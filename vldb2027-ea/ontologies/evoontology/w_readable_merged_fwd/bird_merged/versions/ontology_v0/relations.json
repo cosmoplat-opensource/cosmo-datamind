@@ -1,0 +1,479 @@
+[
+  {
+    "id": "rel_cs_district_schools",
+    "source": "cs_school_district",
+    "relation_type": "composition",
+    "target": "cs_school",
+    "connection_condition": "schools.District names the district that operates the school; district and school codes share the CDSCode prefix",
+    "description": "A district is composed of the schools it operates; a school record has no meaning without its district.",
+    "evidence": "ev_cs_doc_soc"
+  },
+  {
+    "id": "rel_cs_rate_derivation",
+    "source": "cs_free_meal_count",
+    "relation_type": "derivation",
+    "target": "cs_eligible_free_rate",
+    "connection_condition": "free meal count divided by enrollment for the same age scope",
+    "description": "The eligible free rate is computed as the free or reduced price meal count divided by enrollment, per school and per age scope.",
+    "evidence": "ev_cs_tables"
+  },
+  {
+    "id": "rel_cs_excellence_derivation",
+    "source": "cs_ge1500_count",
+    "relation_type": "derivation",
+    "target": "cs_excellence_rate",
+    "connection_condition": "NumGE1500 divided by NumTstTakr for the same school",
+    "description": "The excellence rate is computed as the count of test takers scoring 1500 or above divided by the total test taker count.",
+    "evidence": "ev_cs_sat"
+  },
+  {
+    "id": "rel_cs_admin_school",
+    "source": "cs_administrator_contact",
+    "relation_type": "association",
+    "target": "cs_school",
+    "connection_condition": "administrator names and e-mails are stored on the school row rather than in a separate person table",
+    "description": "Administrators manage the school; the connection is an attribute of the school record, not a separate entity relationship.",
+    "evidence": "ev_cs_address_admin"
+  },
+  {
+    "id": "rel_cg_set_cards",
+    "source": "cg_card_set",
+    "relation_type": "composition",
+    "target": "cg_card",
+    "connection_condition": "cards.setCode corresponds to sets.code",
+    "description": "A set is composed of its card printings; a printing cannot exist without the set it belongs to.",
+    "evidence": "ev_cg_set_naming"
+  },
+  {
+    "id": "rel_cg_card_foreign",
+    "source": "cg_card",
+    "relation_type": "composition",
+    "target": "cg_foreign_printing",
+    "connection_condition": "foreign_data.uuid references cards.uuid",
+    "description": "Foreign-language printings are language-specific variants of a card and cannot exist without the base card printing.",
+    "evidence": "ev_cg_foreign_join"
+  },
+  {
+    "id": "rel_cg_set_translations",
+    "source": "cg_card_set",
+    "relation_type": "composition",
+    "target": "cg_set_translation",
+    "connection_condition": "set_translations.setCode references sets.code",
+    "description": "Localized set names are parts of the set record, one per language.",
+    "evidence": "ev_cg_set_naming"
+  },
+  {
+    "id": "rel_cg_set_name_equiv",
+    "source": "cg_set_name",
+    "relation_type": "equivalence",
+    "target": "cg_set_translation",
+    "connection_condition": "both name the same set, one in English and one in a target language",
+    "description": "A set can be identified by its English name or by any localized translation of that name; both express the same business concept.",
+    "evidence": "ev_cg_set_naming"
+  },
+  {
+    "id": "rel_cg_rulings",
+    "source": "cg_card",
+    "relation_type": "composition",
+    "target": "cg_ruling",
+    "connection_condition": "rulings.uuid references cards.uuid",
+    "description": "Rulings belong to a card printing and are meaningless without it.",
+    "evidence": "ev_cg_tables"
+  },
+  {
+    "id": "rel_cg_format_status",
+    "source": "cg_legality_status",
+    "relation_type": "association",
+    "target": "cg_format",
+    "connection_condition": "legalities holds one status row per card and format",
+    "description": "Legality status is only meaningful relative to a play format; the pair together answers whether a card may be played somewhere.",
+    "evidence": "ev_cg_legality"
+  },
+  {
+    "id": "rel_dc_customer_consumption",
+    "source": "dc_customer",
+    "relation_type": "composition",
+    "target": "dc_monthly_consumption",
+    "connection_condition": "yearmonth.CustomerID references customers.CustomerID",
+    "description": "Monthly consumption records are parts of a customer's consumption history and cannot exist without the customer.",
+    "evidence": "ev_dc_yearmonth"
+  },
+  {
+    "id": "rel_dc_station_transactions",
+    "source": "dc_gas_station",
+    "relation_type": "composition",
+    "target": "dc_transaction",
+    "connection_condition": "transactions_1k.GasStationID identifies the station where the transaction took place",
+    "description": "Transactions occur at a gas station and are attributed to it.",
+    "evidence": "ev_dc_transactions"
+  },
+  {
+    "id": "rel_dc_product_transaction",
+    "source": "dc_product",
+    "relation_type": "association",
+    "target": "dc_transaction",
+    "connection_condition": "transactions_1k.ProductID identifies the purchased product",
+    "description": "A product is purchased in a transaction, but product records exist independently of any single transaction.",
+    "evidence": "ev_dc_transactions"
+  },
+  {
+    "id": "rel_dc_segment_customer",
+    "source": "dc_customer_segment",
+    "relation_type": "association",
+    "target": "dc_customer",
+    "connection_condition": "customers.Segment holds the segment label on the customer row",
+    "description": "Each customer belongs to one business segment that shapes how consumption is compared.",
+    "evidence": "ev_dc_segments"
+  },
+  {
+    "id": "rel_dc_consumption_change",
+    "source": "dc_monthly_consumption",
+    "relation_type": "derivation",
+    "target": "dc_consumption_change",
+    "connection_condition": "yearly totals of the same segment and currency in consecutive years",
+    "description": "Consumption change and percentage increase are derived from yearly aggregates of monthly consumption.",
+    "evidence": "ev_dc_yearmonth"
+  },
+  {
+    "id": "rel_fn_district_clients",
+    "source": "fn_district",
+    "relation_type": "composition",
+    "target": "fn_client",
+    "connection_condition": "client.district_id references district.district_id",
+    "description": "A district is composed of the clients who live there; a client record requires a district.",
+    "evidence": "ev_fn_district"
+  },
+  {
+    "id": "rel_fn_account_loans",
+    "source": "fn_account",
+    "relation_type": "composition",
+    "target": "fn_loan",
+    "connection_condition": "loan.account_id references account.account_id",
+    "description": "Loans are granted to an account and cannot exist without it.",
+    "evidence": "ev_fn_codes"
+  },
+  {
+    "id": "rel_fn_account_transactions",
+    "source": "fn_account",
+    "relation_type": "composition",
+    "target": "fn_transaction",
+    "connection_condition": "trans.account_id references account.account_id",
+    "description": "Transactions are movements on an account and have no meaning without that account.",
+    "evidence": "ev_fn_trans"
+  },
+  {
+    "id": "rel_fn_client_account",
+    "source": "fn_client",
+    "relation_type": "association",
+    "target": "fn_account",
+    "connection_condition": "disp.client_id and disp.account_id connect clients to accounts; one client may hold several accounts",
+    "description": "Clients own or use accounts through the disposition link, so the connection is many-to-many rather than a simple containment.",
+    "evidence": "ev_fn_codes"
+  },
+  {
+    "id": "rel_fn_frequency_account",
+    "source": "fn_statement_frequency",
+    "relation_type": "association",
+    "target": "fn_account",
+    "connection_condition": "account.frequency holds the statement code",
+    "description": "Statement issuance frequency describes how an account is serviced and is chosen per account.",
+    "evidence": "ev_fn_codes"
+  },
+  {
+    "id": "rel_f1_race_results",
+    "source": "f1_race",
+    "relation_type": "composition",
+    "target": "f1_result",
+    "connection_condition": "results.raceId references races.raceId",
+    "description": "A race is composed of the classified results of its drivers; a result cannot exist without a race.",
+    "evidence": "ev_f1_results_time"
+  },
+  {
+    "id": "rel_f1_circuit_races",
+    "source": "f1_circuit",
+    "relation_type": "composition",
+    "target": "f1_race",
+    "connection_condition": "races.circuitId references circuits.circuitId",
+    "description": "A circuit hosts races; a race is held at exactly one circuit and cannot exist without it.",
+    "evidence": "ev_f1_nationality"
+  },
+  {
+    "id": "rel_f1_fullname",
+    "source": "f1_driver",
+    "relation_type": "derivation",
+    "target": "f1_driver_full_name",
+    "connection_condition": "forename concatenated with surname",
+    "description": "A driver full name is derived by combining forename and surname; natural-language questions name drivers this way.",
+    "evidence": "ev_f1_nationality"
+  },
+  {
+    "id": "rel_f1_fastest_lap",
+    "source": "f1_lap_time",
+    "relation_type": "derivation",
+    "target": "f1_fastest_lap",
+    "connection_condition": "minimum lap time per driver per race; results.rank orders those minima",
+    "description": "The fastest lap is the minimum lap time recorded in a race, ranked within the race.",
+    "evidence": "ev_f1_fastest_lap"
+  },
+  {
+    "id": "rel_f1_completion",
+    "source": "f1_result",
+    "relation_type": "derivation",
+    "target": "f1_race_completion",
+    "connection_condition": "a populated results.time marks a finished race",
+    "description": "Race completion is derived from whether a result carries a race time, and the completion rate aggregates that flag.",
+    "evidence": "ev_f1_results_time"
+  },
+  {
+    "id": "rel_f1_age",
+    "source": "f1_driver",
+    "relation_type": "derivation",
+    "target": "f1_driver_age",
+    "connection_condition": "derived from drivers.dob",
+    "description": "Driver age and birth year are derived from the date of birth and drive oldest and youngest comparisons.",
+    "evidence": "ev_f1_nationality"
+  },
+  {
+    "id": "rel_f1_nationality_assoc",
+    "source": "f1_nationality",
+    "relation_type": "association",
+    "target": "f1_driver",
+    "connection_condition": "drivers.nationality is a text label with no country reference table",
+    "description": "Nationality is associated with a driver as a free-text attribute rather than a foreign key to a country entity.",
+    "evidence": "ev_f1_nationality"
+  },
+  {
+    "id": "rel_sc_fullname",
+    "source": "sc_member",
+    "relation_type": "derivation",
+    "target": "sc_member_full_name",
+    "connection_condition": "first_name concatenated with last_name",
+    "description": "A member full name is derived by combining first name and last name.",
+    "evidence": "ev_sc_major"
+  },
+  {
+    "id": "rel_sc_event_budgets",
+    "source": "sc_event",
+    "relation_type": "composition",
+    "target": "sc_budget",
+    "connection_condition": "budget.link_to_event references event.event_id",
+    "description": "An event is composed of its budget lines; a budget line cannot exist without its event.",
+    "evidence": "ev_sc_schema"
+  },
+  {
+    "id": "rel_sc_event_attendance",
+    "source": "sc_event",
+    "relation_type": "composition",
+    "target": "sc_event_attendance",
+    "connection_condition": "attendance.link_to_event references event.event_id",
+    "description": "Attendance records are parts of an event and are meaningless without it.",
+    "evidence": "ev_sc_schema"
+  },
+  {
+    "id": "rel_sc_budget_expenses",
+    "source": "sc_budget",
+    "relation_type": "composition",
+    "target": "sc_expense",
+    "connection_condition": "expense.link_to_budget references budget.budget_id",
+    "description": "Individual expenses are charged against a budget line and cannot exist without it.",
+    "evidence": "ev_sc_schema"
+  },
+  {
+    "id": "rel_sc_member_expenses",
+    "source": "sc_member",
+    "relation_type": "composition",
+    "target": "sc_expense",
+    "connection_condition": "expense.link_to_member references member.member_id",
+    "description": "An expense is attributable to the member who spent the money.",
+    "evidence": "ev_sc_schema"
+  },
+  {
+    "id": "rel_sc_member_income",
+    "source": "sc_member",
+    "relation_type": "composition",
+    "target": "sc_income",
+    "connection_condition": "income.link_to_member references member.member_id",
+    "description": "Income receipts are recorded against the member who received the funds.",
+    "evidence": "ev_sc_schema"
+  },
+  {
+    "id": "rel_sc_major_members",
+    "source": "sc_major",
+    "relation_type": "composition",
+    "target": "sc_member",
+    "connection_condition": "member.link_to_major references major.major_id",
+    "description": "A major groups the members who study it; a member record carries exactly one major.",
+    "evidence": "ev_sc_major"
+  },
+  {
+    "id": "rel_sc_major_unit",
+    "source": "sc_major",
+    "relation_type": "composition",
+    "target": "sc_organization_unit",
+    "connection_condition": "major.department and major.college hold the owning unit",
+    "description": "A major is part of an academic department within a college.",
+    "evidence": "ev_sc_major"
+  },
+  {
+    "id": "rel_sc_source_income",
+    "source": "sc_income_source",
+    "relation_type": "association",
+    "target": "sc_income",
+    "connection_condition": "income.source holds the source label on the income row",
+    "description": "The income source classifies why funds were received, but has no independent entity record.",
+    "evidence": "ev_sc_schema"
+  },
+  {
+    "id": "rel_sh_publisher_heroes",
+    "source": "sh_publisher",
+    "relation_type": "composition",
+    "target": "sh_superhero",
+    "connection_condition": "superhero.publisher_id references publisher.id",
+    "description": "A publisher is composed of the superheroes it publishes; a hero requires a publisher record.",
+    "evidence": "ev_sh_publisher_power"
+  },
+  {
+    "id": "rel_sh_hero_attributes",
+    "source": "sh_superhero",
+    "relation_type": "composition",
+    "target": "sh_attribute",
+    "connection_condition": "hero_attribute.hero_id references superhero.id",
+    "description": "Attribute measurements are parts of a hero profile and cannot exist without the hero.",
+    "evidence": "ev_sh_attributes"
+  },
+  {
+    "id": "rel_sh_hero_powers",
+    "source": "sh_superhero",
+    "relation_type": "composition",
+    "target": "sh_superpower",
+    "connection_condition": "hero_power.hero_id and hero_power.power_id link heroes to powers",
+    "description": "A hero is characterised by assigned superpowers drawn from the shared power catalogue.",
+    "evidence": "ev_sh_publisher_power"
+  },
+  {
+    "id": "rel_sh_eye_hair_equiv",
+    "source": "sh_eye_colour",
+    "relation_type": "equivalence",
+    "target": "sh_hair_colour",
+    "connection_condition": "eye_colour_id and hair_colour_id both reference colour.id",
+    "description": "Eye colour and hair colour are different attributes expressed over the same colour value domain, so a colour label means the same thing in both.",
+    "evidence": "ev_sh_colours_weight"
+  },
+  {
+    "id": "rel_sh_hair_skin_equiv",
+    "source": "sh_hair_colour",
+    "relation_type": "equivalence",
+    "target": "sh_skin_colour",
+    "connection_condition": "hair_colour_id and skin_colour_id both reference colour.id",
+    "description": "Hair colour and skin colour share the colour reference list and therefore the same label semantics.",
+    "evidence": "ev_sh_colours_weight"
+  },
+  {
+    "id": "rel_sh_gender_hero",
+    "source": "sh_gender",
+    "relation_type": "association",
+    "target": "sh_superhero",
+    "connection_condition": "superhero.gender_id references gender.id",
+    "description": "Gender classifies a hero through a small reference list including an N/A label.",
+    "evidence": "ev_sh_colours_weight"
+  },
+  {
+    "id": "rel_tp_patient_labs",
+    "source": "tp_patient",
+    "relation_type": "composition",
+    "target": "tp_laboratory_test",
+    "connection_condition": "Laboratory.ID references Patient.ID",
+    "description": "Laboratory records are parts of a patient's history and cannot exist without the patient.",
+    "evidence": "ev_tp_patient_exam"
+  },
+  {
+    "id": "rel_tp_patient_exams",
+    "source": "tp_patient",
+    "relation_type": "composition",
+    "target": "tp_examination",
+    "connection_condition": "Examination.ID references Patient.ID",
+    "description": "Examination records belong to a patient and are meaningless without one.",
+    "evidence": "ev_tp_patient_exam"
+  },
+  {
+    "id": "rel_tp_age",
+    "source": "tp_patient",
+    "relation_type": "derivation",
+    "target": "tp_patient_age",
+    "connection_condition": "current year minus year of Birthday",
+    "description": "Patient age is derived from the birth date and the current date.",
+    "evidence": "ev_tp_patient_exam"
+  },
+  {
+    "id": "rel_tp_normal_range",
+    "source": "tp_normal_range",
+    "relation_type": "association",
+    "target": "tp_lab_measure",
+    "connection_condition": "thresholds are stated per analyte in the workload evidence",
+    "description": "A normal range classifies analyte measurements without being stored as a column; the interpretation is applied by the analyst.",
+    "evidence": "ev_tp_lab_ranges"
+  },
+  {
+    "id": "rel_tp_coag_exam",
+    "source": "tp_coagulation_result",
+    "relation_type": "association",
+    "target": "tp_examination",
+    "connection_condition": "KCT, RVVT and LAC are columns on the examination row",
+    "description": "Coagulation measures are recorded as part of a clinical examination.",
+    "evidence": "ev_tp_patient_exam"
+  },
+  {
+    "id": "rel_tg_carcinogenic_is_molecule",
+    "source": "tg_carcinogenic_molecule",
+    "relation_type": "hierarchy",
+    "target": "tg_molecule",
+    "connection_condition": "every carcinogenic molecule id exists in molecule",
+    "description": "A carcinogenic molecule is a kind of molecule: its value domain is the subset of molecules labelled carcinogenic.",
+    "evidence": "ev_tg_schema"
+  },
+  {
+    "id": "rel_tg_non_carcinogenic_is_molecule",
+    "source": "tg_non_carcinogenic_molecule",
+    "relation_type": "hierarchy",
+    "target": "tg_molecule",
+    "connection_condition": "every non-carcinogenic molecule id exists in molecule",
+    "description": "A non-carcinogenic molecule is a kind of molecule: its value domain is the subset of molecules labelled non-carcinogenic.",
+    "evidence": "ev_tg_schema"
+  },
+  {
+    "id": "rel_tg_molecule_atoms",
+    "source": "tg_molecule",
+    "relation_type": "composition",
+    "target": "tg_atom",
+    "connection_condition": "atom.molecule_id references molecule.molecule_id",
+    "description": "A molecule is composed of its atoms; an atom cannot exist without its molecule.",
+    "evidence": "ev_tg_elements"
+  },
+  {
+    "id": "rel_tg_molecule_bonds",
+    "source": "tg_molecule",
+    "relation_type": "composition",
+    "target": "tg_bond",
+    "connection_condition": "bond.molecule_id references molecule.molecule_id",
+    "description": "A molecule is composed of its bonds; a bond cannot exist without its molecule.",
+    "evidence": "ev_tg_schema"
+  },
+  {
+    "id": "rel_tg_bond_connections",
+    "source": "tg_bond",
+    "relation_type": "composition",
+    "target": "tg_atom_connection",
+    "connection_condition": "connected.bond_id references bond.bond_id",
+    "description": "A bond realises the connection between its two atoms and gives the connection its type.",
+    "evidence": "ev_tg_elements"
+  },
+  {
+    "id": "rel_tg_element_ratio",
+    "source": "tg_atom",
+    "relation_type": "derivation",
+    "target": "tg_element_ratio",
+    "connection_condition": "count of atoms of an element divided by the total atom count of the molecule",
+    "description": "The element ratio is derived from the element composition of a molecule's atoms.",
+    "evidence": "ev_tg_elements"
+  }
+]

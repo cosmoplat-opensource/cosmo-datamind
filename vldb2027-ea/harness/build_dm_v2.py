@@ -90,7 +90,7 @@ def make_workload(direction, dbs, path, S="full"):
     wl, counts = {}, {}
     for db in dbs:
         f = (EXP / "variants" / "opaque" / "questions" / sr / "construction" / f"{db}.json") if S == "opaque" \
-            else (EXP / "variants" / "opaque_merged" / "workload" / sr / f"{db}.json") if S == "opaque_merged" \
+            else (EXP / "variants" / S / "workload" / sr / f"{db}.json") if S in ("opaque_merged", "readable_merged") \
             else DATA / sr / "construction" / f"{db}.json"
         qs = json.loads(f.read_text())["questions"]
         # 与 EvoOntology 的 construction_workload 信息对等:问题 + evidence(有则附),不含 SQL、答案
@@ -178,7 +178,7 @@ def build(track, S, direction, dbs, port, force, rebuild=False):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--track", required=True, choices=["w", "d"])
-    ap.add_argument("--S", required=True, choices=["full", "nofk", "bare", "opaque", "opaque_merged"])
+    ap.add_argument("--S", required=True, choices=["full", "nofk", "bare", "opaque", "opaque_merged", "readable_merged"])
     ap.add_argument("--dir", default="")
     ap.add_argument("--port", type=int, default=8101)
     ap.add_argument("--force", action="store_true")

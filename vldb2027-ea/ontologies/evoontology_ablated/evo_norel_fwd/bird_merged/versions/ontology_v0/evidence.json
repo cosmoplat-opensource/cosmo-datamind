@@ -1,0 +1,210 @@
+[
+  {
+    "id": "ev_schema",
+    "source": "bird_merged sqlite",
+    "query": "SELECT name, sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
+    "result": "60 tables tb001 to tb060 with opaque columns cl0001 to cl0420; declared types and foreign keys are retained and used to group tables into nine source datasets.",
+    "validation_method": "schema listing and foreign-key inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_cs_core",
+    "source": "bird_merged sqlite",
+    "query": "SELECT * FROM tb003 LIMIT 2; SELECT * FROM tb001 LIMIT 2; SELECT * FROM tb002 LIMIT 3",
+    "result": "tb003 holds school identity, status, county, district, address, type codes, category, flags, coordinates and administrator fields; tb001 holds academic year, grades and enrollment and meal metrics; tb002 holds grade 12 enrollment, test takers, reading/math/writing averages and the count scoring 1500 or above.",
+    "validation_method": "representative row inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_cs_frpm",
+    "source": "bird_merged sqlite",
+    "query": "SELECT cl0019,cl0020,cl0021,cl0022,cl0023,cl0024,cl0025,cl0026,cl0027,cl0028 FROM tb001 WHERE cl0019>0 LIMIT 5",
+    "result": "Ratios confirm the column roles: cl0021 equals cl0020/cl0019, cl0023 equals cl0022/cl0019, cl0026 equals cl0025/cl0024 and cl0028 equals cl0027/cl0024. Distinct provision values include Multiple Provision Types.",
+    "validation_method": "ratio cross-check and grouped value counts",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_cs_codes",
+    "source": "bird_merged sqlite",
+    "query": "SELECT cl0065,cl0066,COUNT(*) FROM tb003 GROUP BY 1,2; same for cl0067/cl0068, cl0069/cl0070, cl0075, cl0076",
+    "result": "District types 54 Unified (10190), 52 Elementary (4378), 00 County Office (1703), 56 High School (1079), 31 State Special Schools (6). School types include 62 Intermediate/Middle and 66 High. Categories include SSS State Special School and TRAD Traditional. Virtual flag values F, N, P and blank; magnet flag 1 and 0.",
+    "validation_method": "grouped value counts",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_cs_sat",
+    "source": "bird_merged sqlite",
+    "query": "SELECT cl0035,cl0036,cl0037,cl0038,cl0039,cl0040 FROM tb002 ORDER BY cl0035 DESC LIMIT 5",
+    "result": "cl0035 is grade 12 enrollment, cl0036 is test takers, cl0037 to cl0039 are reading, math and writing averages and cl0040 is the count scoring 1500 or above.",
+    "validation_method": "row inspection and magnitude check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_cs_geo",
+    "source": "bird_merged sqlite",
+    "query": "SELECT MIN(cl0078),MAX(cl0078),MIN(cl0077),MAX(cl0077) FROM tb003; SELECT cl0077,cl0078,cl0079,cl0080,cl0081 FROM tb003 WHERE cl0079<>'' LIMIT 3",
+    "result": "Latitude ranges 32.5 to 44.2 and longitude ranges -124.3 to -83.8, all negative for California. Administrator first name, last name and e-mail are present in the school row.",
+    "validation_method": "range and row inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_cg_core",
+    "source": "bird_merged sqlite",
+    "query": "SELECT cl0089,cl0090,cl0093,cl0099,cl0101,cl0110,cl0121,cl0137,cl0143,cl0147,cl0151,cl0153,cl0160 FROM tb004 LIMIT 3",
+    "result": "tb004 is the card printing table; the selected columns hold card id, artist, border colour, converted mana cost, EDHRec rank, content warning flag, story spotlight flag, name, power, rarity, set code, subtypes and uuid.",
+    "validation_method": "representative row inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_cg_enums",
+    "source": "bird_merged sqlite",
+    "query": "grouped counts on tb006.cl0164, tb006.cl0165, tb004.cl0147, tb004.cl0093, tb004.cl0121",
+    "result": "Formats are lower-case (commander 55576, gladiator 16568 and others); legality values are Legal, Banned, Restricted; rarity common/uncommon/rare/mythic; border black/white/silver/gold/borderless; story spotlight 0 and 1.",
+    "validation_method": "grouped value counts",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_cg_sets",
+    "source": "bird_merged sqlite",
+    "query": "SELECT cl0169,cl0176,cl0167,cl0177,cl0179 FROM tb007 WHERE cl0169 IN ('ARC','CSP','10E','CMD')",
+    "result": "Set rows confirm code, name, block, MTGO code and release date; ARC is Archenemy, CSP is Coldsnap, 10E is Tenth Edition and CMD is Commander with an empty primary name.",
+    "validation_method": "targeted row inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_cg_foreign",
+    "source": "bird_merged sqlite",
+    "query": "SELECT * FROM tb005 LIMIT 2; grouped counts on tb005.cl0163; SELECT * FROM tb009 LIMIT 2",
+    "result": "tb005 holds localized printings with language, translated name, text and flavor text; languages include German, Spanish, French, Italian, Korean and Portuguese (Brasil). tb009 holds ruling text and date.",
+    "validation_method": "representative row and grouped value inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_db_core",
+    "source": "bird_merged sqlite",
+    "query": "SELECT * FROM tb010 LIMIT 3; SELECT * FROM tb011 LIMIT 3; SELECT * FROM tb012 LIMIT 3; SELECT * FROM tb013 LIMIT 3",
+    "result": "tb010 holds customers with segment and currency; tb011 holds gas stations with chain and country; tb012 holds products with description; tb013 holds transactions with date, time, customer, station, product, amount and price.",
+    "validation_method": "representative row inspection and foreign-key check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_db_enums",
+    "source": "bird_merged sqlite",
+    "query": "GROUP BY tb010.cl0185, tb010.cl0186; GROUP BY tb011.cl0189",
+    "result": "Segments KAM, LAM and SME; currencies CZK and EUR; countries CZE (4836 stations) and SVK (880).",
+    "validation_method": "grouped value counts",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_db_dates",
+    "source": "bird_merged sqlite",
+    "query": "SELECT cl0193, typeof(cl0193), COUNT(*) FROM tb014 GROUP BY 1 ORDER BY 1 LIMIT 5; SELECT * FROM tb014 LIMIT 3",
+    "result": "tb014 date is text in YYYYMM form (201112, 201201) and consumption is a decimal value per customer-month. Transaction date and time are separate columns in tb013.",
+    "validation_method": "type inspection and row sampling",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_fn_core",
+    "source": "bird_merged sqlite",
+    "query": "SELECT * FROM tb015 LIMIT 2; tb016 to tb022 samples",
+    "result": "tb015 accounts; tb016 cards; tb017 clients; tb018 dispositions; tb019 districts; tb020 loans; tb021 orders; tb022 transactions. Foreign keys link dispositions to clients and accounts.",
+    "validation_method": "representative row inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_fn_enums",
+    "source": "bird_merged sqlite",
+    "query": "GROUP BY tb015.cl0201, tb020.cl0229, tb022.cl0205, tb022.cl0235, tb017.cl0208",
+    "result": "Statement frequency POPLATEK MESICNE, POPLATEK TYDNE, POPLATEK PO OBRATU; loan status A, B, C, D; transaction type PRIJEM, VYBER, VYDAJ; operations VKLAD, VYBER, PREVOD NA UCET, PREVOD Z UCTU, VYBER KARTOU; sex F and M.",
+    "validation_method": "grouped value counts",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_fn_district",
+    "source": "bird_merged sqlite",
+    "query": "SELECT cl0210,cl0211,cl0219 FROM tb019 LIMIT 5; GROUP BY cl0211",
+    "result": "District name, region and average salary are columns of the district row; regions include Prague, central Bohemia, east Bohemia, north Bohemia, south Moravia and west Bohemia; salary values are in the thousands.",
+    "validation_method": "row and grouped value inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_f1_core",
+    "source": "bird_merged sqlite",
+    "query": "SELECT * FROM tb023 LIMIT 2; tb024 to tb035 samples",
+    "result": "tb023 circuits; tb024 constructors; tb025 drivers; tb026 seasons; tb027 races; tb028 constructor results; tb029 constructor standings; tb030 driver standings; tb031 lap times; tb032 pit stops; tb033 qualifying; tb034 status; tb035 results. Foreign keys and value ranges confirm the mapping.",
+    "validation_method": "representative row inspection and foreign-key check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_f1_enums",
+    "source": "bird_merged sqlite",
+    "query": "GROUP BY tb025.cl0250; SELECT * FROM tb034 LIMIT 2",
+    "result": "Driver nationalities include British, American, Italian, French, German, Japanese and Dutch. Status values include Finished and Disqualified.",
+    "validation_method": "grouped value and row inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_sc_core",
+    "source": "bird_merged sqlite",
+    "query": "SELECT * FROM tb036 LIMIT 3; tb037 to tb043 samples",
+    "result": "tb036 events; tb037 majors; tb038 zip codes; tb039 attendance; tb040 budgets; tb041 expenses; tb042 income; tb043 members. Identifier columns link events to attendance and members to areas.",
+    "validation_method": "representative row inspection and foreign-key check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_sc_enums",
+    "source": "bird_merged sqlite",
+    "query": "GROUP BY tb036.cl0291, tb036.cl0294, tb040.cl0307, tb042.cl0320",
+    "result": "Event types Meeting, Game, Social, Election, Community Service, Guest Speaker, Budget, Registration; statuses Open, Closed, Planning; budget categories Food, Advertisement, Speaker Gifts, Parking, Club T-Shirts; income sources Dues, Fundraising, Sponsorship, School Appropiation.",
+    "validation_method": "grouped value counts",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_sh_core",
+    "source": "bird_merged sqlite",
+    "query": "SELECT * FROM tb044 LIMIT 3; tb045 to tb053 samples",
+    "result": "tb044 alignment; tb045 attribute; tb046 colour; tb047 gender; tb048 publisher; tb049 race; tb050 superhero; tb051 hero attribute; tb052 superpower; tb053 hero power. Superhero columns reference the lookups by identifier.",
+    "validation_method": "representative row inspection and foreign-key check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_sh_lookup",
+    "source": "bird_merged sqlite",
+    "query": "SELECT cl0330,cl0333 FROM tb046 WHERE cl0330<=12; SELECT cl0330,cl0335 FROM tb048 WHERE cl0335 IN ('Marvel Comics','DC Comics','Dark Horse Comics'); SELECT cl0330,cl0334 FROM tb047 LIMIT 3",
+    "result": "Colour ids: 1 No Colour, 2 Amber, 3 Auburn, 4 Black, 6 Blond, 7 Blue. Publisher ids: 3 Dark Horse Comics, 4 DC Comics, 13 Marvel Comics. Gender: 1 Male, 2 Female, 3 N/A.",
+    "validation_method": "lookup row inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_th_core",
+    "source": "bird_merged sqlite",
+    "query": "SELECT * FROM tb055 LIMIT 3; SELECT * FROM tb054 LIMIT 4",
+    "result": "tb055 patients hold sex, birth date, patient type and diagnosis; tb054 examinations hold date, ANA pattern, coagulation signs, symptoms and thrombosis level.",
+    "validation_method": "representative row inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_th_lab",
+    "source": "bird_merged sqlite",
+    "query": "SELECT * FROM tb056 LIMIT 2; MIN/MAX/AVG for cl0373, cl0377, cl0379, cl0380, cl0382, cl0384, cl0385, cl0390, cl0398, cl0400",
+    "result": "Laboratory values match physiological ranges: GPT 1 to 4780, ALB 1.0 to 5.8, UN 0 to 152, creatinine 0.1 to 17.1, total cholesterol 37 to 568, CPK 0 to 10835, glucose 62 to 499, platelets 5 to 5844, IgG 3 to 6510 and IgM 0 to 1573.",
+    "validation_method": "distribution range check",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_th_enums",
+    "source": "bird_merged sqlite",
+    "query": "GROUP BY tb055.cl0366, tb055.cl0370, tb054.cl0358, tb054.cl0361 to cl0363, tb054.cl0365",
+    "result": "Sex F and M; patient type plus and minus; ANA patterns S, P, D, N and combinations; coagulation signs plus, minus and blank; thrombosis level 0 to 3.",
+    "validation_method": "grouped value counts",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_tx_core",
+    "source": "bird_merged sqlite",
+    "query": "SELECT * FROM tb057 LIMIT 3; tb058 to tb060 samples; GROUP BY tb058.cl0418, tb060.cl0420, tb057.cl0416",
+    "result": "tb057 atoms with molecule and element; tb058 bonds with molecule and bond type; tb059 atom-bond connections; tb060 molecules with label. Bond types single, double, triple; labels plus and minus; elements lower-case such as h, c, o, n, cl, br, i, s, p, f.",
+    "validation_method": "representative row and grouped value inspection",
+    "timestamp": "2026-11-06"
+  }
+]

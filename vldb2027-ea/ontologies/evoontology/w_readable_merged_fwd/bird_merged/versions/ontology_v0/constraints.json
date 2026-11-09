@@ -1,0 +1,1116 @@
+[
+  {
+    "id": "con_cs_virtual_enum",
+    "target": "cs_virtual_school_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "virtual",
+      "exclusively virtual",
+      "fully virtual",
+      "Virtual = 'F'"
+    ],
+    "severity": "block",
+    "scope": "california_schools schools.Virtual",
+    "confidence": "high",
+    "description": "Virtual values are F, N and P. F marks an exclusively or fully virtual school, N a not-virtual school and P a partially virtual school; 6868 rows have no value. Questions asking for exclusively virtual schools select the F value.",
+    "evidence": "ev_cs_virtual_magnet"
+  },
+  {
+    "id": "con_cs_magnet_enum",
+    "target": "cs_magnet_program",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "magnet",
+      "magnet program",
+      "offers a magnet program"
+    ],
+    "severity": "warning",
+    "scope": "california_schools schools.Magnet",
+    "confidence": "high",
+    "description": "Magnet = 1 means the school offers a magnet program and 0 means it does not; 7076 schools leave the field empty, which is not the same as 0.",
+    "evidence": "ev_cs_virtual_magnet"
+  },
+  {
+    "id": "con_cs_nslp_values",
+    "target": "cs_nslp_provision_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "NSLP provision status",
+      "Multiple Provision Types",
+      "CEP",
+      "provision"
+    ],
+    "severity": "warning",
+    "scope": "california_schools frpm.NSLP Provision Status",
+    "confidence": "high",
+    "description": "Provision labels are exact strings: Multiple Provision Types, Provision 1, Provision 2, Provision 3, Breakfast Provision 2, Lunch Provision 2 and CEP. Match them case-sensitively; an empty value is not a provision category.",
+    "evidence": "ev_cs_nslp"
+  },
+  {
+    "id": "con_cs_soc_doc_codes",
+    "target": "cs_school_type_code",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "school type",
+      "district type",
+      "Intermediate/Middle Schools",
+      "Unified School",
+      "Elementary School District",
+      "SOC",
+      "DOC"
+    ],
+    "severity": "block",
+    "scope": "california_schools",
+    "confidence": "high",
+    "description": "Codes are stored as two-character text. SOC 62 is Intermediate/Middle Schools (Public), SOC 66 is High Schools (Public), SOC 60 is Elementary Schools (Public). DOC 54 is Unified School District, DOC 52 is Elementary School District, DOC 56 is High School District. Questions naming a school type must translate the label to its code.",
+    "evidence": "ev_cs_doc_soc"
+  },
+  {
+    "id": "con_cs_edops_sss",
+    "target": "cs_school_type_code",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "State Special School",
+      "SSS",
+      "EdOpsCode",
+      "educational option"
+    ],
+    "severity": "block",
+    "scope": "california_schools schools.EdOpsCode",
+    "confidence": "high",
+    "description": "EdOpsCode SSS means State Special School; only three schools carry it, while DOC 31 labels six State Special Schools records. The operational type and the district type are different classifications.",
+    "evidence": "ev_cs_edops"
+  },
+  {
+    "id": "con_cs_grade_span_notation",
+    "target": "cs_grade_span",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "grade span",
+      "K-8",
+      "Kindergarten to 8th grade",
+      "grades 1 through 12",
+      "K-12"
+    ],
+    "severity": "block",
+    "scope": "california_schools GSoffered and GSserved",
+    "confidence": "high",
+    "description": "Grade spans use compact notation where K stands for Kindergarten: K-8 means Kindergarten to 8th grade, 9-12 means grades 9 to 12, K-12 means Kindergarten to 12th grade. GSoffered is the span a school offers, GSserved the span it actually serves. 3882 schools leave both empty.",
+    "evidence": "ev_cs_grade_span"
+  },
+  {
+    "id": "con_cs_longitude_direction",
+    "target": "cs_school_location",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "longitude",
+      "highest longitude",
+      "westernmost",
+      "coordinates"
+    ],
+    "severity": "block",
+    "scope": "california_schools schools.Longitude",
+    "confidence": "high",
+    "description": "All California longitudes are negative (range -124.28481 to -83.781133), so the numerically largest longitude is the easternmost point. A question asking for the highest longitude means the maximum absolute value. 4823 schools record zero or null longitude and must be excluded from coordinate comparisons.",
+    "evidence": "ev_cs_longitude"
+  },
+  {
+    "id": "con_cs_full_address",
+    "target": "cs_school_address",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "full address",
+      "complete address",
+      "communication address",
+      "Street, City, State, Zip"
+    ],
+    "severity": "warning",
+    "scope": "california_schools",
+    "confidence": "high",
+    "description": "A full communication address requires all four components: street, city, state and ZIP code. Street, City, Zip and State hold the physical address; MailStreet, MailCity, MailZip and MailState hold the mailing address, which may differ.",
+    "evidence": "ev_cs_address_admin"
+  },
+  {
+    "id": "con_cs_excellence_rate_formula",
+    "target": "cs_excellence_rate",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "excellence rate",
+      "rate of high scorers",
+      "NumGE1500",
+      "NumTstTakr"
+    ],
+    "severity": "block",
+    "scope": "california_schools satscores",
+    "confidence": "high",
+    "description": "Excellence rate is NumGE1500 divided by NumTstTakr for the same school. NumTstTakr can be zero, so a division must guard against a zero denominator.",
+    "evidence": "ev_cs_sat"
+  },
+  {
+    "id": "con_cs_eligible_free_rate_formula",
+    "target": "cs_eligible_free_rate",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "eligible free rate",
+      "free meal rate",
+      "free or reduced price meals"
+    ],
+    "severity": "block",
+    "scope": "california_schools frpm",
+    "confidence": "high",
+    "description": "Eligible free rate is the free or reduced price meal count divided by enrollment for the same age scope: use the K-12 pair for grade-based questions and the Ages 5-17 pair for age-based questions. Precomputed percent columns exist for both scopes.",
+    "evidence": "ev_cs_tables"
+  },
+  {
+    "id": "con_cs_k12_scope",
+    "target": "cs_enrollment",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "K-12",
+      "grades 1 through 12",
+      "enrolment",
+      "enrollment"
+    ],
+    "severity": "warning",
+    "scope": "california_schools frpm",
+    "confidence": "medium",
+    "description": "The K-12 columns cover students in grades 1 through 12, while the Ages 5-17 columns cover the same population by age. Questions about students aged 5 to 17 use the Ages 5-17 pair; questions about grades 1 through 12 use the K-12 pair.",
+    "evidence": "ev_cs_tables"
+  },
+  {
+    "id": "con_cg_language_labels",
+    "target": "cg_language",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "Italian",
+      "French",
+      "Korean",
+      "Portuguese",
+      "Brazilian Portuguese",
+      "language"
+    ],
+    "severity": "block",
+    "scope": "card_games foreign_data and set_translations",
+    "confidence": "high",
+    "description": "Language labels are exact strings. Brazilian Portuguese is stored as Portuguese (Brazil), not Portuguese (Brasil). The main labels are Japanese, French, German, Italian, Spanish, Portuguese (Brazil), Chinese Simplified, Chinese Traditional, Russian and Korean.",
+    "evidence": "ev_cg_languages"
+  },
+  {
+    "id": "con_cg_legality_status_case",
+    "target": "cg_legality_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "legal status",
+      "legal",
+      "banned",
+      "restricted",
+      "status"
+    ],
+    "severity": "block",
+    "scope": "card_games legalities.status",
+    "confidence": "high",
+    "description": "Status labels are title case: Legal, Banned and Restricted. Formats are lower case: commander, modern, gladiator, vintage, legacy. Mixing the two cases silently returns no rows.",
+    "evidence": "ev_cg_legality"
+  },
+  {
+    "id": "con_cg_format_values",
+    "target": "cg_format",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "format",
+      "play format",
+      "commander",
+      "gladiator",
+      "modern"
+    ],
+    "severity": "warning",
+    "scope": "card_games legalities.format",
+    "confidence": "high",
+    "description": "Format names are stored as single lower-case words. Each card has one legality row per format, so counting cards in a format requires filtering to that format first.",
+    "evidence": "ev_cg_legality"
+  },
+  {
+    "id": "con_cg_ban_semantics",
+    "target": "cg_legality_status",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "banned",
+      "banned in",
+      "not allowed"
+    ],
+    "severity": "block",
+    "scope": "card_games",
+    "confidence": "high",
+    "description": "A card is banned in a format when its legality status for that format is Banned; it is playable when the status is Legal. Banned is a subset of the status column, not a separate table.",
+    "evidence": "ev_cg_legality"
+  },
+  {
+    "id": "con_cg_content_warning_enum",
+    "target": "cg_content_warning",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "content warning",
+      "missing or degraded properties",
+      "hasContentWarning"
+    ],
+    "severity": "block",
+    "scope": "card_games cards.hasContentWarning",
+    "confidence": "high",
+    "description": "hasContentWarning = 1 marks a card with missing or degraded properties and values; 0 marks a card without a content warning. Only 29 cards carry the warning. Percentages over this flag must divide the flagged count by the count within the filtered population.",
+    "evidence": "ev_cg_tables"
+  },
+  {
+    "id": "con_cg_power_missing",
+    "target": "cg_card_power",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "without power",
+      "no power",
+      "power is null",
+      "power is *"
+    ],
+    "severity": "block",
+    "scope": "card_games cards.power",
+    "confidence": "high",
+    "description": "A card has no power when the power column is NULL, which is true for 30624 cards, or when it prints an asterisk, true for 429 cards. Both cases must be included when a question says cards without power.",
+    "evidence": "ev_cg_power_star"
+  },
+  {
+    "id": "con_cg_mtgo_blank",
+    "target": "cg_card_set",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "Magic: The Gathering Online",
+      "MTGO",
+      "mtgoCode",
+      "appear online"
+    ],
+    "severity": "block",
+    "scope": "card_games sets.mtgoCode and cards.mtgoId",
+    "confidence": "high",
+    "description": "Availability on Magic: The Gathering Online is recorded as a non-blank code. Missing values are empty strings, not NULL: 391 of 551 sets have an empty mtgoCode and 24684 cards have an empty mtgoId. Testing IS NOT NULL alone wrongly counts every row as online.",
+    "evidence": "ev_cg_mtgo_blank"
+  },
+  {
+    "id": "con_cg_set_naming_variants",
+    "target": "cg_card_set",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "set",
+      "card set",
+      "Coldsnap",
+      "Archenemy",
+      "Hauptset Zehnte Edition",
+      "set code"
+    ],
+    "severity": "warning",
+    "scope": "card_games",
+    "confidence": "high",
+    "description": "A set can be referenced four ways: English name in sets.name, short code in sets.code, market name in sets.mcmName, or a localized name in set_translations.translation. A non-English set name such as Hauptset Zehnte Edition matches only the translation column.",
+    "evidence": "ev_cg_set_naming"
+  },
+  {
+    "id": "con_cg_rule_means_format",
+    "target": "cg_format",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "rule of playing card",
+      "rule",
+      "what format"
+    ],
+    "severity": "info",
+    "scope": "card_games",
+    "confidence": "medium",
+    "description": "In card-rule questions the rule a card can be played under is its play format, recorded per card in legalities.format rather than as free text on the card.",
+    "evidence": "ev_cg_legality"
+  },
+  {
+    "id": "con_dc_yearmonth_format",
+    "target": "dc_yearmonth_period",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "yearmonth",
+      "month",
+      "year 2013",
+      "201309",
+      "date"
+    ],
+    "severity": "block",
+    "scope": "debit_card_specializing yearmonth.Date",
+    "confidence": "high",
+    "description": "yearmonth.Date is a six-character text key: the first four characters are the year and the last two the month. A year filter is a prefix range such as 201301 to 201312, and a month filter compares the last two characters. The table covers 201112 to 201311.",
+    "evidence": "ev_dc_yearmonth"
+  },
+  {
+    "id": "con_dc_segment_values",
+    "target": "dc_customer_segment",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "segment",
+      "KAM",
+      "LAM",
+      "SME"
+    ],
+    "severity": "block",
+    "scope": "debit_card_specializing customers.Segment",
+    "confidence": "high",
+    "description": "Customers belong to exactly one of three segments: KAM, LAM or SME. Segment comparisons must group by this label and pair it with the customer's currency.",
+    "evidence": "ev_dc_segments"
+  },
+  {
+    "id": "con_dc_currency_values",
+    "target": "dc_currency",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "currency",
+      "CZK",
+      "EUR",
+      "paid in euro",
+      "paid in CZK"
+    ],
+    "severity": "block",
+    "scope": "debit_card_specializing customers.Currency",
+    "confidence": "high",
+    "description": "Currency is either CZK or EUR per customer. Paying in euro means Currency = EUR; paying in CZK means Currency = CZK. The same segment can contain customers in both currencies, so currency must be filtered explicitly.",
+    "evidence": "ev_dc_segments"
+  },
+  {
+    "id": "con_dc_country_codes",
+    "target": "dc_country",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "Czech Republic",
+      "Slovakia",
+      "country",
+      "CZE"
+    ],
+    "severity": "block",
+    "scope": "debit_card_specializing gasstations.Country",
+    "confidence": "high",
+    "description": "Station countries are ISO-style codes: CZE for the Czech Republic and SVK for Slovakia. Questions naming a country must translate the name to its code.",
+    "evidence": "ev_dc_segments"
+  },
+  {
+    "id": "con_dc_consumption_grain",
+    "target": "dc_monthly_consumption",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "monthly consumption",
+      "annual consumption",
+      "average monthly",
+      "peak month"
+    ],
+    "severity": "warning",
+    "scope": "debit_card_specializing yearmonth",
+    "confidence": "high",
+    "description": "Consumption is recorded once per customer per month. Annual consumption is the sum of twelve monthly values, so an annual average divides the yearly total by twelve rather than averaging the monthly rows.",
+    "evidence": "ev_dc_yearmonth"
+  },
+  {
+    "id": "con_dc_percentage_increase",
+    "target": "dc_consumption_change",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "percentage increase",
+      "increase in consumption",
+      "biggest increase",
+      "difference in annual average"
+    ],
+    "severity": "warning",
+    "scope": "debit_card_specializing",
+    "confidence": "medium",
+    "description": "The percentage increase in consumption between 2012 and 2013 is the difference between the two yearly totals divided by the consumption of the later year, expressed as a percent. The difference itself is the later year minus the earlier year.",
+    "evidence": "ev_dc_yearmonth"
+  },
+  {
+    "id": "con_fn_frequency_codes",
+    "target": "fn_statement_frequency",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "weekly issuance",
+      "monthly statement",
+      "issuance after transaction",
+      "POPLATEK TYDNE",
+      "POPLATEK MESICNE",
+      "POPLATEK PO OBRATU"
+    ],
+    "severity": "block",
+    "scope": "financial account.frequency",
+    "confidence": "high",
+    "description": "Statement frequency codes are Czech text: POPLATEK TYDNE is weekly issuance, POPLATEK MESICNE is monthly issuance and POPLATEK PO OBRATU is issuance after transaction.",
+    "evidence": "ev_fn_codes"
+  },
+  {
+    "id": "con_fn_loan_status_codes",
+    "target": "fn_loan_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "status",
+      "running contract",
+      "still running",
+      "no issue",
+      "loan status"
+    ],
+    "severity": "block",
+    "scope": "financial loan.status",
+    "confidence": "medium",
+    "description": "Loan status is a single letter. C marks a running contract that is still in order, which is the meaning required by questions about accounts still running with no issue. Codes A, B and D also exist and should not be interpreted as running contracts without further evidence.",
+    "evidence": "ev_fn_codes"
+  },
+  {
+    "id": "con_fn_operation_codes",
+    "target": "fn_transaction_operation",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "withdrawal in cash",
+      "withdrawal",
+      "deposit",
+      "operation",
+      "VYBER",
+      "VKLAD"
+    ],
+    "severity": "block",
+    "scope": "financial trans.operation",
+    "confidence": "high",
+    "description": "Operation codes are Czech text: VYBER is a withdrawal in cash, VKLAD a deposit, PREVOD NA UCET a transfer to another account, PREVOD Z UCTU a transfer from another account and VYBER KARTOU a card withdrawal. Cash withdrawal questions use VYBER, not the broader debit type.",
+    "evidence": "ev_fn_trans"
+  },
+  {
+    "id": "con_fn_type_codes",
+    "target": "fn_transaction_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "type",
+      "debit",
+      "credit",
+      "VYDAJ",
+      "PRIJEM"
+    ],
+    "severity": "warning",
+    "scope": "financial trans.type",
+    "confidence": "high",
+    "description": "Transaction direction is VYDAJ for debits and PRIJEM for credits. A cash withdrawal appears under VYDAJ, but VYDAJ also covers transfers and card payments, so direction alone does not identify withdrawals.",
+    "evidence": "ev_fn_trans"
+  },
+  {
+    "id": "con_fn_region_case",
+    "target": "fn_region",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "East Bohemia",
+      "North Bohemia",
+      "region",
+      "Bohemia",
+      "Prague"
+    ],
+    "severity": "warning",
+    "scope": "financial district.A3",
+    "confidence": "high",
+    "description": "Region names are stored in lower case with a lower-case compass direction, for example east Bohemia and north Bohemia. Questions use title case, so region comparisons must be case-insensitive.",
+    "evidence": "ev_fn_district"
+  },
+  {
+    "id": "con_fn_district_columns",
+    "target": "fn_district",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "district",
+      "A2",
+      "A3",
+      "A11",
+      "district name",
+      "average salary"
+    ],
+    "severity": "warning",
+    "scope": "financial district",
+    "confidence": "high",
+    "description": "District attributes are anonymized columns: A2 is the district name, A3 the region, A11 the average salary and A8 to A16 further demographic measures. District questions must map the requested attribute to the right letter column.",
+    "evidence": "ev_fn_district"
+  },
+  {
+    "id": "con_fn_gender_values",
+    "target": "fn_client",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "male",
+      "female",
+      "woman",
+      "man",
+      "gender"
+    ],
+    "severity": "block",
+    "scope": "financial client.gender",
+    "confidence": "high",
+    "description": "Client gender is recorded as M for male and F for female. Woman and female are the same value, so percentage of women uses F.",
+    "evidence": "ev_fn_district"
+  },
+  {
+    "id": "con_f1_finish_semantics",
+    "target": "f1_result",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "finished the race",
+      "race completion",
+      "time is not null",
+      "completed the race",
+      "did not finish"
+    ],
+    "severity": "block",
+    "scope": "formula_1 results.time",
+    "confidence": "high",
+    "description": "A driver finished a race when the result carries a race time; 17696 of 23657 results have no time and represent non-finishes. Race completion rate is the count of results with a time divided by the count of results in scope.",
+    "evidence": "ev_f1_results_time"
+  },
+  {
+    "id": "con_f1_fastest_lap_semantics",
+    "target": "f1_fastest_lap",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "fastest lap",
+      "fastest lap time",
+      "fastest lap number",
+      "quickest lap"
+    ],
+    "severity": "block",
+    "scope": "formula_1 results and lapTimes",
+    "confidence": "high",
+    "description": "Fastest lap is the minimum lap time. In results, fastestLapTime holds the formatted best lap and rank holds its rank within the race, where rank 1 is the fastest; in lapTimes, the minimum milliseconds per driver per race gives the same concept. A driver with no lap time has no fastest lap.",
+    "evidence": "ev_f1_fastest_lap"
+  },
+  {
+    "id": "con_f1_winner_semantics",
+    "target": "f1_race_winner",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "champion",
+      "winner",
+      "most winning",
+      "ranked 1st",
+      "rank the highest"
+    ],
+    "severity": "block",
+    "scope": "formula_1 results",
+    "confidence": "high",
+    "description": "The winner or champion of a race is the driver classified in position 1. Ranking highest in a race means the minimum finishing position. Most wins aggregates race wins, not accumulated points.",
+    "evidence": "ev_f1_results_time"
+  },
+  {
+    "id": "con_f1_fullname",
+    "target": "f1_driver_full_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "full name",
+      "Lewis Hamilton",
+      "Michael Schumacher",
+      "driver name"
+    ],
+    "severity": "block",
+    "scope": "formula_1 drivers",
+    "confidence": "high",
+    "description": "A driver is never stored under a single full-name column. Full name is forename followed by surname, and a named driver in a question must be matched against the combination of the two columns.",
+    "evidence": "ev_f1_nationality"
+  },
+  {
+    "id": "con_f1_dob_year",
+    "target": "f1_driver_age",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "born in",
+      "oldest",
+      "youngest",
+      "age",
+      "birth year"
+    ],
+    "severity": "block",
+    "scope": "formula_1 drivers.dob",
+    "confidence": "high",
+    "description": "Birth date is stored as a date. Born in a given year means the year of dob equals that year; oldest means the minimum date of birth and youngest the maximum, so the comparison is on dates, not on a numeric age column.",
+    "evidence": "ev_f1_nationality"
+  },
+  {
+    "id": "con_f1_time_format",
+    "target": "f1_lap_time",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "lap time",
+      "Q3 time",
+      "1:26.714",
+      "02:00.00",
+      "formatted time"
+    ],
+    "severity": "warning",
+    "scope": "formula_1 results.fastestLapTime, qualifying.q1-q3, lapTimes.time",
+    "confidence": "high",
+    "description": "Formatted times use minutes:seconds.milliseconds without a leading zero on minutes, for example 1:26.714. Numeric comparison must use the milliseconds columns, since comparing formatted strings is unreliable.",
+    "evidence": "ev_f1_fastest_lap"
+  },
+  {
+    "id": "con_f1_laptime_threshold",
+    "target": "f1_lap_time",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "laptime less than 02:00.00",
+      "lap time under two minutes",
+      "120 seconds"
+    ],
+    "severity": "info",
+    "scope": "formula_1 lap times",
+    "confidence": "medium",
+    "description": "A lap time below 02:00.00 corresponds to fewer than 120 seconds or 120000 milliseconds; thresholds in questions are expressed in that form and must be converted before comparison with numeric lap columns.",
+    "evidence": "ev_f1_fastest_lap"
+  },
+  {
+    "id": "con_sc_fullname",
+    "target": "sc_member_full_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "full name",
+      "Maya Mclean",
+      "member name",
+      "student name"
+    ],
+    "severity": "block",
+    "scope": "student_club member",
+    "confidence": "high",
+    "description": "Member names are stored as separate first_name and last_name columns with no combined column. A named person in a question must be matched against both columns together.",
+    "evidence": "ev_sc_major"
+  },
+  {
+    "id": "con_sc_event_date_format",
+    "target": "sc_event",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "event date",
+      "2019",
+      "closed from",
+      "event_date"
+    ],
+    "severity": "warning",
+    "scope": "student_club event.event_date",
+    "confidence": "high",
+    "description": "event_date is an ISO timestamp carrying a time component, for example 2020-03-10T12:00:00. Date-range and year filters must compare only the date portion, and a year is the first four characters of the text.",
+    "evidence": "ev_sc_schema"
+  },
+  {
+    "id": "con_sc_budget_vs_expense",
+    "target": "sc_budget",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "amount budgeted",
+      "budget",
+      "spent",
+      "total cost",
+      "total expense"
+    ],
+    "severity": "block",
+    "scope": "student_club budget and expense",
+    "confidence": "high",
+    "description": "budget.amount is the amount budgeted for an event category, budget.spent is the amount already spent against that line, and expense.cost is an individual expense. Questions about money budgeted use budget.amount; questions about money actually spent use expense.cost or budget.spent depending on the stated grain.",
+    "evidence": "ev_sc_schema"
+  },
+  {
+    "id": "con_sc_income_sources",
+    "target": "sc_income_source",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "fundraising",
+      "dues",
+      "sponsorship",
+      "source of income"
+    ],
+    "severity": "warning",
+    "scope": "student_club income.source",
+    "confidence": "high",
+    "description": "Income sources are exact labels: Dues (33 receipts), Fundraising, Sponsorship and the misspelled School Appropration. Fundraising receipts carry a date_received and notes, so questions about a fundraising on a date filter both the source label and the date.",
+    "evidence": "ev_sc_schema"
+  },
+  {
+    "id": "con_sc_event_status",
+    "target": "sc_event_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "closed event",
+      "open event",
+      "planning",
+      "status"
+    ],
+    "severity": "block",
+    "scope": "student_club event.status",
+    "confidence": "high",
+    "description": "Event status values are Open, Closed and Planning. A closed event is not the same as an event that has already taken place, because status and event_date are independent.",
+    "evidence": "ev_sc_schema"
+  },
+  {
+    "id": "con_sc_member_position",
+    "target": "sc_member_position",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "member",
+      "position",
+      "president",
+      "officer",
+      "inactive"
+    ],
+    "severity": "warning",
+    "scope": "student_club member.position",
+    "confidence": "high",
+    "description": "Positions are Member, President, Vice President, Secretary, Treasurer and Inactive. Questions that say members without qualification include the 26 members with position Member; officers and inactive members are excluded.",
+    "evidence": "ev_sc_major"
+  },
+  {
+    "id": "con_sh_attribute_names_case",
+    "target": "sh_attribute_type",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "strength",
+      "speed",
+      "intelligence",
+      "attribute name",
+      "dumbest",
+      "fastest"
+    ],
+    "severity": "block",
+    "scope": "superhero attribute.attribute_name",
+    "confidence": "high",
+    "description": "Attribute names are title case: Strength, Speed, Power, Intelligence, Durability and Combat. Lower-case wording in a question such as strength or intelligence must be matched case-insensitively.",
+    "evidence": "ev_sh_attributes"
+  },
+  {
+    "id": "con_sh_superlatives",
+    "target": "sh_attribute",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "dumbest",
+      "fastest",
+      "strongest",
+      "highest attribute",
+      "most intelligent"
+    ],
+    "severity": "block",
+    "scope": "superhero hero_attribute",
+    "confidence": "high",
+    "description": "Superlative wording maps onto one attribute: dumbest is the minimum Intelligence value, fastest the maximum Speed, strongest the maximum Strength. The attribute must be filtered first, then the extreme value taken across heroes.",
+    "evidence": "ev_sh_attributes"
+  },
+  {
+    "id": "con_sh_missing_weight",
+    "target": "sh_physical_measure",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "missing weight",
+      "no weight",
+      "weight is 0",
+      "missing data"
+    ],
+    "severity": "block",
+    "scope": "superhero superhero.weight_kg",
+    "confidence": "high",
+    "description": "An unrecorded weight is stored either as 0 (172 heroes) or as NULL (64 heroes). Missing weight means both cases, and the same convention applies to other measurement columns.",
+    "evidence": "ev_sh_colours_weight"
+  },
+  {
+    "id": "con_sh_colour_shared_domain",
+    "target": "sh_eye_colour",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "eye colour",
+      "hair colour",
+      "skin colour",
+      "same colour",
+      "blue eyes"
+    ],
+    "severity": "block",
+    "scope": "superhero colour reference",
+    "confidence": "high",
+    "description": "Eye, hair and skin colour all reference the same colour table, so colour labels are comparable directly across the three attributes. A colour label may be compound, such as Strawberry Blond, and a missing reference is not the same as the label Black.",
+    "evidence": "ev_sh_colours_weight"
+  },
+  {
+    "id": "con_sh_missing_full_name",
+    "target": "sh_superhero_full_name",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "without full name",
+      "no full name",
+      "full_name",
+      "real name"
+    ],
+    "severity": "warning",
+    "scope": "superhero superhero.full_name",
+    "confidence": "high",
+    "description": "Some superheroes have no recorded full name; those rows carry NULL. Counting heroes without a full name means counting NULL full_name values, not empty strings.",
+    "evidence": "ev_sh_attributes"
+  },
+  {
+    "id": "con_sh_race_missing",
+    "target": "sh_race",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "race",
+      "human",
+      "species",
+      "unknown race"
+    ],
+    "severity": "warning",
+    "scope": "superhero race",
+    "confidence": "high",
+    "description": "Race labels are title case, for example Human, Mutant and God / Eternal. The label '-' (295 heroes) records an unknown race and must not be treated as a species when counting.",
+    "evidence": "ev_sh_colours_weight"
+  },
+  {
+    "id": "con_tp_liver_enzyme_ranges",
+    "target": "tp_normal_range",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "GPT",
+      "ALT",
+      "CPK",
+      "creatinine phosphokinase",
+      "liver enzyme",
+      "normal range",
+      "exceed the normal range"
+    ],
+    "severity": "block",
+    "scope": "thrombosis_prediction Laboratory",
+    "confidence": "high",
+    "description": "GPT is abnormal when it reaches 60 or more and normal below 60. Creatinine phosphokinase (CPK) is normal below 250 and abnormal at 250 or above. A question about exceeding the normal range uses these thresholds.",
+    "evidence": "ev_tp_lab_ranges"
+  },
+  {
+    "id": "con_tp_metabolic_ranges",
+    "target": "tp_normal_range",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "GLU",
+      "blood glucose",
+      "T-CHO",
+      "total cholesterol",
+      "CRE",
+      "creatinine",
+      "UN",
+      "urea nitrogen",
+      "normal range"
+    ],
+    "severity": "block",
+    "scope": "thrombosis_prediction Laboratory",
+    "confidence": "high",
+    "description": "Blood glucose (GLU) is outside the normal range at 180 or above. Total cholesterol (T-CHO) is within normal range below 250. Creatinine (CRE) is abnormal at 1.5 or above. Urea nitrogen (UN) equal to 29 is the borderline passing value used for just within the borderline questions.",
+    "evidence": "ev_tp_lab_ranges"
+  },
+  {
+    "id": "con_tp_immunoglobulin_ranges",
+    "target": "tp_normal_range",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "IGG",
+      "Ig G",
+      "IGM",
+      "Ig M",
+      "immunoglobulin",
+      "abnormal Ig"
+    ],
+    "severity": "block",
+    "scope": "thrombosis_prediction Laboratory",
+    "confidence": "high",
+    "description": "Ig G is within normal range strictly between 900 and 2000. Ig M is abnormal at 40 or below and at 400 or above, so a normal Ig M lies strictly between those bounds.",
+    "evidence": "ev_tp_lab_ranges"
+  },
+  {
+    "id": "con_tp_sex_values",
+    "target": "tp_sex",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "male",
+      "female",
+      "sex",
+      "SEX"
+    ],
+    "severity": "block",
+    "scope": "thrombosis_prediction Patient.SEX",
+    "confidence": "high",
+    "description": "Patient sex is recorded as M for male and F for female. Sex and gender wording in questions maps to these two single-letter values.",
+    "evidence": "ev_tp_patient_exam"
+  },
+  {
+    "id": "con_tp_admission_values",
+    "target": "tp_admission_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "in-patient",
+      "outpatient",
+      "admission",
+      "admitted"
+    ],
+    "severity": "block",
+    "scope": "thrombosis_prediction Patient.Admission",
+    "confidence": "medium",
+    "description": "Admission '+' marks an in-patient and '-' an out-patient. A few rows carry the malformed value '+(' and must be normalized or excluded when the two groups are compared.",
+    "evidence": "ev_tp_patient_exam"
+  },
+  {
+    "id": "con_tp_coagulation_positive",
+    "target": "tp_coagulation_result",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "positive degree of coagulation",
+      "coagulation",
+      "KCT",
+      "RVVT",
+      "LAC"
+    ],
+    "severity": "block",
+    "scope": "thrombosis_prediction Examination",
+    "confidence": "high",
+    "description": "A positive degree of coagulation means at least one of KCT, RVVT or LAC equals '+'; a negative result is '-'. The three tests are separate columns, so a positive case requires a disjunction across them.",
+    "evidence": "ev_tp_patient_exam"
+  },
+  {
+    "id": "con_tp_symptom_missing",
+    "target": "tp_symptom",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "symptom",
+      "have symptoms",
+      "no symptom",
+      "symptoms is null"
+    ],
+    "severity": "block",
+    "scope": "thrombosis_prediction Examination.Symptoms",
+    "confidence": "high",
+    "description": "Symptoms is free text. A non-missing value means the patient has symptoms; a missing value means no symptom was recorded, which these questions treat as having no symptom.",
+    "evidence": "ev_tp_patient_exam"
+  },
+  {
+    "id": "con_tp_age_calculation",
+    "target": "tp_patient_age",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "age",
+      "how old",
+      "born between",
+      "aren't 70 yet"
+    ],
+    "severity": "block",
+    "scope": "thrombosis_prediction Patient.Birthday",
+    "confidence": "high",
+    "description": "Age is the current year minus the birth year, not a stored column. Born between two years means the year of Birthday falls in that inclusive range. Filters such as not yet 70 compare this derived age with the threshold.",
+    "evidence": "ev_tp_patient_exam"
+  },
+  {
+    "id": "con_tp_ana_pattern",
+    "target": "tp_ana_pattern",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "ANA pattern",
+      "ANA",
+      "pattern of only S"
+    ],
+    "severity": "warning",
+    "scope": "thrombosis_prediction Examination",
+    "confidence": "medium",
+    "description": "ANA Pattern holds letter combinations such as S, P, P,S and S,P, and the letter case is inconsistent (some rows store p). A pattern of only S means the pattern equals S alone, excluding combinations. ANA itself is a numeric titre.",
+    "evidence": "ev_tp_codes"
+  },
+  {
+    "id": "con_tp_crp_values",
+    "target": "tp_lab_measure",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "CRP",
+      "C-reactive protein",
+      "abnormal C-reactive protein"
+    ],
+    "severity": "block",
+    "scope": "thrombosis_prediction Laboratory.CRP",
+    "confidence": "high",
+    "description": "CRP is a mixed text column: plus and minus signs, numeric text, threshold strings such as <0.2 and 2+, and missing values. An abnormal C-reactive protein is recorded as '+'; numeric comparison is unsafe on this column.",
+    "evidence": "ev_tp_codes"
+  },
+  {
+    "id": "con_tp_centromere_ssb_normal",
+    "target": "tp_lab_measure",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "anti-centromere",
+      "CENTROMEA",
+      "anti-SSB",
+      "SSB",
+      "anti-scl70",
+      "SC170",
+      "normal level"
+    ],
+    "severity": "block",
+    "scope": "thrombosis_prediction Laboratory",
+    "confidence": "medium",
+    "description": "Antibody columns are qualitative text. CENTROMEA records normal results as negative or 0, SSB as negative or 0, and SC170 as negative or 0; missing values dominate all three. Normal level questions must accept these recorded spellings rather than assuming a '-' token exists.",
+    "evidence": "ev_tp_codes"
+  },
+  {
+    "id": "con_tg_label_enum",
+    "target": "tg_molecule",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "carcinogenic",
+      "non-carcinogenic",
+      "label",
+      "cancer"
+    ],
+    "severity": "block",
+    "scope": "toxicology molecule.label",
+    "confidence": "high",
+    "description": "The label column stores '+' for carcinogenic molecules (152) and '-' for non-carcinogenic molecules (191). No other label values exist.",
+    "evidence": "ev_tg_schema"
+  },
+  {
+    "id": "con_tg_bond_type_enum",
+    "target": "tg_bond_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "single bond",
+      "double bond",
+      "triple bond",
+      "bond type"
+    ],
+    "severity": "block",
+    "scope": "toxicology bond.bond_type",
+    "confidence": "high",
+    "description": "Bond types are '-' for single, '=' for double and '#' for triple; one bond row has no type. Single bond questions use '-', not the word single.",
+    "evidence": "ev_tg_schema"
+  },
+  {
+    "id": "con_tg_element_symbols",
+    "target": "tg_element",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "hydrogen",
+      "chlorine",
+      "fluorine",
+      "iodine",
+      "sulfur",
+      "phosphorus",
+      "bromine",
+      "element"
+    ],
+    "severity": "block",
+    "scope": "toxicology atom.element",
+    "confidence": "high",
+    "description": "Elements are stored as lower-case chemical symbols: h, c, o, n, cl, s, br, na, p, f, i and a few metal symbols. Element names in questions must be converted to these symbols, with two-letter symbols kept lower case.",
+    "evidence": "ev_tg_elements"
+  },
+  {
+    "id": "con_tg_connected_symmetry",
+    "target": "tg_atom_connection",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "connected",
+      "bond between atoms",
+      "atom pair",
+      "connections"
+    ],
+    "severity": "block",
+    "scope": "toxicology connected",
+    "confidence": "high",
+    "description": "The connected table stores each atom pair twice, once in each direction: 24758 rows correspond to only 12379 distinct undirected connections. Counting connections requires a distinct treatment, otherwise every bond is counted twice.",
+    "evidence": "ev_tg_elements"
+  }
+]

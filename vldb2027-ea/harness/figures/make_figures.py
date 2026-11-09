@@ -430,7 +430,49 @@ def perdb():
     save(fig, "perdb")
 
 
+# --------------------------------------------------------------------------- protocol v5: ablation, turn budget, readable names
+def v5():
+    st = json.loads((EXP / "runs/v5/stats_v5.json").read_text())
+    cd = st["conditions"]
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(TXT, 2.05), gridspec_kw={"width_ratios": [1.15, 1]})
+    # (a) merged schema with opaque names: which part of EvoOntology's ontology matters, and the turn budget
+    rows = [("MG:none", "No ontology", C["none"]), ("MG:none_t60", "No ontology, 60 turns", C["none"]),
+            ("MG:evo", "EvoOntology", C["evo"]), ("MG:evo_t60", "EvoOntology, 60 turns", C["evo"]),
+            ("MG:evo_norel", "EvoOntology w/o relations", C["evo"]), ("MG:evo_nomap", "EvoOntology w/o mappings", C["evo"])]
+    ys = list(range(len(rows)))[::-1]
+    for y, (k, lab, col) in zip(ys, rows):
+        v = cd[k]; lo, hi = v["tolerant_ci"]
+        ax1.plot([lo, hi], [y, y], color=col, lw=6, alpha=0.22, solid_capstyle="butt", zorder=2)
+        ax1.plot([v["tolerant"]], [y], "o", ms=5.5, color=col, mec="white", mew=0.8, zorder=5)
+        for f, m in (("fwd", "^"), ("rev", "s")):
+            ax1.plot([v["tolerant_by_fold"][f]], [y + 0.28], m, ms=3.4, color="white", mec=col, mew=0.9, zorder=4)
+    ax1.axvline(cd["MG:doc"]["tolerant"], color=C["doc"], lw=1.0, ls=(0, (3, 2)), zorder=1)
+    ax1.text(cd["MG:doc"]["tolerant"] + 0.6, len(rows) - 0.35, "Documentation", rotation=90, ha="left", va="top", fontsize=7.0, color=C["doc"])
+    ax1.set_yticks(ys); ax1.set_yticklabels([r[1] for r in rows]); ax1.tick_params(axis="y", length=0)
+    ax1.set_ylim(-0.6, len(rows) - 0.3); ax1.set_xlim(15, 60)
+    ax1.set_xlabel("Test accuracy, merged schema, opaque names (%)")
+    ax1.set_title("a  Ablation and turn budget", loc="left", fontsize=8, fontweight="bold")
+    clean(ax1, grid=None); ax1.spines["left"].set_visible(False)
+    # (b) the same 60 tables and questions with opaque and with readable names
+    conds = [("none", "No ontology"), ("doc", "Documentation"), ("evo", "EvoOntology"), ("dm", "DataMind")]
+    ys2 = list(range(len(conds)))[::-1]
+    for y, (c, lab) in zip(ys2, conds):
+        a, b = cd[f"MG:{c}"], cd[f"MGR:{c}"]
+        ax2.plot([a["tolerant"], b["tolerant"]], [y, y], color=GRID, lw=2.2, zorder=1, solid_capstyle="round")
+        ax2.plot([a["tolerant"]], [y], "o", ms=5.5, color="white", mec=C[c], mew=1.3, zorder=4)
+        lo, hi = b["tolerant_ci"]
+        ax2.plot([lo, hi], [y, y], color=C[c], lw=6, alpha=0.22, solid_capstyle="butt", zorder=2)
+        ax2.plot([b["tolerant"]], [y], "o", ms=5.5, color=C[c], mec="white", mew=0.8, zorder=5)
+    ax2.set_yticks(ys2); ax2.set_yticklabels([c[1] for c in conds]); ax2.tick_params(axis="y", length=0)
+    ax2.set_ylim(-0.6, len(conds) - 0.4); ax2.set_xlim(15, 60)
+    ax2.set_xlabel("Test accuracy, same 60 tables and questions (%)")
+    ax2.set_title("b  Opaque (open) vs. readable names (filled)", loc="left", fontsize=8, fontweight="bold")
+    clean(ax2, grid=None); ax2.spines["left"].set_visible(False)
+    fig.subplots_adjust(left=0.2, right=0.985, top=0.88, bottom=0.2, wspace=0.62)
+    save(fig, "v5")
+
+
 if __name__ == "__main__":
-    for f in (teaser, scoring, pitfalls, benchmarks, forest_v4, perdb, contents, rebuilt, coverage, turns, ablations):
+    for f in (teaser, scoring, pitfalls, benchmarks, forest_v4, perdb, contents, rebuilt, coverage, turns, ablations, v5):
         f()
         print("drew", f.__name__)

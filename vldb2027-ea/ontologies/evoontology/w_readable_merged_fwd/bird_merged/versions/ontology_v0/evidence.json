@@ -1,0 +1,290 @@
+[
+  {
+    "id": "ev_cs_tables",
+    "source": "bird_merged / california_schools tables",
+    "query": "SELECT count(*) FROM schools; SELECT count(*) FROM frpm; SELECT count(*) FROM satscores;",
+    "result": "schools=17686, frpm=9986, satscores=2269; schools.CDSCode is primary key, frpm.CDSCode and satscores.cds reference it",
+    "validation_method": "row counts and declared foreign keys",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_cs_edops",
+    "source": "bird_merged / schools",
+    "query": "SELECT EdOpsCode, EdOpsName, count(*) FROM schools GROUP BY 1,2",
+    "result": "SSS = State Special School (3 rows); TRAD Traditional 10103; SPEC Special Education School 228; 5711 rows have empty EdOpsCode",
+    "validation_method": "distinct value distribution",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_cs_doc_soc",
+    "source": "bird_merged / schools",
+    "query": "SELECT DOC, DOCType, count(*) FROM schools GROUP BY 1,2 ORDER BY 3 DESC",
+    "result": "54 Unified School District 10190; 52 Elementary School District 4378; 00 County Office of Education; 56 High School District; 02,03,31,34,42,58,98,99 also present. SOC 62 Intermediate/Middle Schools (Public) 1652; SOC 66 High Schools (Public) 1776; SOC 60 Elementary 7591",
+    "validation_method": "code-to-label distribution",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_cs_virtual_magnet",
+    "source": "bird_merged / schools",
+    "query": "SELECT Virtual, count(*) FROM schools GROUP BY 1; SELECT Magnet, count(*) FROM schools GROUP BY 1",
+    "result": "Virtual: F=69, N=9703, P=1046, empty=6868. Magnet: 1=519, 0=10091, empty=7076",
+    "validation_method": "enumeration distribution",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_cs_nslp",
+    "source": "bird_merged / frpm",
+    "query": "SELECT NSLP Provision Status, count(*) FROM frpm GROUP BY 1",
+    "result": "Multiple Provision Types=11; Provision 2=1365; Breakfast Provision 2=285; CEP=172; Provision 1=7; Lunch Provision 2=5; Provision 3=2; empty=8139",
+    "validation_method": "enumeration distribution",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_cs_grade_span",
+    "source": "bird_merged / schools",
+    "query": "SELECT GSoffered, count(*) FROM schools GROUP BY 1 ORDER BY 2 DESC LIMIT 15",
+    "result": "K-5 2724; 9-12 2368; K-6 2362; K-8 1292; 6-8 1123; K-12 674; 7-12 570; Adult 380; P 189; P-6 108; empty 3882",
+    "validation_method": "value distribution confirming compact grade-span notation",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_cs_longitude",
+    "source": "bird_merged / schools",
+    "query": "SELECT min(Longitude), max(Longitude), count(*) FROM schools WHERE Longitude IS NOT NULL",
+    "result": "min=-124.28481, max=-83.781133; all values negative (western hemisphere); 4823 rows have zero or null longitude",
+    "validation_method": "range inspection",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_cs_sat",
+    "source": "bird_merged / satscores",
+    "query": "SELECT rtype, count(*), min(NumTstTakr) FROM satscores GROUP BY rtype; SELECT max(NumGE1500) FROM satscores",
+    "result": "rtype D=520, S=1749; NumTstTakr minimum 0; NumGE1500 maximum 5837; NumGE1500 and NumTstTakr are counts of test takers scoring >=1500 and of all test takers",
+    "validation_method": "column semantics confirmed from name and value range",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_cs_address_admin",
+    "source": "bird_merged / schools",
+    "query": "SELECT CDSCode, School, City, MailStreet, MailCity, MailState, MailZip, Street, Zip, State FROM schools WHERE City='Monterey' AND SOC LIKE '66%' LIMIT 3; SELECT sum(AdmEmail1 IS NULL), count(*) FROM schools",
+    "result": "Monterey High: Street=101 Herrmann Drive, City=Monterey, Zip=93940-2538, State=CA, MailStreet and MailCity mirror them. 6012 of 17686 schools have NULL AdmEmail1; AdmFName1 and AdmLName1 NULL for 5986",
+    "validation_method": "row inspection and null counts",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_cg_tables",
+    "source": "bird_merged / card_games tables",
+    "query": "SELECT count(*) FROM cards; foreign_data; sets; set_translations; legalities; rulings",
+    "result": "cards=56822, foreign_data=229186, sets=551, set_translations=1210, legalities=427907, rulings=87769",
+    "validation_method": "row counts",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_cg_languages",
+    "source": "bird_merged / foreign_data and set_translations",
+    "query": "SELECT language, count(*) FROM foreign_data GROUP BY 1; SELECT language, count(*) FROM set_translations GROUP BY 1",
+    "result": "foreign_data: Japanese 31226, French 29301, German 28891, Italian 28698, Spanish 28639, Portuguese (Brazil) 25641, Chinese Simplified 20106, Russian 15878, Chinese Traditional 11106, Korean 9692, plus Phyrexian/Sanskrit/Latin/Hebrew/Arabic. set_translations has the same 10 main languages, 121 rows each",
+    "validation_method": "label distribution",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_cg_legality",
+    "source": "bird_merged / legalities",
+    "query": "SELECT format, count(*) FROM legalities GROUP BY 1; SELECT status, count(*) FROM legalities GROUP BY 1",
+    "result": "formats: vintage, legacy, commander 55576 each; modern 40774; pauper 22784; gladiator 16568; standard 7698; status: Legal 424958, Banned 2313, Restricted 636",
+    "validation_method": "label distribution showing title-case status and lower-case format",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_cg_set_naming",
+    "source": "bird_merged / sets and set_translations",
+    "query": "SELECT code,name,block,mcmName,mtgoCode FROM sets WHERE name='Coldsnap' OR name='Archenemy'; SELECT setCode,language,translation FROM set_translations WHERE setCode='CSP' LIMIT 3",
+    "result": "Coldsnap code=CSP; Archenemy code=ARC, mcmName empty, mtgoCode empty; CSP translations include French 'Souffle glaciaire', Chinese Simplified '骤霜'",
+    "validation_method": "row inspection",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_cg_foreign_join",
+    "source": "bird_merged / cards join foreign_data",
+    "query": "SELECT cards.name, cards.setCode, foreign_data.language, foreign_data.name FROM cards JOIN foreign_data ON cards.uuid=foreign_data.uuid WHERE cards.name='Ancestor''s Chosen' LIMIT 5",
+    "result": "10E printings exist in German, Spanish, French, Italian, Japanese; Italian name = 'Prescelto dell'Antenata'. foreign_data.uuid references cards.uuid and carries language-specific name, text, flavorText, type",
+    "validation_method": "join inspection",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_cg_mtgo_blank",
+    "source": "bird_merged / sets and cards",
+    "query": "SELECT sum(mtgoCode IS NULL), sum(mtgoCode=''), sum(mtgoCode IS NOT NULL AND mtgoCode<>'') FROM sets; same for cards.mtgoId",
+    "result": "sets: 0 NULL, 391 empty strings, 160 non-blank of 551. cards.mtgoId: 0 NULL, 24684 empty, 32138 non-blank of 56822",
+    "validation_method": "null versus empty-string audit",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_cg_power_star",
+    "source": "bird_merged / cards",
+    "query": "SELECT count(*) FROM cards WHERE power IS NULL; SELECT count(*) FROM cards WHERE power='*'",
+    "result": "power IS NULL for 30624 cards; power='*' for 429 cards",
+    "validation_method": "missing-value distribution",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_dc_yearmonth",
+    "source": "bird_merged / yearmonth",
+    "query": "SELECT Date, length(Date) FROM yearmonth GROUP BY 1 LIMIT 6; SELECT min(Date), max(Date), count(*) FROM yearmonth",
+    "result": "Date values are 6-character YYYYMM strings (201112, 201201 ... 201311); 383282 rows; Consumption has no NULLs and ranges -582092.86 to 2052187.11",
+    "validation_method": "format and range inspection",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_dc_segments",
+    "source": "bird_merged / customers and gasstations",
+    "query": "SELECT Segment, Currency, count(*) FROM customers GROUP BY 1,2; SELECT Country, count(*) FROM gasstations GROUP BY 1",
+    "result": "Segments KAM/LAM/SME; currencies CZK and EUR (SME CZK 25134, SME EUR 1629, LAM CZK 3356, KAM CZK 1969). gasstations.Country: CZE 4836, SVK 880",
+    "validation_method": "enumeration distribution",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_dc_transactions",
+    "source": "bird_merged / transactions_1k",
+    "query": "SELECT * FROM transactions_1k LIMIT 3; SELECT ChainID, count(*) FROM gasstations GROUP BY 1 ORDER BY 2 DESC LIMIT 8",
+    "result": "Date '2012-08-24', Time '09:41:00', CustomerID, CardID, GasStationID, ProductID, Amount, Price. ChainID 3 has 1462 stations, 2 has 853, 11 exists",
+    "validation_method": "row inspection and distribution",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_fn_codes",
+    "source": "bird_merged / account and loan",
+    "query": "SELECT frequency, count(*) FROM account GROUP BY 1; SELECT status, count(*) FROM loan GROUP BY 1",
+    "result": "frequency: POPLATEK MESICNE 4167, POPLATEK TYDNE 240, POPLATEK PO OBRATU 93. loan.status: A=203, B=31, C=403, D=45",
+    "validation_method": "enumeration distribution",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_fn_trans",
+    "source": "bird_merged / trans",
+    "query": "SELECT type, operation, count(*) FROM trans GROUP BY 1,2 ORDER BY 3 DESC LIMIT 15",
+    "result": "type VYDAJ with operation VYBER 418252, PREVOD NA UCET 208283, VYBER KARTOU 8036; type PRIJEM with empty operation 183114, VKLAD 156743, PREVOD Z UCTU 65226; 1056320 rows total",
+    "validation_method": "type/operation cross distribution",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_fn_district",
+    "source": "bird_merged / district and client",
+    "query": "SELECT A3, count(*) FROM district GROUP BY 1; SELECT min(A11), max(A11) FROM district; SELECT gender, count(*) FROM client GROUP BY 1",
+    "result": "A3 region values are lower case: 'south Moravia', 'central Bohemia', 'north Moravia', 'east Bohemia', 'west Bohemia', 'north Bohemia', 'south Bohemia', 'Prague'. A11 ranges 8110-12541 across 77 districts. client.gender F=2645, M=2724",
+    "validation_method": "value inspection",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_f1_results_time",
+    "source": "bird_merged / results",
+    "query": "SELECT count(*), sum(time IS NULL), sum(milliseconds IS NULL) FROM results",
+    "result": "23657 results; time NULL for 17696; milliseconds NULL for 17697. Rows with time populated also carry milliseconds, so a populated race time marks a classified finish",
+    "validation_method": "null analysis",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_f1_fastest_lap",
+    "source": "bird_merged / results and lapTimes",
+    "query": "SELECT raceId, driverId, time, milliseconds, fastestLapTime, rank FROM results WHERE fastestLapTime IS NOT NULL LIMIT 5",
+    "result": "fastestLapTime formatted '1:27.452'; rank column holds the fastest-lap rank within the race (rank=1 for 1:27.418); lapTimes holds per-lap milliseconds",
+    "validation_method": "row inspection",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_f1_nationality",
+    "source": "bird_merged / drivers and constructors",
+    "query": "SELECT nationality, count(*) FROM drivers GROUP BY 1; SELECT nationality, count(*) FROM constructors GROUP BY 1",
+    "result": "driver nationalities: British 162, American 157, Italian 99, French 72, German 49, Japanese 19, Dutch 17; constructor nationalities British 85, American 39, Italian 29",
+    "validation_method": "value distribution",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_f1_qualifying",
+    "source": "bird_merged / qualifying",
+    "query": "SELECT raceId, q1, q2, q3, position FROM qualifying WHERE q3 IS NOT NULL LIMIT 3; SELECT count(*), sum(q3 IS NULL) FROM qualifying",
+    "result": "q3 values such as '1:26.714'; 7397 qualifying rows, q3 NULL for 5251 (drivers eliminated before Q3)",
+    "validation_method": "row inspection and null count",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_sc_schema",
+    "source": "bird_merged / student_club tables",
+    "query": "SELECT event_date FROM event LIMIT 3; SELECT expense_date FROM expense LIMIT 3; SELECT date_received, source FROM income LIMIT 3; SELECT status, type FROM event GROUP BY 1,2",
+    "result": "event_date '2020-03-10T12:00:00'; expense_date '2019-08-20'; date_received '2019-10-17'. event.status Closed 18, Open 13, Planning 11; event.type Meeting 16, Guest Speaker 7, Game 6, Community Service 4, Social 4, Budget 2, Election 2, Registration 1. income.source Dues 33, Sponsorship 1, School Appropration 1, Fundraising 1",
+    "validation_method": "format and enumeration inspection",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_sc_major",
+    "source": "bird_merged / major and member",
+    "query": "SELECT department, college, count(*) FROM major GROUP BY 1,2 ORDER BY 3 DESC LIMIT 10; SELECT position, count(*) FROM member GROUP BY 1",
+    "result": "department 'School of Applied Sciences, Technology and Education' 21 majors in College of Agriculture and Applied Sciences. member.position: Member 26, President 1, Secretary 1, Treasurer 1, Vice President 1, Inactive 3",
+    "validation_method": "grouped inspection",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_sh_attributes",
+    "source": "bird_merged / attribute and hero_attribute",
+    "query": "SELECT attribute_name, count(*), min(attribute_value), max(attribute_value) FROM attribute JOIN hero_attribute ON attribute.id=hero_attribute.attribute_id GROUP BY 1",
+    "result": "six attributes: Strength, Speed, Power, Intelligence, Durability, Combat; 623 measurements each; values 5-100 except Intelligence 35-100; average Strength 47.24",
+    "validation_method": "distribution inspection",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_sh_colours_weight",
+    "source": "bird_merged / colour and superhero",
+    "query": "SELECT colour FROM colour GROUP BY 1 ORDER BY 2 DESC LIMIT 12; SELECT weight_kg, count(*) FROM superhero GROUP BY 1 ORDER BY 2 DESC LIMIT 4",
+    "result": "colour table stores compound labels such as 'Yellow/Red', 'White/Red', 'Strawberry Blond', plus primaries like 'Black'. weight_kg: 0 for 172 heroes and NULL for 64",
+    "validation_method": "value inspection showing shared colour domain and missing-weight coding",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_sh_publisher_power",
+    "source": "bird_merged / publisher, superhero, superpower, hero_power",
+    "query": "SELECT publisher_name, count(*) FROM publisher JOIN superhero ON publisher.id=superhero.publisher_id GROUP BY 1; SELECT power_name, count(*) FROM superpower JOIN hero_power ON superpower.id=hero_power.power_id GROUP BY 1",
+    "result": "publisher: Marvel Comics 387, DC Comics 224, NBC - Heroes 19, Dark Horse Comics 19. powers: Super Strength 358, Stamina 288, Agility 239, Stealth present",
+    "validation_method": "join distribution",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_tp_patient_exam",
+    "source": "bird_merged / Patient, Examination, Laboratory",
+    "query": "SELECT SEX, Admission, count(*) FROM Patient GROUP BY 1,2; SELECT KCT, RVVT, LAC, count(*) FROM Examination GROUP BY 1,2,3",
+    "result": "Patient 1238 rows; SEX F/M plus blanks; Admission '+', '-', and a '+(' variant. Examination 806 rows; KCT/RVVT/LAC values '+', '-', blank. Laboratory 13908 rows keyed by (ID, Date)",
+    "validation_method": "row counts and cross distribution",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_tp_lab_ranges",
+    "source": "bird_merged / Laboratory",
+    "query": "SELECT min/max of GPT, GLU, T-CHO, CPK, CRE, IGG, IGM, UN, ALB, PLT FROM Laboratory",
+    "result": "GPT 1-4780, GLU 62-499, T-CHO 37-568, CPK 0-10835, CRE 0.1-17.1, IGG 3-6510, IGM 0-1573, UN 0-152, ALB 1.0-5.8, PLT 5-5844",
+    "validation_method": "range inspection against the thresholds stated in workload evidence",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_tp_codes",
+    "source": "bird_merged / Examination and Laboratory",
+    "query": "SELECT CRP, count(*) FROM Laboratory GROUP BY 1; SELECT CENTROMEA, count(*) FROM Laboratory GROUP BY 1; SELECT SC170, count(*) FROM Laboratory GROUP BY 1; SELECT ANA Pattern, count(*) FROM Examination GROUP BY 1",
+    "result": "CRP mixes '+', '-', numeric text, '<0.2', '2+', '6+<' and nulls. CENTROMEA only '', '0', 'negative'; SC170 '', 'negative', '0' plus numeric. ANA Pattern: '', 'S' 252, 'P' 178, 'P,S' 89, 'S,P' 11, 'p' 2",
+    "validation_method": "label distribution",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_tg_schema",
+    "source": "bird_merged / toxicology tables",
+    "query": "SELECT label, count(*) FROM molecule GROUP BY 1; SELECT bond_type, count(*) FROM bond GROUP BY 1; SELECT count(*) FROM atom; SELECT count(*) FROM connected",
+    "result": "molecule label '+' 152, '-' 191; bond_type '-' 10528, '=' 1844, '#' 6, empty 1; atom 12333; connected 24758",
+    "validation_method": "distribution and row counts",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_tg_elements",
+    "source": "bird_merged / atom, bond, connected",
+    "query": "SELECT element, count(*) FROM atom GROUP BY 1 ORDER BY 2 DESC LIMIT 15; SELECT count(*), count(DISTINCT bond_id||atom pair) FROM connected; SELECT * FROM connected WHERE bond_id='TR001_6_9'",
+    "result": "elements lower case: h 5518, c 4605, o 1043, n 480, cl 429, s 113, br 47, na 35, p 31, f 11, i 6, si 4, sn 2, cu 2, zn 1. connected has 24758 rows but only 12379 distinct undirected atom pairs, i.e. each connection is stored twice. bond TR001_6_9 is type '-' and links atoms TR001_6 and TR001_9",
+    "validation_method": "value inspection and symmetry check",
+    "timestamp": "2026-11-09"
+  }
+]

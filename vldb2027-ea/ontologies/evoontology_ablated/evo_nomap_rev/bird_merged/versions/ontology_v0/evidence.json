@@ -1,0 +1,130 @@
+[
+  {
+    "id": "ev_schema_overview",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT name, sql FROM sqlite_master WHERE type='table' ORDER BY name;",
+    "result": "61 tables (tb001-tb060 plus sqlite_sequence). Every column is renamed clNNNN; foreign keys link related tables (e.g. tb003.cl0001 <- tb001.cl0001, tb027.cl0259 <- tb035.cl0259).",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_cs_frpm_rates",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT cl0019, cl0020, cl0021, cl0022, cl0023, cl0024, cl0027 FROM tb001 LIMIT 4;",
+    "result": "Row 01100170109835: cl0019=1087, cl0020=565, cl0021=0.519779, cl0022=715, cl0023=0.657774, cl0024=1070, cl0027=702. cl0021 = cl0020/cl0019 and cl0023 = cl0022/cl0019 exactly.",
+    "validation_method": "arithmetic verification of stored rate columns",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_cs_school_codes",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT cl0065, cl0066, COUNT(*) FROM tb003 GROUP BY 1,2; SELECT cl0043, COUNT(*) FROM tb003 GROUP BY 1; SELECT cl0062, COUNT(*) FROM tb003 GROUP BY 1; SELECT cl0075, COUNT(*) FROM tb003 GROUP BY 1; SELECT cl0064, COUNT(*) FROM tb003 GROUP BY 1;",
+    "result": "cl0065: 54 Unified 10190, 52 Elementary 4378, 00 COE 1703, 56 High 1079. cl0043: Active 11708, Closed 4518, Merged 1448, Pending 12. cl0062: 1=1729, 0=14588, blank 1369. cl0075: F 69, N 9703, P 1046, blank 6868. cl0064: Directly funded 1176, Locally funded 460, Not in CS funding model 6, blank 16044.",
+    "validation_method": "value distribution inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_cs_sat_columns",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT cl0030, cl0031, cl0035, cl0036, cl0037, cl0038, cl0039, cl0040 FROM tb002 WHERE cl0035 > 0 LIMIT 8;",
+    "result": "2269 rows with cl0031 in {D,S}. Example 44698070110007: enroll12=75, testers=20, read=620, math=546, write=554, numGE1500=15. The three score columns vary independently, consistent with read/math/write ordering.",
+    "validation_method": "column ordering and value-range inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_cg_card_columns",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT cl0089, cl0090, cl0093, cl0094, cl0095, cl0098, cl0107, cl0117, cl0122, cl0137, cl0141, cl0143, cl0153, cl0154 FROM tb004 WHERE cl0137 IN ('Ancestor''s Chosen','Lightning Bolt'); SELECT cl0093, COUNT(*) FROM tb004 GROUP BY 1; SELECT (cl0094 IS NOT NULL), (cl0095 IS NOT NULL), COUNT(*) FROM tb004 GROUP BY 1,2;",
+    "result": "56822 cards. cl0093: black 49729, white 5017, gold 1244, silver 591, borderless 241. cl0094/cl0095 null patterns: neither 9771, only cl0095 18139, only cl0094 3851, both 25061. cl0143 has 28 distinct values with 30624 NULLs. Frame versions 1993/1997/2003/2015.",
+    "validation_method": "sample rows and value distributions",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_cg_enums",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT cl0163, COUNT(*) FROM tb005 GROUP BY 1; SELECT cl0164, cl0165, COUNT(*) FROM tb006 GROUP BY 1,2; SELECT cl0165, COUNT(*) FROM tb006 GROUP BY 1;",
+    "result": "tb005: 229186 foreign printings across 16 languages (German, Spanish, French, Italian, Chinese Simplified, ...). tb006: 427907 legality rows across 15 formats; cl0165 is exactly Legal, Banned, Restricted.",
+    "validation_method": "enumeration value inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_cg_set_columns",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT cl0166, cl0169, cl0137, cl0170, cl0171, cl0174, cl0176, cl0179, cl0158 FROM tb007 LIMIT 5; SELECT COUNT(*) FROM tb008;",
+    "result": "551 sets. cl0166 base set size (e.g. 383 for Tenth Edition); cl0169 set code; cl0171 foreign-only flag (1 for Fourth Edition Foreign Black Border). tb008 has 1210 set translations keyed by cl0151 set code.",
+    "validation_method": "sample rows and join-key inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_dc_enums",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT cl0185, COUNT(*) FROM tb010 GROUP BY 1; SELECT cl0186, COUNT(*) FROM tb010 GROUP BY 1; SELECT cl0189, COUNT(*) FROM tb011 GROUP BY 1; SELECT cl0185, COUNT(*) FROM tb011 GROUP BY 1; SELECT cl0193 FROM tb014 LIMIT 5; SELECT cl0194 FROM tb013 LIMIT 5;",
+    "result": "tb010: segment SME/LAM/KAM; currency EUR and CZK only; 32461 customers. tb011: country CZE/SVK only; station segment Premium/Value for money/Noname/Other; 5716 stations. Yearmonth values 201112, 201201, 201202. Transaction times HH:MM:SS. tb013 1000 rows, tb014 383282 rows.",
+    "validation_method": "enumeration and format inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_fi_district_columns",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT cl0200, cl0210, cl0211, cl0212, cl0219, cl0220, cl0221, cl0223 FROM tb019 LIMIT 4;",
+    "result": "77 districts. Prague: inhabitants 1204953, avg salary 12541, unemployment 1995 = 0.2, 1996 = 0.43, crimes 1995 = 85677. Benesov: 88884, 8507, 1.6, 1.85, 2159.",
+    "validation_method": "sample rows against known Czech district statistics",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_fi_enums",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT cl0229, COUNT(*) FROM tb020 GROUP BY 1; SELECT cl0205, COUNT(*) FROM tb018 GROUP BY 1; SELECT cl0205, COUNT(*) FROM tb016 GROUP BY 1; SELECT cl0205, cl0235, COUNT(*) FROM tb022 GROUP BY 1,2;",
+    "result": "Loans: A 203, B 31, C 403, D 45. tb018.cl0205: OWNER, DISPONENT. tb016.cl0205: gold, classic, junior. tb022.cl0205: PRIJEM, VYDAJ, VYBER; tb022.cl0235 includes VKLAD, PREVOD Z UCTU, PREVOD NA UCET, VYBER, VYBER KARTOU.",
+    "validation_method": "enumeration inspection across tables",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_f1_columns",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT name FROM sqlite_master WHERE name BETWEEN 'tb023' AND 'tb035'; SELECT * FROM each table LIMIT 1;",
+    "result": "72 circuits, 208 constructors, 840 drivers, 68 seasons, 976 races, 11082 constructor results, 11836 constructor standings, 31578 driver standings, 420369 lap times, 6070 pit stops, 7397 qualifying rows, 134 statuses, 23657 race results. Driver name split into cl0255 forename and cl0256 surname.",
+    "validation_method": "row counts and sample-row inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_f1_measures",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT cl0262, cl0272, cl0287 FROM tb035 LIMIT 5; SELECT cl0274, cl0272 FROM tb032 LIMIT 3; SELECT cl0276, cl0277, cl0278 FROM tb033 LIMIT 3;",
+    "result": "tb035.cl0262 holds '1:34:50.616' for the winner and '+5.478' style gaps for others; cl0287 fastest lap speeds e.g. 218.300. tb032.cl0274 durations e.g. 23.227 seconds with cl0272 milliseconds. tb033 Q1/Q2/Q3 times in cl0276/cl0277/cl0278.",
+    "validation_method": "value format inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_sc_columns",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT cl0288, cl0289, cl0290, cl0291, cl0293, cl0294 FROM tb036 LIMIT 3; SELECT cl0321, cl0322, cl0323, cl0325, cl0326, cl0327 FROM tb043 LIMIT 3; SELECT cl0306, cl0307, cl0308, cl0309, cl0310, cl0311 FROM tb040 LIMIT 3; SELECT cl0312, cl0313, cl0314, cl0315 FROM tb041 LIMIT 3;",
+    "result": "42 events (status Open/Planning/Closed), 33 members (position President/Vice President/Member/Inactive; t-shirt Small/Medium/Large/X-Large), 52 budget lines, 32 expenses with text dates. tb039 has 326 attendance rows.",
+    "validation_method": "sample rows and enumeration inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_sh_columns",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT * FROM tb047; SELECT cl0330, cl0337, cl0339, cl0346, cl0347 FROM tb050 WHERE cl0337 IN ('Copycat','3-D Man'); SELECT cl0339, COUNT(*) FROM tb050 GROUP BY 1; SELECT cl0334 FROM tb047;",
+    "result": "tb047: 1 Male, 2 Female, 3 N/A. Hero counts by gender code: Male 519, Female 203, N/A 28. 750 heroes with height in cm and weight in kg. 3738 hero-attribute rows and 5825 hero-power rows.",
+    "validation_method": "reference-table and sample-row inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_th_columns",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT cl0353, cl0366, cl0367, cl0368, cl0369, cl0360 FROM tb055 LIMIT 3; SELECT cl0353, cl0354, cl0360, cl0364, cl0365 FROM tb054 LIMIT 3; SELECT cl0353, cl0371, cl0374, cl0378, cl0382, cl0387, cl0389, cl0391, cl0399, cl0400, cl0407 FROM tb056 LIMIT 3;",
+    "result": "1238 patients, 806 examinations, 13908 lab rows. Sex values F/M/blank; diagnosis values SLE, PSS, RA susp., MCTD; thrombosis 0/1/2/3; symptoms 39 distinct texts. Lab sample: LDH 567/579/684, uric acid 3.8/4.2/4.9, cholesterol 165, RBC 2.6/2.9/3.4, hematocrit 20.3/21.6/24.7, IgA 145/188, aCL 46/132, anti-SM values 0/1/negative/2.",
+    "validation_method": "sample rows and value distributions",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_tx_columns",
+    "source": "bird_merged.sqlite",
+    "query": "SELECT cl0414, cl0415, cl0416 FROM tb057 LIMIT 3; SELECT cl0417, cl0415, cl0418 FROM tb058 LIMIT 3; SELECT cl0414, cl0419, cl0417 FROM tb059 LIMIT 3; SELECT cl0415, cl0420 FROM tb060 LIMIT 3;",
+    "result": "12333 atoms with ids like TR000_1 and element symbols c/h/o/cl; 12379 bonds with ids like TR000_1_2 and types '-', '=', '#'; 24758 connected atom pairs; 343 molecules with labels '+' and '-'.",
+    "validation_method": "sample rows and enumeration inspection",
+    "timestamp": "2026-11-06"
+  }
+]

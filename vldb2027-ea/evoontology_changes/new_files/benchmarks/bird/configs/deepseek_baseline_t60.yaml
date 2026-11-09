@@ -1,0 +1,21 @@
+condition: baseline
+
+agent:
+  model: "deepseek-flash"
+  temperature: 0.0
+  max_turns: 60
+  provider: "openai"
+  base_url: "https://api.deepseek.com"
+  api_key_env: "BIRD_AGENT_API_KEY"
+
+semantic:
+  enabled: false
+  store_path: ""
+
+mcp_servers:
+  - name: sqlite
+    module: "tool_server.sqlite_mcp"
+    description: "SQLite database exploration tools"
+    args:
+      - "--db-path"
+      - ""

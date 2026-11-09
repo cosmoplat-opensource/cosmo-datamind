@@ -112,7 +112,7 @@ def prompt_for(db, track, S, direction, ws, dbpath):
     if track == "w":
         sr = SPLITROOT[direction]
         wl = (EXP / "variants" / "opaque_workload" / sr / f"{db}.json") if S == "opaque" \
-            else (EXP / "variants" / "opaque_merged" / "workload" / sr / f"{db}.json") if S == "opaque_merged" \
+            else (EXP / "variants" / S / "workload" / sr / f"{db}.json") if S in ("opaque_merged", "readable_merged") \
             else BIRD / "data" / sr / "construction_workload" / f"{db}.json"
         return wl, f"""使用 evoontology 插件的 build-ontology skill,为数据库 {db} 构建初始本体层 ontology_v0。
 - 项目模式:Fixed-Split Mode;划分已冻结,不要重新划分。
@@ -214,7 +214,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("db")
     ap.add_argument("--track", required=True, choices=["w", "d"])
-    ap.add_argument("--S", required=True, choices=["full", "nofk", "bare", "opaque", "opaque_merged"])
+    ap.add_argument("--S", required=True, choices=["full", "nofk", "bare", "opaque", "opaque_merged", "readable_merged"])
     ap.add_argument("--dir", default="")
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--max-turns", type=int, default=180)

@@ -1,0 +1,371 @@
+[
+  {
+    "id": "rel_cs_district_schools",
+    "source": "cs_district",
+    "relation_type": "composition",
+    "target": "cs_school",
+    "connection_condition": "schools carry the district code in tb003.cl0041 and district name in tb003.cl0045",
+    "description": "A district is composed of multiple schools; a school record belongs to one district.",
+    "evidence": "ev_cs_core"
+  },
+  {
+    "id": "rel_cs_county_district",
+    "source": "cs_county",
+    "relation_type": "association",
+    "target": "cs_district",
+    "connection_condition": "county name is repeated on each school row alongside the district name",
+    "description": "Districts are located within counties, but the county is a label on school records rather than a separate district entity.",
+    "evidence": "ev_cs_core"
+  },
+  {
+    "id": "rel_cs_efr_derivation",
+    "source": "cs_free_meal_count",
+    "relation_type": "derivation",
+    "target": "cs_eligible_free_rate",
+    "connection_condition": "rate is free meal eligible count divided by enrollment for the same age base",
+    "description": "The eligible free rate is computed from free meal count and enrollment.",
+    "evidence": "ev_cs_frpm"
+  },
+  {
+    "id": "rel_cs_excellence_derivation",
+    "source": "cs_sat_test_takers",
+    "relation_type": "derivation",
+    "target": "cs_excellence_rate",
+    "connection_condition": "rate is the count of test takers scoring 1500 or above divided by total test takers",
+    "description": "The excellence rate is derived from SAT test takers and the count scoring 1500 or above.",
+    "evidence": "ev_cs_sat"
+  },
+  {
+    "id": "rel_cg_set_cards",
+    "source": "cg_card_set",
+    "relation_type": "composition",
+    "target": "cg_card",
+    "connection_condition": "cards carry a set code that matches sets.cl0169",
+    "description": "An expansion set is composed of card printings.",
+    "evidence": "ev_cg_sets"
+  },
+  {
+    "id": "rel_cg_card_lang",
+    "source": "cg_card",
+    "relation_type": "equivalence",
+    "target": "cg_language_version",
+    "connection_condition": "localized rows share the card id and card uuid with the primary card row",
+    "description": "A localized printing expresses the same card in another language; the primary and localized rows are alternative representations of one card.",
+    "evidence": "ev_cg_foreign"
+  },
+  {
+    "id": "rel_cg_card_legality",
+    "source": "cg_card",
+    "relation_type": "composition",
+    "target": "cg_format",
+    "connection_condition": "legalities rows reference the card id and add a format and legality status",
+    "description": "Format legality records are component records of a card.",
+    "evidence": "ev_cg_enums"
+  },
+  {
+    "id": "rel_db_customer_tx",
+    "source": "db_customer",
+    "relation_type": "composition",
+    "target": "db_transaction",
+    "connection_condition": "transactions carry the customer identifier",
+    "description": "A customer is composed of their card transactions.",
+    "evidence": "ev_db_core"
+  },
+  {
+    "id": "rel_db_station_tx",
+    "source": "db_gas_station",
+    "relation_type": "composition",
+    "target": "db_transaction",
+    "connection_condition": "transactions carry the gas station identifier",
+    "description": "A gas station is composed of the transactions made there.",
+    "evidence": "ev_db_core"
+  },
+  {
+    "id": "rel_db_product_tx",
+    "source": "db_product",
+    "relation_type": "composition",
+    "target": "db_transaction",
+    "connection_condition": "transactions carry the product identifier",
+    "description": "A product is composed of the transactions that purchase it.",
+    "evidence": "ev_db_core"
+  },
+  {
+    "id": "rel_db_consumption_derivation",
+    "source": "db_transaction",
+    "relation_type": "derivation",
+    "target": "db_monthly_consumption",
+    "connection_condition": "monthly consumption aggregates transaction amounts per customer and month",
+    "description": "Monthly consumption is derived from a customer's transactions for a month.",
+    "evidence": "ev_db_dates"
+  },
+  {
+    "id": "rel_fn_district_accounts",
+    "source": "fn_district",
+    "relation_type": "composition",
+    "target": "fn_account",
+    "connection_condition": "accounts carry a district identifier",
+    "description": "A district is composed of the accounts opened in it.",
+    "evidence": "ev_fn_core"
+  },
+  {
+    "id": "rel_fn_client_account",
+    "source": "fn_client",
+    "relation_type": "composition",
+    "target": "fn_account",
+    "connection_condition": "the disposition table links clients to accounts",
+    "description": "A client holds accounts through disposition records.",
+    "evidence": "ev_fn_core"
+  },
+  {
+    "id": "rel_fn_account_loan",
+    "source": "fn_account",
+    "relation_type": "composition",
+    "target": "fn_loan",
+    "connection_condition": "loans carry the account identifier",
+    "description": "An account is composed of its loans.",
+    "evidence": "ev_fn_core"
+  },
+  {
+    "id": "rel_fn_account_tx",
+    "source": "fn_account",
+    "relation_type": "composition",
+    "target": "fn_transaction",
+    "connection_condition": "transactions carry the account identifier",
+    "description": "An account is composed of its transactions.",
+    "evidence": "ev_fn_core"
+  },
+  {
+    "id": "rel_fn_district_salary",
+    "source": "fn_district",
+    "relation_type": "association",
+    "target": "fn_average_salary",
+    "connection_condition": "average salary is a district-level attribute stored on the district row",
+    "description": "The average salary is a district characteristic used to characterize its residents.",
+    "evidence": "ev_fn_district"
+  },
+  {
+    "id": "rel_f1_race_result",
+    "source": "f1_race",
+    "relation_type": "composition",
+    "target": "f1_result",
+    "connection_condition": "results carry the race identifier",
+    "description": "A race is composed of its driver results.",
+    "evidence": "ev_f1_core"
+  },
+  {
+    "id": "rel_f1_driver_result",
+    "source": "f1_driver",
+    "relation_type": "association",
+    "target": "f1_result",
+    "connection_condition": "results carry the driver identifier",
+    "description": "A driver participates in races through result rows.",
+    "evidence": "ev_f1_core"
+  },
+  {
+    "id": "rel_f1_constructor_result",
+    "source": "f1_constructor",
+    "relation_type": "association",
+    "target": "f1_result",
+    "connection_condition": "results carry the constructor identifier",
+    "description": "A constructor participates in races through result rows.",
+    "evidence": "ev_f1_core"
+  },
+  {
+    "id": "rel_f1_race_lap",
+    "source": "f1_race",
+    "relation_type": "composition",
+    "target": "f1_lap_time",
+    "connection_condition": "lap times carry the race identifier and driver identifier",
+    "description": "A race is composed of individual lap times.",
+    "evidence": "ev_f1_core"
+  },
+  {
+    "id": "rel_f1_standing_derivation",
+    "source": "f1_result",
+    "relation_type": "derivation",
+    "target": "f1_driver_standing",
+    "connection_condition": "standings aggregate result points and wins per driver and race",
+    "description": "Driver championship standings are derived from race results.",
+    "evidence": "ev_f1_core"
+  },
+  {
+    "id": "rel_f1_constructor_standing_derivation",
+    "source": "f1_result",
+    "relation_type": "derivation",
+    "target": "f1_constructor_standing",
+    "connection_condition": "standings aggregate result points and wins per constructor and race",
+    "description": "Constructor championship standings are derived from race results.",
+    "evidence": "ev_f1_core"
+  },
+  {
+    "id": "rel_f1_full_name_derivation",
+    "source": "f1_driver",
+    "relation_type": "derivation",
+    "target": "f1_driver_full_name",
+    "connection_condition": "forename and surname are separate columns on the driver row",
+    "description": "A driver full name is formed from the forename and surname.",
+    "evidence": "ev_f1_core"
+  },
+  {
+    "id": "rel_sc_event_attendance",
+    "source": "sc_event",
+    "relation_type": "composition",
+    "target": "sc_attendance",
+    "connection_condition": "attendance rows carry the event identifier",
+    "description": "An event is composed of attendance links to members.",
+    "evidence": "ev_sc_core"
+  },
+  {
+    "id": "rel_sc_member_attendance",
+    "source": "sc_member",
+    "relation_type": "composition",
+    "target": "sc_attendance",
+    "connection_condition": "attendance rows carry the member identifier",
+    "description": "A member participates in events through attendance links.",
+    "evidence": "ev_sc_core"
+  },
+  {
+    "id": "rel_sc_member_major",
+    "source": "sc_member",
+    "relation_type": "association",
+    "target": "sc_major",
+    "connection_condition": "members carry a major reference",
+    "description": "A member studies an academic major with a department and college.",
+    "evidence": "ev_sc_core"
+  },
+  {
+    "id": "rel_sc_budget_expense",
+    "source": "sc_budget",
+    "relation_type": "composition",
+    "target": "sc_expense",
+    "connection_condition": "expense rows carry the budget identifier",
+    "description": "A budget category is composed of member expense lines.",
+    "evidence": "ev_sc_core"
+  },
+  {
+    "id": "rel_sc_member_income",
+    "source": "sc_member",
+    "relation_type": "association",
+    "target": "sc_income",
+    "connection_condition": "income rows carry the member identifier",
+    "description": "Income records such as dues are associated with the paying member.",
+    "evidence": "ev_sc_core"
+  },
+  {
+    "id": "rel_sc_full_name_derivation",
+    "source": "sc_member",
+    "relation_type": "derivation",
+    "target": "sc_member_full_name",
+    "connection_condition": "first name and last name are separate columns",
+    "description": "A member full name is formed from first name and last name.",
+    "evidence": "ev_sc_core"
+  },
+  {
+    "id": "rel_sh_hero_power",
+    "source": "sh_superhero",
+    "relation_type": "composition",
+    "target": "sh_hero_power",
+    "connection_condition": "hero power links carry the hero identifier",
+    "description": "A superhero is composed of links to its superpowers.",
+    "evidence": "ev_sh_core"
+  },
+  {
+    "id": "rel_sh_power_link",
+    "source": "sh_superpower",
+    "relation_type": "association",
+    "target": "sh_hero_power",
+    "connection_condition": "hero power links carry the power identifier",
+    "description": "A superpower is associated with heroes through hero power links.",
+    "evidence": "ev_sh_core"
+  },
+  {
+    "id": "rel_sh_attribute_value",
+    "source": "sh_superhero",
+    "relation_type": "composition",
+    "target": "sh_attribute_value",
+    "connection_condition": "hero attribute rows carry the hero identifier",
+    "description": "A superhero is composed of scored attribute values.",
+    "evidence": "ev_sh_core"
+  },
+  {
+    "id": "rel_sh_attribute_link",
+    "source": "sh_attribute",
+    "relation_type": "association",
+    "target": "sh_attribute_value",
+    "connection_condition": "hero attribute rows carry the attribute identifier",
+    "description": "An attribute is associated with heroes through attribute value rows.",
+    "evidence": "ev_sh_core"
+  },
+  {
+    "id": "rel_sh_colour_equiv",
+    "source": "sh_colour",
+    "relation_type": "equivalence",
+    "target": "sh_colour",
+    "connection_condition": "eye, hair and skin references all resolve to the same colour lookup table",
+    "description": "Eye, hair and skin colour attributes share one colour value domain.",
+    "evidence": "ev_sh_lookup"
+  },
+  {
+    "id": "rel_th_patient_exam",
+    "source": "th_patient",
+    "relation_type": "composition",
+    "target": "th_examination",
+    "connection_condition": "examination rows carry the patient identifier",
+    "description": "A patient is composed of clinical examinations.",
+    "evidence": "ev_th_core"
+  },
+  {
+    "id": "rel_th_patient_lab",
+    "source": "th_patient",
+    "relation_type": "composition",
+    "target": "th_lab_test",
+    "connection_condition": "laboratory rows carry the patient identifier",
+    "description": "A patient is composed of laboratory test sessions.",
+    "evidence": "ev_th_lab"
+  },
+  {
+    "id": "rel_th_lab_measure",
+    "source": "th_lab_test",
+    "relation_type": "composition",
+    "target": "th_lab_measure",
+    "connection_condition": "laboratory measurements are columns of a test session row",
+    "description": "A laboratory test session is composed of individual measurements.",
+    "evidence": "ev_th_lab"
+  },
+  {
+    "id": "rel_th_age_derivation",
+    "source": "th_patient_birth_date",
+    "relation_type": "derivation",
+    "target": "th_age",
+    "connection_condition": "age is the difference between the current year and the birth year",
+    "description": "Patient age is derived from the birth date and the current date.",
+    "evidence": "ev_th_core"
+  },
+  {
+    "id": "rel_tx_molecule_atom",
+    "source": "tx_molecule",
+    "relation_type": "composition",
+    "target": "tx_atom",
+    "connection_condition": "atoms carry the molecule identifier",
+    "description": "A molecule is composed of atoms.",
+    "evidence": "ev_tx_core"
+  },
+  {
+    "id": "rel_tx_molecule_bond",
+    "source": "tx_molecule",
+    "relation_type": "composition",
+    "target": "tx_bond",
+    "connection_condition": "bonds carry the molecule identifier",
+    "description": "A molecule is composed of bonds.",
+    "evidence": "ev_tx_core"
+  },
+  {
+    "id": "rel_tx_bond_atom",
+    "source": "tx_bond",
+    "relation_type": "composition",
+    "target": "tx_atom_bond",
+    "connection_condition": "atom-bond links carry the bond identifier",
+    "description": "A bond is composed of connections to the atoms it joins.",
+    "evidence": "ev_tx_core"
+  }
+]

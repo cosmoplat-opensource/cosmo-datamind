@@ -1,0 +1,1730 @@
+[
+  {
+    "id": "cs_school",
+    "name": "School",
+    "type": "entity",
+    "definition": "A California public school record in the school master table.",
+    "scope": "california_schools",
+    "aliases": [
+      "school"
+    ],
+    "evidence": "ev_cs_core"
+  },
+  {
+    "id": "cs_cds_code",
+    "name": "CDS Code",
+    "type": "dimension",
+    "definition": "Unique California school identifier linking school, enrollment and SAT records.",
+    "scope": "california_schools",
+    "aliases": [
+      "CDSCode",
+      "cds"
+    ],
+    "evidence": "ev_cs_core"
+  },
+  {
+    "id": "cs_school_status",
+    "name": "School Status",
+    "type": "dimension",
+    "definition": "Operating status of a school, Active or Closed.",
+    "scope": "california_schools",
+    "aliases": [
+      "status"
+    ],
+    "evidence": "ev_cs_core"
+  },
+  {
+    "id": "cs_county",
+    "name": "County",
+    "type": "dimension",
+    "definition": "California county in which a school is located.",
+    "scope": "california_schools",
+    "aliases": [
+      "county name"
+    ],
+    "evidence": "ev_cs_core"
+  },
+  {
+    "id": "cs_district",
+    "name": "School District",
+    "type": "entity",
+    "definition": "District responsible for a school, with a district code and name.",
+    "scope": "california_schools",
+    "aliases": [
+      "district"
+    ],
+    "evidence": "ev_cs_core"
+  },
+  {
+    "id": "cs_district_type",
+    "name": "District Type",
+    "type": "dimension",
+    "definition": "Administrative type of a district, coded and labelled (Unified, Elementary, State Special Schools and others).",
+    "scope": "california_schools",
+    "aliases": [
+      "district type code"
+    ],
+    "evidence": "ev_cs_codes"
+  },
+  {
+    "id": "cs_school_type",
+    "name": "School Type",
+    "type": "dimension",
+    "definition": "Instructional type of a school, coded and labelled (Elementary, High, Intermediate/Middle and others).",
+    "scope": "california_schools",
+    "aliases": [
+      "school type code"
+    ],
+    "evidence": "ev_cs_codes"
+  },
+  {
+    "id": "cs_school_category",
+    "name": "School Category",
+    "type": "dimension",
+    "definition": "Program category of a school, coded and labelled (Traditional, Continuation, State Special School and others).",
+    "scope": "california_schools",
+    "aliases": [
+      "school category code"
+    ],
+    "evidence": "ev_cs_codes"
+  },
+  {
+    "id": "cs_address",
+    "name": "School Address",
+    "type": "concept",
+    "definition": "Address components of a school: street, city, state and ZIP code.",
+    "scope": "california_schools",
+    "aliases": [
+      "full communication address",
+      "complete address"
+    ],
+    "evidence": "ev_cs_core"
+  },
+  {
+    "id": "cs_open_date",
+    "name": "School Open Date",
+    "type": "dimension",
+    "definition": "Calendar date on which a school opened.",
+    "scope": "california_schools",
+    "aliases": [
+      "opened"
+    ],
+    "evidence": "ev_cs_core"
+  },
+  {
+    "id": "cs_grade_span",
+    "name": "Grade Span",
+    "type": "concept",
+    "definition": "Lowest and highest grade levels served by a school, for example K-8 or 9-12.",
+    "scope": "california_schools",
+    "aliases": [
+      "grades offered",
+      "K-8"
+    ],
+    "evidence": "ev_cs_core"
+  },
+  {
+    "id": "cs_virtual_instruction",
+    "name": "Virtual Instruction Type",
+    "type": "concept",
+    "definition": "Degree to which a school is virtual: exclusively virtual, not virtual, or partially virtual.",
+    "scope": "california_schools",
+    "aliases": [
+      "exclusively virtual",
+      "virtual school"
+    ],
+    "evidence": "ev_cs_codes"
+  },
+  {
+    "id": "cs_magnet_program",
+    "name": "Magnet Program",
+    "type": "concept",
+    "definition": "Whether a school offers a magnet program.",
+    "scope": "california_schools",
+    "aliases": [
+      "offers a magnet program",
+      "magnet"
+    ],
+    "evidence": "ev_cs_codes"
+  },
+  {
+    "id": "cs_geolocation",
+    "name": "School Geolocation",
+    "type": "concept",
+    "definition": "Latitude and longitude coordinates of a school.",
+    "scope": "california_schools",
+    "aliases": [
+      "latitude",
+      "longitude"
+    ],
+    "evidence": "ev_cs_geo"
+  },
+  {
+    "id": "cs_administrator",
+    "name": "School Administrator",
+    "type": "entity",
+    "definition": "Named administrator of a school with first name, last name and e-mail address.",
+    "scope": "california_schools",
+    "aliases": [
+      "administrator",
+      "principal"
+    ],
+    "evidence": "ev_cs_geo"
+  },
+  {
+    "id": "cs_academic_year",
+    "name": "Academic Year",
+    "type": "dimension",
+    "definition": "School year label such as 2014-2015 for enrollment and meal statistics.",
+    "scope": "california_schools",
+    "aliases": [
+      "school year"
+    ],
+    "evidence": "ev_cs_core"
+  },
+  {
+    "id": "cs_enrollment",
+    "name": "School Enrollment",
+    "type": "metric",
+    "definition": "Number of students enrolled at a school, reported for grades K-12 and for ages 5-17.",
+    "scope": "california_schools",
+    "aliases": [
+      "enrolment",
+      "students enrolled"
+    ],
+    "evidence": "ev_cs_frpm"
+  },
+  {
+    "id": "cs_free_meal_count",
+    "name": "Free Meal Eligible Count",
+    "type": "metric",
+    "definition": "Number of students eligible for free meals, reported for K-12 and ages 5-17.",
+    "scope": "california_schools",
+    "aliases": [
+      "free meals",
+      "free or reduced price meals"
+    ],
+    "evidence": "ev_cs_frpm"
+  },
+  {
+    "id": "cs_frpm_count",
+    "name": "FRPM Eligible Count",
+    "type": "metric",
+    "definition": "Number of students eligible for free or reduced-price meals, reported for K-12 and ages 5-17.",
+    "scope": "california_schools",
+    "aliases": [
+      "FRPM count"
+    ],
+    "evidence": "ev_cs_frpm"
+  },
+  {
+    "id": "cs_eligible_free_rate",
+    "name": "Eligible Free Rate",
+    "type": "metric",
+    "definition": "Share of enrolled students eligible for free meals, computed as free meal count divided by enrollment.",
+    "scope": "california_schools",
+    "aliases": [
+      "eligible free rate",
+      "percent eligible free"
+    ],
+    "evidence": "ev_cs_frpm"
+  },
+  {
+    "id": "cs_sat_score",
+    "name": "SAT Average Score",
+    "type": "metric",
+    "definition": "School-average SAT score in reading, math and writing.",
+    "scope": "california_schools",
+    "aliases": [
+      "SAT score",
+      "average math score",
+      "average writing score"
+    ],
+    "evidence": "ev_cs_sat"
+  },
+  {
+    "id": "cs_sat_test_takers",
+    "name": "SAT Test Takers",
+    "type": "metric",
+    "definition": "Number of students at a school who took the SAT.",
+    "scope": "california_schools",
+    "aliases": [
+      "NumTstTakr"
+    ],
+    "evidence": "ev_cs_sat"
+  },
+  {
+    "id": "cs_excellence_rate",
+    "name": "Excellence Rate",
+    "type": "metric",
+    "definition": "Share of SAT test takers scoring 1500 or above, computed as the count scoring 1500 or above divided by test takers.",
+    "scope": "california_schools",
+    "aliases": [
+      "excellence rate"
+    ],
+    "evidence": "ev_cs_sat"
+  },
+  {
+    "id": "cg_card",
+    "name": "Card Printing",
+    "type": "entity",
+    "definition": "A Magic: The Gathering card printing record.",
+    "scope": "card_games",
+    "aliases": [
+      "card"
+    ],
+    "evidence": "ev_cg_core"
+  },
+  {
+    "id": "cg_card_name",
+    "name": "Card Name",
+    "type": "dimension",
+    "definition": "Printed name of a card in the primary card table.",
+    "scope": "card_games",
+    "aliases": [
+      "name"
+    ],
+    "evidence": "ev_cg_core"
+  },
+  {
+    "id": "cg_card_artist",
+    "name": "Card Artist",
+    "type": "dimension",
+    "definition": "Illustrator credited on the card printing.",
+    "scope": "card_games",
+    "aliases": [
+      "illustrated by",
+      "designed by"
+    ],
+    "evidence": "ev_cg_core"
+  },
+  {
+    "id": "cg_rarity",
+    "name": "Card Rarity",
+    "type": "dimension",
+    "definition": "Rarity of the printing: common, uncommon, rare or mythic.",
+    "scope": "card_games",
+    "aliases": [
+      "rarity"
+    ],
+    "evidence": "ev_cg_enums"
+  },
+  {
+    "id": "cg_border_color",
+    "name": "Border Colour",
+    "type": "dimension",
+    "definition": "Border colour of the printing: black, white, silver, gold or borderless.",
+    "scope": "card_games",
+    "aliases": [
+      "white border",
+      "borderColor"
+    ],
+    "evidence": "ev_cg_enums"
+  },
+  {
+    "id": "cg_converted_mana_cost",
+    "name": "Converted Mana Cost",
+    "type": "metric",
+    "definition": "Converted mana cost (mana value) of a card.",
+    "scope": "card_games",
+    "aliases": [
+      "mana value",
+      "costs more converted mana"
+    ],
+    "evidence": "ev_cg_core"
+  },
+  {
+    "id": "cg_edhrec_rank",
+    "name": "EDHRec Rank",
+    "type": "metric",
+    "definition": "EDHRec popularity rank of a card; rank 1 is the most popular.",
+    "scope": "card_games",
+    "aliases": [
+      "ranked 1st on EDHRec"
+    ],
+    "evidence": "ev_cg_core"
+  },
+  {
+    "id": "cg_card_power",
+    "name": "Card Power",
+    "type": "metric",
+    "definition": "Power characteristic of a creature card, possibly missing or non-numeric.",
+    "scope": "card_games",
+    "aliases": [
+      "power",
+      "without power"
+    ],
+    "evidence": "ev_cg_core"
+  },
+  {
+    "id": "cg_card_subtypes",
+    "name": "Card Subtypes",
+    "type": "dimension",
+    "definition": "Comma-separated subtypes of a card.",
+    "scope": "card_games",
+    "aliases": [
+      "subtype"
+    ],
+    "evidence": "ev_cg_core"
+  },
+  {
+    "id": "cg_content_warning",
+    "name": "Content Warning Flag",
+    "type": "concept",
+    "definition": "Flag indicating whether the printing has a content warning.",
+    "scope": "card_games",
+    "aliases": [
+      "content warning"
+    ],
+    "evidence": "ev_cg_enums"
+  },
+  {
+    "id": "cg_story_spotlight",
+    "name": "Story Spotlight Flag",
+    "type": "concept",
+    "definition": "Flag indicating whether the card is a Story Spotlight card.",
+    "scope": "card_games",
+    "aliases": [
+      "Story Spotlight"
+    ],
+    "evidence": "ev_cg_enums"
+  },
+  {
+    "id": "cg_card_set",
+    "name": "Expansion Set",
+    "type": "entity",
+    "definition": "Expansion set that a card printing belongs to, with name, code, block and release date.",
+    "scope": "card_games",
+    "aliases": [
+      "set",
+      "card set"
+    ],
+    "evidence": "ev_cg_sets"
+  },
+  {
+    "id": "cg_set_code",
+    "name": "Set Code",
+    "type": "dimension",
+    "definition": "Short code identifying an expansion set.",
+    "scope": "card_games",
+    "aliases": [
+      "code"
+    ],
+    "evidence": "ev_cg_sets"
+  },
+  {
+    "id": "cg_set_block",
+    "name": "Set Block",
+    "type": "dimension",
+    "definition": "Block that an expansion set belongs to.",
+    "scope": "card_games",
+    "aliases": [
+      "block"
+    ],
+    "evidence": "ev_cg_sets"
+  },
+  {
+    "id": "cg_language_version",
+    "name": "Localized Card Printing",
+    "type": "entity",
+    "definition": "Localized printing of a card with translated name, rules text and flavor text.",
+    "scope": "card_games",
+    "aliases": [
+      "foreign printing",
+      "Italian version",
+      "Korean version"
+    ],
+    "evidence": "ev_cg_foreign"
+  },
+  {
+    "id": "cg_ruling",
+    "name": "Card Ruling",
+    "type": "entity",
+    "definition": "Official rules ruling text and date for a card.",
+    "scope": "card_games",
+    "aliases": [
+      "ruling",
+      "rule of playing card"
+    ],
+    "evidence": "ev_cg_foreign"
+  },
+  {
+    "id": "cg_format",
+    "name": "Play Format",
+    "type": "dimension",
+    "definition": "Play format such as commander, gladiator, modern or legacy.",
+    "scope": "card_games",
+    "aliases": [
+      "format"
+    ],
+    "evidence": "ev_cg_enums"
+  },
+  {
+    "id": "cg_legality_status",
+    "name": "Legality Status",
+    "type": "dimension",
+    "definition": "Legality of a card in a format: Legal, Banned or Restricted.",
+    "scope": "card_games",
+    "aliases": [
+      "legal status",
+      "banned"
+    ],
+    "evidence": "ev_cg_enums"
+  },
+  {
+    "id": "db_customer",
+    "name": "Bank Customer",
+    "type": "entity",
+    "definition": "Retail-banking customer identified by customer id.",
+    "scope": "debit_card_specializing",
+    "aliases": [
+      "customer"
+    ],
+    "evidence": "ev_db_core"
+  },
+  {
+    "id": "db_customer_segment",
+    "name": "Customer Segment",
+    "type": "dimension",
+    "definition": "Customer segment: SME, LAM or KAM.",
+    "scope": "debit_card_specializing",
+    "aliases": [
+      "segment"
+    ],
+    "evidence": "ev_db_core"
+  },
+  {
+    "id": "db_customer_currency",
+    "name": "Customer Currency",
+    "type": "dimension",
+    "definition": "Currency in which a customer pays: EUR or CZK.",
+    "scope": "debit_card_specializing",
+    "aliases": [
+      "pays in euro",
+      "paid in CZK"
+    ],
+    "evidence": "ev_db_core"
+  },
+  {
+    "id": "db_gas_station",
+    "name": "Gas Station",
+    "type": "entity",
+    "definition": "Gas station where card transactions occur, identified by station, chain and country.",
+    "scope": "debit_card_specializing",
+    "aliases": [
+      "gas station"
+    ],
+    "evidence": "ev_db_core"
+  },
+  {
+    "id": "db_chain",
+    "name": "Gas Station Chain",
+    "type": "dimension",
+    "definition": "Retail chain that a gas station belongs to.",
+    "scope": "debit_card_specializing",
+    "aliases": [
+      "chain no."
+    ],
+    "evidence": "ev_db_core"
+  },
+  {
+    "id": "db_country",
+    "name": "Gas Station Country",
+    "type": "dimension",
+    "definition": "Country of a gas station as a three-letter code such as CZE or SVK.",
+    "scope": "debit_card_specializing",
+    "aliases": [
+      "Czech Republic"
+    ],
+    "evidence": "ev_db_enums"
+  },
+  {
+    "id": "db_product",
+    "name": "Product",
+    "type": "entity",
+    "definition": "Product purchased at a gas station, with a description.",
+    "scope": "debit_card_specializing",
+    "aliases": [
+      "product description"
+    ],
+    "evidence": "ev_db_core"
+  },
+  {
+    "id": "db_transaction",
+    "name": "Card Transaction",
+    "type": "entity",
+    "definition": "Card transaction with date, time, customer, gas station, product, amount and price.",
+    "scope": "debit_card_specializing",
+    "aliases": [
+      "transaction"
+    ],
+    "evidence": "ev_db_core"
+  },
+  {
+    "id": "db_transaction_date",
+    "name": "Transaction Date",
+    "type": "dimension",
+    "definition": "Calendar date on which a transaction occurred.",
+    "scope": "debit_card_specializing",
+    "aliases": [
+      "date of transaction"
+    ],
+    "evidence": "ev_db_dates"
+  },
+  {
+    "id": "db_transaction_time",
+    "name": "Transaction Time",
+    "type": "dimension",
+    "definition": "Clock time at which a transaction occurred.",
+    "scope": "debit_card_specializing",
+    "aliases": [
+      "disparate time"
+    ],
+    "evidence": "ev_db_dates"
+  },
+  {
+    "id": "db_monthly_consumption",
+    "name": "Monthly Consumption",
+    "type": "metric",
+    "definition": "Total consumption amount of a customer in a month.",
+    "scope": "debit_card_specializing",
+    "aliases": [
+      "monthly consumption",
+      "gas consumption"
+    ],
+    "evidence": "ev_db_dates"
+  },
+  {
+    "id": "db_year_month",
+    "name": "Year-Month Key",
+    "type": "dimension",
+    "definition": "Year-month key of a monthly consumption record, stored as YYYYMM text.",
+    "scope": "debit_card_specializing",
+    "aliases": [
+      "yearmonth"
+    ],
+    "evidence": "ev_db_dates"
+  },
+  {
+    "id": "fn_account",
+    "name": "Bank Account",
+    "type": "entity",
+    "definition": "Bank account with opening date, statement frequency and district.",
+    "scope": "financial",
+    "aliases": [
+      "account"
+    ],
+    "evidence": "ev_fn_core"
+  },
+  {
+    "id": "fn_statement_frequency",
+    "name": "Statement Frequency",
+    "type": "dimension",
+    "definition": "Frequency at which account statements are issued.",
+    "scope": "financial",
+    "aliases": [
+      "issuance",
+      "weekly statements",
+      "monthly statement"
+    ],
+    "evidence": "ev_fn_enums"
+  },
+  {
+    "id": "fn_client",
+    "name": "Bank Client",
+    "type": "entity",
+    "definition": "Bank client with sex, birth date and district of residence.",
+    "scope": "financial",
+    "aliases": [
+      "client",
+      "customer"
+    ],
+    "evidence": "ev_fn_core"
+  },
+  {
+    "id": "fn_client_sex",
+    "name": "Client Sex",
+    "type": "dimension",
+    "definition": "Sex of a client: F or M.",
+    "scope": "financial",
+    "aliases": [
+      "male",
+      "female"
+    ],
+    "evidence": "ev_fn_enums"
+  },
+  {
+    "id": "fn_client_birth_date",
+    "name": "Client Birth Date",
+    "type": "dimension",
+    "definition": "Birth date of a client.",
+    "scope": "financial",
+    "aliases": [
+      "born"
+    ],
+    "evidence": "ev_fn_core"
+  },
+  {
+    "id": "fn_district",
+    "name": "District",
+    "type": "entity",
+    "definition": "Administrative district in which clients and accounts are located.",
+    "scope": "financial",
+    "aliases": [
+      "district name"
+    ],
+    "evidence": "ev_fn_district"
+  },
+  {
+    "id": "fn_region",
+    "name": "Region",
+    "type": "dimension",
+    "definition": "Region of a district, such as Prague or north Bohemia.",
+    "scope": "financial",
+    "aliases": [
+      "region"
+    ],
+    "evidence": "ev_fn_district"
+  },
+  {
+    "id": "fn_average_salary",
+    "name": "District Average Salary",
+    "type": "metric",
+    "definition": "Average salary reported for a district.",
+    "scope": "financial",
+    "aliases": [
+      "average salary"
+    ],
+    "evidence": "ev_fn_district"
+  },
+  {
+    "id": "fn_loan",
+    "name": "Loan",
+    "type": "entity",
+    "definition": "Loan granted to an account, with amount, duration, payment and status.",
+    "scope": "financial",
+    "aliases": [
+      "loan"
+    ],
+    "evidence": "ev_fn_core"
+  },
+  {
+    "id": "fn_loan_amount",
+    "name": "Loan Amount",
+    "type": "metric",
+    "definition": "Approved loan amount.",
+    "scope": "financial",
+    "aliases": [
+      "approved amount"
+    ],
+    "evidence": "ev_fn_core"
+  },
+  {
+    "id": "fn_loan_duration",
+    "name": "Loan Duration",
+    "type": "metric",
+    "definition": "Loan duration in months.",
+    "scope": "financial",
+    "aliases": [
+      "loan validity"
+    ],
+    "evidence": "ev_fn_core"
+  },
+  {
+    "id": "fn_loan_status",
+    "name": "Loan Status",
+    "type": "dimension",
+    "definition": "Contract status of a loan: A, B, C or D.",
+    "scope": "financial",
+    "aliases": [
+      "status",
+      "running contract"
+    ],
+    "evidence": "ev_fn_enums"
+  },
+  {
+    "id": "fn_transaction",
+    "name": "Account Transaction",
+    "type": "entity",
+    "definition": "Account transaction with type, operation, amount and balance.",
+    "scope": "financial",
+    "aliases": [
+      "transaction",
+      "withdrawal"
+    ],
+    "evidence": "ev_fn_core"
+  },
+  {
+    "id": "fn_transaction_type",
+    "name": "Transaction Type",
+    "type": "dimension",
+    "definition": "Credit or debit direction of a transaction: PRIJEM, VYBER or VYDAJ.",
+    "scope": "financial",
+    "aliases": [
+      "type"
+    ],
+    "evidence": "ev_fn_enums"
+  },
+  {
+    "id": "fn_transaction_operation",
+    "name": "Transaction Operation",
+    "type": "dimension",
+    "definition": "Detailed operation of a transaction, such as VKLAD, VYBER or PREVOD.",
+    "scope": "financial",
+    "aliases": [
+      "operation",
+      "withdrawal in cash"
+    ],
+    "evidence": "ev_fn_enums"
+  },
+  {
+    "id": "fn_transaction_amount",
+    "name": "Transaction Amount",
+    "type": "metric",
+    "definition": "Monetary amount of an account transaction.",
+    "scope": "financial",
+    "aliases": [
+      "amount"
+    ],
+    "evidence": "ev_fn_core"
+  },
+  {
+    "id": "f1_driver",
+    "name": "Formula 1 Driver",
+    "type": "entity",
+    "definition": "Formula 1 driver with reference, code, name parts, birth date and nationality.",
+    "scope": "formula_1",
+    "aliases": [
+      "driver",
+      "racer"
+    ],
+    "evidence": "ev_f1_core"
+  },
+  {
+    "id": "f1_driver_full_name",
+    "name": "Driver Full Name",
+    "type": "concept",
+    "definition": "Full name of a driver formed from forename and surname.",
+    "scope": "formula_1",
+    "aliases": [
+      "full name",
+      "name of the driver"
+    ],
+    "evidence": "ev_f1_core"
+  },
+  {
+    "id": "f1_driver_dob",
+    "name": "Driver Date of Birth",
+    "type": "dimension",
+    "definition": "Date of birth of a driver.",
+    "scope": "formula_1",
+    "aliases": [
+      "born",
+      "dob",
+      "youngest",
+      "oldest"
+    ],
+    "evidence": "ev_f1_core"
+  },
+  {
+    "id": "f1_driver_nationality",
+    "name": "Driver Nationality",
+    "type": "dimension",
+    "definition": "Nationality of a driver.",
+    "scope": "formula_1",
+    "aliases": [
+      "nationality",
+      "French drivers",
+      "Japanese drivers"
+    ],
+    "evidence": "ev_f1_enums"
+  },
+  {
+    "id": "f1_driver_ref",
+    "name": "Driver Reference",
+    "type": "dimension",
+    "definition": "Short reference identifier of a driver.",
+    "scope": "formula_1",
+    "aliases": [
+      "driverRef",
+      "reference name"
+    ],
+    "evidence": "ev_f1_core"
+  },
+  {
+    "id": "f1_constructor",
+    "name": "Formula 1 Constructor",
+    "type": "entity",
+    "definition": "Formula 1 constructor (team).",
+    "scope": "formula_1",
+    "aliases": [
+      "constructor"
+    ],
+    "evidence": "ev_f1_core"
+  },
+  {
+    "id": "f1_constructor_name",
+    "name": "Constructor Name",
+    "type": "dimension",
+    "definition": "Name of a constructor.",
+    "scope": "formula_1",
+    "aliases": [
+      "constructor name"
+    ],
+    "evidence": "ev_f1_core"
+  },
+  {
+    "id": "f1_constructor_nationality",
+    "name": "Constructor Nationality",
+    "type": "dimension",
+    "definition": "Nationality of a constructor.",
+    "scope": "formula_1",
+    "aliases": [
+      "Japanese constructors"
+    ],
+    "evidence": "ev_f1_enums"
+  },
+  {
+    "id": "f1_constructor_ref",
+    "name": "Constructor Reference",
+    "type": "dimension",
+    "definition": "Short reference identifier of a constructor.",
+    "scope": "formula_1",
+    "aliases": [
+      "constructor reference name"
+    ],
+    "evidence": "ev_f1_core"
+  },
+  {
+    "id": "f1_circuit",
+    "name": "Circuit",
+    "type": "entity",
+    "definition": "Race circuit with name, reference, location, country and coordinates.",
+    "scope": "formula_1",
+    "aliases": [
+      "circuit"
+    ],
+    "evidence": "ev_f1_core"
+  },
+  {
+    "id": "f1_race",
+    "name": "Race",
+    "type": "entity",
+    "definition": "A Formula 1 race event in a season, with name, round, date and circuit.",
+    "scope": "formula_1",
+    "aliases": [
+      "race",
+      "grand prix"
+    ],
+    "evidence": "ev_f1_core"
+  },
+  {
+    "id": "f1_result",
+    "name": "Race Result",
+    "type": "entity",
+    "definition": "Race result row for one driver and constructor in one race.",
+    "scope": "formula_1",
+    "aliases": [
+      "result",
+      "finished"
+    ],
+    "evidence": "ev_f1_core"
+  },
+  {
+    "id": "f1_result_position",
+    "name": "Finishing Position",
+    "type": "dimension",
+    "definition": "Finishing position of a driver in a race.",
+    "scope": "formula_1",
+    "aliases": [
+      "rank",
+      "position"
+    ],
+    "evidence": "ev_f1_core"
+  },
+  {
+    "id": "f1_result_points",
+    "name": "Race Points",
+    "type": "metric",
+    "definition": "Championship points awarded for a race result.",
+    "scope": "formula_1",
+    "aliases": [
+      "points",
+      "point scores"
+    ],
+    "evidence": "ev_f1_core"
+  },
+  {
+    "id": "f1_result_laps",
+    "name": "Completed Laps",
+    "type": "metric",
+    "definition": "Number of laps completed by a driver in a race.",
+    "scope": "formula_1",
+    "aliases": [
+      "lap numbers",
+      "laps"
+    ],
+    "evidence": "ev_f1_core"
+  },
+  {
+    "id": "f1_fastest_lap",
+    "name": "Fastest Lap",
+    "type": "concept",
+    "definition": "Fastest lap achieved by a driver in a race, with rank and lap time.",
+    "scope": "formula_1",
+    "aliases": [
+      "fastest lap",
+      "fastest lap time"
+    ],
+    "evidence": "ev_f1_core"
+  },
+  {
+    "id": "f1_lap_time",
+    "name": "Lap Time",
+    "type": "metric",
+    "definition": "Lap time recorded for a driver on a lap, stored as milliseconds.",
+    "scope": "formula_1",
+    "aliases": [
+      "laptime",
+      "average lap time"
+    ],
+    "evidence": "ev_f1_core"
+  },
+  {
+    "id": "f1_qualifying",
+    "name": "Qualifying Result",
+    "type": "entity",
+    "definition": "Qualifying result for a driver in a race, with Q1, Q2 and Q3 times.",
+    "scope": "formula_1",
+    "aliases": [
+      "qualifying",
+      "Q3 time"
+    ],
+    "evidence": "ev_f1_core"
+  },
+  {
+    "id": "f1_status",
+    "name": "Result Status",
+    "type": "dimension",
+    "definition": "Finishing status of a result, such as Finished or Disqualified.",
+    "scope": "formula_1",
+    "aliases": [
+      "status",
+      "finished the game"
+    ],
+    "evidence": "ev_f1_enums"
+  },
+  {
+    "id": "f1_driver_standing",
+    "name": "Driver Standing",
+    "type": "entity",
+    "definition": "Driver championship standing after a race, with points, position and wins.",
+    "scope": "formula_1",
+    "aliases": [
+      "champion",
+      "most winning"
+    ],
+    "evidence": "ev_f1_core"
+  },
+  {
+    "id": "f1_constructor_standing",
+    "name": "Constructor Standing",
+    "type": "entity",
+    "definition": "Constructor championship standing after a race, with points, position and wins.",
+    "scope": "formula_1",
+    "aliases": [
+      "constructor points"
+    ],
+    "evidence": "ev_f1_core"
+  },
+  {
+    "id": "sc_event",
+    "name": "Club Event",
+    "type": "entity",
+    "definition": "Student club event with name, date, type, location, notes and status.",
+    "scope": "student_club",
+    "aliases": [
+      "event"
+    ],
+    "evidence": "ev_sc_core"
+  },
+  {
+    "id": "sc_event_type",
+    "name": "Event Type",
+    "type": "dimension",
+    "definition": "Category of an event, such as Meeting, Game or Social.",
+    "scope": "student_club",
+    "aliases": [
+      "type of event",
+      "category of events"
+    ],
+    "evidence": "ev_sc_enums"
+  },
+  {
+    "id": "sc_event_status",
+    "name": "Event Status",
+    "type": "dimension",
+    "definition": "Lifecycle status of an event: Open, Closed or Planning.",
+    "scope": "student_club",
+    "aliases": [
+      "closed event",
+      "open event"
+    ],
+    "evidence": "ev_sc_enums"
+  },
+  {
+    "id": "sc_member",
+    "name": "Club Member",
+    "type": "entity",
+    "definition": "Student club member with name, e-mail, position, t-shirt size and major.",
+    "scope": "student_club",
+    "aliases": [
+      "member",
+      "student"
+    ],
+    "evidence": "ev_sc_core"
+  },
+  {
+    "id": "sc_member_full_name",
+    "name": "Person Full Name",
+    "type": "concept",
+    "definition": "Full name of a member formed from first name and last name.",
+    "scope": "student_club",
+    "aliases": [
+      "full name",
+      "first name",
+      "last name"
+    ],
+    "evidence": "ev_sc_core"
+  },
+  {
+    "id": "sc_member_tshirt_size",
+    "name": "T-shirt Size",
+    "type": "dimension",
+    "definition": "T-shirt size of a member.",
+    "scope": "student_club",
+    "aliases": [
+      "t-shirt size"
+    ],
+    "evidence": "ev_sc_core"
+  },
+  {
+    "id": "sc_major",
+    "name": "Academic Major",
+    "type": "entity",
+    "definition": "Academic major with name, department and college.",
+    "scope": "student_club",
+    "aliases": [
+      "major"
+    ],
+    "evidence": "ev_sc_core"
+  },
+  {
+    "id": "sc_attendance",
+    "name": "Event Attendance",
+    "type": "entity",
+    "definition": "Attendance link between an event and a member.",
+    "scope": "student_club",
+    "aliases": [
+      "attend",
+      "members of event"
+    ],
+    "evidence": "ev_sc_core"
+  },
+  {
+    "id": "sc_budget",
+    "name": "Event Budget",
+    "type": "entity",
+    "definition": "Per-event budget category with budgeted amount, spent amount and remaining balance.",
+    "scope": "student_club",
+    "aliases": [
+      "budget",
+      "amount budgeted"
+    ],
+    "evidence": "ev_sc_core"
+  },
+  {
+    "id": "sc_expense",
+    "name": "Expense",
+    "type": "entity",
+    "definition": "Individual expense charged by a member against a budget category, with description, date and amount.",
+    "scope": "student_club",
+    "aliases": [
+      "expense",
+      "total expense"
+    ],
+    "evidence": "ev_sc_core"
+  },
+  {
+    "id": "sc_income",
+    "name": "Income",
+    "type": "entity",
+    "definition": "Income received by the club, with date, amount and source.",
+    "scope": "student_club",
+    "aliases": [
+      "funds received",
+      "dues",
+      "fundraising"
+    ],
+    "evidence": "ev_sc_core"
+  },
+  {
+    "id": "sh_superhero",
+    "name": "Superhero",
+    "type": "entity",
+    "definition": "Comic-book superhero with name, full name, physical attributes and publisher.",
+    "scope": "superhero",
+    "aliases": [
+      "hero",
+      "superhero"
+    ],
+    "evidence": "ev_sh_core"
+  },
+  {
+    "id": "sh_superhero_name",
+    "name": "Superhero Name",
+    "type": "dimension",
+    "definition": "Superhero name of a character.",
+    "scope": "superhero",
+    "aliases": [
+      "hero name"
+    ],
+    "evidence": "ev_sh_core"
+  },
+  {
+    "id": "sh_full_name",
+    "name": "Superhero Full Name",
+    "type": "concept",
+    "definition": "Civilian full name of a superhero.",
+    "scope": "superhero",
+    "aliases": [
+      "full name"
+    ],
+    "evidence": "ev_sh_core"
+  },
+  {
+    "id": "sh_gender",
+    "name": "Gender",
+    "type": "dimension",
+    "definition": "Gender of a superhero: Male, Female or N/A.",
+    "scope": "superhero",
+    "aliases": [
+      "male",
+      "female"
+    ],
+    "evidence": "ev_sh_lookup"
+  },
+  {
+    "id": "sh_colour",
+    "name": "Colour",
+    "type": "entity",
+    "definition": "Colour value used for eye, hair and skin attributes, such as Blue, Black or Blond.",
+    "scope": "superhero",
+    "aliases": [
+      "colour",
+      "color"
+    ],
+    "evidence": "ev_sh_lookup"
+  },
+  {
+    "id": "sh_race",
+    "name": "Race",
+    "type": "dimension",
+    "definition": "Race of a superhero, such as Human or Alien.",
+    "scope": "superhero",
+    "aliases": [
+      "human",
+      "race"
+    ],
+    "evidence": "ev_sh_lookup"
+  },
+  {
+    "id": "sh_publisher",
+    "name": "Publisher",
+    "type": "dimension",
+    "definition": "Comic publisher of a superhero, such as Marvel Comics or DC Comics.",
+    "scope": "superhero",
+    "aliases": [
+      "published by"
+    ],
+    "evidence": "ev_sh_lookup"
+  },
+  {
+    "id": "sh_alignment",
+    "name": "Alignment",
+    "type": "dimension",
+    "definition": "Moral alignment of a superhero: Good, Bad or Neutral.",
+    "scope": "superhero",
+    "aliases": [
+      "alignment"
+    ],
+    "evidence": "ev_sh_lookup"
+  },
+  {
+    "id": "sh_height",
+    "name": "Height",
+    "type": "metric",
+    "definition": "Height of a superhero in centimetres.",
+    "scope": "superhero",
+    "aliases": [
+      "height cm",
+      "tall"
+    ],
+    "evidence": "ev_sh_core"
+  },
+  {
+    "id": "sh_weight",
+    "name": "Weight",
+    "type": "metric",
+    "definition": "Weight of a superhero in kilograms.",
+    "scope": "superhero",
+    "aliases": [
+      "weight"
+    ],
+    "evidence": "ev_sh_core"
+  },
+  {
+    "id": "sh_superpower",
+    "name": "Superpower",
+    "type": "entity",
+    "definition": "A named superpower such as Agility or Stealth.",
+    "scope": "superhero",
+    "aliases": [
+      "superpower",
+      "power"
+    ],
+    "evidence": "ev_sh_core"
+  },
+  {
+    "id": "sh_hero_power",
+    "name": "Hero Superpower Link",
+    "type": "entity",
+    "definition": "Association of a superpower with a superhero.",
+    "scope": "superhero",
+    "aliases": [
+      "hero power"
+    ],
+    "evidence": "ev_sh_core"
+  },
+  {
+    "id": "sh_attribute",
+    "name": "Hero Attribute",
+    "type": "entity",
+    "definition": "A scored attribute such as Intelligence, Strength or Speed.",
+    "scope": "superhero",
+    "aliases": [
+      "attribute",
+      "strength",
+      "speed"
+    ],
+    "evidence": "ev_sh_core"
+  },
+  {
+    "id": "sh_attribute_value",
+    "name": "Attribute Value",
+    "type": "metric",
+    "definition": "Numeric score of a superhero attribute.",
+    "scope": "superhero",
+    "aliases": [
+      "attribute value"
+    ],
+    "evidence": "ev_sh_core"
+  },
+  {
+    "id": "th_patient",
+    "name": "Patient",
+    "type": "entity",
+    "definition": "Thrombosis patient with sex, birth date, patient type and diagnosis.",
+    "scope": "thrombosis_prediction",
+    "aliases": [
+      "patient"
+    ],
+    "evidence": "ev_th_core"
+  },
+  {
+    "id": "th_patient_sex",
+    "name": "Patient Sex",
+    "type": "dimension",
+    "definition": "Sex of a patient: F or M.",
+    "scope": "thrombosis_prediction",
+    "aliases": [
+      "male",
+      "female"
+    ],
+    "evidence": "ev_th_enums"
+  },
+  {
+    "id": "th_patient_birth_date",
+    "name": "Patient Birth Date",
+    "type": "dimension",
+    "definition": "Birth date of a patient.",
+    "scope": "thrombosis_prediction",
+    "aliases": [
+      "birthday",
+      "born"
+    ],
+    "evidence": "ev_th_core"
+  },
+  {
+    "id": "th_patient_type",
+    "name": "Patient Type",
+    "type": "dimension",
+    "definition": "In-patient or out-patient status of a patient.",
+    "scope": "thrombosis_prediction",
+    "aliases": [
+      "in-patient",
+      "outpatient"
+    ],
+    "evidence": "ev_th_enums"
+  },
+  {
+    "id": "th_diagnosis",
+    "name": "Diagnosis",
+    "type": "dimension",
+    "definition": "Diagnosed disease of a patient, such as SLE.",
+    "scope": "thrombosis_prediction",
+    "aliases": [
+      "disease",
+      "diagnosed with"
+    ],
+    "evidence": "ev_th_core"
+  },
+  {
+    "id": "th_examination",
+    "name": "Clinical Examination",
+    "type": "entity",
+    "definition": "Clinical examination record of a patient, with date, ANA pattern, coagulation signs and thrombosis level.",
+    "scope": "thrombosis_prediction",
+    "aliases": [
+      "examination"
+    ],
+    "evidence": "ev_th_core"
+  },
+  {
+    "id": "th_thrombosis_level",
+    "name": "Thrombosis Level",
+    "type": "dimension",
+    "definition": "Graded degree of thrombosis.",
+    "scope": "thrombosis_prediction",
+    "aliases": [
+      "degree of thrombosis",
+      "thrombosis level"
+    ],
+    "evidence": "ev_th_enums"
+  },
+  {
+    "id": "th_ana_pattern",
+    "name": "ANA Pattern",
+    "type": "dimension",
+    "definition": "Antinuclear antibody pattern such as S, P, D or N.",
+    "scope": "thrombosis_prediction",
+    "aliases": [
+      "ANA pattern"
+    ],
+    "evidence": "ev_th_enums"
+  },
+  {
+    "id": "th_symptom",
+    "name": "Symptom",
+    "type": "dimension",
+    "definition": "Recorded symptoms of a patient.",
+    "scope": "thrombosis_prediction",
+    "aliases": [
+      "have symptoms",
+      "no symptom"
+    ],
+    "evidence": "ev_th_core"
+  },
+  {
+    "id": "th_coagulation_degree",
+    "name": "Coagulation Degree",
+    "type": "dimension",
+    "definition": "Coagulation test sign recorded as positive or negative.",
+    "scope": "thrombosis_prediction",
+    "aliases": [
+      "degree of coagulation",
+      "positive measure"
+    ],
+    "evidence": "ev_th_enums"
+  },
+  {
+    "id": "th_lab_test",
+    "name": "Laboratory Test Session",
+    "type": "entity",
+    "definition": "Laboratory test session of a patient on a date.",
+    "scope": "thrombosis_prediction",
+    "aliases": [
+      "laboratory test",
+      "examined"
+    ],
+    "evidence": "ev_th_lab"
+  },
+  {
+    "id": "th_lab_measure",
+    "name": "Laboratory Measurement",
+    "type": "metric",
+    "definition": "A numeric or coded laboratory measurement in a test session.",
+    "scope": "thrombosis_prediction",
+    "aliases": [
+      "lab value",
+      "level"
+    ],
+    "evidence": "ev_th_lab"
+  },
+  {
+    "id": "th_gpt",
+    "name": "GPT (ALT)",
+    "type": "metric",
+    "definition": "ALT/GPT liver enzyme level.",
+    "scope": "thrombosis_prediction",
+    "aliases": [
+      "ALT",
+      "glutamic pylvic transaminase"
+    ],
+    "evidence": "ev_th_lab"
+  },
+  {
+    "id": "th_alb",
+    "name": "Albumin",
+    "type": "metric",
+    "definition": "Blood albumin level.",
+    "scope": "thrombosis_prediction",
+    "aliases": [
+      "ALB",
+      "blood albumin"
+    ],
+    "evidence": "ev_th_lab"
+  },
+  {
+    "id": "th_un",
+    "name": "Urea Nitrogen",
+    "type": "metric",
+    "definition": "Blood urea nitrogen level.",
+    "scope": "thrombosis_prediction",
+    "aliases": [
+      "UN",
+      "urea nitrogen"
+    ],
+    "evidence": "ev_th_lab"
+  },
+  {
+    "id": "th_creatinine",
+    "name": "Creatinine",
+    "type": "metric",
+    "definition": "Blood creatinine level.",
+    "scope": "thrombosis_prediction",
+    "aliases": [
+      "CREA",
+      "creatinine level"
+    ],
+    "evidence": "ev_th_lab"
+  },
+  {
+    "id": "th_total_cholesterol",
+    "name": "Total Cholesterol",
+    "type": "metric",
+    "definition": "Total cholesterol level.",
+    "scope": "thrombosis_prediction",
+    "aliases": [
+      "T-CHO",
+      "cholesterol"
+    ],
+    "evidence": "ev_th_lab"
+  },
+  {
+    "id": "th_cpk",
+    "name": "Creatinine Phosphokinase",
+    "type": "metric",
+    "definition": "Creatinine phosphokinase level.",
+    "scope": "thrombosis_prediction",
+    "aliases": [
+      "CPK"
+    ],
+    "evidence": "ev_th_lab"
+  },
+  {
+    "id": "th_glu",
+    "name": "Blood Glucose",
+    "type": "metric",
+    "definition": "Blood glucose level.",
+    "scope": "thrombosis_prediction",
+    "aliases": [
+      "GLU",
+      "blood glucose"
+    ],
+    "evidence": "ev_th_lab"
+  },
+  {
+    "id": "th_plt",
+    "name": "Platelet Count",
+    "type": "metric",
+    "definition": "Platelet count.",
+    "scope": "thrombosis_prediction",
+    "aliases": [
+      "PLT"
+    ],
+    "evidence": "ev_th_lab"
+  },
+  {
+    "id": "th_igg",
+    "name": "Immunoglobulin G",
+    "type": "metric",
+    "definition": "Immunoglobulin G level.",
+    "scope": "thrombosis_prediction",
+    "aliases": [
+      "Ig G",
+      "IgG"
+    ],
+    "evidence": "ev_th_lab"
+  },
+  {
+    "id": "th_igm",
+    "name": "Immunoglobulin M",
+    "type": "metric",
+    "definition": "Immunoglobulin M / anti-cardiolipin IgM level.",
+    "scope": "thrombosis_prediction",
+    "aliases": [
+      "Ig M",
+      "IgM",
+      "anti-Cardiolipin antibody"
+    ],
+    "evidence": "ev_th_lab"
+  },
+  {
+    "id": "th_crp",
+    "name": "C-Reactive Protein",
+    "type": "metric",
+    "definition": "C-reactive protein result.",
+    "scope": "thrombosis_prediction",
+    "aliases": [
+      "CRP",
+      "C-reactive protein"
+    ],
+    "evidence": "ev_th_lab"
+  },
+  {
+    "id": "th_anti_scl70",
+    "name": "Anti-Scl70",
+    "type": "metric",
+    "definition": "Anti-Scl70 autoantibody result.",
+    "scope": "thrombosis_prediction",
+    "aliases": [
+      "anti-scl70",
+      "anti-scl 70"
+    ],
+    "evidence": "ev_th_lab"
+  },
+  {
+    "id": "th_anti_ssb",
+    "name": "Anti-SSB",
+    "type": "metric",
+    "definition": "Anti-SSB autoantibody result.",
+    "scope": "thrombosis_prediction",
+    "aliases": [
+      "anti-SSB"
+    ],
+    "evidence": "ev_th_lab"
+  },
+  {
+    "id": "th_anti_centromere",
+    "name": "Anti-Centromere",
+    "type": "metric",
+    "definition": "Anti-centromere autoantibody result.",
+    "scope": "thrombosis_prediction",
+    "aliases": [
+      "anti-centromere"
+    ],
+    "evidence": "ev_th_lab"
+  },
+  {
+    "id": "th_age",
+    "name": "Patient Age",
+    "type": "metric",
+    "definition": "Patient age derived from birth date and the current date.",
+    "scope": "thrombosis_prediction",
+    "aliases": [
+      "age"
+    ],
+    "evidence": "ev_th_core"
+  },
+  {
+    "id": "tx_molecule",
+    "name": "Molecule",
+    "type": "entity",
+    "definition": "A chemical molecule record.",
+    "scope": "toxicology",
+    "aliases": [
+      "molecule"
+    ],
+    "evidence": "ev_tx_core"
+  },
+  {
+    "id": "tx_molecule_label",
+    "name": "Carcinogenicity Label",
+    "type": "dimension",
+    "definition": "Carcinogenicity label of a molecule.",
+    "scope": "toxicology",
+    "aliases": [
+      "carcinogenic",
+      "label"
+    ],
+    "evidence": "ev_tx_core"
+  },
+  {
+    "id": "tx_atom",
+    "name": "Atom",
+    "type": "entity",
+    "definition": "An atom within a molecule, with element symbol.",
+    "scope": "toxicology",
+    "aliases": [
+      "atom"
+    ],
+    "evidence": "ev_tx_core"
+  },
+  {
+    "id": "tx_element",
+    "name": "Chemical Element",
+    "type": "dimension",
+    "definition": "Chemical element symbol of an atom, stored in lower case.",
+    "scope": "toxicology",
+    "aliases": [
+      "element"
+    ],
+    "evidence": "ev_tx_core"
+  },
+  {
+    "id": "tx_bond",
+    "name": "Bond",
+    "type": "entity",
+    "definition": "A bond within a molecule, with bond type.",
+    "scope": "toxicology",
+    "aliases": [
+      "bond"
+    ],
+    "evidence": "ev_tx_core"
+  },
+  {
+    "id": "tx_bond_type",
+    "name": "Bond Type",
+    "type": "dimension",
+    "definition": "Bond order type: single, double or triple.",
+    "scope": "toxicology",
+    "aliases": [
+      "bond type",
+      "single bond",
+      "triple bond"
+    ],
+    "evidence": "ev_tx_core"
+  },
+  {
+    "id": "tx_atom_bond",
+    "name": "Atom-Bond Connection",
+    "type": "entity",
+    "definition": "Connection between a bond and an atom it joins.",
+    "scope": "toxicology",
+    "aliases": [
+      "atom in bond"
+    ],
+    "evidence": "ev_tx_core"
+  }
+]

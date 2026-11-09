@@ -10,6 +10,7 @@ set -e
 EXP=.
 OUT=$1 SR=$2 SPLIT=$3 G=$4 SEM=$5 PORT=$6 CTX=${7:-1} CHK=${8:-1} ABL=${9-dict} DBR=${10:--}
 CFG=deepseek_ontology; [[ $SEM == - ]] && CFG=deepseek_baseline
+CFG=$CFG${EVO_CFG_SUFFIX:-}   # protocol v5: EVO_CFG_SUFFIX=_t60 selects the 60-turn configurations
 mkdir -p $OUT
 EVAL="source $EXP/evo_env.sh; cd $EXP/EvoOntology/benchmarks/bird; exec $EXP/.venv-evo/bin/python run_evaluation.py --config configs/$CFG.yaml --dataset minidev --split-dir ${QDIR:-data/$SR}/$SPLIT --parallel 5 --save-traces --output $OUT"
 export EVO_USE_EVIDENCE=${EVID:-1}

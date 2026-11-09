@@ -1,0 +1,1733 @@
+[
+  {
+    "id": "m_cs_school",
+    "term_id": "cs_school",
+    "database_source": "bird_merged",
+    "table": "schools",
+    "column": "CDSCode",
+    "grain": "one row per school",
+    "validation": "primary key of schools; also referenced by frpm.CDSCode and satscores.cds"
+  },
+  {
+    "id": "m_cs_district",
+    "term_id": "cs_school_district",
+    "database_source": "bird_merged",
+    "table": "schools",
+    "column": "District",
+    "grain": "one row per school carries its district name",
+    "validation": "district names repeat across counties"
+  },
+  {
+    "id": "m_cs_address_street",
+    "term_id": "cs_school_address",
+    "database_source": "bird_merged",
+    "table": "schools",
+    "column": "Street",
+    "grain": "per school",
+    "validation": "Monterey High has Street 101 Herrmann Drive"
+  },
+  {
+    "id": "m_cs_address_city",
+    "term_id": "cs_school_address",
+    "database_source": "bird_merged",
+    "table": "schools",
+    "column": "City",
+    "grain": "per school"
+  },
+  {
+    "id": "m_cs_address_zip",
+    "term_id": "cs_school_address",
+    "database_source": "bird_merged",
+    "table": "schools",
+    "column": "Zip",
+    "grain": "per school"
+  },
+  {
+    "id": "m_cs_address_state",
+    "term_id": "cs_school_address",
+    "database_source": "bird_merged",
+    "table": "schools",
+    "column": "State",
+    "grain": "per school"
+  },
+  {
+    "id": "m_cs_mail_address",
+    "term_id": "cs_school_address",
+    "database_source": "bird_merged",
+    "table": "schools",
+    "column": "MailStreet",
+    "semantic_filter": "use when the communication address is the mailing address",
+    "grain": "per school",
+    "validation": "MailCity, MailZip and MailState complete this variant"
+  },
+  {
+    "id": "m_cs_admin_first",
+    "term_id": "cs_administrator_contact",
+    "database_source": "bird_merged",
+    "table": "schools",
+    "column": "AdmFName1",
+    "grain": "per school, first administrator",
+    "validation": "AdmFName2 and AdmFName3 hold additional administrators"
+  },
+  {
+    "id": "m_cs_admin_last",
+    "term_id": "cs_administrator_contact",
+    "database_source": "bird_merged",
+    "table": "schools",
+    "column": "AdmLName1",
+    "grain": "per school, first administrator"
+  },
+  {
+    "id": "m_cs_admin_email",
+    "term_id": "cs_administrator_contact",
+    "database_source": "bird_merged",
+    "table": "schools",
+    "column": "AdmEmail1",
+    "grain": "per school, first administrator",
+    "validation": "6012 of 17686 rows are NULL"
+  },
+  {
+    "id": "m_cs_grade_offered",
+    "term_id": "cs_grade_span",
+    "database_source": "bird_merged",
+    "table": "schools",
+    "column": "GSoffered",
+    "grain": "per school"
+  },
+  {
+    "id": "m_cs_grade_served",
+    "term_id": "cs_grade_span",
+    "database_source": "bird_merged",
+    "table": "schools",
+    "column": "GSserved",
+    "grain": "per school"
+  },
+  {
+    "id": "m_cs_enrollment_k12",
+    "term_id": "cs_enrollment",
+    "database_source": "bird_merged",
+    "table": "frpm",
+    "column": "Enrollment (K-12)",
+    "grain": "per school"
+  },
+  {
+    "id": "m_cs_enrollment_517",
+    "term_id": "cs_enrollment",
+    "database_source": "bird_merged",
+    "table": "frpm",
+    "column": "Enrollment (Ages 5-17)",
+    "semantic_filter": "enrollment restricted to ages 5 to 17",
+    "grain": "per school"
+  },
+  {
+    "id": "m_cs_free_meal_k12",
+    "term_id": "cs_free_meal_count",
+    "database_source": "bird_merged",
+    "table": "frpm",
+    "column": "Free Meal Count (K-12)",
+    "grain": "per school"
+  },
+  {
+    "id": "m_cs_free_meal_517",
+    "term_id": "cs_free_meal_count",
+    "database_source": "bird_merged",
+    "table": "frpm",
+    "column": "Free Meal Count (Ages 5-17)",
+    "semantic_filter": "meal eligibility restricted to ages 5 to 17",
+    "grain": "per school"
+  },
+  {
+    "id": "m_cs_eligible_rate_k12",
+    "term_id": "cs_eligible_free_rate",
+    "database_source": "bird_merged",
+    "table": "frpm",
+    "column": "Percent (%) Eligible Free (K-12)",
+    "grain": "per school"
+  },
+  {
+    "id": "m_cs_eligible_rate_517",
+    "term_id": "cs_eligible_free_rate",
+    "database_source": "bird_merged",
+    "table": "frpm",
+    "column": "Percent (%) Eligible Free (Ages 5-17)",
+    "grain": "per school"
+  },
+  {
+    "id": "m_cs_nslp",
+    "term_id": "cs_nslp_provision_status",
+    "database_source": "bird_merged",
+    "table": "frpm",
+    "column": "NSLP Provision Status",
+    "grain": "per school"
+  },
+  {
+    "id": "m_cs_magnet",
+    "term_id": "cs_magnet_program",
+    "database_source": "bird_merged",
+    "table": "schools",
+    "column": "Magnet",
+    "grain": "per school",
+    "validation": "1 = offers magnet program, 0 = does not, empty = unknown"
+  },
+  {
+    "id": "m_cs_virtual",
+    "term_id": "cs_virtual_school_type",
+    "database_source": "bird_merged",
+    "table": "schools",
+    "column": "Virtual",
+    "grain": "per school",
+    "validation": "F fully virtual, N not virtual, P partial"
+  },
+  {
+    "id": "m_cs_doc",
+    "term_id": "cs_school_type_code",
+    "database_source": "bird_merged",
+    "table": "schools",
+    "column": "DOC",
+    "grain": "per school",
+    "validation": "54 Unified School District, 52 Elementary School District"
+  },
+  {
+    "id": "m_cs_soc",
+    "term_id": "cs_school_type_code",
+    "database_source": "bird_merged",
+    "table": "schools",
+    "column": "SOC",
+    "grain": "per school",
+    "validation": "62 Intermediate/Middle Schools, 66 High Schools"
+  },
+  {
+    "id": "m_cs_edops",
+    "term_id": "cs_school_type_code",
+    "database_source": "bird_merged",
+    "table": "schools",
+    "column": "EdOpsCode",
+    "grain": "per school",
+    "validation": "SSS = State Special School"
+  },
+  {
+    "id": "m_cs_sat_math",
+    "term_id": "cs_sat_score",
+    "database_source": "bird_merged",
+    "table": "satscores",
+    "column": "AvgScrMath",
+    "grain": "per school test cohort"
+  },
+  {
+    "id": "m_cs_sat_read",
+    "term_id": "cs_sat_score",
+    "database_source": "bird_merged",
+    "table": "satscores",
+    "column": "AvgScrRead",
+    "grain": "per school test cohort"
+  },
+  {
+    "id": "m_cs_sat_write",
+    "term_id": "cs_sat_score",
+    "database_source": "bird_merged",
+    "table": "satscores",
+    "column": "AvgScrWrite",
+    "grain": "per school test cohort"
+  },
+  {
+    "id": "m_cs_ge1500",
+    "term_id": "cs_ge1500_count",
+    "database_source": "bird_merged",
+    "table": "satscores",
+    "column": "NumGE1500",
+    "grain": "per school test cohort"
+  },
+  {
+    "id": "m_cs_takers",
+    "term_id": "cs_sat_test_takers",
+    "database_source": "bird_merged",
+    "table": "satscores",
+    "column": "NumTstTakr",
+    "grain": "per school test cohort"
+  },
+  {
+    "id": "m_cs_lat",
+    "term_id": "cs_school_location",
+    "database_source": "bird_merged",
+    "table": "schools",
+    "column": "Latitude",
+    "grain": "per school"
+  },
+  {
+    "id": "m_cs_lng",
+    "term_id": "cs_school_location",
+    "database_source": "bird_merged",
+    "table": "schools",
+    "column": "Longitude",
+    "grain": "per school"
+  },
+  {
+    "id": "m_cs_open_date",
+    "term_id": "cs_open_date",
+    "database_source": "bird_merged",
+    "table": "schools",
+    "column": "OpenDate",
+    "grain": "per school",
+    "validation": "range 1850-07-01 to 2017-09-22; 1369 nulls"
+  },
+  {
+    "id": "m_cg_card",
+    "term_id": "cg_card",
+    "database_source": "bird_merged",
+    "table": "cards",
+    "column": "uuid",
+    "grain": "one row per printing"
+  },
+  {
+    "id": "m_cg_card_name",
+    "term_id": "cg_card",
+    "database_source": "bird_merged",
+    "table": "cards",
+    "column": "name",
+    "grain": "per printing"
+  },
+  {
+    "id": "m_cg_card_set_code",
+    "term_id": "cg_card",
+    "database_source": "bird_merged",
+    "table": "cards",
+    "column": "setCode",
+    "semantic_filter": "links a printing to its set",
+    "grain": "per printing"
+  },
+  {
+    "id": "m_cg_set_code",
+    "term_id": "cg_card_set",
+    "database_source": "bird_merged",
+    "table": "sets",
+    "column": "code",
+    "grain": "one row per set"
+  },
+  {
+    "id": "m_cg_set_name",
+    "term_id": "cg_set_name",
+    "database_source": "bird_merged",
+    "table": "sets",
+    "column": "name",
+    "grain": "per set"
+  },
+  {
+    "id": "m_cg_set_block",
+    "term_id": "cg_card_set",
+    "database_source": "bird_merged",
+    "table": "sets",
+    "column": "block",
+    "grain": "per set",
+    "validation": "Commander block contains 23 sets"
+  },
+  {
+    "id": "m_cg_set_mcm",
+    "term_id": "cg_card_set",
+    "database_source": "bird_merged",
+    "table": "sets",
+    "column": "mcmName",
+    "semantic_filter": "market name of the set",
+    "grain": "per set"
+  },
+  {
+    "id": "m_cg_set_mtgo",
+    "term_id": "cg_card_set",
+    "database_source": "bird_merged",
+    "table": "sets",
+    "column": "mtgoCode",
+    "semantic_filter": "presence of a non-blank code marks availability on Magic: The Gathering Online",
+    "grain": "per set"
+  },
+  {
+    "id": "m_cg_set_translation",
+    "term_id": "cg_set_translation",
+    "database_source": "bird_merged",
+    "table": "set_translations",
+    "column": "translation",
+    "grain": "per set and language"
+  },
+  {
+    "id": "m_cg_set_translation_lang",
+    "term_id": "cg_set_translation",
+    "database_source": "bird_merged",
+    "table": "set_translations",
+    "column": "language",
+    "grain": "per set and language"
+  },
+  {
+    "id": "m_cg_foreign_name",
+    "term_id": "cg_foreign_printing",
+    "database_source": "bird_merged",
+    "table": "foreign_data",
+    "column": "name",
+    "grain": "per card and language"
+  },
+  {
+    "id": "m_cg_foreign_text",
+    "term_id": "cg_foreign_printing",
+    "database_source": "bird_merged",
+    "table": "foreign_data",
+    "column": "text",
+    "grain": "per card and language"
+  },
+  {
+    "id": "m_cg_foreign_flavor",
+    "term_id": "cg_foreign_printing",
+    "database_source": "bird_merged",
+    "table": "foreign_data",
+    "column": "flavorText",
+    "grain": "per card and language"
+  },
+  {
+    "id": "m_cg_foreign_lang",
+    "term_id": "cg_foreign_printing",
+    "database_source": "bird_merged",
+    "table": "foreign_data",
+    "column": "language",
+    "grain": "per card and language"
+  },
+  {
+    "id": "m_cg_format",
+    "term_id": "cg_format",
+    "database_source": "bird_merged",
+    "table": "legalities",
+    "column": "format",
+    "grain": "per card and format"
+  },
+  {
+    "id": "m_cg_legality_status",
+    "term_id": "cg_legality_status",
+    "database_source": "bird_merged",
+    "table": "legalities",
+    "column": "status",
+    "grain": "per card and format"
+  },
+  {
+    "id": "m_cg_ruling",
+    "term_id": "cg_ruling",
+    "database_source": "bird_merged",
+    "table": "rulings",
+    "column": "text",
+    "grain": "per ruling"
+  },
+  {
+    "id": "m_cg_rarity",
+    "term_id": "cg_rarity",
+    "database_source": "bird_merged",
+    "table": "cards",
+    "column": "rarity",
+    "grain": "per printing"
+  },
+  {
+    "id": "m_cg_border",
+    "term_id": "cg_border_color",
+    "database_source": "bird_merged",
+    "table": "cards",
+    "column": "borderColor",
+    "grain": "per printing"
+  },
+  {
+    "id": "m_cg_cmc",
+    "term_id": "cg_converted_mana_cost",
+    "database_source": "bird_merged",
+    "table": "cards",
+    "column": "convertedManaCost",
+    "grain": "per printing"
+  },
+  {
+    "id": "m_cg_edhrec",
+    "term_id": "cg_edhrec_rank",
+    "database_source": "bird_merged",
+    "table": "cards",
+    "column": "edhrecRank",
+    "grain": "per printing"
+  },
+  {
+    "id": "m_cg_warning",
+    "term_id": "cg_content_warning",
+    "database_source": "bird_merged",
+    "table": "cards",
+    "column": "hasContentWarning",
+    "grain": "per printing",
+    "validation": "1 for 29 cards"
+  },
+  {
+    "id": "m_cg_spotlight",
+    "term_id": "cg_story_spotlight",
+    "database_source": "bird_merged",
+    "table": "cards",
+    "column": "isStorySpotlight",
+    "grain": "per printing"
+  },
+  {
+    "id": "m_cg_power",
+    "term_id": "cg_card_power",
+    "database_source": "bird_merged",
+    "table": "cards",
+    "column": "power",
+    "grain": "per printing"
+  },
+  {
+    "id": "m_cg_artist",
+    "term_id": "cg_artist",
+    "database_source": "bird_merged",
+    "table": "cards",
+    "column": "artist",
+    "grain": "per printing"
+  },
+  {
+    "id": "m_cg_type",
+    "term_id": "cg_card",
+    "database_source": "bird_merged",
+    "table": "cards",
+    "column": "originalType",
+    "semantic_filter": "original printed card type line",
+    "grain": "per printing"
+  },
+  {
+    "id": "m_dc_customer",
+    "term_id": "dc_customer",
+    "database_source": "bird_merged",
+    "table": "customers",
+    "column": "CustomerID",
+    "grain": "one row per customer"
+  },
+  {
+    "id": "m_dc_segment",
+    "term_id": "dc_customer_segment",
+    "database_source": "bird_merged",
+    "table": "customers",
+    "column": "Segment",
+    "grain": "per customer"
+  },
+  {
+    "id": "m_dc_currency",
+    "term_id": "dc_currency",
+    "database_source": "bird_merged",
+    "table": "customers",
+    "column": "Currency",
+    "grain": "per customer"
+  },
+  {
+    "id": "m_dc_consumption",
+    "term_id": "dc_monthly_consumption",
+    "database_source": "bird_merged",
+    "table": "yearmonth",
+    "column": "Consumption",
+    "aggregation_semantics": "summed or averaged across months and customers depending on the question",
+    "grain": "per customer and month"
+  },
+  {
+    "id": "m_dc_period",
+    "term_id": "dc_yearmonth_period",
+    "database_source": "bird_merged",
+    "table": "yearmonth",
+    "column": "Date",
+    "grain": "per customer and month",
+    "validation": "six-character YYYYMM text"
+  },
+  {
+    "id": "m_dc_gasstation",
+    "term_id": "dc_gas_station",
+    "database_source": "bird_merged",
+    "table": "gasstations",
+    "column": "GasStationID",
+    "grain": "one row per station"
+  },
+  {
+    "id": "m_dc_chain",
+    "term_id": "dc_station_chain",
+    "database_source": "bird_merged",
+    "table": "gasstations",
+    "column": "ChainID",
+    "grain": "per station"
+  },
+  {
+    "id": "m_dc_station_country",
+    "term_id": "dc_country",
+    "database_source": "bird_merged",
+    "table": "gasstations",
+    "column": "Country",
+    "grain": "per station"
+  },
+  {
+    "id": "m_dc_transaction",
+    "term_id": "dc_transaction",
+    "database_source": "bird_merged",
+    "table": "transactions_1k",
+    "column": "TransactionID",
+    "grain": "one row per transaction"
+  },
+  {
+    "id": "m_dc_tx_date",
+    "term_id": "dc_transaction",
+    "database_source": "bird_merged",
+    "table": "transactions_1k",
+    "column": "Date",
+    "grain": "per transaction",
+    "validation": "ISO date text"
+  },
+  {
+    "id": "m_dc_tx_time",
+    "term_id": "dc_transaction",
+    "database_source": "bird_merged",
+    "table": "transactions_1k",
+    "column": "Time",
+    "grain": "per transaction",
+    "validation": "HH:MM:SS text"
+  },
+  {
+    "id": "m_dc_amount",
+    "term_id": "dc_transaction",
+    "database_source": "bird_merged",
+    "table": "transactions_1k",
+    "column": "Amount",
+    "grain": "per transaction"
+  },
+  {
+    "id": "m_dc_price",
+    "term_id": "dc_transaction",
+    "database_source": "bird_merged",
+    "table": "transactions_1k",
+    "column": "Price",
+    "grain": "per transaction"
+  },
+  {
+    "id": "m_dc_product",
+    "term_id": "dc_product",
+    "database_source": "bird_merged",
+    "table": "products",
+    "column": "ProductID",
+    "grain": "one row per product"
+  },
+  {
+    "id": "m_dc_product_desc",
+    "term_id": "dc_product",
+    "database_source": "bird_merged",
+    "table": "products",
+    "column": "Description",
+    "grain": "per product"
+  },
+  {
+    "id": "m_fn_account",
+    "term_id": "fn_account",
+    "database_source": "bird_merged",
+    "table": "account",
+    "column": "account_id",
+    "grain": "one row per account"
+  },
+  {
+    "id": "m_fn_account_freq",
+    "term_id": "fn_statement_frequency",
+    "database_source": "bird_merged",
+    "table": "account",
+    "column": "frequency",
+    "grain": "per account"
+  },
+  {
+    "id": "m_fn_account_date",
+    "term_id": "fn_account",
+    "database_source": "bird_merged",
+    "table": "account",
+    "column": "date",
+    "semantic_filter": "account opening date",
+    "grain": "per account"
+  },
+  {
+    "id": "m_fn_client",
+    "term_id": "fn_client",
+    "database_source": "bird_merged",
+    "table": "client",
+    "column": "client_id",
+    "grain": "one row per client"
+  },
+  {
+    "id": "m_fn_gender",
+    "term_id": "fn_client",
+    "database_source": "bird_merged",
+    "table": "client",
+    "column": "gender",
+    "semantic_filter": "M male, F female",
+    "grain": "per client"
+  },
+  {
+    "id": "m_fn_birth_date",
+    "term_id": "fn_client",
+    "database_source": "bird_merged",
+    "table": "client",
+    "column": "birth_date",
+    "grain": "per client"
+  },
+  {
+    "id": "m_fn_disp",
+    "term_id": "fn_account_client_link",
+    "database_source": "bird_merged",
+    "table": "disp",
+    "column": "disp_id",
+    "grain": "one row per client-account link"
+  },
+  {
+    "id": "m_fn_disp_type",
+    "term_id": "fn_account_client_link",
+    "database_source": "bird_merged",
+    "table": "disp",
+    "column": "type",
+    "grain": "per client-account link"
+  },
+  {
+    "id": "m_fn_district",
+    "term_id": "fn_district",
+    "database_source": "bird_merged",
+    "table": "district",
+    "column": "district_id",
+    "grain": "one row per district"
+  },
+  {
+    "id": "m_fn_district_name",
+    "term_id": "fn_district",
+    "database_source": "bird_merged",
+    "table": "district",
+    "column": "A2",
+    "grain": "per district"
+  },
+  {
+    "id": "m_fn_region",
+    "term_id": "fn_region",
+    "database_source": "bird_merged",
+    "table": "district",
+    "column": "A3",
+    "grain": "per district"
+  },
+  {
+    "id": "m_fn_avg_salary",
+    "term_id": "fn_avg_salary",
+    "database_source": "bird_merged",
+    "table": "district",
+    "column": "A11",
+    "grain": "per district"
+  },
+  {
+    "id": "m_fn_loan",
+    "term_id": "fn_loan",
+    "database_source": "bird_merged",
+    "table": "loan",
+    "column": "loan_id",
+    "grain": "one row per loan"
+  },
+  {
+    "id": "m_fn_loan_amount",
+    "term_id": "fn_loan",
+    "database_source": "bird_merged",
+    "table": "loan",
+    "column": "amount",
+    "grain": "per loan"
+  },
+  {
+    "id": "m_fn_loan_duration",
+    "term_id": "fn_loan",
+    "database_source": "bird_merged",
+    "table": "loan",
+    "column": "duration",
+    "semantic_filter": "loan validity in months",
+    "grain": "per loan"
+  },
+  {
+    "id": "m_fn_loan_status",
+    "term_id": "fn_loan_status",
+    "database_source": "bird_merged",
+    "table": "loan",
+    "column": "status",
+    "grain": "per loan"
+  },
+  {
+    "id": "m_fn_loan_date",
+    "term_id": "fn_loan",
+    "database_source": "bird_merged",
+    "table": "loan",
+    "column": "date",
+    "semantic_filter": "loan approval date",
+    "grain": "per loan"
+  },
+  {
+    "id": "m_fn_trans",
+    "term_id": "fn_transaction",
+    "database_source": "bird_merged",
+    "table": "trans",
+    "column": "trans_id",
+    "grain": "one row per transaction"
+  },
+  {
+    "id": "m_fn_trans_type",
+    "term_id": "fn_transaction_type",
+    "database_source": "bird_merged",
+    "table": "trans",
+    "column": "type",
+    "grain": "per transaction"
+  },
+  {
+    "id": "m_fn_trans_operation",
+    "term_id": "fn_transaction_operation",
+    "database_source": "bird_merged",
+    "table": "trans",
+    "column": "operation",
+    "grain": "per transaction"
+  },
+  {
+    "id": "m_fn_trans_amount",
+    "term_id": "fn_transaction",
+    "database_source": "bird_merged",
+    "table": "trans",
+    "column": "amount",
+    "grain": "per transaction"
+  },
+  {
+    "id": "m_fn_trans_date",
+    "term_id": "fn_transaction",
+    "database_source": "bird_merged",
+    "table": "trans",
+    "column": "date",
+    "grain": "per transaction"
+  },
+  {
+    "id": "m_f1_driver",
+    "term_id": "f1_driver",
+    "database_source": "bird_merged",
+    "table": "drivers",
+    "column": "driverId",
+    "grain": "one row per driver"
+  },
+  {
+    "id": "m_f1_driver_ref",
+    "term_id": "f1_driver",
+    "database_source": "bird_merged",
+    "table": "drivers",
+    "column": "driverRef",
+    "semantic_filter": "reference name",
+    "grain": "per driver"
+  },
+  {
+    "id": "m_f1_driver_code",
+    "term_id": "f1_driver",
+    "database_source": "bird_merged",
+    "table": "drivers",
+    "column": "code",
+    "semantic_filter": "three-letter abbreviated code",
+    "grain": "per driver"
+  },
+  {
+    "id": "m_f1_forename",
+    "term_id": "f1_driver_full_name",
+    "database_source": "bird_merged",
+    "table": "drivers",
+    "column": "forename",
+    "grain": "per driver"
+  },
+  {
+    "id": "m_f1_surname",
+    "term_id": "f1_driver_full_name",
+    "database_source": "bird_merged",
+    "table": "drivers",
+    "column": "surname",
+    "grain": "per driver"
+  },
+  {
+    "id": "m_f1_dob",
+    "term_id": "f1_driver_age",
+    "database_source": "bird_merged",
+    "table": "drivers",
+    "column": "dob",
+    "grain": "per driver"
+  },
+  {
+    "id": "m_f1_driver_nat",
+    "term_id": "f1_nationality",
+    "database_source": "bird_merged",
+    "table": "drivers",
+    "column": "nationality",
+    "grain": "per driver"
+  },
+  {
+    "id": "m_f1_constructor_nat",
+    "term_id": "f1_nationality",
+    "database_source": "bird_merged",
+    "table": "constructors",
+    "column": "nationality",
+    "grain": "per constructor"
+  },
+  {
+    "id": "m_f1_circuit",
+    "term_id": "f1_circuit",
+    "database_source": "bird_merged",
+    "table": "circuits",
+    "column": "circuitId",
+    "grain": "one row per circuit"
+  },
+  {
+    "id": "m_f1_circuit_ref",
+    "term_id": "f1_circuit",
+    "database_source": "bird_merged",
+    "table": "circuits",
+    "column": "circuitRef",
+    "semantic_filter": "reference name",
+    "grain": "per circuit"
+  },
+  {
+    "id": "m_f1_circuit_name",
+    "term_id": "f1_circuit",
+    "database_source": "bird_merged",
+    "table": "circuits",
+    "column": "name",
+    "grain": "per circuit"
+  },
+  {
+    "id": "m_f1_circuit_country",
+    "term_id": "f1_circuit",
+    "database_source": "bird_merged",
+    "table": "circuits",
+    "column": "country",
+    "grain": "per circuit"
+  },
+  {
+    "id": "m_f1_circuit_lat",
+    "term_id": "f1_circuit",
+    "database_source": "bird_merged",
+    "table": "circuits",
+    "column": "lat",
+    "grain": "per circuit"
+  },
+  {
+    "id": "m_f1_circuit_lng",
+    "term_id": "f1_circuit",
+    "database_source": "bird_merged",
+    "table": "circuits",
+    "column": "lng",
+    "grain": "per circuit"
+  },
+  {
+    "id": "m_f1_constructor",
+    "term_id": "f1_constructor",
+    "database_source": "bird_merged",
+    "table": "constructors",
+    "column": "constructorId",
+    "grain": "one row per constructor"
+  },
+  {
+    "id": "m_f1_constructor_ref",
+    "term_id": "f1_constructor",
+    "database_source": "bird_merged",
+    "table": "constructors",
+    "column": "constructorRef",
+    "semantic_filter": "reference name",
+    "grain": "per constructor"
+  },
+  {
+    "id": "m_f1_constructor_url",
+    "term_id": "f1_constructor",
+    "database_source": "bird_merged",
+    "table": "constructors",
+    "column": "url",
+    "grain": "per constructor"
+  },
+  {
+    "id": "m_f1_race",
+    "term_id": "f1_race",
+    "database_source": "bird_merged",
+    "table": "races",
+    "column": "raceId",
+    "grain": "one row per race"
+  },
+  {
+    "id": "m_f1_race_name",
+    "term_id": "f1_race",
+    "database_source": "bird_merged",
+    "table": "races",
+    "column": "name",
+    "grain": "per race"
+  },
+  {
+    "id": "m_f1_race_year",
+    "term_id": "f1_race",
+    "database_source": "bird_merged",
+    "table": "races",
+    "column": "year",
+    "grain": "per race"
+  },
+  {
+    "id": "m_f1_race_date",
+    "term_id": "f1_race",
+    "database_source": "bird_merged",
+    "table": "races",
+    "column": "date",
+    "grain": "per race"
+  },
+  {
+    "id": "m_f1_result",
+    "term_id": "f1_result",
+    "database_source": "bird_merged",
+    "table": "results",
+    "column": "resultId",
+    "grain": "one row per driver per race"
+  },
+  {
+    "id": "m_f1_result_position",
+    "term_id": "f1_race_winner",
+    "database_source": "bird_merged",
+    "table": "results",
+    "column": "position",
+    "semantic_filter": "position 1 identifies the race winner",
+    "grain": "per driver per race"
+  },
+  {
+    "id": "m_f1_result_points",
+    "term_id": "f1_result",
+    "database_source": "bird_merged",
+    "table": "results",
+    "column": "points",
+    "grain": "per driver per race"
+  },
+  {
+    "id": "m_f1_result_time",
+    "term_id": "f1_race_completion",
+    "database_source": "bird_merged",
+    "table": "results",
+    "column": "time",
+    "semantic_filter": "a populated race time marks a classified finish",
+    "grain": "per driver per race"
+  },
+  {
+    "id": "m_f1_result_ms",
+    "term_id": "f1_result",
+    "database_source": "bird_merged",
+    "table": "results",
+    "column": "milliseconds",
+    "grain": "per driver per race"
+  },
+  {
+    "id": "m_f1_result_rank",
+    "term_id": "f1_fastest_lap",
+    "database_source": "bird_merged",
+    "table": "results",
+    "column": "rank",
+    "semantic_filter": "rank of the driver's fastest lap within the race; 1 is the fastest",
+    "grain": "per driver per race"
+  },
+  {
+    "id": "m_f1_result_flt",
+    "term_id": "f1_fastest_lap",
+    "database_source": "bird_merged",
+    "table": "results",
+    "column": "fastestLapTime",
+    "grain": "per driver per race"
+  },
+  {
+    "id": "m_f1_lap_ms",
+    "term_id": "f1_lap_time",
+    "database_source": "bird_merged",
+    "table": "lapTimes",
+    "column": "milliseconds",
+    "aggregation_semantics": "minimum gives the fastest lap, average gives the average lap time",
+    "grain": "per race, driver and lap"
+  },
+  {
+    "id": "m_f1_lap_time",
+    "term_id": "f1_lap_time",
+    "database_source": "bird_merged",
+    "table": "lapTimes",
+    "column": "time",
+    "grain": "per race, driver and lap"
+  },
+  {
+    "id": "m_f1_quali_q1",
+    "term_id": "f1_qualifying_result",
+    "database_source": "bird_merged",
+    "table": "qualifying",
+    "column": "q1",
+    "grain": "per driver per race"
+  },
+  {
+    "id": "m_f1_quali_q3",
+    "term_id": "f1_qualifying_result",
+    "database_source": "bird_merged",
+    "table": "qualifying",
+    "column": "q3",
+    "grain": "per driver per race"
+  },
+  {
+    "id": "m_f1_quali_position",
+    "term_id": "f1_qualifying_result",
+    "database_source": "bird_merged",
+    "table": "qualifying",
+    "column": "position",
+    "grain": "per driver per race"
+  },
+  {
+    "id": "m_sc_member",
+    "term_id": "sc_member",
+    "database_source": "bird_merged",
+    "table": "member",
+    "column": "member_id",
+    "grain": "one row per member"
+  },
+  {
+    "id": "m_sc_first_name",
+    "term_id": "sc_member_full_name",
+    "database_source": "bird_merged",
+    "table": "member",
+    "column": "first_name",
+    "grain": "per member"
+  },
+  {
+    "id": "m_sc_last_name",
+    "term_id": "sc_member_full_name",
+    "database_source": "bird_merged",
+    "table": "member",
+    "column": "last_name",
+    "grain": "per member"
+  },
+  {
+    "id": "m_sc_position",
+    "term_id": "sc_member_position",
+    "database_source": "bird_merged",
+    "table": "member",
+    "column": "position",
+    "grain": "per member"
+  },
+  {
+    "id": "m_sc_tshirt",
+    "term_id": "sc_member",
+    "database_source": "bird_merged",
+    "table": "member",
+    "column": "t_shirt_size",
+    "grain": "per member"
+  },
+  {
+    "id": "m_sc_event",
+    "term_id": "sc_event",
+    "database_source": "bird_merged",
+    "table": "event",
+    "column": "event_id",
+    "grain": "one row per event"
+  },
+  {
+    "id": "m_sc_event_name",
+    "term_id": "sc_event",
+    "database_source": "bird_merged",
+    "table": "event",
+    "column": "event_name",
+    "grain": "per event"
+  },
+  {
+    "id": "m_sc_event_date",
+    "term_id": "sc_event",
+    "database_source": "bird_merged",
+    "table": "event",
+    "column": "event_date",
+    "grain": "per event",
+    "validation": "ISO timestamp text with a time component"
+  },
+  {
+    "id": "m_sc_event_type",
+    "term_id": "sc_event",
+    "database_source": "bird_merged",
+    "table": "event",
+    "column": "type",
+    "grain": "per event"
+  },
+  {
+    "id": "m_sc_event_status",
+    "term_id": "sc_event_status",
+    "database_source": "bird_merged",
+    "table": "event",
+    "column": "status",
+    "grain": "per event"
+  },
+  {
+    "id": "m_sc_event_location",
+    "term_id": "sc_event",
+    "database_source": "bird_merged",
+    "table": "event",
+    "column": "location",
+    "grain": "per event"
+  },
+  {
+    "id": "m_sc_attendance_event",
+    "term_id": "sc_event_attendance",
+    "database_source": "bird_merged",
+    "table": "attendance",
+    "column": "link_to_event",
+    "grain": "per member-event pair"
+  },
+  {
+    "id": "m_sc_attendance_member",
+    "term_id": "sc_event_attendance",
+    "database_source": "bird_merged",
+    "table": "attendance",
+    "column": "link_to_member",
+    "grain": "per member-event pair"
+  },
+  {
+    "id": "m_sc_budget",
+    "term_id": "sc_budget",
+    "database_source": "bird_merged",
+    "table": "budget",
+    "column": "budget_id",
+    "grain": "one row per event and category"
+  },
+  {
+    "id": "m_sc_budget_category",
+    "term_id": "sc_budget",
+    "database_source": "bird_merged",
+    "table": "budget",
+    "column": "category",
+    "grain": "per budget line"
+  },
+  {
+    "id": "m_sc_budget_amount",
+    "term_id": "sc_budget",
+    "database_source": "bird_merged",
+    "table": "budget",
+    "column": "amount",
+    "semantic_filter": "amount budgeted for the category",
+    "aggregation_semantics": "sum across categories of an event",
+    "grain": "per budget line"
+  },
+  {
+    "id": "m_sc_budget_spent",
+    "term_id": "sc_budget",
+    "database_source": "bird_merged",
+    "table": "budget",
+    "column": "spent",
+    "semantic_filter": "amount actually spent against the line",
+    "grain": "per budget line"
+  },
+  {
+    "id": "m_sc_expense",
+    "term_id": "sc_expense",
+    "database_source": "bird_merged",
+    "table": "expense",
+    "column": "expense_id",
+    "grain": "one row per expense"
+  },
+  {
+    "id": "m_sc_expense_desc",
+    "term_id": "sc_expense",
+    "database_source": "bird_merged",
+    "table": "expense",
+    "column": "expense_description",
+    "grain": "per expense"
+  },
+  {
+    "id": "m_sc_expense_cost",
+    "term_id": "sc_expense",
+    "database_source": "bird_merged",
+    "table": "expense",
+    "column": "cost",
+    "aggregation_semantics": "sum of individual expense costs",
+    "grain": "per expense"
+  },
+  {
+    "id": "m_sc_expense_date",
+    "term_id": "sc_expense",
+    "database_source": "bird_merged",
+    "table": "expense",
+    "column": "expense_date",
+    "grain": "per expense"
+  },
+  {
+    "id": "m_sc_income",
+    "term_id": "sc_income",
+    "database_source": "bird_merged",
+    "table": "income",
+    "column": "income_id",
+    "grain": "one row per income receipt"
+  },
+  {
+    "id": "m_sc_income_amount",
+    "term_id": "sc_income",
+    "database_source": "bird_merged",
+    "table": "income",
+    "column": "amount",
+    "grain": "per income receipt"
+  },
+  {
+    "id": "m_sc_income_source",
+    "term_id": "sc_income_source",
+    "database_source": "bird_merged",
+    "table": "income",
+    "column": "source",
+    "grain": "per income receipt"
+  },
+  {
+    "id": "m_sc_income_date",
+    "term_id": "sc_income",
+    "database_source": "bird_merged",
+    "table": "income",
+    "column": "date_received",
+    "grain": "per income receipt"
+  },
+  {
+    "id": "m_sc_income_notes",
+    "term_id": "sc_income",
+    "database_source": "bird_merged",
+    "table": "income",
+    "column": "notes",
+    "grain": "per income receipt"
+  },
+  {
+    "id": "m_sc_major",
+    "term_id": "sc_major",
+    "database_source": "bird_merged",
+    "table": "major",
+    "column": "major_id",
+    "grain": "one row per major"
+  },
+  {
+    "id": "m_sc_major_name",
+    "term_id": "sc_major",
+    "database_source": "bird_merged",
+    "table": "major",
+    "column": "major_name",
+    "grain": "per major"
+  },
+  {
+    "id": "m_sc_major_dept",
+    "term_id": "sc_organization_unit",
+    "database_source": "bird_merged",
+    "table": "major",
+    "column": "department",
+    "grain": "per major"
+  },
+  {
+    "id": "m_sc_major_college",
+    "term_id": "sc_organization_unit",
+    "database_source": "bird_merged",
+    "table": "major",
+    "column": "college",
+    "grain": "per major"
+  },
+  {
+    "id": "m_sh_hero",
+    "term_id": "sh_superhero",
+    "database_source": "bird_merged",
+    "table": "superhero",
+    "column": "id",
+    "grain": "one row per hero"
+  },
+  {
+    "id": "m_sh_hero_name",
+    "term_id": "sh_superhero",
+    "database_source": "bird_merged",
+    "table": "superhero",
+    "column": "superhero_name",
+    "grain": "per hero"
+  },
+  {
+    "id": "m_sh_fullname",
+    "term_id": "sh_superhero_full_name",
+    "database_source": "bird_merged",
+    "table": "superhero",
+    "column": "full_name",
+    "grain": "per hero"
+  },
+  {
+    "id": "m_sh_height",
+    "term_id": "sh_physical_measure",
+    "database_source": "bird_merged",
+    "table": "superhero",
+    "column": "height_cm",
+    "grain": "per hero"
+  },
+  {
+    "id": "m_sh_weight",
+    "term_id": "sh_physical_measure",
+    "database_source": "bird_merged",
+    "table": "superhero",
+    "column": "weight_kg",
+    "grain": "per hero"
+  },
+  {
+    "id": "m_sh_attr_name",
+    "term_id": "sh_attribute_type",
+    "database_source": "bird_merged",
+    "table": "attribute",
+    "column": "attribute_name",
+    "grain": "one row per attribute type"
+  },
+  {
+    "id": "m_sh_attr_value",
+    "term_id": "sh_attribute",
+    "database_source": "bird_merged",
+    "table": "hero_attribute",
+    "column": "attribute_value",
+    "grain": "per hero and attribute"
+  },
+  {
+    "id": "m_sh_power",
+    "term_id": "sh_superpower",
+    "database_source": "bird_merged",
+    "table": "superpower",
+    "column": "power_name",
+    "grain": "one row per power"
+  },
+  {
+    "id": "m_sh_hero_power",
+    "term_id": "sh_superpower",
+    "database_source": "bird_merged",
+    "table": "hero_power",
+    "column": "power_id",
+    "grain": "per hero and power"
+  },
+  {
+    "id": "m_sh_publisher",
+    "term_id": "sh_publisher",
+    "database_source": "bird_merged",
+    "table": "publisher",
+    "column": "publisher_name",
+    "grain": "one row per publisher"
+  },
+  {
+    "id": "m_sh_eye",
+    "term_id": "sh_eye_colour",
+    "database_source": "bird_merged",
+    "table": "superhero",
+    "column": "eye_colour_id",
+    "grain": "per hero"
+  },
+  {
+    "id": "m_sh_hair",
+    "term_id": "sh_hair_colour",
+    "database_source": "bird_merged",
+    "table": "superhero",
+    "column": "hair_colour_id",
+    "grain": "per hero"
+  },
+  {
+    "id": "m_sh_skin",
+    "term_id": "sh_skin_colour",
+    "database_source": "bird_merged",
+    "table": "superhero",
+    "column": "skin_colour_id",
+    "grain": "per hero"
+  },
+  {
+    "id": "m_sh_colour",
+    "term_id": "sh_eye_colour",
+    "database_source": "bird_merged",
+    "table": "colour",
+    "column": "colour",
+    "grain": "one row per colour label",
+    "validation": "shared lookup for eye, hair and skin colour ids"
+  },
+  {
+    "id": "m_sh_gender",
+    "term_id": "sh_gender",
+    "database_source": "bird_merged",
+    "table": "gender",
+    "column": "gender",
+    "grain": "one row per gender label"
+  },
+  {
+    "id": "m_sh_race",
+    "term_id": "sh_race",
+    "database_source": "bird_merged",
+    "table": "race",
+    "column": "race",
+    "grain": "one row per race label"
+  },
+  {
+    "id": "m_tp_patient",
+    "term_id": "tp_patient",
+    "database_source": "bird_merged",
+    "table": "Patient",
+    "column": "ID",
+    "grain": "one row per patient"
+  },
+  {
+    "id": "m_tp_sex",
+    "term_id": "tp_sex",
+    "database_source": "bird_merged",
+    "table": "Patient",
+    "column": "SEX",
+    "grain": "per patient"
+  },
+  {
+    "id": "m_tp_birthday",
+    "term_id": "tp_patient_age",
+    "database_source": "bird_merged",
+    "table": "Patient",
+    "column": "Birthday",
+    "grain": "per patient"
+  },
+  {
+    "id": "m_tp_admission",
+    "term_id": "tp_admission_type",
+    "database_source": "bird_merged",
+    "table": "Patient",
+    "column": "Admission",
+    "grain": "per patient"
+  },
+  {
+    "id": "m_tp_patient_diag",
+    "term_id": "tp_diagnosis",
+    "database_source": "bird_merged",
+    "table": "Patient",
+    "column": "Diagnosis",
+    "grain": "per patient"
+  },
+  {
+    "id": "m_tp_exam",
+    "term_id": "tp_examination",
+    "database_source": "bird_merged",
+    "table": "Examination",
+    "column": "Examination Date",
+    "grain": "per patient and examination date"
+  },
+  {
+    "id": "m_tp_exam_diag",
+    "term_id": "tp_diagnosis",
+    "database_source": "bird_merged",
+    "table": "Examination",
+    "column": "Diagnosis",
+    "grain": "per examination"
+  },
+  {
+    "id": "m_tp_exam_ana",
+    "term_id": "tp_ana_pattern",
+    "database_source": "bird_merged",
+    "table": "Examination",
+    "column": "ANA",
+    "grain": "per examination"
+  },
+  {
+    "id": "m_tp_exam_ana_pattern",
+    "term_id": "tp_ana_pattern",
+    "database_source": "bird_merged",
+    "table": "Examination",
+    "column": "ANA Pattern",
+    "grain": "per examination"
+  },
+  {
+    "id": "m_tp_exam_symptoms",
+    "term_id": "tp_symptom",
+    "database_source": "bird_merged",
+    "table": "Examination",
+    "column": "Symptoms",
+    "grain": "per examination"
+  },
+  {
+    "id": "m_tp_exam_thrombosis",
+    "term_id": "tp_thrombosis_degree",
+    "database_source": "bird_merged",
+    "table": "Examination",
+    "column": "Thrombosis",
+    "grain": "per examination"
+  },
+  {
+    "id": "m_tp_exam_kct",
+    "term_id": "tp_coagulation_result",
+    "database_source": "bird_merged",
+    "table": "Examination",
+    "column": "KCT",
+    "grain": "per examination"
+  },
+  {
+    "id": "m_tp_exam_rvvt",
+    "term_id": "tp_coagulation_result",
+    "database_source": "bird_merged",
+    "table": "Examination",
+    "column": "RVVT",
+    "grain": "per examination"
+  },
+  {
+    "id": "m_tp_exam_lac",
+    "term_id": "tp_coagulation_result",
+    "database_source": "bird_merged",
+    "table": "Examination",
+    "column": "LAC",
+    "grain": "per examination"
+  },
+  {
+    "id": "m_tp_lab",
+    "term_id": "tp_laboratory_test",
+    "database_source": "bird_merged",
+    "table": "Laboratory",
+    "column": "Date",
+    "grain": "per patient and test date"
+  },
+  {
+    "id": "m_tp_lab_gpt",
+    "term_id": "tp_lab_measure",
+    "database_source": "bird_merged",
+    "table": "Laboratory",
+    "column": "GPT",
+    "grain": "per patient and test date"
+  },
+  {
+    "id": "m_tp_lab_alb",
+    "term_id": "tp_lab_measure",
+    "database_source": "bird_merged",
+    "table": "Laboratory",
+    "column": "ALB",
+    "grain": "per patient and test date"
+  },
+  {
+    "id": "m_tp_lab_glu",
+    "term_id": "tp_lab_measure",
+    "database_source": "bird_merged",
+    "table": "Laboratory",
+    "column": "GLU",
+    "grain": "per patient and test date"
+  },
+  {
+    "id": "m_tp_lab_tcho",
+    "term_id": "tp_lab_measure",
+    "database_source": "bird_merged",
+    "table": "Laboratory",
+    "column": "T-CHO",
+    "grain": "per patient and test date"
+  },
+  {
+    "id": "m_tp_lab_cpk",
+    "term_id": "tp_lab_measure",
+    "database_source": "bird_merged",
+    "table": "Laboratory",
+    "column": "CPK",
+    "grain": "per patient and test date"
+  },
+  {
+    "id": "m_tp_lab_cre",
+    "term_id": "tp_lab_measure",
+    "database_source": "bird_merged",
+    "table": "Laboratory",
+    "column": "CRE",
+    "grain": "per patient and test date"
+  },
+  {
+    "id": "m_tp_lab_plt",
+    "term_id": "tp_lab_measure",
+    "database_source": "bird_merged",
+    "table": "Laboratory",
+    "column": "PLT",
+    "grain": "per patient and test date"
+  },
+  {
+    "id": "m_tp_lab_igg",
+    "term_id": "tp_lab_measure",
+    "database_source": "bird_merged",
+    "table": "Laboratory",
+    "column": "IGG",
+    "grain": "per patient and test date"
+  },
+  {
+    "id": "m_tp_lab_igm",
+    "term_id": "tp_lab_measure",
+    "database_source": "bird_merged",
+    "table": "Laboratory",
+    "column": "IGM",
+    "grain": "per patient and test date"
+  },
+  {
+    "id": "m_tp_lab_un",
+    "term_id": "tp_lab_measure",
+    "database_source": "bird_merged",
+    "table": "Laboratory",
+    "column": "UN",
+    "grain": "per patient and test date"
+  },
+  {
+    "id": "m_tp_lab_crp",
+    "term_id": "tp_lab_measure",
+    "database_source": "bird_merged",
+    "table": "Laboratory",
+    "column": "CRP",
+    "grain": "per patient and test date"
+  },
+  {
+    "id": "m_tp_lab_sc170",
+    "term_id": "tp_lab_measure",
+    "database_source": "bird_merged",
+    "table": "Laboratory",
+    "column": "SC170",
+    "grain": "per patient and test date"
+  },
+  {
+    "id": "m_tp_lab_ssb",
+    "term_id": "tp_lab_measure",
+    "database_source": "bird_merged",
+    "table": "Laboratory",
+    "column": "SSB",
+    "grain": "per patient and test date"
+  },
+  {
+    "id": "m_tp_lab_centromere",
+    "term_id": "tp_lab_measure",
+    "database_source": "bird_merged",
+    "table": "Laboratory",
+    "column": "CENTROMEA",
+    "grain": "per patient and test date"
+  },
+  {
+    "id": "m_tg_molecule",
+    "term_id": "tg_molecule",
+    "database_source": "bird_merged",
+    "table": "molecule",
+    "column": "molecule_id",
+    "grain": "one row per molecule"
+  },
+  {
+    "id": "m_tg_label",
+    "term_id": "tg_molecule",
+    "database_source": "bird_merged",
+    "table": "molecule",
+    "column": "label",
+    "grain": "per molecule"
+  },
+  {
+    "id": "m_tg_atom",
+    "term_id": "tg_atom",
+    "database_source": "bird_merged",
+    "table": "atom",
+    "column": "atom_id",
+    "grain": "one row per atom"
+  },
+  {
+    "id": "m_tg_element",
+    "term_id": "tg_element",
+    "database_source": "bird_merged",
+    "table": "atom",
+    "column": "element",
+    "grain": "per atom"
+  },
+  {
+    "id": "m_tg_bond",
+    "term_id": "tg_bond",
+    "database_source": "bird_merged",
+    "table": "bond",
+    "column": "bond_id",
+    "grain": "one row per bond"
+  },
+  {
+    "id": "m_tg_bond_type",
+    "term_id": "tg_bond_type",
+    "database_source": "bird_merged",
+    "table": "bond",
+    "column": "bond_type",
+    "grain": "per bond"
+  },
+  {
+    "id": "m_tg_connected",
+    "term_id": "tg_atom_connection",
+    "database_source": "bird_merged",
+    "table": "connected",
+    "column": "bond_id",
+    "grain": "per atom pair and bond; two symmetric rows per connection"
+  },
+  {
+    "id": "m_tg_connected_atom",
+    "term_id": "tg_atom_connection",
+    "database_source": "bird_merged",
+    "table": "connected",
+    "column": "atom_id",
+    "grain": "per atom pair and bond"
+  }
+]

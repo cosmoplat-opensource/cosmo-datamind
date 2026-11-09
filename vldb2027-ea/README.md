@@ -7,13 +7,14 @@ released predictions, and to rerun the experiments from scratch.
 
 | Directory | What it holds |
 |---|---|
-| `harness/` | Experiment and analysis scripts (run with Python 3.13; standard library plus `sqlglot` for `make_opaque*.py`). `harness/figures/make_figures.py` draws Figures 3–11 (matplotlib; it reads the experiment-root layout described below, with `make_figures.py` placed in `<root>/paper_vldb/`). |
+| `harness/` | Experiment and analysis scripts (run with Python 3.13; standard library plus `sqlglot` for `make_opaque*.py`). `harness/figures/make_figures.py` draws Figures 3–12 (matplotlib; it reads the experiment-root layout described below, with `make_figures.py` placed in `<root>/paper_vldb/`). |
 | `evoontology_changes/` | Our changes to EvoOntology's BIRD benchmark runner, as a patch against the commit in `BASE_COMMIT`, plus new files (DeepSeek configuration, documentation context modes, the compiled-ontology gate). |
 | `splits/` | The frozen question splits: `minidev` (fold A→B) and `minidev_rev` (B→A) of BIRD Mini-Dev, `ind_fwd` / `ind_rev` of the two industrial databases. Each has `construction/`, `validation/`, `test/` and a `split_manifest.json`. |
-| `benchmarks/` | BIRD-opaque and BIRD-opaque-merged without the databases: name mappings, rewritten questions and gold SQL, re-keyed documentation, construction workloads and `verify.json` (result check of every rewritten gold query). `nofk/` and `bare/` hold the checks of the earlier schema variants. |
-| `ontologies/` | Every ontology used: `evoontology/<build>/<db>/versions/...` (EvoOntology record format), `datamind/<build>/ir/<db>.json` (DataMind IR with relation evidence), `datamind_converted/` (DataMind ontologies for the merged schema in EvoOntology's format, as consumed by the agent). |
-| `results/v4/` | Main matrix (Table 2, Figures 5, 6, 9, 10): `predictions/<setting>_<fold>/<condition>_r<repeat>/all_results.json.gz` (predicted SQL, turns, ontology tool calls) and `rescore.json` (per question: [strict, column-tolerant]); statistics and audits; `dr093_frozen_code/` (code behind Figure 8); `discarded_infra/` (the eight units discarded by the infrastructure audit of Section 3.2 and rerun; kept for inspection, used in no statistic). |
-| `results/v2/`, `results/v3/` | Per-question scores of the matched comparison (Table 1, Figure 3) and of the DataMind-chain runs (Figure 11); each system's own-scorer statistics in `results/v2/completion/`; raw outputs of the DataMind chain in `*_datamind_chain_outputs.tar.xz`. |
+| `benchmarks/` | BIRD-opaque, BIRD-opaque-merged and BIRD-readable-merged without the databases: name mappings, rewritten questions and gold SQL, re-keyed documentation, construction workloads and `verify.json` (result check of every rewritten gold query). `nofk/` and `bare/` hold the checks of the earlier schema variants. |
+| `ontologies/` | Every ontology used: `evoontology/<build>/<db>/versions/...` (EvoOntology record format), `datamind/<build>/ir/<db>.json` (DataMind IR with relation evidence), `datamind_converted/` (DataMind ontologies for the merged schemas in EvoOntology's format, as consumed by the agent), `evoontology_ablated/` (EvoOntology's merged-schema ontologies without relations or without term-to-column mappings, Section 6.1). |
+| `results/v5/` | Post-hoc runs (Figure 7; Sections 4.2, 5, 6.1, 6.5): component ablation and 60-turn budget on BIRD-opaque-merged, and BIRD-readable-merged; same layout as `results/v4/predictions/`, plus `stats_v5.json`. |
+| `results/v4/` | Main matrix (Table 2, Figures 5, 6, 10, 11): `predictions/<setting>_<fold>/<condition>_r<repeat>/all_results.json.gz` (predicted SQL, turns, ontology tool calls) and `rescore.json` (per question: [strict, column-tolerant]); statistics and audits; `dr093_frozen_code/` (code behind Figure 9); `discarded_infra/` (the eight units discarded by the infrastructure audit of Section 3.2 and rerun; kept for inspection, used in no statistic). |
+| `results/v2/`, `results/v3/` | Per-question scores of the matched comparison (Table 1, Figure 3) and of the DataMind-chain runs (Figure 12); each system's own-scorer statistics in `results/v2/completion/`; raw outputs of the DataMind chain in `*_datamind_chain_outputs.tar.xz`. |
 | `results/v3_validation/` | Validation runs used during development (numbers marked "validation" in Sections 6.1–6.2); their counts in `val_mg_summary.json`; the ontology tool responses of the converted Section 6.2 ontology in `mg_reactdm94_fwd_val_traces.tar.xz`. |
 
 Setting names: `R` readable BIRD Mini-Dev, `O` BIRD-opaque, `MG` BIRD-opaque-merged. Conditions: `none`, `doc`
@@ -31,11 +32,13 @@ Setting names: `R` readable BIRD Mini-Dev, `O` BIRD-opaque, `MG` BIRD-opaque-mer
 | Section 4, Figure 4 (benchmark checks, leakage audit) | `make_opaque.py`, `make_opaque_merged.py`, `audit_evo_builds.py` | `benchmarks/*/verify.json`, `benchmarks/opaque_merged/mapping.json`, `results/v4/evo_build_audit.json` |
 | Table 2, Figure 5, Section 5 | `queue_v4.py` (runs), `score_v4_all.sh` → `score_react_dir.py`, `stats_v4.py` | `results/v4/统计_v4.md`, `results/v4/stats_v4.json` |
 | Figure 6 (per source database) | `analysis_perdb.py` | `results/v4/analysis_perdb.json` |
-| Section 6.1, Figure 7 | `analysis_table4.py` | `results/v4/analysis_table4.json` |
+| Figure 7; Sections 4.2, 5 (readable names, large schema), 6.1 (ablation), 6.5 (60 turns) | `make_readable_merged.py`, `make_v5_ablations.py`, `queue_v5.py`, `score_v5_all.sh`, `stats_v5.py` | `results/v5/stats_v5.json`, `benchmarks/readable_merged/verify.json` |
+| Section 3.2 (repeat flips), Section 3.4 (BIRD extra columns by type, at most one extra column), Section 5 (Holm, equivalence tests), Section 6.1 (stratification), Section 7 (prior-knowledge sensitivity) | `analysis_v5_robust.py`, `analysis_v5_strat.py`, `analysis_v5_prior.py` (shared code in `analysis_v5_common.py`) | `results/v4/analysis_v5_robust.json`, `analysis_v5_strat.json`, `analysis_v5_prior.json` |
+| Section 6.1, Figure 8 | `analysis_table4.py` | `results/v4/analysis_table4.json` |
 | Sections 6.1–6.2, validation counts (61 questions of fold A→B; 28 of 61 tool responses) | `analysis_val_mg.py` | `results/v3_validation/val_mg_summary.json` |
-| Section 6.2, Figure 8 | `stats_dr093.py`; code in `results/v4/dr093_frozen_code/` | `results/v4/stats_dr093.json` |
-| Sections 6.3–6.5, Figures 9–10 | `analysis_sec6.py` | `results/v4/analysis_sec6.json` |
-| Section 6.6, Figure 11 | `rescore_v3.py`, `analysis_ablation_v3.py` | `results/v4/analysis_ablation_v3.json` |
+| Section 6.2, Figure 9 | `stats_dr093.py`; code in `results/v4/dr093_frozen_code/` | `results/v4/stats_dr093.json` |
+| Sections 6.3–6.5, Figures 10–11 | `analysis_sec6.py` | `results/v4/analysis_sec6.json` |
+| Section 6.6, Figure 12 | `rescore_v3.py`, `analysis_ablation_v3.py` | `results/v4/analysis_ablation_v3.json` |
 | Section 7 (prior-knowledge check) | `audit_prior_knowledge.py` | `results/v4/prior_knowledge_audit.json` |
 
 All intervals: 95% bootstrap, 10,000 resamples, fixed seeds in the scripts; database-cluster resampling for BIRD and
@@ -85,6 +88,13 @@ released (`rescore.json`), `stats_v4.py`, `stats_dr093.py` and `analysis_ablatio
    use DataMind code.
 6. Runs: `queue_v4.py plan` then `queue_v4.py run`; `audit_infra_v4.py --requeue` before scoring (runs with an API
    connection error or five or more timeouts are rerun).
+
+7. Protocol v5 (post hoc): `make_readable_merged.py` and `make_v5_ablations.py`; ontologies of BIRD-readable-merged with
+   `build_evo_v2.py bird_merged --track w --S readable_merged --dir fwd|rev` and
+   `DATAMIND_ABLATE=grounding,value_semantics build_dm_v2.py --track w --S readable_merged --dir fwd|rev bird_merged`
+   (one DataMind build at a time), converted with `DM_DBDIR=variants/readable_merged/dev_databases DM2EVO_FULL=1 dm2evo.py`;
+   then `queue_v5.py plan` and `queue_v5.py run`, `score_v5_all.sh`, `stats_v5.py`. The 60-turn runs select the
+   configurations `deepseek_*_t60.yaml` through `EVO_CFG_SUFFIX=_t60` in `run_method.sh`.
 
 Model outputs vary between runs; the paper reports three repeats per configuration and the released predictions are the
 ones behind every number.

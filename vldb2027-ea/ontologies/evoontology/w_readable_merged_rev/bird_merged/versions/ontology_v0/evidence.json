@@ -1,0 +1,242 @@
+[
+  {
+    "id": "ev_school_enums",
+    "source": "bird_merged SQLite (read-only)",
+    "query": "SELECT Charter,count(*) FROM schools GROUP BY Charter; SELECT Virtual,count(*) FROM schools GROUP BY Virtual; SELECT StatusType,count(*) FROM schools GROUP BY StatusType; SELECT DISTINCT FundingType FROM schools",
+    "result": "Charter: NULL 1369, 0 14588, 1 1729. Virtual: NULL 6868, F 69, N 9703, P 1046. StatusType: Active 11708, Closed 4518, Merged 1448, Pending 12. FundingType: NULL, Directly funded, Locally funded, Not in CS funding model.",
+    "validation_method": "read-only GROUP BY and DISTINCT queries",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_school_doc_soc",
+    "source": "bird_merged SQLite (read-only)",
+    "query": "SELECT DOC,count(*) FROM schools GROUP BY DOC; SELECT DOCType,count(*) FROM schools GROUP BY DOCType; SELECT SOC,SOCType,count(*) FROM schools GROUP BY SOC,SOCType",
+    "result": "DOC 54 10190, 52 4378, 00 1703, 56 1079. DOCType includes Unified School District 10190, Elementary School District 4378, High School District 1079, County Office of Education 1703. SOC '66' maps to 'High Schools (Public)' with 1776 rows.",
+    "validation_method": "read-only GROUP BY verification of code-text pairing",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_school_frpm_sat",
+    "source": "bird_merged SQLite (read-only)",
+    "query": "SELECT * FROM frpm LIMIT 1; SELECT rtype,count(*) FROM satscores GROUP BY rtype; SELECT count(*) FROM satscores WHERE AvgScrRead IS NULL; SELECT \"Academic Year\",count(*) FROM frpm GROUP BY 1",
+    "result": "frpm columns include Enrollment (K-12), Free Meal Count (K-12), Percent (%) Eligible Free (K-12), FRPM Count (K-12), Percent (%) Eligible FRPM (K-12), Enrollment (Ages 5-17). Single Academic Year 2014-2015 with 9986 rows. satscores rtype S 1749, D 520; 596 null score rows.",
+    "validation_method": "schema inspection and GROUP BY counts",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_school_joins",
+    "source": "bird_merged SQLite (read-only)",
+    "query": "SELECT count(*) FROM frpm f JOIN schools sc ON sc.CDSCode=f.CDSCode; SELECT count(*) FROM satscores s JOIN schools sc ON sc.CDSCode=s.cds; SELECT CDSCode,County,District,School,Street,MailStreet,Phone,OpenDate,ClosedDate FROM schools LIMIT 2",
+    "result": "frpm joins schools 9986/9986; satscores joins schools 2058/2269. Street and MailStreet both populated; Phone present; OpenDate range 1850-07-01 to 2017-09-22; ClosedDate range 1980-07-01 to 2016-09-01.",
+    "validation_method": "join cardinality and column sampling",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_card_flags",
+    "source": "bird_merged SQLite (read-only)",
+    "query": "SELECT power,count(*) FROM cards WHERE power='*' OR power IS NULL GROUP BY power; SELECT borderColor,count(*) FROM cards GROUP BY borderColor; SELECT isStorySpotlight,isTextless,count(*) FROM cards GROUP BY 1,2; SELECT count(*) FROM cards WHERE cardKingdomFoilId IS NOT NULL AND cardKingdomId IS NOT NULL",
+    "result": "power '*' 429, NULL 30624. borderColor black 49729, white 5017, gold 1244, silver 591, borderless 241. isStorySpotlight/isTextless: (0,0) 56603, (0,1) 115, (1,0) 104. Foil pair non-null 25061; cardKingdomId only 18139; foil only 3851.",
+    "validation_method": "read-only GROUP BY and conditional counts",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_card_lang_legal",
+    "source": "bird_merged SQLite (read-only)",
+    "query": "SELECT language,count(*) FROM foreign_data GROUP BY language ORDER BY 2 DESC; SELECT format,status,count(*) FROM legalities GROUP BY format,status ORDER BY 3 DESC",
+    "result": "16 languages; Italian 28698, Chinese Simplified 20106, German 28891, Japanese 31226. legalities: commander Legal 55244, commander Banned 332, vintage Restricted 413, legacy Banned 546.",
+    "validation_method": "GROUP BY on foreign_data.language and legalities format/status",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_card_sets",
+    "source": "bird_merged SQLite (read-only)",
+    "query": "SELECT id,code,name,baseSetSize,isForeignOnly FROM sets WHERE name IN ('Coldsnap','Hour of Devastation','Eighth Edition'); SELECT count(*) FROM cards c JOIN sets s ON s.code=c.setCode WHERE s.name='Coldsnap'; SELECT language,setCode,translation FROM set_translations WHERE language='Chinese Simplified' LIMIT 3",
+    "result": "Coldsnap code CSP baseSetSize 155; Hour of Devastation HOU 199; Eighth Edition 8ED 354. 155 cards join Coldsnap via setCode. set_translations 10E -> '核心系列第十版'; some translations NULL.",
+    "validation_method": "join count and sampled lookups",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_card_rulings",
+    "source": "bird_merged SQLite (read-only)",
+    "query": "SELECT count(DISTINCT uuid) FROM rulings; SELECT max(cnt),avg(cnt) FROM (SELECT uuid,count(*) cnt FROM rulings GROUP BY uuid); SELECT count(*) FROM cards WHERE uuid IN (SELECT uuid FROM rulings)",
+    "result": "26141 distinct card uuids have rulings; max 27 rulings per card; average 3.36. All ruling uuids exist in cards.",
+    "validation_method": "aggregate over rulings grouped by uuid",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_debit_dist",
+    "source": "bird_merged SQLite (read-only)",
+    "query": "SELECT Segment,count(*) FROM customers GROUP BY Segment; SELECT Currency,count(*) FROM customers GROUP BY Currency; SELECT Country,count(*) FROM gasstations GROUP BY Country; SELECT Segment,count(*) FROM gasstations GROUP BY Segment; SELECT * FROM products LIMIT 5",
+    "result": "Customers: SME 26763, LAM 3658, KAM 2040; CZK 30459, EUR 2002. Gas stations: CZE 4836, SVK 880; Discount 294, Noname 1005, Other 2392, Premium 1428, Value for money 597. Products have Czech descriptions such as 'Nafta', 'Natural'.",
+    "validation_method": "GROUP BY on segment, currency and country columns",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_debit_time",
+    "source": "bird_merged SQLite (read-only)",
+    "query": "SELECT min(Date),max(Date),min(Time),max(Time) FROM transactions_1k; SELECT min(Date),max(Date),count(DISTINCT substr(Date,1,6)) FROM yearmonth; SELECT Date,length(Date),count(*) FROM yearmonth GROUP BY length(Date)",
+    "result": "transactions_1k: dates 2012-08-23 to 2012-08-26, times 00:07:00 to 23:20:00, 1000 rows. yearmonth: dates 201112 to 201311 across 21 months, every Date is 6 characters with 383282 rows.",
+    "validation_method": "min/max and length distribution",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_debit_joins",
+    "source": "bird_merged SQLite (read-only)",
+    "query": "SELECT count(*) FROM transactions_1k t JOIN gasstations g ON g.GasStationID=t.GasStationID; same for products and customers",
+    "result": "All three joins return 1000/1000 rows; transactions_1k is fully referentially consistent with customers, gasstations and products.",
+    "validation_method": "join cardinality checks",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_fin_district",
+    "source": "bird_merged SQLite (read-only)",
+    "query": "SELECT * FROM district LIMIT 5; SELECT min(A4),max(A4),min(A11),max(A11),min(A12),max(A12),min(A13),max(A13),min(A15),max(A15) FROM district",
+    "result": "A2 name (Hl.m. Praha, Benesov), A3 region (Prague, central Bohemia), A4 inhabitants (1204953, 88884), A11 average salary 8110-12541, A12 0.2-7.3, A13 0.43-9.4, A15 818-85677. A4 is stored as TEXT.",
+    "validation_method": "row sampling and numeric min/max",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_fin_enums",
+    "source": "bird_merged SQLite (read-only)",
+    "query": "SELECT status,count(*) FROM loan GROUP BY status; SELECT type,count(*) FROM trans GROUP BY type; SELECT operation,count(*) FROM trans GROUP BY operation; SELECT type,count(*) FROM card GROUP BY type; SELECT type,count(*) FROM disp GROUP BY type; SELECT gender,count(*) FROM client GROUP BY gender",
+    "result": "loan.status A 203, B 31, C 403, D 45. trans.type PRIJEM 405083, VYBER 16666, VYDAJ 634571. VYBER KARTOU 8036. card.type classic 659, gold 88, junior 145. disp.type OWNER 4500, DISPONENT 869. client.gender F 2645, M 2724.",
+    "validation_method": "GROUP BY distributions",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_fin_dates",
+    "source": "bird_merged SQLite (read-only)",
+    "query": "SELECT min(date),max(date) FROM trans; SELECT min(date),max(date) FROM account; SELECT min(date),max(date) FROM loan",
+    "result": "trans 1993-01-01 to 1998-12-31; account 1993-01-01 to 1997-12-29; loan 1993-07-05 to 1998-12-08.",
+    "validation_method": "date range aggregation",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_f1_status",
+    "source": "bird_merged SQLite (read-only)",
+    "query": "SELECT statusId,status,count(*) FROM results r JOIN status s USING(statusId) GROUP BY statusId ORDER BY 3 DESC; SELECT count(*) FROM results WHERE time IS NULL",
+    "result": "Finished statusId 1: 5966; Accident 3: 1007; Disqualified 2: 137; Engine 5: 1971; +1 Lap 11: 3265. results.time NULL 17696 and non-null 5961.",
+    "validation_method": "status distribution and null count",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_f1_timing",
+    "source": "bird_merged SQLite (read-only)",
+    "query": "SELECT position,count(*) FROM results WHERE position=1 AND time LIKE '%:%' GROUP BY position; SELECT count(*) FROM results WHERE position=1 AND time NOT LIKE '%:%'; SELECT position,count(*) FROM results WHERE position>1 AND time LIKE '+%' GROUP BY 1",
+    "result": "972 winner rows have absolute HH:MM:SS times and zero winner rows lack them; position>1 rows have '+...' relative times. Champion time is the only absolute time in a race.",
+    "validation_method": "pattern distribution by position",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_f1_schema",
+    "source": "bird_merged SQLite (read-only)",
+    "query": "SELECT * FROM races LIMIT 5; SELECT * FROM drivers WHERE surname IN ('Hamilton','Senna'); SELECT * FROM qualifying, pitStops, lapTimes, circuits, constructorResults LIMIT samples; SELECT min(year),max(year) FROM races",
+    "result": "Races 1950-2017, 976 rows, raceId 1 = 2009 Australian Grand Prix. Drivers: Hamilton id 1 forename Lewis surname Hamilton; Bruno Senna id 811. q1 '1:26.572'. pitStops duration '23.227' and milliseconds 23227. lapTimes time '1:49.088'. circuits lat/lng numeric. constructorResults points numeric.",
+    "validation_method": "schema and representative row inspection",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_f1_speed",
+    "source": "bird_merged SQLite (read-only)",
+    "query": "SELECT count(*) FROM results WHERE fastestLapSpeed IS NOT NULL; SELECT max(cast(fastestLapSpeed as real)),max(fastestLapSpeed) FROM results",
+    "result": "5268 non-null fastestLapSpeed values. Numeric maximum is 257.32 but lexical MAX returns '91.610', confirming text storage and lexicographic ordering.",
+    "validation_method": "numeric cast versus text max comparison",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_club_schema",
+    "source": "bird_merged SQLite (read-only)",
+    "query": "SELECT * FROM event/member/budget/expense LIMIT 5; SELECT status,count(*) FROM event GROUP BY status; SELECT position,count(*) FROM member GROUP BY position; SELECT approved,count(*) FROM expense GROUP BY approved; SELECT * FROM zip_code WHERE county='Orange County' AND state='Virginia'",
+    "result": "event.status Closed 18, Open 13, Planning 11. member position President 1, Member 26, officers 3. expense.approved 'true' 31, NULL 1. budget.remaining can be negative (-0.2). Orange County/Virginia has 7 ZIP rows and 7 distinct cities. major 'Business' exists.",
+    "validation_method": "row sampling and GROUP BY",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_club_links",
+    "source": "bird_merged SQLite (read-only)",
+    "query": "SELECT count(*) FROM attendance; SELECT count(*) FROM budget b JOIN event e ON e.event_id=b.link_to_event WHERE e.status<>b.event_status; SELECT e.event_name,e.status,b.event_status FROM budget b JOIN event e LIMIT 5",
+    "result": "326 attendance rows. 0 budget rows have event_status different from the joined event.status; budget.event_status mirrors event.status.",
+    "validation_method": "join consistency check",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_hero_enums",
+    "source": "bird_merged SQLite (read-only)",
+    "query": "SELECT * FROM gender; SELECT * FROM alignment; SELECT * FROM attribute; SELECT colour FROM colour; SELECT * FROM publisher LIMIT 3; SELECT * FROM superhero LIMIT 3; SELECT * FROM hero_attribute LIMIT 5",
+    "result": "gender 1 Male, 2 Female, 3 N/A. alignment Good/Bad/Neutral/N/A. attributes Intelligence, Strength, Speed, Durability, Power, Combat. colour includes Green and No Colour. superhero id 1 3-D Man full_name Charles Chandler height 188 weight 90. hero_attribute attribute_value numeric.",
+    "validation_method": "reference-table inspection and row sampling",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_hero_counts",
+    "source": "bird_merged SQLite (read-only)",
+    "query": "SELECT count(*) FROM superhero s JOIN publisher p ON p.id=s.publisher_id WHERE p.publisher_name='Marvel Comics'; same for DC Comics",
+    "result": "Marvel Comics 387 superheroes; DC Comics 224 superheroes; 750 characters total with unique ids.",
+    "validation_method": "join counts",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_thromb_enums",
+    "source": "bird_merged SQLite (read-only)",
+    "query": "SELECT * FROM Patient/Examination/Laboratory LIMIT 3; SELECT Thrombosis,count(*) FROM Examination GROUP BY Thrombosis; SELECT Admission,count(*) FROM Patient GROUP BY Admission; SELECT SEX,count(*) FROM Patient GROUP BY SEX; SELECT min/max dates",
+    "result": "Thrombosis 0 726, 1 57, 2 18, 3 5. Admission '-' 713, '+' 488, '+(' 3, empty 34. SEX F 1023, M 202, empty 13. Patient 1238, Examination 806 over 763 patients, Laboratory 13908 over 302 patients. Examination dates 1989-1998, lab dates 1981-1999, birthdays 1912-2007.",
+    "validation_method": "GROUP BY and range aggregation",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_thromb_lab",
+    "source": "bird_merged SQLite (read-only)",
+    "query": "SELECT min(UA),max(UA),min(HCT),max(HCT),min(PT),max(PT),min(LDH),max(LDH),min(IGA),max(IGA) FROM Laboratory; SELECT * FROM Laboratory LIMIT 2",
+    "result": "UA 0.4-17.3; HCT 3.0-56.0; PT 10.1-27.0; LDH 25-67080; IGA 1-1765. Laboratory rows carry T-CHO and SM among many measurements.",
+    "validation_method": "numeric range aggregation",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_thromb_sm",
+    "source": "bird_merged SQLite (read-only)",
+    "query": "SELECT SM,length(SM),quote(SM),count(*) FROM Laboratory GROUP BY SM,length(SM)",
+    "result": "SM values: NULL 13780, '0' 102, '1' 4, '2' 1, '8' 1, 'negative' 20. No literal '-' or '+-' values exist, so the workload's '-' and '+-' codes map to 'negative' and '0'.",
+    "validation_method": "DISTINCT/GROUP BY with quote() to reveal exact text",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_tox_enums",
+    "source": "bird_merged SQLite (read-only)",
+    "query": "SELECT label,count(*) FROM molecule GROUP BY label; SELECT bond_type,count(*) FROM bond GROUP BY bond_type; SELECT element,count(*) FROM atom GROUP BY element ORDER BY 2 DESC",
+    "result": "molecule.label '+' 152, '-' 191. bond_type '-' 10528, '=' 1844, '#' 6, NULL 1. Elements lower case: h 5518, c 4605, o 1043, n 480, cl 429.",
+    "validation_method": "GROUP BY distributions",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_tox_connected",
+    "source": "bird_merged SQLite (read-only)",
+    "query": "SELECT count(*) FROM connected; SELECT count(DISTINCT bond_id) FROM connected; SELECT count(*) FROM bond; SELECT count(*) FROM atom WHERE atom_id NOT IN (SELECT atom_id FROM connected) AND atom_id NOT IN (SELECT atom_id2 FROM connected)",
+    "result": "connected has 24758 rows and 12379 distinct bond_id, exactly twice the 12379 bond rows. 49 atoms appear in no connection.",
+    "validation_method": "cardinality comparison between connected and bond",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_tox_atom",
+    "source": "bird_merged SQLite (read-only)",
+    "query": "SELECT atom_id,molecule_id,element FROM atom LIMIT 5; SELECT atom_id FROM atom WHERE atom_id LIKE 'TR%_19' LIMIT 5; SELECT * FROM bond WHERE bond_id='TR004_8_9'",
+    "result": "atom_id examples TR000_1, TR000_2; 'atom 19' matches ids like TR001_19. bond_id TR004_8_9 exists with bond_type '-', confirming bond ids use molecule_atom1_atom2 form.",
+    "validation_method": "identifier pattern sampling",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_workload",
+    "source": "construction workload minidev_rev/bird_merged.json (questions and evidence only)",
+    "query": "N/A - evidence statements supplied with the 139 construction questions",
+    "result": "Evidence defines domain vocabulary, for example: non-chartered = Charter 0; Virtual F = no physical building; DOC 52 Elementary / 54 Unified; unknown power = '*' or NULL; Story Spotlight = isStorySpotlight 1 and isTextless 0; loan status C/D = running contracts; VYBER KARTOU = credit card withdrawal; postal street = mailing street; full names = forename+surname; SM 'negative' and '0' are the normal anti-SM codes.",
+    "validation_method": "workload evidence cross-checked against database values where queryable",
+    "timestamp": "2026-11-09"
+  },
+  {
+    "id": "ev_table_counts",
+    "source": "bird_merged SQLite (read-only)",
+    "query": "SELECT count(*) per table over all 61 tables",
+    "result": "Schools domain: schools 17686, frpm 9986, satscores 2269. Card games: cards 56822, sets 551, set_translations 1210, foreign_data 229186, legalities 427907, rulings 87769. Debit: customers 32461, gasstations 5716, products 591, transactions_1k 1000, yearmonth 383282. Financial: client 5369, account 4500, disp 5369, loan 682, trans 1056320, district 77, card 892. F1: drivers 840, constructors 208, races 976, circuits 72, results 23657, qualifying 7397, pitStops 6070, lapTimes 420369. Club: member 33, event 42, attendance 326, budget 52, expense 32, major 113, zip_code 41877. Hero: superhero 750, attribute 6, superpower 167, hero_power 5825, hero_attribute 3738, publisher 25. Thrombosis: Patient 1238, Examination 806, Laboratory 13908. Toxicology: molecule 343, atom 12333, bond 12379, connected 24758.",
+    "validation_method": "table row counts",
+    "timestamp": "2026-11-09"
+  }
+]

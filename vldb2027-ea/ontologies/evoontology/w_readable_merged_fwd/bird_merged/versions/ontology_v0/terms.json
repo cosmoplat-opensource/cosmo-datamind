@@ -1,0 +1,1516 @@
+[
+  {
+    "id": "cs_school",
+    "name": "California Public School",
+    "type": "entity",
+    "definition": "A California school record identified by the 14-digit CDSCode, carrying identity, location, type, administration and operational attributes.",
+    "scope": "california_schools sub-database; one row per school per CDSCode",
+    "aliases": [
+      "school",
+      "schools"
+    ],
+    "evidence": "ev_cs_tables"
+  },
+  {
+    "id": "cs_school_district",
+    "name": "School District",
+    "type": "entity",
+    "definition": "Administrative district that operates one or more schools; district names repeat across counties.",
+    "scope": "california_schools sub-database",
+    "aliases": [
+      "district",
+      "district name"
+    ],
+    "evidence": "ev_cs_doc_soc"
+  },
+  {
+    "id": "cs_school_address",
+    "name": "School Communication Address",
+    "type": "concept",
+    "definition": "Physical or mailing address of a school composed of street, city, state and ZIP code.",
+    "scope": "california_schools; address questions require all four components",
+    "aliases": [
+      "full address",
+      "communication address",
+      "mailing address"
+    ],
+    "evidence": "ev_cs_address_admin"
+  },
+  {
+    "id": "cs_administrator_contact",
+    "name": "School Administrator Contact",
+    "type": "concept",
+    "definition": "Named administrator (principal) of a school with first name, last name and e-mail address; up to three administrators per school.",
+    "scope": "california_schools; administrators manage the school",
+    "aliases": [
+      "administrator",
+      "principal",
+      "school manager"
+    ],
+    "evidence": "ev_cs_address_admin"
+  },
+  {
+    "id": "cs_grade_span",
+    "name": "Grade Span",
+    "type": "dimension",
+    "definition": "Range of grades a school offers or serves, written in compact notation such as K-8 or 9-12.",
+    "scope": "california_schools",
+    "aliases": [
+      "grades offered",
+      "grades served",
+      "grade span",
+      "K-8"
+    ],
+    "evidence": "ev_cs_grade_span"
+  },
+  {
+    "id": "cs_enrollment",
+    "name": "School Enrollment",
+    "type": "metric",
+    "definition": "Number of students enrolled at a school, reported separately for grades K-12 and for ages 5-17.",
+    "scope": "california_schools frpm table",
+    "aliases": [
+      "enrollment",
+      "enrolment",
+      "students enrolled"
+    ],
+    "evidence": "ev_cs_tables"
+  },
+  {
+    "id": "cs_free_meal_count",
+    "name": "Free or Reduced Price Meal Count",
+    "type": "metric",
+    "definition": "Count of students eligible for free or reduced price meals, reported for K-12 and for ages 5-17.",
+    "scope": "california_schools frpm table",
+    "aliases": [
+      "free meal count",
+      "free or reduced price meals",
+      "FRPM count"
+    ],
+    "evidence": "ev_cs_tables"
+  },
+  {
+    "id": "cs_eligible_free_rate",
+    "name": "Eligible Free Rate",
+    "type": "metric",
+    "definition": "Share of enrolled students eligible for free meals, derived as free meal count divided by enrollment.",
+    "scope": "california_schools; unit is percent",
+    "aliases": [
+      "eligible free rate",
+      "percent eligible free"
+    ],
+    "evidence": "ev_cs_tables"
+  },
+  {
+    "id": "cs_nslp_provision_status",
+    "name": "NSLP Provision Status",
+    "type": "category",
+    "definition": "School meal provision category under the National School Lunch Program, including Multiple Provision Types, CEP and numbered provisions.",
+    "scope": "california_schools frpm table",
+    "aliases": [
+      "NSLP provision status",
+      "provision type",
+      "meal provision"
+    ],
+    "evidence": "ev_cs_nslp"
+  },
+  {
+    "id": "cs_magnet_program",
+    "name": "Magnet Program Indicator",
+    "type": "category",
+    "definition": "Flag stating whether a school offers a magnet program.",
+    "scope": "california_schools schools table",
+    "aliases": [
+      "magnet",
+      "magnet program"
+    ],
+    "evidence": "ev_cs_virtual_magnet"
+  },
+  {
+    "id": "cs_virtual_school_type",
+    "name": "Virtual School Type",
+    "type": "category",
+    "definition": "Degree to which a school delivers instruction virtually; fully virtual schools are the exclusively virtual ones.",
+    "scope": "california_schools schools table",
+    "aliases": [
+      "virtual",
+      "exclusively virtual",
+      "fully virtual"
+    ],
+    "evidence": "ev_cs_virtual_magnet"
+  },
+  {
+    "id": "cs_school_type_code",
+    "name": "School and District Type Code",
+    "type": "category",
+    "definition": "Coded classification of a school or district such as Unified School District, Elementary School District, Intermediate/Middle Schools or High Schools.",
+    "scope": "california_schools; DOC classifies districts, SOC classifies schools, EdOpsCode classifies educational operations",
+    "aliases": [
+      "school type",
+      "district type",
+      "SOC",
+      "DOC"
+    ],
+    "evidence": "ev_cs_doc_soc"
+  },
+  {
+    "id": "cs_sat_score",
+    "name": "SAT Average Score",
+    "type": "metric",
+    "definition": "Average SAT score of a school's test takers in reading, mathematics and writing.",
+    "scope": "california_schools satscores table",
+    "aliases": [
+      "average SAT score",
+      "math score",
+      "writing score"
+    ],
+    "evidence": "ev_cs_sat"
+  },
+  {
+    "id": "cs_ge1500_count",
+    "name": "Count of Test Takers Scoring 1500 or Above",
+    "type": "metric",
+    "definition": "Number of SAT test takers at a school who scored at least 1500.",
+    "scope": "california_schools satscores table",
+    "aliases": [
+      "NumGE1500",
+      "students scoring above 1500"
+    ],
+    "evidence": "ev_cs_sat"
+  },
+  {
+    "id": "cs_sat_test_takers",
+    "name": "SAT Test Taker Count",
+    "type": "metric",
+    "definition": "Number of students at a school who took the SAT.",
+    "scope": "california_schools satscores table",
+    "aliases": [
+      "NumTstTakr",
+      "test takers"
+    ],
+    "evidence": "ev_cs_sat"
+  },
+  {
+    "id": "cs_excellence_rate",
+    "name": "Excellence Rate",
+    "type": "metric",
+    "definition": "Proportion of SAT test takers at a school who scored 1500 or above, derived from the count above 1500 and the test taker count.",
+    "scope": "california_schools",
+    "aliases": [
+      "excellence rate",
+      "rate of high scorers"
+    ],
+    "evidence": "ev_cs_sat"
+  },
+  {
+    "id": "cs_school_location",
+    "name": "School Geographic Coordinates",
+    "type": "dimension",
+    "definition": "Latitude and longitude of a school in decimal degrees; all longitudes are negative because they lie west of the prime meridian.",
+    "scope": "california_schools",
+    "aliases": [
+      "latitude",
+      "longitude",
+      "coordinates"
+    ],
+    "evidence": "ev_cs_longitude"
+  },
+  {
+    "id": "cs_open_date",
+    "name": "School Open Date",
+    "type": "dimension",
+    "definition": "Date on which a school opened; used for school-age and opening-period questions.",
+    "scope": "california_schools; ClosedDate records closure",
+    "aliases": [
+      "open date",
+      "opened",
+      "year opened"
+    ],
+    "evidence": "ev_cs_address_admin"
+  },
+  {
+    "id": "cg_card",
+    "name": "Magic Card Printing",
+    "type": "entity",
+    "definition": "A specific printing of a Magic: The Gathering card, uniquely identified by uuid, with attributes such as rarity, border colour, mana cost and artist.",
+    "scope": "card_games sub-database",
+    "aliases": [
+      "card",
+      "printing",
+      "cards"
+    ],
+    "evidence": "ev_cg_tables"
+  },
+  {
+    "id": "cg_card_set",
+    "name": "Card Set",
+    "type": "entity",
+    "definition": "A published expansion or set, identified by a short set code, English name, block, market name and MTGO code.",
+    "scope": "card_games sub-database",
+    "aliases": [
+      "set",
+      "expansion",
+      "set code"
+    ],
+    "evidence": "ev_cg_set_naming"
+  },
+  {
+    "id": "cg_set_name",
+    "name": "Set English Name",
+    "type": "concept",
+    "definition": "Canonical English name of a card set.",
+    "scope": "card_games sets table",
+    "aliases": [
+      "set name",
+      "name of the set"
+    ],
+    "evidence": "ev_cg_set_naming"
+  },
+  {
+    "id": "cg_set_translation",
+    "name": "Localized Set Name",
+    "type": "concept",
+    "definition": "Set name translated into a specific language; the same set can be referenced by its localized name instead of its English name or code.",
+    "scope": "card_games set_translations table",
+    "aliases": [
+      "translated set name",
+      "Italian set name",
+      "German set name"
+    ],
+    "evidence": "ev_cg_set_naming"
+  },
+  {
+    "id": "cg_foreign_printing",
+    "name": "Foreign-Language Printing",
+    "type": "concept",
+    "definition": "Language-specific version of a card carrying translated name, rules text, flavor text and type.",
+    "scope": "card_games foreign_data table",
+    "aliases": [
+      "foreign card",
+      "translated card",
+      "Italian version"
+    ],
+    "evidence": "ev_cg_foreign_join"
+  },
+  {
+    "id": "cg_language",
+    "name": "Card Language",
+    "type": "dimension",
+    "definition": "Language of a card printing or set translation.",
+    "scope": "card_games; labels are exact strings such as Italian, French, Korean, Portuguese (Brazil)",
+    "aliases": [
+      "language",
+      "Italian",
+      "French",
+      "Korean"
+    ],
+    "evidence": "ev_cg_languages"
+  },
+  {
+    "id": "cg_format",
+    "name": "Play Format",
+    "type": "dimension",
+    "definition": "Game format in which legality is assessed, such as commander, modern or gladiator; the format a card can be played under is also referred to as its rule.",
+    "scope": "card_games legalities table",
+    "aliases": [
+      "format",
+      "play format",
+      "rule of playing card"
+    ],
+    "evidence": "ev_cg_legality"
+  },
+  {
+    "id": "cg_legality_status",
+    "name": "Format Legality Status",
+    "type": "category",
+    "definition": "Legality of a card in a format: Legal, Banned or Restricted.",
+    "scope": "card_games legalities table",
+    "aliases": [
+      "status",
+      "legal status",
+      "banned",
+      "restricted"
+    ],
+    "evidence": "ev_cg_legality"
+  },
+  {
+    "id": "cg_ruling",
+    "name": "Card Ruling",
+    "type": "concept",
+    "definition": "Official ruling text issued for a card on a given date.",
+    "scope": "card_games rulings table",
+    "aliases": [
+      "ruling",
+      "ruling text",
+      "text ruling"
+    ],
+    "evidence": "ev_cg_tables"
+  },
+  {
+    "id": "cg_rarity",
+    "name": "Card Rarity",
+    "type": "category",
+    "definition": "Rarity of a card printing: common, uncommon, rare or mythic.",
+    "scope": "card_games",
+    "aliases": [
+      "rarity",
+      "mythic",
+      "mythic rarity"
+    ],
+    "evidence": "ev_cg_tables"
+  },
+  {
+    "id": "cg_border_color",
+    "name": "Card Border Colour",
+    "type": "category",
+    "definition": "Colour of the printed card border, such as black, white, gold, silver or borderless.",
+    "scope": "card_games",
+    "aliases": [
+      "border colour",
+      "border color",
+      "white border"
+    ],
+    "evidence": "ev_cg_tables"
+  },
+  {
+    "id": "cg_converted_mana_cost",
+    "name": "Converted Mana Cost",
+    "type": "metric",
+    "definition": "Total mana cost of a card expressed as a single number.",
+    "scope": "card_games",
+    "aliases": [
+      "converted mana cost",
+      "mana cost",
+      "costs more converted mana"
+    ],
+    "evidence": "ev_cg_tables"
+  },
+  {
+    "id": "cg_edhrec_rank",
+    "name": "EDHRec Rank",
+    "type": "metric",
+    "definition": "Popularity rank of a card on EDHRec, where rank 1 is the most popular.",
+    "scope": "card_games",
+    "aliases": [
+      "EDHRec rank",
+      "ranked 1st on EDHRec"
+    ],
+    "evidence": "ev_cg_tables"
+  },
+  {
+    "id": "cg_content_warning",
+    "name": "Content Warning Flag",
+    "type": "category",
+    "definition": "Flag marking whether a card printing has missing or degraded properties and values requiring a content warning.",
+    "scope": "card_games",
+    "aliases": [
+      "content warning",
+      "hasContentWarning",
+      "missing or degraded properties"
+    ],
+    "evidence": "ev_cg_tables"
+  },
+  {
+    "id": "cg_story_spotlight",
+    "name": "Story Spotlight Flag",
+    "type": "category",
+    "definition": "Flag marking a card as part of a set's story spotlight cycle.",
+    "scope": "card_games",
+    "aliases": [
+      "story spotlight",
+      "isStorySpotlight"
+    ],
+    "evidence": "ev_cg_tables"
+  },
+  {
+    "id": "cg_card_power",
+    "name": "Card Power",
+    "type": "dimension",
+    "definition": "Power value printed on a creature card; absent cards have no power and some cards print an asterisk instead of a number.",
+    "scope": "card_games",
+    "aliases": [
+      "power",
+      "cards without power"
+    ],
+    "evidence": "ev_cg_power_star"
+  },
+  {
+    "id": "cg_artist",
+    "name": "Card Artist",
+    "type": "dimension",
+    "definition": "Illustrator credited for a card printing.",
+    "scope": "card_games",
+    "aliases": [
+      "artist",
+      "illustrated by",
+      "designed by"
+    ],
+    "evidence": "ev_cg_tables"
+  },
+  {
+    "id": "dc_customer",
+    "name": "Energy Customer",
+    "type": "entity",
+    "definition": "Customer of the energy retailer identified by CustomerID, with a business segment and a billing currency.",
+    "scope": "debit_card_specializing sub-database",
+    "aliases": [
+      "customer",
+      "client"
+    ],
+    "evidence": "ev_dc_segments"
+  },
+  {
+    "id": "dc_customer_segment",
+    "name": "Customer Segment",
+    "type": "category",
+    "definition": "Business segment of a customer: KAM, LAM or SME.",
+    "scope": "debit_card_specializing",
+    "aliases": [
+      "segment",
+      "KAM",
+      "LAM",
+      "SME"
+    ],
+    "evidence": "ev_dc_segments"
+  },
+  {
+    "id": "dc_currency",
+    "name": "Billing Currency",
+    "type": "category",
+    "definition": "Currency in which a customer pays for consumption: CZK or EUR.",
+    "scope": "debit_card_specializing",
+    "aliases": [
+      "currency",
+      "CZK",
+      "EUR",
+      "paid in euro"
+    ],
+    "evidence": "ev_dc_segments"
+  },
+  {
+    "id": "dc_monthly_consumption",
+    "name": "Monthly Consumption",
+    "type": "metric",
+    "definition": "Gas consumption recorded for one customer in one month.",
+    "scope": "debit_card_specializing yearmonth table",
+    "aliases": [
+      "consumption",
+      "monthly consumption",
+      "gas consumption"
+    ],
+    "evidence": "ev_dc_yearmonth"
+  },
+  {
+    "id": "dc_yearmonth_period",
+    "name": "Year-Month Period",
+    "type": "dimension",
+    "definition": "Six-character year and month key of a consumption record, where the first four characters are the year and the last two the month.",
+    "scope": "debit_card_specializing yearmonth table",
+    "aliases": [
+      "date",
+      "yearmonth",
+      "month",
+      "year"
+    ],
+    "evidence": "ev_dc_yearmonth"
+  },
+  {
+    "id": "dc_consumption_change",
+    "name": "Consumption Change",
+    "type": "metric",
+    "definition": "Difference and percentage change in consumption of a segment between two years.",
+    "scope": "debit_card_specializing; percentage increase compares the yearly difference against the later year",
+    "aliases": [
+      "increase",
+      "percentage increase",
+      "difference in consumption"
+    ],
+    "evidence": "ev_dc_yearmonth"
+  },
+  {
+    "id": "dc_gas_station",
+    "name": "Gas Station",
+    "type": "entity",
+    "definition": "Fuel station identified by GasStationID, belonging to a chain and located in a country.",
+    "scope": "debit_card_specializing",
+    "aliases": [
+      "gas station",
+      "station"
+    ],
+    "evidence": "ev_dc_transactions"
+  },
+  {
+    "id": "dc_station_chain",
+    "name": "Gas Station Chain",
+    "type": "dimension",
+    "definition": "Chain number that groups gas stations under one operator.",
+    "scope": "debit_card_specializing",
+    "aliases": [
+      "chain",
+      "chain no."
+    ],
+    "evidence": "ev_dc_transactions"
+  },
+  {
+    "id": "dc_transaction",
+    "name": "Card Transaction",
+    "type": "entity",
+    "definition": "Purchase transaction made at a gas station with a date, time, amount and price.",
+    "scope": "debit_card_specializing transactions_1k table",
+    "aliases": [
+      "transaction",
+      "purchase"
+    ],
+    "evidence": "ev_dc_transactions"
+  },
+  {
+    "id": "dc_product",
+    "name": "Product",
+    "type": "entity",
+    "definition": "Product purchased in a transaction, identified by ProductID with a description.",
+    "scope": "debit_card_specializing",
+    "aliases": [
+      "product",
+      "product description"
+    ],
+    "evidence": "ev_dc_transactions"
+  },
+  {
+    "id": "dc_country",
+    "name": "Station Country",
+    "type": "dimension",
+    "definition": "Country where a gas station operates, coded CZE for the Czech Republic and SVK for Slovakia.",
+    "scope": "debit_card_specializing",
+    "aliases": [
+      "country",
+      "Czech Republic"
+    ],
+    "evidence": "ev_dc_segments"
+  },
+  {
+    "id": "fn_account",
+    "name": "Bank Account",
+    "type": "entity",
+    "definition": "Bank account opened in a district on a date with a statement issuance frequency.",
+    "scope": "financial sub-database",
+    "aliases": [
+      "account",
+      "accounts"
+    ],
+    "evidence": "ev_fn_codes"
+  },
+  {
+    "id": "fn_client",
+    "name": "Bank Client",
+    "type": "entity",
+    "definition": "Person holding one or more bank accounts, with gender, birth date and home district.",
+    "scope": "financial sub-database",
+    "aliases": [
+      "client",
+      "customer",
+      "woman",
+      "man"
+    ],
+    "evidence": "ev_fn_district"
+  },
+  {
+    "id": "fn_district",
+    "name": "Bank District",
+    "type": "entity",
+    "definition": "Administrative district of a client or branch, described by coded attributes including name, region and average salary.",
+    "scope": "financial sub-database",
+    "aliases": [
+      "district",
+      "district name"
+    ],
+    "evidence": "ev_fn_district"
+  },
+  {
+    "id": "fn_account_client_link",
+    "name": "Account Client Disposition",
+    "type": "concept",
+    "definition": "Link between a client and an account stating the client's disposition type (owner or user).",
+    "scope": "financial disp table",
+    "aliases": [
+      "disp",
+      "disposition",
+      "account holder link"
+    ],
+    "evidence": "ev_fn_codes"
+  },
+  {
+    "id": "fn_loan",
+    "name": "Loan",
+    "type": "entity",
+    "definition": "Loan granted to an account with amount, duration, monthly payment and repayment status.",
+    "scope": "financial sub-database",
+    "aliases": [
+      "loan",
+      "approved amount",
+      "loan validity"
+    ],
+    "evidence": "ev_fn_codes"
+  },
+  {
+    "id": "fn_transaction",
+    "name": "Account Transaction",
+    "type": "entity",
+    "definition": "Debit or credit movement on an account with date, operation type, amount and balance.",
+    "scope": "financial trans table",
+    "aliases": [
+      "transaction",
+      "withdrawal",
+      "deposit"
+    ],
+    "evidence": "ev_fn_trans"
+  },
+  {
+    "id": "fn_statement_frequency",
+    "name": "Statement Issuance Frequency",
+    "type": "category",
+    "definition": "Coded frequency at which statements are issued for an account: weekly, monthly or after transaction.",
+    "scope": "financial; values are Czech POPLATEK codes",
+    "aliases": [
+      "frequency",
+      "weekly issuance",
+      "monthly statement",
+      "issuance after transaction"
+    ],
+    "evidence": "ev_fn_codes"
+  },
+  {
+    "id": "fn_loan_status",
+    "name": "Loan Repayment Status",
+    "type": "category",
+    "definition": "Coded repayment status of a loan, where code C marks a running contract that is still in order.",
+    "scope": "financial loan table",
+    "aliases": [
+      "status",
+      "running contract",
+      "still running"
+    ],
+    "evidence": "ev_fn_codes"
+  },
+  {
+    "id": "fn_region",
+    "name": "District Region",
+    "type": "dimension",
+    "definition": "Region of a district such as east Bohemia or north Bohemia, stored in lower case.",
+    "scope": "financial district.A3",
+    "aliases": [
+      "region",
+      "East Bohemia",
+      "North Bohemia"
+    ],
+    "evidence": "ev_fn_district"
+  },
+  {
+    "id": "fn_avg_salary",
+    "name": "District Average Salary",
+    "type": "metric",
+    "definition": "Average salary reported for a district.",
+    "scope": "financial district.A11",
+    "aliases": [
+      "average salary",
+      "avg salary"
+    ],
+    "evidence": "ev_fn_district"
+  },
+  {
+    "id": "fn_transaction_operation",
+    "name": "Transaction Operation",
+    "type": "category",
+    "definition": "Specific operation performed in a transaction, such as cash withdrawal, card withdrawal, deposit or transfer.",
+    "scope": "financial trans.operation",
+    "aliases": [
+      "operation",
+      "withdrawal in cash",
+      "VYBER"
+    ],
+    "evidence": "ev_fn_trans"
+  },
+  {
+    "id": "fn_transaction_type",
+    "name": "Transaction Direction",
+    "type": "category",
+    "definition": "Whether a transaction is a debit (VYDAJ) or a credit (PRIJEM).",
+    "scope": "financial trans.type",
+    "aliases": [
+      "type",
+      "debit",
+      "credit"
+    ],
+    "evidence": "ev_fn_trans"
+  },
+  {
+    "id": "f1_driver",
+    "name": "Formula 1 Driver",
+    "type": "entity",
+    "definition": "Racing driver identified by driverId with reference name, code, forename, surname, date of birth and nationality.",
+    "scope": "formula_1 sub-database",
+    "aliases": [
+      "driver",
+      "racer",
+      "drivers"
+    ],
+    "evidence": "ev_f1_nationality"
+  },
+  {
+    "id": "f1_driver_full_name",
+    "name": "Driver Full Name",
+    "type": "concept",
+    "definition": "Full name of a driver formed by combining forename and surname.",
+    "scope": "formula_1; used whenever a question names a driver in natural language",
+    "aliases": [
+      "full name",
+      "driver name",
+      "racer name"
+    ],
+    "evidence": "ev_f1_nationality"
+  },
+  {
+    "id": "f1_circuit",
+    "name": "Racing Circuit",
+    "type": "entity",
+    "definition": "Circuit on which races are held, with reference name, location, country, coordinates and altitude.",
+    "scope": "formula_1 circuits table",
+    "aliases": [
+      "circuit",
+      "track",
+      "circuit reference name"
+    ],
+    "evidence": "ev_f1_nationality"
+  },
+  {
+    "id": "f1_constructor",
+    "name": "Formula 1 Constructor",
+    "type": "entity",
+    "definition": "Team or constructor identified by constructorId with reference name, official name, nationality and website.",
+    "scope": "formula_1",
+    "aliases": [
+      "constructor",
+      "team"
+    ],
+    "evidence": "ev_f1_nationality"
+  },
+  {
+    "id": "f1_race",
+    "name": "Formula 1 Race",
+    "type": "entity",
+    "definition": "A Grand Prix event in a season at a circuit, identified by raceId and described by name and date.",
+    "scope": "formula_1 races table",
+    "aliases": [
+      "race",
+      "grand prix",
+      "race number"
+    ],
+    "evidence": "ev_f1_results_time"
+  },
+  {
+    "id": "f1_result",
+    "name": "Race Result",
+    "type": "entity",
+    "definition": "One driver's result in one race, with grid position, finishing position, points, laps, race time and fastest lap.",
+    "scope": "formula_1 results table",
+    "aliases": [
+      "result",
+      "finishing position",
+      "points"
+    ],
+    "evidence": "ev_f1_results_time"
+  },
+  {
+    "id": "f1_lap_time",
+    "name": "Lap Time",
+    "type": "metric",
+    "definition": "Time taken for a lap, recorded both as a formatted string and as milliseconds.",
+    "scope": "formula_1 lapTimes and results",
+    "aliases": [
+      "lap time",
+      "laptime",
+      "milliseconds"
+    ],
+    "evidence": "ev_f1_fastest_lap"
+  },
+  {
+    "id": "f1_qualifying_result",
+    "name": "Qualifying Result",
+    "type": "entity",
+    "definition": "A driver's qualifying performance in a race, with Q1, Q2 and Q3 segment times and resulting position.",
+    "scope": "formula_1 qualifying table",
+    "aliases": [
+      "qualifying",
+      "Q3 time",
+      "qualifying position"
+    ],
+    "evidence": "ev_f1_qualifying"
+  },
+  {
+    "id": "f1_race_winner",
+    "name": "Race Winner",
+    "type": "concept",
+    "definition": "Driver classified first in a race, equivalently the champion of that race.",
+    "scope": "formula_1 results; winner is the first classified position",
+    "aliases": [
+      "champion",
+      "winner",
+      "ranked 1st",
+      "rank the highest"
+    ],
+    "evidence": "ev_f1_results_time"
+  },
+  {
+    "id": "f1_fastest_lap",
+    "name": "Fastest Lap",
+    "type": "concept",
+    "definition": "Quickest single lap in a race, identified by the minimum lap time and ranked within the race.",
+    "scope": "formula_1 results and lapTimes",
+    "aliases": [
+      "fastest lap",
+      "fastest lap time",
+      "fastest lap number"
+    ],
+    "evidence": "ev_f1_fastest_lap"
+  },
+  {
+    "id": "f1_race_completion",
+    "name": "Race Completion",
+    "type": "metric",
+    "definition": "Whether a driver finished a race, indicated by a recorded race time, and the resulting completion rate over a set of results.",
+    "scope": "formula_1 results",
+    "aliases": [
+      "race completion",
+      "finished the race",
+      "completion rate",
+      "completed"
+    ],
+    "evidence": "ev_f1_results_time"
+  },
+  {
+    "id": "f1_driver_age",
+    "name": "Driver Age and Birth Year",
+    "type": "metric",
+    "definition": "Age or birth year of a driver derived from the date of birth; oldest and youngest comparisons use this value.",
+    "scope": "formula_1 drivers.dob",
+    "aliases": [
+      "age",
+      "born in",
+      "oldest",
+      "youngest"
+    ],
+    "evidence": "ev_f1_nationality"
+  },
+  {
+    "id": "f1_nationality",
+    "name": "Driver or Constructor Nationality",
+    "type": "dimension",
+    "definition": "Country of nationality recorded as a text label on drivers and constructors.",
+    "scope": "formula_1; no country reference table exists",
+    "aliases": [
+      "nationality",
+      "Japanese",
+      "French",
+      "German",
+      "Dutch"
+    ],
+    "evidence": "ev_f1_nationality"
+  },
+  {
+    "id": "sc_member",
+    "name": "Student Club Member",
+    "type": "entity",
+    "definition": "Member of the student club with name, position, t-shirt size, contact details and major.",
+    "scope": "student_club sub-database",
+    "aliases": [
+      "member",
+      "student",
+      "members"
+    ],
+    "evidence": "ev_sc_major"
+  },
+  {
+    "id": "sc_member_full_name",
+    "name": "Member Full Name",
+    "type": "concept",
+    "definition": "Full name of a member formed from first name and last name.",
+    "scope": "student_club member table",
+    "aliases": [
+      "full name",
+      "member name",
+      "student name"
+    ],
+    "evidence": "ev_sc_major"
+  },
+  {
+    "id": "sc_event",
+    "name": "Club Event",
+    "type": "entity",
+    "definition": "Club event with a name, date-time, type, location, notes and status.",
+    "scope": "student_club event table",
+    "aliases": [
+      "event",
+      "event name"
+    ],
+    "evidence": "ev_sc_schema"
+  },
+  {
+    "id": "sc_event_attendance",
+    "name": "Event Attendance",
+    "type": "concept",
+    "definition": "Record that a member attended a specific event.",
+    "scope": "student_club attendance table",
+    "aliases": [
+      "attend",
+      "attended",
+      "attendance"
+    ],
+    "evidence": "ev_sc_schema"
+  },
+  {
+    "id": "sc_budget",
+    "name": "Event Budget Line",
+    "type": "entity",
+    "definition": "Budget line for an event and category, holding the budgeted amount, spent amount and remaining amount.",
+    "scope": "student_club budget table",
+    "aliases": [
+      "budget",
+      "amount budgeted",
+      "budget category"
+    ],
+    "evidence": "ev_sc_schema"
+  },
+  {
+    "id": "sc_expense",
+    "name": "Club Expense",
+    "type": "entity",
+    "definition": "Individual expense with a description, date, cost, approval flag, member and budget line.",
+    "scope": "student_club expense table",
+    "aliases": [
+      "expense",
+      "cost",
+      "spent"
+    ],
+    "evidence": "ev_sc_schema"
+  },
+  {
+    "id": "sc_income",
+    "name": "Club Income",
+    "type": "entity",
+    "definition": "Money received by the club on a date from a source such as dues, fundraising or sponsorship.",
+    "scope": "student_club income table",
+    "aliases": [
+      "income",
+      "funds received",
+      "dues",
+      "fundraising"
+    ],
+    "evidence": "ev_sc_schema"
+  },
+  {
+    "id": "sc_major",
+    "name": "Academic Major",
+    "type": "entity",
+    "definition": "Academic major with a name, department and college.",
+    "scope": "student_club major table",
+    "aliases": [
+      "major",
+      "major name",
+      "department"
+    ],
+    "evidence": "ev_sc_major"
+  },
+  {
+    "id": "sc_organization_unit",
+    "name": "Department and College",
+    "type": "concept",
+    "definition": "Organizational unit of a major, comprising an academic department within a college.",
+    "scope": "student_club major table",
+    "aliases": [
+      "department",
+      "college"
+    ],
+    "evidence": "ev_sc_major"
+  },
+  {
+    "id": "sc_event_status",
+    "name": "Event Status",
+    "type": "category",
+    "definition": "Lifecycle status of an event: Open, Closed or Planning.",
+    "scope": "student_club event table",
+    "aliases": [
+      "status",
+      "closed",
+      "open",
+      "planning"
+    ],
+    "evidence": "ev_sc_schema"
+  },
+  {
+    "id": "sc_income_source",
+    "name": "Income Source",
+    "type": "category",
+    "definition": "Origin of club income such as Dues, Fundraising, Sponsorship or School Appropration.",
+    "scope": "student_club income table; source labels are exact strings",
+    "aliases": [
+      "source",
+      "fundraising",
+      "dues",
+      "sponsorship"
+    ],
+    "evidence": "ev_sc_schema"
+  },
+  {
+    "id": "sc_member_position",
+    "name": "Member Position",
+    "type": "category",
+    "definition": "Role held by a club member, distinguishing officers from ordinary members and inactive members.",
+    "scope": "student_club member table",
+    "aliases": [
+      "position",
+      "member",
+      "president",
+      "officer"
+    ],
+    "evidence": "ev_sc_major"
+  },
+  {
+    "id": "sh_superhero",
+    "name": "Superhero",
+    "type": "entity",
+    "definition": "Superhero character with name, full name, gender, colour attributes, race, publisher and physical measurements.",
+    "scope": "superhero sub-database",
+    "aliases": [
+      "hero",
+      "superhero",
+      "character"
+    ],
+    "evidence": "ev_sh_attributes"
+  },
+  {
+    "id": "sh_superhero_full_name",
+    "name": "Superhero Full Name",
+    "type": "concept",
+    "definition": "Real full name of a superhero; some heroes have no recorded full name.",
+    "scope": "superhero",
+    "aliases": [
+      "full name",
+      "real name"
+    ],
+    "evidence": "ev_sh_attributes"
+  },
+  {
+    "id": "sh_attribute",
+    "name": "Hero Attribute Value",
+    "type": "metric",
+    "definition": "Numeric score of a superhero on one attribute such as strength, speed or intelligence.",
+    "scope": "superhero hero_attribute table",
+    "aliases": [
+      "attribute",
+      "attribute value",
+      "highest attribute"
+    ],
+    "evidence": "ev_sh_attributes"
+  },
+  {
+    "id": "sh_attribute_type",
+    "name": "Hero Attribute Type",
+    "type": "dimension",
+    "definition": "Name of a superhero attribute; the six attributes are Strength, Speed, Power, Intelligence, Durability and Combat.",
+    "scope": "superhero attribute table",
+    "aliases": [
+      "attribute name",
+      "strength",
+      "speed",
+      "intelligence"
+    ],
+    "evidence": "ev_sh_attributes"
+  },
+  {
+    "id": "sh_superpower",
+    "name": "Superpower",
+    "type": "entity",
+    "definition": "Named superpower that can be assigned to one or more superheroes.",
+    "scope": "superhero superpower and hero_power tables",
+    "aliases": [
+      "power",
+      "superpower",
+      "abilities"
+    ],
+    "evidence": "ev_sh_publisher_power"
+  },
+  {
+    "id": "sh_publisher",
+    "name": "Comic Publisher",
+    "type": "entity",
+    "definition": "Publisher that owns a superhero, such as Marvel Comics or DC Comics.",
+    "scope": "superhero publisher table",
+    "aliases": [
+      "publisher",
+      "published by"
+    ],
+    "evidence": "ev_sh_publisher_power"
+  },
+  {
+    "id": "sh_eye_colour",
+    "name": "Eye Colour",
+    "type": "dimension",
+    "definition": "Eye colour of a superhero, drawn from the shared colour reference list.",
+    "scope": "superhero; references colour.id",
+    "aliases": [
+      "eyes",
+      "eye colour",
+      "blue eyes"
+    ],
+    "evidence": "ev_sh_colours_weight"
+  },
+  {
+    "id": "sh_hair_colour",
+    "name": "Hair Colour",
+    "type": "dimension",
+    "definition": "Hair colour of a superhero, drawn from the shared colour reference list.",
+    "scope": "superhero; references colour.id",
+    "aliases": [
+      "hair",
+      "hair colour",
+      "blond hair"
+    ],
+    "evidence": "ev_sh_colours_weight"
+  },
+  {
+    "id": "sh_skin_colour",
+    "name": "Skin Colour",
+    "type": "dimension",
+    "definition": "Skin colour of a superhero, drawn from the shared colour reference list.",
+    "scope": "superhero; references colour.id",
+    "aliases": [
+      "skin",
+      "skin colour"
+    ],
+    "evidence": "ev_sh_colours_weight"
+  },
+  {
+    "id": "sh_gender",
+    "name": "Superhero Gender",
+    "type": "category",
+    "definition": "Gender of a superhero: Male, Female or N/A.",
+    "scope": "superhero gender table",
+    "aliases": [
+      "gender",
+      "female",
+      "male"
+    ],
+    "evidence": "ev_sh_colours_weight"
+  },
+  {
+    "id": "sh_race",
+    "name": "Superhero Race",
+    "type": "category",
+    "definition": "Species or race of a superhero such as Human, Mutant or God / Eternal; a dash marks unknown race.",
+    "scope": "superhero race table",
+    "aliases": [
+      "race",
+      "human",
+      "species"
+    ],
+    "evidence": "ev_sh_colours_weight"
+  },
+  {
+    "id": "sh_physical_measure",
+    "name": "Hero Height and Weight",
+    "type": "metric",
+    "definition": "Height in centimetres and weight in kilograms of a superhero; a zero weight records an unrecorded weight.",
+    "scope": "superhero superhero table",
+    "aliases": [
+      "height",
+      "weight",
+      "cm",
+      "kg"
+    ],
+    "evidence": "ev_sh_colours_weight"
+  },
+  {
+    "id": "tp_patient",
+    "name": "Thrombosis Patient",
+    "type": "entity",
+    "definition": "Patient under investigation, identified by ID with sex, birth date, admission type, first visit date and diagnosis.",
+    "scope": "thrombosis_prediction sub-database",
+    "aliases": [
+      "patient",
+      "patients"
+    ],
+    "evidence": "ev_tp_patient_exam"
+  },
+  {
+    "id": "tp_patient_age",
+    "name": "Patient Age",
+    "type": "metric",
+    "definition": "Age of a patient computed as the difference between the current year and the birth year.",
+    "scope": "thrombosis_prediction Patient.Birthday",
+    "aliases": [
+      "age",
+      "how old",
+      "aren't 70 yet"
+    ],
+    "evidence": "ev_tp_patient_exam"
+  },
+  {
+    "id": "tp_laboratory_test",
+    "name": "Laboratory Test Record",
+    "type": "entity",
+    "definition": "Set of laboratory measurements for one patient on one date, covering liver, metabolic, coagulation and immunological analytes.",
+    "scope": "thrombosis_prediction Laboratory table; grain is patient and test date",
+    "aliases": [
+      "laboratory test",
+      "lab test",
+      "test date"
+    ],
+    "evidence": "ev_tp_lab_ranges"
+  },
+  {
+    "id": "tp_examination",
+    "name": "Clinical Examination",
+    "type": "entity",
+    "definition": "Examination record for a patient on a date capturing diagnosis, autoantibodies, coagulation measures, symptoms and thrombosis degree.",
+    "scope": "thrombosis_prediction Examination table",
+    "aliases": [
+      "examination",
+      "examined"
+    ],
+    "evidence": "ev_tp_patient_exam"
+  },
+  {
+    "id": "tp_diagnosis",
+    "name": "Disease Diagnosis",
+    "type": "category",
+    "definition": "Disease diagnosed for a patient or during an examination, coded as abbreviated disease names such as SLE, SJS, RA, BEHCET, PSS or MCTD.",
+    "scope": "thrombosis_prediction; values can combine several diseases",
+    "aliases": [
+      "disease",
+      "diagnosis",
+      "diagnosed with",
+      "most common disease"
+    ],
+    "evidence": "ev_tp_patient_exam"
+  },
+  {
+    "id": "tp_sex",
+    "name": "Patient Sex",
+    "type": "category",
+    "definition": "Sex of a patient recorded as M or F.",
+    "scope": "thrombosis_prediction",
+    "aliases": [
+      "sex",
+      "male",
+      "female"
+    ],
+    "evidence": "ev_tp_patient_exam"
+  },
+  {
+    "id": "tp_admission_type",
+    "name": "Admission Type",
+    "type": "category",
+    "definition": "Whether a patient is an in-patient or an out-patient.",
+    "scope": "thrombosis_prediction Patient.Admission",
+    "aliases": [
+      "admission",
+      "in-patient",
+      "outpatient"
+    ],
+    "evidence": "ev_tp_patient_exam"
+  },
+  {
+    "id": "tp_coagulation_result",
+    "name": "Coagulation Test Result",
+    "type": "concept",
+    "definition": "Qualitative degree of coagulation from the KCT, RVVT and LAC tests, where a plus sign marks a positive measure.",
+    "scope": "thrombosis_prediction Examination table",
+    "aliases": [
+      "coagulation",
+      "positive degree of coagulation",
+      "KCT",
+      "RVVT",
+      "LAC"
+    ],
+    "evidence": "ev_tp_patient_exam"
+  },
+  {
+    "id": "tp_lab_measure",
+    "name": "Laboratory Analyte Measurement",
+    "type": "metric",
+    "definition": "Numeric value of a named laboratory analyte such as GPT, ALB, GLU, T-CHO, CPK, CRE, PLT, IGG, IGM or UN.",
+    "scope": "thrombosis_prediction Laboratory table",
+    "aliases": [
+      "blood level",
+      "level",
+      "albumin",
+      "cholesterol",
+      "creatinine"
+    ],
+    "evidence": "ev_tp_lab_ranges"
+  },
+  {
+    "id": "tp_normal_range",
+    "name": "Analyte Normal Range",
+    "type": "concept",
+    "definition": "Reference interval defining when a laboratory analyte is within normal range, abnormal, or on the borderline.",
+    "scope": "thrombosis_prediction; thresholds are stated per analyte",
+    "aliases": [
+      "normal range",
+      "abnormal",
+      "within normal range",
+      "borderline"
+    ],
+    "evidence": "ev_tp_lab_ranges"
+  },
+  {
+    "id": "tp_symptom",
+    "name": "Patient Symptom Record",
+    "type": "concept",
+    "definition": "Free-text symptom entry on an examination; a missing entry records that the patient has no symptom.",
+    "scope": "thrombosis_prediction Examination.Symptoms",
+    "aliases": [
+      "symptom",
+      "have symptoms",
+      "no symptom"
+    ],
+    "evidence": "ev_tp_patient_exam"
+  },
+  {
+    "id": "tp_ana_pattern",
+    "name": "ANA Pattern",
+    "type": "category",
+    "definition": "Antinuclear antibody staining pattern recorded as combinations of S, P and D, where a single letter denotes a pattern of only that type.",
+    "scope": "thrombosis_prediction Examination table",
+    "aliases": [
+      "ANA",
+      "ANA pattern",
+      "pattern of only S"
+    ],
+    "evidence": "ev_tp_codes"
+  },
+  {
+    "id": "tp_thrombosis_degree",
+    "name": "Thrombosis Degree",
+    "type": "dimension",
+    "definition": "Numeric degree of thrombosis recorded for an examination.",
+    "scope": "thrombosis_prediction Examination.Thrombosis",
+    "aliases": [
+      "thrombosis level",
+      "degree of thrombosis"
+    ],
+    "evidence": "ev_tp_patient_exam"
+  },
+  {
+    "id": "tg_molecule",
+    "name": "Molecule",
+    "type": "entity",
+    "definition": "Chemical molecule identified by molecule_id with a carcinogenicity label.",
+    "scope": "toxicology sub-database",
+    "aliases": [
+      "molecule",
+      "compound"
+    ],
+    "evidence": "ev_tg_schema"
+  },
+  {
+    "id": "tg_carcinogenic_molecule",
+    "name": "Carcinogenic Molecule",
+    "type": "category",
+    "definition": "Molecule labelled carcinogenic.",
+    "scope": "toxicology molecule.label = '+'",
+    "aliases": [
+      "carcinogenic",
+      "cancer causing"
+    ],
+    "evidence": "ev_tg_schema"
+  },
+  {
+    "id": "tg_non_carcinogenic_molecule",
+    "name": "Non-Carcinogenic Molecule",
+    "type": "category",
+    "definition": "Molecule labelled non-carcinogenic.",
+    "scope": "toxicology molecule.label = '-'",
+    "aliases": [
+      "non-carcinogenic",
+      "not carcinogenic"
+    ],
+    "evidence": "ev_tg_schema"
+  },
+  {
+    "id": "tg_atom",
+    "name": "Atom",
+    "type": "entity",
+    "definition": "Atom within a molecule, identified by atom_id and carrying an element symbol.",
+    "scope": "toxicology atom table",
+    "aliases": [
+      "atom",
+      "atoms"
+    ],
+    "evidence": "ev_tg_elements"
+  },
+  {
+    "id": "tg_element",
+    "name": "Chemical Element",
+    "type": "dimension",
+    "definition": "Element of an atom recorded as a lower-case chemical symbol such as h, c, cl, br, i, s, p or f.",
+    "scope": "toxicology atom.element",
+    "aliases": [
+      "element",
+      "hydrogen",
+      "chlorine",
+      "fluorine"
+    ],
+    "evidence": "ev_tg_elements"
+  },
+  {
+    "id": "tg_bond",
+    "name": "Chemical Bond",
+    "type": "entity",
+    "definition": "Bond within a molecule, identified by bond_id with a bond type.",
+    "scope": "toxicology bond table",
+    "aliases": [
+      "bond",
+      "bonds"
+    ],
+    "evidence": "ev_tg_schema"
+  },
+  {
+    "id": "tg_bond_type",
+    "name": "Bond Type",
+    "type": "category",
+    "definition": "Order of a chemical bond: single, double or triple.",
+    "scope": "toxicology bond.bond_type",
+    "aliases": [
+      "bond type",
+      "single bond",
+      "double bond",
+      "triple bond"
+    ],
+    "evidence": "ev_tg_schema"
+  },
+  {
+    "id": "tg_atom_connection",
+    "name": "Atom Connection",
+    "type": "concept",
+    "definition": "Undirected connection between two atoms formed by a bond; each connection is stored twice, once per direction.",
+    "scope": "toxicology connected table",
+    "aliases": [
+      "connected",
+      "atom pair"
+    ],
+    "evidence": "ev_tg_elements"
+  },
+  {
+    "id": "tg_element_ratio",
+    "name": "Element Ratio in Molecule",
+    "type": "metric",
+    "definition": "Share of atoms of a given element among all atoms of a molecule.",
+    "scope": "toxicology; derived from atom composition",
+    "aliases": [
+      "ratio",
+      "proportion of element",
+      "percentage of element"
+    ],
+    "evidence": "ev_tg_elements"
+  }
+]

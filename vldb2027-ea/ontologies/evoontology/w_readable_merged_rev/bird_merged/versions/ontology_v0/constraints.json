@@ -1,0 +1,1236 @@
+[
+  {
+    "id": "constraint_school_charter_flag",
+    "target": "school_charter_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "charter",
+      "non-chartered",
+      "charter school",
+      "Charter = 0"
+    ],
+    "severity": "block",
+    "scope": "Filtering schools by charter status",
+    "confidence": "high",
+    "description": "schools.Charter is 0 for non-chartered schools and 1 for chartered schools; NULL means no determination. 'Non-chartered schools' requires Charter = 0.",
+    "evidence": [
+      "ev_school_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_school_virtual_code",
+    "target": "school_virtual_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "virtual",
+      "virtual school",
+      "does not offer physical building",
+      "physical building"
+    ],
+    "severity": "block",
+    "scope": "Filtering schools by delivery mode",
+    "confidence": "high",
+    "description": "Virtual is coded F (exclusively virtual, no physical building), P (partial virtual) or N (not virtual). Questions about schools that do not offer a physical building use Virtual = 'F'.",
+    "evidence": [
+      "ev_school_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_school_doc_code",
+    "target": "school_district_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "DOC",
+      "district type",
+      "Unified School District",
+      "Elementary School District",
+      "High School District"
+    ],
+    "severity": "block",
+    "scope": "Classifying districts in california_schools",
+    "confidence": "high",
+    "description": "DOC codes: 52 = Elementary School District, 54 = Unified School District, 56 = High School District, 00 = County Office of Education. DOCType carries the same classification as text.",
+    "evidence": [
+      "ev_school_doc_soc",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_school_soc_code",
+    "target": "school_ownership_code",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "ownership code",
+      "SOC",
+      "ownership code 66"
+    ],
+    "severity": "block",
+    "scope": "Classifying schools by ownership/school type",
+    "confidence": "high",
+    "description": "SOC is the school ownership/type code; SOC = '66' means High Schools (Public). SOCType gives the text label.",
+    "evidence": [
+      "ev_school_doc_soc",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_school_rate_scale",
+    "target": "school_free_meal_rate_k12",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "percent",
+      "rate",
+      "0.18%",
+      "free meal rate",
+      "eligible free"
+    ],
+    "severity": "block",
+    "scope": "Interpreting eligibility rates in frpm",
+    "confidence": "high",
+    "description": "The stored percent columns are already percentages (count/enrollment*100). A question threshold written as 0.18 percent refers to the ratio 0.18 (18 percent); compare against the ratio count/enrollment, not against the stored 0-100 percentage directly.",
+    "evidence": [
+      "ev_school_frpm_sat",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_school_frpm_year",
+    "target": "school_enrollment_k12",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "frpm",
+      "academic year",
+      "enrollment"
+    ],
+    "severity": "info",
+    "scope": "frpm table",
+    "confidence": "high",
+    "description": "frpm contains a single Academic Year value, 2014-2015. Eligibility metrics are a 2014-2015 snapshot.",
+    "evidence": [
+      "ev_school_frpm_sat"
+    ]
+  },
+  {
+    "id": "constraint_school_sat_rtype",
+    "target": "school_sat_reading",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "SAT",
+      "average score",
+      "district average",
+      "school average",
+      "rtype"
+    ],
+    "severity": "warning",
+    "scope": "satscores table",
+    "confidence": "high",
+    "description": "satscores holds both district rows (rtype='D') and school rows (rtype='S'); 596 rows have null scores. Use rtype='S' for school-level analysis to avoid mixing district aggregates with schools and nulls.",
+    "evidence": [
+      "ev_school_frpm_sat"
+    ]
+  },
+  {
+    "id": "constraint_school_status_merged",
+    "target": "school_school",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "merged",
+      "status",
+      "closed school",
+      "active school"
+    ],
+    "severity": "warning",
+    "scope": "schools table",
+    "confidence": "high",
+    "description": "schools.StatusType takes Active, Closed, Merged or Pending. 'Merged' schools are a distinct status from active and closed schools and must be filtered explicitly.",
+    "evidence": [
+      "ev_school_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_school_address_mail",
+    "target": "school_address",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "postal street",
+      "mailing street",
+      "address",
+      "street address"
+    ],
+    "severity": "block",
+    "scope": "school address questions",
+    "confidence": "high",
+    "description": "schools.Street is the physical street and schools.MailStreet is the mailing/postal street; the workload treats postal street and mailing street as synonyms, so postal-address questions use MailStreet.",
+    "evidence": [
+      "ev_school_joins",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_school_contact_phone",
+    "target": "school_phone",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "telephone",
+      "phone number",
+      "communication number",
+      "contact number"
+    ],
+    "severity": "info",
+    "scope": "school contact questions",
+    "confidence": "high",
+    "description": "'Telephone number' and 'communication number' both refer to schools.Phone.",
+    "evidence": [
+      "ev_school_joins",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_card_power_unknown",
+    "target": "card_power",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "unknown power",
+      "infinite power",
+      "power",
+      "power is null"
+    ],
+    "severity": "block",
+    "scope": "cards.power filtering",
+    "confidence": "high",
+    "description": "cards.power = '*' means infinite power; NULL means no power value. 'Unknown power' questions include both '*' and NULL; 'infinite power' means only '*'.",
+    "evidence": [
+      "ev_card_flags",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_card_borderless",
+    "target": "card_border_color",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "borderless",
+      "border color",
+      "borderColor"
+    ],
+    "severity": "block",
+    "scope": "cards.borderColor filtering",
+    "confidence": "high",
+    "description": "Borderless cards are exactly borderColor = 'borderless' (lower case); other values are black, white, gold and silver.",
+    "evidence": [
+      "ev_card_flags",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_card_story_textless",
+    "target": "card_story_spotlight_flag",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "Story Spotlight",
+      "text box",
+      "textless",
+      "isStorySpotlight",
+      "isTextless"
+    ],
+    "severity": "block",
+    "scope": "cards flag filtering",
+    "confidence": "high",
+    "description": "isStorySpotlight = 1 identifies Story Spotlight cards; isTextless = 1 means no text box. 'Story Spotlight cards that do not have a text box' requires isStorySpotlight = 1 AND isTextless = 0.",
+    "evidence": [
+      "ev_card_flags",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_card_legal_status",
+    "target": "card_legal_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "legal",
+      "banned",
+      "restricted",
+      "commander",
+      "play format"
+    ],
+    "severity": "block",
+    "scope": "legalities table",
+    "confidence": "high",
+    "description": "legalities.status is Legal, Banned or Restricted. 'Legal for commander' means format = 'commander' AND status = 'Legal'; 'banned' means status = 'Banned'.",
+    "evidence": [
+      "ev_card_lang_legal",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_card_language_values",
+    "target": "card_language",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "language",
+      "German",
+      "Italian",
+      "Chinese Simplified",
+      "foreign language"
+    ],
+    "severity": "block",
+    "scope": "foreign_data and set_translations language filtering",
+    "confidence": "high",
+    "description": "Languages are stored with exact English names, e.g. 'Chinese Simplified', 'German', 'Italian', 'Japanese'. 'Foreign language' means a matching foreign_data row exists for the card.",
+    "evidence": [
+      "ev_card_lang_legal",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_card_set_vs_card_name",
+    "target": "card_set",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "card set",
+      "set",
+      "Coldsnap",
+      "Hour of Devastation",
+      "Adarkar Valkyrie"
+    ],
+    "severity": "block",
+    "scope": "card_games set questions",
+    "confidence": "high",
+    "description": "Set names live in sets.name while card names live in cards.name. A set is reached from cards through cards.setCode = sets.code; a phrase such as 'the set Coldsnap' refers to sets.name = 'Coldsnap', not to a card named Coldsnap.",
+    "evidence": [
+      "ev_card_sets",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_card_set_translation_null",
+    "target": "card_set_translation",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "translation",
+      "set name",
+      "Simplified Chinese",
+      "translated name"
+    ],
+    "severity": "warning",
+    "scope": "set_translations table",
+    "confidence": "high",
+    "description": "set_translations.translation can be NULL when a set has no localized name; return NULL rather than substituting the English name.",
+    "evidence": [
+      "ev_card_sets"
+    ]
+  },
+  {
+    "id": "constraint_card_foil_ids",
+    "target": "card_foil_availability",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "foil",
+      "powerful foil",
+      "incredibly powerful",
+      "cardKingdomFoilId"
+    ],
+    "severity": "block",
+    "scope": "cards foil questions",
+    "confidence": "high",
+    "description": "A powerful/available foil requires both cardKingdomFoilId and cardKingdomId to be non-null. cardKingdomFoilId alone indicates foil-only availability and is not a complete foil pair.",
+    "evidence": [
+      "ev_card_flags",
+      "ev_card_rulings",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_card_promo_flag",
+    "target": "card_card",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "promotional",
+      "promo printing",
+      "isPromo"
+    ],
+    "severity": "info",
+    "scope": "cards.isPromo",
+    "confidence": "high",
+    "description": "isPromo = 1 marks a promotional printing; 0 is a regular printing.",
+    "evidence": [
+      "ev_card_flags",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_card_base_set_size",
+    "target": "card_base_set_size",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "base set number",
+      "base set size",
+      "baseSetSize",
+      "under 100"
+    ],
+    "severity": "info",
+    "scope": "sets.baseSetSize filtering",
+    "confidence": "high",
+    "description": "baseSetSize is the base card count of a set and is the value used for 'base set number under 100' style comparisons.",
+    "evidence": [
+      "ev_card_sets",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_debit_currency_segment",
+    "target": "debit_currency",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "currency",
+      "CZK",
+      "EUR",
+      "SME",
+      "segment",
+      "pay in"
+    ],
+    "severity": "block",
+    "scope": "customers table",
+    "confidence": "high",
+    "description": "customers.Currency is CZK (Czech koruna) or EUR. customers.Segment is SME (small and medium enterprise), LAM or KAM. SME + CZK is the combination used by 'SMEs paying in Czech koruna'.",
+    "evidence": [
+      "ev_debit_dist",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_debit_country_code",
+    "target": "debit_country",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "Czech Republic",
+      "Slovakia",
+      "CZE",
+      "SVK",
+      "country"
+    ],
+    "severity": "block",
+    "scope": "gasstations.Country filtering",
+    "confidence": "high",
+    "description": "gasstations.Country stores ISO-like codes: 'CZE' = Czech Republic, 'SVK' = Slovakia. Country names in questions map to these codes.",
+    "evidence": [
+      "ev_debit_dist",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_debit_station_segment_case",
+    "target": "debit_gas_station_segment",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "premium",
+      "discount",
+      "segment",
+      "gas station segment"
+    ],
+    "severity": "block",
+    "scope": "gasstations.Segment filtering",
+    "confidence": "high",
+    "description": "gasstations.Segment values are 'Discount', 'Premium', 'Noname', 'Other' and 'Value for money' with exact capitalisation.",
+    "evidence": [
+      "ev_debit_dist",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_debit_yearmonth_format",
+    "target": "debit_monthly_consumption",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "year",
+      "month",
+      "consumption",
+      "2012",
+      "2013",
+      "yearmonth"
+    ],
+    "severity": "block",
+    "scope": "yearmonth table",
+    "confidence": "high",
+    "description": "yearmonth.Date is a 6-character YYYYMM text value; the first four characters are the year and the last two the month. Each row is a customer-month consumption value.",
+    "evidence": [
+      "ev_debit_time",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_debit_transactions_range",
+    "target": "debit_transaction",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "transactions",
+      "June 2013",
+      "date range",
+      "2012/8/26",
+      "8:00-9:00"
+    ],
+    "severity": "warning",
+    "scope": "transactions_1k sample",
+    "confidence": "high",
+    "description": "transactions_1k is a 1000-row sample covering only 2012-08-23 to 2012-08-26. Month-level questions outside that window (for example June 2013) must use yearmonth rather than transactions_1k.",
+    "evidence": [
+      "ev_debit_time",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_fin_loan_status",
+    "target": "fin_loan_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "running contract",
+      "client in debt",
+      "loan status",
+      "status = D",
+      "status = C"
+    ],
+    "severity": "block",
+    "scope": "loan.status filtering",
+    "confidence": "high",
+    "description": "loan.status codes: C = running contract, OK so far; D = running contract, client in debt; A and B are finished contracts. 'Running contracts' means status IN ('C','D'); 'client in debt' means status = 'D'.",
+    "evidence": [
+      "ev_fin_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_fin_trans_codes",
+    "target": "fin_transaction_operation",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "credit card withdrawal",
+      "VYBER KARTOU",
+      "transaction type",
+      "PRIJEM",
+      "VYDAJ",
+      "VYBER"
+    ],
+    "severity": "block",
+    "scope": "trans table",
+    "confidence": "high",
+    "description": "trans.type: PRIJEM = credit, VYDAJ = debit/expense, VYBER = withdrawal. trans.operation 'VYBER KARTOU' = credit card withdrawal. Transaction amounts and operations are in Czech.",
+    "evidence": [
+      "ev_fin_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_fin_card_gold",
+    "target": "fin_card_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "high-level credit card",
+      "gold card",
+      "card type"
+    ],
+    "severity": "block",
+    "scope": "card.type filtering",
+    "confidence": "high",
+    "description": "card.type values are classic, gold and junior; a 'high level credit card' is type = 'gold'.",
+    "evidence": [
+      "ev_fin_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_fin_disp_owner",
+    "target": "fin_disposition",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "eligible for loans",
+      "account owner",
+      "OWNER",
+      "disponent"
+    ],
+    "severity": "block",
+    "scope": "disp.type filtering",
+    "confidence": "high",
+    "description": "disp.type OWNER identifies the account owner; DISPONENT is a secondary holder. Workload evidence treats 'eligible for loans' as disp.type = 'OWNER'.",
+    "evidence": [
+      "ev_fin_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_fin_district_columns",
+    "target": "fin_district",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "A2",
+      "A3",
+      "A4",
+      "A11",
+      "A12",
+      "A13",
+      "A15",
+      "district",
+      "unemployment",
+      "crimes",
+      "salary",
+      "inhabitants"
+    ],
+    "severity": "block",
+    "scope": "district table column interpretation",
+    "confidence": "high",
+    "description": "district columns: A2 = district name, A3 = region name, A4 = inhabitants, A11 = average salary, A12 = unemployment rate 1995, A13 = unemployment rate 1996, A15 = average crimes 1995, A16 = average crimes 1996. A4 is stored as text and must be cast for numeric comparison.",
+    "evidence": [
+      "ev_fin_district",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_fin_client_gender",
+    "target": "fin_client_gender",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "female",
+      "male",
+      "gender",
+      "women"
+    ],
+    "severity": "block",
+    "scope": "client.gender filtering",
+    "confidence": "high",
+    "description": "client.gender is 'F' for female and 'M' for male.",
+    "evidence": [
+      "ev_fin_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_f1_finish_time_format",
+    "target": "f1_finish_time",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "finish time",
+      "champion",
+      "did not finish",
+      "finished the race",
+      "time is not null"
+    ],
+    "severity": "block",
+    "scope": "results.time interpretation",
+    "confidence": "high",
+    "description": "Only the winner's time is an absolute HH:MM:SS.mmm value; other classified drivers store a relative '+seconds.mmm' offset. NULL time means the driver did not finish. 'Drivers who finished' means time IS NOT NULL.",
+    "evidence": [
+      "ev_f1_timing",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_f1_status_codes",
+    "target": "f1_race_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "accident",
+      "finished",
+      "disqualified",
+      "statusId",
+      "number of accidents"
+    ],
+    "severity": "block",
+    "scope": "status/results statusId filtering",
+    "confidence": "high",
+    "description": "statusId 1 = Finished, 2 = Disqualified, 3 = Accident; other ids are mechanical failures or lapped classifications. 'Number of accidents' uses statusId = 3.",
+    "evidence": [
+      "ev_f1_status",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_f1_driver_full_name",
+    "target": "f1_driver_full_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "full name",
+      "Lewis Hamilton",
+      "Bruno Senna",
+      "Alex Yoong",
+      "driver name"
+    ],
+    "severity": "block",
+    "scope": "drivers table name matching",
+    "confidence": "high",
+    "description": "Drivers are named by concatenating forename and surname; driverRef is a separate lowercase reference name (for example 'bruno_senna').",
+    "evidence": [
+      "ev_f1_schema",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_f1_race_number",
+    "target": "f1_race",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "race number",
+      "race No.",
+      "raceId"
+    ],
+    "severity": "block",
+    "scope": "race identification",
+    "confidence": "high",
+    "description": "'Race number' refers to races.raceId. Races are also identified by name plus year, and names repeat across seasons.",
+    "evidence": [
+      "ev_f1_schema",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_f1_position_rank",
+    "target": "f1_position",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "champion",
+      "winner",
+      "ranked second",
+      "first place",
+      "position"
+    ],
+    "severity": "block",
+    "scope": "results.position interpretation",
+    "confidence": "high",
+    "description": "results.position = 1 is the race champion/winner; ranked second means position = 2. Use numeric position, not positionText, for ranking.",
+    "evidence": [
+      "ev_f1_timing",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_f1_pit_duration",
+    "target": "f1_pit_stop",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "pit stop duration",
+      "average pit stop",
+      "milliseconds",
+      "duration"
+    ],
+    "severity": "warning",
+    "scope": "pitStops table",
+    "confidence": "high",
+    "description": "pitStops.duration is text in seconds and milliseconds is its integer millisecond equivalent. Average pit stop duration is the average over stops for the driver; prefer milliseconds for numeric comparison.",
+    "evidence": [
+      "ev_f1_schema",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_f1_speed_text",
+    "target": "f1_fastest_lap_speed",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "fastest lap speed",
+      "fastestLapSpeed",
+      "maximum speed"
+    ],
+    "severity": "block",
+    "scope": "results.fastestLapSpeed",
+    "confidence": "high",
+    "description": "fastestLapSpeed is stored as TEXT, so plain MAX() compares lexicographically and returns '91.610' instead of the true numeric maximum 257.32. Cast to a numeric type before comparing or aggregating.",
+    "evidence": [
+      "ev_f1_speed"
+    ]
+  },
+  {
+    "id": "constraint_f1_qualifying_q1",
+    "target": "f1_qualifying",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "q1",
+      "first qualifying period",
+      "eliminated in the first period",
+      "qualifying"
+    ],
+    "severity": "warning",
+    "scope": "qualifying table",
+    "confidence": "high",
+    "description": "q1, q2 and q3 are qualifying period times for a race. 'Eliminated in the first period' refers to the slowest drivers by q1 in that race (five drivers per the workload definition).",
+    "evidence": [
+      "ev_f1_schema",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_f1_circuit_coords",
+    "target": "f1_circuit",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "coordinates",
+      "location",
+      "lat",
+      "lng",
+      "latitude",
+      "longitude"
+    ],
+    "severity": "info",
+    "scope": "circuit location questions",
+    "confidence": "high",
+    "description": "Location coordinates are circuits.lat and circuits.lng; a race's coordinates are obtained through races.circuitId.",
+    "evidence": [
+      "ev_f1_schema",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_club_event_status",
+    "target": "club_event_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "closed event",
+      "open event",
+      "planning",
+      "event status"
+    ],
+    "severity": "block",
+    "scope": "event.status filtering",
+    "confidence": "high",
+    "description": "event.status values are Open, Closed and Planning. 'Closed events' requires event.status = 'Closed'.",
+    "evidence": [
+      "ev_club_schema",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_club_budget_status",
+    "target": "club_budget",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "budget",
+      "event status",
+      "budget status"
+    ],
+    "severity": "warning",
+    "scope": "budget table",
+    "confidence": "high",
+    "description": "budget.event_status mirrors the related event.status in every observed row; either column can be used, but join to event when the question asks about event status.",
+    "evidence": [
+      "ev_club_links"
+    ]
+  },
+  {
+    "id": "constraint_club_approved_text",
+    "target": "club_expense_approval",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "approved",
+      "approval",
+      "total value approved"
+    ],
+    "severity": "block",
+    "scope": "expense.approved filtering",
+    "confidence": "high",
+    "description": "expense.approved is stored as the text value 'true', not a boolean; one row is NULL. Approved expenses use approved = 'true'.",
+    "evidence": [
+      "ev_club_schema"
+    ]
+  },
+  {
+    "id": "constraint_club_attendance_join",
+    "target": "club_attendance",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "attendance",
+      "attended",
+      "members attended",
+      "how many members"
+    ],
+    "severity": "block",
+    "scope": "attendance counting",
+    "confidence": "high",
+    "description": "Members attending an event are counted through attendance rows (one member-event pair each); the attendance table has no count column.",
+    "evidence": [
+      "ev_club_links",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_club_remaining_negative",
+    "target": "club_budget",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "exceeded the budget",
+      "remaining",
+      "overspent",
+      "spend-to-budget ratio"
+    ],
+    "severity": "warning",
+    "scope": "budget.remaining interpretation",
+    "confidence": "high",
+    "description": "budget.remaining can be negative when spending exceeds the allocation; the event that exceeded the budget the most has the minimum remaining value below zero. Spend-to-budget ratio is spent divided by amount.",
+    "evidence": [
+      "ev_club_schema",
+      "ev_club_links",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_club_full_name_phone",
+    "target": "club_member_full_name",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "full name",
+      "contact number",
+      "phone",
+      "member name"
+    ],
+    "severity": "info",
+    "scope": "member naming and contact",
+    "confidence": "high",
+    "description": "Member full name is first_name plus last_name; contact number is member.phone.",
+    "evidence": [
+      "ev_club_schema",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_club_zip_geo",
+    "target": "club_zip_code",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "county",
+      "state",
+      "city",
+      "grew up in",
+      "how many cities"
+    ],
+    "severity": "block",
+    "scope": "ZIP geography questions",
+    "confidence": "high",
+    "description": "zip_code supplies city, county and state for members via member.zip. County values include the suffix 'County' (for example 'Orange County'), and state values are full names such as 'Virginia'.",
+    "evidence": [
+      "ev_club_schema"
+    ]
+  },
+  {
+    "id": "constraint_hero_gender_ids",
+    "target": "hero_gender",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "male",
+      "female",
+      "gender",
+      "gender_id"
+    ],
+    "severity": "block",
+    "scope": "superhero gender filtering",
+    "confidence": "high",
+    "description": "gender.id 1 = Male, 2 = Female, 3 = N/A. Match through superhero.gender_id; do not infer gender from names.",
+    "evidence": [
+      "ev_hero_enums"
+    ]
+  },
+  {
+    "id": "constraint_hero_attribute_case",
+    "target": "hero_attribute",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "durability",
+      "strength",
+      "speed",
+      "intelligence",
+      "combat",
+      "power",
+      "attribute"
+    ],
+    "severity": "block",
+    "scope": "attribute_name matching",
+    "confidence": "high",
+    "description": "attribute_name values are Title Case: 'Intelligence', 'Strength', 'Speed', 'Durability', 'Power', 'Combat'. Lower-case question words must be matched case-insensitively or mapped to the Title Case value.",
+    "evidence": [
+      "ev_hero_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_hero_alignment_villain",
+    "target": "hero_alignment",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "villain",
+      "hero",
+      "alignment",
+      "Bad",
+      "Good"
+    ],
+    "severity": "block",
+    "scope": "alignment filtering",
+    "confidence": "high",
+    "description": "alignment values are Good, Bad, Neutral and N/A; 'villains' means alignment = 'Bad'.",
+    "evidence": [
+      "ev_hero_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_hero_colour_none",
+    "target": "hero_colour",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "no eye color",
+      "no colour",
+      "green-skinned",
+      "skin colour"
+    ],
+    "severity": "block",
+    "scope": "colour reference filtering",
+    "confidence": "high",
+    "description": "colour.colour uses values such as 'Green', 'Blue', 'No Colour'. 'No eye color' means the eye_colour_id references 'No Colour'; 'green-skinned' means skin_colour_id references 'Green'.",
+    "evidence": [
+      "ev_hero_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_hero_publisher_names",
+    "target": "hero_publisher",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "Marvel Comics",
+      "DC Comics",
+      "Dark Horse Comics",
+      "Star Trek",
+      "publisher"
+    ],
+    "severity": "block",
+    "scope": "publisher filtering",
+    "confidence": "high",
+    "description": "publisher_name stores full publisher names such as 'Marvel Comics', 'DC Comics', 'Dark Horse Comics' and 'Star Trek'; 'DC' and 'Marvel' in questions map to the full names.",
+    "evidence": [
+      "ev_hero_counts",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_hero_height_weight_units",
+    "target": "hero_height_weight",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "height",
+      "weight",
+      "cm",
+      "kg",
+      "over 200cm"
+    ],
+    "severity": "info",
+    "scope": "superhero body measurements",
+    "confidence": "high",
+    "description": "height_cm is in centimetres and weight_kg is in kilograms; comparisons such as 'over 200cm' apply directly to height_cm.",
+    "evidence": [
+      "ev_hero_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_thromb_severity",
+    "target": "thromb_thrombosis_severity",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "thrombosis",
+      "severe thrombosis",
+      "most serious thrombosis",
+      "thrombosis = 2"
+    ],
+    "severity": "block",
+    "scope": "Examination.Thrombosis filtering",
+    "confidence": "high",
+    "description": "Thrombosis is an ordinal code 0-3, not a boolean: 0 means none. Workload evidence uses code 2 for 'severe degree of thrombosis' in one question and code 1 for 'most serious thrombosis' in another, so the explicit code stated in the question evidence must be used.",
+    "evidence": [
+      "ev_thromb_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_thromb_sex_values",
+    "target": "thromb_sex",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "female",
+      "male",
+      "women",
+      "sex",
+      "SEX"
+    ],
+    "severity": "block",
+    "scope": "Patient.SEX filtering",
+    "confidence": "high",
+    "description": "Patient.SEX is 'F' for female and 'M' for male; 13 patients have an empty sex value and are excluded from sex-specific counts.",
+    "evidence": [
+      "ev_thromb_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_thromb_lab_normal_ranges",
+    "target": "thromb_uric_acid",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "normal range",
+      "abnormal",
+      "uric acid",
+      "UA",
+      "HCT",
+      "PT",
+      "LDH",
+      "Ig A",
+      "IGA",
+      "total cholesterol"
+    ],
+    "severity": "block",
+    "scope": "Laboratory normal-range questions",
+    "confidence": "high",
+    "description": "Workload-defined normal/abnormal thresholds: uric acid abnormal when UA > 8.0 for males or UA > 6.5 for females; hematocrit abnormal when HCT >= 52; prothrombin time abnormal when PT >= 14; LDH beyond normal when LDH > 500; Ig A normal when IGA > 80 and IGA < 500.",
+    "evidence": [
+      "ev_thromb_lab",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_thromb_age_derivation",
+    "target": "thromb_patient_age",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "age",
+      "older than",
+      "youngest",
+      "underage",
+      "born after",
+      "born in"
+    ],
+    "severity": "warning",
+    "scope": "Patient age questions",
+    "confidence": "high",
+    "description": "Patient has no age column; age is derived as the current year minus the year of Birthday. 'Youngest' means the latest Birthday and 'oldest' the earliest. Filters on birth year should use Birthday directly.",
+    "evidence": [
+      "ev_thromb_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_thromb_sm_encoding",
+    "target": "thromb_anti_sm",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "anti-SM",
+      "SM",
+      "normal anti-SM",
+      "negative",
+      "positive"
+    ],
+    "severity": "block",
+    "scope": "Laboratory.SM filtering",
+    "confidence": "high",
+    "description": "Laboratory.SM encodes the anti-SM result: 'negative' = '-', '0' = '+-', '1' = '+', with '2' and '8' as stronger positives; NULL means not tested. 'Normal anti-SM' means SM IN ('negative','0'), corresponding to '-' or '+-'.",
+    "evidence": [
+      "ev_thromb_sm",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_thromb_date_ranges",
+    "target": "thromb_examination_date",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "1990",
+      "1993",
+      "1997",
+      "date range",
+      "examined in",
+      "came to the hospital"
+    ],
+    "severity": "warning",
+    "scope": "thrombosis temporal filtering",
+    "confidence": "high",
+    "description": "Examination dates span 1989-04-18 to 1998-04-17 and Laboratory dates span 1981-01-27 to 1999-03-04; patient birth dates span 1912 to 2007. Different event dates live in Examination, Laboratory and Patient (Description, First Date) and must not be interchanged.",
+    "evidence": [
+      "ev_thromb_enums",
+      "ev_thromb_lab",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_tox_bond_types",
+    "target": "tox_bond_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "single bond",
+      "double bond",
+      "triple bond",
+      "bond type",
+      "bond_type"
+    ],
+    "severity": "block",
+    "scope": "bond.bond_type filtering",
+    "confidence": "high",
+    "description": "bond_type '-' is a single bond, '=' a double bond, '#' a triple bond; one bond row has a NULL type.",
+    "evidence": [
+      "ev_tox_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_tox_label",
+    "target": "tox_carcinogenicity_label",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "carcinogenic",
+      "non-carcinogenic",
+      "label",
+      "toxicology"
+    ],
+    "severity": "block",
+    "scope": "molecule.label filtering",
+    "confidence": "high",
+    "description": "molecule.label '+' means carcinogenic and '-' means non-carcinogenic.",
+    "evidence": [
+      "ev_tox_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_tox_atom_id_format",
+    "target": "tox_atom",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "atom 19",
+      "4th atom",
+      "atom_id",
+      "atom number",
+      "TR004_8_9"
+    ],
+    "severity": "block",
+    "scope": "atom and bond identifier parsing",
+    "confidence": "high",
+    "description": "atom_id has the form <molecule_id>_<atom ordinal> (for example TR000_1); 'atom 19' means the atom whose id ends with '_19' for the relevant molecule. bond_id has the form <molecule_id>_<atom1>_<atom2>.",
+    "evidence": [
+      "ev_tox_atom",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "constraint_tox_connected_symmetric",
+    "target": "tox_connected_atom",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "connections",
+      "connected",
+      "bonded atoms",
+      "cannot bond with any other atoms"
+    ],
+    "severity": "block",
+    "scope": "connected table counting",
+    "confidence": "high",
+    "description": "connected stores every bond twice, once per direction, and also stores both atoms of each bond; counting rows directly double counts. Use bond_id or count distinct atoms. An atom with no connection is absent from both atom_id and atom_id2.",
+    "evidence": [
+      "ev_tox_connected",
+      "ev_workload"
+    ]
+  }
+]

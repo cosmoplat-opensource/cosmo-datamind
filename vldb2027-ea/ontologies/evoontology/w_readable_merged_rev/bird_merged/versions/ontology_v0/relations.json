@@ -1,0 +1,866 @@
+[
+  {
+    "id": "rel_school_district_composed_of_schools",
+    "source": "school_district",
+    "relation_type": "composition",
+    "target": "school_school",
+    "connection_condition": "schools.District stores the district name that groups school rows",
+    "description": "A district is composed of its schools; each school belongs to one district.",
+    "evidence": [
+      "ev_school_enums"
+    ]
+  },
+  {
+    "id": "rel_school_county_has_districts",
+    "source": "school_county",
+    "relation_type": "association",
+    "target": "school_district",
+    "connection_condition": "County and District are both text attributes on the schools row",
+    "description": "Counties contain districts, connected only through county text rather than a district identifier.",
+    "evidence": [
+      "ev_school_enums"
+    ]
+  },
+  {
+    "id": "rel_school_free_meal_rate_derived",
+    "source": "school_free_meal_count_k12",
+    "relation_type": "derivation",
+    "target": "school_free_meal_rate_k12",
+    "connection_condition": "rate = Free Meal Count (K-12) * 100 / Enrollment (K-12)",
+    "description": "The eligible free meal rate is derived from the free meal count and K-12 enrollment.",
+    "evidence": [
+      "ev_school_frpm_sat",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "rel_school_frpm_rate_derived",
+    "source": "school_frpm_count_k12",
+    "relation_type": "derivation",
+    "target": "school_frpm_rate_k12",
+    "connection_condition": "rate = FRPM Count (K-12) / Enrollment (K-12)",
+    "description": "The eligible free or reduced price meal rate is derived from the FRPM count and K-12 enrollment.",
+    "evidence": [
+      "ev_school_frpm_sat",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "rel_school_charter_of_school",
+    "source": "school_charter_status",
+    "relation_type": "association",
+    "target": "school_school",
+    "connection_condition": "Charter flag on the schools row",
+    "description": "Charter status characterizes whether a school is chartered.",
+    "evidence": [
+      "ev_school_enums"
+    ]
+  },
+  {
+    "id": "rel_school_virtual_of_school",
+    "source": "school_virtual_status",
+    "relation_type": "association",
+    "target": "school_school",
+    "connection_condition": "Virtual code on the schools row",
+    "description": "Virtual status characterizes the instructional delivery mode of a school.",
+    "evidence": [
+      "ev_school_enums"
+    ]
+  },
+  {
+    "id": "rel_card_set_composed_of_cards",
+    "source": "card_set",
+    "relation_type": "composition",
+    "target": "card_card",
+    "connection_condition": "cards.setCode corresponds to sets.code",
+    "description": "A set is composed of card printings; each card printing belongs to one set code.",
+    "evidence": [
+      "ev_card_sets"
+    ]
+  },
+  {
+    "id": "rel_card_has_rulings",
+    "source": "card_card",
+    "relation_type": "composition",
+    "target": "card_ruling",
+    "connection_condition": "rulings.uuid corresponds to cards.uuid",
+    "description": "Rulings are attached to a card and cannot exist without it.",
+    "evidence": [
+      "ev_card_rulings"
+    ]
+  },
+  {
+    "id": "rel_card_has_translation",
+    "source": "card_card",
+    "relation_type": "composition",
+    "target": "card_foreign_translation",
+    "connection_condition": "foreign_data.uuid corresponds to cards.uuid",
+    "description": "Foreign translation records belong to a card printing.",
+    "evidence": [
+      "ev_card_lang_legal"
+    ]
+  },
+  {
+    "id": "rel_card_set_has_translation",
+    "source": "card_set",
+    "relation_type": "composition",
+    "target": "card_set_translation",
+    "connection_condition": "set_translations.setCode corresponds to sets.code",
+    "description": "Set name translations belong to a set and are identified by set code plus language.",
+    "evidence": [
+      "ev_card_sets"
+    ]
+  },
+  {
+    "id": "rel_card_language_of_translation",
+    "source": "card_language",
+    "relation_type": "association",
+    "target": "card_foreign_translation",
+    "connection_condition": "foreign_data.language names the translation language",
+    "description": "Language classifies a foreign card translation.",
+    "evidence": [
+      "ev_card_lang_legal"
+    ]
+  },
+  {
+    "id": "rel_card_legal_format_status",
+    "source": "card_legal_format",
+    "relation_type": "association",
+    "target": "card_legal_status",
+    "connection_condition": "One legality row carries both format and status per card uuid",
+    "description": "Legality status is only meaningful together with a play format.",
+    "evidence": [
+      "ev_card_lang_legal"
+    ]
+  },
+  {
+    "id": "rel_debit_customer_consumption",
+    "source": "debit_customer",
+    "relation_type": "association",
+    "target": "debit_monthly_consumption",
+    "connection_condition": "yearmonth.CustomerID corresponds to customers.CustomerID",
+    "description": "Monthly consumption is attributed to a customer.",
+    "evidence": [
+      "ev_debit_time"
+    ]
+  },
+  {
+    "id": "rel_debit_transaction_customer",
+    "source": "debit_transaction",
+    "relation_type": "association",
+    "target": "debit_customer",
+    "connection_condition": "transactions_1k.CustomerID corresponds to customers.CustomerID",
+    "description": "Each transaction is made by one customer.",
+    "evidence": [
+      "ev_debit_dist",
+      "ev_debit_joins"
+    ]
+  },
+  {
+    "id": "rel_debit_transaction_station",
+    "source": "debit_transaction",
+    "relation_type": "association",
+    "target": "debit_gas_station",
+    "connection_condition": "transactions_1k.GasStationID corresponds to gasstations.GasStationID",
+    "description": "Each transaction occurs at one gas station.",
+    "evidence": [
+      "ev_debit_dist",
+      "ev_debit_joins"
+    ]
+  },
+  {
+    "id": "rel_debit_transaction_product",
+    "source": "debit_transaction",
+    "relation_type": "association",
+    "target": "debit_product",
+    "connection_condition": "transactions_1k.ProductID corresponds to products.ProductID",
+    "description": "Each transaction line refers to one product.",
+    "evidence": [
+      "ev_debit_joins"
+    ]
+  },
+  {
+    "id": "rel_debit_station_country",
+    "source": "debit_gas_station",
+    "relation_type": "association",
+    "target": "debit_country",
+    "connection_condition": "gasstations.Country is a country code on the station row",
+    "description": "A gas station is located in one country.",
+    "evidence": [
+      "ev_debit_dist"
+    ]
+  },
+  {
+    "id": "rel_debit_station_segment",
+    "source": "debit_gas_station",
+    "relation_type": "association",
+    "target": "debit_gas_station_segment",
+    "connection_condition": "gasstations.Segment on the station row",
+    "description": "A gas station belongs to one market segment.",
+    "evidence": [
+      "ev_debit_dist"
+    ]
+  },
+  {
+    "id": "rel_fin_account_has_loans",
+    "source": "fin_account",
+    "relation_type": "composition",
+    "target": "fin_loan",
+    "connection_condition": "loan.account_id corresponds to account.account_id",
+    "description": "Loan contracts belong to an account and cannot exist without it.",
+    "evidence": [
+      "ev_fin_enums"
+    ]
+  },
+  {
+    "id": "rel_fin_account_has_transactions",
+    "source": "fin_account",
+    "relation_type": "composition",
+    "target": "fin_transaction",
+    "connection_condition": "trans.account_id corresponds to account.account_id",
+    "description": "Transactions are movements of an account.",
+    "evidence": [
+      "ev_fin_enums"
+    ]
+  },
+  {
+    "id": "rel_fin_district_has_accounts",
+    "source": "fin_district",
+    "relation_type": "composition",
+    "target": "fin_account",
+    "connection_condition": "account.district_id corresponds to district.district_id",
+    "description": "Accounts are opened at a district branch; the branch is the district entity.",
+    "evidence": [
+      "ev_fin_district"
+    ]
+  },
+  {
+    "id": "rel_fin_client_disposition",
+    "source": "fin_client",
+    "relation_type": "association",
+    "target": "fin_disposition",
+    "connection_condition": "disp.client_id corresponds to client.client_id",
+    "description": "A client is linked to accounts through disposition records.",
+    "evidence": [
+      "ev_fin_enums"
+    ]
+  },
+  {
+    "id": "rel_fin_account_disposition",
+    "source": "fin_account",
+    "relation_type": "association",
+    "target": "fin_disposition",
+    "connection_condition": "disp.account_id corresponds to account.account_id",
+    "description": "A disposition record links an account to its holder or disponent.",
+    "evidence": [
+      "ev_fin_enums"
+    ]
+  },
+  {
+    "id": "rel_fin_loan_status",
+    "source": "fin_loan",
+    "relation_type": "association",
+    "target": "fin_loan_status",
+    "connection_condition": "loan.status on the contract row",
+    "description": "Each loan contract has one status code describing whether it is running and whether the client is in debt.",
+    "evidence": [
+      "ev_fin_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "rel_fin_transaction_type",
+    "source": "fin_transaction",
+    "relation_type": "association",
+    "target": "fin_transaction_type",
+    "connection_condition": "trans.type on the transaction row",
+    "description": "Each transaction has a direction type.",
+    "evidence": [
+      "ev_fin_enums"
+    ]
+  },
+  {
+    "id": "rel_fin_transaction_operation",
+    "source": "fin_transaction",
+    "relation_type": "association",
+    "target": "fin_transaction_operation",
+    "connection_condition": "trans.operation on the transaction row",
+    "description": "Each transaction has an operation mode, including credit card withdrawal.",
+    "evidence": [
+      "ev_fin_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "rel_fin_client_age_derived",
+    "source": "fin_client",
+    "relation_type": "derivation",
+    "target": "fin_client_age",
+    "connection_condition": "age computed from client.birth_date",
+    "description": "Client age is derived from the stored birth date.",
+    "evidence": [
+      "ev_fin_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "rel_fin_client_gender",
+    "source": "fin_client",
+    "relation_type": "association",
+    "target": "fin_client_gender",
+    "connection_condition": "client.gender on the client row",
+    "description": "Gender is an attribute of a client.",
+    "evidence": [
+      "ev_fin_enums"
+    ]
+  },
+  {
+    "id": "rel_fin_card_type",
+    "source": "fin_card",
+    "relation_type": "association",
+    "target": "fin_card_type",
+    "connection_condition": "card.type on the card row",
+    "description": "Each payment card has a type/tier.",
+    "evidence": [
+      "ev_fin_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "rel_fin_district_population",
+    "source": "fin_district",
+    "relation_type": "association",
+    "target": "fin_district_population",
+    "connection_condition": "district.A4 on the district row",
+    "description": "Population is a statistic of a district.",
+    "evidence": [
+      "ev_fin_district",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "rel_fin_district_salary",
+    "source": "fin_district",
+    "relation_type": "association",
+    "target": "fin_district_avg_salary",
+    "connection_condition": "district.A11 on the district row",
+    "description": "Average salary is a statistic of a district.",
+    "evidence": [
+      "ev_fin_district",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "rel_fin_district_unemployment",
+    "source": "fin_district",
+    "relation_type": "association",
+    "target": "fin_district_unemployment_rate",
+    "connection_condition": "district.A12 and A13 on the district row",
+    "description": "Unemployment rates are statistics of a district.",
+    "evidence": [
+      "ev_fin_district",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "rel_fin_district_crime",
+    "source": "fin_district",
+    "relation_type": "association",
+    "target": "fin_district_crime_count",
+    "connection_condition": "district.A15 and A16 on the district row",
+    "description": "Crime counts are statistics of a district.",
+    "evidence": [
+      "ev_fin_district",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "rel_f1_race_has_results",
+    "source": "f1_race",
+    "relation_type": "composition",
+    "target": "f1_result",
+    "connection_condition": "results.raceId corresponds to races.raceId",
+    "description": "Race results are components of a race.",
+    "evidence": [
+      "ev_f1_status"
+    ]
+  },
+  {
+    "id": "rel_f1_race_at_circuit",
+    "source": "f1_race",
+    "relation_type": "association",
+    "target": "f1_circuit",
+    "connection_condition": "races.circuitId corresponds to circuits.circuitId",
+    "description": "A race is held at a circuit; the circuit is not a part or a subtype of the race.",
+    "evidence": [
+      "ev_f1_schema"
+    ]
+  },
+  {
+    "id": "rel_f1_result_driver",
+    "source": "f1_result",
+    "relation_type": "association",
+    "target": "f1_driver",
+    "connection_condition": "results.driverId corresponds to drivers.driverId",
+    "description": "Each result belongs to one driver.",
+    "evidence": [
+      "ev_f1_schema"
+    ]
+  },
+  {
+    "id": "rel_f1_result_constructor",
+    "source": "f1_result",
+    "relation_type": "association",
+    "target": "f1_constructor",
+    "connection_condition": "results.constructorId corresponds to constructors.constructorId",
+    "description": "Each result records the constructor the driver raced for.",
+    "evidence": [
+      "ev_f1_schema"
+    ]
+  },
+  {
+    "id": "rel_f1_result_status",
+    "source": "f1_result",
+    "relation_type": "association",
+    "target": "f1_race_status",
+    "connection_condition": "results.statusId corresponds to status.statusId",
+    "description": "Each result has a final race status.",
+    "evidence": [
+      "ev_f1_status",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "rel_f1_driver_full_name_derived",
+    "source": "f1_driver",
+    "relation_type": "derivation",
+    "target": "f1_driver_full_name",
+    "connection_condition": "full name = drivers.forename concatenated with drivers.surname",
+    "description": "Driver full names are derived from forename and surname.",
+    "evidence": [
+      "ev_f1_schema",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "rel_f1_constructor_result_constructor",
+    "source": "f1_constructor_result",
+    "relation_type": "association",
+    "target": "f1_constructor",
+    "connection_condition": "constructorResults.constructorId corresponds to constructors.constructorId",
+    "description": "Constructor race points belong to a constructor.",
+    "evidence": [
+      "ev_f1_schema"
+    ]
+  },
+  {
+    "id": "rel_f1_constructor_result_race",
+    "source": "f1_constructor_result",
+    "relation_type": "association",
+    "target": "f1_race",
+    "connection_condition": "constructorResults.raceId corresponds to races.raceId",
+    "description": "Constructor race points are awarded in a specific race.",
+    "evidence": [
+      "ev_f1_schema"
+    ]
+  },
+  {
+    "id": "rel_f1_qualifying_driver",
+    "source": "f1_qualifying",
+    "relation_type": "association",
+    "target": "f1_driver",
+    "connection_condition": "qualifying.driverId corresponds to drivers.driverId",
+    "description": "A qualifying result belongs to one driver.",
+    "evidence": [
+      "ev_f1_schema"
+    ]
+  },
+  {
+    "id": "rel_f1_pit_stop_driver",
+    "source": "f1_pit_stop",
+    "relation_type": "association",
+    "target": "f1_driver",
+    "connection_condition": "pitStops.driverId corresponds to drivers.driverId",
+    "description": "A pit stop belongs to one driver.",
+    "evidence": [
+      "ev_f1_schema"
+    ]
+  },
+  {
+    "id": "rel_f1_lap_time_driver",
+    "source": "f1_lap_time",
+    "relation_type": "association",
+    "target": "f1_driver",
+    "connection_condition": "lapTimes.driverId corresponds to drivers.driverId",
+    "description": "A lap time belongs to one driver.",
+    "evidence": [
+      "ev_f1_schema"
+    ]
+  },
+  {
+    "id": "rel_f1_fastest_speed_result",
+    "source": "f1_fastest_lap_speed",
+    "relation_type": "association",
+    "target": "f1_result",
+    "connection_condition": "results.fastestLapSpeed on the result row",
+    "description": "Fastest lap speed is a measurement recorded on a race result.",
+    "evidence": [
+      "ev_f1_speed",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "rel_club_event_has_attendance",
+    "source": "club_event",
+    "relation_type": "composition",
+    "target": "club_attendance",
+    "connection_condition": "attendance.link_to_event corresponds to event.event_id",
+    "description": "Attendance records are components of an event.",
+    "evidence": [
+      "ev_club_links"
+    ]
+  },
+  {
+    "id": "rel_club_event_has_budget",
+    "source": "club_event",
+    "relation_type": "composition",
+    "target": "club_budget",
+    "connection_condition": "budget.link_to_event corresponds to event.event_id",
+    "description": "Budget lines belong to an event.",
+    "evidence": [
+      "ev_club_links"
+    ]
+  },
+  {
+    "id": "rel_club_budget_has_expense",
+    "source": "club_budget",
+    "relation_type": "composition",
+    "target": "club_expense",
+    "connection_condition": "expense.link_to_budget corresponds to budget.budget_id",
+    "description": "Expenses are charged against a budget line.",
+    "evidence": [
+      "ev_club_schema"
+    ]
+  },
+  {
+    "id": "rel_club_member_attendance",
+    "source": "club_member",
+    "relation_type": "association",
+    "target": "club_attendance",
+    "connection_condition": "attendance.link_to_member corresponds to member.member_id",
+    "description": "A member attends events through attendance records.",
+    "evidence": [
+      "ev_club_links"
+    ]
+  },
+  {
+    "id": "rel_club_member_full_name_derived",
+    "source": "club_member",
+    "relation_type": "derivation",
+    "target": "club_member_full_name",
+    "connection_condition": "full name = member.first_name concatenated with member.last_name",
+    "description": "Member full names are derived from first and last name.",
+    "evidence": [
+      "ev_club_schema",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "rel_club_member_major",
+    "source": "club_member",
+    "relation_type": "association",
+    "target": "club_major",
+    "connection_condition": "member.link_to_major corresponds to major.major_id",
+    "description": "A member studies one major.",
+    "evidence": [
+      "ev_club_schema"
+    ]
+  },
+  {
+    "id": "rel_club_member_zip",
+    "source": "club_member",
+    "relation_type": "association",
+    "target": "club_zip_code",
+    "connection_condition": "member.zip corresponds to zip_code.zip_code",
+    "description": "A member's ZIP code provides city, county and state geography.",
+    "evidence": [
+      "ev_club_schema"
+    ]
+  },
+  {
+    "id": "rel_club_event_status",
+    "source": "club_event",
+    "relation_type": "association",
+    "target": "club_event_status",
+    "connection_condition": "event.status on the event row",
+    "description": "Each event has a lifecycle status.",
+    "evidence": [
+      "ev_club_schema",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "rel_club_budget_category",
+    "source": "club_budget",
+    "relation_type": "association",
+    "target": "club_budget_category",
+    "connection_condition": "budget.category on the budget row",
+    "description": "Each budget line has an expense category.",
+    "evidence": [
+      "ev_club_schema"
+    ]
+  },
+  {
+    "id": "rel_club_expense_approval",
+    "source": "club_expense",
+    "relation_type": "association",
+    "target": "club_expense_approval",
+    "connection_condition": "expense.approved on the expense row",
+    "description": "Each expense has an approval flag.",
+    "evidence": [
+      "ev_club_schema"
+    ]
+  },
+  {
+    "id": "rel_hero_has_attributes",
+    "source": "hero_superhero",
+    "relation_type": "composition",
+    "target": "hero_attribute_value",
+    "connection_condition": "hero_attribute.hero_id corresponds to superhero.id",
+    "description": "Attribute ratings are components of a superhero record.",
+    "evidence": [
+      "ev_hero_enums"
+    ]
+  },
+  {
+    "id": "rel_hero_attribute_type",
+    "source": "hero_attribute",
+    "relation_type": "association",
+    "target": "hero_attribute_value",
+    "connection_condition": "hero_attribute.attribute_id corresponds to attribute.id",
+    "description": "Each attribute value is an instance of one attribute type.",
+    "evidence": [
+      "ev_hero_enums"
+    ]
+  },
+  {
+    "id": "rel_hero_has_superpowers",
+    "source": "hero_superhero",
+    "relation_type": "association",
+    "target": "hero_superpower",
+    "connection_condition": "hero_power.hero_id corresponds to superhero.id and hero_power.power_id to superpower.id",
+    "description": "Superheroes possess named superpowers through the hero_power link table.",
+    "evidence": [
+      "ev_hero_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "rel_hero_publisher",
+    "source": "hero_superhero",
+    "relation_type": "association",
+    "target": "hero_publisher",
+    "connection_condition": "superhero.publisher_id corresponds to publisher.id",
+    "description": "A superhero is published by one publisher.",
+    "evidence": [
+      "ev_hero_enums",
+      "ev_hero_counts"
+    ]
+  },
+  {
+    "id": "rel_hero_gender",
+    "source": "hero_superhero",
+    "relation_type": "association",
+    "target": "hero_gender",
+    "connection_condition": "superhero.gender_id corresponds to gender.id",
+    "description": "A superhero has one gender classification.",
+    "evidence": [
+      "ev_hero_enums"
+    ]
+  },
+  {
+    "id": "rel_hero_alignment",
+    "source": "hero_superhero",
+    "relation_type": "association",
+    "target": "hero_alignment",
+    "connection_condition": "superhero.alignment_id corresponds to alignment.id",
+    "description": "A superhero has one alignment, where Bad corresponds to villain.",
+    "evidence": [
+      "ev_hero_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "rel_hero_colour",
+    "source": "hero_superhero",
+    "relation_type": "association",
+    "target": "hero_colour",
+    "connection_condition": "superhero.eye_colour_id, hair_colour_id and skin_colour_id each reference colour.id",
+    "description": "Eye, hair and skin colours are colour reference values of a superhero.",
+    "evidence": [
+      "ev_hero_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "rel_hero_race",
+    "source": "hero_superhero",
+    "relation_type": "association",
+    "target": "hero_race",
+    "connection_condition": "superhero.race_id corresponds to race.id",
+    "description": "A superhero has one race/species.",
+    "evidence": [
+      "ev_hero_enums"
+    ]
+  },
+  {
+    "id": "rel_thromb_patient_examinations",
+    "source": "thromb_patient",
+    "relation_type": "composition",
+    "target": "thromb_examination",
+    "connection_condition": "Examination.ID corresponds to Patient.ID",
+    "description": "Examinations are components of a patient's record.",
+    "evidence": [
+      "ev_thromb_enums"
+    ]
+  },
+  {
+    "id": "rel_thromb_patient_labs",
+    "source": "thromb_patient",
+    "relation_type": "composition",
+    "target": "thromb_laboratory",
+    "connection_condition": "Laboratory.ID corresponds to Patient.ID",
+    "description": "Laboratory tests are components of a patient's record.",
+    "evidence": [
+      "ev_thromb_enums"
+    ]
+  },
+  {
+    "id": "rel_thromb_patient_diagnosis",
+    "source": "thromb_patient",
+    "relation_type": "association",
+    "target": "thromb_diagnosis",
+    "connection_condition": "Patient.Diagnosis on the patient row; Examination.Diagnosis also exists",
+    "description": "A patient has a diagnosis recorded at patient level.",
+    "evidence": [
+      "ev_thromb_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "rel_thromb_patient_sex",
+    "source": "thromb_patient",
+    "relation_type": "association",
+    "target": "thromb_sex",
+    "connection_condition": "Patient.SEX on the patient row",
+    "description": "Sex is an attribute of a patient.",
+    "evidence": [
+      "ev_thromb_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "rel_thromb_patient_age_derived",
+    "source": "thromb_patient",
+    "relation_type": "derivation",
+    "target": "thromb_patient_age",
+    "connection_condition": "age computed from Patient.Birthday",
+    "description": "Patient age is derived from the birth date.",
+    "evidence": [
+      "ev_thromb_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "rel_thromb_patient_admission",
+    "source": "thromb_patient",
+    "relation_type": "association",
+    "target": "thromb_admission",
+    "connection_condition": "Patient.Admission on the patient row",
+    "description": "Admission type is an attribute of a patient.",
+    "evidence": [
+      "ev_thromb_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "rel_thromb_exam_severity",
+    "source": "thromb_examination",
+    "relation_type": "association",
+    "target": "thromb_thrombosis_severity",
+    "connection_condition": "Examination.Thrombosis on the examination row",
+    "description": "Thrombosis severity is recorded per examination.",
+    "evidence": [
+      "ev_thromb_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "rel_tox_molecule_atoms",
+    "source": "tox_molecule",
+    "relation_type": "composition",
+    "target": "tox_atom",
+    "connection_condition": "atom.molecule_id corresponds to molecule.molecule_id",
+    "description": "Atoms are components of a molecule.",
+    "evidence": [
+      "ev_tox_enums",
+      "ev_tox_atom"
+    ]
+  },
+  {
+    "id": "rel_tox_molecule_bonds",
+    "source": "tox_molecule",
+    "relation_type": "composition",
+    "target": "tox_bond",
+    "connection_condition": "bond.molecule_id corresponds to molecule.molecule_id",
+    "description": "Bonds are components of a molecule.",
+    "evidence": [
+      "ev_tox_enums"
+    ]
+  },
+  {
+    "id": "rel_tox_atom_connected",
+    "source": "tox_atom",
+    "relation_type": "association",
+    "target": "tox_connected_atom",
+    "connection_condition": "connected.atom_id and connected.atom_id2 each reference atom.atom_id",
+    "description": "Atoms are connected to other atoms through the symmetric connected relation.",
+    "evidence": [
+      "ev_tox_connected"
+    ]
+  },
+  {
+    "id": "rel_tox_bond_type",
+    "source": "tox_bond",
+    "relation_type": "association",
+    "target": "tox_bond_type",
+    "connection_condition": "bond.bond_type on the bond row",
+    "description": "Each bond has a bond order type.",
+    "evidence": [
+      "ev_tox_enums"
+    ]
+  },
+  {
+    "id": "rel_tox_molecule_label",
+    "source": "tox_molecule",
+    "relation_type": "association",
+    "target": "tox_carcinogenicity_label",
+    "connection_condition": "molecule.label on the molecule row",
+    "description": "Each molecule has a carcinogenicity label.",
+    "evidence": [
+      "ev_tox_enums",
+      "ev_workload"
+    ]
+  },
+  {
+    "id": "rel_tox_atom_element",
+    "source": "tox_atom",
+    "relation_type": "association",
+    "target": "tox_element",
+    "connection_condition": "atom.element on the atom row",
+    "description": "Each atom has a chemical element.",
+    "evidence": [
+      "ev_tox_enums"
+    ]
+  }
+]

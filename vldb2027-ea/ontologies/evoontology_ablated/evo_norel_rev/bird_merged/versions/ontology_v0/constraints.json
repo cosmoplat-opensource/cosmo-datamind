@@ -1,0 +1,905 @@
+[
+  {
+    "id": "con_cs_district_type_codes",
+    "target": "term_cs_district_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "district type",
+      "unified school district",
+      "elementary school district",
+      "merged unified",
+      "district type code"
+    ],
+    "severity": "block",
+    "scope": "california_schools tb003.cl0065",
+    "confidence": "high",
+    "description": "cl0065 codes: 52 Elementary School District, 54 Unified School District, 56 High School District, 00 County Office of Education, 98 Regional Occupation Center, 34 Non-School Locations. cl0066 holds the matching text.",
+    "evidence": [
+      "ev_cs_school_codes"
+    ]
+  },
+  {
+    "id": "con_cs_charter_flag",
+    "target": "term_cs_charter_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "charter",
+      "non-chartered",
+      "charter school"
+    ],
+    "severity": "block",
+    "scope": "california_schools tb003.cl0062",
+    "confidence": "high",
+    "description": "cl0062 = 1 means charter school; 0 means non-chartered; blank means not reported. 'Non-chartered schools' means cl0062 = 0.",
+    "evidence": [
+      "ev_cs_school_codes"
+    ]
+  },
+  {
+    "id": "con_cs_virtual_flag",
+    "target": "term_cs_virtual_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "virtual",
+      "exclusively virtual",
+      "physical building",
+      "does not offer physical building"
+    ],
+    "severity": "block",
+    "scope": "california_schools tb003.cl0075",
+    "confidence": "high",
+    "description": "cl0075 = 'F' means fully / exclusively virtual, i.e. the school does not offer a physical building; 'P' partial virtual; 'N' not virtual; blank unknown.",
+    "evidence": [
+      "ev_cs_school_codes"
+    ]
+  },
+  {
+    "id": "con_cs_school_status_codes",
+    "target": "term_cs_school_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "merged",
+      "closed",
+      "active",
+      "school status"
+    ],
+    "severity": "warning",
+    "scope": "california_schools tb003.cl0043",
+    "confidence": "high",
+    "description": "cl0043 holds Active / Closed / Merged / Pending. 'Merged schools' in a district-type question refers to cl0043 = 'Merged', not to district consolidation dates.",
+    "evidence": [
+      "ev_cs_school_codes"
+    ]
+  },
+  {
+    "id": "con_cs_frpm_rate_columns",
+    "target": "term_cs_k12_frpm_rate",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "free or reduced price meal rate",
+      "frpm rate",
+      "percent eligible",
+      "eligible free meal rate"
+    ],
+    "severity": "block",
+    "scope": "california_schools tb001",
+    "confidence": "high",
+    "description": "Two distinct stored rates exist: cl0021 = cl0020/cl0019 (free meal rate) and cl0023 = cl0022/cl0019 (free or reduced-price meal rate). Use cl0023/cl0022 when the question says free OR reduced-price; use cl0020/cl0019 when it says free meals only.",
+    "evidence": [
+      "ev_cs_frpm_rates"
+    ]
+  },
+  {
+    "id": "con_cs_frpm_denominators",
+    "target": "term_cs_frpm_record",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "k-12",
+      "grades 1 through 12",
+      "ages 5-17",
+      "enrollment"
+    ],
+    "severity": "warning",
+    "scope": "california_schools tb001",
+    "confidence": "high",
+    "description": "K-12 measures use cl0019/cl0020/cl0022; ages 5-17 measures use cl0024/cl0025/cl0027. 'Grades 1 through 12' and 'K-12' both refer to the K-12 columns.",
+    "evidence": [
+      "ev_cs_frpm_rates"
+    ]
+  },
+  {
+    "id": "con_cs_sat_average_of_average",
+    "target": "term_cs_sat_avg_of_avg_math",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "average of average math",
+      "average math score",
+      "average score"
+    ],
+    "severity": "warning",
+    "scope": "california_schools tb002",
+    "confidence": "medium",
+    "description": "Score columns already hold per-school averages. An 'average' over several schools is the sum of those averages divided by the number of SAT records, not a re-weighted student-level average. District rows (cl0031 = 'D') are separate records and can double-count if not excluded.",
+    "evidence": [
+      "ev_cs_sat_columns"
+    ]
+  },
+  {
+    "id": "con_cs_sat_district_rows",
+    "target": "term_cs_sat_record",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "sat",
+      "district aggregate",
+      "rtype"
+    ],
+    "severity": "warning",
+    "scope": "california_schools tb002",
+    "confidence": "high",
+    "description": "tb002 contains both district aggregate rows (cl0031 = 'D') and school rows (cl0031 = 'S'). Aggregating without filtering mixes two grains.",
+    "evidence": [
+      "ev_cs_sat_columns"
+    ]
+  },
+  {
+    "id": "con_cs_address_synonyms",
+    "target": "term_cs_school_address",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "postal street",
+      "mailing street",
+      "street address",
+      "full street address"
+    ],
+    "severity": "info",
+    "scope": "california_schools tb003",
+    "confidence": "high",
+    "description": "cl0048 (physical street) and cl0052 (mailing street) are synonyms for a postal street address; either may be returned.",
+    "evidence": [
+      "ev_schema_overview"
+    ]
+  },
+  {
+    "id": "con_cs_phone_synonym",
+    "target": "term_cs_school_phone",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "communication number",
+      "telephone number",
+      "phone"
+    ],
+    "severity": "info",
+    "scope": "california_schools tb003.cl0057",
+    "confidence": "high",
+    "description": "'Communication number' means the school phone number.",
+    "evidence": [
+      "ev_schema_overview"
+    ]
+  },
+  {
+    "id": "con_cg_power_values",
+    "target": "term_cg_card_power",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "power",
+      "unknown power",
+      "infinite power",
+      "incredibly powerful"
+    ],
+    "severity": "block",
+    "scope": "card_games tb004.cl0143",
+    "confidence": "medium",
+    "description": "cl0143 holds power as text. '*' is the special marker for infinite power; NULL means the card has no power value (typically non-creature). Questions about 'unknown power' use '*' or NULL, while 'infinite power' is '*' only.",
+    "evidence": [
+      "ev_cg_card_columns"
+    ]
+  },
+  {
+    "id": "con_cg_promo_flag",
+    "target": "term_cg_promo_flag",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "promotional printing",
+      "promo"
+    ],
+    "severity": "warning",
+    "scope": "card_games tb004.cl0117",
+    "confidence": "medium",
+    "description": "cl0117 is one of a block of binary 0/1 printing flags; 1 marks a promotional printing.",
+    "evidence": [
+      "ev_cg_card_columns"
+    ]
+  },
+  {
+    "id": "con_cg_textless_flag",
+    "target": "term_cg_textless_flag",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "text box",
+      "do not have a text box",
+      "textless"
+    ],
+    "severity": "warning",
+    "scope": "card_games tb004.cl0122",
+    "confidence": "medium",
+    "description": "cl0122 = 0 identifies cards without a text box; combine with the story-spotlight flag when the question asks for story spotlight cards lacking text.",
+    "evidence": [
+      "ev_cg_card_columns"
+    ]
+  },
+  {
+    "id": "con_cg_foil_identifier_pair",
+    "target": "term_cg_card",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "foil",
+      "powerful foils",
+      "incredibly powerful",
+      "printing availability"
+    ],
+    "severity": "warning",
+    "scope": "card_games tb004.cl0094 and cl0095",
+    "confidence": "low",
+    "description": "cl0094 and cl0095 are sparse nullable numeric identifier columns, not business measures. The construction workload treats the pair being non-null as a 'powerful foil' printing marker; this interpretation is only weakly supported by the data and should be flagged when used.",
+    "evidence": [
+      "ev_cg_card_columns"
+    ]
+  },
+  {
+    "id": "con_cg_legality_values",
+    "target": "term_cg_legality_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "legal",
+      "banned",
+      "restricted",
+      "commander"
+    ],
+    "severity": "block",
+    "scope": "card_games tb006.cl0165",
+    "confidence": "high",
+    "description": "cl0165 has exactly three values: Legal, Banned, Restricted. 'Legal for commander' means cl0164 = 'commander' and cl0165 = 'Legal'.",
+    "evidence": [
+      "ev_cg_enums"
+    ]
+  },
+  {
+    "id": "con_cg_language_values",
+    "target": "term_cg_language",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "language",
+      "chinese simplified",
+      "german",
+      "italian",
+      "translation"
+    ],
+    "severity": "info",
+    "scope": "card_games tb005.cl0163 and tb008.cl0163",
+    "confidence": "high",
+    "description": "Card printings use 16 language names (including Chinese Simplified); set translations use 10. A row with no translation has NULL cl0182.",
+    "evidence": [
+      "ev_cg_enums"
+    ]
+  },
+  {
+    "id": "con_cg_foreign_only_flag",
+    "target": "term_cg_foreign_only",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "only available outside the united states",
+      "foreign only",
+      "set availability"
+    ],
+    "severity": "warning",
+    "scope": "card_games tb007.cl0171",
+    "confidence": "high",
+    "description": "cl0171 = 1 marks a set printed only outside the United States.",
+    "evidence": [
+      "ev_cg_set_columns"
+    ]
+  },
+  {
+    "id": "con_cg_set_join_keys",
+    "target": "term_cg_card_set",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "set",
+      "card set",
+      "expansion"
+    ],
+    "severity": "warning",
+    "scope": "card_games tb004/tb007/tb008",
+    "confidence": "high",
+    "description": "Sets are keyed by code cl0169, which matches tb004.cl0151; tb007.cl0137 holds the set display name. tb008 references the set by code in cl0151, not by tb007.cl0137.",
+    "evidence": [
+      "ev_cg_set_columns"
+    ]
+  },
+  {
+    "id": "con_dc_currency",
+    "target": "term_dc_currency",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "currency",
+      "eur",
+      "czk",
+      "czech koruna",
+      "euros"
+    ],
+    "severity": "block",
+    "scope": "debit_card_specializing tb010.cl0186",
+    "confidence": "high",
+    "description": "cl0186 has exactly two values, EUR and CZK. 'Czech koruna' means CZK.",
+    "evidence": [
+      "ev_dc_enums"
+    ]
+  },
+  {
+    "id": "con_dc_country",
+    "target": "term_dc_country",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "country",
+      "czech republic",
+      "slovakia",
+      "cze",
+      "svk"
+    ],
+    "severity": "block",
+    "scope": "debit_card_specializing tb011.cl0189",
+    "confidence": "high",
+    "description": "cl0189 has exactly two values: CZE = Czech Republic and SVK = Slovakia.",
+    "evidence": [
+      "ev_dc_enums"
+    ]
+  },
+  {
+    "id": "con_dc_yearmonth_format",
+    "target": "term_dc_yearmonth",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "yearmonth",
+      "february 2012",
+      "june 2013",
+      "year 2012",
+      "month"
+    ],
+    "severity": "block",
+    "scope": "debit_card_specializing tb014.cl0193 and tb013.cl0193",
+    "confidence": "high",
+    "description": "Period values are six-character strings YYYYMM; the first four characters are the year and the last two the month. February 2012 = '201202' and June 2013 = '201306'.",
+    "evidence": [
+      "ev_dc_enums"
+    ]
+  },
+  {
+    "id": "con_dc_transaction_time",
+    "target": "term_dc_transaction",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "time",
+      "8:00-9:00",
+      "hour",
+      "during"
+    ],
+    "severity": "info",
+    "scope": "debit_card_specializing tb013.cl0194",
+    "confidence": "high",
+    "description": "Transaction time is stored as an HH:MM:SS text value; time-window filters compare it as text or cast it to a time value.",
+    "evidence": [
+      "ev_dc_enums"
+    ]
+  },
+  {
+    "id": "con_dc_segment_columns",
+    "target": "term_dc_customer_segment",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "segment",
+      "sme",
+      "premium",
+      "customer segment"
+    ],
+    "severity": "warning",
+    "scope": "debit_card_specializing",
+    "confidence": "high",
+    "description": "cl0185 means customer segment (SME/LAM/KAM) in tb010 but station segment (Premium/Value for money/Noname/Other) in tb011. Always qualify by table when resolving 'segment'.",
+    "evidence": [
+      "ev_dc_enums"
+    ]
+  },
+  {
+    "id": "con_fi_gender",
+    "target": "term_fi_gender",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "female",
+      "male",
+      "gender"
+    ],
+    "severity": "block",
+    "scope": "financial tb017.cl0208",
+    "confidence": "high",
+    "description": "cl0208 = 'F' female, 'M' male.",
+    "evidence": [
+      "ev_fi_enums"
+    ]
+  },
+  {
+    "id": "con_fi_loan_status",
+    "target": "term_fi_loan_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "running contract",
+      "in debt",
+      "loan status",
+      "finished",
+      "still running"
+    ],
+    "severity": "block",
+    "scope": "financial tb020.cl0229",
+    "confidence": "high",
+    "description": "cl0229: A = finished OK, B = finished not paid, C = running OK, D = running in debt. 'Running contracts' means C or D; 'running and in debt' means D only.",
+    "evidence": [
+      "ev_fi_enums"
+    ]
+  },
+  {
+    "id": "con_fi_cl0205_domains",
+    "target": "term_fi_disposition_type",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "card type",
+      "gold",
+      "owner",
+      "disponent",
+      "transaction type",
+      "prijem",
+      "vydaj"
+    ],
+    "severity": "block",
+    "scope": "financial tb016, tb018, tb022",
+    "confidence": "high",
+    "description": "The column name cl0205 recurs with unrelated domains: tb018 disposition type (OWNER/DISPONENT), tb016 credit card type (gold/classic/junior) and tb022 transaction type (PRIJEM/VYDAJ/VYBER). Always qualify cl0205 by its table.",
+    "evidence": [
+      "ev_fi_enums"
+    ]
+  },
+  {
+    "id": "con_fi_unemployment_years",
+    "target": "term_fi_unemployment_rate_1995",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "unemployment rate",
+      "unemployment increment",
+      "1995",
+      "1996"
+    ],
+    "severity": "block",
+    "scope": "financial tb019.cl0220 and cl0221",
+    "confidence": "high",
+    "description": "cl0220 is the 1995 unemployment rate and cl0221 the 1996 rate (no 2015/2016 columns exist). The increment percentage is (cl0221 - cl0220) / cl0220 * 100.",
+    "evidence": [
+      "ev_fi_district_columns"
+    ]
+  },
+  {
+    "id": "con_fi_credit_card_withdrawal",
+    "target": "term_fi_operation",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "credit card withdrawal",
+      "vyber kartou",
+      "credit card transaction"
+    ],
+    "severity": "warning",
+    "scope": "financial tb022.cl0235",
+    "confidence": "high",
+    "description": "Operation cl0235 = 'VYBER KARTOU' means credit card withdrawal; credit-card transactions are identified through this operation rather than through tb016.",
+    "evidence": [
+      "ev_fi_enums"
+    ]
+  },
+  {
+    "id": "con_fi_account_frequency",
+    "target": "term_fi_account_frequency",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "statement issuance",
+      "after each transaction",
+      "poplatek po obratu",
+      "frequency"
+    ],
+    "severity": "warning",
+    "scope": "financial tb015.cl0201",
+    "confidence": "high",
+    "description": "cl0201 values: POPLATEK MESICNE (monthly), POPLATEK TYDNE (weekly), POPLATEK PO OBRATU (issuance after each transaction).",
+    "evidence": [
+      "ev_fi_enums"
+    ]
+  },
+  {
+    "id": "con_f1_finish_time_format",
+    "target": "term_f1_finish_time",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "finish time",
+      "champion",
+      "time",
+      "faster in percentage"
+    ],
+    "severity": "block",
+    "scope": "formula_1 tb035.cl0262",
+    "confidence": "high",
+    "description": "Only the race champion's finish time is an absolute 'H:MM:SS.mmm' value; other drivers store a '+gap' string. 'Finished the race' is cl0262 IS NOT NULL.",
+    "evidence": [
+      "ev_f1_measures"
+    ]
+  },
+  {
+    "id": "con_f1_birthdate_direction",
+    "target": "term_f1_driver_age",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "oldest",
+      "youngest",
+      "age",
+      "born between"
+    ],
+    "severity": "warning",
+    "scope": "formula_1 tb025.cl0257",
+    "confidence": "high",
+    "description": "A larger birth date means a younger person; the oldest driver has the minimum birth date.",
+    "evidence": [
+      "ev_f1_columns"
+    ]
+  },
+  {
+    "id": "con_f1_pitstop_columns",
+    "target": "term_f1_pit_stop_duration",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "pit stop",
+      "pit stop duration",
+      "average pit stop"
+    ],
+    "severity": "warning",
+    "scope": "formula_1 tb032",
+    "confidence": "high",
+    "description": "tb032.cl0274 holds the stop duration in seconds and cl0272 the same duration in milliseconds; cl0262 is the time of day of the stop, not the duration.",
+    "evidence": [
+      "ev_f1_measures"
+    ]
+  },
+  {
+    "id": "con_f1_position_columns",
+    "target": "term_f1_result",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "position",
+      "ranked second",
+      "track number",
+      "grid",
+      "champion"
+    ],
+    "severity": "warning",
+    "scope": "formula_1 tb028-tb035",
+    "confidence": "high",
+    "description": "Position-like columns differ by table: tb035.cl0267 is finishing order, tb035.cl0281 is starting grid, tb035.cl0282 is final position, and tb029/tb030.cl0267 are standings positions. Choose by grain.",
+    "evidence": [
+      "ev_f1_columns"
+    ]
+  },
+  {
+    "id": "con_f1_nationality_free_text",
+    "target": "term_f1_nationality",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "nationality",
+      "british",
+      "german"
+    ],
+    "severity": "info",
+    "scope": "formula_1 tb024/tb025",
+    "confidence": "high",
+    "description": "Nationality is free text on drivers and constructors; there is no country dimension table and no join to circuit country.",
+    "evidence": [
+      "ev_f1_columns"
+    ]
+  },
+  {
+    "id": "con_sc_event_status",
+    "target": "term_sc_event_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "closed events",
+      "event status",
+      "open",
+      "planning"
+    ],
+    "severity": "block",
+    "scope": "student_club tb036.cl0294",
+    "confidence": "high",
+    "description": "Event status cl0294 takes Open, Planning or Closed. tb040.cl0311 holds the same value set at budget-line grain and must be qualified by table.",
+    "evidence": [
+      "ev_sc_columns"
+    ]
+  },
+  {
+    "id": "con_sc_expense_date_text",
+    "target": "term_sc_expense",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "september",
+      "october",
+      "month",
+      "expense date",
+      "2019/8/20"
+    ],
+    "severity": "block",
+    "scope": "student_club tb041.cl0314",
+    "confidence": "high",
+    "description": "Expense dates are text 'YYYY-M-D' without zero padding; month extraction must parse the text rather than use a date function blindly.",
+    "evidence": [
+      "ev_sc_columns"
+    ]
+  },
+  {
+    "id": "con_sc_budget_columns",
+    "target": "term_sc_budget",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "budget",
+      "spent",
+      "remaining",
+      "exceeded the budget",
+      "spend-to-budget"
+    ],
+    "severity": "warning",
+    "scope": "student_club tb040",
+    "confidence": "high",
+    "description": "cl0310 is the allocated amount, cl0308 the amount spent and cl0309 the remaining amount. A negative cl0309 means the budget was exceeded; cl0308/cl0310 is the spend-to-budget ratio.",
+    "evidence": [
+      "ev_sc_columns"
+    ]
+  },
+  {
+    "id": "con_sc_member_name",
+    "target": "term_sc_member",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "full name",
+      "first name",
+      "last name",
+      "member"
+    ],
+    "severity": "info",
+    "scope": "student_club tb043",
+    "confidence": "high",
+    "description": "A member full name is cl0322 concatenated with cl0323; neither column alone is the full name.",
+    "evidence": [
+      "ev_sc_columns"
+    ]
+  },
+  {
+    "id": "con_sh_gender_codes",
+    "target": "term_sh_gender",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "female superheroes",
+      "male superheroes",
+      "gender"
+    ],
+    "severity": "block",
+    "scope": "superhero tb047 and tb050.cl0339",
+    "confidence": "high",
+    "description": "Gender codes: 1 = Male, 2 = Female, 3 = N/A. tb050 stores the numeric code in cl0339, which must be joined to tb047.cl0330.",
+    "evidence": [
+      "ev_sh_columns"
+    ]
+  },
+  {
+    "id": "con_sh_height_weight_units",
+    "target": "term_sh_height",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "height",
+      "weight",
+      "cm",
+      "kg"
+    ],
+    "severity": "block",
+    "scope": "superhero tb050",
+    "confidence": "high",
+    "description": "Height cl0346 is in centimetres and weight cl0347 in kilograms. Unknown weights are stored as 0 and must be excluded from averages.",
+    "evidence": [
+      "ev_sh_columns"
+    ]
+  },
+  {
+    "id": "con_sh_attribute_model",
+    "target": "term_sh_hero_attribute",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "attribute",
+      "strength",
+      "durability",
+      "speed",
+      "intelligence"
+    ],
+    "severity": "block",
+    "scope": "superhero tb045/tb051",
+    "confidence": "high",
+    "description": "Attributes are stored as rows: tb051 links hero (cl0348) to attribute id (cl0349) with value cl0350. Attribute names such as Strength and Durability live in tb045.cl0332, so an attribute name filter requires the join through cl0349.",
+    "evidence": [
+      "ev_sh_columns"
+    ]
+  },
+  {
+    "id": "con_th_thrombosis_scale",
+    "target": "term_th_thrombosis_severity",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "thrombosis",
+      "severe degree of thrombosis",
+      "most serious thrombosis",
+      "does not have thrombosis"
+    ],
+    "severity": "block",
+    "scope": "thrombosis_prediction tb054.cl0365",
+    "confidence": "medium",
+    "description": "cl0365 takes 0,1,2,3. The workload treats 1 as the most serious degree, 2 as severe and 0 as no thrombosis; verify against the question wording before applying.",
+    "evidence": [
+      "ev_th_columns"
+    ]
+  },
+  {
+    "id": "con_th_sex_codes",
+    "target": "term_th_sex",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "female",
+      "male",
+      "women",
+      "sex"
+    ],
+    "severity": "block",
+    "scope": "thrombosis_prediction tb055.cl0366",
+    "confidence": "high",
+    "description": "cl0366 = 'F' female, 'M' male, empty unknown. Percentages over a sex subset must restrict the denominator accordingly.",
+    "evidence": [
+      "ev_th_columns"
+    ]
+  },
+  {
+    "id": "con_th_lab_reference_ranges",
+    "target": "term_th_lab_test",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "normal range",
+      "beyond normal",
+      "abnormal",
+      "ldh",
+      "uric acid",
+      "iga",
+      "prothrombin",
+      "hematocrit",
+      "red blood cell"
+    ],
+    "severity": "block",
+    "scope": "thrombosis_prediction tb056",
+    "confidence": "medium",
+    "description": "Observed reference thresholds used by the workload: LDH > 500 abnormal; uric acid > 8.0 for males and > 6.5 for females; IgA normal 80-500; PT >= 14 abnormal; hematocrit >= 52 exceeded; red blood cell < 3.5 low. Thresholds are workload-grounded, not laboratory-certified.",
+    "evidence": [
+      "ev_th_columns"
+    ]
+  },
+  {
+    "id": "con_th_anti_sm_coding",
+    "target": "term_th_anti_sm",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "anti-sm",
+      "normal anti-sm",
+      "negative"
+    ],
+    "severity": "warning",
+    "scope": "thrombosis_prediction tb056.cl0407",
+    "confidence": "medium",
+    "description": "cl0407 mixes numeric and text codes: '0', 'negative' and '+-' are non-positive/negative results while '1', '2', '16' are positive. Normal anti-SM is '-' or '+-'.",
+    "evidence": [
+      "ev_th_columns"
+    ]
+  },
+  {
+    "id": "con_th_date_columns",
+    "target": "term_th_patient",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "born",
+      "birthday",
+      "came at the hospital",
+      "examination date",
+      "1990 to 1993"
+    ],
+    "severity": "warning",
+    "scope": "thrombosis_prediction tb054/tb055/tb056",
+    "confidence": "high",
+    "description": "Dates are spread across tables: patient birthday cl0367, patient admission dates cl0368/cl0369, examination date tb054.cl0354, laboratory date tb056.cl0371. Pick by the event the question describes.",
+    "evidence": [
+      "ev_th_columns"
+    ]
+  },
+  {
+    "id": "con_tx_bond_types",
+    "target": "term_tx_bond_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "single bond",
+      "double bond",
+      "triple bond",
+      "bond type"
+    ],
+    "severity": "block",
+    "scope": "toxicology tb058.cl0418",
+    "confidence": "high",
+    "description": "cl0418 has exactly three values: '-' single bond, '=' double bond, '#' triple bond.",
+    "evidence": [
+      "ev_tx_columns"
+    ]
+  },
+  {
+    "id": "con_tx_carcinogenic",
+    "target": "term_tx_carcinogenic",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "carcinogenic",
+      "non-carcinogenic",
+      "label"
+    ],
+    "severity": "block",
+    "scope": "toxicology tb060.cl0420",
+    "confidence": "high",
+    "description": "cl0420 = '+' carcinogenic, '-' non-carcinogenic. Three hundred and forty-three molecules are labelled.",
+    "evidence": [
+      "ev_tx_columns"
+    ]
+  },
+  {
+    "id": "con_tx_atom_identity",
+    "target": "term_tx_atom",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "atom",
+      "atom number",
+      "4th atom",
+      "connection"
+    ],
+    "severity": "block",
+    "scope": "toxicology tb057/tb059",
+    "confidence": "high",
+    "description": "Atom identifiers have the form <molecule>_<atom number>. An atom's connections are rows of tb059 where cl0414 or cl0419 equals the atom id, linked to bonds through cl0417.",
+    "evidence": [
+      "ev_tx_columns"
+    ]
+  },
+  {
+    "id": "con_tx_element_symbols",
+    "target": "term_tx_element",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "element",
+      "carbon",
+      "elements in bond",
+      "toxicology element"
+    ],
+    "severity": "info",
+    "scope": "toxicology tb057.cl0416",
+    "confidence": "high",
+    "description": "Element symbols are lower-case (c, h, o, n, cl, br, ...). Element names in questions such as 'carbon' map to the symbol 'c'.",
+    "evidence": [
+      "ev_tx_columns"
+    ]
+  }
+]
