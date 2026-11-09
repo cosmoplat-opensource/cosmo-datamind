@@ -84,3 +84,23 @@ def test_history_rejects_corrupted_candidate(tmp_path):
             response = get(client, path + suffix)
             assert response.status_code == 409
             assert response.get_json()['error']['code'] == 'artifact_integrity'
+
+
+def test_legacy_generated_title_comes_from_saved_response_without_migration(tmp_path):
+    with http_app(tmp_path) as (_, client, _, root):
+        _, version, _ = fixture(root, ready=True)
+        service = TaskService(root, model()[0], generation_policy='offline')
+        saved = message(service, start(service, version))
+        with service.storage.transaction(write=True) as conn:
+            record = json.loads(conn.execute('SELECT record FROM robotics_task_sessions').fetchone()[0])
+            record.pop('generation_titles'); record.pop('task_description')
+            conn.execute('UPDATE robotics_task_sessions SET record=?', (json.dumps(record),))
+            for row in conn.execute('SELECT rowid,response FROM robotics_task_requests WHERE response IS NOT NULL').fetchall():
+                response = json.loads(row['response'])
+                response.pop('task_description', None); response.pop('generation_titles', None)
+                conn.execute('UPDATE robotics_task_requests SET response=? WHERE rowid=?', (json.dumps(response), row['rowid']))
+        before = db_rows(root)
+        assert get(client, '').get_json()['items'][0]['title'] == TEXT
+        path = f"/{saved['session_id']}/generations/{saved['run_id']}"
+        assert get(client, path).get_json()['title'] == TEXT
+        assert db_rows(root) == before
