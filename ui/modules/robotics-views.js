@@ -132,7 +132,15 @@
         const body=await response.json();if(current!==token)return;
         if(!response.ok)throw Error(body.error?.message||`读取失败（HTTP ${response.status}）`);
         if(body.ontology_id!==oid||body.version_id!==vid||body.view!==view)throw Error('返回的本体版本不匹配。');
-        data=body;render();
+        // DR-068: share task-page aliases for historical names. Only display
+        // labels change; fixed OWL bytes, identifiers and parameter values stay intact.
+        const displayLabel=global.RoboticsTask.displayLabel;
+        data=view==='relations'?{...body,nodes:body.nodes.map(node=>({...node,
+          label:displayLabel(node.label),properties:node.properties.map(property=>
+            property.predicate==='http://www.w3.org/2000/01/rdf-schema#label'
+              ? {...property,value:displayLabel(property.value)} : property)
+        }))}:body;
+        render();
       }catch(error){if(error.name!=='AbortError')fail(error);}
     })();
   }

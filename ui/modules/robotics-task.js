@@ -206,5 +206,5 @@
     host.prepend(wrap);wrap.querySelector('button').onclick=()=>{wrap.querySelector('form').hidden=false;};
     wrap.querySelector('form').onsubmit=async e=>{e.preventDefault();const form=new FormData(e.currentTarget);form.set('mode','real');form.set('request_id',global.crypto.randomUUID());try{const r=await json(global.fetch.bind(global),'/api/robotics/imports',{method:'POST',body:form});global.location.hash=link(r.ontology_id,r.version_id,r.mode);}catch(err){const p=wrap.querySelector('[role=alert]');p.hidden=false;p.textContent=err.message;}};
   }
-  global.RoboticsTask={createController,page,link,importButton};
+  global.RoboticsTask={createController,page,link,importButton,displayLabel};
 })(window);

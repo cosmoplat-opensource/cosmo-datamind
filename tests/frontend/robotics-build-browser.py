@@ -484,3 +484,49 @@ def test_catalog_single_graph_entry_and_subtree_back_navigation(live):
     page.get_by_role('button', name='返回主流程', exact=True).click()
     expect(page.locator('#rv_tree')).to_have_value('main')
     done(site)
+
+
+def test_legacy_configuration_names_match_task_page_without_changing_owl(live):
+    """DR-068: normalize historical names throughout the graph, preserving RDF data."""
+    from rdflib import Literal, RDFS
+    from tests.robotics_support import S
+    from tests.robotics_task_support import fixture
+
+    site, page = live
+    names = [
+        (S.Perception_Current, S.PartType_A, S.hasPerceptionProfile,
+         '源文件当前感知参数；尚未绑定业务零件类型', '源文件感知配置'),
+        (S.Placement_Current, S.Slot_B_01, S.hasPlacementProfile,
+         '源文件当前放置目标；尚未绑定业务槽位', '源文件放置配置'),
+    ]
+    def historical_labels(graph):
+        for target, owner, predicate, old, _ in names:
+            graph.set((target, RDFS.label, Literal(old, lang='zh')))
+            graph.set((owner, predicate, target))
+        graph.set((S.LeftCamera, RDFS.label, Literal('用户自定义相机名称', lang='zh')))
+
+    assets, version, _ = fixture(site.root, mutate=historical_labels)
+    ref = {key: version[key] for key in ('ontology_id', 'version_id')}
+    original = assets.read_payload(**ref)
+    page.goto(site.url + '/#library')
+    page.evaluate('''() => {const Graph=G6.Graph; G6.Graph=class extends Graph {
+        constructor(options){super(options); window.__labelGraph=this;}
+    };}''')
+    page.goto(site.url + '/#robotics-view?asset=' + ref['ontology_id'] + '&version=' + ref['version_id'] + '&view=relations')
+    expect(page.locator('#rv_canvas canvas')).to_be_visible()
+    for target, owner, _, old, display in names:
+        page.get_by_label('查找节点', exact=True).fill(display)
+        page.get_by_role('button', name='查找', exact=True).click()
+        expect(page.locator('#rv_node')).to_have_value(str(target))
+        expect(page.locator('#rv_properties h3')).to_have_text(display)
+        expect(page.locator('#rv_properties dl')).to_contain_text(display)
+        expect(page.locator('#rv_host')).not_to_contain_text('尚未绑定业务')
+        assert page.evaluate('(id)=>window.__labelGraph.findById(id).getModel().label', str(target)) == display
+        assert page.evaluate('(value)=>RoboticsTask.displayLabel(value)', old) == display
+        page.get_by_label('节点详情', exact=True).select_option(str(owner))
+        expect(page.locator('#rv_properties ul')).to_contain_text(display)
+        expect(page.locator('#rv_properties ul')).not_to_contain_text(old)
+    expect(page.locator('#rv_node')).to_contain_text('用户自定义相机名称')
+    assert assets.read_payload(**ref) == original
+    assert site.posts() == []
+    done(site)
