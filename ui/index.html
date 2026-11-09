@@ -193,7 +193,7 @@ a{color:var(--acc)}
 .sk-card.sel{border-color:var(--acc);background:#F7F9FF}
 .sk-card .nm{font-size:14px;font-weight:600;color:var(--txt)} .sk-card .badge{font-size:11px;background:#EEF2FF;color:var(--acc);border-radius:4px;padding:1px 6px;margin-left:6px}
 .sk-card .ds{font-size:12px;color:var(--sub);margin-top:4px}
-</style><link rel="stylesheet" href="/assets/styles/responsive.css"><link rel="stylesheet" href="/assets/styles/qa-anchor.css?v=1"><link rel="stylesheet" href="/assets/styles/robotics.css?v=7"></head><body>
+</style><link rel="stylesheet" href="/assets/styles/responsive.css"><link rel="stylesheet" href="/assets/styles/qa-anchor.css?v=1"><link rel="stylesheet" href="/assets/styles/robotics.css?v=8"></head><body>
 <header class="topbar">
  <div class="wm">◈ COSMO DataMind <small>数据智脑 · 治理 × 本体 × 问数</small></div>
  <div class="tools">
@@ -218,6 +218,7 @@ a{color:var(--acc)}
   <div class="nav" data-p="review">本体评审</div>
   <div class="nav" data-p="ontquality">元数据覆盖</div>
   <div class="nav" data-p="library">本体库</div>
+  <div class="nav" data-p="robotics-view" hidden>机器人本体视图</div>
   <div class="nav" data-p="robotics-task" hidden>行为树生成</div>
   <div class="nav" data-p="sparql">SPARQL 查询</div></div>
 <div class="nav-group"><div class="gh" onclick="dqGroup(this)">指标平台 <span class="ar">▾</span></div>
@@ -716,11 +717,13 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
   <div class="card"><textarea id="sq_q" style="height:120px;font-family:monospace">SELECT ?cls ?label WHERE { ?cls a <http://www.w3.org/2002/07/owl#Class>. OPTIONAL{?cls <http://www.w3.org/2000/01/rdf-schema#label> ?label} } LIMIT 20</textarea>
    <div class="row" style="margin-top:8px"><button onclick="sparqlRun()">执行</button><span class="muted" id="sq_info"></span></div>
    <div class="scroll" id="sq_out" style="margin-top:10px"></div></div></div>
+<div class="page" id="p_robotics-view"><div id="rv_host"></div></div>
 <div class="page" id="p_robotics-task"><div id="rt_task"></div></div>
 </main>
 </div>
 <script src="/assets/modules/robotics-task.js?v=6"></script>
-<script src="/assets/modules/robotics-assets.js?v=7"></script>
+<script src="/assets/modules/robotics-assets.js?v=9"></script>
+<script src="/assets/modules/robotics-views.js?v=4"></script>
 <script src="/assets/modules/robotics-build.js?v=2"></script>
 <script src="/assets/modules/robotics-review.js?v=1"></script>
 <script src="/assets/modules/robotics-review-page.js?v=1"></script>
@@ -752,7 +755,7 @@ const EDIT_KINDS=['object','event','asset','role'];
 function goPage(p){const nav=document.querySelector('[data-p="'+p+'"]');if(!nav)return false;
  document.querySelectorAll('.nav').forEach(x=>x.classList.remove('on'));nav.classList.add('on');
  document.querySelectorAll('.page').forEach(pg=>pg.classList.remove('on'));const el=$('#p_'+p);if(el)el.classList.add('on');
- window.RoboticsBuild?.page(p);window.RoboticsAssets?.page(p);window.RoboticsReview?.page(p);window.RoboticsTask?.page(p);
+ window.RoboticsBuild?.page(p);window.RoboticsAssets?.page(p);window.RoboticsReview?.page(p);window.RoboticsTask?.page(p);window.RoboticsViews?.page(p);
  const revisit=!!loaded[p];load(p);
  // 易变页每次进入都重取:别处(评审/动作/构建)的变动切回来即见,不吃首屏一次性缓存
  if(revisit){try{
@@ -2466,6 +2469,7 @@ async function sparqlRun(){$('#sq_info').textContent='查询中…';
 if(location.hash.slice(1))routeHash();else{home();loaded.home=1;}
 // hash 路由:每个子页可经 #<page> 寻址;另支持 #graph=<key> / #obj=<key>:<id> 深链
 function routeHash(){if(window.RoboticsReview?.guardHash())return;const h=location.hash.slice(1);
+ if(/^robotics-view\?/.test(h)){goPage('robotics-view');return;}
  if(/^robotics-task\?/.test(h)){goPage('robotics-task');return;}
  if(/^build\?/.test(h)){goPage('build');return;}
  if(/^library\?/.test(h)){goPage('library');return;}

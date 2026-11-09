@@ -10,7 +10,7 @@ import uuid
 
 from rdflib import Graph, Literal, RDF, XSD
 
-from domains.robotics import authoring, consumer, evidence, version_diff
+from domains.robotics import authoring, consumer, evidence, version_diff, views
 from domains.robotics.graph import S
 from srv_context import _RDF_LOCK
 
@@ -253,6 +253,21 @@ class GovernanceService:
         with self._atomic() as conn:
             self._asset(conn,ontology_id)
             return [json.loads(row[0]) for row in conn.execute('SELECT record FROM governance_events WHERE ontology_id=? ORDER BY rowid',(ontology_id,))]
+
+    def visualize(self, ontology_id, version_id, view):
+        """DR-068: both projections share the exact immutable, verified RDF version."""
+        if view not in {'relations', 'behavior-tree'}:
+            raise GovernanceError('invalid_request', '未知视图。')
+        with self._atomic() as conn:
+            version = self._version(conn, ontology_id, version_id)
+            graph = self._graph(conn, version)
+            try:
+                projection = views.relations(graph) if view == 'relations' else views.behavior_tree(graph)
+            except ValueError as exc:
+                raise GovernanceError('view_unavailable', str(exc)) from exc
+            return {'ontology_id': ontology_id, 'version_id': version_id,
+                    'version_number': self.assets._version_number(conn, ontology_id, version_id),
+                    'name': self._asset(conn, ontology_id)['name'], 'view': view, **projection}
 
     def inspect(self, ontology_id, version_id):
         """DR-059/061: project one RDF snapshot and current governance in one read transaction."""
