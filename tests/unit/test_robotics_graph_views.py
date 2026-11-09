@@ -76,3 +76,24 @@ def test_views_http_are_version_pinned_read_only_and_integrity_checked(tmp_path)
         assert client.get(prefix.replace(version['version_id'], 'missing') + 'relations', base_url=BASE_URL).status_code == 404
         (root / assets.get_version(version['ontology_id'], version['version_id'])['path']).write_bytes(b'damaged')
         assert client.get(prefix + 'relations', base_url=BASE_URL).status_code == 409
+
+
+def test_views_http_reject_cross_asset_data_domain_and_incomplete_tree(tmp_path):
+    with http_app(tmp_path) as (_, client, _, root):
+        assets, version, _ = fixture(root)
+        prefix = f"/api/ontology-assets/{version['ontology_id']}/versions/"
+        other = assets.create_asset(name='other', domain='robotics')
+        assert client.get(f"/api/ontology-assets/{other['ontology_id']}/versions/{version['version_id']}/views/relations",
+                          base_url=BASE_URL).status_code == 404
+        data = assets.create_asset(name='data', domain='data')
+        assert client.get(f"/api/ontology-assets/{data['ontology_id']}/versions/{version['version_id']}/views/relations",
+                          base_url=BASE_URL).status_code == 400
+        g = Graph().parse(data=assets.read_payload(version['ontology_id'], version['version_id']), format='xml')
+        g.set((S.BehaviorTree_Source, S.rootAttributes, Literal('null')))
+        broken = assets.add_version(version['ontology_id'], g.serialize(format='xml', encoding='utf-8'),
+                                    payload_kind='robotics_rdf',
+                                    source_asset_ids=version['source_asset_ids'], metadata=version['metadata'])
+        response = client.get(prefix + broken['version_id'] + '/views/behavior-tree', base_url=BASE_URL)
+        assert response.status_code == 422
+        assert response.get_json()['error']['code'] == 'view_unavailable'
+        assert '流程或参数绑定不完整' in response.get_json()['error']['message']
