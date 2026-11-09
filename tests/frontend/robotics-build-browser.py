@@ -367,3 +367,47 @@ if __name__ == '__main__':
     if args.case:
         command += ['-k', args.case]
     raise SystemExit(pytest.main(command))
+
+
+def test_fixed_robotics_relationship_and_behavior_tree_views(live):
+    """DR-068: real RDF endpoints, navigation, keyboard details and read-only refresh."""
+    site, page = live
+    choose_robotics(page, site)
+    fill_robotics(page)
+    rid = submit_from_ui(page, site)
+    wait_run_ui(page, rid, 'completed')
+    row = site.terminal(rid)
+    ref = row['output_asset_ref']
+    posts = len(site.posts())
+    page.goto(site.url + '/#library')
+    card = page.locator(f'[data-ontology-id="{ref["ontology_id"]}"]')
+    card.get_by_role('link', name='打开图谱', exact=True).click()
+    expect(page.locator('#rv_canvas canvas')).to_be_visible()
+    expect(page.locator('#rv_host')).to_contain_text('当前：版本 1')
+    page.get_by_label('展示范围', exact=True).select_option('skills')
+    expect(page.locator('#rv_node option')).not_to_have_count(1)
+    page.get_by_label('节点详情', exact=True).select_option(index=1)
+    expect(page.locator('#rv_properties h3')).to_be_visible()
+    page.get_by_role('button', name='适应画布', exact=True).click()
+    page.get_by_role('link', name='← 返回本体详情', exact=True).click()
+    page.get_by_role('link', name='打开行为树视图', exact=True).click()
+    expect(page.locator('#rv_canvas canvas')).to_be_visible()
+    expect(page.locator('#rv_host')).to_contain_text('本体流程 · 非任务生成结果')
+    expect(page.locator('#rv_tree')).to_have_value('main')
+    page.get_by_label('查找节点', exact=True).fill('SubTree · Perception')
+    page.get_by_role('button', name='查找', exact=True).click()
+    expect(page.locator('#rv_properties')).to_contain_text('Perception')
+    page.get_by_role('button', name='查看子树 Perception', exact=True).click()
+    expect(page.locator('#rv_tree')).to_have_value('Perception')
+    page.get_by_label('节点详情', exact=True).select_option(index=3)
+    expect(page.locator('#rv_properties dl')).to_be_visible()
+    before_url = page.url
+    page.reload()
+    expect(page.locator('#rv_canvas canvas')).to_be_visible()
+    assert page.url == before_url and len(site.posts()) == posts
+    page.set_viewport_size({'width': 390, 'height': 844})
+    assert page.locator('#rv_host').evaluate('el=>el.scrollWidth<=el.clientWidth+1')
+    page.set_viewport_size({'width': 1440, 'height': 1000})
+    page.goto(site.url + '/#graph=demo')
+    expect(page.locator('#p_graph')).to_be_visible()
+    assert len(site.posts()) == posts
