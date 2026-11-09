@@ -23,6 +23,7 @@ from ontology_assets.storage import digest
 from srv_context import _RDF_LOCK
 
 from . import RunStore
+from .store import _now
 from .robotics import generate_application
 
 SCHEMA = (
@@ -95,6 +96,10 @@ class TaskService:
         return state
 
     def _put(self, conn, state):
+        # DR-069: timestamps live in the existing session JSON, with no schema upgrade.
+        now = _now()
+        state.setdefault('created_at', now)
+        state['updated_at'] = now
         conn.execute('INSERT INTO robotics_task_sessions VALUES (?,?) ON CONFLICT(session_id) '
                      'DO UPDATE SET record=excluded.record', (state['session_id'], json_text(state)))
 
@@ -185,6 +190,7 @@ class TaskService:
             _clear(state)
             state['revision'] += 1
             state['status'] = 'running'
+            state['task_description'] = text
             state['messages'].append({'role': 'user', 'content': text})
             state['model_status'] = self.model.status()
             self._put(conn, state)
@@ -247,6 +253,8 @@ class TaskService:
                 task=state['task'], mode=state['mode'], session_ref={'namespace': 'robotics_task', 'id': state['session_id']},
                 purpose=state['generation_policy'], model_info={'invoked': True, 'provider': 'openai-compatible',
                             'model': state['model_status'].get('model') or 'unconfigured'})
+            state.setdefault('generation_titles', {})[run['run_id']] = state.get('task_description') or next(
+                (m['content'] for m in state['messages'] if m['role'] == 'user'), '行为树任务')
             state.update(run_id=run['run_id'], result=run['result'], status=run['result']['status'])
             state['task_readiness'] = run['result'].get('task_readiness', state['task_readiness'])
             if state['status'] == 'generated':

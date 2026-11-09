@@ -7,6 +7,7 @@ from werkzeug.exceptions import BadRequest, RequestEntityTooLarge
 
 from domain_runs.build_service import BuildRequestError
 from domain_runs.robotics_task_service import TaskError, TaskService
+from domain_runs.robotics_task_history import TaskHistory
 from domains.robotics.task_model import ModelClient, ModelError
 
 
@@ -56,6 +57,27 @@ def init_app(app, runtime):
     @bp.get('/api/robotics/task-capabilities')
     def capabilities():
         return jsonify(enabled=runtime.enabled, model=ModelClient.from_datamind().status())
+
+    @bp.get('/api/robotics/tasks')
+    def history():
+        # DR-069: read-only even when robotics is disabled or no database exists.
+        if set(request.args) - {'limit', 'offset', 'q'} or any(len(request.args.getlist(k)) != 1 for k in request.args):
+            raise TaskError('invalid_request', '不支持的历史查询参数。')
+        try:
+            limit, offset = int(request.args.get('limit', '30')), int(request.args.get('offset', '0'))
+        except ValueError:
+            raise TaskError('invalid_request', '分页参数不正确。') from None
+        return jsonify(TaskHistory(runtime.root).list(limit=limit, offset=offset, q=request.args.get('q', '')))
+
+    @bp.get('/api/robotics/tasks/<session_id>/generations/<run_id>')
+    def generation(session_id, run_id):
+        return jsonify(TaskHistory(runtime.root).get(session_id, run_id))
+
+    @bp.get('/api/robotics/tasks/<session_id>/generations/<run_id>/candidate')
+    def generation_download(session_id, run_id):
+        raw = TaskHistory(runtime.root).candidate(session_id, run_id)
+        return send_file(io.BytesIO(raw), mimetype='application/xml', as_attachment=True,
+                         download_name='behavior-tree.xml', max_age=0)
 
     @bp.post('/api/robotics/tasks')
     def start():
