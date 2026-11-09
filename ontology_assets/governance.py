@@ -267,7 +267,8 @@ class GovernanceService:
                 raise GovernanceError('view_unavailable', str(exc)) from exc
             return {'ontology_id': ontology_id, 'version_id': version_id,
                     'version_number': self.assets._version_number(conn, ontology_id, version_id),
-                    'name': self._asset(conn, ontology_id)['name'], 'view': view, **projection}
+                    'name': self._asset(conn, ontology_id)['name'], 'view': view,
+                    'mode': version['metadata'].get('mode') or version.get('publication_mode') or 'real', **projection}
 
     def inspect(self, ontology_id, version_id):
         """DR-059/061: project one RDF snapshot and current governance in one read transaction."""

@@ -193,7 +193,7 @@ a{color:var(--acc)}
 .sk-card.sel{border-color:var(--acc);background:#F7F9FF}
 .sk-card .nm{font-size:14px;font-weight:600;color:var(--txt)} .sk-card .badge{font-size:11px;background:#EEF2FF;color:var(--acc);border-radius:4px;padding:1px 6px;margin-left:6px}
 .sk-card .ds{font-size:12px;color:var(--sub);margin-top:4px}
-</style><link rel="stylesheet" href="/assets/styles/responsive.css"><link rel="stylesheet" href="/assets/styles/qa-anchor.css?v=1"><link rel="stylesheet" href="/assets/styles/robotics.css?v=8"></head><body>
+</style><link rel="stylesheet" href="/assets/styles/responsive.css"><link rel="stylesheet" href="/assets/styles/qa-anchor.css?v=1"><link rel="stylesheet" href="/assets/styles/robotics.css?v=9"></head><body>
 <header class="topbar">
  <div class="wm">◈ COSMO DataMind <small>数据智脑 · 治理 × 本体 × 问数</small></div>
  <div class="tools">
@@ -219,7 +219,6 @@ a{color:var(--acc)}
   <div class="nav" data-p="ontquality">元数据覆盖</div>
   <div class="nav" data-p="library">本体库</div>
   <div class="nav" data-p="robotics-view" hidden>机器人本体视图</div>
-  <div class="nav" data-p="robotics-task" hidden>行为树生成</div>
   <div class="nav" data-p="sparql">SPARQL 查询</div></div>
 <div class="nav-group"><div class="gh" onclick="dqGroup(this)">指标平台 <span class="ar">▾</span></div>
   <div class="nav" data-p="metrics">指标中心</div>
@@ -227,8 +226,9 @@ a{color:var(--acc)}
 <div class="nav-group"><div class="gh" onclick="dqGroup(this)">数据治理 <span class="ar">▾</span></div>
   <div class="nav" data-p="quality">数据质量</div>
   <div class="nav" data-p="glossary">术语管理</div></div>
-<div class="nav-group"><div class="gh" onclick="dqGroup(this)">智能问数 <span class="ar">▾</span></div>
+<div class="nav-group"><div class="gh" onclick="dqGroup(this)">本体应用 <span class="ar">▾</span></div>
   <div class="nav" data-p="chat">深度问数</div>
+  <div class="nav" data-p="robotics-task">行为树生成</div>
   <div class="nav" data-p="assistant">业务助手</div>
   <div class="nav" data-p="qaeval">问数评测</div></div>
 <div class="nav-group"><div class="gh" onclick="dqGroup(this)">智能体与技能 <span class="ar">▾</span></div>
@@ -718,12 +718,13 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
    <div class="row" style="margin-top:8px"><button onclick="sparqlRun()">执行</button><span class="muted" id="sq_info"></span></div>
    <div class="scroll" id="sq_out" style="margin-top:10px"></div></div></div>
 <div class="page" id="p_robotics-view"><div id="rv_host"></div></div>
-<div class="page" id="p_robotics-task"><div id="rt_task"></div></div>
+<div class="page" id="p_robotics-task"><div id="rt_application"></div></div>
 </main>
 </div>
-<script src="/assets/modules/robotics-task.js?v=7"></script>
+<script src="/assets/modules/robotics-task.js?v=8"></script>
+<script src="/assets/modules/robotics-task-app.js?v=1"></script>
 <script src="/assets/modules/robotics-assets.js?v=11"></script>
-<script src="/assets/modules/robotics-views.js?v=7"></script>
+<script src="/assets/modules/robotics-views.js?v=8"></script>
 <script src="/assets/modules/robotics-build.js?v=2"></script>
 <script src="/assets/modules/robotics-review.js?v=1"></script>
 <script src="/assets/modules/robotics-review-page.js?v=1"></script>
@@ -754,8 +755,9 @@ const EDIT_KINDS=['object','event','asset','role'];
 // 页面切换 + URL 寻址:每个子页对应 #<page> hash,可直接寻址/前进后退/刷新保持
 function goPage(p){const nav=document.querySelector('[data-p="'+p+'"]');if(!nav)return false;
  document.querySelectorAll('.nav').forEach(x=>x.classList.remove('on'));nav.classList.add('on');
+ if(p==='robotics-task')nav.scrollIntoView({block:'nearest'});
  document.querySelectorAll('.page').forEach(pg=>pg.classList.remove('on'));const el=$('#p_'+p);if(el)el.classList.add('on');
- window.RoboticsBuild?.page(p);window.RoboticsAssets?.page(p);window.RoboticsReview?.page(p);window.RoboticsTask?.page(p);window.RoboticsViews?.page(p);
+ window.RoboticsBuild?.page(p);window.RoboticsAssets?.page(p);window.RoboticsReview?.page(p);window.RoboticsTaskApp?.page(p);window.RoboticsTask?.page(p);window.RoboticsViews?.page(p);
  const revisit=!!loaded[p];load(p);
  // 易变页每次进入都重取:别处(评审/动作/构建)的变动切回来即见,不吃首屏一次性缓存
  if(revisit){try{

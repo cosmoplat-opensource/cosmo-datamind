@@ -100,7 +100,7 @@
     function render() {
       const tree=view==='behavior-tree';selectedTree=tree?data.main_tree:null;
       host.innerHTML=`<a class="ra-back" href="${escape(global.RoboticsAssets.versionLink(oid,vid))}">← 返回本体详情</a>
-        <header class="rt-heading"><div><span class="rt-eyebrow">机器人本体 · ${tree?'行为树视图':'关系图'}</span><h2>${escape(data.name)}</h2><p>当前：版本 ${escape(data.version_number)} · 只读浏览</p></div></header>
+        <header class="rt-heading"><div><span class="rt-eyebrow">机器人本体 · ${tree?'行为树视图':'关系图'}</span><h2>${escape(data.name)}</h2><p>当前：版本 ${escape(data.version_number)} · 只读浏览</p></div><a class="ra-button" href="${escape(global.RoboticsTask.link(oid,vid,data.mode||'real'))}">基于此本体生成行为树</a></header>
         <p class="rv-help">${tree?'本体流程 · 非任务生成结果。显示本体保存的流程与参数绑定；具体任务的参数以生成结果为准。':'展示本体中的命名对象及其关系。筛选可聚焦业务对象或技能流程；OWL 类定义、匿名约束及审计记录不在此图中。'}</p>
         <section class="card rv-toolbar">${tree?`<label>行为树<select id="rv_tree" aria-label="行为树">${data.trees.map(t=>`<option value="${escape(t.name)}">${escape(t.name)}${t.name===data.main_tree?' · 主流程':' · 子树'}</option>`).join('')}</select></label>`:'<label>展示范围<select id="rv_group" aria-label="展示范围"><option value="business">业务对象与配置</option><option value="skills">技能与流程</option><option value="all">全部对象</option></select></label>'}
         <form id="rv_search"><label>查找节点<input id="rv_query" placeholder="输入节点名称" autocomplete="off"></label><button class="ghost" type="submit">查找</button></form><span id="rv_search_result" role="status"></span>

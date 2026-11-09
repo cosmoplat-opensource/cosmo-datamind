@@ -103,6 +103,7 @@
     if(name!=='robotics-task')return;
     const host=global.document.getElementById('rt_task');if(!host)return;
     const params=new URLSearchParams(global.location.hash.split('?')[1]||'');
+    if(params.get('run')||!['session','asset','version'].some(key=>params.has(key)))return;
     const view={controller:null,text:'',creates:{},configEdit:null,capabilities:null,timer:null,initial:true};active=view;
     function render(state){
       if(active!==view)return;
@@ -113,6 +114,7 @@
       // Replace, not hash navigation: keep this controller and any in-progress input alive.
       const route=link(s.ontology_id,s.version_id,s.mode)+'&session='+encodeURIComponent(s.session_id);
       global.history.replaceState(null,'',route);
+      global.RoboticsTaskApp?.changed(s);
       const model=view.capabilities?.model || s.model_status || {}, enabled=view.capabilities?.enabled!==false;
       const error=state.error || s.error, busy=state.busy || s.status==='running';
       if(view.configEdit && (view.configEdit.session!==s.session_id || view.configEdit.revision!==s.revision))view.configEdit=null;
@@ -206,5 +208,5 @@
     host.prepend(wrap);wrap.querySelector('button').onclick=()=>{wrap.querySelector('form').hidden=false;};
     wrap.querySelector('form').onsubmit=async e=>{e.preventDefault();const form=new FormData(e.currentTarget);form.set('mode','real');form.set('request_id',global.crypto.randomUUID());try{const r=await json(global.fetch.bind(global),'/api/robotics/imports',{method:'POST',body:form});global.location.hash=link(r.ontology_id,r.version_id,r.mode);}catch(err){const p=wrap.querySelector('[role=alert]');p.hidden=false;p.textContent=err.message;}};
   }
-  global.RoboticsTask={createController,page,link,importButton,displayLabel};
+  global.RoboticsTask={createController,page,link,importButton,displayLabel,renderTree};
 })(window);
