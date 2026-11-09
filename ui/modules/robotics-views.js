@@ -14,6 +14,7 @@
     const oid = params.get('asset'), vid = params.get('version'), view = params.get('view') || 'relations';
     host.innerHTML = '<p class="ra-empty" role="status">正在读取本体视图…</p>';
     let canvas = null, resize = null, data = null, visibleNodes = [], selectedTree = null;
+    const treeHistory = [];
     const abort = new AbortController();
     const disposeCanvas = () => {resize?.disconnect();resize=null;canvas?.destroy();canvas=null;};
     active = {dispose:()=>{abort.abort();disposeCanvas();}};
@@ -44,11 +45,13 @@
         side.innerHTML+='<h4>关联关系</h4>'+(related.length?'<ul>'+related.map(e=>`<li>${escape(nodes.get(e.source)?.label)} → <b>${escape(e.label)}</b> → ${escape(nodes.get(e.target)?.label)}</li>`).join('')+'</ul>':'<p class="rv-help">没有实例间关系。</p>');
       }else if(node.tag==='SubTree' && data.trees.some(t=>t.name===node.attributes.ID)){
         const button=global.document.createElement('button');button.className='ghost';button.textContent='查看子树 '+node.attributes.ID;
-        button.onclick=()=>{host.querySelector('#rv_tree').value=node.attributes.ID;selectedTree=node.attributes.ID;draw();};side.append(button);
+        button.onclick=()=>{treeHistory.push({tree:selectedTree,node:id});host.querySelector('#rv_tree').value=node.attributes.ID;selectedTree=node.attributes.ID;draw();};side.append(button);
       }
     }
     function draw() {
       disposeCanvas();
+      const back=host.querySelector('#rv_tree_back');
+      if(back){back.hidden=!treeHistory.length&&selectedTree===data.main_tree;back.textContent=treeHistory.length?'返回上一级':'返回主流程';}
       const plot=host.querySelector('#rv_canvas'), side=host.querySelector('#rv_properties');
       plot.innerHTML='';side.innerHTML='<div class="rv-side-empty">选择图中的节点，查看对象关系或节点参数。<br>也可以使用上方的节点列表。</div>';
       let edges=[];
@@ -79,17 +82,20 @@
       if(!global.G6)throw Error('图形组件加载失败，请刷新页面重试。');
       canvas=new global.G6.Graph({container:plot,width:plot.clientWidth,height:plot.clientHeight,
         ...(view==='relations'?{layout:{type:'dagre',rankdir:'LR',nodesep:24,ranksep:95}}:{}),
-        modes:{default:['drag-canvas','zoom-canvas','drag-node']},animate:false,fitView:false,
+        modes:{default:['drag-canvas','zoom-canvas','drag-node']},animate:false,fitView:false,minZoom:.02,maxZoom:3,
         defaultNode:{type:'rect',size:[172,44],anchorPoints:view==='relations'?[[0,.5],[1,.5]]:[[.5,0],[.5,1]],style:{radius:9,lineWidth:1.3},labelCfg:{style:{fontSize:12,fill:'#243247'}}},
         nodeStateStyles:{selected:{lineWidth:3,shadowColor:'#4a5ff3',shadowBlur:8}},
         defaultEdge:{type:'polyline',style:{stroke:'#b6bfd7',radius:10,offset:20,endArrow:{path:global.G6.Arrow.triangle(6,7,0),fill:'#b6bfd7'}},labelCfg:{style:{fontSize:10,fill:'#64748b',background:{fill:'#fff',padding:[3,4]}}}}});
+      // DR-068: G6 canvas dirty-region refresh can retain stale pixels after group
+      // transforms. Full redraw keeps zoom/pan and selected-node focus in sync.
+      canvas.get('canvas').set('localRefresh',false);
       const drawing=canvas;
       const fitAfterPaint=()=>global.requestAnimationFrame(()=>{if(canvas===drawing)fit();});
       canvas.on('afterlayout',fitAfterPaint);
       canvas.on('node:click',event=>selectNode(event.item.getID()));
       canvas.data({nodes:visibleNodes.map(n=>({id:n.id,...(view==='behavior-tree'?{x:n.x,y:n.y}:{}),label:n.label.length>22?n.label.slice(0,21)+'…':n.label,style:{fill:n.group==='skills'?'#f5efff':n.group==='other'?'#ecfafb':'#eef2ff',stroke:colors[n.group]}})),edges:edges.map(e=>({...e,sourceAnchor:1,targetAnchor:0}))});
       canvas.render();fitAfterPaint();
-      resize=new ResizeObserver(()=>{if(canvas&&plot.clientWidth){canvas.changeSize(plot.clientWidth,plot.clientHeight);}});resize.observe(plot);
+      resize=new ResizeObserver(()=>{if(canvas&&plot.clientWidth&&(canvas.getWidth()!==plot.clientWidth||canvas.getHeight()!==plot.clientHeight)){canvas.changeSize(plot.clientWidth,plot.clientHeight);}});resize.observe(plot);
     }
     function render() {
       const tree=view==='behavior-tree';selectedTree=tree?data.main_tree:null;
@@ -98,14 +104,21 @@
         <p class="rv-help">${tree?'本体流程 · 非任务生成结果。显示本体保存的流程与参数绑定；具体任务的参数以生成结果为准。':'展示本体中的命名对象及其关系。筛选可聚焦业务对象或技能流程；OWL 类定义、匿名约束及审计记录不在此图中。'}</p>
         <section class="card rv-toolbar">${tree?`<label>行为树<select id="rv_tree" aria-label="行为树">${data.trees.map(t=>`<option value="${escape(t.name)}">${escape(t.name)}${t.name===data.main_tree?' · 主流程':' · 子树'}</option>`).join('')}</select></label>`:'<label>展示范围<select id="rv_group" aria-label="展示范围"><option value="business">业务对象与配置</option><option value="skills">技能与流程</option><option value="all">全部对象</option></select></label>'}
         <form id="rv_search"><label>查找节点<input id="rv_query" placeholder="输入节点名称" autocomplete="off"></label><button class="ghost" type="submit">查找</button></form><span id="rv_search_result" role="status"></span>
-        <div class="rv-controls"><button type="button" data-zoom="in" aria-label="放大">＋</button><button type="button" data-zoom="out" aria-label="缩小">−</button><button type="button" id="rv_fit">适应画布</button></div></section>
+        ${tree?'<button type="button" class="ghost" id="rv_tree_back" hidden>返回上一级</button>':''}<div class="rv-controls"><button type="button" data-zoom="in" aria-label="放大">＋</button><button type="button" data-zoom="out" aria-label="缩小">−</button><button type="button" id="rv_fit">适应画布</button></div></section>
         <div class="rv-workspace"><section class="card rv-graph"><div class="ra-section-heading"><h3>${tree?'流程结构':'对象关联'}</h3><span id="rv_counts"></span></div><div id="rv_canvas" role="img" aria-label="${tree?'行为树流程图':'机器人本体关系图'}"></div><p class="rv-legend">${tree?'从上到下执行，同级节点从左到右排列；点击 SubTree 节点可查看子树。':'蓝色：业务对象与配置　紫色：技能与流程　青色：其他对象'} · 拖动画布移动，滚轮缩放</p></section>
         <aside class="card rv-sidebar"><label for="rv_node">节点详情</label><select id="rv_node"></select><div id="rv_properties"></div></aside></div>`;
-      if(tree){host.querySelector('#rv_tree').value=selectedTree;host.querySelector('#rv_tree').onchange=e=>{selectedTree=e.target.value;draw();};}
+      if(tree){
+        host.querySelector('#rv_tree').value=selectedTree;
+        host.querySelector('#rv_tree').onchange=e=>{treeHistory.length=0;selectedTree=e.target.value;draw();};
+        host.querySelector('#rv_tree_back').onclick=()=>{
+          const parent=treeHistory.pop();selectedTree=parent?.tree||data.main_tree;
+          host.querySelector('#rv_tree').value=selectedTree;draw();if(parent)selectNode(parent.node);
+        };
+      }
       else {host.querySelector('#rv_group').value=data.nodes.some(n=>n.group==='business')?'business':'all';host.querySelector('#rv_group').onchange=draw;}
       host.querySelector('#rv_node').onchange=e=>selectNode(e.target.value);
       host.querySelector('#rv_fit').onclick=fit;
-      host.querySelectorAll('[data-zoom]').forEach(button=>button.onclick=()=>{if(canvas)canvas.zoomTo(Math.max(.05,Math.min(3,canvas.getZoom()*(button.dataset.zoom==='in'?1.25:.8))));});
+      host.querySelectorAll('[data-zoom]').forEach(button=>button.onclick=()=>{if(canvas)canvas.zoomTo(Math.max(.02,Math.min(3,canvas.getZoom()*(button.dataset.zoom==='in'?1.25:.8))),{x:canvas.getWidth()/2,y:canvas.getHeight()/2});});
       let searchIndex=0,lastQuery='';
       host.querySelector('#rv_search').onsubmit=e=>{e.preventDefault();const q=host.querySelector('#rv_query').value.trim().toLocaleLowerCase();const matches=q?visibleNodes.filter(n=>n.label.toLocaleLowerCase().includes(q)):[];
         if(q!==lastQuery){searchIndex=0;lastQuery=q;}const index=matches.length?searchIndex++%matches.length:0;

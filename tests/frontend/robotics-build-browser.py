@@ -411,3 +411,76 @@ def test_fixed_robotics_relationship_and_behavior_tree_views(live):
     page.goto(site.url + '/#graph=demo')
     expect(page.locator('#p_graph')).to_be_visible()
     assert len(site.posts()) == posts
+
+
+@pytest.mark.parametrize('view', ['relations', 'behavior-tree'])
+def test_view_zoom_remains_effective_after_node_selection(live, view):
+    """DR-068: measure the real G6 viewport, not just successful button clicks."""
+    site, page = live
+    ref = site.submit()['output_asset_ref']
+    page.goto(site.url + '/#library')
+    # Observe the real renderer without replacing its behavior or API responses.
+    page.evaluate('''() => {const Graph=G6.Graph; G6.Graph=class extends Graph {
+        constructor(options){super(options); window.__viewGraph=this;}
+    };}''')
+    page.goto(site.url + '/#robotics-view?asset=' + ref['ontology_id'] + '&version=' + ref['version_id'] + '&view=' + view)
+    expect(page.locator('#rv_canvas canvas')).to_be_visible()
+    page.wait_for_timeout(200)
+
+    def zoom():
+        return page.evaluate('window.__viewGraph.getZoom()')
+
+    for selected in [False, True]:
+        if selected:
+            page.get_by_label('节点详情', exact=True).select_option(index=2)
+            expect(page.locator('#rv_properties h3')).to_be_visible()
+        before = zoom()
+        pixels = page.locator('#rv_canvas canvas').evaluate('el=>el.toDataURL()')
+        auto_paint = page.evaluate("window.__viewGraph.get('autoPaint')")
+        page.get_by_role('button', name='放大', exact=True).click()
+        page.wait_for_timeout(150)
+        enlarged = zoom()
+        assert page.locator('#rv_canvas canvas').evaluate('el=>el.toDataURL()') != pixels, (view, selected, auto_paint, before, enlarged)
+        assert enlarged > before * 1.1, (view, selected, before, enlarged)
+        pixels = page.locator('#rv_canvas canvas').evaluate('el=>el.toDataURL()')
+        page.get_by_role('button', name='缩小', exact=True).click()
+        page.wait_for_timeout(150)
+        assert zoom() < enlarged * .95
+        assert page.locator('#rv_canvas canvas').evaluate('el=>el.toDataURL()') != pixels
+        page.locator('#rv_canvas').hover()
+        before = zoom()
+        pixels = page.locator('#rv_canvas canvas').evaluate('el=>el.toDataURL()')
+        page.mouse.wheel(0, -180)
+        page.wait_for_timeout(200)
+        assert zoom() > before, (view, selected, 'wheel')
+        assert page.locator('#rv_canvas canvas').evaluate('el=>el.toDataURL()') != pixels
+        page.get_by_role('button', name='适应画布', exact=True).click()
+        page.wait_for_timeout(150)
+        assert 0 < zoom() <= 1
+    done(site)
+
+
+def test_catalog_single_graph_entry_and_subtree_back_navigation(live):
+    """DR-068: one card action, detail access, and return to the actual parent tree."""
+    site, page = live
+    ref = site.submit()['output_asset_ref']
+    page.goto(site.url + '/#library')
+    card = page.locator(f'[data-ontology-id="{ref["ontology_id"]}"]')
+    expect(card.get_by_role('link')).to_have_count(1)
+    card.get_by_role('link', name='打开图谱', exact=True).click()
+    page.get_by_role('link', name='← 返回本体详情', exact=True).click()
+    expect(page.get_by_role('link', name='生成行为树', exact=True)).to_be_visible()
+    page.get_by_role('link', name='打开行为树视图', exact=True).click()
+    page.get_by_label('查找节点', exact=True).fill('SubTree · Perception')
+    page.get_by_role('button', name='查找', exact=True).click()
+    selected = page.locator('#rv_node').input_value()
+    page.get_by_role('button', name='查看子树 Perception', exact=True).click()
+    expect(page.locator('#rv_tree')).to_have_value('Perception')
+    page.get_by_role('button', name='返回上一级', exact=True).click()
+    expect(page.locator('#rv_tree')).to_have_value('main')
+    expect(page.locator('#rv_node')).to_have_value(selected)
+    expect(page.locator('#rv_properties')).to_contain_text('Perception')
+    page.get_by_label('行为树', exact=True).select_option('Place')
+    page.get_by_role('button', name='返回主流程', exact=True).click()
+    expect(page.locator('#rv_tree')).to_have_value('main')
+    done(site)
