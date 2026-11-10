@@ -1,4 +1,4 @@
-# Reproducibility package: "What Does an Ontology Layer Add to a Data Agent? Evaluation Pitfalls and Conditions of Usefulness" [Experiment, Analysis & Benchmark]
+# Reproducibility package: "What Does an Ontology Layer Add to a Data Agent? Evaluation Pitfalls and When It Helps" [Experiment, Analysis & Benchmark]
 
 PVLDB Volume 20 submission. This directory holds everything needed to recompute every number in the paper from the
 released predictions, and to rerun the experiments from scratch.
@@ -87,7 +87,9 @@ released (`rescore.json`), `stats_v4.py`, `stats_dr093.py` and `analysis_ablatio
    The answering chain is selected with `DM_ROOT` (set by `run_method.sh` and `queue_v2.py`); the ReAct agent does not
    use DataMind code.
 6. Runs: `queue_v4.py plan` then `queue_v4.py run`; `audit_infra_v4.py --requeue` before scoring (runs with an API
-   connection error or five or more timeouts are rerun).
+   connection error or five or more timeouts are rerun). BIRD's per-question evidence: the protocol-v2/v3 runs
+   (Section 3, Section 6.6) give it to both systems (`EVO_USE_EVIDENCE=1`, `DM_EVIDENCE=1`); the protocol-v4/v5 runs
+   (Sections 5 and 6.1–6.5) give it to no condition (`EVID=0` in `queue_v4.py` and `queue_v5.py`).
 
 7. Protocol v5 (post hoc): `make_readable_merged.py` and `make_v5_ablations.py`; ontologies of BIRD-readable-merged with
    `build_evo_v2.py bird_merged --track w --S readable_merged --dir fwd|rev` and

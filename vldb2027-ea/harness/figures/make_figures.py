@@ -85,10 +85,10 @@ def teaser():
     arrow(a, (4.12, 3.15), (4.73, 2.55)); arrow(a, (4.12, 1.42), (4.73, 2.05))
     box(a, 4.75, 3.5, 2.25, 0.7, "Docs / exemplars", fc="#ffffff", size=7)
     arrow(a, (5.875, 3.48), (5.875, 2.87))
-    badge(a, 7.0, 4.2, 3)                                   # on the corner of the side-information box
+    badge(a, 7.28, 3.85, 3)                                 # beside the side-information box, clear of its border
     box(a, 7.75, 1.75, 1.5, 1.1, "One\nscorer", fc="#ffffff")
     arrow(a, (7.02, 2.3), (7.73, 2.3))
-    badge(a, 9.25, 2.85, 1); badge(a, 9.25, 1.75, 2)        # on the corners of the scorer box
+    badge(a, 9.53, 2.6, 1); badge(a, 9.53, 2.0, 2)          # beside the scorer box, clear of its border
     a.text(0.05, 0.45, "Pitfalls controlled", ha="left", va="center", color=INK2, fontsize=7)
     for i, (x, t) in enumerate(zip((2.6, 5.1, 7.35), ["multiset vs set", "extra column", "unequal side info"])):
         badge(a, x, 0.45, i + 1)
@@ -297,7 +297,7 @@ def coverage():
         b.barh(y - h / 2, m["acc_not_covered"], height=h - 0.04, color="#f6d48a", zorder=3, label="not covered" if S == "R" else None)
         b.text(m["acc_covered"] + 2, y + h / 2, f"{m['acc_covered']:.0f}", ha="left", va="center", fontsize=7.0, color=INK)
         b.text(m["acc_not_covered"] + 2, y - h / 2, f"{m['acc_not_covered']:.0f}", ha="left", va="center", fontsize=7.0, color=INK)
-    b.set_xlim(0, 100); b.set_xticks([0, 50, 100]); b.set_xlabel("Accuracy (%)")
+    b.set_xlim(0, 108); b.set_xticks([0, 50, 100]); b.set_xlabel("Accuracy (%)")
     b.legend(frameon=False, loc="lower right", bbox_to_anchor=(1.03, 0.98), ncol=2, handlelength=0.9, columnspacing=0.8,
              handletextpad=0.35, borderaxespad=0.1)
     for ax in (a, b):
@@ -354,8 +354,9 @@ def ablations():
         ax.set_xlim(-11, 5.5); ax.set_xticks([-10, -5, 0, 5])
         clean(ax, grid="x"); ax.spines["left"].set_visible(False); ax.tick_params(axis="y", length=0)
     axs[0].set_yticks(ys); axs[0].set_yticklabels(["– " + c[1] for c in comps])
-    fig.supxlabel("Change when removed (points); filled: interval excludes 0", fontsize=8, color=INK2, x=0.58, y=-0.06)
     fig.subplots_adjust(wspace=0.08)
+    fig.supxlabel("Change when removed (points); filled: interval excludes 0", fontsize=8, color=INK2,
+                  x=(axs[0].get_position().x0 + axs[1].get_position().x1) / 2, y=-0.06)
     save(fig, "ablations")
 
 
@@ -423,10 +424,11 @@ def perdb():
     from matplotlib.lines import Line2D
     h = [Line2D([], [], marker="o", ls="", ms=5, mfc="white", mec=INK2, mew=1.2, label="own database, opaque names (O)"),
          Line2D([], [], marker="o", ls="", ms=5.5, mfc=INK2, mec="white", label="inside the 60-table merged schema (MG)")]
-    fig.legend(handles=h, ncol=2, frameon=False, loc="lower center", bbox_to_anchor=(0.6, 0.97), handletextpad=0.3,
-               columnspacing=1.6)
-    fig.supxlabel("Gain in column-tolerant accuracy (points), same test questions", fontsize=8, color=INK2, x=0.6, y=-0.04)
     fig.subplots_adjust(wspace=0.08)
+    xc = (axs[0].get_position().x0 + axs[1].get_position().x1) / 2      # centre over the two panels
+    fig.legend(handles=h, ncol=2, frameon=False, loc="lower center", bbox_to_anchor=(xc, 0.97), handletextpad=0.3,
+               columnspacing=1.6)
+    fig.supxlabel("Gain in column-tolerant accuracy (points), same test questions", fontsize=8, color=INK2, x=xc, y=-0.04)
     save(fig, "perdb")
 
 
@@ -452,7 +454,7 @@ def v5():
     ax1.set_ylim(-0.6, len(rows) - 0.3); ax1.set_xlim(15, 60)
     ax1.set_xlabel("Test accuracy, merged schema, opaque names (%)")
     ax1.set_title("a  Ablation and turn budget", loc="left", fontsize=8, fontweight="bold")
-    clean(ax1, grid=None); ax1.spines["left"].set_visible(False)
+    clean(ax1, grid=None); ax1.spines["left"].set_visible(False); ax1.tick_params(axis="y", length=0)
     # (b) the same 60 tables and questions with opaque and with readable names
     conds = [("none", "No ontology"), ("doc", "Documentation"), ("evo", "EvoOntology"), ("dm", "DataMind")]
     ys2 = list(range(len(conds)))[::-1]
@@ -467,7 +469,7 @@ def v5():
     ax2.set_ylim(-0.6, len(conds) - 0.4); ax2.set_xlim(15, 60)
     ax2.set_xlabel("Test accuracy, same 60 tables and questions (%)")
     ax2.set_title("b  Opaque (open) vs. readable names (filled)", loc="left", fontsize=8, fontweight="bold")
-    clean(ax2, grid=None); ax2.spines["left"].set_visible(False)
+    clean(ax2, grid=None); ax2.spines["left"].set_visible(False); ax2.tick_params(axis="y", length=0)
     fig.subplots_adjust(left=0.2, right=0.985, top=0.88, bottom=0.2, wspace=0.62)
     save(fig, "v5")
 
