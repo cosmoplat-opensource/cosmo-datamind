@@ -4,7 +4,7 @@ Release accompanying the manuscript **"Visual Fact Binding of Rendered Financial
 Diagnostic Study"** (Jinze Yu; submitted to the International Journal on Document Analysis and Recognition, IJDAR).
 It contains the benchmark (target boxes, references, candidate inventories), every language-model request design and
 response, every reported configuration's predictions with their manifests, the dated protocol files, and the code
-that builds, runs and scores everything. 1,439 files, 484 MB; `MANIFEST.sha256` lists the sha256 of
+that builds, runs and scores everything. 1,441 files, 484 MB; `MANIFEST.sha256` lists the sha256 of
 every file.
 
 ## Quick start
@@ -14,7 +14,7 @@ cd ijdar2026-uk-ixbrl-bind
 python3 unpack.py --verify          # check MANIFEST.sha256, then restore the run layout (about 11 GB unpacked)
 python3 release_tools/score_offline.py heldout \
     runs/cvpr_complete_v10_20261014/native_correspondence/heldout_v1/llm/fewshot_history/deepseek_deepseek-flash/answers
-cd cvpr_complete_v9 && python3 ../paper_ijdar/figures/paper_stats.py      # numbers of Tables 1, S1 and Section 3
+cd cvpr_complete_v9 && python3 ../paper_ijdar/figures/paper_stats.py      # Table 6 lists, reachability, year ends, seed spread
 ```
 
 Large files are stored xz-compressed (`<name>.xz`), directories of many small files as `<dir>.tar.xz`, and anything
@@ -26,7 +26,7 @@ above 95 MB compressed as numbered parts (`<name>.part000`, `.part001`, ...). `u
 | Path (after `unpack.py`) | What it is |
 |---|---|
 | `cvpr_complete_v9/` | All code: rendering (`native_v30_render.py`, `heldout_render_v1.py`), OCR and word features (`native_v30_perception.py`, `heldout_perception_v1.py`, `encoder.py`), targets (`heldout_targets_v1.py`), candidate inventories (`native_witness_inventory_v23.py`, `native_v26_bank.py`, `native_v30_bank.py`, `heldout_bank_v1.py`), priors (`native_structural_prior_v27..v34*.py`, `native_presentation_v34.py`, `heldout_priors_*.py`), learners (`native_scope_learning_v23..v34*.py`), scoring (`native_scope_score_*.py`, `score_native_binding_v17.py`, `compare_*.py`), language-model baselines (`llm_baseline_v30.py`, `llm_fewshot_*.py`, `heldout_llm_*.py`), sealed selection (`sealed_select_v1.py`, `sealed_sources_v1.py`), the paper's crop figures (`make_paper_figures_v1/v2.py`), shell drivers and unit tests (`tests/`). Earlier exploratory stages of the same project are kept because later stages import them. |
-| `paper_ijdar/figures/` | `make_figures.py` (data figures), `paper_stats.py` (Table 1, Table S1 and inline numbers), `reanalysis_v1.py` and its output `reanalysis_v1.json` (Holm tests, glyph-rule subset, value errors), `choices.json` (cells shown in the crop figures). `paper_ijdar/build_supplement_md.py`, `paper_ijdar/latex/build_tex.py`: manuscript build. |
+| `paper_ijdar/figures/` | `make_figures.py` (data figures), `paper_stats.py` (Table 6 lists, reachability, year ends, seed spread and other inline numbers), `reanalysis_v1.py` and its output `reanalysis_v1.json` (Holm tests, glyph-rule subset, value errors), `reanalysis_v2.py` and `reanalysis_v2.json` (period errors before the structural prior, repeated row labels), `choices.json` (cells shown in the crop figures). `paper_ijdar/build_supplement_md.py`, `paper_ijdar/latex/build_tex.py`: manuscript build. |
 | `runs/.../native_correspondence/public/`, `scoring_only/`, `training_only/` | Development targets (task list with target boxes and page sha256), the scorer's reference provenance and the 2023 teacher cells with filed tuples. `scoring_only/references_resolved_dev.json` holds the 560 development evaluation references as resolved by the paper's scorer (see *Code changes*). |
 | `.../witness_composition_v23/`, `.../common_candidate_v26/`, `.../common_candidate_v30/` | The three development candidate inventories (`public/tasks.json`, `records.json`, `witnesses.json`, `manifest.json`): v23 (original), v26 (repair; used by v26-v29), v30 (perception fix and repair II; used by v30-v34 and the no-LLM system). |
 | `.../common_candidate_v27` ... `v34_nollm`, `*_ablation_*`, `v33loco` | Every reported configuration: `learning_v1/predictions/` (all six learners x 2 orders x 3 seeds x budgets 0/5/10), `manifest.json` (sha256 of every prediction file and of the design), `design.json`, `development_results.json` (per-configuration and per-company counts, paired comparisons, candidate availability per target), `paired_vs_*.json` (every paired comparison of the paper), `local/` and `parents/*/metadata.json` (training exposure records), `source_snapshot/` (code as run). |
@@ -178,7 +178,7 @@ Scripts run from `cvpr_complete_v9/` after `unpack.py`. "R" = `runs/cvpr_complet
 
 | Manuscript item | Script | Released inputs |
 |---|---|---|
-| Table 1, Table S1, Figure S1 | `paper_ijdar/figures/paper_stats.py`; `make_figures.py 5` | `R/common_candidate_v30/public/tasks.json`, `R/heldout_v1/bank/public/tasks.json`, `R/sealed_v1/bank/public/tasks.json`, `scoring_only/references*.json`, `R/sealed_v1/selection.json`, `ext/xbrl_scope_source_index/` |
+| Table 1, Table S1, Figure S1 | no dedicated script: counts of the files listed (`make_figures.py 5` draws Figure S1 from the Table S1 numbers) | `R/common_candidate_v30/public/tasks.json`, `R/heldout_v1/bank/public/tasks.json`, `R/sealed_v1/bank/public/tasks.json`, `scoring_only/references*.json`, `R/sealed_v1/selection.json`, `ext/xbrl_scope_source_index/` |
 | Table 2, Figure 4, Figure S3, Table S3 | `native_scope_score_v23..v34*.py` (wrote the results); `make_figures.py 6 7`; `paper_stats.py` | `R/<config>/learning_v1/development_results.json` and `paired_vs_*.json` for `witness_composition_v23`, `common_candidate_v26..v34`, `v34_nollm`, `v30_ablation_*`, `v32_ablation_*`; reachability = `candidate_availability_*` in the same files |
 | Table 3 | `compare_llm_run_v1.py`, `regen_llm_paired_v1.sh`, `rule_only_baseline_v30.py` | `R/common_candidate_v32|v34|v34_nollm/learning_v1/paired_vs_*_llm.json`, `R/common_candidate_v30/llm_baseline_v30/*/answers`, `R/common_candidate_v30/rule_only_baseline_v30.json` |
 | Table 4 | `heldout_predict_v1.py`, `compare_heldout_v1.py` | `R/heldout_v1/evaluation_v1..v5/results.json`, `paired_vs_*.json`, `R/heldout_v1/llm/*/answers` |
@@ -190,6 +190,7 @@ Scripts run from `cvpr_complete_v9/` after `unpack.py`. "R" = `runs/cvpr_complet
 | Figure 3 | `make_figures.py 3` (fig4_pipeline; a diagram, no data) | — |
 | Figure 6, Figure 7 | `make_figures.py 8 9` | predictions and answers of the three splits, `paired_vs_fewshot*_budget10.json` |
 | Figures S4, S5, S6 | `make_figures.py 10 11 12` | as Figures 6 and 7 |
+| Section 5.2 / S3.3 period errors before the structural prior and repeated row labels | `paper_ijdar/figures/reanalysis_v2.py` -> `reanalysis_v2.json` | v26 and v32 development predictions, `prior_v29/row_labels.json`, references |
 | Section 5 inline numbers (Holm tests, glyph-rule subset, value errors) | `paper_ijdar/figures/reanalysis_v1.py` -> `reanalysis_v1.json` | predictions, answers, references; Part 2 additionally reads the page OCR, whose per-cell outcome is released as `release_meta/derived/dev_glyph_rule.json` |
 
 **Recomputing without API access.** Every language-model output used in the paper is stored in an `answers/` file and
@@ -215,6 +216,14 @@ them, as in the paper). The figure scripts use Helvetica Neue when available.
   sealed roster was audited and frozen (`registry_metadata_v1/design.json`).
 - The designation of the main family of comparisons (manuscript Section 5.1) is recorded in the manuscript drafts only;
   no separate dated file exists, and the family was not pre-registered.
+- `sealed_v1/selection.json` (`eligible_total` 42 of 60): `sealed_select_v1.py` read the index through the unsorted
+  pages `ext/xbrl_scope_source_index/gb_page_*.json`, which repeat 208 and omit 208 of the 2,959 records; in the
+  stable-sorted pages `gb_stable_page_*.json` used for the reservation all 60 sealed companies have filings for 2023,
+  2024 and 2025. The ten test companies were therefore drawn from 42 rather than 60 (manuscript Section 5.5 and S3.5).
+- Design records: the `fewshot_history` and `fewshot_linkbase` `design.json` files store neither the temperature nor a
+  prompt-template hash (the code sends temperature 0); the sealed `fewshot_linkbase` design says `split: "heldout"`;
+  the Poe designs say `thinking: disabled`, although no thinking parameter is sent. The audit cards themselves are not
+  released (sample, card list and verdicts are).
 
 ## Environment
 
