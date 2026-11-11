@@ -24,7 +24,9 @@
 
 compiler.instantiate 是结构性原语，不能直接作为面向用户的正式生成 API。
 allow_unresolved 默认为 false；只有 create_authoring_draft 显式使用宽松选项，不能据此绕过严格任务证据检查。
-离线演示命令见 [运行说明](../../docs/robotics-offline-demo.md)。平台 API、LLM 提取适配和知识编辑页面仍属后续阶段。
+离线演示命令见 [运行说明](../../docs/robotics-offline-demo.md)。
+平台 API、知识编辑和 IR-024 模型辅助构建已接入，当前范围见 [双路径指南](../../docs/robotics-dual-build.md)。
+`modeling` 包复用平台模型进行 TBox 设计，ABox 按确认骨架执行确定性规则；新设计候选单独验证，UR 行为树消费者保持独立准入。
 
 发布采用 `ur-pick-place-owl-v2`，原子参数的名称、方向和类型从 mapsToPort 指向的端口读取。
 构建草稿中的重复属性只有与端口值一致才可移除，矛盾数据拒绝发布，原图不变。

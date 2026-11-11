@@ -1,4 +1,4 @@
-"""Transactionally persist run state, events and artifacts — DR-064 / DR-065."""
+"""Transactionally persist run state, events and artifacts — DR-064 / DR-065 / DR-070."""
 from datetime import datetime, timezone
 import json
 import uuid
@@ -9,7 +9,7 @@ from ontology_assets.store import AssetStore, _required, _version
 
 from . import build_contracts, contracts
 
-JSON_FIELDS = ("task", "session_ref", "components", "ontology_snapshot", "result", "build_input", "output_asset_ref")
+JSON_FIELDS = ("task", "session_ref", "components", "ontology_snapshot", "result", "build_input", "output_asset_ref", "design_input")
 MANIFEST_FIELDS = ("run_id", "ontology_id", "version_id", "operation", "task", "mode", "session_ref",
                    "components", "ontology_snapshot", "status", "result", "retry_of", "created_at", "updated_at")
 ARTIFACT_FIELDS = ("artifact_id", "name", "kind", "media_type", "sha256", "byte_size")
@@ -43,6 +43,8 @@ def _manifest(run, artifacts):
     # Keep every schema-2 manifest byte/shape valid; new fields apply only to builds.
     if run["build_input"] is not None:
         data.update(build_input=run["build_input"], output_asset_ref=run["output_asset_ref"])
+    if run.get("design_input") is not None:
+        data.update(design_input=run["design_input"], output_asset_ref=run["output_asset_ref"])
     data["artifacts"] = [{field: item[field] for field in ARTIFACT_FIELDS}
                          for item in artifacts if item["kind"] != "manifest"]
     return data
@@ -72,6 +74,10 @@ class RunStore:
                 "rule_digest": validation.get("validation_shapes_sha256")}
 
     def _verify_snapshot(self, conn, run):
+        if run.get("design_input") is not None:
+            from .robotics_design_contracts import verify_input
+            verify_input(self.storage, conn, run)
+            return
         if run["build_input"] is not None:
             if (run["operation"] != "build_ontology" or run["mode"] != "real"
                     or any(run[key] is not None for key in ("ontology_id", "version_id", "ontology_snapshot"))):
@@ -94,7 +100,7 @@ class RunStore:
 
     def _insert(self, conn, inputs, snapshot, retry_of=None):
         timestamp = _now()
-        record = {"build_input": None, "output_asset_ref": None, **inputs, "ontology_snapshot": snapshot, "run_id": "run_" + uuid.uuid4().hex,
+        record = {"build_input": None, "design_input": None, "output_asset_ref": None, **inputs, "ontology_snapshot": snapshot, "run_id": "run_" + uuid.uuid4().hex,
                   "status": "queued", "result": None, "retry_of": retry_of,
                   "created_at": timestamp, "updated_at": timestamp}
         stored = {**record}
@@ -102,7 +108,7 @@ class RunStore:
             stored[field] = json_text(stored[field]) if stored[field] is not None else None
         conn.execute("""INSERT INTO runs VALUES (:run_id,:ontology_id,:version_id,:operation,:task,:mode,
             :session_ref,:components,:ontology_snapshot,:status,:result,:retry_of,:created_at,:updated_at,
-            :build_input,:output_asset_ref)""", stored)
+            :build_input,:output_asset_ref,:design_input)""", stored)
         self._event(conn, record["run_id"], "state", {"status": "queued"})
         return _decode(stored)
 
@@ -110,7 +116,7 @@ class RunStore:
         contracts.text(ontology_id, "ontology_id")
         contracts.text(version_id, "version_id")
         contracts.text(operation, "operation")
-        if operation == "build_ontology":
+        if operation in ("build_ontology", "design_tbox", "extract_abox"):
             raise ValueError("本体构建必须通过来源输入型运行创建。")
         if mode not in ("real", "demo"):
             raise ValueError("运行模式必须为 real 或 demo。")
@@ -211,6 +217,8 @@ class RunStore:
         with self.storage.transaction(write=True) as conn:
             old = _run(conn, run_id)
             _expect(old, "interrupted", "failed")
+            if old.get("design_input") is not None:
+                raise ValueError("设计运行须通过设计会话显式重试。")
             self._verify_snapshot(conn, old)
             inputs = {key: old[key] for key in ("ontology_id", "version_id", "operation", "task", "mode",
                                                "session_ref", "components", "build_input")}
@@ -232,7 +240,7 @@ class RunStore:
             run = _run(conn, run_id)
             _expect(run, "running")
             self._verify_snapshot(conn, run)
-            if run["build_input"] is not None:
+            if run["build_input"] is not None or run.get("design_input") is not None:
                 raise ValueError("来源构建不能通过生成完成契约提交。")
             return self._complete(conn, run, outcome, artifacts)
 
@@ -250,7 +258,7 @@ class RunStore:
             conn.execute("""INSERT INTO run_artifacts VALUES (:artifact_id,:run_id,:name,:kind,:media_type,
                 :sha256,:byte_size,:path,:created_at)""", record)
         # Recheck sources immediately before exposing success, including post-write damage.
-        if outcome["status"] != "error" or run["build_input"] is None:
+        if outcome["status"] != "error" or (run["build_input"] is None and run.get("design_input") is None):
             self._verify_snapshot(conn, run)
         conn.execute("UPDATE runs SET status=?,result=?,updated_at=?,output_asset_ref=? WHERE run_id=?",
                      (run["status"], json_text(outcome), run["updated_at"],

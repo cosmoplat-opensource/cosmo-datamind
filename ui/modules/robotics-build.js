@@ -35,7 +35,7 @@
       try {
         const result = await json(fetcher, '/api/robotics/capabilities');
         if (dead) return;
-        caps = result; state.enabled = result.enabled === true; state.limits = result.limits; state.error = null;
+        caps = result; state.enabled = result.enabled === true; state.limits = result.limits; state.error = result.configuration_issue; state.build_ready=result.build_ready; state.building_method=result.building_method;
       } catch (e) { if (dead) return; state.enabled = false; state.error = errorOf(e); }
       notify();
     }
@@ -46,6 +46,7 @@
     }
     function validate() {
       if (!state.enabled) return '机器人构建功能未启用。';
+      if(caps?.build_ready===false)return caps.configuration_issue?.message||'模型配置不可用';
       const d = state.draft;
       if (!d.name?.trim()) return '请填写机器人本体名称。';
       if (d.name.length > 256) return '本体名称不能超过 256 个字符。';
@@ -65,12 +66,13 @@
       const body = new FormData();
       for (const [k,v] of Object.entries({name:state.draft.name, recipe:'bt_xml', profile:state.draft.profile, request_id:requestId,
         behavior_tree:state.draft.behavior_tree, node_models:state.draft.node_models})) body.append(k,v);
+      if(state.draft.description)body.append('description',state.draft.description);
       const token = generation;
       state.busy = true; state.error = null; notify();
       try {
         const row = await json(fetcher, '/api/robotics/builds', {method:'POST', body});
         if (!current(token)) return;
-        select(row.run_id, row); later();
+        if(row.session_ref?.namespace==='robotics_design'){state.session=row;}else{select(row.run_id, row); later();}
       } catch (e) { if (current(token)) state.error = errorOf(e); }
       finally { if (!dead) { state.busy = false; notify(); } }
     }
@@ -126,7 +128,8 @@
     if (pageName !== 'build') { active?.dispose(); active = null; routeKey = null; return; }
     const query = new URLSearchParams(global.location.hash.startsWith('#build?') ? global.location.hash.split('?')[1] : '');
     const recipe = query.get('recipe') === 'robotics' ? 'robotics' : 'data', runId = query.get('run');
-    const key = recipe + ':' + (runId || '');
+    const sessionId=query.get('session');
+    const key = recipe + ':' + (sessionId || runId || '');
     if (active && routeKey === key) return;
     active?.dispose(); routeKey = key;
     const doc = global.document, select = doc.getElementById('rb_recipe'), panel = doc.getElementById('rb_panel');
@@ -136,6 +139,8 @@
     doc.querySelector('#p_build .bc-hero').hidden = robotic;
     panel.hidden = !robotic;
     const ui = global.RoboticsAssets;
+    select.onchange = () => { global.location.hash = select.value === 'robotics' ? '#build?recipe=robotics' : '#build'; };
+    if(robotic&&sessionId){panel.innerHTML='<section class="card" id="design_host"></section>';active=global.RoboticsDesign.mount(panel.firstChild,sessionId);select.disabled=false;return;}
     panel.innerHTML = `<header class="rb-hero"><div class="rb-hero-copy"><svg aria-hidden="true" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="18" r="2.5"/><path d="M11 7 6 16M13 7l5 9M8 18h8"/></svg><div><h2>机器人本体构建</h2><p>从已有行为树整理技能、参数与业务知识，为任务生成准备本体。</p><div class="rb-pipeline"><span>上传 XML</span><i>→</i><span>构建与检查</span><i>→</i><span>生成行为树</span></div></div></div><span class="rb-hero-badge">构建模板<br><b>UR 抓移放</b></span></header>
       <div class="rb-workspace"><div class="rb-source-panel card"><div class="rb-section-title"><h3>构建来源</h3><span class="rb-soft-tag">2 份 XML</span></div>
       <form id="rb_form" class="rb-form" novalidate hidden>
@@ -143,7 +148,7 @@
         <div><label for="rb_profile">构建模板</label><select id="rb_profile" aria-label="构建模板"><option value="ur_pick_place">UR 抓移放 · ur_pick_place</option></select></div>
         <div class="rb-upload"><div class="rb-upload-title"><span aria-hidden="true">01</span><label for="rb_tree">主行为树 XML</label></div><p>包含抓取、移动与放置的流程。</p><input id="rb_tree" type="file" accept=".xml,application/xml,text/xml"></div>
         <div class="rb-upload"><div class="rb-upload-title"><span aria-hidden="true">02</span><label for="rb_models">节点模型 XML</label></div><p>定义节点接口及输入、输出参数。</p><input id="rb_models" type="file" accept=".xml,application/xml,text/xml"></div>
-        <p class="muted" id="rb_limits">正在读取构建能力…</p>
+        <div><label for="rb_description">建模要求</label><textarea id="rb_description" maxlength="20000"></textarea><p id="rb_method"></p></div><p class="muted" id="rb_limits">正在读取构建能力…</p>
         <div id="rb_error" role="alert" hidden></div>
         <button type="submit" class="dq-send rb-submit">构建机器人本体</button><a class="rb-history-link" href="#jobs">查看构建历史 →</a>
       </form></div>
@@ -160,8 +165,10 @@
         const option = doc.createElement('option'); option.value = 'robotics'; option.textContent = '行为树 XML → 机器人本体'; select.append(option);
       } else if (!state.enabled && robotOption) robotOption.remove();
       select.value = robotic && state.enabled ? 'robotics' : 'data';
-      form.querySelector('button').disabled = !state.enabled || state.busy;
-      error.hidden = !state.error; error.textContent = state.error ? ui.errorText(state.error) : '';
+      form.querySelector('button').disabled = !state.enabled || state.busy || state.build_ready===false;
+      error.hidden = !state.error; error.textContent = state.error ? (state.error.code==='configuration_error'?'模型配置错误：':'')+ui.errorText(state.error) : '';
+      doc.getElementById('rb_method').textContent=state.building_method==='legacy_xml'?'离线构建：建模要求不参与语义建模。':state.building_method==='llm_tbox_abox'?'模型辅助构建':'';
+      if(state.session){global.location.hash='#build?recipe=robotics&session='+encodeURIComponent(state.session.session_id);return;}
       const row = state.run;
       runPanel.hidden = !row;
       doc.getElementById('rb_welcome').hidden = !!row;
@@ -188,7 +195,7 @@
     }
     controller = createController({onChange:render}); active = controller;
     select.onchange = () => { global.location.hash = select.value === 'robotics' ? '#build?recipe=robotics' : '#build'; };
-    const sync = () => controller.setDraft({name:doc.getElementById('rb_name').value, profile:doc.getElementById('rb_profile').value,
+    const sync = () => controller.setDraft({description:doc.getElementById('rb_description').value,name:doc.getElementById('rb_name').value, profile:doc.getElementById('rb_profile').value,
       behavior_tree:doc.getElementById('rb_tree').files[0] || null, node_models:doc.getElementById('rb_models').files[0] || null});
     form.oninput = sync; form.onchange = sync;
     form.onsubmit = event => { event.preventDefault(); sync(); controller.submit(); };

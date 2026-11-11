@@ -77,7 +77,7 @@
     (async()=>{try{
       const [catalog,cap]=await Promise.all([read('/api/ontology-assets?domain=robotics',abort.signal),read('/api/robotics/task-capabilities',abort.signal)]);
       if(active!==view)return;
-      const items=catalog.items.filter(item=>item.domain==='robotics'&&item.version_id);
+      const items=catalog.items.filter(item=>item.domain==='robotics'&&item.version_id&&item.application_compatibility?.status==='supported');
       host.innerHTML=`<div class="rt-welcome rta-welcome"><div class="rt-welcome-mark" aria-hidden="true">◇</div><h1>从一句任务，到行为树</h1><p>选择机器人本体，描述你的任务。<br>同一本体可以生成多份行为树，每次结果都能从左侧找回。</p></div>
         <section class="dq-inputbar rta-start"><label for="rta_asset">选择机器人本体</label><select id="rta_asset"><option value="">请选择本体</option>${items.map(item=>`<option value="${esc(item.ontology_id)}">${esc(item.name)} · 版本 ${esc(item.version_number)}</option>`).join('')}</select>
         <p class="rv-help">${!cap.enabled?'机器人功能未启用，请在配置中启用后创建任务。':!items.length?'暂无机器人本体，请先构建或导入。':'选择后将固定当前版本，后续任务可继续复用本体知识。'}</p><div class="rta-start-actions"><a href="#build">构建本体</a><button type="button" class="dq-send" data-task-start disabled>开始新任务</button></div></section>`;

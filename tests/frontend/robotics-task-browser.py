@@ -25,12 +25,21 @@ from tests.storage_pipeline_support import fresh_payload
 class TaskSite(LiveSite):
     def __init__(self, directory, output, *, model_url):
         self.model_url = model_url
+        self.model_enabled = False
         super().__init__(directory, output)
 
     def start(self):
-        self.env.update(DATAMIND_LLM_BASE=self.model_url, DATAMIND_LLM_MODEL='scripted-test-model',
-                        DATAMIND_LLM_KEY='local-model-test-key', DATAMIND_LLM_TIMEOUT='5')
+        if self.model_enabled:
+            self.env.update(DATAMIND_LLM_BASE=self.model_url, DATAMIND_LLM_MODEL='scripted-test-model',
+                            DATAMIND_LLM_KEY='local-model-test-key', DATAMIND_LLM_TIMEOUT='5')
         super().start()
+
+    def enable_task_model(self):
+        # DR-070: create the legacy asset offline, then configure task extraction.
+        # A configured build now belongs to the new TBox/ABox flow.
+        if not self.model_enabled:
+            self.model_enabled = True
+            self.restart()
 
 
 @pytest.fixture(scope='session')
@@ -72,7 +81,9 @@ def done(site):
     site.evidence['assertions_completed'] = True
 
 
-def open_task(page, site, ref):
+def open_task(page, site, ref, *, enable_model=True):
+    if enable_model:
+        site.enable_task_model()
     page.goto(site.url + '/#robotics-task?asset=' + ref['ontology_id'] + '&version=' + ref['version_id'])
     panel = page.get_by_test_id('robotics-task')
     expect(panel).to_be_visible()
@@ -155,6 +166,7 @@ def test_real_build_to_inline_completion_generation_download_and_restart(live):
     built = site.terminal(rid)
     original_ref = built['output_asset_ref']
     before = AssetStore(site.root).read_payload(**original_ref)
+    site.enable_task_model()
     page.get_by_role('link', name='生成行为树', exact=True).click()
     panel = page.get_by_test_id('robotics-task')
     expect(panel.get_by_test_id('task-current-version')).to_have_count(1)
@@ -281,9 +293,9 @@ def test_model_failure_is_visible_without_fake_task_or_xml(live):
     site, page, _ = live
     site.stop()
     site.env['DATAMIND_LLM_KEY'] = ''
-    # TaskSite.start sets the scripted credentials, so call base start for this error case.
+    # Keep this case offline: no scripted credentials at build or task admission.
     LiveSite.start(site)
-    panel = open_task(page, site, site.submit()['output_asset_ref'])
+    panel = open_task(page, site, site.submit()['output_asset_ref'], enable_model=False)
     expect(panel.get_by_test_id('task-model-status')).to_contain_text('未配置')
     expect(panel.get_by_role('button', name='生成行为树', exact=True)).to_be_disabled()
     assert panel.get_by_role('link', name='下载行为树 XML', exact=True).count() == 0
@@ -390,6 +402,7 @@ def test_task_application_history_retains_two_generations_and_reopens_without_mo
     from tests.robotics_task_support import fixture
     site, page, calls = live
     _, version, _ = fixture(site.root, ready=True)
+    site.enable_task_model()
     page.goto(site.url + '/#robotics-task')
     expect(page.locator('.nav-group').filter(has_text='本体应用').get_by_text('行为树生成', exact=True)).to_be_visible()
     expect(page.get_by_role('heading', name='从一句任务，到行为树', exact=True)).to_be_visible()
@@ -434,6 +447,7 @@ def test_task_application_history_retains_two_generations_and_reopens_without_mo
 def test_graph_starts_task_with_selected_ontology_version(live):
     site, page, calls = live
     ref = site.submit()['output_asset_ref']
+    site.enable_task_model()
     page.goto(site.url + '/#robotics-view?asset=' + ref['ontology_id'] + '&version=' + ref['version_id'] + '&view=relations')
     page.get_by_role('link', name='基于此本体生成行为树', exact=True).click()
     panel = page.get_by_test_id('robotics-task')

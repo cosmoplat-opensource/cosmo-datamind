@@ -150,6 +150,8 @@ def main():
                                   "--output", str(reports / "robotics-review-browser")], env, reports, results)
                         run_check("robotics-task-browser", [py, "tests/frontend/robotics-task-browser.py",
                                   "--output", str(reports / "robotics-task-browser")], env, reports, results)
+                        run_check("robotics-design-browser", [py, "tests/frontend/robotics-design-browser.py",
+                                  "--output", str(reports / "robotics-design-browser")], env, reports, results)
                 finally:
                     server.terminate()
                     try:

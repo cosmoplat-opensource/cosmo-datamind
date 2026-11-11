@@ -28,6 +28,11 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - **安全**:只读 SQL、全局 CSRF 守卫、图谱键路径穿越校验、命令白名单、SPARQL 禁 SERVICE/FROM 外链,见 [[DR-006-security-model]]。
 - **寻址**:28 个子页经 `#<page>` hash 直接寻址 + 深链,见 [[DR-007-url-hash-routing]]。
 
+## 机器人双路径构建（2026-11-10，已确认方案）
+
+- [DR-070 · 机器人本体统一入口与模型／离线双路径](decisions/DR-070-robotics-dual-build.md)：accepted；必须上传双 XML，有模型走新 TBox/ABox 方案，无模型保留旧 UR 离线构建；模型错误不静默降级，设计候选与应用资格分开。
+- [IR-024 · 机器人本体模型辅助与离线双路径构建](iterations/IR-024-robotics-dual-build.md)：delivered（2026-11-11 用户确认）：双路径、完整 JSON/OWL、设计修订和应用准入已交付；T10 全量 13 阶段通过，1988 单元通过、覆盖率 85.0%，真实模型运行已核验。
+
 ## 索引
 
 ### 决定 / Decisions
