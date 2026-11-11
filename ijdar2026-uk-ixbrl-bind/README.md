@@ -4,7 +4,7 @@ Release accompanying the manuscript **"Visual Fact Binding of Rendered Financial
 Diagnostic Study"** (Jinze Yu; submitted to the International Journal on Document Analysis and Recognition, IJDAR).
 It contains the benchmark (target boxes, references, candidate inventories), every language-model request design and
 response, every reported configuration's predictions with their manifests, the dated protocol files, and the code
-that builds, runs and scores everything. 1,441 files, 484 MB; `MANIFEST.sha256` lists the sha256 of
+that builds, runs and scores everything. 1,454 files, 490 MB; `MANIFEST.sha256` lists the sha256 of
 every file.
 
 ## Quick start
@@ -80,6 +80,7 @@ Sizes as stored:
 | `runs/cvpr_complete_v10_20261014/native_correspondence/common_candidate_v30/prior_v33loco_structural` | 4.5 MB |
 | `runs/cvpr_complete_v10_20261014/native_correspondence/common_candidate_v30/prior_v34_field` | 2.2 MB |
 | `runs/cvpr_complete_v10_20261014/native_correspondence/common_candidate_v30/prior_v34_nollm_field` | 2.2 MB |
+| `runs/cvpr_complete_v10_20261014/native_correspondence/common_candidate_v30/prior_v34loco_field` | 2.3 MB |
 | `runs/cvpr_complete_v10_20261014/native_correspondence/common_candidate_v30/public` | 63.0 MB |
 | `runs/cvpr_complete_v10_20261014/native_correspondence/common_candidate_v30_ablation_none/learning_v1` | 9.9 MB |
 | `runs/cvpr_complete_v10_20261014/native_correspondence/common_candidate_v30_ablation_p27/learning_v1` | 9.9 MB |
@@ -93,6 +94,8 @@ Sizes as stored:
 | `runs/cvpr_complete_v10_20261014/native_correspondence/common_candidate_v33loco/learning_v1` | 9.8 MB |
 | `runs/cvpr_complete_v10_20261014/native_correspondence/common_candidate_v34/learning_v1` | 10.1 MB |
 | `runs/cvpr_complete_v10_20261014/native_correspondence/common_candidate_v34_nollm/learning_v1` | 10.1 MB |
+| `runs/cvpr_complete_v10_20261014/native_correspondence/common_candidate_v34_top40/learning_v1` | 2.2 MB |
+| `runs/cvpr_complete_v10_20261014/native_correspondence/common_candidate_v34loco/learning_v1` | 2.2 MB |
 | `runs/cvpr_complete_v10_20261014/native_correspondence/full_binding_preparation_v14/training_only` | 0.5 MB |
 | `runs/cvpr_complete_v10_20261014/native_correspondence/heldout_v1/bank` | 14.5 MB |
 | `runs/cvpr_complete_v10_20261014/native_correspondence/heldout_v1/evaluation_v1` | 1.2 MB |
@@ -147,7 +150,10 @@ Sizes as stored:
 * **Word features and embeddings** (`.npy`, `.npz`, `native_word_features/`, `features/*.npz`): regenerable
   deterministically from the renders with the included scripts and the pinned LayoutLMv3 and MiniLM revisions.
 * **Composer weights** (`.pt`): regenerable with the training scripts (fixed seeds 19, 41, 73); every prediction they
-  produced is released with its hash.
+  produced is released with its hash. `native_v34_top40_eval.py` loads the v34 parent weights written by
+  `native_scope_learning_v34.py`, so that run must be repeated first; the script re-fits the local weights itself and
+  checks their exposure sequence against the released v34 records (all 168 re-fitted local weights matched the
+  original hashes, and `--check` reproduced the v34 predictions without the restriction).
 * **Logs, account probes, credentials**: not released. The API scripts read keys from the environment or a local
   `.env` file, which is not part of the release.
 * The tag-cell audit was run in an interactive session (Claude); its cards were images and are not released, but the
@@ -190,6 +196,7 @@ Scripts run from `cvpr_complete_v9/` after `unpack.py`. "R" = `runs/cvpr_complet
 | Figure 3 | `make_figures.py 3` (fig4_pipeline; a diagram, no data) | — |
 | Figure 6, Figure 7 | `make_figures.py 8 9` | predictions and answers of the three splits, `paired_vs_fewshot*_budget10.json` |
 | Figures S4, S5, S6 | `make_figures.py 10 11 12` | as Figures 6 and 7 |
+| Sections 5.1, 5.6, S2.6, S3.6: v34 with leave-one-company-out priors and v34 restricted to the 40-concept prompt list (post hoc) | `native_structural_prior_v34_loco.py`, `native_v34loco_data.py`, `native_v34loco_eval.py`, `native_v34_top40_eval.py`; `paper_ijdar/figures/reanalysis_v3.py` -> `reanalysis_v3.json` | `R/common_candidate_v34loco/`, `R/common_candidate_v34_top40/` (semantic-memory composer only), `R/common_candidate_v30/prior_v34loco_field/` |
 | Section 5.2 / S3.3 period errors before the structural prior and repeated row labels | `paper_ijdar/figures/reanalysis_v2.py` -> `reanalysis_v2.json` | v26 and v32 development predictions, `prior_v29/row_labels.json`, references |
 | Section 5 inline numbers (Holm tests, glyph-rule subset, value errors) | `paper_ijdar/figures/reanalysis_v1.py` -> `reanalysis_v1.json` | predictions, answers, references; Part 2 additionally reads the page OCR, whose per-cell outcome is released as `release_meta/derived/dev_glyph_rule.json` |
 

@@ -443,11 +443,11 @@ def fig0_teaser(tasks, by_id, pages, anchors, contexts, teachers, width=W2 - 0.2
             ax.scatter([sysv], [yy], s=22, color=BLUE, edgecolor="white", linewidth=0.6, zorder=7); ax.scatter([llm], [yy], s=20, marker="s", facecolor="white", edgecolor=ORANGE, linewidth=1.3, zorder=5)
             ax.scatter([anv], [yy], s=22, marker="D", facecolor="white", edgecolor=VIOLET, linewidth=1.3, zorder=5)
             ax.text(28.5, yy, comp, fontsize=6.4, color=INK2, ha="right", va="center", clip_on=False)
-            ax.text(115, yy, fmt(diff), fontsize=6.6, color=ORANGE, ha="right", va="center")
-            ax.text(134, yy, fmt(sysv - anv), fontsize=6.6, color=VIOLET, ha="right", va="center")
+            ax.text(112, yy, fmt(diff), fontsize=6.6, color=ORANGE, ha="right", va="center")
+            ax.text(135, yy, fmt(sysv - anv), fontsize=6.6, color=VIOLET, ha="right", va="center")
         y -= 1.3
     ax.set_yticks([])
-    ax.set_xlim(30, 135); ax.set_ylim(y + 0.75, 0.75)
+    ax.set_xlim(30, 136); ax.set_ylim(y + 0.75, 0.75)
     ax.set_xticks([40, 60, 80, 100]); ax.set_xlabel("accuracy (%), budget 10", fontsize=7); ax.spines["bottom"].set_bounds(30, 100)
     grid(ax, "x")
     for sp in ("top", "right", "left"):

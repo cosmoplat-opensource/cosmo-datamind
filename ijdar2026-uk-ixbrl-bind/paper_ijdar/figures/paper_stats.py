@@ -43,6 +43,12 @@ def table9():
         print("%-8s %4d %5.1f | %5.1f %5.1f %5.1f | %5.1f %5.1f %5.1f" % (split, len(refs), 100 * len(inside) / len(refs),
               acc(sysrows, "field"), acc([d["llmc"]["fewshot"]], "field"), acc([d["llmc"]["annotated"]], "field"),
               acc(sysrows, "semantic_tuple_exact"), acc([d["llmc"]["fewshot"]], "semantic_tuple_exact"), acc([d["llmc"]["annotated"]], "semantic_tuple_exact")))
+        claude = {"dev": R / "common_candidate_v30/llm_baseline_v30/poe_claude-sonnet-5.5/vision/answers",
+                  "heldout": R / "heldout_v1/llm/poe_claude-sonnet-5.5/vision/answers"}.get(split)
+        if claude is not None:  # Claude Sonnet 5.5 (zero-shot, page crop) on the same within-list cells; Section 5.6 / S3.6
+            bound = M.llm_bindings(claude, refs)
+            ok = [bool(bound.get(t)) and M.component_correct(bound[t], refs[t])["field"] for t in inside]
+            print("%-8s Claude Sonnet 5.5 concept within the list: %5.1f on %d cells (system %5.1f)" % (split, 100 * np.mean(ok), len(inside), acc(sysrows, "field")))
 
 
 def reachability():

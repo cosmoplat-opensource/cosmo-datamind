@@ -248,7 +248,7 @@ def fig6():
 
 # ---------------------------------------------------------------- Fig 7: where accuracy comes from (ladder)
 def fig7():
-    steps = ["none", "+ structural prior", "+ concept \u00d7 unit/value", "+ concept disambiguation", "+ LLM concept ranking", "+ LLM period/dims choices", "+ few-shot reading (v33)", "+ linkbases (v34)"]
+    steps = ["none", "+ structural prior", "+ concept \u00d7 unit\u2013value", "+ concept disambiguation", "+ LLM concept ranking", "+ LLM period/dims choices", "+ few-shot reading (v33)", "+ linkbases (v34)"]
     exact = [17.0, 29.0, 29.6, 33.2, 40.0, 44.3, 44.5, 53.2]
     delta = [None, (12.0, 9.1, 15.0), (1.5, 0.6, 2.4), (2.2, 0.5, 3.8), (7.4, 5.2, 9.8), (4.9, 2.6, 6.8), (0.4, -1.7, 2.2), (8.3, 5.8, 11.7)]
     comp = np.array([[np.nan] * 3, [17.9, 11.1, 1.4], [0.9, 0.2, 0.1], [0.7, -0.2, 4.9], [0.7, 0.5, 11.9], [7.6, 2.3, 0.6], [1.9, -0.7, 0.3], [-1.2, 0.2, 14.7]])

@@ -106,7 +106,7 @@ FIXES["S2"] += [
   "## S2.3 Concept disambiguation\n\nConfusions between sibling IFRS elements (OtherComprehensiveIncome versus ComprehensiveIncome, TradeAndOtherPayables versus NoncurrentPayables) are"),
  ("## S2.4 Presentation and calculation linkbases\n\n**Presentation and calculation structure.** ", "## S2.4 Presentation and calculation linkbases\n\n"),
  ("the Inline XBRL report itself is not opened.", "the linkbase prior does not read the Inline XBRL report."),
- ("Within the development population the priors depend little", "Within the development population the v33 priors depend little"),
+ ("Within the development population the priors depend little", "Within the development population the v33 and v34 priors depend little"),
 ]
 FIXES["S3"] += [
  ("printed as landscape spreads (Section 3.5);", "printed as landscape spreads (Section S1.4);"),
@@ -120,7 +120,38 @@ FIXES["S3"] += [
  ("**Result.** The final system reaches 46.9%",
   "A defect of the selection input was found after the test. The selection script read the filings index through unsorted pages, which repeat 208 and omit 208 of its 2,959 records; in them 42 of the 60 sealed companies show filings for three consecutive year ends, whereas in the stable-sorted pages used for the reservation (Section 3.2) all 60 do. The ten companies were therefore drawn from 42 rather than 60. The rule and its input were fixed before any sealed filing was downloaded, so the defect does not depend on any result; the 18 companies it excluded remain unopened.\n\n**Result.** The final system reaches 46.9%"),
 ]
-GLOBAL = [("shared page reading", "shared page transcription"), ("one zero-shot reading of each target's table region", "one zero-shot transcription of each target's table region")]
+FIXES["S2"] += [
+ ("(Section 4.1) but the v34 priors were not refitted leave-one-company-out for the evaluation.",
+  "(Section 4.1). In a post hoc refit (cvpr_complete_v9/native_structural_prior_v34_loco.py and native_v34loco_eval.py; semantic-memory composer, both orders, three seeds, all budgets), the v34 field prior and the v33 structural prior applied to each company's cells were both fitted on the other thirteen companies (the other companies' teacher cells, on which the composer is trained, carry their own out-of-fold prior scores, whose weights include the evaluated company's 2023 teacher cells); the refitted v34 reaches 51.5% at budget 10 (hash-prefix order; frozen v34 53.2%), concept 84.5%, period 85.8%, dimensions 78.3% and value 82.9%; the pooled difference to the frozen v34 is −1.6 points [−2.9, −0.4] on the exact tuple, −0.5 [−1.6, +0.5] on the concept and 0.0 on the period. The refitted system remains above the history-matched control (+11.7 [+6.5, +16.9] at budget 10, 11 of 14 companies) and the annotated control (+6.7 [+1.9, +11.6], 10 of 14; frozen v34 +8.4) (figures/reanalysis_v3.py)."),
+]
+FIXES["S3"] += [
+ ("## S3.6 The three splits: additional figures\n\n",
+  "## S3.6 The three splits: additional analyses\n\n*Restricted candidate list* (development companies, post hoc; figures/reanalysis_v3.py). The v34 semantic-memory composer of the development runs was re-run with every concept candidate outside the 40-concept prompt list of the language-model baselines given a logit of −10^4 on the evaluation cells; training is unchanged. The parents are the original ones, and the local weights, which had not been kept, were re-fitted with the recorded seeds (weight hashes equal to the originals; without the restriction the predictions are identical to the original v34 predictions). At budget 10 (hash-prefix order) the restricted system reaches 48.4% exact (v34 53.2%) and 76.8% concept (84.6%); pooled over orders, budgets and seeds the restriction changes the exact tuple by −4.9 points [−6.7, −3.2] and the concept by −8.5 [−11.0, −6.1] and leaves the period unchanged (−0.1 [−0.5, +0.3]). On the 446 cells whose filed concept is in the list its concept accuracy is 96.5% (v34 94.4%, annotated control 91.3%). Against the controls at budget 10 it is +8.6 [+4.4, +12.9] exact (11 of 14 companies) and +12.0 [+10.0, +14.0] concept over the history-matched control, and +3.6 [−0.3, +7.7] exact (9 of 14) and +4.2 [+1.9, +6.6] concept over the annotated control.\n\n"),
+]
+FIXES["S3"] += [
+ ("semantic-memory composer +8.3), as expected, since the priors are common inputs to all learners.", "semantic-memory composer +8.3); the priors are common inputs to all learners."),
+ ("(period −6.7), as expected where periods run by row block, as in statements of changes in equity.", "(period −6.7): in statements of changes in equity the periods run by row block, not by column."),
+ ("points over budget 0), as expected when the parent has never seen the company.", "points over budget 0); the parent composer has never seen these companies."),
+]
+FIXES["S2"] += [
+ ("(cvpr_complete_v9/native_structural_prior_v34_loco.py and native_v34loco_eval.py; semantic-memory composer", "(release scripts native_structural_prior_v34_loco.py and native_v34loco_eval.py; semantic-memory composer"),
+ ("the v34 field prior and the v33 structural prior applied", "the v34 concept prior and the v33 structural prior applied"),
+]
+FIXES["S3"] += [
+ (" On these two companies' layouts, the readings were needed, and the linkbases are not a substitute for them.", ""),
+ (" With higher period and value accuracy, the model exceeds v34 on these layouts without any company history.", ""),
+ ("the system and the language model are indistinguishable on exact-tuple accuracy;", "the exact-tuple difference between the system and the language model is not significant (+1.1 [−4.5, +6.3]);"),
+ ("and +3.6 [−0.3, +7.7] exact (9 of 14) and +4.2 [+1.9, +6.6] concept over the annotated control.\n\n",
+  "and +3.6 [−0.3, +7.7] exact (9 of 14) and +4.2 [+1.9, +6.6] concept over the annotated control. On the cells whose filed concept is in the list, Claude Sonnet 5.5's concept accuracy is 89.5% on the development companies (446 cells; v34 94.4%) and 95.5% on the held-out companies (133 cells; v34 96.5%) (figures/paper_stats.py).\n\n"),
+]
+GLOBAL = [("shared page reading", "shared page transcription"), ("one zero-shot reading of each target's table region", "one zero-shot transcription of each target's table region"),
+          ("-prefix* policy", "-prefix* order"), ("-prefix policy", "-prefix order"), ("pooled over policies", "pooled over orders"),
+          ("with a feedback budget,", "at budgets above zero,"), ("at feedback budget 10", "at budget 10"),
+          ("its ontology properties: item type,", "its declared element attributes: item type,"),
+          ("concept × unit/value pair", "concept × unit–value pair"), ("256 optimizer steps", "256 optimiser steps"),
+          ("| Shared page transcription for concept retrieval", "| Shared page transcription for concept retrieval"),
+          ("page region crop, batches of three targets", "page crop, batches of three targets"),
+          ("as much as the system that uses the model's readings", "not significantly different from the system that uses the model's readings")]
 
 def fix_s1_caption(t):
     i = t.index("**Figure S1.**"); j = t.index("\n", i)
