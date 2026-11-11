@@ -1,0 +1,88 @@
+{
+  "iteration": "IR-024",
+  "task": "T06 RED review amendment",
+  "date": "2026-11-10",
+  "status": "red-awaiting-human-test-review",
+  "authorization": "用户明确要求单份总 JSON 保存完整业务内容，不要求来源格式字段兼容。",
+  "supersedes_test_hashes_in": "docs/audits/IR-024-t06-red-results.json",
+  "red": {
+    "total": 82,
+    "passed": 4,
+    "failed": 78,
+    "errors": 0,
+    "skipped": 0,
+    "exit_code": 1,
+    "command": ".venv/bin/python -m pytest tests/unit/test_robotics_design_{service,storage,concurrency,failures,assets,compatibility}.py --tb=short -ra --junitxml=.check-results/IR-024-t06-unified-json/junit.xml",
+    "log": ".check-results/IR-024-t06-unified-json/pytest.log",
+    "failure_messages": {
+      "ModuleNotFoundError: No module named 'domain_runs.robotics_design_service'": 73,
+      "assert 5 > 5": 2,
+      "AssertionError: Inject only after actually executing the migration\nassert ([5] and 5 > 5)": 1,
+      "Failed: DID NOT RAISE ValueError": 2
+    }
+  },
+  "changed_test_files": [
+    "tests/unit/test_robotics_design_assets.py",
+    "tests/unit/test_robotics_design_failures.py"
+  ],
+  "test_sha256": {
+    "tests/robotics_design_support.py": "d0837a3ce5f9fb92f3f824b165ac4f4766b53329f703a5883ac674e03eea510b",
+    "tests/unit/test_robotics_design_assets.py": "cbacfe51309167ce5c866a76cc082ec063e0cd77b54bde714d080c05be126113",
+    "tests/unit/test_robotics_design_compatibility.py": "48d6dac39709ff03cf6c779389e4f9667c1935598992b2f21adae76b0053d797",
+    "tests/unit/test_robotics_design_concurrency.py": "ac6414771624233007d2efb6d214d390fce9821337329add72e698f87ae1aa67",
+    "tests/unit/test_robotics_design_failures.py": "f7f5cd74268c93bee2beba71f5fb03fdbb366617e28cfcd454a28f02b6eab9d5",
+    "tests/unit/test_robotics_design_service.py": "0b18ee26e8fd4e1c9a641424b0b86cdb0f4eba79262c39c6a574beae530668b8",
+    "tests/unit/test_robotics_design_storage.py": "8c377de0ffda011cda09848cab909ccd510118c17ac36d2c225080a7a9203bfb"
+  },
+  "fixture_sha256": {
+    "tests/fixtures/domain_storage/schema5_snapshot.json": "5b32179bb56fd8ec7e0eabff8c6f701fc3bb52f81796317af313a1bc5375f02c"
+  },
+  "unchanged_prior_sha256": {
+    "domain_runs/robotics_build_routing.py": "27f0c9f8211a86f11bb31f9bb5f537b1addf86d47e2e50690e7d7fbab66ed269",
+    "domains/robotics/source_admission.py": "aff7639f8091c5e1cffefa807de1650b74fcf2150eb806ba101fc8ad39597737",
+    "domain_runs/build_service.py": "f6473c72676d37825608ed5a8dadf7383b0517818a0766bfd1941ab1577e6ca7",
+    "bp_robotics.py": "c83aba8640cd9c14063bfa6c668d703582a76a4aff8ed986c2e7dea0ffc06dfb",
+    "openai_runtime.py": "912ab897090985c64b9d02dcddf983f0799fdf80d3d42f9641a371cf58862e8e",
+    "tests/robotics_dual_build_support.py": "6db6118dbbac25a91c4cc3c360bad15a5a5535d5b99fdc66c433ea0a19f95e10",
+    "tests/unit/test_robotics_dual_build_routing.py": "84cda799fe90fd6259a5f35718826c6cf8b707ef7212cd8c2ddc6bad1b7d3d11",
+    "tests/unit/test_robotics_dual_build_http.py": "01ef4fa34ed1edb657b9a3c6bcc10043b1b4ed2de5a78c24fc93bcea0df582b6",
+    "tests/unit/test_robotics_build_http.py": "27cf39fc35e473c4e7eb4515f631ff3d34035ae0f6491b2081855e68f3d2e62c",
+    "tests/frontend/robotics-task-browser.py": "63ec1460ae604faea6e5148249a1dc14164338af9b9886fd7e737f8812fc866c",
+    "domains/robotics/modeling/__init__.py": "7c27623de5004302916f252c6f463fccf1c8721fb0986b55f614a058bac7ede3",
+    "domains/robotics/modeling/_extractor.py": "1913c4d33121b1613efc239ba39495454076db3825a4553d84b78ee230d2007c",
+    "domains/robotics/modeling/_schema.py": "0890e6111e1b2de1e41983c5835965337b1898aa6c0be814dc4b73e596a43d35",
+    "domains/robotics/modeling/_tbox_validation.py": "78b1f0e10cf4a995ba003071901499207716f49f67adde4af3bc40ba3597506e",
+    "domains/robotics/modeling/abox.py": "1eb717b032e2cc46fa3f994cc8fe88c82adf79f181f3d3e510b012c4dbfe9c62",
+    "domains/robotics/modeling/common.py": "649259b5546df5a847e035707a3e5067055e1515d02048266c7c2b12b1b35838",
+    "domains/robotics/modeling/data/ur_skill_terminology.json": "eef9314fb13144a35efd659f6fd863dcc89cebf1ae0e54c3777bcdcf8e2a06aa",
+    "domains/robotics/modeling/data/xml_mapping.json": "33a96d644b49c62c41001c6c9ca7e2e95eb2b91b27944c2806861f101c4cc107",
+    "domains/robotics/modeling/evidence.py": "08436643139bcbeeb2f080e8c164d7f677b4f469efaf5d20888c15a64ac6e225",
+    "domains/robotics/modeling/export.py": "b8288bac3d95ce77d72bb3dd17eb2f334fb6dd38429452e1df818d878f78c9d5",
+    "domains/robotics/modeling/prompts.py": "20b492732b933fdfebc0f684b9622386f0f4c87f03ee274fd517f56f20776729",
+    "domains/robotics/modeling/tbox.py": "3a82092553d6d3d584d38dc2ac6a89be4be9eef77ed418a04446ac51e87bfe80",
+    "domains/robotics/modeling/vocabulary.py": "4b8d70e44ad19be761a8bc64fe4167d6ec54390d85468b699c16aec0798f5c45",
+    "requirements.txt": "521cfba88ed804f7a9e608aa30e681a9c28850cf5762154334ddd9cdbb18bee3",
+    "tests/unit/test_robotics_modeling_evidence.py": "71da3c9256921f8c6484633b76d76ec1a99d3040bb9ba611bc3f125367025cdd",
+    "tests/unit/test_robotics_tbox_design.py": "26e761fd7a84843c5e74dc53491a07f98771c8c0e320b04dacb62f2c51333f66",
+    "tests/unit/test_robotics_abox_design.py": "29b839876ea0831356465a4375dae7e58f144046ac000727af7dd052a748fc3f",
+    "tests/unit/test_robotics_design_export.py": "fb953411d3bf1e94f8ec67180a336dcba21407dea45fe03b7e91e0b7959bdf9f",
+    "tests/robotics_modeling_support.py": "f2623563eb208178f7d036e2f5a89ae8ce1d8e90a628b9e5b8c104284f101fc0",
+    "tests/fixtures/robotics/modeling/ur_selected_tbox.json": "8146272db7896d9372861fec2ddf657600e56560f32a8efe15e9e27fc903ab22",
+    "tests/fixtures/robotics/modeling/provenance.json": "a42ac5f751ade1af2c0b6605f6e143b98ef8d8226f7fc41c0ef4d4df80fbf663"
+  },
+  "static_checks": {
+    "ruff": "passed, 2 changed files",
+    "mypy": "passed, 2 changed files",
+    "acceptance_traceability": "1 passed",
+    "diff_check": "passed"
+  },
+  "prior_baseline": {
+    "rerun": false,
+    "reference": "docs/audits/IR-024-t06-red-results.json",
+    "passed": 141
+  },
+  "production_changed": false,
+  "reviewed_t03_t05_tests_changed": false,
+  "real_model_invoked": false,
+  "http_model_build_ready": false
+}

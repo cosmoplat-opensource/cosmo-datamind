@@ -1,0 +1,1294 @@
+{
+  "namespace": "urn:tbox-chat:bda12fd6fc2b4769adf99dc48ab94de8#",
+  "classes": [
+    {
+      "id": "Skill",
+      "label": "技能",
+      "definition": "可复用能力总类，区分原子与复合能力，不等同于流程中的某次调用。",
+      "parent_ids": [],
+      "source_refs": [
+        "E00034",
+        "E00074"
+      ],
+      "cq_refs": [
+        "CQ02",
+        "CQ03"
+      ]
+    },
+    {
+      "id": "AtomicSkill",
+      "label": "原子技能",
+      "definition": "由单一动作节点表达、可直接映射到服务或动作调用的技能类别。",
+      "parent_ids": [
+        "Skill"
+      ],
+      "source_refs": [
+        "E00034",
+        "E00064",
+        "E00071",
+        "E00073"
+      ],
+      "cq_refs": [
+        "CQ02",
+        "CQ03",
+        "CQ04"
+      ]
+    },
+    {
+      "id": "CompositeSkill",
+      "label": "复合技能",
+      "definition": "由多个子技能或子树组合形成、可复用的流程型能力类别。",
+      "parent_ids": [
+        "Skill"
+      ],
+      "source_refs": [
+        "E00002",
+        "E00009",
+        "E00014",
+        "E00074"
+      ],
+      "cq_refs": [
+        "CQ02",
+        "CQ03"
+      ]
+    },
+    {
+      "id": "Task",
+      "label": "任务",
+      "definition": "面向自然语言业务目标的作业单元类别，可由一个任务流程实现。",
+      "parent_ids": [],
+      "source_refs": [
+        "M0001"
+      ],
+      "cq_refs": [
+        "CQ01",
+        "CQ02"
+      ]
+    },
+    {
+      "id": "TaskProcedure",
+      "label": "任务流程",
+      "definition": "组织技能调用顺序以实现任务的流程定义类别，不等同于单次执行记录。",
+      "parent_ids": [],
+      "source_refs": [
+        "E00021",
+        "E00022"
+      ],
+      "cq_refs": [
+        "CQ02",
+        "CQ03"
+      ]
+    },
+    {
+      "id": "SkillImplementation",
+      "label": "技能实现",
+      "definition": "技能所对应的行为树节点契约或子树定义类别，描述如何实现而非何时调用。",
+      "parent_ids": [],
+      "source_refs": [
+        "E00034",
+        "E00074",
+        "E00021"
+      ],
+      "cq_refs": [
+        "CQ03",
+        "CQ04"
+      ]
+    },
+    {
+      "id": "SkillInvocation",
+      "label": "技能调用",
+      "definition": "流程定义中某位置的静态技能调用类别，保留调用位置和绑定关系，不是运行日志。",
+      "parent_ids": [],
+      "source_refs": [
+        "E00004",
+        "E00011",
+        "E00016",
+        "E00027",
+        "E00030",
+        "E00031"
+      ],
+      "cq_refs": [
+        "CQ03",
+        "CQ04",
+        "CQ09"
+      ]
+    },
+    {
+      "id": "SkillParameter",
+      "label": "技能参数定义",
+      "definition": "技能接口中参数的定义类别，描述名称与类型，不表示具体运行值。",
+      "parent_ids": [],
+      "source_refs": [
+        "E00035",
+        "E00065",
+        "E00072",
+        "E00090"
+      ],
+      "cq_refs": [
+        "CQ04",
+        "CQ10"
+      ]
+    },
+    {
+      "id": "PortContract",
+      "label": "原始端口契约",
+      "definition": "技能实现对外暴露的原始输入输出端口定义类别，约束可绑定参数集合。",
+      "parent_ids": [],
+      "source_refs": [
+        "E00034",
+        "E00074",
+        "E00136"
+      ],
+      "cq_refs": [
+        "CQ04",
+        "CQ10"
+      ]
+    },
+    {
+      "id": "ParameterBinding",
+      "label": "参数绑定",
+      "definition": "静态调用中把端口绑定到常量、流程变量或上游输出的关系承载类别，不表示求值结果。",
+      "parent_ids": [],
+      "source_refs": [
+        "E00004",
+        "E00023",
+        "E00027",
+        "E00030",
+        "E00031"
+      ],
+      "cq_refs": [
+        "CQ04",
+        "CQ09"
+      ]
+    },
+    {
+      "id": "DataReference",
+      "label": "流程数据引用",
+      "definition": "流程作用域内可复用的数据键或变量引用类别，不是某次感知或执行的具体值。",
+      "parent_ids": [],
+      "source_refs": [
+        "E00004",
+        "E00023",
+        "E00027"
+      ],
+      "cq_refs": [
+        "CQ09"
+      ]
+    },
+    {
+      "id": "SkillCondition",
+      "label": "技能条件",
+      "definition": "技能执行前后需要判断的条件类别，条件声明不自动表示条件已满足。",
+      "parent_ids": [],
+      "source_refs": [
+        "E00055",
+        "E00112",
+        "E00028"
+      ],
+      "cq_refs": [
+        "CQ11"
+      ]
+    },
+    {
+      "id": "Resource",
+      "label": "设备资源",
+      "definition": "机器人、夹爪、相机等设备资源的总类。",
+      "parent_ids": [],
+      "source_refs": [
+        "E00004",
+        "E00013",
+        "E00005"
+      ],
+      "cq_refs": [
+        "CQ07"
+      ]
+    },
+    {
+      "id": "RobotArm",
+      "label": "机械臂",
+      "definition": "执行 MoveJ、MoveL 等运动技能的机械臂设备类别。",
+      "parent_ids": [
+        "Resource"
+      ],
+      "source_refs": [
+        "E00004",
+        "E00011",
+        "E00064",
+        "E00071"
+      ],
+      "cq_refs": [
+        "CQ05",
+        "CQ07"
+      ]
+    },
+    {
+      "id": "Gripper",
+      "label": "夹爪",
+      "definition": "执行开合、夹持与释放动作的末端执行器类别。",
+      "parent_ids": [
+        "Resource"
+      ],
+      "source_refs": [
+        "E00013",
+        "E00020",
+        "E00041",
+        "E00073"
+      ],
+      "cq_refs": [
+        "CQ07",
+        "CQ08"
+      ]
+    },
+    {
+      "id": "Camera",
+      "label": "相机",
+      "definition": "提供图像、深度、内参与位姿估计输入的视觉设备类别。",
+      "parent_ids": [
+        "Resource"
+      ],
+      "source_refs": [
+        "E00005",
+        "E00007",
+        "E00008"
+      ],
+      "cq_refs": [
+        "CQ06",
+        "CQ07"
+      ]
+    },
+    {
+      "id": "Workpiece",
+      "label": "实物零件",
+      "definition": "任务中实际被搬运的零件单件类别，区别于零件类型。",
+      "parent_ids": [],
+      "source_refs": [
+        "M0001",
+        "E00027"
+      ],
+      "cq_refs": [
+        "CQ01",
+        "CQ12"
+      ]
+    },
+    {
+      "id": "PartType",
+      "label": "零件类型",
+      "definition": "用于识别、建模和匹配的零件类型类别，可由 object_name 或模型名关联。",
+      "parent_ids": [],
+      "source_refs": [
+        "M0001",
+        "E00008",
+        "E00027"
+      ],
+      "cq_refs": [
+        "CQ01",
+        "CQ12"
+      ]
+    },
+    {
+      "id": "Workstation",
+      "label": "工位",
+      "definition": "承载任务目标并关联载具的工位类别。",
+      "parent_ids": [],
+      "source_refs": [
+        "M0001"
+      ],
+      "cq_refs": [
+        "CQ01",
+        "CQ08"
+      ]
+    },
+    {
+      "id": "Carrier",
+      "label": "载具",
+      "definition": "工位上承载零件并关联放置目标的载具类别。",
+      "parent_ids": [],
+      "source_refs": [
+        "M0001"
+      ],
+      "cq_refs": [
+        "CQ01",
+        "CQ08"
+      ]
+    },
+    {
+      "id": "PlacementSlot",
+      "label": "放置位",
+      "definition": "载具内可供任务选择的放置位置类别，用于细化“放到载具上”的目标。",
+      "parent_ids": [],
+      "source_refs": [
+        "M0001",
+        "E00031"
+      ],
+      "cq_refs": [
+        "CQ08"
+      ]
+    },
+    {
+      "id": "PlacementProfile",
+      "label": "放置目标配置",
+      "definition": "描述放置目标位姿及放置约束的配置类别。",
+      "parent_ids": [],
+      "source_refs": [
+        "E00031",
+        "E00009",
+        "E00012"
+      ],
+      "cq_refs": [
+        "CQ05",
+        "CQ08"
+      ]
+    },
+    {
+      "id": "PerceptionProfile",
+      "label": "感知参数配置",
+      "definition": "描述感知对象、模型、阈值、曝光和拍照位姿的配置类别。",
+      "parent_ids": [],
+      "source_refs": [
+        "E00027",
+        "E00008",
+        "E00005"
+      ],
+      "cq_refs": [
+        "CQ06"
+      ]
+    },
+    {
+      "id": "ImplementationConfiguration",
+      "label": "固定实现配置",
+      "definition": "技能实现内部预置参数或流程常量的配置类别，不属于对外技能接口。",
+      "parent_ids": [],
+      "source_refs": [
+        "E00023",
+        "E00024",
+        "E00027",
+        "E00031",
+        "E00036"
+      ],
+      "cq_refs": [
+        "CQ10"
+      ]
+    },
+    {
+      "id": "CartesianPose",
+      "label": "笛卡尔位姿",
+      "definition": "以笛卡尔位置与姿态表达的位姿类别，区别于关节配置。",
+      "parent_ids": [],
+      "source_refs": [
+        "E00008",
+        "E00031",
+        "E00090",
+        "E00093"
+      ],
+      "cq_refs": [
+        "CQ05",
+        "CQ06"
+      ]
+    },
+    {
+      "id": "JointConfiguration",
+      "label": "关节配置",
+      "definition": "以各关节值表达的机械臂配置类别。",
+      "parent_ids": [],
+      "source_refs": [
+        "E00023",
+        "E00024",
+        "E00065",
+        "E00112"
+      ],
+      "cq_refs": [
+        "CQ05"
+      ]
+    },
+    {
+      "id": "CoordinateFrame",
+      "label": "坐标系",
+      "definition": "位姿、变换和传感数据所依附的坐标系类别。",
+      "parent_ids": [],
+      "source_refs": [
+        "E00029",
+        "E00005",
+        "E00008"
+      ],
+      "cq_refs": [
+        "CQ05",
+        "CQ06"
+      ]
+    }
+  ],
+  "object_properties": [
+    {
+      "id": "actsOn",
+      "label": "操作对象",
+      "definition": "表示任务作用于实际搬运的实物零件，不表示零件类型。",
+      "domain_ids": [
+        "Task"
+      ],
+      "source_refs": [
+        "M0001",
+        "E00027"
+      ],
+      "cq_refs": [
+        "CQ01",
+        "CQ02"
+      ],
+      "range_ids": [
+        "Workpiece"
+      ]
+    },
+    {
+      "id": "bindsParameter",
+      "label": "绑定参数",
+      "definition": "表示一个参数绑定所对应的技能参数定义，用于约束实参落到哪个接口参数。",
+      "domain_ids": [
+        "ParameterBinding"
+      ],
+      "source_refs": [
+        "E00004",
+        "E00027",
+        "E00030"
+      ],
+      "cq_refs": [
+        "CQ04",
+        "CQ09"
+      ],
+      "range_ids": [
+        "SkillParameter"
+      ]
+    },
+    {
+      "id": "expressedInFrame",
+      "label": "表达坐标系",
+      "definition": "表示笛卡尔位姿所依附的坐标系，避免把相机坐标系位姿直接当作机器人坐标系位姿。",
+      "domain_ids": [
+        "CartesianPose"
+      ],
+      "source_refs": [
+        "E00029",
+        "E00008"
+      ],
+      "cq_refs": [
+        "CQ05",
+        "CQ06"
+      ],
+      "range_ids": [
+        "CoordinateFrame"
+      ]
+    },
+    {
+      "id": "hasBinding",
+      "label": "具有参数绑定",
+      "definition": "表示某个静态技能调用所携带的参数绑定集合，不表示运行期求值结果。",
+      "domain_ids": [
+        "SkillInvocation"
+      ],
+      "source_refs": [
+        "E00004",
+        "E00027",
+        "E00030",
+        "E00031"
+      ],
+      "cq_refs": [
+        "CQ04",
+        "CQ09"
+      ],
+      "range_ids": [
+        "ParameterBinding"
+      ]
+    },
+    {
+      "id": "hasCaptureJoints",
+      "label": "拍照关节位",
+      "definition": "表示感知参数配置所关联的拍照关节配置，用于生成拍照位运动目标。",
+      "domain_ids": [
+        "PerceptionProfile"
+      ],
+      "source_refs": [
+        "E00023",
+        "E00024",
+        "E00027"
+      ],
+      "cq_refs": [
+        "CQ06"
+      ],
+      "range_ids": [
+        "JointConfiguration"
+      ]
+    },
+    {
+      "id": "hasCarrier",
+      "label": "工位载具",
+      "definition": "表示工位所关联的载具，用于解析“工位B的载具”这类目标。",
+      "domain_ids": [
+        "Workstation"
+      ],
+      "source_refs": [
+        "M0001"
+      ],
+      "cq_refs": [
+        "CQ01",
+        "CQ08"
+      ],
+      "range_ids": [
+        "Carrier"
+      ]
+    },
+    {
+      "id": "hasDestination",
+      "label": "目标放置位",
+      "definition": "表示任务选定的目标放置位，用于细化放到载具上的具体位置。",
+      "domain_ids": [
+        "Task"
+      ],
+      "source_refs": [
+        "M0001"
+      ],
+      "cq_refs": [
+        "CQ01",
+        "CQ08"
+      ],
+      "range_ids": [
+        "PlacementSlot"
+      ]
+    },
+    {
+      "id": "hasFixedBinding",
+      "label": "包含固定绑定",
+      "definition": "表示固定实现配置所包含的内部参数绑定，用于区分内部常量与对外接口。",
+      "domain_ids": [
+        "ImplementationConfiguration"
+      ],
+      "source_refs": [
+        "E00023",
+        "E00024",
+        "E00027"
+      ],
+      "cq_refs": [
+        "CQ04",
+        "CQ10"
+      ],
+      "range_ids": [
+        "ParameterBinding"
+      ]
+    },
+    {
+      "id": "hasFixedConfiguration",
+      "label": "固定实现配置",
+      "definition": "表示技能实现具有内部固定配置，不表示对外暴露的技能参数。",
+      "domain_ids": [
+        "SkillImplementation"
+      ],
+      "source_refs": [
+        "E00023",
+        "E00024",
+        "E00027",
+        "E00031"
+      ],
+      "cq_refs": [
+        "CQ10"
+      ],
+      "range_ids": [
+        "ImplementationConfiguration"
+      ]
+    },
+    {
+      "id": "hasInput",
+      "label": "具有输入",
+      "definition": "表示技能接口具有输入参数定义。",
+      "domain_ids": [
+        "Skill"
+      ],
+      "source_refs": [
+        "E00034",
+        "E00064",
+        "E00074"
+      ],
+      "cq_refs": [
+        "CQ04",
+        "CQ10"
+      ],
+      "range_ids": [
+        "SkillParameter"
+      ]
+    },
+    {
+      "id": "hasOutput",
+      "label": "具有输出",
+      "definition": "表示技能接口具有输出参数定义。",
+      "domain_ids": [
+        "Skill"
+      ],
+      "source_refs": [
+        "E00034",
+        "E00064",
+        "E00074"
+      ],
+      "cq_refs": [
+        "CQ04",
+        "CQ10"
+      ],
+      "range_ids": [
+        "SkillParameter"
+      ]
+    },
+    {
+      "id": "hasPartType",
+      "label": "零件类型",
+      "definition": "表示实物零件所属的零件类型，用于把实物单件与识别模型对象类区分开。",
+      "domain_ids": [
+        "Workpiece"
+      ],
+      "source_refs": [
+        "M0001",
+        "E00027"
+      ],
+      "cq_refs": [
+        "CQ01",
+        "CQ12"
+      ],
+      "range_ids": [
+        "PartType"
+      ]
+    },
+    {
+      "id": "hasPerceptionProfile",
+      "label": "感知配置",
+      "definition": "表示零件类型所适用的感知参数配置，用于选择模型、阈值和拍照参数。",
+      "domain_ids": [
+        "PartType"
+      ],
+      "source_refs": [
+        "E00008",
+        "E00027"
+      ],
+      "cq_refs": [
+        "CQ06",
+        "CQ12"
+      ],
+      "range_ids": [
+        "PerceptionProfile"
+      ]
+    },
+    {
+      "id": "hasPlacementProfile",
+      "label": "放置配置",
+      "definition": "表示放置位所适用的放置目标配置，用于生成放置位姿与约束。",
+      "domain_ids": [
+        "PlacementSlot"
+      ],
+      "source_refs": [
+        "M0001",
+        "E00031"
+      ],
+      "cq_refs": [
+        "CQ08"
+      ],
+      "range_ids": [
+        "PlacementProfile"
+      ]
+    },
+    {
+      "id": "hasPortContract",
+      "label": "原始端口定义",
+      "definition": "表示技能实现拥有原始端口契约，约束该实现的对外端口集合。",
+      "domain_ids": [
+        "SkillImplementation"
+      ],
+      "source_refs": [
+        "E00034",
+        "E00074"
+      ],
+      "cq_refs": [
+        "CQ04",
+        "CQ10"
+      ],
+      "range_ids": [
+        "PortContract"
+      ]
+    },
+    {
+      "id": "hasPrecondition",
+      "label": "前置条件",
+      "definition": "表示技能执行前需要检查的条件，条件声明不表示条件已经满足。",
+      "domain_ids": [
+        "Skill"
+      ],
+      "source_refs": [
+        "E00055",
+        "E00112",
+        "E00028"
+      ],
+      "cq_refs": [
+        "CQ11"
+      ],
+      "range_ids": [
+        "SkillCondition"
+      ]
+    },
+    {
+      "id": "hasSlot",
+      "label": "载具放置位",
+      "definition": "表示载具内部可供任务选择的放置位。",
+      "domain_ids": [
+        "Carrier"
+      ],
+      "source_refs": [
+        "M0001"
+      ],
+      "cq_refs": [
+        "CQ01",
+        "CQ08"
+      ],
+      "range_ids": [
+        "PlacementSlot"
+      ]
+    },
+    {
+      "id": "hasStep",
+      "label": "包含步骤",
+      "definition": "表示复合技能或任务流程包含有序的技能调用步骤，不表示运行日志。",
+      "domain_ids": [
+        "CompositeSkill",
+        "TaskProcedure"
+      ],
+      "source_refs": [
+        "E00010",
+        "E00015",
+        "E00022"
+      ],
+      "cq_refs": [
+        "CQ02",
+        "CQ03"
+      ],
+      "range_ids": [
+        "SkillInvocation"
+      ]
+    },
+    {
+      "id": "hasTargetPose",
+      "label": "机器人目标位姿",
+      "definition": "表示放置目标配置所关联的机器人目标笛卡尔位姿。",
+      "domain_ids": [
+        "PlacementProfile"
+      ],
+      "source_refs": [
+        "E00031",
+        "E00012"
+      ],
+      "cq_refs": [
+        "CQ05",
+        "CQ08"
+      ],
+      "range_ids": [
+        "CartesianPose"
+      ]
+    },
+    {
+      "id": "implementedBy",
+      "label": "实现为",
+      "definition": "表示技能由某个技能实现来承载，实现与调用分离。",
+      "domain_ids": [
+        "Skill"
+      ],
+      "source_refs": [
+        "E00034",
+        "E00074",
+        "E00002",
+        "E00009"
+      ],
+      "cq_refs": [
+        "CQ03",
+        "CQ04"
+      ],
+      "range_ids": [
+        "SkillImplementation"
+      ]
+    },
+    {
+      "id": "invokesSkill",
+      "label": "调用技能",
+      "definition": "表示某个静态调用位置调用哪个技能，用于确定代码生成目标。",
+      "domain_ids": [
+        "SkillInvocation"
+      ],
+      "source_refs": [
+        "E00004",
+        "E00027",
+        "E00030",
+        "E00031"
+      ],
+      "cq_refs": [
+        "CQ03",
+        "CQ04"
+      ],
+      "range_ids": [
+        "Skill"
+      ]
+    },
+    {
+      "id": "mapsToPort",
+      "label": "对应端口契约",
+      "definition": "表示技能参数定义映射到的原始端口契约，用于接口约束。",
+      "domain_ids": [
+        "SkillParameter"
+      ],
+      "source_refs": [
+        "E00035",
+        "E00064",
+        "E00074"
+      ],
+      "cq_refs": [
+        "CQ04",
+        "CQ10"
+      ],
+      "range_ids": [
+        "PortContract"
+      ]
+    },
+    {
+      "id": "parameterData",
+      "label": "接口对应局部变量",
+      "definition": "表示技能参数定义对应的流程局部数据引用，不表示具体运行值。",
+      "domain_ids": [
+        "SkillParameter"
+      ],
+      "source_refs": [
+        "E00004",
+        "E00027"
+      ],
+      "cq_refs": [
+        "CQ09"
+      ],
+      "range_ids": [
+        "DataReference"
+      ]
+    },
+    {
+      "id": "sourceData",
+      "label": "读取数据",
+      "definition": "表示参数绑定从某个流程数据引用读取来源值。",
+      "domain_ids": [
+        "ParameterBinding"
+      ],
+      "source_refs": [
+        "E00004",
+        "E00027",
+        "E00030"
+      ],
+      "cq_refs": [
+        "CQ09"
+      ],
+      "range_ids": [
+        "DataReference"
+      ]
+    },
+    {
+      "id": "sourceParameter",
+      "label": "来自复合技能输入",
+      "definition": "表示参数绑定的来源是复合技能的输入参数，而非固定常量。",
+      "domain_ids": [
+        "ParameterBinding"
+      ],
+      "source_refs": [
+        "E00027",
+        "E00030"
+      ],
+      "cq_refs": [
+        "CQ04",
+        "CQ09"
+      ],
+      "range_ids": [
+        "SkillParameter"
+      ]
+    },
+    {
+      "id": "targetData",
+      "label": "写入数据",
+      "definition": "表示参数绑定把结果写入某个流程数据引用。",
+      "domain_ids": [
+        "ParameterBinding"
+      ],
+      "source_refs": [
+        "E00004",
+        "E00027",
+        "E00030",
+        "E00031"
+      ],
+      "cq_refs": [
+        "CQ09"
+      ],
+      "range_ids": [
+        "DataReference"
+      ]
+    },
+    {
+      "id": "usesProcedure",
+      "label": "使用任务流程",
+      "definition": "表示任务采用某个任务流程定义来实现业务目标。",
+      "domain_ids": [
+        "Task"
+      ],
+      "source_refs": [
+        "M0001",
+        "E00021"
+      ],
+      "cq_refs": [
+        "CQ02"
+      ],
+      "range_ids": [
+        "TaskProcedure"
+      ]
+    },
+    {
+      "id": "usesResource",
+      "label": "使用设备",
+      "definition": "表示技能调用或任务使用机械臂、夹爪、相机等设备资源。",
+      "domain_ids": [
+        "SkillInvocation",
+        "Task"
+      ],
+      "source_refs": [
+        "E00004",
+        "E00013",
+        "E00005",
+        "E00027"
+      ],
+      "cq_refs": [
+        "CQ07"
+      ],
+      "range_ids": [
+        "Resource"
+      ]
+    }
+  ],
+  "data_properties": [
+    {
+      "id": "bindingDirection",
+      "label": "绑定方向",
+      "definition": "记录参数绑定是读取来源、写入目标等方向，不表示运行值。",
+      "domain_ids": [],
+      "source_refs": [
+        "E00004",
+        "E00027"
+      ],
+      "cq_refs": [
+        "CQ04",
+        "CQ09"
+      ],
+      "class_ids": [
+        "ParameterBinding"
+      ],
+      "datatype": "xsd:string"
+    },
+    {
+      "id": "cppType",
+      "label": "原始C++类型",
+      "definition": "保留端口或参数在源 XML 中声明的原始 C++ 类型字符串，用于接口约束，不推断运行值。",
+      "domain_ids": [],
+      "source_refs": [
+        "E00035",
+        "E00065",
+        "E00082"
+      ],
+      "cq_refs": [
+        "CQ04"
+      ],
+      "class_ids": [
+        "PortContract",
+        "SkillParameter"
+      ],
+      "datatype": "xsd:string"
+    },
+    {
+      "id": "dataKey",
+      "label": "数据键",
+      "definition": "记录流程数据引用使用的数据键，用于区分流程变量名而非具体运行值。",
+      "domain_ids": [],
+      "source_refs": [
+        "E00004",
+        "E00023",
+        "E00027"
+      ],
+      "cq_refs": [
+        "CQ09"
+      ],
+      "class_ids": [
+        "DataReference"
+      ],
+      "datatype": "xsd:string"
+    },
+    {
+      "id": "direction",
+      "label": "参数方向",
+      "definition": "记录技能参数在接口中的输入或输出方向。",
+      "domain_ids": [],
+      "source_refs": [
+        "E00034",
+        "E00074"
+      ],
+      "cq_refs": [
+        "CQ04",
+        "CQ10"
+      ],
+      "class_ids": [
+        "SkillParameter"
+      ],
+      "datatype": "xsd:string"
+    },
+    {
+      "id": "exposureTime",
+      "label": "原始曝光参数",
+      "definition": "记录感知配置中的原始曝光参数值，按源接口保留字符串，不推断物理单位或算法语义。",
+      "domain_ids": [],
+      "source_refs": [
+        "E00005",
+        "E00037"
+      ],
+      "cq_refs": [
+        "CQ06"
+      ],
+      "class_ids": [
+        "PerceptionProfile"
+      ],
+      "datatype": "xsd:string"
+    },
+    {
+      "id": "isPublicConfig",
+      "label": "允许外部配置",
+      "definition": "标识某配置是否允许作为对外接口配置，用于区分固定实现配置与技能参数。",
+      "domain_ids": [],
+      "source_refs": [
+        "E00036",
+        "E00023"
+      ],
+      "cq_refs": [
+        "CQ10"
+      ],
+      "class_ids": [
+        "ImplementationConfiguration",
+        "SkillParameter"
+      ],
+      "datatype": "xsd:boolean"
+    },
+    {
+      "id": "lengthUnit",
+      "label": "长度单位",
+      "definition": "记录位姿或坐标数据所采用的长度单位说明，不根据数值猜测单位。",
+      "domain_ids": [],
+      "source_refs": [
+        "E00049",
+        "E00056"
+      ],
+      "cq_refs": [
+        "CQ05",
+        "CQ06"
+      ],
+      "class_ids": [
+        "CartesianPose",
+        "CoordinateFrame"
+      ],
+      "datatype": "xsd:string"
+    },
+    {
+      "id": "angleUnit",
+      "label": "角度单位",
+      "definition": "记录姿态或关节数据所采用的角度单位说明，不根据数值猜测单位。",
+      "domain_ids": [],
+      "source_refs": [
+        "E00056"
+      ],
+      "cq_refs": [
+        "CQ05"
+      ],
+      "class_ids": [
+        "CartesianPose",
+        "JointConfiguration"
+      ],
+      "datatype": "xsd:string"
+    },
+    {
+      "id": "literalValue",
+      "label": "字面量",
+      "definition": "记录静态绑定或固定配置中的字面量值，按源 XML 字符串保留。",
+      "domain_ids": [],
+      "source_refs": [
+        "E00011",
+        "E00027",
+        "E00031"
+      ],
+      "cq_refs": [
+        "CQ04",
+        "CQ10"
+      ],
+      "class_ids": [
+        "ParameterBinding",
+        "ImplementationConfiguration"
+      ],
+      "datatype": "xsd:string"
+    },
+    {
+      "id": "modelName",
+      "label": "识别模型标识",
+      "definition": "记录感知配置中使用的识别模型标识，用于关联零件类型和识别输入。",
+      "domain_ids": [],
+      "source_refs": [
+        "E00008",
+        "E00087"
+      ],
+      "cq_refs": [
+        "CQ06",
+        "CQ12"
+      ],
+      "class_ids": [
+        "PerceptionProfile",
+        "PartType"
+      ],
+      "datatype": "xsd:string"
+    },
+    {
+      "id": "objectName",
+      "label": "识别对象标识",
+      "definition": "记录感知配置中的识别对象标识，可关联零件类型，不等同于实物单件。",
+      "domain_ids": [],
+      "source_refs": [
+        "E00008",
+        "E00084"
+      ],
+      "cq_refs": [
+        "CQ06",
+        "CQ12"
+      ],
+      "class_ids": [
+        "PerceptionProfile",
+        "PartType",
+        "Workpiece"
+      ],
+      "datatype": "xsd:string"
+    },
+    {
+      "id": "orientationRepresentation",
+      "label": "姿态表示",
+      "definition": "记录笛卡尔位姿的姿态表示形式，避免不同序列化格式混用。",
+      "domain_ids": [],
+      "source_refs": [
+        "E00049",
+        "E00090"
+      ],
+      "cq_refs": [
+        "CQ05"
+      ],
+      "class_ids": [
+        "CartesianPose"
+      ],
+      "datatype": "xsd:string"
+    },
+    {
+      "id": "parameterName",
+      "label": "参数名称",
+      "definition": "记录技能参数或端口在接口中的名称。",
+      "domain_ids": [],
+      "source_refs": [
+        "E00035",
+        "E00065",
+        "E00072"
+      ],
+      "cq_refs": [
+        "CQ04"
+      ],
+      "class_ids": [
+        "SkillParameter",
+        "PortContract"
+      ],
+      "datatype": "xsd:string"
+    },
+    {
+      "id": "rawValue",
+      "label": "原始序列化数值",
+      "definition": "保留源 XML 中序列化的原始数值或位姿字符串，不在此阶段拆解为数值类型。",
+      "domain_ids": [],
+      "source_refs": [
+        "E00023",
+        "E00065",
+        "E00072"
+      ],
+      "cq_refs": [
+        "CQ05",
+        "CQ10"
+      ],
+      "class_ids": [
+        "CartesianPose",
+        "JointConfiguration",
+        "ImplementationConfiguration"
+      ],
+      "datatype": "xsd:string"
+    },
+    {
+      "id": "scope",
+      "label": "数据作用域",
+      "definition": "记录流程数据引用的作用域说明，用于区分流程变量与固定配置。",
+      "domain_ids": [],
+      "source_refs": [
+        "E00004",
+        "E00027"
+      ],
+      "cq_refs": [
+        "CQ09"
+      ],
+      "class_ids": [
+        "DataReference"
+      ],
+      "datatype": "xsd:string"
+    },
+    {
+      "id": "stepIndex",
+      "label": "步骤序号",
+      "definition": "记录技能调用在复合技能或任务流程中的顺序编号。",
+      "domain_ids": [],
+      "source_refs": [
+        "E00010",
+        "E00022"
+      ],
+      "cq_refs": [
+        "CQ03"
+      ],
+      "class_ids": [
+        "SkillInvocation"
+      ],
+      "datatype": "xsd:integer"
+    },
+    {
+      "id": "threshold",
+      "label": "原始阈值",
+      "definition": "记录感知配置中的原始检测阈值，按源接口保留字符串，不推断单位或算法语义。",
+      "domain_ids": [],
+      "source_refs": [
+        "E00008",
+        "E00088"
+      ],
+      "cq_refs": [
+        "CQ06"
+      ],
+      "class_ids": [
+        "PerceptionProfile"
+      ],
+      "datatype": "xsd:string"
+    },
+    {
+      "id": "conditionKind",
+      "label": "条件类别",
+      "definition": "记录技能条件的类别说明，用于表达前置校验类型，不表示条件已满足。",
+      "domain_ids": [],
+      "source_refs": [
+        "E00055",
+        "E00112"
+      ],
+      "cq_refs": [
+        "CQ11"
+      ],
+      "class_ids": [
+        "SkillCondition"
+      ],
+      "datatype": "xsd:string"
+    }
+  ]
+}

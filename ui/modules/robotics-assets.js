@@ -20,7 +20,7 @@
   }
   function createController(options = {}) {
     const fetcher = options.fetch || global.fetch.bind(global), emit = options.onChange || (() => {});
-    let state = {items:[], detail:null, error:null}, dead = false, catalogToken = 0, detailToken = 0;
+    let state = {items:[], detail:null, error:null, loading:false, catalogLoaded:false}, dead = false, catalogToken = 0, detailToken = 0;
     const snapshot = () => ({...state, items:[...state.items]});
     const notify = () => { if (!dead) emit(snapshot()); };
     const failure = e => ({message:e.message || String(e), status:e.status, code:e.code});
@@ -28,12 +28,12 @@
       snapshot,
       async loadCatalog({domain} = {}) {
         const token = ++catalogToken;
-        state.error = null; notify();
+        state.error = null; state.loading=true; notify();
         try {
           const body = await json(fetcher, '/api/ontology-assets' + (domain ? '?domain=' + encodeURIComponent(domain) : ''));
           if (dead || token !== catalogToken) return;
-          state.items = body.items || []; state.error = null;
-        } catch (e) { if (dead || token !== catalogToken) return; state.items = []; state.error = failure(e); }
+          state.items = body.items || []; state.error = null; state.loading=false; state.catalogLoaded=true;
+        } catch (e) { if (dead || token !== catalogToken) return; state.items = []; state.error = failure(e); state.loading=false; state.catalogLoaded=true; }
         notify();
       },
       async openVersion(oid, vid) {
@@ -51,8 +51,32 @@
     };
   }
   function readiness(result = {}) {
+    if(result.status==='designed'&&result.contract?.id==='robotics-design')return '<div class="rb-readiness"><span>设计与来源检查：通过</span><span>行为树应用：'+(result.task_readiness==='supported'?'支持':'不支持')+'</span><span>执行：未验证</span></div>';
     const structure = result.validation?.shacl_conforms === true && result.status === 'built' ? '通过' : result.status === 'error' ? '未通过' : '未记录';
     return `<div class="rb-readiness"><span>结构检查：${structure}</span><span>任务适配：${result.task_readiness === 'not_assessed' ? '未评估' : escape(result.task_readiness || '未评估')}</span><span>执行：${result.execution_readiness === 'not_verified' ? '未验证' : escape(result.execution_readiness || '未验证')}</span></div>`;
+  }
+  // DR-070: design candidates have a generic schema/instance view, independent of UR validation.
+  function designDetails(d) {
+    const design=d.design, schema=design.tbox||{}, abox=design.abox||{}, report=design.report||{}, coverage=report.source_coverage||{};
+    const classes=schema.classes||[], objects=schema.object_properties||[], data=schema.data_properties||[], individuals=abox.individuals||[];
+    const labels=new Map([...classes,...objects,...data,...individuals].map(x=>[x.id,x.label||x.id]));
+    const names=values=>(values||[]).map(id=>labels.get(id)||id).join('、');
+    const table=(heads,rows)=>'<div class="rd-table"><table><thead><tr>'+heads.map(h=>'<th>'+escape(h)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(row=>'<tr>'+row.map(v=>'<td>'+escape(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
+    const counts=[['类别',classes.length],['对象关系',objects.length],['数据属性',data.length],['实例',individuals.length],['对象断言',(abox.object_assertions||[]).length],['数据断言',(abox.data_assertions||[]).length]];
+    const partial=(report.missing_terms||[]).length||(report.omitted_information||[]).length||(report.skipped_assertions||[]).length||(report.skipped_instances||[]).length;
+    return `<section class="card ra-section" data-testid="design-overview"><div class="ra-section-heading"><h3>设计本体概览</h3><span>当前固定版本</span></div><div class="rb-counts">${counts.map(([label,n])=>`<div><strong>${n}</strong><span>${label}</span></div>`).join('')}</div></section>
+    <section class="card ra-section" data-testid="design-schema"><h3>类别与属性</h3>
+      <details open><summary>类别（${classes.length}）</summary>${table(['名称','定义','父类别'],classes.map(x=>[x.label||x.id,x.definition||'',names(x.parent_ids)||'根类别']))}</details>
+      <details><summary>对象关系（${objects.length}）</summary>${table(['名称','定义','起点类别','终点类别'],objects.map(x=>[x.label||x.id,x.definition||'',names(x.domain_ids)||'未声明',names(x.range_ids)||'未声明']))}</details>
+      <details><summary>数据属性（${data.length}）</summary>${table(['名称','定义','定义域','数据类型'],data.map(x=>[x.label||x.id,x.definition||'',names(x.domain_ids)||'未声明',x.datatype||'未声明']))}</details>
+    </section>
+    <section class="card ra-section" data-testid="design-instances"><h3>实例与断言</h3><p>根据已确认骨架和 XML 规则抽取。</p>
+      <details><summary>实例（${individuals.length}）</summary>${table(['名称','类别','标识'],individuals.map(x=>[x.label||x.id,names(x.class_ids),x.id]))}</details>
+      <details><summary>对象关系断言（${(abox.object_assertions||[]).length}）</summary>${table(['主体','关系','对象'],(abox.object_assertions||[]).map(x=>[labels.get(x.subject)||x.subject,labels.get(x.property)||x.property,labels.get(x.object)||x.object]))}</details>
+      <details><summary>数据属性断言（${(abox.data_assertions||[]).length}）</summary>${table(['主体','属性','值'],(abox.data_assertions||[]).map(x=>[labels.get(x.subject)||x.subject,labels.get(x.property)||x.property,typeof x.value==='object'?JSON.stringify(x.value):x.value]))}</details>
+    </section>
+    <section class="card ra-section" data-testid="design-coverage"><h3>来源覆盖与遗漏</h3><p>${partial?'部分覆盖：下列统计不代表所有 XML 信息均已表达。':'未发现已记录的抽取遗漏。'}</p><p>技能调用 ${coverage.calls_emitted??0} / ${coverage.calls_total??0} · 参数绑定 ${coverage.bindings_emitted??0} / ${coverage.bindings_total??0} · 接口端口 ${coverage.declared_ports_emitted??0} / ${coverage.declared_ports_total??0}</p>
+    <details><summary>查看完整覆盖与遗漏报告</summary><pre>${escape(JSON.stringify(report,null,2))}</pre></details></section>`;
   }
   function issues(rows = []) {
     return rows?.length ? '<h4>构建问题与来源定位</h4>' + rows.map(issue => `<div class="rb-issue"><b>${escape(issue.code)}</b><p>${escape(issue.message)}</p><p>${escape(issue.source_role)} · ${escape(issue.source_asset_id)}</p><pre>${escape(JSON.stringify(issue.location || {}, null, 2))}</pre></div>`).join('') : '';
@@ -114,16 +138,20 @@
         if (!d) { panel.innerHTML = '<p class="ra-empty">正在读取指定版本…</p>'; return; }
         panel.dataset.ontologyId = d.ontology_id; panel.dataset.versionId = d.version_id; panel.dataset.publicationState = d.publication_state;
         const counts = d.result?.validation?.ontology_counts || {};
+        const session=d.design?.session_ref?.id;
+        const designLink=session?'#build?recipe=robotics&session='+encodeURIComponent(session):null;
         panel.innerHTML = `<a class="ra-back" href="#library"><span aria-hidden="true">← </span>返回本体目录</a>
           <section class="card ra-overview"><div class="ra-detail-heading"><div class="ra-icon">${domainIcon(d.asset?.domain)}</div><div class="ra-title"><span class="rt-eyebrow">${d.asset?.domain === 'robotics' ? '机器人本体' : '数据本体'} · 本体详情</span><h2>${escape(d.asset?.name || '未命名本体')}</h2><p>当前：版本 ${escape(d.version_number)}</p></div><span class="rb-soft-tag">${escape(statusText(d.publication_state))}</span></div>
-          <div class="ra-detail-actions">${d.asset?.domain === 'robotics' ? `<a class="ra-button ra-primary" href="${escape(global.RoboticsTask.link(d.ontology_id,d.version_id,d.metadata?.mode||d.publication_mode||'real'))}">生成行为树 <span aria-hidden="true">→</span></a><a class="ra-button" href="${escape(global.RoboticsViews.link(d.ontology_id,d.version_id))}">打开图谱</a>` : ''}${downloads(d.artifacts)}</div><div data-download-error role="alert" hidden></div></section>
+          <div class="ra-detail-actions">${d.asset?.domain === 'robotics' && d.application_compatibility?.status!=='unsupported' && d.application_compatibility?.status!=='invalid' ? `<a class="ra-button ra-primary" href="${escape(global.RoboticsTask.link(d.ontology_id,d.version_id,d.metadata?.mode||d.publication_mode||'real'))}">生成行为树 <span aria-hidden="true">→</span></a><a class="ra-button" href="${escape(global.RoboticsViews.link(d.ontology_id,d.version_id))}">打开图谱</a>` : ''}${d.design?`<a href="/api/ontology-assets/${escape(d.ontology_id)}/versions/${escape(d.version_id)}/exports/json">下载完整 JSON</a><a href="${escape(d.payload_url)}">下载 OWL</a><a href="${escape(global.RoboticsViews.link(d.ontology_id,d.version_id))}">打开图谱</a><p>${escape(d.application_compatibility?.reasons?.join('；'))}</p>`:downloads(d.artifacts)}</div><div data-download-error role="alert" hidden></div></section>
           ${d.asset?.domain === 'robotics' ? `<section class="card ra-section"><div class="ra-section-heading"><h3>验证状态</h3><span>当前版本的检查结果</span></div>${readiness(d.result || {status:d.validation?.shacl_conforms ? 'built' : undefined, validation:d.validation})}</section>` : ''}
+          ${d.design?designDetails(d):''}
           ${Object.keys(counts).length ? `<section class="card ra-section"><div class="ra-section-heading"><h3>知识概览</h3><span>本体中的技能与配置</span></div><div class="rb-counts">${Object.entries(counts).map(([kind,n]) => `<div><strong data-count-kind="${escape(kind)}">${escape(n)}</strong><span>${escape(({AtomicSkill:'原子技能',CompositeSkill:'复合技能',SkillInvocation:'技能调用',DataReference:'数据引用',ImplementationConfiguration:'实现配置',ParameterBinding:'参数绑定',SkillParameter:'技能参数'})[kind] || kind)}</span></div>`).join('')}</div></section>` : ''}
-          ${d.sources?.length || d.build_run_id || d.asset?.domain === 'robotics' ? `<section class="card ra-section ra-provenance"><div class="ra-section-heading"><h3>来源与维护</h3><span>需要追溯或调整知识时展开查看</span></div>${sources(d.sources,{expanded:false})}<div class="ra-secondary-links">${d.build_run_id ? `<a href="${escape(runLink(d.build_run_id))}">查看构建运行与阶段记录 →</a>` : ''}${d.asset?.domain === 'robotics' ? `<a aria-label="维护知识" href="${escape(versionLink(d.ontology_id,d.version_id) + '&tab=knowledge')}">维护知识 →</a>` : ''}</div></section>` : ''}${issues(d.result?.issues)}`;
+          ${d.sources?.length || d.build_run_id || d.asset?.domain === 'robotics' ? `<section class="card ra-section ra-provenance"><div class="ra-section-heading"><h3>来源与维护</h3><span>需要追溯或调整知识时展开查看</span></div>${sources(d.sources,{expanded:false})}<div class="ra-secondary-links">${d.build_run_id ? `<a href="${escape(designLink||runLink(d.build_run_id))}">查看构建运行与阶段记录 →</a>` : ''}${d.design ? (designLink?`<a href="${escape(designLink)}">继续修改设计 →</a>`:'') : d.asset?.domain === 'robotics' ? `<a aria-label="维护知识" href="${escape(versionLink(d.ontology_id,d.version_id) + '&tab=knowledge')}">维护知识 →</a>` : ''}</div></section>` : ''}${issues(d.result?.issues)}`;
         bindDownloads(panel);
       } else {
         const list = host.querySelector('[data-testid="ontology-catalog"]');
         if (state.error) { list.innerHTML = `<div role="alert">${escape(errorText(state.error))}</div>`; return; }
+        if(state.loading||!state.catalogLoaded){list.innerHTML='<div class="card ra-empty" role="status">正在加载本体目录…</div>';return;}
         list.innerHTML = state.items.map(item => {
           const legacy = item.entry_kind === 'legacy_reference';
           const title = escape(item.name || item.legacy_key || '未命名本体');

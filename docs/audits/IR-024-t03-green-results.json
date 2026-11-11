@@ -1,0 +1,166 @@
+{
+  "iteration": "IR-024",
+  "task": "T03 GREEN",
+  "date": "2026-11-10",
+  "status": "green-after-approved-fixture-rerun",
+  "delivery_status": "in-progress; T04 and later remain",
+  "regression": {
+    "initial_full_run_exit_code": 1,
+    "initial_full_run_summary": ".check-results/IR-024-t03-green/all-final/summary.json",
+    "affected_rerun_exit_code": 0,
+    "affected_rerun_summary": ".check-results/IR-024-t03-green/fixture-rerun/summary.json",
+    "effective_stage_results": [
+      {
+        "name": "lint",
+        "exit_code": 0,
+        "seconds": 0.032,
+        "log": ".check-results/IR-024-t03-green/fixture-rerun/lint.log"
+      },
+      {
+        "name": "types",
+        "exit_code": 0,
+        "seconds": 5.329,
+        "log": ".check-results/IR-024-t03-green/fixture-rerun/types.log"
+      },
+      {
+        "name": "unit",
+        "exit_code": 0,
+        "seconds": 1687.104,
+        "log": ".check-results/IR-024-t03-green/all-final/unit.log"
+      },
+      {
+        "name": "coverage",
+        "exit_code": 0,
+        "seconds": 0.567,
+        "log": ".check-results/IR-024-t03-green/all-final/coverage.log"
+      },
+      {
+        "name": "integration",
+        "exit_code": 0,
+        "seconds": 7.928,
+        "log": ".check-results/IR-024-t03-green/all-final/integration.log"
+      },
+      {
+        "name": "strict10",
+        "exit_code": 0,
+        "seconds": 0.217,
+        "log": ".check-results/IR-024-t03-green/all-final/strict10.log"
+      },
+      {
+        "name": "test_ui",
+        "exit_code": 0,
+        "seconds": 123.052,
+        "log": ".check-results/IR-024-t03-green/all-final/test_ui.log"
+      },
+      {
+        "name": "test_ui_ops",
+        "exit_code": 0,
+        "seconds": 42.851,
+        "log": ".check-results/IR-024-t03-green/all-final/test_ui_ops.log"
+      },
+      {
+        "name": "build-browser",
+        "exit_code": 0,
+        "seconds": 2.268,
+        "log": ".check-results/IR-024-t03-green/all-final/build-browser.log"
+      },
+      {
+        "name": "robotics-browser",
+        "exit_code": 0,
+        "seconds": 69.278,
+        "log": ".check-results/IR-024-t03-green/all-final/robotics-browser.log"
+      },
+      {
+        "name": "robotics-review-browser",
+        "exit_code": 0,
+        "seconds": 98.252,
+        "log": ".check-results/IR-024-t03-green/all-final/robotics-review-browser.log"
+      },
+      {
+        "name": "robotics-task-browser",
+        "exit_code": 0,
+        "seconds": 116.359,
+        "log": ".check-results/IR-024-t03-green/fixture-rerun/robotics-task-browser.log"
+      }
+    ],
+    "note": "Production unchanged. User approved rerunning affected checks only after task browser fixture sequencing correction; the original full command is not represented as exit 0."
+  },
+  "counts": {
+    "t02_targeted": {
+      "passed": 62,
+      "failed": 0,
+      "skipped": 0
+    },
+    "unit": {
+      "passed": 1743,
+      "failed": 0,
+      "skipped": 5
+    },
+    "coverage_percent": 84.5,
+    "coverage_minimum_percent": 81.0,
+    "integration": {
+      "passed": 551,
+      "failed": 0,
+      "skipped": 8
+    },
+    "strict_rounds": {
+      "passed": 10,
+      "failed": 0
+    },
+    "ui": {
+      "passed": 64,
+      "failed": 0
+    },
+    "ui_ops": {
+      "passed": 50,
+      "failed": 0,
+      "skipped": 3
+    },
+    "build_browser": {
+      "passed": 10,
+      "failed": 0
+    },
+    "robotics_build_browser": {
+      "passed": 18,
+      "failed": 0
+    },
+    "robotics_review_browser": {
+      "passed": 16,
+      "failed": 0
+    },
+    "robotics_task_browser": {
+      "passed": 12,
+      "failed": 0
+    }
+  },
+  "approved_test_changes": [
+    {
+      "file": "tests/unit/test_robotics_build_http.py",
+      "change": "Malformed XML HTTP expectation updated from async 202 failure to located 400 with no source/run writes.",
+      "approval": "同意，更新冲突的旧测试"
+    },
+    {
+      "file": "tests/frontend/robotics-task-browser.py",
+      "change": "Build legacy assets before enabling scripted task model. All 59 asserts and 42 Playwright expectations retained.",
+      "approval": "同意，调整夹具并重跑受影响检查"
+    }
+  ],
+  "production_sha256": {
+    "domain_runs/robotics_build_routing.py": "27f0c9f8211a86f11bb31f9bb5f537b1addf86d47e2e50690e7d7fbab66ed269",
+    "domains/robotics/source_admission.py": "aff7639f8091c5e1cffefa807de1650b74fcf2150eb806ba101fc8ad39597737",
+    "domain_runs/build_service.py": "f6473c72676d37825608ed5a8dadf7383b0517818a0766bfd1941ab1577e6ca7",
+    "bp_robotics.py": "c83aba8640cd9c14063bfa6c668d703582a76a4aff8ed986c2e7dea0ffc06dfb",
+    "openai_runtime.py": "912ab897090985c64b9d02dcddf983f0799fdf80d3d42f9641a371cf58862e8e"
+  },
+  "reviewed_t02_sha256": {
+    "tests/robotics_dual_build_support.py": "6db6118dbbac25a91c4cc3c360bad15a5a5535d5b99fdc66c433ea0a19f95e10",
+    "tests/unit/test_robotics_dual_build_routing.py": "84cda799fe90fd6259a5f35718826c6cf8b707ef7212cd8c2ddc6bad1b7d3d11",
+    "tests/unit/test_robotics_dual_build_http.py": "01ef4fa34ed1edb657b9a3c6bcc10043b1b4ed2de5a78c24fc93bcea0df582b6"
+  },
+  "approved_test_sha256": {
+    "tests/unit/test_robotics_build_http.py": "27cf39fc35e473c4e7eb4515f631ff3d34035ae0f6491b2081855e68f3d2e62c",
+    "tests/frontend/robotics-task-browser.py": "63ec1460ae604faea6e5148249a1dc14164338af9b9886fd7e737f8812fc866c"
+  },
+  "real_model_invoked": false,
+  "remaining": "Configured model builds return 503/model_build_pending until TBox/ABox and design-session integration. This result does not validate real model modeling quality."
+}

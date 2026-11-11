@@ -453,23 +453,18 @@ finally:
     assert db_rows(root) == before, 'Server/WSGI reopen must not rerun a terminal build'
 
 
-def test_actual_invalid_xml_is_accepted_then_reported_as_located_failure(tmp_path):
+def test_actual_invalid_xml_is_rejected_before_admission_with_location(tmp_path):
+    # DR-070: shared XML intake supersedes the old HTTP late-failure contract.
+    # User approved this expectation change during IR-024 T03.
     with http_app(tmp_path, start_executor=True) as (_, client, _, root):
         data = multipart()
         data.setlist('behavior_tree', [(io.BytesIO(b'<broken>'), 'broken.xml')])
+        before, files = db_rows(root), blob_bytes(root)
         response = post(client, data)
-        assert response.status_code == 202
-        saved = terminal(root, response.json['run_id'])
-        detail = get(client, f"/api/domain-runs/{saved['run_id']}").json
-        assert detail['status'] == 'failed' and detail['output_asset_ref'] is None
-        problem = next(i for i in detail['result']['issues'] if i['code'] == 'invalid_xml')
-        source = next(s for s in saved['build_input']['sources'] if s['role'] == 'behavior_tree')
+        body = assert_error(response, 400, 'invalid_source')
+        problem = next(i for i in body['error']['issues'] if i['code'] == 'invalid_xml')
         assert problem['source_role'] == 'behavior_tree'
-        assert problem['source_asset_id'] == source['source_asset_id']
         assert problem['location']['line'] == 1
-        assert {a['kind'] for a in detail['artifacts']} == {'validation', 'manifest'}
-        report = next(a for a in detail['artifacts'] if a['kind'] == 'validation')
-        downloaded = get(client, report['download_url'])
-        assert downloaded.status_code == 200
-        assert downloaded.json['issues'] == detail['result']['issues']
-        assert_public(detail, root)
+        assert db_rows(root) == before and blob_bytes(root) == files
+        assert 'run_id' not in body
+        assert_public(body, root)

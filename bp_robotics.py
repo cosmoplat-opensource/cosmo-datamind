@@ -1,4 +1,4 @@
-"""Robot build HTTP composition, catalog and registered downloads — DR-060 / DR-063 / DR-064."""
+"""Robot build HTTP composition and downloads — DR-060 / DR-063 / DR-064 / DR-070."""
 import atexit
 import io
 import math
@@ -12,23 +12,31 @@ from werkzeug.exceptions import BadRequest, RequestEntityTooLarge
 from domain_runs import RunStore
 from domain_runs.build_service import BuildRequestError, BuildService, ROLES
 from domain_runs.executor import BuildExecutor
+from domain_runs.robotics_design_service import DesignService
+from ontology_assets.robotics_design import DesignAssets
+from domain_runs.design_executor import DesignExecutor
 from domain_runs.store import _decode
 from ontology_assets import AssetStore
 import bp_robotics_review
+from domain_runs.robotics_build_routing import resolve_route
 
 
 class Runtime:
     def __init__(self, root, enabled, limits, *, start_executor):
         self.root, self.enabled, self.limits = root, enabled, limits
-        self.service = self.executor = None
+        self.service = self.executor = self.design_executor = None
         if enabled:
             self.service = BuildService(root, max_pending=limits['pending'], file_limit_bytes=limits['file_bytes'])
             if start_executor:
                 self.executor = BuildExecutor(root, timeout_seconds=limits['timeout_seconds'])
                 self.executor.start()
+                self.design_executor = DesignExecutor(root)
+                self.design_executor.start()
                 atexit.register(self.close)
 
     def close(self):
+        if self.design_executor is not None:
+            self.design_executor.stop()
         if self.executor is not None:
             self.executor.stop()
         atexit.unregister(self.close)
@@ -54,8 +62,13 @@ class Runtime:
 
     def public(self, value):
         if isinstance(value, dict):
-            return {k: self.public(v) for k, v in value.items()
-                    if k not in {'path', 'storage_root', 'database_path', 'command'}}
+            result = {k: self.public(v) for k, v in value.items()
+                      if k not in {'path', 'storage_root', 'database_path', 'command'}}
+            # Existing build_ontology runs are immutable legacy XML runs (DR-070).
+            # Project new metadata without changing archived manifests or fingerprints.
+            if value.get('operation') == 'build_ontology':
+                result.update(method='legacy_xml', model=None)
+            return result
         if isinstance(value, list):
             return [self.public(v) for v in value]
         if isinstance(value, str):
@@ -127,7 +140,10 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True):
 
     @bp.errorhandler(BuildRequestError)
     def request_error(exc):
-        return jsonify(error={'code': exc.code, 'message': str(exc)}), exc.status_code
+        error = {'code': exc.code, 'message': str(exc)}
+        if exc.issues is not None:
+            error['issues'] = exc.issues
+        return jsonify(error=error), exc.status_code
 
     @bp.errorhandler(KeyError)
     def not_found(exc):
@@ -148,27 +164,40 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True):
 
     @bp.get('/api/robotics/capabilities')
     def capabilities():
+        state = {'building_method': None, 'model': None, 'configuration_issue': None, 'build_ready': False}
+        if enabled:
+            try:
+                route = resolve_route().public()
+                state.update(building_method=route['method'], model=route['model'],
+                             build_ready=True)
+                if not state['build_ready']:
+                    state['configuration_issue'] = {'code': 'model_build_pending',
+                        'message': '模型辅助构建尚未开放。'}
+            except BuildRequestError as exc:
+                state['configuration_issue'] = {'code': exc.code, 'message': str(exc)}
         return jsonify(enabled=enabled, recipes=[{'id': 'bt_xml', 'profiles': ['ur_pick_place'],
-                        'input_roles': list(ROLES)}], limits=limits)
+                        'input_roles': list(ROLES)}], limits=limits, **state)
 
     @bp.post('/api/robotics/builds')
     def submit():
         service = runtime.writer()
         fields = {'name', 'recipe', 'profile', 'request_id'}
-        if (request.mimetype != 'multipart/form-data' or set(request.form) != fields
+        if (request.mimetype != 'multipart/form-data' or not fields <= set(request.form)
+                or set(request.form) - fields - {'description'}
                 or set(request.files) != set(ROLES)
-                or any(len(request.form.getlist(k)) != 1 for k in fields)
+                or any(len(request.form.getlist(k)) != 1 for k in request.form)
                 or any(len(request.files.getlist(k)) != 1 for k in ROLES)):
             raise _invalid()
         sources = {role: {'filename': request.files[role].filename,
                          'content': request.files[role].stream.read(limits['file_bytes'] + 1)} for role in ROLES}
         row = service.submit(name=request.form['name'], recipe=request.form['recipe'],
-            profile_id=request.form['profile'], request_id=request.form['request_id'], sources=sources)
+            profile_id=request.form['profile'], request_id=request.form['request_id'], sources=sources,
+            description=request.form.get('description', ''), route_resolver=resolve_route)
         return jsonify(runtime.public(row)), 202
 
     def run_row(runs, run_id):
         row = runs.get_run(run_id)
-        if row['operation'] != 'build_ontology':
+        if row['operation'] not in ('build_ontology', 'design_tbox', 'extract_abox'):
             raise KeyError(run_id)
         return row
 
@@ -180,7 +209,7 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True):
     def history():
         _query_fields({'operation', 'limit', 'offset'})
         operation = request.args.get('operation', 'build_ontology')
-        if operation != 'build_ontology':
+        if operation not in ('build_ontology', 'design_tbox', 'extract_abox'):
             raise _invalid('此入口仅查询本体构建运行。')
         limit, offset = _integer_arg('limit', 20, 1, 100), _integer_arg('offset', 0, 0)
         if not (root / 'domain.sqlite3').exists():
@@ -241,6 +270,79 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True):
         return send_file(io.BytesIO(content), mimetype=record['media_type'], as_attachment=True,
                          download_name=record['name'], max_age=0)
 
+    def designs(write=False):
+        if write:
+            runtime.writer()
+            return DesignService(root, max_pending=limits['pending'])
+        if not (root / 'domain.sqlite3').exists():
+            raise KeyError('missing')
+        return runtime._reader(DesignService)
+
+    def design_read(call):
+        try:
+            return call()
+        except BuildRequestError:
+            raise
+        except (ValueError, OSError) as exc:
+            raise BuildRequestError('artifact_integrity', '设计文件缺失或损坏。', 409) from exc
+
+    @bp.get('/api/robotics/design-sessions/<sid>')
+    def design_session(sid):
+        _query_fields(set())
+        return jsonify(runtime.public(designs().get(sid)))
+
+    @bp.get('/api/robotics/design-sessions/<sid>/revisions')
+    def design_revisions(sid):
+        _query_fields(set())
+        return jsonify(items=designs().list_revisions(sid))
+
+    @bp.get('/api/robotics/design-sessions/<sid>/revisions/<revision>')
+    @bp.get('/api/robotics/design-sessions/<sid>/revisions/<revision>/exports/<format>')
+    def design_revision(sid, revision, format=None):
+        _query_fields(set())
+        if not revision.isascii() or not revision.isdigit() or len(revision)>10 or format not in (None, 'json', 'owl'):
+            raise _invalid()
+        service = designs()
+        raw = design_read(lambda: service.export_revision(sid, int(revision), format=format or 'json'))
+        if format is None:
+            return jsonify(runtime.public(__import__('json').loads(raw)))
+        return send_file(io.BytesIO(raw), mimetype='application/json' if format=='json' else 'application/rdf+xml',
+            as_attachment=True, download_name='design.'+format, max_age=0)
+
+    @bp.post('/api/robotics/design-sessions/<sid>/<operation>')
+    def design_operation(sid, operation):
+        service = designs(write=True)
+        _query_fields(set())
+        fields = {'messages': {'text','request_id','expected_revision','expected_stage'},
+            'confirm-classes': {'request_id','expected_revision','snapshot_sha256'},
+            'edit-classes': {'request_id','expected_revision'},
+            'confirm-schema': {'request_id','expected_revision','snapshot_sha256'},
+            'retry': {'request_id','expected_revision','failed_run_id'}}
+        body = request.get_json() if request.is_json else None
+        if operation not in fields or not isinstance(body,dict) or set(body)!=fields[operation]:
+            raise _invalid()
+        rev = body['expected_revision']
+        if type(rev) is not int or rev<0:
+            raise _invalid()
+        function = getattr(service, 'message' if operation=='messages' else operation.replace('-', '_'))
+        return jsonify(runtime.public(function(sid, **body))), 202 if operation in ('messages','confirm-schema','retry') else 200
+
+    def design_assets():
+        return runtime._reader(DesignAssets)
+
+    @bp.get('/api/ontology-assets/<ontology_id>/versions/<version_id>/compatibility')
+    def design_compatibility(ontology_id, version_id):
+        _query_fields(set())
+        return jsonify(design_assets().compatibility(ontology_id, version_id))
+
+    @bp.get('/api/ontology-assets/<ontology_id>/versions/<version_id>/exports/<format>')
+    def design_export(ontology_id, version_id, format):
+        _query_fields(set())
+        if format!='json': raise _invalid()
+        raw = design_read(lambda: design_assets().export_json(ontology_id, version_id))
+        return send_file(io.BytesIO(raw), mimetype='application/json', as_attachment=True,
+            download_name='design.json', max_age=0)
+
     @bp.get('/api/ontology-assets')
     def catalog():
         _query_fields({'domain'})
@@ -254,15 +356,22 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True):
                 bindings = {r['ontology_id']: r['legacy_key'] for r in conn.execute('SELECT * FROM legacy_assets')}
             bound = set(bindings.values())
             for asset in assets.list_assets():
+                if domain is not None and asset['domain'] != domain:
+                    continue
                 versions = assets.list_versions(asset['ontology_id'])
                 versions = [{**v, 'version_number': i} for i, v in enumerate(versions, 1)]
                 latest = versions[-1] if versions else None
+                # DR-070: the catalog offers the current version; historic eligibility is checked on explicit access.
+                if latest and asset['domain']=='robotics':
+                    latest['application_compatibility'] = design_assets().compatibility(asset['ontology_id'], latest['version_id'])
                 item = {**asset, 'entry_kind': 'asset', 'version_id': latest['version_id'] if latest else None,
                         'version_number': latest['version_number'] if latest else None,
                         'publication_state': latest['publication_state'] if latest else None,
                         'versions': versions}
                 if asset['ontology_id'] in bindings:
                     item['legacy_key'] = bindings[asset['ontology_id']]
+                if asset['domain']=='robotics' and latest:
+                    item['application_compatibility'] = latest['application_compatibility']
                 items.append(item)
         for old in legacy_catalog():
             if old['key'] not in bound:
@@ -280,6 +389,11 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True):
         result = {**row, 'version_number': assets.version_number(ontology_id, version_id),
                   'asset': assets.get_asset(ontology_id), 'build_run_id': rid,
                   'sources': [assets.get_source(sid) for sid in row['source_asset_ids']]}
+        is_design = row['metadata'].get('design_contract') is not None
+        if is_design:
+            result['design'] = design_read(lambda: design_assets().detail(ontology_id, version_id))
+        if result['asset']['domain']=='robotics':
+            result['application_compatibility'] = design_assets().compatibility(ontology_id, version_id)
         if rid:
             runs = runtime.runs()
             build = run_row(runs, rid)
@@ -287,7 +401,7 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True):
             result['result'] = build['result']
         if result['asset']['domain'] == 'robotics':
             result['payload_url'] = url_for('robotics_review.payload', ontology_id=ontology_id, version_id=version_id)
-            current_artifacts = bp_robotics_review.version_artifacts(runtime, ontology_id, version_id)
+            current_artifacts = [] if is_design else bp_robotics_review.version_artifacts(runtime, ontology_id, version_id)
             if current_artifacts or not rid:
                 result['artifacts'] = current_artifacts
         return jsonify(runtime.public(result))

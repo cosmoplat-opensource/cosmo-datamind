@@ -28,6 +28,9 @@ import json
 import os
 import urllib.request
 
+# DR-070: routing and the platform runtime share the same default model identity.
+DEFAULT_MODEL = 'gpt-4o-mini'
+
 
 def _int_env(name, default):
     try: return max(1, int(os.environ.get(name) or default))
@@ -60,7 +63,7 @@ class OpenAICompatRuntime:
     def __init__(self):
         self.base = (os.environ.get("DATAMIND_LLM_BASE") or "").rstrip("/")
         self.key = os.environ.get("DATAMIND_LLM_KEY") or ""
-        self.model = os.environ.get("DATAMIND_LLM_MODEL") or "gpt-4o-mini"
+        self.model = os.environ.get("DATAMIND_LLM_MODEL") or DEFAULT_MODEL
 
     def available(self):
         """端点与 Key 齐备才算可用 —— 缺一即视为未配置,不制造"看似可用"的假象。"""

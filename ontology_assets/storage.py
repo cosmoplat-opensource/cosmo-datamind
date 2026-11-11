@@ -9,7 +9,7 @@ import tempfile
 
 from srv_context import confine
 
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 _TRANSACTION_FILES = ContextVar('asset_transaction_files', default=None)
 SCHEMA = (
     """CREATE TABLE assets (
@@ -132,6 +132,10 @@ class Storage:
             if version == 4:
                 from .governance_schema import migrate
                 migrate(conn)
+                version = 5
+            if version == 5:
+                from .design_schema import migrate as migrate_design
+                migrate_design(conn)
             elif version != SCHEMA_VERSION:
                 raise ValueError(f"不支持的资产数据库 schema 版本：{version}")
 

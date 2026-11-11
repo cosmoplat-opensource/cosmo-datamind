@@ -182,6 +182,19 @@ def init_app(app, runtime):
         # DR-068: GET only, fixed version, same read-only integrity boundary.
         if request.args or view not in {'relations', 'behavior-tree'}:
             raise invalid()
+        service(ontology_id)  # DR-070: retain the original domain guard before resolving versions.
+        from ontology_assets.robotics_design import DesignAssets
+        assets = runtime.assets()
+        if assets.get_version(ontology_id, version_id)['metadata'].get('design_contract'):
+            if view != 'relations': raise invalid()
+            reader=DesignAssets(runtime.root)
+            graph=reader.graph(ontology_id, version_id)
+            for node in graph['nodes']:
+                for prop in node['properties']: prop['name']=prop['predicate']
+            for edge in graph['edges']: edge['label']=edge['predicate'].rsplit('#',1)[-1]
+            return response({**graph, 'ontology_id':ontology_id, 'version_id':version_id, 'view':view,
+                'name':assets.get_asset(ontology_id)['name'], 'version_number':assets.version_number(ontology_id,version_id),
+                'application_compatibility':reader.compatibility(ontology_id,version_id)})
         return response(service(ontology_id).visualize(ontology_id, version_id, view))
 
     @bp.post(prefix + '/drafts')
@@ -282,6 +295,15 @@ def init_app(app, runtime):
 
     @bp.get(prefix + '/versions/<version_id>/payload')
     def payload(ontology_id, version_id):
+        service(ontology_id)
+        assets=runtime.assets()
+        if assets.get_version(ontology_id,version_id)['metadata'].get('design_contract'):
+            from ontology_assets.robotics_design import DesignAssets
+            try:
+                raw=DesignAssets(runtime.root).payload(ontology_id,version_id)
+            except ValueError as exc:
+                raise BuildRequestError('artifact_integrity','设计文件损坏。',409) from exc
+            return send_file(io.BytesIO(raw),mimetype='application/rdf+xml',as_attachment=True,download_name='candidate.owl')
         return download(ontology_id, version_id)
 
     @bp.get(prefix + '/versions/<version_id>/artifacts/<artifact_id>')

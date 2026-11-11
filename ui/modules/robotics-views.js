@@ -56,8 +56,12 @@
       plot.innerHTML='';side.innerHTML='<div class="rv-side-empty">选择图中的节点，查看对象关系或节点参数。<br>也可以使用上方的节点列表。</div>';
       let edges=[];
       if(view==='relations'){
-        const group=host.querySelector('#rv_group').value;
-        visibleNodes=data.nodes.filter(n=>group==='all'||n.group===group);
+        const group=host.querySelector('#rv_group').value, typeSelect=host.querySelector('#rv_type'), selectedType=typeSelect.value;
+        const grouped=data.nodes.filter(n=>group==='all'||n.group===group);
+        const types=new Map();for(const node of grouped)(node.types||[]).forEach((type,i)=>types.set(type,node.type_labels?.[i]||type));
+        typeSelect.innerHTML='<option value="">全部类型</option>'+[...types.entries()].sort((a,b)=>a[1].localeCompare(b[1])).map(([id,label])=>`<option value="${escape(id)}">${escape(label)}</option>`).join('');
+        typeSelect.value=types.has(selectedType)?selectedType:'';
+        visibleNodes=grouped.filter(n=>!typeSelect.value||(n.types||[]).includes(typeSelect.value));
         const ids=new Set(visibleNodes.map(n=>n.id));edges=data.edges.filter(e=>ids.has(e.source)&&ids.has(e.target));
       } else {
         visibleNodes=[];
@@ -74,11 +78,11 @@
         }
         if(tree)walk(tree.root,null);
       }
-      host.querySelector('#rv_counts').textContent=`${visibleNodes.length} 个节点 · ${edges.length} 条连线`;
+      host.querySelector('#rv_counts').textContent=view==='relations'?`当前显示 ${visibleNodes.length} / ${data.nodes.length} 个实例 · ${edges.length} 条连线`:`${visibleNodes.length} 个节点 · ${edges.length} 条连线`;
       const select=host.querySelector('#rv_node');
       select.innerHTML='<option value="">选择节点查看详情</option>'+visibleNodes.map((n,i)=>`<option value="${escape(n.id)}">${i+1}. ${escape(n.label)}</option>`).join('');
       host.querySelector('#rv_search_result').textContent='';
-      if(!visibleNodes.length){plot.innerHTML='<div class="ra-empty">当前范围没有可展示的节点，请切换筛选范围。</div>';return;}
+      if(!visibleNodes.length){plot.innerHTML='<div class="ra-empty">'+(view==='relations'&&host.querySelector('#rv_group').value==='business'?'该本体尚未包含业务对象与配置实例。类别定义不等于实例，可切换到技能与流程或全部对象。':'当前范围没有可展示的实例，请切换筛选范围或实例类型。')+'</div>';return;}
       if(!global.G6)throw Error('图形组件加载失败，请刷新页面重试。');
       canvas=new global.G6.Graph({container:plot,width:plot.clientWidth,height:plot.clientHeight,
         ...(view==='relations'?{layout:{type:'dagre',rankdir:'LR',nodesep:24,ranksep:95}}:{}),
@@ -100,12 +104,13 @@
     function render() {
       const tree=view==='behavior-tree';selectedTree=tree?data.main_tree:null;
       host.innerHTML=`<a class="ra-back" href="${escape(global.RoboticsAssets.versionLink(oid,vid))}">← 返回本体详情</a>
-        <header class="rt-heading"><div><span class="rt-eyebrow">机器人本体 · ${tree?'行为树视图':'关系图'}</span><h2>${escape(data.name)}</h2><p>当前：版本 ${escape(data.version_number)} · 只读浏览</p></div><a class="ra-button" href="${escape(global.RoboticsTask.link(oid,vid,data.mode||'real'))}">基于此本体生成行为树</a></header>
-        <p class="rv-help">${tree?'本体流程 · 非任务生成结果。显示本体保存的流程与参数绑定；具体任务的参数以生成结果为准。':'展示本体中的命名对象及其关系。筛选可聚焦业务对象或技能流程；OWL 类定义、匿名约束及审计记录不在此图中。'}</p>
-        <section class="card rv-toolbar">${tree?`<label>行为树<select id="rv_tree" aria-label="行为树">${data.trees.map(t=>`<option value="${escape(t.name)}">${escape(t.name)}${t.name===data.main_tree?' · 主流程':' · 子树'}</option>`).join('')}</select></label>`:'<label>展示范围<select id="rv_group" aria-label="展示范围"><option value="business">业务对象与配置</option><option value="skills">技能与流程</option><option value="all">全部对象</option></select></label>'}
+        <header class="rt-heading"><div><span class="rt-eyebrow">机器人本体 · ${tree?'行为树视图':'关系图'}</span><h2>${escape(data.name)}</h2><p>当前：版本 ${escape(data.version_number)} · 只读浏览</p></div>${data.application_compatibility&&data.application_compatibility.status!=='supported'?`<p>${escape(data.application_compatibility.reasons.join('；'))}</p>`:`<a class="ra-button" href="${escape(global.RoboticsTask.link(oid,vid,data.mode||'real'))}">基于此本体生成行为树</a>`}</header>
+        <p class="rv-help">${tree?'本体流程 · 非任务生成结果。显示本体保存的流程与参数绑定；具体任务的参数以生成结果为准。':'展示当前版本的实例及实例间关系。新旧本体使用相同分组；类别和属性定义请在本体详情中查看。'}</p>
+        <section class="card rv-toolbar">${tree?`<label>行为树<select id="rv_tree" aria-label="行为树">${data.trees.map(t=>`<option value="${escape(t.name)}">${escape(t.name)}${t.name===data.main_tree?' · 主流程':' · 子树'}</option>`).join('')}</select></label>`:'<label>展示范围<select id="rv_group" aria-label="展示范围"><option value="business">业务对象与配置</option><option value="skills">技能与流程</option><option value="other">参数与其他对象</option><option value="all">全部对象</option></select></label><label>实例类型<select id="rv_type" aria-label="实例类型"><option value="">全部类型</option></select></label>'}
         <form id="rv_search"><label>查找节点<input id="rv_query" placeholder="输入节点名称" autocomplete="off"></label><button class="ghost" type="submit">查找</button></form><span id="rv_search_result" role="status"></span>
         ${tree?'<button type="button" class="ghost" id="rv_tree_back" hidden>返回上一级</button>':''}<div class="rv-controls"><button type="button" data-zoom="in" aria-label="放大">＋</button><button type="button" data-zoom="out" aria-label="缩小">−</button><button type="button" id="rv_fit">适应画布</button></div></section>
-        <div class="rv-workspace"><section class="card rv-graph"><div class="ra-section-heading"><h3>${tree?'流程结构':'对象关联'}</h3><span id="rv_counts"></span></div><div id="rv_canvas" role="img" aria-label="${tree?'行为树流程图':'机器人本体关系图'}"></div><p class="rv-legend">${tree?'从上到下执行，同级节点从左到右排列；点击 SubTree 节点可查看子树。':'蓝色：业务对象与配置　紫色：技能与流程　青色：其他对象'} · 拖动画布移动，滚轮缩放</p></section>
+        <p class="rv-help" id="rv_scope_notice" role="status"></p>
+        <div class="rv-workspace"><section class="card rv-graph"><div class="ra-section-heading"><h3>${tree?'流程结构':'对象关联'}</h3><span id="rv_counts"></span></div><div id="rv_canvas" role="img" aria-label="${tree?'行为树流程图':'机器人本体关系图'}"></div><p class="rv-legend">${tree?'从上到下执行，同级节点从左到右排列；点击 SubTree 节点可查看子树。':'蓝色：业务对象与配置　紫色：技能与流程　青色：参数与其他对象'} · 拖动画布移动，滚轮缩放</p></section>
         <aside class="card rv-sidebar"><label for="rv_node">节点详情</label><select id="rv_node"></select><div id="rv_properties"></div></aside></div>`;
       if(tree){
         host.querySelector('#rv_tree').value=selectedTree;
@@ -115,7 +120,9 @@
           host.querySelector('#rv_tree').value=selectedTree;draw();if(parent)selectNode(parent.node);
         };
       }
-      else {host.querySelector('#rv_group').value=data.nodes.some(n=>n.group==='business')?'business':'all';host.querySelector('#rv_group').onchange=draw;}
+      else {const hasBusiness=data.nodes.some(n=>n.group==='business');host.querySelector('#rv_group').value=hasBusiness?'business':data.nodes.some(n=>n.group==='skills')?'skills':'all';
+        if(!hasBusiness)host.querySelector('#rv_scope_notice').textContent='该本体尚未包含业务对象与配置实例；可切换展示范围查看技能、参数及其他实例。';
+        host.querySelector('#rv_group').onchange=()=>{host.querySelector('#rv_type').value='';draw();};host.querySelector('#rv_type').onchange=draw;}
       host.querySelector('#rv_node').onchange=e=>selectNode(e.target.value);
       host.querySelector('#rv_fit').onclick=fit;
       host.querySelectorAll('[data-zoom]').forEach(button=>button.onclick=()=>{if(canvas)canvas.zoomTo(Math.max(.02,Math.min(3,canvas.getZoom()*(button.dataset.zoom==='in'?1.25:.8))),{x:canvas.getWidth()/2,y:canvas.getHeight()/2});});
@@ -140,7 +147,7 @@
         // DR-068: share task-page aliases for historical names. Only display
         // labels change; fixed OWL bytes, identifiers and parameter values stay intact.
         const displayLabel=global.RoboticsTask.displayLabel;
-        data=view==='relations'?{...body,nodes:body.nodes.map(node=>({...node,
+        data=view==='relations'?{...body,nodes:body.nodes.filter(node=>!node.kind||node.kind==='individual').map(node=>({...node,
           label:displayLabel(node.label),properties:node.properties.map(property=>
             property.predicate==='http://www.w3.org/2000/01/rdf-schema#label'
               ? {...property,value:displayLabel(property.value)} : property)

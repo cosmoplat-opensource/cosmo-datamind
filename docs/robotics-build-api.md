@@ -1,7 +1,9 @@
 # 机器人本体构建 API（IR-018 T05）
 
 T05 接通真实双 XML 上传、后台构建、持久运行、候选版本和下载；T07 已接入页面，操作路径见 [UI 指南](robotics-build-ui.md)。
-仅支持 `bt_xml` 配方和 `ur_pick_place` profile，不调用 LLM，不添加演示补充资料，不自动正式发布或执行机器人动作。
+仅支持 `bt_xml` 配方和 `ur_pick_place` profile，不自动正式发布或执行机器人动作。
+IR-024 已增加平台模型路由；未配置模型时沿用本文旧离线构建，配置有效时受理为设计会话。
+当前双路径操作、完整 JSON 和限制见 [双路径指南](robotics-dual-build.md)，接口见 [设计 HTTP 契约](../specs/contracts/robotics-design-http-ui-v1.md)。
 
 ## 隔离启动
 
@@ -34,7 +36,8 @@ curl -sS -X POST http://127.0.0.1:8093/api/robotics/builds \
   -F 'node_models=@tests/fixtures/robotics/sources/xml_models.xml'
 ```
 
-响应为 HTTP 202，包含 `run_id`，表示已受理；不能据此判断构建成功。
+旧离线路径响应为 HTTP 202，包含 `run_id`，表示已受理；不能据此判断构建成功。
+模型路径返回设计会话；可提交可选 `description` 作为建模要求，空描述等待输入，后续确认和设计通过会话接口完成。
 把实际返回编号替换下面的占位符：
 
 ```bash
