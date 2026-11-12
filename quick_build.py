@@ -49,13 +49,6 @@ def _record_query_error(operation, table, column, exc):
                              "column": str(column or "")[:120], "error_type": type(exc).__name__})
 
 
-def distinct(t, c, cap=20000):
-    try:
-        return set(r[0] for r in con.execute(f'SELECT DISTINCT {qi(c)} FROM {qi(t)} LIMIT {cap}') if r[0] not in (None, ""))
-    except Exception as exc:
-        _record_query_error("distinct", t, c, exc)
-        return set()
-
 _UNIQ_CACHE_MAX = 4096          # 容量上限:超出按 LRU 逐出最久未用项
 _uniq_cache: _OrderedDict[tuple[str, str], bool] = _OrderedDict()
 def is_key_unique(t, c):

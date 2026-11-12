@@ -26,14 +26,6 @@ SOFT_DELETE_COLUMN_PATTERN: str = _DETECT["column_pattern"]
 LIVE_MARKERS: tuple = tuple(_DETECT["live_markers"])
 
 
-def is_live_marker(value) -> bool:
-    """取值是否表示「未删除」。数值与字符串等价比较(0 与 '0' 相同)。"""
-    if value is None:
-        return True
-    return any(m is not None and str(m) == str(value) for m in LIVE_MARKERS) or (
-        isinstance(value, float) and value == 0)
-
-
 def is_valid_rows(evidence: dict | None) -> bool:
     """证据里写明了认可的有效行规则且成立:父键在有效行上唯一。"""
     vr = (evidence or {}).get("valid_rows")
