@@ -3674,6 +3674,17 @@ _TTL_XSD = {"int": "integer", "integer": "integer", "bigint": "integer", "smalli
             "decimal": "decimal", "numeric": "decimal", "double": "decimal", "float": "decimal", "real": "decimal",
             "date": "date", "datetime": "dateTime", "timestamp": "dateTime", "bool": "boolean", "boolean": "boolean"}
 
+_PN_RANGES = ((0xC0, 0xD6), (0xD8, 0xF6), (0xF8, 0x2FF), (0x370, 0x37D), (0x37F, 0x1FFF), (0x2070, 0x218F),
+              (0x2C00, 0x2FEF), (0x3001, 0xD7FF), (0xF900, 0xFDCF), (0xFDF0, 0xFFFD), (0x10000, 0xEFFFF))
+
+
+def _pn_char(ch):
+    """字符能否原样出现在 Turtle 本地名里(PN_CHARS_BASE 加 ASCII 字母数字与下划线),且是字母或数字。"""
+    if ch == "_" or (ch.isascii() and ch.isalnum()): return True
+    o = ord(ch)
+    return ch.isalnum() and any(a <= o <= b for a, b in _PN_RANGES)
+
+
 def _ir_to_turtle(key, ir):
     """IR → OWL2 Turtle，带 BFO/IOF 上层类别、IOF-AV 注释和关系映射状态。
     自包含、确定性纯函数;所有图谱(示例/应用/quick_build/forged)统一走此路径,ttl/jsonld/owl 三格式一致且带注释。"""
@@ -3683,9 +3694,19 @@ def _ir_to_turtle(key, ir):
     for o in (ir.get("objects") or []):
         for kk in (o.get("id"), o.get("name")):
             if kk: raw[str(kk)] = o
+    _loc_of, _loc_used = {}, set()
     def loc(x):
-        s = re.sub(r"[^0-9A-Za-z_]", "_", str(x))
-        return ("_" + s) if (s and s[0].isdigit()) else (s or "_")
+        """本地名:保留 Turtle 允许的字母数字(含中文),其余换成下划线;不同的原名不共用一个本地名(DR-100)。
+        此前非 ASCII 字符一律换成下划线,「客户」「订单」都成了 :__,全部对象并成一个类。"""
+        rx = str(x)
+        if rx in _loc_of: return _loc_of[rx]
+        s = "".join(ch if _pn_char(ch) else "_" for ch in rx) or "_"
+        if s[0].isdigit(): s = "_" + s
+        if s in _loc_used or not s.strip("_"):            # 与另一个原名撞名,或整个名字都被替换掉:加原名摘要区分
+            s = (s.rstrip("_") or "n") + "_" + hashlib.sha1(rx.encode("utf-8")).hexdigest()[:6]
+            if s[0].isdigit(): s = "_" + s
+        _loc_used.add(s); _loc_of[rx] = s
+        return s
     def esc(x):                                           # 转义 + C0 控制字符→\uXXXX,兼容严格 TTL 解析器(Jena 等)
         s = str(x).replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
         return re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", lambda m: "\\u%04X" % ord(m.group(0)), s)
@@ -7217,9 +7238,19 @@ def _mark_sample_limited(ir, db):
         sides = {k: f"抽样 {trunc[t][0]} / 约 {trunc[t][1]} 行" for k, t in (("child", ct), ("parent", pt)) if t in trunc}
         if not sides:
             continue
-        r.setdefault("evidence", {})["sample_limited"] = sides
-        if "parent" in sides and (r["evidence"].get("orphan_tolerant") or r.get("status") != "verified"):
+        ev = r.setdefault("evidence", {})
+        ev["sample_limited"] = sides
+        if "parent" in sides and (ev.get("orphans") or ev.get("orphan_tolerant") or r.get("status") != "verified"):
             r["note"] = str(r.get("note") or "") + f"(父表为抽样截断:{sides['parent']},孤儿比例可能偏高,全量数据上可能成立)"
+        # DR-100 抽样库上算出的重叠率与父键唯一性不是完整证据。数据库声明的外键是模式层面的事实,不受抽样影响;
+        # 其余关系如实标为证据不完整,已判 verified 的转为候选,等全量数据核对。
+        if ev.get("source") != "declared_fk" and ev.get("declared") is not True:
+            ev["evidence_complete"] = False
+            if r.get("status") == "verified":
+                r["status"] = r["evidence_status"] = "candidate"
+                ev["verified_on_sample"] = True
+                r["note"] = str(r.get("note") or "") + "(在抽样数据上成立;" + "、".join(
+                    ("子表" if k == "child" else "父表") + v for k, v in sides.items()) + ",须在全量数据上核对后才能认定)"
         n += 1
     return n
 
@@ -8058,11 +8089,13 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                                     and dao_core.name_ok(key, tt, pcol, child_table=ts) and not _own_pk
                                     # 编码列对上 id 列(account_code → account_id)不按孤儿容忍:后缀不同说明取值体系不同
                                     and (pcol.lower() == "id" or key.lower().rsplit("_", 1)[-1] == pcol.lower().rsplit("_", 1)[-1])):
-                                # DR-070 孤儿记录容忍:子键就是父表标识键、父键唯一,重叠不足是因为子表引用了父表里没有的记录
-                                _orph = {"overlap": round(ov, 1), "orphan_rate": round(1 - ov / 100.0, 3)}
-                                trial_status = "verified"
-                                reason = (f"父表标识键·父键唯一·重叠 {ov:.0f}%,其余 {100 - ov:.0f}% 为孤儿记录(父表中找不到),"
-                                          "关联取数时这部分不会出现")
+                                # 子键就是父表标识键、父键唯一,重叠不足多半是子表引用了父表里没有的记录(孤儿记录)。
+                                # DR-070 曾据此直接判 verified;DR-100 改为保持候选:重叠率不到阈值时,数据本身分不清
+                                # 「引用了已删除的记录」和「根本不是引用」,孤儿比例写进证据,由人工判断。
+                                if ov < dao_core.MIN_OVERLAP:
+                                    _orph = {"overlap": round(ov, 1), "orphan_rate": round(1 - ov / 100.0, 3)}
+                                    reason = (f"父表标识键·父键唯一·重叠 {ov:.0f}%,其余 {100 - ov:.0f}% 为孤儿记录(父表中找不到);"
+                                              f"未达 {dao_core.MIN_OVERLAP:.0f}%,不由数据直接认定,交人工判断")
                         if _contract:
                             reason += f"·代码契约({_contract['file'].split(':')[-1].split('/')[-1]})"
                         if reverse:
@@ -8081,7 +8114,7 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                                  **({"condition": {"column": _cond["column"], "value": _cond["value"]},
                                      "condition_overlap": _cond["overlap"]} if _cond else {}),
                                  **({"value_pattern": _vp} if _vp else {}),
-                                 **({"orphan_tolerant": _orph} if _orph else {})}
+                                 **({"orphans": _orph} if _orph else {})}
                         if best is None or ov > best[0]: best = (ov, trial_status, reason, trial)
                         if best_single is None or ov > best_single[0]: best_single = (ov, trial_status, reason, trial)
                         if trial_status == "verified":
@@ -8879,7 +8912,7 @@ def build_inquire():
             yield push("codebook_links", True, f"同一子键指向多个父表 · {_ndp} 条改为候选(保留名称最吻合的父表)")
         _nsl = _mark_sample_limited(ir, db)
         if _nsl:
-            yield push("relation_triage", True, f"抽样截断 · {_nsl} 条关系的一端是只取了最新部分行的大表,重叠率与孤儿比例已注明可能受抽样影响")
+            yield push("relation_triage", True, f"抽样截断 · {_nsl} 条关系的一端是只取了最新部分行的大表,证据标为不完整;其中在抽样上成立的转为候选,等全量数据核对")
         # DR-073 候选分流:凭已记录的证据自动驳回明显不成立的、暂缓无数据的,其余按证据强弱排出审阅顺序
         _tri = relation_triage.triage(ir, keep=set(_review_snap))
         yield push("relation_triage", True,

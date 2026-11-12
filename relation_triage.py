@@ -136,8 +136,11 @@ def classify(rel, objs_by_name, o2t, catalogs=None):
         missing.append(f"重叠率({ov:.0f}%,其余为孤儿记录或抽样未覆盖)")
     if ev.get("direction") == "reverse":
         missing.append("方向(子列唯一而父列不唯一)")
-    if (ev.get("sample_limited") or {}).get("parent"):
+    _sl = ev.get("sample_limited") or {}
+    if _sl.get("parent"):
         missing.append("全量数据核对(父表在抽样中被截断)")
+    elif _sl:
+        missing.append("全量数据核对(子表在抽样中被截断)")
     score = (ov / 100.0) * (1.0 if name_ok else 0.6) * (1.0 if pu is not False else 0.7) \
         * (0.5 if ev.get("direction") == "reverse" else 1.0)
     return "review", "缺少:" + ("、".join(missing) if missing else "人工确认业务含义"), round(score, 3)

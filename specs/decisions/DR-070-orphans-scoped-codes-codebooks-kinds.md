@@ -1,5 +1,7 @@
 # DR-070 · 孤儿记录、类别作用域编码、码表关系、取值形态与对象类型
 
+> 2026-11-13:本记录中「孤儿记录容忍」一项已由 [DR-100](DR-100-orphans-samples-and-iris.md) 取代——重叠率未达阈值的关系保持候选,不再判 verified。其余各项仍有效。
+
 - **状态 / Status**: accepted
 - **日期 / Date**: 2026-10-01
 - **关联 / Refs**: [[DR-069-build-agent-real-model-gaps]]、[[DR-063-auto-cross-check-and-qa-cleaning]]、

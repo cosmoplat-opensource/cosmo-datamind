@@ -249,9 +249,9 @@
     },
     {
       "id": "AGENT-02",
-      "criterion": "孤儿记录多的标识键引用、类别作用域编码、数据判定的码表、字母数字编码的取值形态都能形成可验证关系并被验收认可;对象类型按中文名中心词判定;模型抽取超时先重试,降级产物绑表",
+      "criterion": "类别作用域编码、数据判定的码表、字母数字编码的取值形态都能形成可验证关系并被验收认可;孤儿记录多的标识键引用保持候选并记录孤儿比例(DR-100);对象类型按中文名中心词判定;模型抽取超时先重试,降级产物绑表",
       "tests": [
-        "tests/unit/test_build_agent_gaps2.py::test_orphan_heavy_identifier_reference_is_verified",
+        "tests/unit/test_build_agent_gaps2.py::test_orphan_heavy_identifier_reference_goes_to_review_with_its_orphan_rate",
         "tests/unit/test_build_agent_gaps2.py::test_category_scoped_code_resolved_by_composite_key",
         "tests/unit/test_build_agent_gaps2.py::test_codebook_rule_becomes_scoped_relation",
         "tests/unit/test_build_agent_gaps2.py::test_code_like_values_substitute_for_key_name",
@@ -586,6 +586,32 @@
       "criterion": "人审否决的关系模式能从构建产物和示例本体两种形状的图谱读出，并带否决理由",
       "tests": [
         "tests/unit/test_evidence_strength.py::test_rejected_patterns_are_read_from_built_graphs"
+      ]
+    },
+    {
+      "id": "EVID-STR-02",
+      "criterion": "重叠率未达固定阈值的关系不判 verified;父表标识键上的孤儿记录写入证据并进入待审,验收审计不为其放宽阈值",
+      "tests": [
+        "tests/unit/test_build_agent_gaps2.py::test_orphan_heavy_identifier_reference_goes_to_review_with_its_orphan_rate",
+        "tests/unit/test_server_adjudication.py::test_overlap_uses_entire_domain_not_first_8000_values"
+      ]
+    },
+    {
+      "id": "EVID-STR-03",
+      "criterion": "任一端为抽样截断表的关系标为证据不完整;在抽样上成立的转为候选并列入待审的全量数据核对;声明外键不受影响",
+      "tests": [
+        "tests/unit/test_build_agent_gaps2.py::test_sample_limited_relations_marked",
+        "tests/unit/test_build_agent_gaps2.py::test_verified_on_a_truncated_sample_becomes_a_candidate_awaiting_full_data",
+        "tests/unit/test_build_agent_gaps2.py::test_declared_foreign_key_stays_verified_on_a_sample"
+      ]
+    },
+    {
+      "id": "EXPORT-IRI-01",
+      "criterion": "导出 Turtle 时每个对象有自己的 IRI:中文名保留,只差标点的名字不共用 IRI,纯 ASCII 名字与此前一致",
+      "tests": [
+        "tests/unit/test_turtle_iris.py::test_chinese_named_objects_keep_distinct_class_iris",
+        "tests/unit/test_turtle_iris.py::test_names_that_differ_only_in_punctuation_do_not_share_an_iri",
+        "tests/unit/test_turtle_iris.py::test_ascii_names_keep_their_previous_iris"
       ]
     }
   ]

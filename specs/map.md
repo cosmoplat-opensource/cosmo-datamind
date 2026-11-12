@@ -34,6 +34,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 ## 索引
 
 ### 决定 / Decisions
+- [DR-100 · 孤儿记录与抽样证据不再直接认定为 verified；导出 IRI 保留中文名](decisions/DR-100-orphans-samples-and-iris.md)
 - [DR-099 · 证据强度补漏：单值子键、指标的独立参照、指标 id、否决模式回流](decisions/DR-099-evidence-strength.md)
 - [DR-098 · 问数校验补漏：连接写法、范围、不存在的列、降级与投票](decisions/DR-098-qa-gate-hardening.md)
 - [DR-097 · 人审结论在继续构建中保留，回放失败留痕](decisions/DR-097-human-review-survives-rebuild.md)
@@ -53,7 +54,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - [DR-076 · 演示库按业务过程仿真重建:108 表基础库与 200 表验证库 v3](decisions/DR-076-process-simulated-demo-databases.md)
 - [DR-075 · 200 表合成验证库生成器 v2:业务链派生、如实登记底库缺陷与生成后语义校验](decisions/DR-075-contract-200-generator-v2.md)
 - [DR-071 · 全量分轮与留出评估:键匹配排序、同名概念消歧与方向反证](decisions/DR-071-full-scale-holdout-evaluation.md)
-- [DR-070 · 孤儿记录、类别作用域编码、码表关系、取值形态与对象类型](decisions/DR-070-orphans-scoped-codes-codebooks-kinds.md)
+- [DR-070 · 孤儿记录、类别作用域编码、码表关系、取值形态与对象类型](decisions/DR-070-orphans-scoped-codes-codebooks-kinds.md)(孤儿记录容忍一项已由 DR-100 取代)
 - [DR-069 · 真实模型评估暴露的构建缺口:跨轮键匹配、多态引用与问数维度核对](decisions/DR-069-build-agent-real-model-gaps.md)
 - [DR-068 · 逻辑删除的「未删除」取值按实际数据记录](decisions/DR-068-observed-live-markers.md)
 - [DR-067 · 场景回归基准:两种数据形态端到端比对标准答案](decisions/DR-067-scenario-regression-benchmark.md)

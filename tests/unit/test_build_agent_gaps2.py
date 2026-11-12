@@ -14,6 +14,7 @@ import os
 
 import build_quality
 import content_quality
+import relation_triage
 import server
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -39,14 +40,15 @@ def _orphan_db(make_sqlite, child_key="sys_no"):
     })
 
 
-def test_orphan_heavy_identifier_reference_is_verified(make_sqlite, monkeypatch):
+def test_orphan_heavy_identifier_reference_goes_to_review_with_its_orphan_rate(make_sqlite, monkeypatch):
     db = _orphan_db(make_sqlite)
     ir = _adjudicate(db, [{"name": "rel", "table": "measure_rel", "kind": "ice"}, {"name": "sys", "table": "inst_system", "kind": "object"}],
                      [{"source": "rel", "target": "sys", "verb": "计量", "child_key": "sys_no", "parent_key": "sys_no"}],
                      {"inst_system": ["sys_no", "sys_name"], "measure_rel": ["id", "sys_no"]}, monkeypatch)
     rel = ir["relations"][0]
-    assert rel["status"] == "verified"
-    assert rel["evidence"]["orphan_tolerant"]["orphan_rate"] > 0.6
+    # DR-100 重叠率不到 60% 的引用不再由数据直接认定:孤儿比例写进证据,交人工判断
+    assert rel["status"] == "candidate"
+    assert rel["evidence"]["orphans"]["orphan_rate"] > 0.6 and "orphan_tolerant" not in rel["evidence"]
     assert "孤儿记录" in rel["note"]
     assert build_quality.audit_verified_evidence(ir)["valid"]
 
@@ -570,6 +572,42 @@ def test_sample_limited_relations_marked(make_sqlite):
     assert server._mark_sample_limited(ir, db) == 1
     rel = ir["relations"][0]
     assert "parent" in rel["evidence"]["sample_limited"] and "抽样截断" in rel["note"]
+    assert rel["evidence"]["evidence_complete"] is False
+
+
+def _sampled(make_sqlite, status, source="key_overlap"):
+    import sqlite3
+    db = make_sqlite({"big": ("id INTEGER, k TEXT", [(i, f"K{i}") for i in range(10)]),
+                      "small": ("id INTEGER, k TEXT", [(i, f"K{i}") for i in range(5)])})
+    con = sqlite3.connect(db)
+    con.execute("CREATE TABLE _dm_tables (table_name TEXT PRIMARY KEY, source_table TEXT, comment TEXT, rows_est INTEGER)")
+    con.executemany("INSERT INTO _dm_tables VALUES (?,?,?,?)", [("big", "big", "", 100000), ("small", "small", "", 5)])
+    con.commit(); con.close()
+    ir = {"objects": [{"name": "s", "table": "small"}, {"name": "b", "table": "big"}, {"name": "s2", "table": "small"}],
+          "relations": [{"source_concept": "s", "target_concept": "b", "status": status, "evidence_status": status,
+                         "note": "重叠 100%",
+                         "evidence": {"child_key": "k", "parent_key": "k", "overlap": 100.0, "parent_unique": True,
+                                      "name_ok": True, "evidence_complete": True, "source": source}},
+                        {"source_concept": "s", "target_concept": "s2", "status": "verified",
+                         "evidence": {"child_key": "k", "parent_key": "k", "overlap": 100.0, "evidence_complete": True}}]}
+    server._mark_sample_limited(ir, db)
+    return ir
+
+
+def test_verified_on_a_truncated_sample_becomes_a_candidate_awaiting_full_data(make_sqlite):
+    ir = _sampled(make_sqlite, "verified")
+    rel = ir["relations"][0]
+    assert rel["status"] == "candidate" and rel["evidence_status"] == "candidate"
+    assert rel["evidence"]["evidence_complete"] is False and rel["evidence"]["verified_on_sample"] is True
+    assert "全量" in rel["note"]
+    assert ir["relations"][1]["status"] == "verified"            # 两端都没有被截断的关系不受影响
+    relation_triage.triage(ir)
+    assert rel in ir["relations"] and "全量数据核对" in rel["review"]["reason"]
+
+
+def test_declared_foreign_key_stays_verified_on_a_sample(make_sqlite):
+    rel = _sampled(make_sqlite, "verified", source="declared_fk")["relations"][0]
+    assert rel["status"] == "verified" and "sample_limited" in rel["evidence"]
 
 
 def test_self_reference_proposed_and_verified(make_sqlite, monkeypatch):
