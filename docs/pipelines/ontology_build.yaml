@@ -174,6 +174,12 @@ nodes:
     desc: 选中复核技能时运行:多通道复核(强冲突降级、有效行四规则升级)与数据清洗规则(DR-062/063/065)
     sse_steps: [cross_check, data_clean, codebook_links, relation_triage]
 
+  - id: review_preservation
+    type: deterministic
+    code: "server.py:_keep_reviewed / relation_triage.py:triage(keep)"
+    desc: 继续构建时,人工做过决定的关系不参与分流;收尾核对它们仍在图谱里且未被复核、码表、去重改写,被移出的放回、被改写的恢复(DR-097)
+    sse_steps: [review_kept]
+
   - id: quality_health
     type: deterministic_check
     code: "health_check.py:check"

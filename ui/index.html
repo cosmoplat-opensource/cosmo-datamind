@@ -1002,7 +1002,7 @@ async function rvLoad(){RV_KEY=$('#rv_sel').value;if(!RV_KEY)return;
  const d=await J('/api/ont/review?graph='+encodeURIComponent(RV_KEY)).catch(e=>({error:''+e}));
  if(d.error){$('#rv_body').innerHTML=`<div class="muted">${esc(d.error)}</div>`;return;}
  const semanticEl=$('#rv_semantic');if(semanticEl){semanticEl.style.display=(d.semantic||[]).length?'block':'none';semanticEl.innerHTML=rvSemanticHTML(d.semantic||[]);}
- const c=d.counts;$('#rv_kpis').innerHTML=`<span class="tag warn">待审 ${c.pending}</span> <span class="tag ok">已通过 ${c.approved}</span> <span class="tag evt">已否决 ${c.rejected}</span> <span class="muted" style="margin-left:6px">共 ${c.total} 条${c.disputed?` · 语义存疑 ${c.disputed}`:''}</span>`;
+ const c=d.counts;$('#rv_kpis').innerHTML=`<span class="tag warn">待审 ${c.pending}</span> <span class="tag ok">已通过 ${c.approved}</span> <span class="tag evt">已否决 ${c.rejected}</span> <span class="muted" style="margin-left:6px">共 ${c.total} 条${c.disputed?` · 语义存疑 ${c.disputed}`:''}</span>`+((d.replay_failed||[]).length?` <span class="tag warn" title="${esc(d.replay_failed.map(f=>f.op+' '+f.target+':'+f.error).join('\n'))}">${d.replay_failed.length} 条人审记录未能应用</span>`:'');
 const SB={verified:'已验证',asserted:'人工断言',candidate:'待取证',inferred:'推理得出',gap:'待补',rejected:'已否决'};
  $('#rv_body').innerHTML='<table><tr><th>关系</th><th>动词</th><th>状态</th><th>取值重合</th><th>语义评审</th><th>人审</th><th>操作</th></tr>'+d.rows.map(r=>{
   const tgt=r.s+'->'+r.t;const stTag=r.status==='verified'?'ok':r.status==='asserted'?'warn':'evt';

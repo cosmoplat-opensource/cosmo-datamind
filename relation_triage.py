@@ -143,28 +143,42 @@ def classify(rel, objs_by_name, o2t, catalogs=None):
     return "review", "缺少:" + ("、".join(missing) if missing else "人工确认业务含义"), round(score, 3)
 
 
-def triage(ir):
-    """就地分流 IR 的候选关系;返回各类条数。"""
+def _same_relation(a, b):
+    ea, eb = (a.get("evidence") or {}), (b.get("evidence") or {})
+    return all(a.get(k) == b.get(k) for k in ("source_concept", "target_concept")) and \
+        all(ea.get(k) == eb.get(k) for k in ("child_key", "parent_key"))
+
+
+def triage(ir, keep=None):
+    """就地分流 IR 的候选关系;返回各类条数。
+
+    keep 是人工已做过决定的关系(源对象, 目标对象)集合(DR-097):这些关系原样留在图谱里,不参与分流。
+    人审结论记在编辑记录里,此处的 IR 上看不到;把这类关系移出图谱后,回放确认或否决时就找不到它。
+    驳回与暂缓列表按(两端对象, 键)去重:继续构建时模型再次提出同一条关系,只保留最近一次的判定。"""
+    keep = keep or ()
     rels_key = "relations" if "relations" in ir else "links"
     rels = ir.get(rels_key) or []
     objs_by_name = {o.get("name"): o for o in ir.get("objects") or [] if isinstance(o, dict)}
     o2t = {k: (v or {}).get("table") for k, v in objs_by_name.items()}
     catalogs = {key_links.table_core(t): t for t in o2t.values() if t and key_links._is_catalog(t)}
-    keep, rejected, deferred = [], list(ir.get("rejected_relations") or []), list(ir.get("deferred_relations") or [])
+    kept, rejected, deferred = [], list(ir.get("rejected_relations") or []), list(ir.get("deferred_relations") or [])
     stat = {"rejected": 0, "deferred": 0, "review": 0}
     for r in rels:
-        if not isinstance(r, dict) or r.get("status") in ("verified", "asserted"):
-            keep.append(r)
+        if not isinstance(r, dict) or r.get("status") in ("verified", "asserted") \
+                or (r.get("source_concept"), r.get("target_concept")) in keep:
+            kept.append(r)
             continue
         kind, why, score = classify(r, objs_by_name, o2t, catalogs)
         if kind == "review":
             r["review"] = {"priority": score, "reason": why}
-            keep.append(r)
+            kept.append(r)
         else:
             r["triage"] = {"decision": kind, "reason": why}
+            rejected[:] = [x for x in rejected if not (isinstance(x, dict) and _same_relation(x, r))]
+            deferred[:] = [x for x in deferred if not (isinstance(x, dict) and _same_relation(x, r))]
             (rejected if kind == "reject" else deferred).append(r)
         stat["rejected" if kind == "reject" else "deferred" if kind == "defer" else "review"] += 1
-    ir[rels_key] = keep
+    ir[rels_key] = kept
     ir["rejected_relations"], ir["deferred_relations"] = rejected, deferred
     return stat
 

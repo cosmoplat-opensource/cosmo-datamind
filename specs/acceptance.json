@@ -507,6 +507,26 @@
         "tests/unit/test_engine_credentials.py::test_endpoint_injected_at_boot_is_not_overridden_by_saved_config",
         "tests/unit/test_engine_credentials.py::test_clearing_the_endpoint_unregisters_the_driver"
       ]
+    },
+    {
+      "id": "REVIEW-KEEP-01",
+      "criterion": "继续构建后，人工确认或否决过的关系仍在图谱里，状态与取证键不被分流、码表、复核、去重改写；同一组键上更强的数据证据可以升级",
+      "tests": [
+        "tests/unit/test_review_survives_rebuild.py::test_confirmed_relation_survives_a_round_whose_triage_would_reject_it",
+        "tests/unit/test_review_survives_rebuild.py::test_rejected_relation_is_not_rewritten_as_verified_by_a_later_step",
+        "tests/unit/test_review_survives_rebuild.py::test_triage_leaves_human_decided_relations_in_the_graph",
+        "tests/unit/test_review_survives_rebuild.py::test_keep_reviewed_restores_a_removed_relation_and_reverts_a_rewritten_one",
+        "tests/unit/test_review_survives_rebuild.py::test_keep_reviewed_accepts_stronger_data_evidence_on_the_same_key"
+      ]
+    },
+    {
+      "id": "REVIEW-KEEP-02",
+      "criterion": "编辑记录里没能应用的操作逐条留痕并由评审接口返回；驳回列表不随继续构建累积重复项",
+      "tests": [
+        "tests/unit/test_review_survives_rebuild.py::test_failed_replay_is_reported_instead_of_vanishing",
+        "tests/unit/test_review_survives_rebuild.py::test_clean_replay_reports_nothing",
+        "tests/unit/test_review_survives_rebuild.py::test_triage_does_not_accumulate_the_same_rejected_relation_across_rounds"
+      ]
     }
   ]
 }

@@ -2696,7 +2696,8 @@ def ont_review():
                 for kind in ('concepts', 'themes', 'derived', 'caveats') for c in ir.get(kind) or []]
     counts['semantic_pending'] = sum(c.get('status') != 'rejected' and (c.get('status') not in ('asserted', 'certified')
                                       or c.get('binding_status') in ('stale', 'unresolved')) for c in semantic)
-    return jsonify({"graph": key, "counts": counts, "rows": rows, "objects": objs, 'semantic': semantic})
+    return jsonify({"graph": key, "counts": counts, "rows": rows, "objects": objs, 'semantic': semantic,
+                    "replay_failed": edit_replay_failures(key)})
 
 def _metric_graph_ir():
     """指标类端点的图谱选择:``graph`` 参数缺省为示例;非法键返回 None(调用方回 400)。"""
@@ -2982,17 +2983,80 @@ def apply_any(ir, op):
     import serve_claw as SC
     return SC.apply_op(ir, op)
 
+# 回放失败的编辑操作(DR-097):图谱键 → [{index, op, target, error}]。每次回放后整体替换。
+_EDIT_REPLAY_FAILED: dict[str, list] = {}
+
+
+def edit_replay_failures(key):
+    """最近一次回放该图谱编辑记录时没能应用的操作;全部应用成功时为空列表。"""
+    return list(_EDIT_REPLAY_FAILED.get(key) or [])
+
+
 def load_ir_edited(key):
-    """IR + 编辑日志回放(草案层,不动构建产物;与 serve_claw 同机制)"""
+    """IR + 编辑日志回放(草案层,不动构建产物;与 serve_claw 同机制)
+
+    某条操作应用不上(目标关系已不在图谱里、记录文件损坏)时,其余操作照常应用,
+    失败的那条记入 edit_replay_failures(key) 并计数(DR-097)。此前异常被直接吞掉:
+    人工确认过的结论从视图里消失,接口照常返回 200,没有任何线索。"""
     ir = load_ir(key)
     if not ir: return None
     ir = json.loads(json.dumps(ir))
+    failed = []
     try:
-        for op in _load_edits(key)["ops"]:
-            try: apply_any(ir, op)
-            except Exception: pass
-    except Exception: pass
+        ops = _load_edits(key)["ops"]
+    except Exception as e:                                      # noqa: BLE001
+        ops = []
+        failed.append({"index": -1, "op": "(编辑记录)", "target": "", "error": "编辑记录无法读取:" + type(e).__name__})
+    for i, op in enumerate(ops):
+        try: apply_any(ir, op)
+        except Exception as e:                                  # noqa: BLE001
+            _op = op if isinstance(op, dict) else {}
+            failed.append({"index": i, "op": str(_op.get("op") or "?")[:40], "target": str(_op.get("target") or "")[:120],
+                           "error": (str(e) or type(e).__name__)[:160]})
+    if failed and failed != _EDIT_REPLAY_FAILED.get(key):       # 同一批失败只记一次,不随每次读取重复计数
+        observability.count("ontology.edit_replay_failed", len(failed))
+        app.logger.warning("图谱 %s 有 %d 条编辑操作回放失败,首条:%s %s", key, len(failed), failed[0]["op"], failed[0]["error"])
+    if failed: _EDIT_REPLAY_FAILED[key] = failed
+    else: _EDIT_REPLAY_FAILED.pop(key, None)
     return ir
+
+
+def _reviewed_relations(key):
+    """人工在该图谱上做过决定的关系:{(源对象, 目标对象): approved|rejected}(读编辑记录回放后的视图)。"""
+    ir = load_ir_edited(key) if key else None
+    if not ir: return {}
+    rels, ks, kt = _rels(ir)
+    return {(l.get(ks), l.get(kt)): l["human_review"] for l in rels if isinstance(l, dict) and l.get("human_review")}
+
+
+_REL_RANK = {"asserted": 3, "verified": 2, "inferred": 1, "candidate": 0}
+
+
+def _keep_reviewed(ir, snapshot):
+    """继续构建收尾时的保底(DR-097):人工做过决定的关系必须仍在图谱里,且不被后续步骤改写。
+
+    snapshot 是并入本轮结果之后、复核/码表/去重/分流之前这些关系的副本。之后:
+    - 关系被移出图谱 → 放回,并从驳回/暂缓列表里取出;
+    - 取证的键被换成另一组,或状态被降级 → 恢复为副本;
+    - 同一组键上状态升级(本轮拿到更强的数据证据)→ 保留本轮结果。
+    返回 {"restored": 放回条数, "reverted": 恢复条数}。"""
+    rels, ks, kt = _rels(ir)
+    cur = {(l.get(ks), l.get(kt)): l for l in rels if isinstance(l, dict)}
+    stat = {"restored": 0, "reverted": 0}
+    def keys(l):
+        ev = l.get("evidence") or {}
+        return ev.get("child_key"), ev.get("parent_key")
+    for pair, snap in snapshot.items():
+        l = cur.get(pair)
+        if l is None:
+            rels.append(json.loads(json.dumps(snap))); stat["restored"] += 1
+            for side in ("rejected_relations", "deferred_relations"):
+                if isinstance(ir.get(side), list):
+                    ir[side] = [x for x in ir[side]
+                                if not (isinstance(x, dict) and (x.get(ks), x.get(kt)) == pair)]
+        elif keys(l) != keys(snap) or _REL_RANK.get(l.get("status"), 0) < _REL_RANK.get(snap.get("status"), 0):
+            l.clear(); l.update(json.loads(json.dumps(snap))); stat["reverted"] += 1
+    return stat
 
 @app.post("/api/ont/apply")
 def ont_apply():
@@ -8610,8 +8674,14 @@ def build_inquire():
             created_at=_t.strftime("%Y-%m-%dT%H:%M:%S%z"), references=references)
         # ④′ 迭代模式:并入既有本体。放在验收检查之前,好让质量评估针对合并后的完整本体,
         # 而不是只评估本轮增量——否则「本轮没提到的部分」会被算成缺失。
+        _review_snap = {}
         if base_ir is not None:
             ir, _mg = _merge_ir(base_ir, ir)
+            # DR-097 人工做过决定的关系:留一份并入后的副本,后续步骤不得把它们移出图谱或改写
+            _reviewed = _reviewed_relations(base_graph)
+            _review_snap = {(r.get("source_concept"), r.get("target_concept")): json.loads(json.dumps(r))
+                            for r in ir.get("relations") or []
+                            if isinstance(r, dict) and (r.get("source_concept"), r.get("target_concept")) in _reviewed}
             _mg["cn_disambiguated"] = _disambiguate_cn(ir)
             # 本轮选择作用于合并后的整张图，避免底本残留上一次标准的专用字段。
             build_references.apply_profile(ir, references)
@@ -8697,12 +8767,17 @@ def build_inquire():
         if _nsl:
             yield push("relation_triage", True, f"抽样截断 · {_nsl} 条关系的一端是只取了最新部分行的大表,重叠率与孤儿比例已注明可能受抽样影响")
         # DR-073 候选分流:凭已记录的证据自动驳回明显不成立的、暂缓无数据的,其余按证据强弱排出审阅顺序
-        _tri = relation_triage.triage(ir)
+        _tri = relation_triage.triage(ir, keep=set(_review_snap))
         yield push("relation_triage", True,
                    f"候选分流 · 自动驳回 {_tri['rejected']} 条 · 无数据暂缓 {_tri['deferred']} 条 · "
                    f"待人工审阅 {_tri['review']} 条(已按证据强弱排序)")
         # ⑤ 验收检查：图结构 + verified 证据契约 + 定义质量 + CQ 可达性，结果可重复。
         # quick_build 已先检查一次(无 CQ)；此处加入本轮 CQ 后重新计算。
+        if _review_snap:
+            _kr = _keep_reviewed(ir, _review_snap)
+            yield push("review_kept", True,
+                       f"人审结论保留 · 人工决定过的关系 {len(_review_snap)} 条留在图谱 · "
+                       f"放回 {_kr['restored']} 条 · 恢复被改写的 {_kr['reverted']} 条")
         quality = build_quality.evaluate(ir, cqs)
         ir["build_quality"] = quality
         ir["gaps"] = quality["gaps"]
