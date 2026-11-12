@@ -297,12 +297,85 @@ def test_design_candidate_library_graph_and_application_filter(live):
     expect(card).to_contain_text('设计测试')
     page.goto(site.url + '/#robotics-view?asset=' + ref['ontology_id'] + '&version=' + ref['version_id'] + '&view=relations')
     expect(page.locator('#rv_canvas canvas')).to_be_visible()
-    expect(page.get_by_role('link', name='基于此本体生成行为树', exact=True)).to_have_count(0)
-    expect(page.locator('#rv_host')).to_contain_text(re.compile('不支持|未满足'))
+    # DR-071: unassessed/incomplete candidates retain the application diagnosis entry.
+    expect(page.get_by_role('link', name='基于此本体生成行为树', exact=True)).to_be_visible()
+    expect(page.locator('#rv_host')).to_contain_text('尚未检查')
     page.goto(site.url + '/#robotics-task')
     expect(page.get_by_label('选择机器人本体', exact=True)).to_be_visible()
-    assert page.locator('#rta_asset option[value="' + ref['ontology_id'] + '"]').count() == 0
+    assert page.locator('#rta_asset option[value="' + ref['ontology_id'] + '"]').count() == 1
+    assert not [r for r in site.evidence['requests'] if '/api/application-checks' in r['url'] and r['method'] == 'POST']
     assert db_rows(site.root) == before and calls == []
+    done(site)
+
+
+def application_posts(site):
+    return [r for r in site.evidence['requests'] if r['method'] == 'POST'
+            and '/api/application-checks' in r['url']]
+
+
+@pytest.mark.parametrize('live', [{'prepare': prepare_candidate}], indirect=True)
+@pytest.mark.parametrize('entry', ['detail', 'graph'])
+def test_application_click_checks_once_and_reload_only_reads_history(live, entry):
+    """DR-071: real HTTP/SQLite/browser; no route fulfillment or synthetic application response."""
+    site, page, calls = live; ref = site.prepared['output_asset_ref']
+    suffix = '?asset=' + ref['ontology_id'] + '&version=' + ref['version_id']
+    page.goto(site.url + ('/#library' if entry == 'detail' else '/#robotics-view') + suffix)
+    name = re.compile('^(基于此本体)?生成行为树')
+    action = page.get_by_role('link', name=name)
+    expect(action).to_be_visible()
+    assert application_posts(site) == []
+    before, files = db_rows(site.root), blob_bytes(site.root)
+    with page.expect_response(lambda r: r.request.method == 'POST' and
+                             r.url == site.url + '/api/application-checks') as pending:
+        action.click()
+    assert pending.value.status == 201, pending.value.text()
+    sent = pending.value.request.post_data_json
+    assert sent['entrypoint'] == 'robotics.generate_behavior_tree' and sent['asset_refs'] == [ref]
+    assert 'application_id' not in sent and 'generation_policy' not in sent['context']
+    report = pending.value.json()['report']; cid = report['check_id']
+    assert report['preparation_status'] == 'blocked' and report['execution_status'] == 'not_evaluated'
+    panel = page.get_by_test_id('application-check')
+    expect(panel).to_have_attribute('data-check-id', cid)
+    expect(panel).to_contain_text('未满足')
+    assert page.get_by_label('选择应用', exact=True).count() == 0
+    assert panel.locator('[data-repair-availability="unavailable"] a[href]').count() == 0
+    assert not [r for r in site.evidence['requests'] if r['method'] == 'POST'
+                and ('/api/robotics/tasks' in r['url'] or '/repairs' in r['url'])]
+    after = db_rows(site.root)
+    assert all(after[t] == rows for t, rows in before.items() if not t.startswith('application_'))
+    assert blob_bytes(site.root) == files and len(application_posts(site)) == 1 and calls == []
+    # Refresh and a real owned-server restart must retain the exact report without POST/check/model replay.
+    page.reload(); expect(page.get_by_test_id('application-check')).to_have_attribute('data-check-id', cid)
+    site.restart(); page.reload()
+    expect(page.get_by_test_id('application-check')).to_have_attribute('data-check-id', cid)
+    assert db_rows(site.root) == after and len(application_posts(site)) == 1 and calls == []
+    page.goto(site.url + '/#library' + suffix)
+    expect(page.get_by_role('link', name=name)).to_be_visible()
+    assert len(application_posts(site)) == 1
+    done(site)
+
+
+def prepare_offline_candidate(root):
+    from tests.robotics_governance_support import actual_build
+    return actual_build(root)[1]
+
+
+@pytest.mark.parametrize('live', [{'prepare': prepare_offline_candidate, 'offline': True}], indirect=True)
+def test_application_without_task_never_claims_execution_ready(live):
+    site, page, calls = live; ref = site.prepared['output_asset_ref']
+    page.goto(site.url + '/#library?asset=' + ref['ontology_id'] + '&version=' + ref['version_id'])
+    with page.expect_response(lambda r: r.request.method == 'POST' and
+                             r.url == site.url + '/api/application-checks') as pending:
+        page.get_by_role('link', name=re.compile('^(基于此本体)?生成行为树')).click()
+    assert pending.value.status == 201
+    report = pending.value.json()['report']
+    assert report['preparation_status'] == 'available' and report['execution_status'] == 'not_evaluated'
+    assert report['task_ref'] is None and report['execution_readiness'] == 'not_verified'
+    panel = page.get_by_test_id('application-check')
+    expect(panel).to_contain_text('可准备任务')
+    expect(panel).not_to_contain_text('已可生成')
+    assert len(application_posts(site)) == 1 and calls == []
+    assert not [r for r in RunStore(site.root, read_only=True).list_runs() if r['operation'] == 'generate_behavior_tree']
     done(site)
 
 

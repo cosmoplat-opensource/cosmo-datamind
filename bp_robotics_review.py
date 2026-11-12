@@ -184,6 +184,7 @@ def init_app(app, runtime):
             raise invalid()
         service(ontology_id)  # DR-070: retain the original domain guard before resolving versions.
         from ontology_assets.robotics_design import DesignAssets
+        from application_contracts.adapters import service as application_checks
         assets = runtime.assets()
         if assets.get_version(ontology_id, version_id)['metadata'].get('design_contract'):
             if view != 'relations': raise invalid()
@@ -194,8 +195,11 @@ def init_app(app, runtime):
             for edge in graph['edges']: edge['label']=edge['predicate'].rsplit('#',1)[-1]
             return response({**graph, 'ontology_id':ontology_id, 'version_id':version_id, 'view':view,
                 'name':assets.get_asset(ontology_id)['name'], 'version_number':assets.version_number(ontology_id,version_id),
-                'application_compatibility':reader.compatibility(ontology_id,version_id)})
-        return response(service(ontology_id).visualize(ontology_id, version_id, view))
+                'application_compatibility':application_checks(runtime.root, read_only=True).summary(ontology_id,version_id)})
+        result = service(ontology_id).visualize(ontology_id, version_id, view)
+        from application_contracts.adapters import service as checks
+        result['application_compatibility'] = checks(runtime.root, read_only=True).summary(ontology_id, version_id)
+        return response(result)
 
     @bp.post(prefix + '/drafts')
     def save(ontology_id):
