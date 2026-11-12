@@ -6952,12 +6952,18 @@ def _rejected_patterns(limit=8):
     """
     pats, seen = [], set()
     for _k, ir in _iter_all_irs():
-        objs = {o.get("id"): o for o in (ir.get("objects") or [])}
-        for r in (ir.get("relations") or ir.get("links") or []):
+        # 端点键名与对象主键随 IR 形状不同(示例本体 source/target + id,构建产物 source_concept/target_concept + name)。
+        # 此前只认前一种,构建产物上的否决一条也读不到(DR-099)。
+        objs = {}
+        for o in (ir.get("objects") or []):
+            for k in (o.get("id"), o.get("name")):
+                if k: objs.setdefault(k, o)
+        rels, ks, kt = _rels(ir)
+        for r in rels:
             if r.get("human_review") != "rejected": continue
-            so, to = objs.get(r.get("source")), objs.get(r.get("target"))
-            s = (so or {}).get("table") or r.get("source") or ""
-            t = (to or {}).get("table") or r.get("target") or ""
+            so, to = objs.get(r.get(ks)), objs.get(r.get(kt))
+            s = (so or {}).get("table") or r.get(ks) or ""
+            t = (to or {}).get("table") or r.get(kt) or ""
             key = (s.lower(), t.lower(), (r.get("verb") or "").strip())
             if not (s and t) or key in seen: continue
             seen.add(key)

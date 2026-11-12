@@ -349,6 +349,9 @@ def classify(*, overlap, parent_unique, name_ok, child_distinct,
         return {"status": "drop", "reason": "重叠率无效,须重新取证"}
     if overlap >= theta and parent_unique is True:
         if name_ok is True:
+            if child_distinct == 1:
+                # DR-099 只有一个取值的列,重叠率只能是 0% 或 100%,说明不了它在引用父表;交人工判断
+                return {"status": "candidate", "reason": "子键只有一个取值,重叠率不足以说明引用关系,送审"}
             return {"status": "verified", "reason": f"重叠 {overlap:.0f}%·父键唯一·列名有据"}
         return {"status": "candidate", "name_mismatch": True,
                 "reason": f"重叠 {overlap:.0f}% 但列名词根不一致,疑为自增键值域巧合,送审"}

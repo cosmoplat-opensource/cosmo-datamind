@@ -117,7 +117,7 @@ def parse_sql(text, source, tab_cols=None):
             if not tcol:
                 tcol = _guess_time_col(table, tab_cols)
             cand = {
-                "id": f"mine.{table}.{col or 'rows'}.{agg}",
+                "id": f"mine.{table}.{col or 'rows'}.{agg}" + _filter_suffix(filters),
                 "name": name, "layer": "atomic", "table": table,
                 "measure": {"col": col, "agg": agg},
                 "filters": filters, "dimensions": dims,
@@ -132,6 +132,18 @@ def parse_sql(text, source, tab_cols=None):
                 cand["references"] = []           # 过滤条件不完整时,原 SQL 不能作为该契约的参照
             cands.append(cand)
     return cands, skipped
+
+
+def _filter_suffix(filters):
+    """过滤条件进入指标 id(DR-099)。此前 id 只含表、列、聚合:同一列上「已支付金额」与「已作废金额」
+    共用一个 id,写入指标层时后一个覆盖前一个。无过滤条件时 id 不变。"""
+    if not filters:
+        return ""
+    import hashlib
+    import json
+    canon = json.dumps(sorted(filters, key=lambda f: json.dumps(f, sort_keys=True, ensure_ascii=False, default=str)),
+                       sort_keys=True, ensure_ascii=False, default=str)
+    return ".f" + hashlib.sha1(canon.encode("utf-8")).hexdigest()[:8]
 
 
 def _guess_time_col(table, tab_cols):

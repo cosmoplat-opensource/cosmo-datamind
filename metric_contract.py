@@ -534,6 +534,9 @@ def _adjudicate_snapshot(db_path, c, ev, con, references, tol):
     if ev["rows"] == 1 and len(res["rows"][0]) == 1:
         ev["value"] = res["rows"][0][0]
     refs = [r for r in (references or []) if isinstance(r, dict)]
+    # DR-099 独立给出的参照值先比。契约自己的来源 SQL 也在参照里,它与契约出自同一条语句,
+    # 比对必然一致;此前它排在前面且一致即停,人工校准的参照值永远比不到。
+    refs.sort(key=lambda r: r.get("kind") != "value")
     best = None
     for ref in refs:
         rres = None
@@ -577,6 +580,9 @@ def _adjudicate_snapshot(db_path, c, ev, con, references, tol):
                     "tol": ref.get("tol", tol), "match": ok, "note": why})
         if ok:
             best = rec
+            break
+        if ref.get("kind") == "value":
+            best = rec                             # 与独立参照值不一致:不再用来源 SQL 的自比结果改判
             break
         if best is None or best.get("match") is None:
             best = rec
