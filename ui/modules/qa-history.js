@@ -2,7 +2,16 @@
 window.DQ_VIEW_MODE = 'new';
 
 function dqAllConv() {
-  try { return JSON.parse(localStorage.getItem('dq_convs') || '[]'); }
+  try {
+    const records=JSON.parse(localStorage.getItem(typeof appSourceStorageKey === 'function' ? appSourceStorageKey() : 'dq_convs') || '[]');
+    if(!Array.isArray(records))return [];
+    if(window.APP_DATA?.ready)return records.filter(c=>{
+      if(c.sourceId)return c.sourceId===appSourceId();
+      const keys=c.scope?.graphs||[];
+      return !keys.length || keys.every(k=>APP_DATA.context.graphs.includes(k));
+    });
+    return records;
+  }
   catch (_) { return []; }
 }
 
@@ -18,11 +27,12 @@ function dqSaveConv(conv) {
   conv = conv || DQ_CONV;
   if (!conv) return;
   if (!conv.scope) conv.scope = dqScopeSnapshot();
+  if(typeof appSourceId==='function')conv.sourceId=appSourceId();
   conv.ts = Date.now();
   let all = dqAllConv().filter(c => c.id !== conv.id);
   all.unshift(conv);
   all = all.slice(0, 30);
-  try { localStorage.setItem('dq_convs', JSON.stringify(all)); } catch (_) {}
+  try { localStorage.setItem(typeof appSourceStorageKey === 'function' ? appSourceStorageKey() : 'dq_convs', JSON.stringify(all)); } catch (_) {}
   dqRenderHist();
 }
 
@@ -40,7 +50,7 @@ function dqRenderHist() {
 
 function dqDelConv(id) {
   const all = dqAllConv().filter(c => c.id !== id);
-  try { localStorage.setItem('dq_convs', JSON.stringify(all)); } catch (_) {}
+  try { localStorage.setItem(typeof appSourceStorageKey === 'function' ? appSourceStorageKey() : 'dq_convs', JSON.stringify(all)); } catch (_) {}
   if (DQ_CONV && DQ_CONV.id === id) dqNew();
   else dqRenderHist();
 }

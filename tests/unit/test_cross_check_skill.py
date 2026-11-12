@@ -30,6 +30,23 @@ def _load(name):
 cc = _load("cross_check")
 
 
+def test_actual_declared_fk_is_not_refuted_by_name_guessing(make_sqlite):
+    import declared_fk
+    db = make_sqlite({'lookup': ('id INTEGER PRIMARY KEY, name TEXT', [(1, 'A'), (2, 'B')]),
+                      'record': ('id INTEGER, first_ref INTEGER REFERENCES lookup(id)', [(10, 1), (11, 2)])})
+    ir = {'objects': [{'name': 'record', 'table': 'record'}, {'name': 'lookup', 'table': 'lookup'}], 'relations': []}
+    with sqlite3.connect(db) as con:
+        declared_fk.apply(con, ir)
+    handle = cc.Db(db)
+    try:
+        rows, _ = cc.check(ir, handle)
+        cc.apply(ir, rows)
+        assert ir['relations'][0]['status'] == 'verified'
+        assert rows[0]['channels']['declared_fk']['state'] == 'support'
+    finally:
+        handle.con.close()
+
+
 def _fixture(make_sqlite):
     ent = [(i, f"E{i}", f"企业{i}", "2024-01-01 00:00:00") for i in range(1, 31)]
     devices = [(f"D{i}", "EMTR") for i in range(40)] + [(f"F{i}", "FMT") for i in range(12)]

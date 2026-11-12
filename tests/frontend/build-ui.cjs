@@ -48,6 +48,7 @@ function fixture() {
   const ctx = vm.createContext(context);
   const streamPath = path.join(root, 'ui/modules/build-stream.js');
   if (fs.existsSync(streamPath)) vm.runInContext(fs.readFileSync(streamPath, 'utf8'), ctx);
+  vm.runInContext(ui.slice(ui.indexOf('function rvSemanticHTML('),ui.indexOf('function rvWho()')),ctx);
   vm.runInContext(ui.slice(ui.indexOf("const BC={"), ui.indexOf('// ══════ 数据连接 ══════')), ctx);
   state.renderResult = ctx.bcRenderResult;
   state.loadBuilt = ctx.bcBuilt;
@@ -69,6 +70,22 @@ function stream(text) {
 function deferred() { let resolve; const promise = new Promise(r => { resolve = r; }); return {promise, resolve}; }
 
 const cases = {
+  async semantic_review_escapes_evidence_and_separates_formula_check() {
+    const f=fixture(); const html=f.ctx.rvSemanticHTML([{name:'<script>x</script>',kind:'derived',formula:'x * 2',
+      target:'semantic:derived:abc',status:'asserted',review_by:'Reviewer',evidence:{formula_verified:false}}]);
+    assert.ok(!html.includes('<script>'));
+    assert.match(html,/人工确认/); assert.match(html,/公式未执行核验/); assert.match(html,/Reviewer/);
+    assert.match(html,/confirm_semantic/); assert.match(html,/&lt;script&gt;/);
+  },
+  async workload_stays_separate_from_acceptance() {
+    const f=fixture(); let body;
+    f.$('#bc_workload').value='产量是多少\n\n能耗趋势';
+    f.$('#bc_cq').value='哪些工单关联订单';
+    f.ctx.fetch=async (_url,opts)=>{body=JSON.parse(opts.body); return stream('data: {"type":"done","graph_key":"built_test"}\n\n');};
+    await f.ctx.bcInquire();
+    assert.deepEqual(body.workload,['产量是多少','能耗趋势']);
+    assert.deepEqual(body.cqs,['哪些工单关联订单']);
+  },
   async upload_failure_is_not_success() {
     const f=fixture(); f.ctx.FormData=class {append(){}};
     f.$('#bc_files').files=[{name:'orders.csv'}]; f.ctx.bcSources=()=>{};

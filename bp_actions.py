@@ -8,6 +8,7 @@ invoke、GET log、POST approve。动作仍是可审计的决策记录，不声�
 import math
 import time
 import uuid
+from typing import Callable
 
 from flask import Blueprint, jsonify, request
 
@@ -22,19 +23,22 @@ from srv_context import _WRITE_LOCK, _atomic_json
 
 bp_actions = Blueprint("actions", __name__)
 _table_list_fn = None
+_scope_fields: Callable[[], dict] = lambda: {}
+_scope_matches: Callable[[dict], bool] = lambda record: True
 
 
-def configure_actions(table_list_fn):
+def configure_actions(table_list_fn, scope_fields=lambda: {}, scope_matches=lambda record: True):
     """注入主应用的数据目录读取函数，避免 blueprint 反向导入 ``server``。"""
-    global _table_list_fn
+    global _table_list_fn, _scope_fields, _scope_matches
     _table_list_fn = table_list_fn
+    _scope_fields, _scope_matches = scope_fields, scope_matches
 
 
 @bp_actions.get("/api/actions")
 def actions_list():
-    log = load_action_log()
+    log = [item for item in load_action_log() if _scope_matches(item)]
     return jsonify({
-        "types": load_action_types(),
+        "types": [item for item in load_action_types() if not item.get('source_path_fp') or _scope_matches(item)],
         "pending": sum(1 for item in log if item["status"] == "pending"),
         "executed": sum(1 for item in log if item["status"] == "executed"),
         "denied": sum(1 for item in log if item["status"] == "denied"),
@@ -86,6 +90,7 @@ def action_type_create():
         "enabled": True,
         "created_by": creator,
         "created_ts": time.strftime("%Y-%m-%d %H:%M"),
+        **_scope_fields(),
     }
     with _WRITE_LOCK:
         action_types = load_action_types()
@@ -103,6 +108,8 @@ def action_type_update():
         action_type = next((item for item in action_types if item["id"] == type_id), None)
         if not action_type:
             return jsonify({"error": "动作类型不存在"}), 404
+        if action_type.get('source_path_fp') and not _scope_matches(action_type):
+            return jsonify({"error": "动作类型属于另一数据库，请切换来源后编辑"}), 409
         if "enabled" in body:
             action_type["enabled"] = bool(body["enabled"])
         if "desc" in body:
@@ -141,6 +148,8 @@ def action_type_delete():
         action_type = next((item for item in action_types if item["id"] == type_id), None)
         if not action_type:
             return jsonify({"error": "动作类型不存在"}), 404
+        if action_type.get('source_path_fp') and not _scope_matches(action_type):
+            return jsonify({"error": "动作类型属于另一数据库，请切换来源后删除"}), 409
         if action_type.get("builtin"):
             return jsonify({"error": "内置动作不可删除(可停用)"}), 400
         _atomic_json(ACTION_TYPES_F, [item for item in action_types if item["id"] != type_id])
@@ -162,6 +171,8 @@ def action_invoke():
     )
     if not action_type:
         return jsonify({"error": "动作类型不存在"}), 404
+    if action_type.get('source_path_fp') and not _scope_matches(action_type):
+        return jsonify({'error': '动作类型属于另一数据库，请先切换数据源'}), 409
     if action_type.get("enabled") is False:
         return jsonify({"error": "该动作类型已停用,不可发起"}), 400
     operator = str(body.get("operator") or "").strip()[:40]
@@ -198,6 +209,7 @@ def action_invoke():
         "effects": [],
         "approver": "",
         "approve_comment": "",
+        **_scope_fields(),
     }
     if item["status"] == "executed":
         item["effects"] = _recorded_effects(action_type)
@@ -225,7 +237,7 @@ def _recorded_effects(action_type):
 
 @bp_actions.get("/api/action/log")
 def action_log():
-    return jsonify({"items": load_action_log()[:200]})
+    return jsonify({"items": [item for item in load_action_log() if _scope_matches(item)][:200]})
 
 
 @bp_actions.post("/api/action/approve")
@@ -246,6 +258,8 @@ def action_approve():
         item = next((entry for entry in log if entry["id"] == record_id), None)
         if not item:
             return jsonify({"error": "记录不存在"}), 404
+        if not _scope_matches(item):
+            return jsonify({'error': '动作记录属于另一数据库，请先切换数据源'}), 409
         if item["status"] != "pending":
             return jsonify({"error": "该动作不在待审批状态"}), 400
         action_type = next(

@@ -14,7 +14,6 @@ import socket
 import subprocess
 import sys
 import time
-from urllib.error import URLError
 from urllib.request import urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -154,7 +153,7 @@ def start(env):
                 if json.load(response).get("ok") is True and owned_pid():
                     print(json.dumps(get_status(), ensure_ascii=False, indent=2))
                     return
-        except (OSError, ValueError, URLError):
+        except (OSError, ValueError):
             pass
         time.sleep(0.25)
     raise RuntimeError(f"Service did not become ready; inspect {STATE / 'error.log'}")
@@ -172,10 +171,16 @@ def main():
             status = get_status()
             print(json.dumps(status, ensure_ascii=False, indent=2))
             return int(not status["running"])
+        env = None
+        if args.action in {"start", "restart"}:
+            # Reject basic configuration errors before interrupting a live service.
+            env = service_env(args.env_file, args.host, args.port)
+            if not Path(env["DATAMIND_DB"]).is_file():
+                raise ValueError("Configured SQLite database does not exist")
         if args.action in {"stop", "restart"}:
             stop()
         if args.action in {"start", "restart"}:
-            start(service_env(args.env_file, args.host, args.port))
+            start(env)
     except (OSError, ValueError, RuntimeError, subprocess.CalledProcessError) as exc:
         print(str(exc), file=sys.stderr)
         return 1

@@ -16,3 +16,15 @@ def test_scenario_matches_golden_answers(results, scenario):
     assert len(mine) >= 10, f"{scenario} 的检查项缺失(构建可能中途失败):{[c.id for c in mine]}"
     failed = [f"{c.id}:{c.detail}" for c in mine if not c.ok]
     assert not failed, "\n".join(failed)
+
+
+def test_semantic_catalog_build_and_answer_match_golden_answers(results):
+    mine = [c for c in results if c.scenario == '名称取值与业务概念']
+    assert len(mine) == 14
+    assert all(c.ok for c in mine), '\n'.join(f'{c.id}: {c.detail}' for c in mine if not c.ok)
+
+
+def test_multi_database_switch_keeps_catalog_and_answer_consistent(results):
+    mine=[c for c in results if c.scenario=='多数据库切换']
+    assert len(mine)==6
+    assert all(c.ok for c in mine), '\n'.join(f'{c.id}: {c.detail}' for c in mine if not c.ok)

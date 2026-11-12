@@ -42,3 +42,32 @@ def test_live_gunicorn_requires_exact_pidfile_identity(tmp_path, monkeypatch):
     monkeypatch.setattr(service.subprocess, "run", lambda *a, **k: SimpleNamespace(
         returncode=0, stdout=f"python -m gunicorn --pid {path} wsgi:application"))
     assert service.owned_pid() == 42
+
+
+@pytest.mark.parametrize("invalid", ["malformed_env", "missing_database"])
+def test_invalid_restart_configuration_preserves_running_service(tmp_path, monkeypatch, invalid):
+    """A rejected restart must leave the currently running service untouched."""
+    path = tmp_path / ".env"
+    if invalid == "malformed_env":
+        path.write_text('DATAMIND_DB="unclosed\n')
+    else:
+        path.write_text(f'DATAMIND_DB="{tmp_path / "missing.db"}"\n')
+    monkeypatch.setattr(service.sys, "argv", ["service.py", "restart", "--env-file", str(path)])
+    calls = []
+    monkeypatch.setattr(service, "stop", lambda: calls.append("stop"))
+    monkeypatch.setattr(service, "start", lambda env: calls.append("start"))
+    assert service.main() == 1
+    assert calls == []
+
+
+def test_valid_restart_keeps_configured_target_and_stop_start_order(tmp_path, monkeypatch):
+    db = tmp_path / "source.db"
+    db.write_bytes(b"")
+    path = tmp_path / ".env"
+    path.write_text(f'DATAMIND_DB="{db}"\nDATAMIND_PORT=18092\n')
+    monkeypatch.setattr(service.sys, "argv", ["service.py", "restart", "--env-file", str(path)])
+    calls = []
+    monkeypatch.setattr(service, "stop", lambda: calls.append("stop"))
+    monkeypatch.setattr(service, "start", lambda env: calls.append(("start", env["DATAMIND_DB"], env["DATAMIND_PORT"])))
+    assert service.main() == 0
+    assert calls == ["stop", ("start", str(db), "18092")]

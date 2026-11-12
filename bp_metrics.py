@@ -18,10 +18,10 @@ bp_metrics = Blueprint("metrics", __name__)
 _deps: dict = {}
 
 
-def configure_metrics(load_graph, open_writable, db_for_source, write_json, write_lock):
+def configure_metrics(load_graph, open_writable, db_for_source, write_json, write_lock, default_graph=lambda: 'demo'):
     """注入主应用的图谱读写与数据源解析,避免 blueprint 反向导入 ``server``。"""
     _deps.update(load_graph=load_graph, open_writable=open_writable, db_for_source=db_for_source,
-                 write_json=write_json, write_lock=write_lock)
+                 write_json=write_json, write_lock=write_lock, default_graph=default_graph)
 
 
 def _find(ir, name):
@@ -34,7 +34,7 @@ def _find(ir, name):
 
 @bp_metrics.get("/api/metric/contract")
 def metric_contract_view():
-    key = (request.args.get("graph") or "demo").strip()
+    key = (request.args.get("graph") or _deps['default_graph']()).strip()
     name = (request.args.get("name") or "").strip()
     ir = _deps["load_graph"](key)
     if ir is None: return jsonify({"error": "非法图谱键"}), 400
@@ -52,7 +52,7 @@ def metric_contract_view():
 
 @bp_metrics.get("/api/metric/dimensions")
 def metric_dimensions():
-    key = (request.args.get("graph") or "demo").strip()
+    key = (request.args.get("graph") or _deps['default_graph']()).strip()
     name = (request.args.get("name") or "").strip()
     ir = _deps["load_graph"](key)
     if ir is None: return jsonify({"error": "非法图谱键"}), 400

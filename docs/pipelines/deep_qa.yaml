@@ -46,7 +46,7 @@ nodes:
   - id: build_context
     type: deterministic
     code: "server.py:build_context(question, focus_tables, trace, graph_keys)"
-    desc: 按问句从本体挑相关对象/关系/指标,拼 schema 上下文;附数据时间窗(M4-a)
+    desc: 按问句和概念别名挑相关对象/关系/指标,拼 schema 上下文;附数据时间窗、字段文档、名称取值目录与单位歧义；已否决/失效绑定不进入提示，显式选表限制同样适用
     output: ctx
 
   - id: load_history
@@ -63,8 +63,8 @@ nodes:
 
   - id: llm_plan
     type: llm
-    code: "server.py:agent_sql_plan / _bounded(..., 90)"
-    desc: 大模型产出分析计划(标题 + SQL),硬性 90 秒预算
+    code: "server.py:agent_sql_plan / _bounded"
+    desc: 大模型可先只读探查再产出分析计划(标题 + SQL),同步150秒/流式155秒预算；线程继承来源库与作答形式
     engine: agent_runtime 多运行时(claude-code / hermes / OpenAI 兼容)
     on_timeout: fallback_plan
 

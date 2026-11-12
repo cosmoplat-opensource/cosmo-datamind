@@ -78,8 +78,10 @@ function dqRestoreScope(conv) {
 
 function dqHeroScoped() {
   const graphs = (DQ_DS && DQ_DS.graphs) || [];
+  if (!graphs.length && window.APP_DATA && APP_DATA.ready && appSourceId() !== 'demo') {
+    return `<div class="dq-hero"><h1>深度问数</h1><p>当前数据库「${esc(APP_DATA.context.source.name)}」尚未构建可查询本体。目录、SQL 工作台和可视化可直接使用；自然语言问数需先完成本体构建。</p><button class="ghost" onclick="goPage('build');location.hash='build'">基于当前数据库构建</button></div>`;
+  }
   const names = dqScopeNames(DQ_DS);
-  const selected = graphs.map(dqGraphMeta).filter(Boolean);
   const title = names.length === 1 ? `基于「${esc(names[0])}」深度问数` : '深度问数';
   const source = names.length ? names.map(esc).join('、') : '示例本体图谱';
   const usable = dqScopeAvailable(DQ_DS);

@@ -2,6 +2,8 @@
 """深度问数同步/流式端点的本体作用域一致性（DR-033）。"""
 import server
 import usage_stat
+import os
+import sqlite3
 
 
 def test_nonstream_chat_uses_selected_graph_and_tables(monkeypatch):
@@ -86,3 +88,46 @@ def test_cache_policy_parses_legacy_and_explicit_values():
     assert server._qa_bypass_cache({"cache_policy": "bypass"}) is True
     assert server._qa_bypass_cache({"nocache": "false"}) is False
     assert server._qa_bypass_cache({"nocache": "1"}) is True
+
+
+def test_answer_cache_tracks_source_updates_and_wal(make_sqlite):
+    db = make_sqlite({'facts': ('value INTEGER', [(1,)])})
+    token = server._QA_DB.set(db)
+    try:
+        with sqlite3.connect(db) as con:
+            con.execute('PRAGMA journal_mode=WAL')
+            before = server._qa_key('数值是多少', [])
+            con.execute('UPDATE facts SET value=2')
+            con.commit()
+            assert server._qa_key('数值是多少', []) != before
+        other = make_sqlite({'facts': ('value INTEGER', [(3,)])}, fname='other.db')
+        previous = server._qa_key('数值是多少', [])
+        second = server._QA_DB.set(other)
+        try:
+            assert server._qa_key('数值是多少', []) != previous
+        finally:
+            server._QA_DB.reset(second)
+    finally:
+        server._QA_DB.reset(token)
+
+
+def test_answer_cache_tracks_graph_and_subsecond_edits(monkeypatch, tmp_path):
+    graph = tmp_path / 'built_test.json'
+    edits = tmp_path / 'built_test.edits.json'
+    graph.write_text('{}')
+    edits.write_text('[]')
+    monkeypatch.setattr(server, 'WORK', str(tmp_path))
+    monkeypatch.setattr(server, '_edits_path', lambda key: str(edits))
+    before = server._qa_key('数量', [], graphs=['built_test'])
+    graph.write_text('{"objects": []}')
+    after_graph = server._qa_key('数量', [], graphs=['built_test'])
+    assert after_graph != before
+    stat = edits.stat()
+    os.utime(edits, ns=(stat.st_atime_ns, stat.st_mtime_ns + 1))
+    assert server._qa_key('数量', [], graphs=['built_test']) != after_graph
+
+
+def test_answer_cache_distinguishes_summary_and_cleaning_policy():
+    before = server._qa_key('它有多少', [{'q': '客户', 'summary': '客户 A'}])
+    assert server._qa_key('它有多少', [{'q': '客户', 'summary': '客户 B'}]) != before
+    assert server._qa_key('数量', [], clean=False) != server._qa_key('数量', [], clean=True)

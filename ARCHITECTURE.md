@@ -9,9 +9,9 @@
 │  前端 (ui/index.html + ui/modules/styles, 原生 JS/CSS)        │
 │   27 页 × hash 路由 · G6 图谱 · ECharts · 统一助手 $/esc/J    │
 ├─────────────────────────────────────────────────────────────┤
-│  HTTP 层 (Flask, 单端口 8092) · 共 137 路由                    │
-│   server.py 115 + bp_engine 5 + bp_actions 7 + bp_metrics 4 + bp_semantic 2 │
-│   生产入口:wsgi.py → Gunicorn(gthread) → Nginx 反向代理       │
+│  HTTP 层 (Flask, 单端口 8092) · 共 138 路由                    │
+│   server.py 120 + bp_engine 5 + bp_actions 7 + bp_metrics 4 + bp_semantic 2 │
+│   生产入口:wsgi.py → Gunicorn(gthread);可另配 Nginx 反向代理 │
 │   app 级 before_request CSRF 守卫(对 blueprint 同样生效)      │
 │   共享层: srv_context(路径/只读连接/原子写/写锁)              │
 │           srv_engine(运行时缓存/引擎配置/引擎回复语义)         │
@@ -60,6 +60,7 @@
 | `store.py` | JSON 持久化抽象:原子写/坏档恢复/schema 校验/迁移/每路径锁 | DR-044 |
 | `ir_relational.py` | IR→关系型语义层投影(只读派生物;OWL 之外的消费出口,证据随行、状态不提升) | DR-049 |
 | `srv_context.py` | 共享上下文:路径、`ro_connect`、`sql_is_readonly`、`_atomic_json`、写锁、`confine` 路径限定 | DR-043 |
+| `database_scope.py` | 已登记 SQLite 来源解析、本体来源路径匹配；请求级数据库上下文由 server.py 管理 | DR-095 |
 | `ir_shape.py` | IR 形状兼容规则集中定义:`rels`(links/relations 双形状)、`obj_names`(对象可指代名超集)与 `strip_cn_suffix/name_variants`(中文表名后缀剥离,指代延续/根因诊断/画像检索共用) | DR-035/055 |
 | `key_links.py` | 按键名补提关系候选:跨轮连接已有对象、关联表、多态引用;只提候选,由数据裁决决定 | DR-069 |
 | `build_prep.py` | 构建体检:数据源概况、建模规律识别(无外键/软删除/多态引用/审计列/分表)、资料覆盖与漂移、能源/碳排放参照建议、枢纽优先的分轮计划;只读不调模型 | DR-060 |
@@ -104,6 +105,7 @@
 | 本地标准资产 | `standard_assets.status/prompt_context/trace`；只读清单文件，不跟随 import 联网 | `standard_assets.py`, `ontology/standards/` |
 | kind→上层类别 | `KIND_DEFAULTS`(含 ice=InformationContentEntity) | `ontology_grounding.py` |
 | 数据源连接 | `build_connect` 按 path/dsn 幂等登记,去重复堆叠 | server.py |
+| 数据库切换 | `X-DataMind-Source` 解析注册来源；本体按物理来源匹配；统计缓存和来源相关记录分开；前端 `database-scope.js` 管理选择、请求与草稿 | DR-095 |
 | 图谱选择器 | `graphOptions(gs,label)` 分组 optgroup(精选/场景/构建) | ui,图谱/工作台/元数据覆盖三处共用 |
 | 指标状态呈现 | `MST{状态→[tag 类,中文]}` + `mstTag()`,指标中心/计算规则卡/即时问数共用;人工操作只有业务确认/停用/撤回 | ui,DR-054 |
 | 前端 kind 规范 | `KIND{c,n}` 颜色+中文,全站图例/配色/标签引用 | ui,`KCOL/KNM` |
@@ -125,7 +127,7 @@
 
 | 层 | 内容 | 是否需起服务 |
 |---|---|---|
-| 单元层 `tests/` | 确定性模块边界/纯函数 + MCP 协议合规 + 缓存失效面 + 文档计数自检 | 否(离线秒级) |
+| 单元层 `tests/` | 确定性模块边界/纯函数 + MCP 协议合规 + 缓存失效面 + 文档计数自检 | 否(离线) |
 | 集成层 `test_all.py` | 源码定义 565 个检查点,覆盖路由正常路径、边界与安全约束 | 是 |
 | UI 层 | `test_ui.py`(全页走查)·`test_ui_ops.py`(浏览器逐步实操) | 是(需 playwright) |
 
@@ -186,4 +188,5 @@ LLM 与 quick_build 共用 `sqlite_evidence.relation_signals`，避免 LIMIT 前
 图谱范围与显式选表在 SQL 执行前用 SQLite authorizer 检查；离线模板不支持的问题如实报告未覆盖。
 构建 SSE 必须有 done 才算完成，前端异步选择按当前请求判定，失败可重试。
 `python scripts/check.py --suite all` 在临时数据目录运行完整检查，清理服务，保存日志与退出码。
-本轮具体结果与后续风险见 [审计报告](docs/audits/2026-09-07.md)。
+最近一次代码清理、实际部署与 UI 检查见 [2026-10-12 复核报告](docs/audits/2026-10-12-code-cleanup.md)。
+此前检查见 [2026-09-07 审计报告](docs/audits/2026-09-07.md)。

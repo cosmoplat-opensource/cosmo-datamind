@@ -8,7 +8,7 @@
 name: ontology_semi_automatic_build
 description: 范围/CQ → 行业/标准参照 → 来源整理 → 技能方法 → LLM 提议 → 语义复核 → 数据验证 → 参照注释 → 指标反解与核验 → 验收 → 人工复核
 entrypoint: server.py:build_inquire
-version: "3.0"
+version: "3.1"
 
 principles:
   - 验收结果采用 pass/review/fail 三态
@@ -20,6 +20,7 @@ principles:
   - 行业/标准可不选;参照缺口待审、强约束缺口阻断,均不得为通过模板而编造证据
   - 标准机器可读资产固定版本本地加载;不跟随 RDF/XSD import 联网,缺失时不得伪装就绪
   - 指标与关系同等:verified 只来自「可编译 ∧ 只读执行成功 ∧ 与参照一致」,certified 只能由人授予
+  - 业务问题提议的概念/主题仅验证取数依据，业务含义和派生公式不自动认证；失效绑定退出问数上下文
 
 nodes:
   - id: intake_scope_and_cq
@@ -99,6 +100,11 @@ nodes:
     code: "sqlite_evidence.py:relation_signals"
     desc: 单列和复合元组完整集合的交集/去重/总行数在SQL内聚合,不以截断前缀证明verified
 
+  - id: declared_fk_evidence
+    type: deterministic_check
+    code: "declared_fk.py:collect / apply"
+    desc: 两个构建分支共用声明外键分组、完整约束与非空引用核验；各角色键独立保留证据，含孤儿或零引用不升级
+
   - id: adjudication_core
     type: deterministic_check
     code: "dao_core.py:overlap_pct / name_ok / should_reverse / classify"
@@ -143,6 +149,18 @@ nodes:
     code: "metric_pipeline.py:run / metric_mining.py:collect"
     desc: 指标反解:上传 SQL / 指标定义表 / 沉淀 SQL / 参考基准 → 带来源的候选;含 JOIN 不猜计算规则
     sse_steps: [metric_mining]
+
+  - id: data_catalog
+    type: deterministic_check
+    code: "data_catalog.py:doc_dictionary / value_catalog / enrich"
+    desc: 只读字段文档和名称—取值目录，保存全量统计/目录截断/各单位及实体覆盖；不声明业务认证
+    sse_steps: [data_catalog]
+
+  - id: workload_concepts
+    type: optional_llm_proposal
+    code: "server.py:_workload_concepts / workload_concepts.py:build / refresh"
+    desc: 可选业务问题分批处理最多1000条；同文CQ排除，SQL只读核验，候选定义/公式进入人审；超时保留失败状态
+    sse_steps: [workload_concepts]
 
   - id: metric_adjudication
     type: deterministic_check
@@ -213,6 +231,8 @@ edges:
   - [proposal, data_adjudication]
   - [data_adjudication, adjudication_core]
   - [data_adjudication, complete_sql_evidence]
+  - [data_adjudication, declared_fk_evidence]
+  - [quick_build_fallback, declared_fk_evidence]
   - [quick_build_fallback, complete_sql_evidence]
   - [complete_sql_evidence, adjudication_core]
   - [proposal, quick_build_fallback]
@@ -222,7 +242,9 @@ edges:
   - [action_projection, iteration_merge]
   - [iteration_merge, upper_relation_grounding]
   - [upper_relation_grounding, reference_annotation]
-  - [reference_annotation, metric_mining]
+  - [reference_annotation, data_catalog]
+  - [data_catalog, workload_concepts]
+  - [workload_concepts, metric_mining]
   - [metric_mining, metric_adjudication]
   - [metric_adjudication, cross_check_and_cleaning]
   - [cross_check_and_cleaning, quality_health]

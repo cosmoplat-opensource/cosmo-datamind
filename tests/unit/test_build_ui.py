@@ -10,6 +10,8 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 @pytest.mark.parametrize("case", [
+    "workload_stays_separate_from_acceptance",
+    "semantic_review_escapes_evidence_and_separates_formula_check",
     "truncated_stream", "http_error", "terminal_error", "success_and_duplicate_submit",
     "crlf_stream", "result_html_escaping", "iteration_race", "clear_iteration_race",
     "busy_iteration_guard", "corrupt_history", "late_reference_catalog",

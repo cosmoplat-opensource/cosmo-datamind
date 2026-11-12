@@ -112,10 +112,12 @@
     },
     {
       "id": "DEP-01",
-      "criterion": "部署配置不执行shell表达式，PID复用不得触发终止无关程序",
+      "criterion": "部署配置不执行shell表达式，PID复用不得触发终止无关程序；错误重启配置不停止现有服务，正常重启保留目标与执行顺序",
       "tests": [
         "tests/unit/test_service_manager.py::test_environment_is_literal_and_error_does_not_disclose_value",
-        "tests/unit/test_service_manager.py::test_stale_pid_never_authorizes_signalling_unrelated_process"
+        "tests/unit/test_service_manager.py::test_stale_pid_never_authorizes_signalling_unrelated_process",
+        "tests/unit/test_service_manager.py::test_invalid_restart_configuration_preserves_running_service",
+        "tests/unit/test_service_manager.py::test_valid_restart_keeps_configured_target_and_stop_start_order"
       ]
     },
     {
@@ -408,6 +410,90 @@
       "criterion": "精确作答问「哪个/是什么」只返回名称一列;明细事实表与汇总层表都能回答时从明细计算;报告式作答不受影响",
       "tests": [
         "tests/unit/test_exact_answer.py::test_exact_style_names_only_and_prefers_detail_tables"
+      ]
+    },
+    {
+      "id": "SEM-01",
+      "criterion": "数据目录保留单位歧义、真实字段文档和来源变化；概念别名召回遵守选表边界",
+      "tests": [
+        "tests/unit/test_semantic_catalog.py::test_catalog_records_coverage_and_unit_ambiguity",
+        "tests/unit/test_semantic_catalog.py::test_catalog_distinguishes_complete_scan_from_truncated_directory",
+        "tests/unit/test_semantic_catalog.py::test_catalog_preserves_zero_unit_code_and_missing_unit_separately",
+        "tests/unit/test_semantic_catalog.py::test_request_profiles_follow_database_changes",
+        "tests/unit/test_semantic_build.py::test_concept_alias_recalls_bound_table_and_respects_focus",
+        "tests/unit/test_properties.py::test_catalog_unit_sets_match_actual_data_with_quoted_identifiers",
+        "tests/unit/test_semantic_catalog.py::test_schema_values_dictionary_and_value_owners_follow_source_updates",
+        "tests/unit/test_deep_qa_scope.py::test_answer_cache_tracks_source_updates_and_wal",
+        "tests/unit/test_deep_qa_scope.py::test_answer_cache_tracks_graph_and_subsecond_edits",
+        "tests/unit/test_deep_qa_scope.py::test_answer_cache_distinguishes_summary_and_cleaning_policy"
+      ]
+    },
+    {
+      "id": "SEM-02",
+      "criterion": "最多1000条业务问题分批处理，提议严格只读，SQL依据可回放且不认证业务定义或公式",
+      "tests": [
+        "tests/unit/test_workload_concepts.py::test_all_1000_questions_are_processed_and_invalid_input_is_reported",
+        "tests/unit/test_workload_concepts.py::test_proposal_queries_cannot_modify_even_a_writable_connection",
+        "tests/unit/test_workload_concepts.py::test_proposals_have_replayable_evidence_but_no_semantic_certification",
+        "tests/scenarios/test_scenarios.py::test_semantic_catalog_build_and_answer_match_golden_answers",
+        "tests/unit/test_workload_concepts.py::test_derived_inputs_require_unambiguous_bindings_across_sources",
+        "tests/unit/test_workload_concepts.py::test_caveat_query_respects_selected_table_scope",
+        "tests/unit/test_workload_concepts.py::test_caveats_require_data_and_serializable_evidence"
+      ]
+    },
+    {
+      "id": "SEM-03",
+      "criterion": "继续构建撤销失效机器绑定，保留人工结论；语义评审可审计撤销，不能冒充公式核验",
+      "tests": [
+        "tests/unit/test_workload_concepts.py::test_refresh_revokes_removed_data_and_merge_replaces_revalidated_binding",
+        "tests/unit/test_semantic_build.py::test_semantic_human_review_is_audited_reversible_and_never_formula_verified",
+        "tests/unit/test_semantic_build.py::test_multigraph_anchor_keeps_semantics_without_cross_source_names_colliding",
+        "tests/unit/test_workload_concepts.py::test_theme_refresh_does_not_silently_change_a_reviewed_binding",
+        "tests/unit/test_workload_concepts.py::test_saved_formula_binding_does_not_switch_when_name_collides",
+        "tests/unit/test_workload_concepts.py::test_expired_refresh_marks_unknown_without_claiming_data_disappeared",
+        "tests/unit/test_workload_concepts.py::test_interrupted_theme_recheck_does_not_claim_codes_disappeared",
+        "tests/unit/test_semantic_build.py::test_reviewed_semantic_binding_that_is_stale_still_requires_review",
+        "tests/unit/test_semantic_build.py::test_declared_fk_recheck_preserves_human_rejection_and_assertion"
+      ]
+    },
+    {
+      "id": "SEM-04",
+      "criterion": "模型辅助构建恢复真实声明外键；角色键各自核验，孤儿或无引用不得升级，复核不被键名猜测干扰",
+      "tests": [
+        "tests/unit/test_semantic_build.py::test_llm_build_recovers_declared_role_keys_without_name_guessing",
+        "tests/unit/test_semantic_build.py::test_declared_orphans_and_empty_references_stay_candidates",
+        "tests/unit/test_semantic_build.py::test_declared_role_keys_require_their_own_complete_check",
+        "tests/unit/test_cross_check_skill.py::test_actual_declared_fk_is_not_refuted_by_name_guessing"
+      ]
+    },
+    {
+      "id": "DB-SCOPE-01",
+      "criterion": "已登记 SQLite 数据源在总览、目录、预览、质量、图谱、指标、SQL及同步/流式问数中保持同一来源；无效来源或跨来源本体明确拒绝，不回退示例库",
+      "tests": [
+        "tests/unit/test_database_scope.py::test_catalog_overview_and_preview_use_selected_database",
+        "tests/unit/test_database_scope.py::test_graphs_and_metrics_are_scoped_and_cross_source_graph_is_rejected",
+        "tests/unit/test_database_scope.py::test_unknown_source_never_falls_back_to_demo",
+        "tests/unit/test_database_scope.py::test_concurrent_sources_and_worker_context_do_not_cross",
+        "tests/unit/test_database_scope.py::test_stream_qa_keeps_selected_source_and_default_graph",
+        "tests/unit/test_database_scope.py::test_source_without_ontology_has_data_but_never_uses_demo",
+        "tests/unit/test_database_scope.py::test_metric_and_profile_blueprints_use_selected_default",
+        "tests/unit/test_database_scope.py::test_default_viz_uses_global_source_but_explicit_demo_uses_demo",
+        "tests/unit/test_database_scope.py::test_readonly_and_explicit_viz_source_survive_global_selection",
+        "tests/unit/test_database_scope.py::test_legacy_graph_only_qa_does_not_fall_back_to_another_database"
+      ]
+    },
+    {
+      "id": "DB-SCOPE-02",
+      "criterion": "切换数据库后不复用其他来源的时间窗、指标统计、SQL技能、会话历史、动作记录或评测答案；可视化晚返回结果被丢弃，所有200张表均可选择",
+      "tests": [
+        "tests/unit/test_database_scope.py::test_data_statistics_do_not_reuse_another_databases_cache",
+        "tests/unit/test_database_scope.py::test_saved_sql_skills_are_not_reused_on_another_source",
+        "tests/unit/test_database_scope.py::test_action_records_keep_database_and_do_not_mix_in_other_scope",
+        "tests/unit/test_database_scope.py::test_source_evaluation_references_are_from_current_database",
+        "tests/unit/test_database_scope.py::test_quick_build_request_uses_registered_source_and_preserves_provenance",
+        "tests/unit/test_database_scope_ui.py::test_database_source_frontend_behavior",
+        "tests/scenarios/test_scenarios.py::test_multi_database_switch_keeps_catalog_and_answer_consistent",
+        "tests/unit/test_database_scope.py::test_ontology_conversation_history_does_not_cross_databases"
       ]
     }
   ]

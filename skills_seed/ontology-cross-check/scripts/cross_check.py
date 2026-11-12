@@ -386,6 +386,30 @@ def hub_keys(db):
     return {k: n for k, n in cnt.items() if n >= need}
 
 
+def declared_channel(db, ct, ck, pt, pk):
+    """Recheck real DDL and referencing rows; never trust a model's declared flag."""
+    try:
+        groups = {}
+        for row in db.con.execute(f'PRAGMA foreign_key_list({q(ct)})'):
+            groups.setdefault(row[0], []).append(row)
+        violations = {row[3] for row in db.con.execute(f'PRAGMA foreign_key_check({q(ct)})')}
+        for fk_id, rows in groups.items():
+            rows.sort(key=lambda row: row[1])
+            parent_keys = [row[4] for row in rows]
+            if all(c is None for c in parent_keys):
+                parent_keys = [row[1] for row in sorted(db.con.execute(f'PRAGMA table_info({q(pt)})'),
+                                                      key=lambda row: row[5]) if row[5]]
+            if (rows[0][2].casefold() == pt.casefold() and ','.join(row[3] for row in rows).casefold() == ck.casefold()
+                    and ','.join(c or '' for c in parent_keys).casefold() == pk.casefold() and fk_id not in violations):
+                cond = ' AND '.join(f'{q(row[3])} IS NOT NULL' for row in rows)
+                n = db.one(f'SELECT COUNT(*) FROM {q(ct)} WHERE {cond}')[0]
+                if n:
+                    return {'state': 'support', 'referencing_rows': n, 'orphan_count': 0}
+    except sqlite3.Error:
+        pass
+    return {'state': 'none'}
+
+
 def check(ir, db):
     scopes = ((ir.get("scenario") or {}).get("code_contracts") or {}).get("codebooks") or []
     objs = {o.get("name"): o for o in ir.get("objects") or []}
@@ -437,7 +461,15 @@ def check(ir, db):
             weak = [k for k in ("bidirectional", "soft_delete", "temporal") if ch.get(k, {}).get("state") == "conflict"]
             if name_bad and pk.lower() != "id":
                 weak.insert(0, "name")
+            if ev.get('source') == 'declared_fk':
+                ch['declared_fk'] = declared_channel(db, ct, ck, pt, pk)
+                if ch['declared_fk']['state'] == 'support':
+                    # DDL proves the connection; naming/comment disagreements remain semantic review signals.
+                    weak += strong
+                    strong = []
             support = [k for k in ("name", "temporal", "contract", "comment") if ch.get(k, {}).get("state") == "support"]
+            if ch.get('declared_fk', {}).get('state') == 'support':
+                support.append('declared_fk')
             row["conflicts"], row["weak_conflicts"], row["supports"] = strong, weak, support
             row["verdict"] = ("refuted" if strong else "review" if weak else
                               "corroborated" if support else "single_channel")

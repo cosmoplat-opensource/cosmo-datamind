@@ -35,6 +35,8 @@ function g6render(containerId,g,lay,opts){opts=opts||{};
   defaultNode:{type:'rect',size:[132,42],style:{radius:8},anchorPoints:[[0,0.5],[1,0.5]]},
  defaultEdge:{type:lay==='dagre'?'polyline':'quadratic',style:{radius:12,offset:18}},
   modes:{default:['drag-canvas','zoom-canvas','drag-node']},fitView:false,animate:!gridIso});
+ graph.__view=nodes.length>120?'all':'readable';
+ graph.__layoutReady=false;
  graph.__focusId=nodes.reduce((best,n)=>(degrees[n.id]||0)>(degrees[best]||0)?n.id:best,nodes[0]&&nodes[0].id);
  let isoAdded=false;
  const addIsolated=()=>{if(!gridIso||isoAdded)return;isoAdded=true;
@@ -48,10 +50,10 @@ function g6render(containerId,g,lay,opts){opts=opts||{};
  // 聚焦不用动画:动画未完时 320 ms 后的第二次 fit 会打断它,视图停在空白处
  const fit=()=>{try{graph.fitView([24,48,24,48]);const z=graph.getZoom();
   if(z>1){graph.zoomTo(1);graph.fitCenter();}
-  else if(nodes.length>40&&z<.85){graph.zoomTo(.85);const item=graph.findById(graph.__focusId);
+  else if(graph.__view==='readable'&&nodes.length>40&&z<.85){graph.zoomTo(.85);const item=graph.findById(graph.__focusId);
    if(item)graph.focusItem(item,false);else graph.fitCenter();}
  }catch(_){}};
- graph.on('afterlayout',()=>{addIsolated();fit();});
+ graph.on('afterlayout',()=>{addIsolated();fit();graph.__layoutReady=true;});
  graph.data({nodes:gridIso?nodes.filter(n=>degrees[n.id]):nodes,edges});graph.render();
  fit();setTimeout(fit,320);
  if(nodes.length>40){const show=(e,v)=>{try{graph.updateItem(e.item,{labelCfg:{style:{opacity:v,background:{fill:'#fff',padding:[2,4,2,4],radius:3,opacity:v}}}});}catch(_){}};

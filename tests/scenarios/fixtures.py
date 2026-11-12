@@ -40,6 +40,31 @@ def _zip(files):
     return buf.getvalue()
 
 
+def semantic_catalog(path):
+    """Name/value data, ambiguous units, a numeric unit code and two role references."""
+    rows = [(i, 1 + i % 3, 1 + (i + 1) % 3, f'Metric{i % 20}', float(i), 'USD' if i % 2 else 'EUR')
+            for i in range(120)]
+    rows.append((120, 1, 2, 'Metric0', 12.0, 'USD'))
+    rows.append((121, 1, 2, 'Metric3', 13.0, 0))
+    _create(path, {
+        'entity': ('id INTEGER PRIMARY KEY, name TEXT', [(i, f'E{i}') for i in range(1, 4)]),
+        'facts': ('id INTEGER PRIMARY KEY, first_ref INTEGER REFERENCES entity(id), '
+                  'second_ref INTEGER REFERENCES entity(id), fact_name TEXT, fact_value REAL, unit NUMERIC', rows),
+        'column_documentation': ('table_name TEXT, column_name TEXT, documentation TEXT',
+                                  [('facts', 'fact_value', 'Reported value'), ('missing', 'x', 'Invalid')]),
+    })
+    return {'db': path, 'proposal': {'objects': [{'name': 'facts', 'table': 'facts'},
+                                                {'name': 'entity', 'table': 'entity'}], 'relations': []},
+            'questions': ['产量是多少', '能耗趋势'],
+            'semantic': {'concepts': [{'name': 'Output', 'aliases': ['产量'], 'table': 'facts',
+                                       'column': 'fact_value', 'filter': "fact_name='Metric0'"}],
+                         'themes': [{'name': 'Energy', 'aliases': ['能耗'], 'table': 'facts', 'name_col': 'fact_name',
+                                     'codes': ['Metric1', 'Metric2', 'Missing']}],
+                         'derived': [{'name': 'Twice', 'formula': 'Output * 2', 'uses': ['Output']}]},
+            'sql': "SELECT SUM(fact_value) AS n FROM facts WHERE fact_name='Metric0' AND unit='USD'",
+            'truth': sum(r[4] for r in rows if r[3] == 'Metric0' and r[5] == 'USD')}
+
+
 # ── 多厂多层湖仓 ──────────────────────────────────────────────────────
 
 LAKEHOUSE_CODE = {
@@ -118,6 +143,17 @@ def lakehouse(path):
 
 
 # ── 元数据驱动业务库 ──────────────────────────────────────────────────
+
+def multi_database(path_a, path_b):
+    out=[]
+    for path,label,count,value in [(path_a,'a',2,7),(path_b,'b',5,31)]:
+        _create(path, {'shared_fact': ('id INTEGER PRIMARY KEY, amount INTEGER', [(i,value) for i in range(count)]),
+                       'only_'+label: ('id INTEGER PRIMARY KEY', [(1,)])})
+        out.append({'db': path, 'source': 'conn_multi_'+label, 'count': count, 'amount': count*value,
+                    'own_table': 'only_'+label,
+                    'proposal': {'objects': [{'name':'shared_fact','table':'shared_fact','kind':'event'},
+                                             {'name':'only_'+label,'table':'only_'+label,'kind':'object'}], 'relations': []}})
+    return out
 
 def business(path):
     types = [("EMTR", "电能表", 0), ("EMTR", "电能表", 1), ("FLOW", "液体流量计", 0), ("FLOW", "液体流量计", 1),

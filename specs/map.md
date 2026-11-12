@@ -23,21 +23,24 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - 需求 → 测试映射 `specs/acceptance.json`;有效行规则 `specs/models/valid_rows_rules.json`;场景回归基准 `tests/scenarios`(`scripts/scenario_bench.py`);构建步骤说明 `docs/pipelines/ontology_build.yaml`;开发顺序见根目录 `AGENTS.md`。
 
 ## 关键契约
-- **数据执行**:深度问数/可视化/SQL 工作台/即时问数(SQL 类)在 `DATAMIND_DB` 指定的 SQLite 数据源上只读执行；示例数据库需按 README 创建或显式指定。防写由 `mode=ro`、`sql_is_readonly` 与单句执行共同实现。SPARQL 在本地 rdflib RDF 图(IR→Turtle)执行。见 [[DR-001-local-readonly-execution]]。
+- **数据执行**:侧栏选择已登记的 SQLite 来源，总览、目录、问数、指标与可视化沿用该来源；SQL 和可视化可显式覆盖。`DATAMIND_DB` 为默认库。防写由 `mode=ro`、`sql_is_readonly` 与单句执行共同实现。SPARQL 在当前本体的本地 rdflib RDF 图(IR→Turtle)执行。见 DR-001、DR-095。
 - **建模算法**:行业/本体标准（均可不选，参照或强约束）+ CQ/技能正文 → LLM 提议对象、事件、关系和候选键 → 数据验证(取值重叠≥60%∧父键唯一∧命名有据∧方向正确→verified,其余保留 candidate)→ 所选参照的候选注释/缺口检查 → 图结构/证据/定义/CQ 验收；LLM 离线时由 quick_build 使用同一后处理和验收规则。见 [[DR-002-multimodal-llm-anti-hallucination-build]]、[[DR-050-executable-ontology-build-gate]] 与 [[DR-052-build-industry-and-standard-references]]。
 - **引擎**:运行时经 `agent_runtime`(CLAW_DRIVER 选 hermes/claude-code/openclaw),多引擎依次降级;**对外统一中性名**(智能引擎/备选/经典),不暴露底层库名,见 [[DR-003-runtime-neutral-naming]]。
 - **深度问数**:SSE 流式执行记录 + 渐进出图,缓存键含上传指纹,离线时降级为模板,见 [[DR-004-deep-qa-sse]]。
 - **前端**:对齐 iiot-platform/design-system 设计 token(#4A5FF3/#409EFF、圆角 4px、PingFang);**工业级去 emoji**(accent bar + 单色 SVG + 状态点),见 [[DR-005-frontend-design-system]]。
 - **安全**:只读 SQL、全局 CSRF 守卫、图谱键路径穿越校验、命令白名单、SPARQL 禁 SERVICE/FROM 外链,见 [[DR-006-security-model]]。
-- **寻址**:28 个子页经 `#<page>` hash 直接寻址 + 深链,见 [[DR-007-url-hash-routing]]。
+- **寻址**:27 个子页经 `#<page>` hash 直接寻址 + 深链,见 [[DR-007-url-hash-routing]]。
 
 ## 索引
 
 ### 决定 / Decisions
+- [DR-095 · 多数据库上下文与可视化切换](decisions/DR-095-multi-database-context-and-visualization.md)
+- [DR-094 · 保持正常功能的代码清理与重启配置检查](decisions/DR-094-behavior-preserving-code-cleanup.md)
 - [DR-072 · 全库评估与修正:注释接入、类型无关的取值比对、按取值补提与实例表识别](decisions/DR-072-whole-dataset-evaluation.md)
 - [DR-073 · 候选关系分流、问数选表修正与澄清、抽样截断标记与独立评审](decisions/DR-073-candidate-triage-and-independent-judging.md)
 - [DR-074 · 200 表合成验证库评估:星型模型键名、字段注释证据与几类误判](decisions/DR-074-contract-200-synthetic-db-evaluation.md)
 - [DR-082 · 精确作答只返回所问名称、明细表优先;双向与工业库重复实验](decisions/DR-082-exact-answer-names-and-detail-tables.md)
+- [DR-093 · 研究能力入产品：字段目录、业务概念、角色外键与可撤销语义复核](decisions/DR-093-research-semantic-capabilities.md)
 - [DR-081 · 精确作答的多路候选投票;本体约束校验作为智能体工具;跨方法投票](decisions/DR-081-candidate-vote-and-hybrid.md)
 - [DR-080 · 问数先探查再作答、按结果核对、角色键与取值出处](decisions/DR-080-qa-probe-verify-and-role-keys.md)
 - [DR-079 · 与 EvoOntology 对比实验:精确作答、驼峰与复数表名、带角色前缀的键名](decisions/DR-079-bird-comparison-exact-answer-and-key-names.md)
@@ -131,8 +134,9 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - `SPEC.md` — 对**平台** web/ 的逆向规格(平台契约,非 DataMind;前缀不同勿混用)。
 
 ## 现状校准
-- 计数(2026-10-03):**137 路由**(server.py 119 + bp_engine 5 + bp_actions 7 + bp_metrics 4 + bp_semantic 2)/ **565 集成断言** /
-  **1187 项 pytest 测试** / DR-001…DR-082 · IR-001…IR-013。
+- 计数(2026-10-12):**138 路由**(server.py 120 + bp_engine 5 + bp_actions 7 + bp_metrics 4 + bp_semantic 2)/ **565 集成断言** /
+  **1279 项 pytest 测试**（多数据库功能复核）/ DR-001…DR-082、DR-093…DR-095 · IR-001…IR-013。
+  DR-093 增加数据目录、问题驱动概念/主题、声明角色外键独立核验与业务语义人审；DR-095 增加多库上下文，场景回归为 51 项。
   DR-076 起 `examples/demo_metrics.db` 由 `scripts/build_demo_108_db.py` 按业务过程仿真生成(108 表 / 308,230 行)。
   DR-060 新增构建前预处理:外部库只读抽样 `ext_sample`、构建体检与分轮计划 `build_prep`。
   DR-059 新增长文分块检索 `doc_chunks`,以及能源管理 `energy_management`、碳排放核算 `carbon_accounting` 两个独立行业参照。

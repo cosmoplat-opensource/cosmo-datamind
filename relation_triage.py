@@ -36,15 +36,6 @@ def _col_type(objs_by_name, obj_name, col):
     return ""
 
 
-def _parent_identifier(table, key):
-    """父键是父表自己的标识:主键 id,或词根与表的核心名一致的编码列。"""
-    if not table or not key or "," in str(key):
-        return True                       # 复合键另有判定,不在这里驳回
-    if str(key).lower() == "id":
-        return True
-    return key_links._owner_key(key_links.table_core(table), key) or key_links._is_catalog(table)
-
-
 _AUDIT = key_links._AUDIT
 
 

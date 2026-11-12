@@ -41,6 +41,13 @@ def audit_verified_evidence(ir):
         declared_fk = (source == "declared_fk" or evidence.get("declared") is True or
                        (isinstance(legacy_sources, list) and "schema-fk" in legacy_sources))
         label = f"{relation.get(source_key) or '?'}→{relation.get(target_key) or '?'}"
+        for role in evidence.get('role_keys') or []:
+            if role.get('source') == 'declared_fk' and (role.get('schema_validated') is not True
+                    or role.get('orphan_count') != 0 or not role.get('referencing_rows')
+                    or not role.get('child_key') or not role.get('parent_key')):
+                issues.append({'type': 'verified_invalid_role_key', 'relation': label, 'index': index,
+                               'desc': '角色外键缺少独立的完整约束检查，或含孤儿/无实际引用',
+                               'fix': '将未通过的角色键移入候选，重新执行完整外键核验'})
         missing_keys = [key for key in ("child_key", "parent_key") if not evidence.get(key)]
         if missing_keys:
             issues.append({"type": "verified_missing_join_key", "relation": label, "index": index,
@@ -219,6 +226,18 @@ def evaluate(ir, cqs=None, definition_threshold=0.6):
     metric_counts = metric_contract.counts(ir)
 
     review_queue = []
+    proposals = [c for k in ('concepts', 'themes', 'derived', 'caveats') for c in ir.get(k) or []
+                 if c.get('status') not in ('asserted', 'certified', 'rejected')]
+    if proposals:
+        review_queue.append({'type': 'semantic_proposals', 'count': len(proposals),
+                             'desc': f'{len(proposals)} 项业务概念、主题或计算建议的含义尚待确认',
+                             'fix': '检查取数证据并确认定义、单位和计算规则；查询有数据不等于语义认证'})
+    unavailable = [c for k in ('concepts', 'themes', 'derived', 'caveats') for c in ir.get(k) or []
+                   if c.get('status') != 'rejected' and c.get('binding_status') in ('stale', 'unresolved')]
+    if unavailable:
+        review_queue.append({'type': 'semantic_bindings_unavailable', 'count': len(unavailable),
+                             'desc': f'{len(unavailable)} 项取数对应失效或尚未重新核验，包括此前已人工确认的条目',
+                             'fix': '重新检查当前来源；保留人工语义结论，取数对应恢复前不用于回答'})
     review_queue.extend(reference_quality["review_queue"])
     for signal in health.get("signals", []):
         review_queue.append({"type": "health_" + signal["type"], "desc": signal["desc"], "fix": signal["fix"]})

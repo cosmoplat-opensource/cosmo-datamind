@@ -49,6 +49,7 @@ async def main(output, base_url=None):
             body = "".join("data: " + json.dumps(event, ensure_ascii=False) + "\r\n\r\n" for event in events)
             return await route.fulfill(content_type="text/event-stream", body=body)
         fixtures = {
+            "/api/data/context": {"source": {"id": "demo", "name": "隔离测试源"}, "tables": 2, "graphs": ["built_test"], "default_graph": "built_test"},
             "/api/ont/runtimes": {"current": "test", "runtimes": []},
             "/api/build/defaults": {"build_query": "补充订单与客户关系", "build_name": "测试本体"},
             "/api/build/sources": {"sources": [{"id": "demo", "name": "隔离测试源", "kind": "sqlite", "tables": 2, "ready": True, "builtin": True}], "assets": []},

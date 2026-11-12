@@ -73,3 +73,23 @@ def test_observability_never_stores_sensitive_values(seed, tmp_path, monkeypatch
     dumped = open(next(tmp_path.glob("obs/*.jsonl")), encoding="utf-8").read()
     assert secret not in dumped and ip not in dumped, (seed, key)
     assert re.search(r'"%s_fp"' % re.escape(key), dumped)
+
+
+@pytest.mark.parametrize('seed', range(12))
+def test_catalog_unit_sets_match_actual_data_with_quoted_identifiers(seed):
+    import sqlite3
+    import data_catalog
+    rng = random.Random(seed)
+    table = 'odd "table' + str(seed)
+    con = sqlite3.connect(':memory:')
+    con.execute(f'CREATE TABLE {data_catalog.qi(table)}(metric_name TEXT, metric_value REAL, unit TEXT)')
+    rows = [(f'M{i % 4}', i, rng.choice(['USD', 'EUR', ''])) for i in range(80)]
+    con.executemany(f'INSERT INTO {data_catalog.qi(table)} VALUES (?,?,?)', rows)
+    cat = data_catalog.value_catalog(con, table, [('metric_name', 'TEXT'), ('metric_value', 'REAL'), ('unit', 'TEXT')],
+                                     min_distinct=4)
+    for e in cat['entries']:
+        units = {r[2] for r in rows if r[0] == e['value']}
+        assert set(e['units']) == units
+        assert e['rows'] == sum(r[0] == e['value'] for r in rows)
+        assert e['unit'] == (next(iter(units)) if len(units) == 1 else '')
+    con.close()

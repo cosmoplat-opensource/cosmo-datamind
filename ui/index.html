@@ -105,7 +105,6 @@ a{color:var(--acc)}
 .dq-inputbar textarea{border:0;padding:2px;resize:none;height:46px;font-size:14px;width:100%}
 .dq-inputbar textarea:focus{outline:none;border:0}
 .dq-tools{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:6px}
-.dq-chip{display:inline-flex;align-items:center;gap:4px;background:#F4F4F5;color:#606266;border-radius:9999px;font-size:12px;padding:3px 10px}
 .dq-sel{border:1px solid var(--line);border-radius:9999px;font-size:12px;padding:4px 10px;background:#F4F4F5;color:#606266;width:auto;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;min-width:0}
 .dq-icon{display:inline-flex;align-items:center;justify-content:center;height:28px;padding:0 12px;border-radius:9999px;background:#F4F4F5;cursor:pointer;font-size:12px;color:#606266;white-space:nowrap;flex:0 0 auto}
 .dq-icon:hover{background:#EEF2FF}
@@ -193,7 +192,7 @@ a{color:var(--acc)}
 .sk-card.sel{border-color:var(--acc);background:#F7F9FF}
 .sk-card .nm{font-size:14px;font-weight:600;color:var(--txt)} .sk-card .badge{font-size:11px;background:#EEF2FF;color:var(--acc);border-radius:4px;padding:1px 6px;margin-left:6px}
 .sk-card .ds{font-size:12px;color:var(--sub);margin-top:4px}
-</style><link rel="stylesheet" href="/assets/styles/responsive.css"><link rel="stylesheet" href="/assets/styles/qa-anchor.css?v=1"></head><body>
+</style><link rel="stylesheet" href="/assets/styles/responsive.css"><link rel="stylesheet" href="/assets/styles/database-scope.css?v=1"><link rel="stylesheet" href="/assets/styles/qa-anchor.css?v=1"></head><body>
 <header class="topbar">
  <div class="wm">◈ COSMO DataMind <small>数据智脑 · 治理 × 本体 × 问数</small></div>
  <div class="tools">
@@ -204,6 +203,7 @@ a{color:var(--acc)}
 </header>
 <div class="shell">
 <aside>
+ <div class="database-switch"><label for="app_source">当前数据库</label><select id="app_source" disabled onchange="appSourceChange(this.value)"><option>读取数据源…</option></select><div class="muted" id="app_source_status" role="status">切换后各页面默认使用所选库；已保存的问数历史按库保留。</div></div>
  <div class="ucard"><div class="av">◈</div><div class="nm">COSMO 工作区</div><div class="rl">数据智脑 · 治理×本体×问数</div><div class="bar"></div></div>
  <div class="nav on" data-p="home">总览驾驶舱</div>
 <div class="nav" data-p="viz">数据可视化</div>
@@ -245,8 +245,8 @@ a{color:var(--acc)}
 </aside>
 <main>
  <div class="page on" id="p_home"><h2>总览驾驶舱</h2><div class="kpis" id="kpis"></div>
-  <div class="grid2"><div class="card"><h3>收入与毛利趋势(万元)</h3><div id="c_trend" class="chart"></div></div>
-  <div class="card"><h3>月度产量</h3><div id="c_prod" class="chart"></div></div></div></div>
+  <div class="grid2"><div class="card"><h3 id="home_trend_title">收入与毛利趋势(万元)</h3><div id="c_trend" class="chart"></div></div>
+  <div class="card"><h3 id="home_prod_title">月度产量</h3><div id="c_prod" class="chart"></div></div></div></div>
 
  <div class="page" id="p_catalog"><h2>数据目录</h2>
   <div class="row" style="margin-bottom:10px"><input id="cat_q" placeholder="搜索表名 / 中文注释…" style="width:300px" oninput="catRender()">
@@ -314,11 +314,11 @@ a{color:var(--acc)}
    <button id="g_ask" onclick="dqStartFromOntology($('#g_sel').value)" title="以当前本体为语义与数据边界新建深度问数">基于此本体问数</button>
    <span class="g-toolbar-group" style="display:inline-flex;align-items:center;gap:8px;white-space:nowrap">导出:<button class="ghost" onclick="expOnt('ttl')">TTL</button><button class="ghost" onclick="expOnt('jsonld')">JSON-LD</button><button class="ghost" onclick="expOnt('owl')">RDF/XML</button><button class="ghost" onclick="enrichOnt(this)" title="调用智能引擎为缺定义的对象提出属加种差定义、正例和反例；结果仍需人工复核">补定义/反例</button></span>
    <span class="g-toolbar-group" style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap">视图<button class="ghost" onclick="gReadable()">可读</button><button class="ghost" onclick="gFitAll()">全图</button><button class="ghost" onclick="gZoom(1.25)" aria-label="放大图谱">＋</button><button class="ghost" onclick="gZoom(.8)" aria-label="缩小图谱">－</button></span>
-   <span class="g-toolbar-group" style="display:inline-flex;align-items:center;gap:8px;white-space:nowrap">布局<select id="g_layout" onchange="drawGraph($('#g_sel').value)" style="width:120px"><option value="dagre">分层</option><option value="force">力导向</option><option value="circular">环形</option><option value="radial">辐射</option></select></span></div>
+   <span class="g-toolbar-group" style="display:inline-flex;align-items:center;gap:8px;white-space:nowrap">布局<select id="g_layout" onchange="this.dataset.userSelected='true';drawGraph($('#g_sel').value)" style="width:120px"><option value="dagre">分层</option><option value="force">力导向</option><option value="circular">环形</option><option value="radial">辐射</option></select></span></div>
   <div id="g_hlbar" style="display:none;margin:-4px 0 10px;padding:7px 12px;border:1px solid #C7D2FE;background:#EEF2FF;border-radius:6px;font-size:12.5px"></div>
   <div style="position:relative"><div class="card" style="padding:6px"><div id="g_canvas"></div></div>
    <div class="card" id="g_detail" style="position:absolute;top:12px;right:12px;width:340px;max-height:calc(100% - 24px);overflow:auto;display:none;z-index:6;box-shadow:0 8px 30px rgba(31,45,61,.16)"></div>
-   <div class="muted" style="position:absolute;bottom:10px;left:14px;font-size:11px;pointer-events:none;background:rgba(255,255,255,.92);padding:2px 8px;border-radius:4px">默认保持可读字号 · 点击节点/连线查看详情(节点较多时悬停连线显示关系名) · 滚轮缩放 · 拖拽平移</div></div></div>
+   <div class="muted" style="position:absolute;bottom:10px;left:14px;font-size:11px;pointer-events:none;background:rgba(255,255,255,.92);padding:2px 8px;border-radius:4px">大型图谱默认全图 · 点「可读」放大查看 · 点击节点/连线查看详情 · 滚轮缩放 · 拖拽平移</div></div></div>
 
  <div class="page" id="p_review"><h2>本体评审 <span class="muted">人机协同人审：通过 / 否决 / 改动词 / 删除，每条记录评审人与意见 · 人只产生「人工断言」 · 全程可撤销 · v0726a</span></h2>
   <div class="card"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">图谱 <select id="rv_sel" style="min-width:280px;max-width:440px" onchange="rvLoad()"></select>
@@ -326,6 +326,7 @@ a{color:var(--acc)}
    <span id="rv_kpis"></span><span style="flex:1"></span>
    <button class="ghost" onclick="rvUndo()">撤销上一步</button><button class="ghost" onclick="rvLoad()">刷新</button></div></div>
   <div class="card scroll" id="rv_objs" style="margin-top:12px;display:none"></div>
+  <div class="card scroll" id="rv_semantic" style="margin-top:12px;display:none"></div>
   <div class="card scroll" id="rv_fb" style="margin-top:12px;display:none"></div>
   <div class="card scroll" id="rv_body" style="margin-top:12px"><div class="muted">加载中…</div></div></div>
  <div class="page" id="p_enginecfg"><h2>引擎设置 <span class="muted">实时切换智能体运行时 / 模型 / 接口密钥 · 改动即刻生效，无需重启 · Key 只写不回显(掩码)，配置文件 0600</span></h2>
@@ -408,9 +409,9 @@ a{color:var(--acc)}
   <div style="margin-bottom:14px"><span id="rvm_clabel">评审意见</span><br><textarea id="rvm_comment" rows="3" style="width:100%;margin-top:4px;resize:vertical" placeholder="填写评审意见 / 原因"></textarea></div>
   <div style="display:flex;gap:8px;justify-content:flex-end"><button class="ghost" onclick="rvmClose()">取消</button><button id="rvm_ok" onclick="rvmSubmit()">提交评审</button></div>
  </div></div>
- <div class="page" id="p_metrics"><h2>指标中心 <span class="muted">指标契约：计算规则可编译、可执行、与参照比对 · 已核验只来自证据 · 业务确认只能由人授予</span></h2>
+ <div class="page" id="p_metrics"><h2>指标中心 <span class="muted">指标计算规则：计算规则可编译、可执行、与参照比对 · 已核验只来自证据 · 业务确认只能由人授予</span></h2>
  <div class="row" style="gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">图谱 <select id="m_sel" style="width:300px" onchange="metrics()"></select>
-  <button class="ghost" onclick="metricReadjudicate()" title="按契约重新编译、只读执行并与已存参照比对；不新增候选">重跑核验</button><span id="m_kpi"></span></div>
+  <button class="ghost" onclick="metricReadjudicate()" title="按计算规则重新编译、只读执行并与已存参照比对；不新增候选">重跑核验</button><span id="m_kpi"></span></div>
  <div id="m_body"></div></div>
  <div class="page" id="p_ontquality"><h2>元数据覆盖 <span class="muted">统计定义、反例、开发状态、BFO/IOF 上层类别和标准关系映射；不代表本体完备性或业务正确性</span></h2>
   <div class="row" style="margin-bottom:10px"><select id="oq_sel" style="width:340px"></select>
@@ -634,6 +635,7 @@ a{color:var(--acc)}
     <div id="bc_log" class="bc-log" role="region" aria-label="本体构建过程与结果" aria-busy="false"></div>
     <div class="bc-compose">
      <input id="bc_name" class="bc-name" aria-label="本体名称，可选" placeholder="本体命名(留空由智能引擎自动命名)">
+     <textarea id="bc_workload" aria-label="业务问题样本，每行一个，可选" style="min-height:46px;margin-bottom:6px" placeholder="业务问题样本(可选，每行一个)——用于补充概念和分析主题，最多处理 1000 条；提议经数据核验后仍需确认业务含义。验收问题请单独填写。"></textarea>
      <textarea id="bc_cq" aria-label="验收问题，每行一个，可选" style="min-height:46px;margin-bottom:6px" placeholder="验收问题(可选，每行一个)——本体建成后应当能回答的业务问题，用于验收；例：哪些工单关联了发生退货的订单?"></textarea>
      <div class="bc-inrow">
       <textarea id="bc_q" aria-label="本轮建模诉求" placeholder="描述你要构建的本体，例：从售后与生产数据构建一张贯通「订单-产品-工单-客户」的制造运营本体" onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();bcInquire()}"></textarea>
@@ -736,6 +738,7 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
 </main>
 </div>
 <script src="/assets/modules/catalog.js"></script>
+<script src="/assets/modules/database-scope.js?v=1"></script>
 <script src="/assets/modules/build-references.js?v=4"></script>
 <script src="/assets/modules/build-stream.js?v=3"></script>
 <script src="/assets/modules/build-prep.js?v=4"></script>
@@ -744,7 +747,7 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
 <script src="/assets/modules/qa-history.js?v=1"></script>
 <script src="/assets/modules/qa-anchor.js?v=4"></script>
 <script src="/assets/modules/graph-render.js?v=1"></script>
-<script>const $=s=>document.querySelector(s), J=async(u,o)=>{try{const r=await fetch(u,o);const t=await r.text();try{return JSON.parse(t)}catch(_){return{error:`请求失败(HTTP ${r.status})`}}}catch(e){return{error:'网络错误:'+(e&&e.message||e)}}};  // 永不抛：后端 404/500 返回 HTML 时降级为 {error}，交由既有 d.error 守卫提示，避免页面半渲染无提示
+<script>const $=s=>document.querySelector(s), J=async(u,o)=>{try{const r=await appFetch(u,o);const t=await r.text();try{return JSON.parse(t)}catch(_){return{error:`请求失败(HTTP ${r.status})`}}}catch(e){return{error:'网络错误:'+(e&&e.message||e)}}};  // 永不抛：后端 404/500 返回 HTML 时降级为 {error}，交由既有 d.error 守卫提示，避免页面半渲染无提示
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // 安全地把值放进 onclick 等内联 JS 字符串:JSON.stringify 产生合法 JS 字面量，esc 再转义引号使其在属性内不越界
 const jsAttr=x=>esc(JSON.stringify(x));
@@ -757,10 +760,6 @@ function toast(msg,ok){document.getElementById('app_toast')?.remove();const t=do
 // 唯一的 kind 规范(五类：颜色 c / 中文 n)，全站图例·配色·标签·编辑下拉统一引用
 const KIND={object:{c:'#16a34a',n:'对象'},event:{c:'#7c3aed',n:'事件'},action:{c:'#d97706',n:'动作'},asset:{c:'#0ea5e9',n:'资产'},role:{c:'#db2777',n:'角色'},ice:{c:'#7c6ff0',n:'信息内容实体'}};
 const KCOL=k=>(KIND[k]||{c:'#5b9dff'}).c, KNM=k=>(KIND[k]||{n:k}).n;
-const KINDS=Object.keys(KIND);
-// 可编辑对象种类：与后端 VALID_KIND / DR-001 对象元类型对齐(object/event/asset/role);
-// 「动作」是独立的 actions 顶层概念(action.kind='query')，不作为对象种类，故不入改类型下拉。
-const EDIT_KINDS=['object','event','asset','role'];
 // 页面切换 + URL 寻址：每个子页对应 #<page> hash，可直接寻址/前进后退/刷新保持
 function goPage(p){const nav=document.querySelector('[data-p="'+p+'"]');if(!nav)return false;
  document.querySelectorAll('.nav').forEach(x=>x.classList.remove('on'));nav.classList.add('on');
@@ -787,7 +786,7 @@ async function load(p){if(loaded[p])return;loaded[p]=1;
  if(p==='build')bcInit();if(p==='conn')cnInit();if(p==='viz')vzInit();if(p==='review')reviewInit();if(p==='actioncenter')acCenter();if(p==='enginecfg')egLoad();
  if(p==='assistant')asLoad();if(p==='qaeval')qeLoad();if(p==='sqldev')sdInit();
  if(p==='agents')agentsLoad();if(p==='glossary')glossaryLoad();
- if(p==='layers')layersLoad();if(p==='sqldev')sqlDevInit();if(p==='quality')qualityLoad();
+ if(p==='layers')layersLoad();if(p==='quality')qualityLoad();
  if(p==='apis')apisLoad();if(p==='jobs')jobsLoad();if(p==='sysadmin')sysLoad();
  if(p==='ontquality')ontQualityLoad();}
 async function ontQualityLoad(){const gs=await J('/api/graphs');const cur=$('#oq_sel').value;
@@ -802,7 +801,7 @@ async function ontQualityRender(){const k=$('#oq_sel').value;if(!k)return;
  const _sr=d.relations||{};if(_sr.semanticReviewed>0){const el=document.createElement('div');el.className='muted';el.style.cssText='margin-top:6px;font-size:12px';el.textContent=`语义评审:${_sr.semanticReviewed} 条已审 · ${_sr.semanticDisputed||0} 条存疑`;$('#oq_kpis').after(el);}
  $('#oq_gaps').innerHTML=(d.gaps&&d.gaps.length)?d.gaps.map(g=>`<div class="step">${esc(g)}</div>`).join(''):'<div class="muted">没有待补定义，全部对象已有定义 ✓</div>';}
 async function oqUpgrade(btn){const k=$('#oq_sel').value;if(!k)return;const t0=btn.textContent;btn.disabled=true;btn.textContent='补定义中…';
- const P=(p)=>fetch(p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:k})}).then(x=>x.json());
+ const P=(p)=>appFetch(p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:k})}).then(x=>x.json());
  try{const a=await P('/api/ont/enrich');btn.textContent='接地关系…';const b=await P('/api/ont/reground');
   (window.toast||alert)('处理完成:'+[a.note,b.note].filter(Boolean).join(' · '));ontQualityRender();
  }catch(e){(window.toast||alert)('升级失败:'+e);}finally{btn.disabled=false;btn.textContent=t0;}}
@@ -817,9 +816,8 @@ async function layersLoad(){const ts=await J('/api/tables');const used=new Set()
  if(other.length)html+=`<div class="card"><h3>其它 <span class="muted">${other.length} 张</span></h3><div class="row" style="flex-wrap:wrap;gap:8px">`+other.map(t=>`<span class="tag" style="background:#F4F4F5">${esc(t.name)}</span>`).join('')+`</div></div>`;
  $('#layers_body').innerHTML=html;}
 // SQL 工作台(C7：可选外部库实连数据源)
-function sqlDevInit(){}
 async function sdInit(){try{const d=await J('/api/build/sources');const ss=(d.sources||[]).filter(s=>s.kind!=='api');
- $('#sd_src').innerHTML=ss.map(s=>`<option value="${esc(s.id)}">${esc(s.name)}${s.kind!=='sqlite'?' · '+esc((s.kind||'').toUpperCase())+' 实连':''}</option>`).join('')||'<option value="demo">示例主库</option>';}catch(_){}}
+ $('#sd_src').innerHTML=ss.map(s=>`<option value="${esc(s.id)}">${esc(s.name)}${s.kind!=='sqlite'?' · '+esc((s.kind||'').toUpperCase())+' 实连':''}</option>`).join('')||'<option value="demo">示例主库</option>';const selected=APP_DATA.draft?.sqlSource||appSourceId();if(ss.some(x=>x.id===selected))$('#sd_src').value=selected;}catch(_){}}
 async function sqlDevRun(){const sql=$('#sd_q').value.trim();if(!sql)return;$('#sd_info').textContent='执行中…';
  const src=($('#sd_src')&&$('#sd_src').value)||'demo';
  const d=await J('/api/query',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sql,src})});
@@ -830,7 +828,6 @@ async function sqlDevRun(){const sql=$('#sd_q').value.trim();if(!sql)return;$('#
 // 数据质量
 async function qualityLoad(){const d=await J('/api/quality');const L=d.levels||{};
  $('#quality_kpis').innerHTML=[['已检表数',d.scanned??'-','#4A5FF3'],['通过',d.passed??'-','#16a34a'],['预警',L.warn||0,'#d97706'],['错误',L.error||0,'#dc2626']].map(([l,n,c])=>`<div class="kpi"><div class="n" style="color:${c}">${n}</div><div class="l">${l}</div></div>`).join('');
- const LC={error:'warn',warn:'warn',ok:'ok'};
  $('#quality_list').innerHTML='<table><tr><th>对象</th><th>规则</th><th>级别</th><th>详情</th></tr>'+
   (d.checks||[]).map(c=>`<tr><td>${esc(c.target)}</td><td>${esc(c.rule)}</td><td><span class="tag ${c.level==='error'?'warn':c.level==='warn'?'warn':'ok'}">${c.level}</span></td><td>${esc(c.detail)}</td></tr>`).join('')+'</table>'+(!(d.checks||[]).length?'<div class="muted" style="padding:10px">全部检查通过 ✓</div>':'');}
 // API 目录
@@ -881,21 +878,21 @@ async function home(){const d=await J('/api/overview');
       {name:'毛利',type:'line',data:d.trend.map(r=>r.gp),itemStyle:{color:'#4ade80'}}]});
  mk($('#c_prod'),{grid:{top:30,left:50,right:20,bottom:30},tooltip:{trigger:'axis'},
   xAxis:{type:'category',data:d.prod.map(r=>r.m),...AX},yAxis:{type:'value',...AX},
-  series:[{type:'line',areaStyle:{opacity:.15},data:d.prod.map(r=>r.qty),itemStyle:{color:'#38bdf8'}}]});}
+  series:[{type:'line',areaStyle:{opacity:.15},data:d.prod.map(r=>r.qty),itemStyle:{color:'#38bdf8'}}]});appOverviewFallback(d);}
 async function objDetail(k,oid){const d=await J('/api/ont/object/'+encodeURIComponent(k)+'/'+encodeURIComponent(oid));
  const w=window.open('','_blank');w.document.write(`<style>body{font-family:sans-serif;padding:20px;background:#f5f7fb}table{border-collapse:collapse}td,th{border:1px solid #dbe4fb;padding:4px 8px}</style>
  <h2>${esc(d.cn||d.name)} <small>${esc(d.kind)} · ${esc(d.table||'')}</small></h2>`+((d.bfo||d.definition)?`<div style="background:#eef2fb;padding:9px 12px;border-radius:6px;margin:8px 0;line-height:1.7"><b>BFO 范畴</b>: ${esc(d.bfo||'-')} &nbsp;·&nbsp; <b>成熟度</b>: ${esc(d.maturity||'-')}${d.isPrimitive?' &nbsp;·&nbsp; <b>原始概念</b>':''}${d.definition?`<br><b>定义</b>(属加种差): ${esc(d.definition)}`:''}${d.example?`<br><b>正例</b>: ${esc(d.example)}`:''}${d.counterExample?`<br><b>反例</b>: ${esc(d.counterExample)}`:''}${(d.provenance&&d.provenance.directSource)?`<br><b>来源</b>(directSource): ${esc(d.provenance.directSource)}`:''}</div>`:'')+`<h3>属性(${(d.attrs||[]).length})</h3>
  <table><tr><th>列</th><th>中文</th><th>类型</th><th>来源</th></tr>`+(d.attrs||[]).map(a=>`<tr><td>${esc(a.col)}</td><td>${esc(a.cn||'')}</td><td>${esc(a.type||'')}</td><td>${esc((a.sources||[]).join('/'))}</td></tr>`).join('')+`</table>`+(d.reused_from?`<h3>ISA-95 对齐(候选，待人审)</h3><div>${esc(JSON.stringify(d.reused_from))}</div>`:'')+(d.foundational_kind?`<h3>UFO 基础类型(候选)</h3><div>${esc(JSON.stringify(d.foundational_kind))}</div>`:'')+`<h3>证据来源</h3><pre>${esc(JSON.stringify(d.evidence,null,1))}</pre>`);}
 let gChart;
 function expOnt(fmt){location='/api/graph/'+document.querySelector('#g_sel').value+'/export.'+fmt;}
-function gReadable(){if(!gChart)return;try{gChart.zoomTo(Math.max(.85,gChart.getZoom()));
+function gReadable(){if(!gChart)return;gChart.__view='readable';try{gChart.zoomTo(Math.max(.85,gChart.getZoom()));
  const item=gChart.__focusId&&gChart.findById(gChart.__focusId);if(item)gChart.focusItem(item,false);else gChart.fitCenter();}catch(_){}}
-function gFitAll(){if(!gChart)return;try{gChart.fitView([24,48,24,48]);}catch(_){}}
+function gFitAll(){if(!gChart)return;gChart.__view='all';try{gChart.fitView([24,48,24,48]);}catch(_){}}
 function gZoom(scale){if(!gChart)return;try{gChart.zoomTo(Math.max(.2,Math.min(2.5,gChart.getZoom()*scale)));}catch(_){}}
 // 为缺定义对象提出属加种差定义、正例和反例；生成内容仍需人工复核。
 async function enrichOnt(btn){const k=$('#g_sel').value;if(!k)return;
  const t0=btn?btn.textContent:'';if(btn){btn.disabled=true;btn.textContent='补定义中…';}
- const P=(p)=>fetch(p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:k})}).then(x=>x.json());
+ const P=(p)=>appFetch(p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:k})}).then(x=>x.json());
  try{
   const r=await P('/api/ont/enrich');
   if(r.error)(window.toast||alert)('补定义:'+r.error);
@@ -907,7 +904,7 @@ async function enrichOnt(btn){const k=$('#g_sel').value;if(!k)return;
  }catch(e){(window.toast||alert)('升级请求失败:'+e);}
  finally{if(btn){btn.disabled=false;btn.textContent=t0||'补定义/反例';}}}
 async function promoteMaturity(key,oid,mat){            // 成熟度人审:candidate/Provisional → Released 等
- try{const r=await fetch('/api/ont/maturity',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:key,object:oid,maturity:mat})}).then(x=>x.json());
+ try{const r=await appFetch('/api/ont/maturity',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:key,object:oid,maturity:mat})}).then(x=>x.json());
   if(r.error){(window.toast||alert)(r.error);return;}
   (window.toast||alert)('成熟度已置为 '+r.maturity);
   const n=GRAPH_CUR.nodes.find(x=>x.id===oid);if(n){n.maturity=mat;showNodeDetail(n);}
@@ -943,6 +940,7 @@ let GRAPH_CUR={key:'demo',nodes:[],edges:[]};
 let GRAPH_HL=null;      // 从深度问数跳来的锚定高亮:{key, set：锚定对象, used:SQL 实际用到的表}
 async function drawGraph(k){const g=await J('/api/graph/'+k);
  if(g.error||!Array.isArray(g.nodes)){$('#g_info').textContent=g.error||'图谱加载失败';return;}
+ appGraphInitialLayout(g);
  GRAPH_CUR={key:k,nodes:g.nodes,edges:g.edges};
  $('#g_info').textContent=`${g.nodes.length} 节点 · ${g.edges.length} 关系`;
  // 元数据覆盖率仅用于定位待补项，不代表本体完备性。
@@ -1003,6 +1001,7 @@ async function rvLoad(){RV_KEY=$('#rv_sel').value;if(!RV_KEY)return;
  if($('#rv_who')&&!$('#rv_who').value)$('#rv_who').value=localStorage.getItem('rv_reviewer')||'';
  const d=await J('/api/ont/review?graph='+encodeURIComponent(RV_KEY)).catch(e=>({error:''+e}));
  if(d.error){$('#rv_body').innerHTML=`<div class="muted">${esc(d.error)}</div>`;return;}
+ const semanticEl=$('#rv_semantic');if(semanticEl){semanticEl.style.display=(d.semantic||[]).length?'block':'none';semanticEl.innerHTML=rvSemanticHTML(d.semantic||[]);}
  const c=d.counts;$('#rv_kpis').innerHTML=`<span class="tag warn">待审 ${c.pending}</span> <span class="tag ok">已通过 ${c.approved}</span> <span class="tag evt">已否决 ${c.rejected}</span> <span class="muted" style="margin-left:6px">共 ${c.total} 条${c.disputed?` · 语义存疑 ${c.disputed}`:''}</span>`;
 const SB={verified:'已验证',asserted:'人工断言',candidate:'待取证',inferred:'推理得出',gap:'待补',rejected:'已否决'};
  $('#rv_body').innerHTML='<table><tr><th>关系</th><th>动词</th><th>状态</th><th>取值重合</th><th>语义评审</th><th>人审</th><th>操作</th></tr>'+d.rows.map(r=>{
@@ -1024,11 +1023,24 @@ const SB={verified:'已验证',asserted:'人工断言',candidate:'待取证',inf
     <td class="muted" style="font-size:11px">${esc((o.tables||[]).join('、'))||'-'}</td>
     <td>${o.by?`<div class="muted" style="font-size:11px">${esc(o.by)}${o.time?' · '+esc(o.time):''}</div>`:''}${o.reason?`<div class="muted" style="font-size:11px">${esc(o.reason)}</div>`:'<span class="muted" style="font-size:11px">-</span>'}</td>
     <td>${o.candidate?`<button class="ghost" onclick="rvObjConfirm(${jsAttr(o.id)})">确认</button> `:''}<button class="ghost" style="color:#b91c1c" onclick="rvObjDel(${jsAttr(o.id)})">删除</button></td></tr>`).join('')+'</table>';}}
+function rvSemanticHTML(items){
+ const labels={concepts:'业务概念',themes:'分析主题',derived:'派生公式建议',caveats:'取数建议'};
+ return '<h3>业务语义复核</h3><div class="muted">取数查询有数据支持与业务含义确认分别记录。确认公式含义后，仍需执行指标计算核验。</div>'+
+ '<table><tr><th>提议</th><th>含义与绑定</th><th>状态与依据</th><th>操作</th></tr>'+items.map(c=>{
+  const title=c.name||c.statement||'未命名',state=c.status==='asserted'?'人工确认':c.status==='rejected'?'已否决':'待确认';
+  const binding=c.table?`${c.table}.${c.column||c.name_col||''}${c.filter?' WHERE '+c.filter:''}`:(c.formula||'');
+  return `<tr><td>${esc(title)}<div class="muted">${esc(labels[c.kind]||c.kind)}</div></td><td>${esc(c.definition||c.statement||'')}<div style="overflow-wrap:anywhere">${esc(binding)}</div></td>
+   <td>${esc(state)}${c.binding_status==='stale'?'<div class="tag warn">取数依据已失效</div>':c.binding_status==='unresolved'?'<div class="tag warn">取数依据待重新核验</div>':''}${c.review_by?`<div class="muted">${esc(c.review_by)} · ${esc(c.review_time||'')} · ${esc(c.review_reason||'')}</div>`:''}
+   <details><summary>查看取数依据${c.kind==='derived'?'（公式未执行核验）':''}</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(JSON.stringify({evidence:c.evidence,codes:c.codes,uses:c.uses},null,2))}</pre></details></td>
+   <td><button class="ghost" onclick="rvmOpen('confirm_semantic',${jsAttr(c.target)},${jsAttr(title)})">确认含义</button> <button class="ghost" onclick="rvmOpen('reject_semantic',${jsAttr(c.target)},${jsAttr(title)})">否决</button></td></tr>`;
+ }).join('')+'</table>';}
 function rvWho(){return ($('#rv_who')&&$('#rv_who').value.trim())||localStorage.getItem('rv_reviewer')||'';}
 function rvSaveWho(){try{localStorage.setItem('rv_reviewer',$('#rv_who').value.trim());}catch(e){}}
 // ── 页面内评审表单(评审人 + 评审意见 可见输入；不依赖浏览器原生弹窗，防被"阻止对话框"设置吞掉)──
 let RVM=null;   // {op,target,params,needReason,graphPage}
 const RVM_META={confirm_relation:['人审通过','评审意见(可选)',false],reject_relation:['人审否决','否决原因(必填)',true],
+ confirm_semantic:['确认业务含义','请核对定义、单位和适用范围；公式执行核验独立进行',false],
+ reject_semantic:['否决业务提议','否决原因(必填)',true],
  remove_relation:['删除关系','删除原因(必填)',true],verb:['修改关系动词','修改说明(可选)',false],
  confirm:['确认候选对象','评审意见(可选)',false],remove_object:['删除对象(级联删除其全部关系)','删除原因(必填)',true]};
 function rvmOpen(op,target,sub,params,graphPage){const[title,clabel,need]=RVM_META[op]||[op,'评审意见',false];
@@ -1372,7 +1384,7 @@ async function asLoad(){
   `<div class="cn-row" style="cursor:pointer" onclick="asAct()"><span style="flex:1">${esc(a.cn)} <span class="tag ${a.risk==='high'?'warn':'ok'}" style="font-size:11px">${a.risk==='high'?'高风险·须审批':'低风险·直接登记'}</span></span><span class="muted" style="font-size:11px">发起 →</span></div>`).join('')||'<div class="muted">该角色暂无关联动作</div>';
  // 待办聚合：四个入口的实时计数(全部来自现有 API，无新状态)
  let rv=0,ac=0,fb=0,ev='—';
- try{rv=((await J('/api/ont/review?graph=demo')).counts||{}).pending||0;}catch(_){}
+ try{rv=((await J('/api/ont/review')).counts||{}).pending||0;}catch(_){}
  try{ac=(await J('/api/actions')).pending||0;}catch(_){}
  try{fb=((await J('/api/chat/feedback')).items||[]).filter(x=>!x.resolved&&x.verdict==='needs_work').length;}catch(_){}
  try{const e=await J('/api/eval/results');if(e&&e.arms&&e.arms.C)ev=e.arms.C.correct+'/'+(e.n||e.items.length);}catch(_){}
@@ -1395,11 +1407,11 @@ async function qeRun(){const model=$('#qe_model').value.trim();
  if(d.error){toast(d.error,false);return}
  toast('评测已启动(后台运行，每题即时落盘)',true);qePoll();}
 function qeRender(d){
- if(!d||d.empty||!(d.items||[]).length){$('#qe_kpis').innerHTML='';$('#qe_body').innerHTML='<div class="muted" style="padding:10px">尚未跑过评测 —— 点上方「跑一轮评测」。三组同题对照:A 只给英文表列(朴素基线),B 加中文语义+本体关系，C 本体全量(再叠加指标/术语/本体约束校验)。</div>';return;}
+ if(!d||d.empty||!(d.items||[]).length){$('#qe_kpis').innerHTML='';$('#qe_body').innerHTML=(appSourceId()!=='demo'?'<div class="muted" style="padding:10px">当前数据库使用自动生成的简单计数检查题，仅用于功能验收，不代表业务问数准确率。</div>':'')+'<div class="muted" style="padding:10px">尚未跑过评测 —— 点上方「跑一轮评测」。三组同题对照:A 只给英文表列(朴素基线),B 加中文语义+本体关系，C 本体全量(再叠加指标/术语/本体约束校验)。</div>';return;}
  const n=(d.items||[]).length;const A=d.arms||{};
  $('#qe_kpis').innerHTML=['A','B','C'].map(k=>{const a=A[k]||{};return `<div class="kpi"><div class="n" style="color:${k==='C'?'#16a34a':k==='B'?'#4A5FF3':'#6B7690'}">${a.correct||0}/${n}</div>
   <div class="l">${k} 组 · ${esc((a.name||'').split('(')[0])}<br><span style="font-size:11px">出处引用 ${a.cite||0}/${n}${k==='C'?` · 本体约束拦截 ${a.gate_block||0}`:''}</span></div></div>`;}).join('');
- $('#qe_body').innerHTML=`<div class="muted" style="font-size:11.5px;margin-bottom:8px">模型:${esc(d.model||'')} · ${esc(d.ts||'')} · 判分=数值容差/字符串等值；出处=SQL 必须引用参考答案所需表</div>`
+ $('#qe_body').innerHTML=`<div class="muted" style="font-size:11.5px;margin-bottom:8px">题集:${esc(d.dataset_type==='source_count_smoke'?'当前库简单计数检查':'业务参考题集')} · 模型:${esc(d.model||'')} · ${esc(d.ts||'')} · 判分=数值容差/字符串等值；出处=SQL 必须引用参考答案所需表</div>`
   +'<table><tr><th>题目</th><th>参考集</th><th>A 朴素</th><th>B 图谱</th><th>C 本体全量</th></tr>'
   +(d.items||[]).map(it=>'<tr><td style="max-width:260px">'+esc(it.q)+'</td><td><code>'+esc(String(it.gold))+'</code></td>'
    +['A','B','C'].map(k=>{const r=(it.arms||{})[k]||{};const mk=r.correct?'<span style="color:#16a34a">✓</span>':r.gate_block?'<span style="color:#d97706">拦</span>':'<span style="color:#dc2626">✗</span>';
@@ -1493,12 +1505,12 @@ async function metrics(){
  const cnt={};Object.values(m).forEach(a=>(a||[]).forEach(x=>{const st=mStatus(x);cnt[st]=(cnt[st]||0)+1;}));
  $('#m_kpi').innerHTML=['certified','verified','candidate','deprecated','heuristic'].filter(k=>cnt[k]).map(k=>`${mstTag(k)}<span class="muted" style="margin-right:8px">${cnt[k]}</span>`).join('');
  $('#m_body').innerHTML=`<div class="card" id="m_lineage" style="display:none"></div>`+
-  Object.entries(m).map(([k,arr])=>`<div class="card"><h3>${names[k]||k}(${arr.length})<span class="muted">· 点行看契约与血缘</span></h3>
+  Object.entries(m).map(([k,arr])=>`<div class="card"><h3>${names[k]||k}(${arr.length})<span class="muted">· 点行查看计算规则与数据溯源</span></h3>
   <div class="scroll" style="max-height:26vh"><table><tr><th>名称</th><th>状态</th><th>计算规则</th><th>来源表</th><th>取值列</th><th>单位</th><th>说明</th></tr>`+
   arr.map(x=>`<tr style="cursor:pointer" onclick="lineage(${jsAttr(x.name)})"><td><b>${esc(x.name)}</b></td><td>${mstTag(mStatus(x))}</td><td><code style="font-size:11px">${esc(mCaliber(x))||'<span class=muted>未声明</span>'}</code></td><td>${esc(x.table)}</td><td>${esc(x.value_col)}</td><td>${esc(x.unit)}</td><td>${esc(x.desc||x.formula)}</td></tr>`).join('')+'</table></div></div>').join('');}
 async function metricReadjudicate(){const g=mGraph();toast('重跑核验中…');
  const d=await J('/api/metric/adjudicate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:g})}).catch(e=>({error:''+e}));
- if(d.error){toast(d.error,false);return;}toast(`核验完成 · 契约 ${d.contracts} 条 · 已核验 ${d.verified} 条`,true);metrics();}
+ if(d.error){toast(d.error,false);return;}toast(`核验完成 · 规则 ${d.contracts} 条 · 已核验 ${d.verified} 条`,true);metrics();}
 async function metricStatus(name,status){const g=mGraph();const who=($('#ml_who')&&$('#ml_who').value.trim())||'';const reason=($('#ml_reason')&&$('#ml_reason').value.trim())||'';
  if(status==='certified'&&!who){toast('业务确认须填写确认人(姓名或工号)',false);$('#ml_who').focus();return;}
  try{localStorage.setItem('rv_reviewer',who);}catch(e){}
@@ -1530,9 +1542,9 @@ async function lineage(name){const g=mGraph();
     ${st!=='deprecated'?`<button class="ghost" onclick="metricStatus(${jsAttr(name)},'deprecated')">停用</button>`:''}
     ${(st==='certified'||st==='deprecated')?`<button class="ghost" onclick="metricStatus(${jsAttr(name)},'candidate')">撤回为待核验</button>`:''}
    </div><div class="muted" style="margin-top:4px">「已核验」只能由核验产生，人工只能授予「业务已确认」或「停用」。</div></div>`
-  :`<div class="step muted">该指标是旧形状(未声明聚合方式)，不能做业务确认；先在构建时反解或补契约。</div>`;
+  :`<div class="step muted">该指标是旧形状(未声明聚合方式)，不能做业务确认；先在构建时反解或补充计算规则。</div>`;
  el.innerHTML=`<h3>${esc(name)} ${mstTag(st)}<span class="tag ok">${esc(LAYER_CN[ly]||ly)}</span>${m.unit?`<span class="tag" style="background:#F4F4F5;color:#606266">${esc(m.unit)}</span>`:''}${m.certified_by?`<span class="muted" style="font-size:11px">确认人 ${esc(m.certified_by)}${m.certified_at?' · '+esc(m.certified_at):''}</span>`:''}</h3>
-  ${isC?`<div class="step"><b>契约计算规则</b>: <code>${esc(c.caliber||'')}</code></div><div class="step"><b>编译 SQL</b>: <code style="font-size:11px;white-space:pre-wrap">${esc(c.compiled_sql||c.compile_error||'')}</code></div>`:''}
+  ${isC?`<div class="step"><b>计算规则</b>: <code>${esc(c.caliber||'')}</code></div><div class="step"><b>编译 SQL</b>: <code style="font-size:11px;white-space:pre-wrap">${esc(c.compiled_sql||c.compile_error||'')}</code></div>`:''}
   ${m.desc?`<div class="step"><b>业务说明</b>: ${esc(m.desc)}</div>`:''}
   <div class="step">${srcLine}</div>${d.formula?`<div class="step"><b>计算公式</b>: ${esc(d.formula)}</div>`:''}
   ${evLine}${dimLine}
@@ -1551,12 +1563,9 @@ async function instantQ(){const n=$('#iq_sel').value;if(!n)return;
  if(d.error){$('#iq_info').textContent=d.error;return}
  $('#iq_info').textContent=`${d.source} · ${d.agg}${d.unit?' · '+d.unit:''}${d.agg_note?' · '+d.agg_note:''}${d.status?' · '+((MST[d.status]||[0,d.status])[1]):''}`;  // 一并展示聚合方式说明(如比率取月均为近似)，透明不误导
  const el=$('#iq_chart');el.style.display='block';
- mk(el,{grid:{top:28,left:60,right:20,bottom:30},tooltip:{trigger:'axis'},
-  xAxis:{type:'category',data:d.data.rows.map(r=>r['月']),...AX},yAxis:{type:'value',...AX},
-  series:[{name:d.metric,type:'line',areaStyle:{opacity:.12},data:d.data.rows.map(r=>r[d.metric]),itemStyle:{color:'#4A5FF3'}}]});}
+ appMetricChart(el,d);}
 // 对外统一引擎名：不暴露底层多智能体库(hermes/claude-code/openclaw)
 function engName(r){return {hermes:'智能引擎','claude-code':'智能引擎(备选)',claude:'智能引擎(备选)',openclaw:'经典引擎'}[r]||'智能引擎';}
-const LOAD_STEPS=['加载 示例 本体上下文…','匹配相关表/指标，组装 schema…','智能引擎生成 SQL 分析计划(约 40-60s)…','本地 SQLite 执行查询…','生成业务洞察…'];
 let DQ_CONV=null, DQ_UID=0, DQ_ATTS=[], DQ_ABORT=null;
 function dqAbort(){if(DQ_ABORT){try{DQ_ABORT.abort()}catch(_){}DQ_ABORT=null;}}
 const EG_Q=['毛利为什么下降?收入有什么变化?产量趋势如何?','最近几个月毛利率的变化趋势','各月收入与实际毛利额对比'];
@@ -1756,7 +1765,7 @@ async function diagAsk(){const inp=$('#chat_q');const q=inp.value.trim();if(!q)r
   <details class="dq-exec" open><summary>执行记录</summary><div class="dq-log" id="_dglog"></div></details><div id="_dgres"></div>`;
  const log=card.querySelector('#_dglog');const res=card.querySelector('#_dgres');
  try{
-  const resp=await fetch('/api/diagnose/stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q})});
+  const resp=await appFetch('/api/diagnose/stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q})});
   const rd=resp.body.getReader();const dec=new TextDecoder();let buf='';
   while(true){const{done,value}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});
    let i;while((i=buf.indexOf('\n\n'))>=0){const chunk=buf.slice(0,i);buf=buf.slice(i+2);
@@ -1797,7 +1806,7 @@ async function ask(){if(DQ_MODE==='diag')return diagAsk();
  try{
   const skill=DQ_SKILL||'demo-deep-qa';
   const requestId='qa_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);
-  const resp=await fetch('/api/chat/stream',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json','Cache-Control':'no-cache'},signal:ac.signal,body:JSON.stringify({q,history:CHAT_HIST.slice(-2),skill,graphs:DQ_DS.graphs,tables:DQ_DS.tables,attachments:DQ_ATTS.map(a=>a.name),cache_policy:'bypass',nocache:1,request_id:requestId})});
+  const resp=await appFetch('/api/chat/stream',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json','Cache-Control':'no-cache'},signal:ac.signal,body:JSON.stringify({q,history:CHAT_HIST.slice(-2),skill,graphs:DQ_DS.graphs,tables:DQ_DS.tables,attachments:DQ_ATTS.map(a=>a.name),cache_policy:'bypass',nocache:1,request_id:requestId})});
   if(!resp.ok){card.innerHTML=`<span class="dq-t warn">请求失败: HTTP ${resp.status}</span>`;$('#chat_btn').disabled=false;return;}
   const rd=resp.body.getReader();const dec=new TextDecoder();let buf='',done=null;
   while(true){const {done:fin,value}=await rd.read();if(fin)break;if(ac.signal.aborted)return;buf+=dec.decode(value,{stream:true});
@@ -2017,7 +2026,7 @@ async function bcSources(){const d=await J('/api/build/sources').catch(()=>({sou
  const as=d.assets||[];$('#bc_asset_n').textContent='('+as.length+')';
  $('#bc_assets').innerHTML=as.length?as.map(a=>`<span class="bc-chip bc-mod-${esc(a.modality)}" title="${a.usable?'构建时整份读入、分块检索，按本轮的表与诉求选取片段':'未解析格式：仅登记来源，不作为已读取证据'}"><b>${esc(a.modality)}</b>${esc(a.name)} <span class="muted">${a.kb}KB</span><span class="use">${a.usable?'· 证据':'· 仅登记'}</span><span class="x" title="删除该资料" onclick="bcDelAsset(${jsAttr(a.name)})">✕</span></span>`).join(''):'<span class="muted">尚无上传</span>';
  const cur=(d.sources||[]).find(s=>s.id===BC.src);if(cur){BC.srcName=cur.name;$('#bc_cur_src').textContent=cur.name;}a11yScan();bcSyncHeight();}
-function bcSelectSrc(id){BC.src=id;const s=(BC._sources||[]).find(x=>x.id===id);BC.srcName=s?s.name:id;
+function bcSelectSrc(id){if(window.APP_DATA&&APP_DATA.ready&&id!==appSourceId()){appSourceChange(id);return;}BC.src=id;const s=(BC._sources||[]).find(x=>x.id===id);BC.srcName=s?s.name:id;
  $('#bc_cur_src').textContent=BC.srcName;
  document.querySelectorAll('#bc_sources .bc-srow').forEach(r=>r.classList.remove('on'));
  bcSources();}
@@ -2191,6 +2200,7 @@ function bcResultHTML(done,viewId='bcpreview_'+(++BC_VIZ_SEQ)){const s=done.stat
     <div><b>${esc(s.objects??0)}</b><span>节点总数</span></div><div><b>${esc(s.events??0)}</b><span>事件</span></div><div><b>${esc(s.actions??0)}</b><span>动作</span></div>
     <div><b>${esc(s.links??0)}</b><span>关系</span></div><div><b>${esc(s.verified??0)}</b><span>数据已验证</span></div>
     <div><b>${esc(s.candidate??0)}</b><span>候选待取证</span></div></div>
+   ${(s.concepts||s.themes||s.derived||s.caveats)?`<div class="muted" style="padding:8px 14px">业务概念 ${esc(s.concepts||0)} · 分析主题 ${esc(s.themes||0)} · 派生公式建议 ${esc(s.derived||0)} · 取数建议 ${esc(s.caveats||0)}。请在「进入人审」中查看依据并确认含义。</div>`:''}
    <div class="bc-summary">${esc(done.summary||'').replace(/\n/g,'<br>')}${done.note?`<div class="muted" style="margin-top:6px;font-size:12px">说明:${esc(done.note)}</div>`:''}</div>
    <div class="bc-viz-wrap"><div class="bc-viz-hd">本体预览 <span class="muted" style="font-weight:400">· 拖拽平移 · 滚轮缩放 · 点节点看绑定表/字段/指标</span></div>
     <div class="bc-viz" id="${esc(viewId)}"></div>
@@ -2274,27 +2284,32 @@ async function cnDel(id){if(!confirm('移除该连接?'))return;
  await J('/api/build/connect/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
  if(CN_SRC===id){CN_SRC=null;$('#cn_browse').innerHTML='<h3>选择左侧「就绪」连接以浏览其数据表</h3>';$('#cn_preview').style.display='none';}cnLoad();}
 // ══════ 数据可视化 ══════
-let VZ_DATA=null,VZ_QUICK={};
+let VZ_DATA=null,VZ_QUICK={},VZ_REQUEST=0;
 async function vzInit(){
  const d=await J('/api/build/sources').catch(()=>({sources:[]}));
  const ready=(d.sources||[]).filter(s=>s.ready&&s.kind==='sqlite');
- $('#vz_src').innerHTML=ready.map(s=>`<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('')||'<option value="demo">示例主库</option>';
- await vzQuickOpts();vzBoardsLoad();}
+ $('#vz_src').innerHTML=ready.map(s=>`<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('')||'<option value="demo">示例主库</option>';const selected=APP_DATA.draft?.vizSource||appSourceId();if(ready.some(s=>s.id===selected))$('#vz_src').value=selected;
+ await vzQuickOpts();vzBoardsLoad();if(VZ_BOARD.length)vzGridRender();}
 async function vzQuickOpts(){VZ_QUICK={};const src=$('#vz_src').value||'demo';let opts='<option value="">— 选表 / 指标自动生成 SQL —</option>';
- // 指标(仅示例图谱)
- if(src==='demo'){try{const m=await J('/api/metrics');const flat=[];Object.values(m||{}).forEach(a=>a.forEach(x=>{if(x.table&&x.value_col)flat.push(x)}));
-  if(flat.length){opts+='<optgroup label="指标(月度聚合)">'+flat.slice(0,60).map((x,i)=>{const kk='m'+i;VZ_QUICK[kk]={type:'metric',m:x};return `<option value="${kk}">${esc(x.name)}</option>`}).join('')+'</optgroup>';}}catch(_){}}
+ // 使用所选数据源的指标规则，不跨库复用。
+ {try{const m=await J('/api/metrics',{headers:{'X-DataMind-Source':src}});const flat=[];Object.values(m||{}).forEach(a=>a.forEach(x=>{if(x.table&&(x.value_col||x.measure))flat.push(x)}));
+  if(flat.length){opts+='<optgroup label="指标(按声明规则)">'+flat.slice(0,60).map((x,i)=>{const kk='m'+i;VZ_QUICK[kk]={type:'metric',m:x};return `<option value="${kk}">${esc(x.name)}</option>`}).join('')+'</optgroup>';}}catch(_){}}
  // 表(取前若干含数值列的表)
- try{const t=await J('/api/conn/tables?src='+encodeURIComponent(src));(t.tables||[]).slice(0,120).forEach((tb,i)=>{const kk='t'+i;VZ_QUICK[kk]={type:'table',name:tb.name};});
-  opts+='<optgroup label="表(预览取数)">'+(t.tables||[]).slice(0,120).map((tb,i)=>`<option value="t${i}">${esc(tb.name)} (${tb.rows}行)</option>`).join('')+'</optgroup>';}catch(_){}
+ try{const t=await J('/api/conn/tables?src='+encodeURIComponent(src));(t.tables||[]).forEach((tb,i)=>{const kk='t'+i;VZ_QUICK[kk]={type:'table',name:tb.name};});
+  opts+='<optgroup label="表(预览取数)">'+(t.tables||[]).map((tb,i)=>`<option value="t${i}">${esc(tb.name)} (${tb.rows}行)</option>`).join('')+'</optgroup>';}catch(_){}
  $('#vz_quick').innerHTML=opts;}
-function vzSrcChange(){vzQuickOpts();}
-function vzQuick(){const k=$('#vz_quick').value;const it=VZ_QUICK[k];if(!it)return;
- if(it.type==='metric'){const m=it.m;$('#vz_sql').value=`SELECT round(sum(${m.value_col}),2) AS "${m.name}" FROM ${m.table}`;$('#vz_type').value='kpi';}
- else{$('#vz_sql').value=`SELECT * FROM ${it.name} LIMIT 100`;}}
+function vzSrcChange(){VZ_DATA=null;++VZ_REQUEST;$('#vz_prev').innerHTML='<div class="muted" style="padding:20px">数据源已切换，请重新取数</div>';$('#vz_info').textContent='';$('#vz_sql').value='';$('#vz_x').innerHTML='';$('#vz_y').innerHTML='';vzQuickOpts();}
+async function vzQuick(){const it=VZ_QUICK[$('#vz_quick').value];if(!it)return;
+ if(it.type==='metric'){const m=it.m,src=$('#vz_src').value;
+  const d=await J('/api/metric/contract?name='+encodeURIComponent(m.name),{headers:{'X-DataMind-Source':src}});
+  if(d.compiled_sql){$('#vz_sql').value=d.compiled_sql;$('#vz_type').value='kpi';}
+  else{toast(d.compile_error||'该指标未声明可编译规则，当前仅预览绑定表');$('#vz_sql').value='SELECT * FROM "'+String(m.table).replace(/"/g,'""')+'" LIMIT 100';}}
+ else{$('#vz_sql').value='SELECT * FROM "'+String(it.name).replace(/"/g,'""')+'" LIMIT 100';}}
 async function vzRun(){const sql=$('#vz_sql').value.trim();if(!sql){toast('请输入 SQL');return}
  $('#vz_info').textContent='取数中…';
- const d=await J('/api/viz/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({src:$('#vz_src').value,sql})}).catch(e=>({error:''+e}));
+ const request=++VZ_REQUEST,source=$('#vz_src').value;
+ const d=await J('/api/viz/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({src:source,sql})}).catch(e=>({error:''+e}));
+ if(request!==VZ_REQUEST||source!==$('#vz_src').value)return;
  if(d.error){$('#vz_info').textContent='';$('#vz_prev').innerHTML=`<div class="tag warn" style="margin:12px">${esc(d.error)}</div>`;VZ_DATA=null;return}
  VZ_DATA=d;$('#vz_info').textContent=`${d.rows.length} 行 × ${d.columns.length} 列`;
  // 自动映射：第一列为 X，其余数值列为 Y(X 若本身是数值列则从 Y 中排除，避免自己画自己)
@@ -2316,7 +2331,8 @@ function vzChartOption(data,type,x,ys){const rows=data.rows||[];const cats=rows.
 function vzRender(){if(!VZ_DATA){return}const type=$('#vz_type').value,x=$('#vz_x').value,ys=vzSel('vz_y');const el=$('#vz_prev');
  if(type==='table'){el.innerHTML=`<div class="scroll" style="max-height:300px"><table><tr>`+(VZ_DATA.columns||[]).map(c=>`<th>${esc(c)}</th>`).join('')+'</tr>'+(VZ_DATA.rows||[]).map(r=>'<tr>'+(VZ_DATA.columns||[]).map(c=>`<td>${cell(r[c])}</td>`).join('')+'</tr>').join('')+'</table></div>';return;}
  if(type==='kpi'){const y=ys[0]||(VZ_DATA.columns||[])[1];const last=(VZ_DATA.rows||[]).slice(-1)[0]||{};
-  el.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%"><div class="muted">${esc(y||'')}</div><div style="font-size:42px;font-weight:700;color:var(--acc);font-variant-numeric:tabular-nums">${esc(last[y]??'-')}</div><div class="muted" style="font-size:12px">末期 ${esc(last[x]??'')}</div></div>`;return;}
+  const rowLabel=VZ_DATA.rows.length>1&&x!==y?`<div class="muted" style="font-size:12px">最后一行：${esc(last[x]??'')}</div>`:'';
+  el.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%"><div class="muted">${esc(y||'')}</div><div style="font-size:42px;font-weight:700;color:var(--acc);font-variant-numeric:tabular-nums">${esc(last[y]??'-')}</div>${rowLabel}</div>`;return;}
  el.innerHTML='';mk(el,vzChartOption(VZ_DATA,type,x,ys));}
 function vzAdd(){if(!VZ_DATA){toast('请先运行取数');return}
  const spec={title:$('#vz_title').value||('图表'+(VZ_BOARD.length+1)),src:$('#vz_src').value,sql:$('#vz_sql').value.trim(),
@@ -2327,7 +2343,7 @@ function vzGridRender(){const g=$('#vz_grid');$('#vz_board_n').textContent='('+V
  g.querySelectorAll('.vc').forEach(el=>{const i=echarts.getInstanceByDom(el);if(i)i.dispose();});  // 释放旧实例，防重渲染泄漏
  const gen=++VZ_GEN;
  if(!VZ_BOARD.length){g.innerHTML='<div class="muted" style="padding:20px;text-align:center;grid-column:1/-1">运行取数后点「添加到看板」，可拼装多图看板并保存</div>';return}
- g.innerHTML=VZ_BOARD.map((c,i)=>`<div class="vz-card"><div class="hd"><span>${esc(c.title)}</span><span class="x" title="移除" onclick="VZ_BOARD.splice(${i},1);vzGridRender()">✕</span></div><div class="vc" id="vzc_${i}"><div class="muted" style="padding:20px;text-align:center">加载中…</div></div></div>`).join('');
+ g.innerHTML=VZ_BOARD.map((c,i)=>`<div class="vz-card"><div class="hd"><span>${esc(c.title)} <small class="muted">· ${esc((APP_DATA.sources||[]).find(s=>s.id===c.src)?.name||c.src||"示例主库")}</small></span><span class="x" title="移除" onclick="VZ_BOARD.splice(${i},1);vzGridRender()">✕</span></div><div class="vc" id="vzc_${i}"><div class="muted" style="padding:20px;text-align:center">加载中…</div></div></div>`).join('');
  VZ_BOARD.forEach((c,i)=>vzCardRender(c,i,gen));}
 async function vzCardRender(c,i,gen){const d=await J('/api/viz/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({src:c.src,sql:c.sql})}).catch(e=>({error:''+e}));
  if(gen!==VZ_GEN)return;                     // 该渲染已被更新的取代，丢弃陈旧结果(防串卡)
@@ -2387,7 +2403,7 @@ async function clawAsk(){const q=$('#claw_q').value.trim();if(!q)return;$('#claw
   const atts=[];for(const f of ($('#claw_file').files||[])){const b=await f.arrayBuffer();
    atts.push({name:f.name,b64:btoa(String.fromCharCode(...new Uint8Array(b)))});}
   $('#claw_file').value='';clawFileLabel();
-  const resp=await fetch('/api/ont/chat/stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:CLAW_ID,message:q,graph:clawGraph(),attachments:atts})});
+  const resp=await appFetch('/api/ont/chat/stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:CLAW_ID,message:q,graph:clawGraph(),attachments:atts})});
   const rd=resp.body.getReader();const dec=new TextDecoder();let buf='',d=null;
   while(true){const {done,value}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});
    let i;while((i=buf.indexOf('\n\n'))>=0){const line=buf.slice(0,i).replace(/^data: /,'');buf=buf.slice(i+2);
@@ -2422,7 +2438,7 @@ async function clawAudit(){const d=await J('/api/ont/audit/'+encodeURIComponent(
    d.recent.map(r=>`<tr><td>${esc(r.op)}</td><td>${esc(r.target||'')}</td><td>${esc(r.by)}</td><td>${esc(r.source)}</td><td class="muted">${esc(r.ts||'')}</td><td class="muted">${esc(r.reason||'')}</td></tr>`).join('')+'</table></div>';}
  h+=`<div class="muted" style="margin-top:6px;font-size:11px">${esc(d.note||'')}</div>`;
  $('#claw_audit').innerHTML=h;}
-async function library(){const d=await J('/api/ont/forged');
+async function library(){if(window.APP_DATA&&APP_DATA.ready)return appLibrary();const d=await J('/api/ont/forged');
  const rows=(d.ontologies||d.list||[]);
  $('#lib_list').innerHTML='<table><tr><th>ID</th><th>名称</th><th>对象数</th><th>关系数</th><th>操作</th></tr>'+
   rows.map(o=>`<tr><td>${esc(o.id)}</td><td>${esc(o.name||'')}</td><td>${o.objects??o.entities??'-'}</td><td>${o.links??'-'}</td>
@@ -2438,7 +2454,7 @@ async function sparqlRun(){$('#sq_info').textContent='查询中…';
  const rows=d.rows||[];const cols=d.vars||(rows[0]?Object.keys(rows[0]):[]);
  $('#sq_out').innerHTML='<table><tr>'+cols.map(c=>`<th>${esc(c)}</th>`).join('')+'</tr>'+rows.map(r=>'<tr>'+cols.map(c=>`<td>${esc(r[c])}</td>`).join('')+'</tr>').join('')+'</table>';}
 // 初始寻址：带 hash 直达对应子页，否则默认首页
-if(location.hash.slice(1))routeHash();else{home();loaded.home=1;}
+(async()=>{if(await appSourceInit()){if(location.hash.slice(1))routeHash();else{home();loaded.home=1;}}else{goPage('conn');}})();
 // hash 路由：每个子页可经 #<page> 寻址；另支持 #graph=<key> / #obj=<key>:<id> 深链
 function routeHash(){const h=location.hash.slice(1);
  const mg=h.match(/^graph=(.+)$/);if(mg){loaded.graph=1;goPage('graph');graphs(mg[1]);return;}

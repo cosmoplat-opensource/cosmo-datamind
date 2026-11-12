@@ -65,6 +65,8 @@ async function bcInquire(opts){
  const cqs=$('#bc_cq').value.split(/\n+/).map(x=>x.trim()).filter(Boolean);
  const references=window.bcRefsPayload?bcRefsPayload():{version:1,industry:{id:$('#bc_ref_industry').value,mode:$('#bc_ref_industry_mode').value},ontology_standard:{id:$('#bc_ref_standard').value,mode:$('#bc_ref_standard_mode').value}};
  const request={q,source:BC.src,name:auto?(opts.name||''):$('#bc_name').value,skills:[...BC.skills],cqs,references,base_graph:BC.base||''};
+ const workload=Array.isArray(opts.workload)?opts.workload:($('#bc_workload')?.value||'').split(/\n+/).map(x=>x.trim()).filter(Boolean);
+ if(workload.length)request.workload=workload;
  if(Array.isArray(opts.tables)&&opts.tables.length)request.tables=opts.tables;
  BC_BUSY=true;$('#bc_send').disabled=true;$('#bc_send').textContent='构建中…';if(!auto)$('#bc_q').value='';
  if(!BC.welcomed||$('#bc_log').querySelector('.bc-welcome'))$('#bc_log').innerHTML='';
