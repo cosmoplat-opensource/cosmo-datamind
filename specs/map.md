@@ -34,6 +34,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 ## 索引
 
 ### 决定 / Decisions
+- [DR-098 · 问数校验补漏：连接写法、范围、不存在的列、降级与投票](decisions/DR-098-qa-gate-hardening.md)
 - [DR-097 · 人审结论在继续构建中保留，回放失败留痕](decisions/DR-097-human-review-survives-rebuild.md)
 - [DR-096 · 已保存的端点凭据只发往已保存的端点](decisions/DR-096-endpoint-credentials-stay-with-their-endpoint.md)
 - [DR-095 · 多数据库上下文与可视化切换](decisions/DR-095-multi-database-context-and-visualization.md)

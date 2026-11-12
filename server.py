@@ -2038,13 +2038,29 @@ def expand_terms(question):
 
 _SQL_KW = {"on", "where", "group", "order", "left", "right", "inner", "outer", "cross",
            "join", "select", "limit", "using", "as", "union", "having", "with"}
+_SQL_LEX = re.compile(r"""('(?:[^']|'')*')|--[^\n]*|/\*.*?\*/|"(%s)"|`(%s)`|\[(%s)\]""" % ((_SQL_IDENT,) * 3), re.S)
+
+
+def _sql_for_gate(sql):
+    """校验用的 SQL 文本(DR-098):去掉注释,去掉简单标识符外面的引号;单引号字符串原样保留。
+    注释里的词不是表名;"orders" 与 orders 是同一张表,带引号时此前整条语句解析不出任何表。"""
+    def sub(m):
+        if m.group(1) is not None: return m.group(1)
+        return m.group(2) or m.group(3) or m.group(4) or " "
+    return _SQL_LEX.sub(sub, sql or "")
+
+
+_COMMA_TABLE = re.compile(r"\s*,\s*(up\.)?(%s)(?:\s+(?:as\s+)?(%s))?" % (_SQL_IDENT, _SQL_IDENT), re.I)
+_ON_BEFORE = re.compile(r"\bon\s*\(?\s*$", re.I)
+
+
 def _validate_sql_ontology(sql, ir, strict=False):
     """A2 本体约束拦截:SQL 执行前对照本体校验,不符合本体约束的查询直接拦下。
     ① 表白名单:FROM/JOIN 的表必须在本体/数据目录/上传库(up.)/CTE 内 —— 拦臆造表名;
     ② JOIN 键校验:ON a.x=b.y 两侧列名不同时,该键对必须落在本体 verified/asserted 关系
       的 child/parent 键上(同名键等值 JOIN 放行,同名列即视为同一含义)—— 拦自造 JOIN。
     → (ok, reason)"""
-    s = sql or ""
+    s = _sql_for_gate(sql)
     # 只在解析表名时去掉字符串常量:WHERE title = '... from experts' 不能解析出表 experts;
     # 有效行等条件校验仍看原文(要认出 del_flag = 'N')(DR-080)
     s_tab = re.sub(r"'(?:[^']|'')*'", "''", s)
@@ -2063,6 +2079,17 @@ def _validate_sql_ontology(sql, ir, strict=False):
         full = ("up." + t) if pre else t
         used.append(full)
         alias[al or t] = full
+        # 逗号连接(FROM a x, b y):后面的表同样登记,否则它们既不过表白名单,也不参与键校验(DR-098)
+        pos = m.end(2) if not al else m.end()
+        while True:
+            cm = _COMMA_TABLE.match(s_tab, pos)
+            if not cm: break
+            ct, cal = cm.group(2).lower(), (cm.group(3) or "").lower()
+            if ct in _SQL_KW: break
+            if cal in _SQL_KW: cal = ""
+            cfull = ("up." + ct) if cm.group(1) else ct
+            used.append(cfull); alias[cal or ct] = cfull
+            pos = cm.end(2) if not cal else cm.end()
     for full in used:
         base = full[3:] if full.startswith("up.") else full
         if full.startswith("up."):
@@ -2110,8 +2137,14 @@ def _validate_sql_ontology(sql, ir, strict=False):
                     relkeys.add((st, c1, tt, p1)); relkeys.add((tt, p1, st, c1))
                     companions[(st, c1, tt, p1)] = companions[(tt, p1, st, c1)] = (st, tt, comps)
     joined_parents = {}                          # 本条 SQL 里作为 1:N 父侧出现的表 → 其别名集合
-    for m in re.finditer(r"\bon\s+(%s)\.(%s)\s*=\s*(%s)\.(%s)" % ((_SQL_IDENT,) * 4), s, re.I):
+    # 连接条件不只写在 ON 后面:带括号的 ON、ON 里 AND 之后的第二个等式、逗号连接或 CROSS JOIN 配 WHERE,
+    # 此前都不经过键校验(DR-098)。这里看语句里所有「别名.列 = 别名.列」;不紧跟 ON 的等式只在两侧
+    # 都是已登记的别名且不是同一个别名时才当作连接条件,同一张表内的列比较不算。
+    for m in re.finditer(r"(?<![\w.])(%s)\.(%s)\s*=\s*(%s)\.(%s)\b" % ((_SQL_IDENT,) * 4), s_tab, re.I):
         a, ca, b, cb = (m.group(i).lower() for i in (1, 2, 3, 4))
+        if not _ON_BEFORE.search(s_tab[max(0, m.start() - 16):m.start()]) and (
+                a == b or a not in alias or b not in alias):
+            continue
         ta, tb = alias.get(a, a), alias.get(b, b)
         if ta in ctes or tb in ctes or ta.startswith("up.") or tb.startswith("up."): continue
         # 父侧识别先于同名键放行:同名等值 JOIN 免验键,但扇出与键名无关
@@ -2165,8 +2198,9 @@ def _validate_sql_ontology(sql, ir, strict=False):
     return True, ""
 
 
-def _qa_validate_sql(sql, ir, strict=False, focus_tables=None):
-    """问数本体约束校验调用层；兼容仍实现旧两参数签名的测试替换与扩展。"""
+def _qa_scope_check(sql, ir, strict=False, focus_tables=None):
+    """查询读到的表是否都在所选范围内(所选本体、显式选择的数据表)。未限定范围时直接通过。
+    由 SQLite 自己解析语句(EXPLAIN + 授权回调),带引号的标识符、嵌套查询和 CTE 都能认出。"""
     if strict or focus_tables:
         allowed = {(o.get("table") or "").lower() for o in ir.get("objects", []) if o.get("table")}
         if focus_tables:
@@ -2203,6 +2237,43 @@ def _qa_validate_sql(sql, ir, strict=False, focus_tables=None):
         finally:
             if con is not None:
                 con.close()
+    return True, ""
+
+
+def _qa_prepare_check(sql):
+    """语句引用了不存在的表或列时,在校验阶段就说明(DR-098)。此前这类语句显示「本体校验通过」,
+    到执行时才报错。只认「no such table / no such column」;其他准备失败留给执行环节照常处理。"""
+    con = None
+    try:
+        con = ro_connect(_qa_db())
+        if os.path.exists(UPLOAD_DB):
+            from pathlib import Path
+            con.execute("ATTACH DATABASE ? AS up", (Path(UPLOAD_DB).absolute().as_uri() + "?mode=ro",))
+        con.execute("EXPLAIN " + sql).fetchone()
+    except sqlite3.Error as exc:
+        msg = str(exc)
+        if msg.startswith(("no such table", "no such column")):
+            return False, "查询引用了不存在的表或列:" + msg[:120]
+    except OSError:
+        pass
+    finally:
+        if con is not None:
+            con.close()
+    return True, ""
+
+
+def _qa_validate_sql(sql, ir, strict=False, focus_tables=None):
+    """问数本体约束校验调用层；兼容仍实现旧两参数签名的测试替换与扩展。"""
+    okscope, why = _qa_scope_check(sql, ir, strict=strict, focus_tables=focus_tables)
+    if not okscope:
+        return False, why
+    okv, why = _qa_ontology_check(sql, ir, strict)
+    if not okv:
+        return okv, why
+    return _qa_prepare_check(sql)
+
+
+def _qa_ontology_check(sql, ir, strict):
     if not strict:
         return _validate_sql_ontology(sql, ir)
     try:
@@ -2345,11 +2416,16 @@ def agent_sql_plan(question, context, steps, probe_runner=None):
     return None
 
 
-def _probe_runner(clean=None):
-    """探查查询的执行器:只读、最多 20 行、语句超时同 q();出错时把错误原文返回给模型。"""
+def _probe_runner(clean=None, scope=None):
+    """探查查询的执行器:只读、最多 20 行、语句超时同 q();出错时把错误原文返回给模型。
+    scope(sql) → (ok, 原因):限定了本体或数据表范围时,探查同样不得读范围之外的表(DR-098)。"""
     def run(sql):
         if not sql_is_readonly(sql):
             return "拒绝:探查只允许只读 SELECT"
+        if scope is not None:
+            okp, whyp = scope(sql)
+            if not okp:
+                return "拒绝:" + whyp
         try:
             d = q(sql, limit=20, attach_uploads=True, clean=clean)
         except Exception as e:                                   # noqa: BLE001
@@ -4602,6 +4678,9 @@ def _vote_candidates(question, cands, chooser=None):
     groups: dict = {}
     for i, c in enumerate(cands):
         groups.setdefault(_row_key(c.get("rows")), []).append(i)
+    # 空结果不与有数据的结果比票数(DR-098):两路候选各自查不出行时,结果键相同,会以 2 票压过唯一查出数据的那一路
+    if len(groups) > 1 and frozenset() in groups:
+        groups.pop(frozenset())
     ordered = sorted(groups.values(), key=lambda g: (-len(g), g[0]))
     top = [g for g in ordered if len(g) == len(ordered[0])]
     pick = top[0]
@@ -4720,11 +4799,16 @@ def _chat_impl():
         steps.append({"step": "skill_reuse", "ok": True, "info": f"命中沉淀技能,复用 {len(plan['analyses'])} 条已验证 SQL"})
     # 硬性时间预算:引擎 90s 内不出计划就走内置模板,保证请求永不卡死
     if plan is None:
-        plan = _bounded(lambda: agent_sql_plan(q_eff, ctx, steps, probe_runner=_probe_runner(clean_rules)), 150)
+        _probe_scope = lambda _sql: _qa_scope_check(                               # noqa: E731
+            _sql, ir_gate, strict=bool(graph_keys and gate_keys != ["demo"] and not fallback), focus_tables=focus_tables)
+        plan = _bounded(lambda: agent_sql_plan(q_eff, ctx, steps,
+                                               probe_runner=_probe_runner(clean_rules, scope=_probe_scope)), 150)
     engine_plan = bool(plan) and not _sk
+    degraded = False                           # DR-098 引擎没给出计划、改用内置模板作答:如实标出,且不进缓存
     if not plan:
         steps.append({"step": "plan_timeout", "ok": False, "info": "引擎超时/离线 → 降级为内置模板"})
         plan = fallback_plan(q_eff, ir=ir_gate, focus_tables=focus_tables)
+        degraded = True
     results, dim_warns, unresolved, blocked = [], [], [], []
     held = []                                  # DR-086 精确作答:被拦下或意图存疑的查询,全部落空时作为带警示的答案
     for a in (plan.get("analyses") or [])[:1 if exact else 4]:
@@ -4832,7 +4916,8 @@ def _chat_impl():
     resp = {"steps": steps, "results": results, "narrative": text, "note": plan.get("note", ""),
             "summary": summary, "metric_cards": _record_metric_usage(_metric_cards(question, ir_gate), gate_keys[0]),
             "anchor": anchor}
-    if results and not bypass_cache:              # 强制刷新请求既不读缓存，也不回写缓存
+    if degraded: resp["degraded"] = True
+    if results and not bypass_cache and not degraded:   # 强制刷新请求既不读缓存，也不回写缓存;降级答案不缓存
         _qa_cache_store(cache_key, resp)
     return jsonify(resp)
 
@@ -4923,7 +5008,10 @@ def chat_stream():
         # 引擎计划:后台线程跑,主循环轮询 plan_steps 实时外推 + 心跳
         plan_steps, box = [], {"v": None, "done": False}
         def _run():
-            try: box["v"] = agent_sql_plan(q_eff, ctx, plan_steps, probe_runner=_probe_runner(clean_rules))
+            try: box["v"] = agent_sql_plan(q_eff, ctx, plan_steps, probe_runner=_probe_runner(
+                clean_rules, scope=lambda _sql: _qa_scope_check(
+                    _sql, ir_gate, strict=bool(graph_keys and _gate_keys != ["demo"] and not _gate_fallback),
+                    focus_tables=focus_tables)))
             except Exception: pass
             box["done"] = True
         if plan is not None:
@@ -4944,9 +5032,11 @@ def chat_stream():
             yield sse({"type": "step", **s})
         engine_plan = bool(box["v"]) and not plan
         plan = plan or box["v"]
+        degraded = False
         if not plan:
             yield push("plan_timeout", False, "引擎超时/离线 → 降级为内置模板")
             plan = fallback_plan(q_eff, ir=ir_gate, focus_tables=focus_tables)
+            degraded = True
         analyses = (plan.get("analyses") or [])[:4]
         dim_warns, unresolved, blocked = [], [], []
         yield push("plan_ready", True, f"分析计划就绪 · 拆解为 {len(analyses)} 个子分析")
@@ -5054,7 +5144,8 @@ def chat_stream():
         resp = {"steps": steps, "results": results, "narrative": text, "note": plan.get("note", ""),
                 "summary": summary, "metric_cards": _record_metric_usage(_metric_cards(question, ir_gate), _gate_keys[0]),
                 "anchor": anchor}   # 随 done 落一份:命中缓存与历史回放时锚定视图不丢
-        if results and not bypass_cache:
+        if degraded: resp["degraded"] = True
+        if results and not bypass_cache and not degraded:
             _qa_cache_store(cache_key, resp)
         yield sse({"type": "done", **resp, "cached": False, "elapsed": round(_t.time() - t0, 1), "session": session})
     from flask import Response, stream_with_context
@@ -5363,6 +5454,15 @@ def _eval_judge(item, val):
     return near(gold) or (item.get("unit") == "万元" and near(gold * 10000))
 
 def _run_eval_thread(model=None, limit=None):
+    """评测线程入口。任何异常都要把任务标回未运行(DR-098):此前一次异常就让 running 一直为 True,
+    之后每次启动都返回 409,只能重启服务。"""
+    try:
+        _run_eval(model, limit)
+    except Exception as e:                                      # noqa: BLE001
+        EVAL_JOB.update(running=False, progress="评测中断:%s: %s" % (type(e).__name__, str(e)[:120]))
+
+
+def _run_eval(model=None, limit=None):
     items = _eval_items()[: (limit or 99)]
     ir = _active_ir()
     arms = [("A", "朴素 Text2SQL(仅英文表列)", lambda it: _ctx_naive(), False),
@@ -6310,6 +6410,14 @@ def _build_stats(ir):
             "def_coverage": round(sum(1 for o in objs if (o.get("definition") or "").strip()) * 100.0 / max(1, len(objs)), 1)}
 
 def _run_skill_compare(query, arms):
+    """技能对比线程入口;异常时把任务标回未运行(DR-098),不让它卡在「进行中」。"""
+    try:
+        _skill_compare(query, arms)
+    except Exception as e:                                      # noqa: BLE001
+        SKILL_CMP_JOB.update(running=False, progress="对比中断:%s: %s" % (type(e).__name__, str(e)[:120]))
+
+
+def _skill_compare(query, arms):
     """两组顺序真实构建(LLM 抽取+关系数据验证,不走降级路径);每组落一个 built_* 产物。"""
     out = {"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "query": query, "arms": []}
     for i, skills in enumerate(arms):

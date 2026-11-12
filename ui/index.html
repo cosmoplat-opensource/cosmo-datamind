@@ -1696,7 +1696,7 @@ function dqRenderCard(card,q,d,origin='live'){const uid=DQ_UID++;const okN=d.ste
  let html=`<div class="dq-tags"><span class="dq-t def">demo-deep-qa</span>
    <span class="dq-t ${origin==='history'?'warn':'idx'}">${origin==='history'?'历史回放':'本次实时分析'}</span>
    <span class="dq-t idx">执行 ${d.steps.length} 步 · 成功 ${okN}</span>
-   ${d.cached?'<span class="dq-t ok">缓存·秒回</span>':''}
+   ${d.cached?'<span class="dq-t ok">缓存·秒回</span>':''}${d.degraded?'<span class="dq-t warn" title="问数引擎没有给出分析计划,以下结果来自内置模板,可能没有针对你的问题">引擎未响应·内置模板结果</span>':''}
    ${nres?`<span class="dq-t ok">出 ${nres} 图</span>`:'<span class="dq-t warn">无图表结果</span>'}</div>`;
  html+=`<details class="dq-exec"${nres?'':' open'}><summary>执行记录(${d.steps.length})</summary><div class="dq-log">`+
   d.steps.map(s=>`<div class="dq-logstep"><span class="ck ${s.ok?'':'no'}">${s.ok?'✓':'✗'}</span><span>${s.ts?`<span class="muted">[${esc(s.ts)}]</span> `:''}<b>${esc(s.step)}</b>${s.info?' — '+esc(s.info):''}</span></div>`).join('')+`</div></details>`;

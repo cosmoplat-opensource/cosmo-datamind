@@ -64,7 +64,7 @@ nodes:
   - id: llm_plan
     type: llm
     code: "server.py:agent_sql_plan / _bounded"
-    desc: 大模型可先只读探查再产出分析计划(标题 + SQL),同步150秒/流式155秒预算；线程继承来源库与作答形式
+    desc: 大模型可先只读探查再产出分析计划(标题 + SQL),同步150秒/流式155秒预算；线程继承来源库与作答形式；探查同样不得读所选本体或数据表范围之外的表(DR-098)
     engine: agent_runtime 多运行时(claude-code / hermes / OpenAI 兼容)
     on_timeout: fallback_plan
 

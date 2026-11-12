@@ -527,6 +527,42 @@
         "tests/unit/test_review_survives_rebuild.py::test_clean_replay_reports_nothing",
         "tests/unit/test_review_survives_rebuild.py::test_triage_does_not_accumulate_the_same_rejected_relation_across_rounds"
       ]
+    },
+    {
+      "id": "QA-GATE-02",
+      "criterion": "未经数据验证的连接无论写成带括号的 ON、ON 里的第二个等式、逗号连接或 WHERE 条件，还是给表名加引号，都被拦下；注释里的词不造成误拦；同表列比较与字符串里的等式不算连接",
+      "tests": [
+        "tests/unit/test_qa_gate_hardening.py::test_unverified_join_is_blocked_however_it_is_written",
+        "tests/unit/test_qa_gate_hardening.py::test_legitimate_queries_still_pass",
+        "tests/unit/test_qa_gate_hardening.py::test_fabricated_table_in_a_comma_join_or_quoted_is_blocked",
+        "tests/unit/test_qa_gate_hardening.py::test_fanout_is_detected_with_a_parenthesised_on",
+        "tests/unit/test_qa_gate_hardening.py::test_table_names_inside_comments_do_not_block"
+      ]
+    },
+    {
+      "id": "QA-GATE-03",
+      "criterion": "引用不存在的表或列的查询在校验阶段被拦下并说明；探查查询不得读所选本体或数据表范围之外的表",
+      "tests": [
+        "tests/unit/test_qa_gate_hardening.py::test_missing_column_is_reported_by_the_gate_not_at_execution",
+        "tests/unit/test_qa_gate_hardening.py::test_probe_outside_the_selected_tables_is_refused"
+      ]
+    },
+    {
+      "id": "QA-DEGRADE-01",
+      "criterion": "引擎未给出计划而改用内置模板作答时，响应标明降级且不写入缓存；多路候选投票中空结果不压过有数据的结果",
+      "tests": [
+        "tests/unit/test_qa_gate_hardening.py::test_template_answer_after_engine_timeout_is_not_cached",
+        "tests/unit/test_qa_gate_hardening.py::test_empty_results_do_not_outvote_an_answer_with_rows",
+        "tests/unit/test_qa_gate_hardening.py::test_all_empty_results_still_return_a_candidate"
+      ]
+    },
+    {
+      "id": "JOB-01",
+      "criterion": "评测与技能对比的后台线程抛异常后，任务状态回到未运行并记录中断原因",
+      "tests": [
+        "tests/unit/test_qa_gate_hardening.py::test_eval_job_is_released_when_the_run_raises",
+        "tests/unit/test_qa_gate_hardening.py::test_skill_compare_job_is_released_when_the_run_raises"
+      ]
     }
   ]
 }
