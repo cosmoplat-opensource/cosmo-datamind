@@ -12,6 +12,8 @@ venv/
 
 # ── 凭据与连接配置:务必不入库 ────────────────────────────
 .env
+# .env 的本机备份(.env.bak_日期)同样含凭据
+.env.bak*
 workdir/conn_secrets.json
 # 凭据静态加密的本机主密钥(0600)。注释必须独占一行 —— .gitignore 不支持行尾注释,
 # 写成 `路径  # 说明` 会让整行变成一个匹配不到文件的 pattern,密钥反而照样入库。
@@ -79,3 +81,11 @@ workdir/uploads_*
 deliverables/
 # 观测事件日志(observability.py 运行时写入,含请求指纹)
 workdir/obs/
+
+# ── 本机分析物料与真实数据样本:一律不入库 ────────────────
+# 此前只写在本机 .git/info/exclude 里,换一份克隆或新开 worktree 就失效,故移到这里。
+/data/
+workdir/*.db
+# 构建产物默认不入库。已入库的那批是开箱演示的种子(见 examples/README-demo.md),不受影响;
+# 确需新增种子时用 git add -f 显式加入。
+workdir/built_*.json
