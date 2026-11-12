@@ -115,21 +115,45 @@ def engine_config_set():
         return jsonify(d)
     return resp
 
+def _endpoint_and_key(b):
+    """解析待用的端点与 Key。
+
+    请求未带 Key 时才沿用已保存的 Key,且只在端点就是已保存的那个时沿用(DR-096):
+    已保存的 Key 属于已保存的服务商,跟着请求里的地址发往别处等于把它交给对方。
+    返回 (base, key, error);error 非空时不得发起请求。"""
+    saved_base = (os.environ.get(LLM_ENV["base"]) or "").strip().rstrip("/")
+    base = str(b.get("base") or saved_base).strip().rstrip("/")
+    key = str(b.get("key") or "").strip()
+    if not key and base and base == saved_base:
+        key = os.environ.get(LLM_ENV["key"], "")
+    if not base or not key:
+        if base and base != saved_base and os.environ.get(LLM_ENV["key"]):
+            return base, "", "该端点不是已保存的端点,请填写它的 API Key(已保存的 Key 只用于已保存的端点)"
+        return base, key, "端点地址与 API Key 缺一不可"
+    if not base.startswith(("http://", "https://")):
+        return base, key, "端点地址须以 http:// 或 https:// 开头"
+    return base, key, ""
+
+
+def _bounded_timeout(value, default=60, ceiling=300):
+    try:
+        return max(1, min(ceiling, int(value)))
+    except (TypeError, ValueError):
+        return default
+
+
 @bp_engine.post("/api/engine/llm/test")
 def engine_llm_test():
     """用**给定的**(可未保存)端点配置跑一次最小请求,回真实延迟与真实报错。
 
     参考通行做法:配置面板里「测试连接」应当测的是你正在填的那份配置,
     而不是已保存的那份 —— 否则先存后测,存错了还得回滚。
-    Key 留空时沿用已保存的,便于只改模型名时复测。"""
+    Key 留空时沿用已保存的,便于只改模型名时复测;仅限端点就是已保存的那个(DR-096)。"""
     b = request.json or {}
-    base = str(b.get("base") or os.environ.get(LLM_ENV["base"], "")).strip().rstrip("/")
-    key = str(b.get("key") or "").strip() or os.environ.get(LLM_ENV["key"], "")
+    base, key, _err = _endpoint_and_key(b)
     model = str(b.get("model") or os.environ.get(LLM_ENV["model"], "")).strip()
-    if not base or not key:
-        return jsonify({"ok": False, "error": "端点地址与 API Key 缺一不可"}), 400
-    if not base.startswith(("http://", "https://")):
-        return jsonify({"ok": False, "error": "端点地址须以 http:// 或 https:// 开头"}), 400
+    if _err:
+        return jsonify({"ok": False, "error": _err}), 400
     if not model:
         return jsonify({"ok": False, "error": "未指定模型名"}), 400
     # 额度取用户填的值(缺省 1024):写死小额度会把推理型模型卡在 finish_reason=length,
@@ -144,7 +168,7 @@ def engine_llm_test():
                                           "Content-Type": "application/json"})
     t0 = time.time()
     try:
-        with urllib.request.urlopen(req, timeout=int(b.get("timeout") or 60)) as r:
+        with urllib.request.urlopen(req, timeout=_bounded_timeout(b.get("timeout") or 60)) as r:
             d = json.loads(r.read())
     except urllib.error.HTTPError as e:
         body_txt = ""
@@ -177,10 +201,9 @@ def engine_llm_test():
 def engine_llm_models():
     """拉取端点的可用模型列表(GET {base}/models)。部分服务不提供该接口,失败即如实返回。"""
     b = request.json or {}
-    base = str(b.get("base") or os.environ.get(LLM_ENV["base"], "")).strip().rstrip("/")
-    key = str(b.get("key") or "").strip() or os.environ.get(LLM_ENV["key"], "")
-    if not base or not key:
-        return jsonify({"models": [], "error": "端点地址与 API Key 缺一不可"}), 400
+    base, key, _err = _endpoint_and_key(b)
+    if _err:
+        return jsonify({"models": [], "error": _err}), 400
     req = urllib.request.Request(base + "/models", headers={"Authorization": "Bearer " + key})
     try:
         with urllib.request.urlopen(req, timeout=20) as r:

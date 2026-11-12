@@ -172,6 +172,9 @@ def register(agent_runtime):
     try:
         rt = OpenAICompatRuntime()
         if not rt.available():
+            # 端点或 Key 被清空:撤掉此前登记的驱动(DR-096),否则它仍被列为可用,
+            # 并带着旧地址与旧 Key 继续被调用。
+            getattr(agent_runtime, "_REGISTRY", {}).pop("openai", None)
             return False
         agent_runtime.register("openai", lambda: rt)
         return True

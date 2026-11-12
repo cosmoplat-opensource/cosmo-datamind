@@ -121,10 +121,13 @@ def _apply_engine_cfg(cfg):
     _llm = cfg.get("llm") or {}
     for fld, var in LLM_ENV.items():
         v = str(_llm.get(fld) or "").strip()
-        if os.environ.get(var) and fld != "key":   # key 允许配置文件补位(env 未注入时)
+        # 「环境变量优先」只对启动时由部署方注入的变量成立(DR-096)。此前按「变量当前有值」判断,
+        # 而上一次应用配置时写入的值也算「有值」:换服务商后地址与模型不更新,只有 Key 更新,
+        # 新 Key 被发往旧端点。Key 一直允许配置补位,这里保持不变。
+        if var in _ENV_LOCKED_AT_BOOT and fld != "key":
             continue
         if v: os.environ[var] = v
-        elif not os.environ.get(var): os.environ.pop(var, None)
+        elif var not in _ENV_LOCKED_AT_BOOT: os.environ.pop(var, None)
     try:                                            # 端点变了要重新注册,否则改完仍用旧实例
         import agent_runtime as _arx, openai_runtime as _orx
         _orx.register(_arx)

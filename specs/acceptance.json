@@ -495,6 +495,18 @@
         "tests/scenarios/test_scenarios.py::test_multi_database_switch_keeps_catalog_and_answer_consistent",
         "tests/unit/test_database_scope.py::test_ontology_conversation_history_does_not_cross_databases"
       ]
+    },
+    {
+      "id": "ENG-CRED-01",
+      "criterion": "已保存的 API Key 只发往已保存的端点；界面保存的端点与模型随配置更新，启动时注入的环境变量不被覆盖；端点清空后驱动不再登记为可用",
+      "tests": [
+        "tests/unit/test_engine_credentials.py::test_models_does_not_send_saved_key_to_another_endpoint",
+        "tests/unit/test_engine_credentials.py::test_test_endpoint_does_not_send_saved_key_to_another_endpoint",
+        "tests/unit/test_engine_credentials.py::test_saved_key_is_reused_for_the_saved_endpoint",
+        "tests/unit/test_engine_credentials.py::test_reapplying_config_switches_endpoint_and_model_with_the_key",
+        "tests/unit/test_engine_credentials.py::test_endpoint_injected_at_boot_is_not_overridden_by_saved_config",
+        "tests/unit/test_engine_credentials.py::test_clearing_the_endpoint_unregisters_the_driver"
+      ]
     }
   ]
 }
