@@ -327,13 +327,17 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True):
         function = getattr(service, 'message' if operation=='messages' else operation.replace('-', '_'))
         return jsonify(runtime.public(function(sid, **body))), 202 if operation in ('messages','confirm-schema','retry') else 200
 
+    def application_summary(oid, vid):
+        from application_contracts.adapters import service
+        return service(root, read_only=True).summary(oid, vid)
+
     def design_assets():
         return runtime._reader(DesignAssets)
 
     @bp.get('/api/ontology-assets/<ontology_id>/versions/<version_id>/compatibility')
     def design_compatibility(ontology_id, version_id):
         _query_fields(set())
-        return jsonify(design_assets().compatibility(ontology_id, version_id))
+        return jsonify(application_summary(ontology_id, version_id))
 
     @bp.get('/api/ontology-assets/<ontology_id>/versions/<version_id>/exports/<format>')
     def design_export(ontology_id, version_id, format):
@@ -363,7 +367,7 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True):
                 latest = versions[-1] if versions else None
                 # DR-070: the catalog offers the current version; historic eligibility is checked on explicit access.
                 if latest and asset['domain']=='robotics':
-                    latest['application_compatibility'] = design_assets().compatibility(asset['ontology_id'], latest['version_id'])
+                    latest['application_compatibility'] = application_summary(asset['ontology_id'], latest['version_id'])
                 item = {**asset, 'entry_kind': 'asset', 'version_id': latest['version_id'] if latest else None,
                         'version_number': latest['version_number'] if latest else None,
                         'publication_state': latest['publication_state'] if latest else None,
@@ -393,7 +397,7 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True):
         if is_design:
             result['design'] = design_read(lambda: design_assets().detail(ontology_id, version_id))
         if result['asset']['domain']=='robotics':
-            result['application_compatibility'] = design_assets().compatibility(ontology_id, version_id)
+            result['application_compatibility'] = application_summary(ontology_id, version_id)
         if rid:
             runs = runtime.runs()
             build = run_row(runs, rid)
@@ -410,5 +414,7 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True):
     from bp_robotics_task import init_app as init_tasks
     init_tasks(app, runtime)
     app.register_blueprint(bp)
+    from bp_application_contracts import init_app as init_applications
+    init_applications(app, root=root, enabled=enabled)
     app.extensions['robotics'] = runtime
     return runtime

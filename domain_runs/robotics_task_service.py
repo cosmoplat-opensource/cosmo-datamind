@@ -249,6 +249,13 @@ class TaskService:
                 if state['status'] == 'error':
                     state['error'] = {'code': 'invalid_ontology', 'message': '本体知识格式不兼容。'}
                 return
+            # Keep admission busy while persisting the facts read by the guard (DR-071).
+            with self._atomic() as conn:
+                self._put(conn, {**state, 'status': 'running'})
+            from application_contracts.adapters import service as application_service
+            application_service(self.root).require_ready(entrypoint='robotics.generate_behavior_tree',
+                asset_refs=[{'ontology_id': state['ontology_id'], 'version_id': state['version_id']}],
+                context={'mode': state['mode'], 'task_ref': {'session_id': state['session_id']}})
             run = generate_application(self.root, ontology_id=state['ontology_id'], version_id=state['version_id'],
                 task=state['task'], mode=state['mode'], session_ref={'namespace': 'robotics_task', 'id': state['session_id']},
                 purpose=state['generation_policy'], model_info={'invoked': True, 'provider': 'openai-compatible',

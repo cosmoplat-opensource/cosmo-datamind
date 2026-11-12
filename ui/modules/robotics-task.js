@@ -104,6 +104,18 @@
     const host=global.document.getElementById('rt_task');if(!host)return;
     const params=new URLSearchParams(global.location.hash.split('?')[1]||'');
     if(params.get('run')||!['session','asset','version'].some(key=>params.has(key)))return;
+    if(!params.get('session') && params.get('asset') && (params.get('assess') || params.get('check')) && !params.get('prepare')){
+      const view={};active=view;
+      (async()=>{try{
+        let response;
+        if(params.get('check')) response=await json(global.fetch.bind(global),'/api/application-checks/'+encodeURIComponent(params.get('check')));
+        else response=await json(global.fetch.bind(global),'/api/application-checks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({entrypoint:'robotics.generate_behavior_tree',asset_refs:[{ontology_id:params.get('asset'),version_id:params.get('version')}],context:{mode:params.get('mode')||'real'},request_id:global.crypto.randomUUID()})});
+        if(active!==view)return;
+        const r=response.report;
+        global.history.replaceState(null,'',link(params.get('asset'),params.get('version'),params.get('mode')||'real')+'&check='+encodeURIComponent(r.check_id));
+        host.innerHTML=`<section class="card ra-section" data-testid="application-check" data-check-id="${esc(r.check_id)}"><h2>行为树应用检查</h2><p>${r.preparation_status==='available'?'可准备任务':'未满足应用要求'}</p>${r.issues.map(i=>`<p>${esc(i.message)}</p>`).join('')}${r.preparation_status==='available'?`<a class="ra-button" href="${esc(link(params.get('asset'),params.get('version'),params.get('mode')||'real')+'&prepare=1')}">继续描述任务</a>`:''}<p>执行未验证</p></section>`;
+      }catch(e){if(active===view)host.innerHTML=`<p role="alert">${esc(e.message)}</p>`;}})();return;
+    }
     const view={controller:null,text:'',creates:{},configEdit:null,capabilities:null,timer:null,initial:true};active=view;
     function render(state){
       if(active!==view)return;

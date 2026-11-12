@@ -242,8 +242,9 @@ def test_fixed_design_asset_detail_json_graph_catalog_and_task_gate(tmp_path):
         assert detail.status_code == 200, detail.get_data(as_text=True)
         assert detail.json['design']['tbox'] == state['schema_confirmation']['tbox']
         compatibility = get(client, url + '/compatibility').json
-        assert compatibility == DesignAssets(root).compatibility(**ref)
-        assert detail.json['application_compatibility'] == compatibility and compatibility['status'] == 'unsupported'
+        # DR-071 supersedes DR-070's eager GET assessment; integrity/download gates remain.
+        assert compatibility['status'] == 'not_assessed'
+        assert detail.json['application_compatibility'] == compatibility
         saved = get(client, url + '/exports/json')
         assert saved.status_code == 200 and saved.data == DesignAssets(root).export_json(**ref)
         assert 'attachment;' in saved.headers['Content-Disposition']
@@ -272,7 +273,8 @@ def test_old_candidate_eligibility_still_supported(tmp_path):
         _, row = actual_build(root)
         ref = row['output_asset_ref']
         response = get(client, f"/api/ontology-assets/{ref['ontology_id']}/versions/{ref['version_id']}/compatibility")
-        assert response.status_code == 200 and response.json['status'] == 'supported'
+        # Even an old compatible candidate is not assessed by a read request (DR-071).
+        assert response.status_code == 200 and response.json['status'] == 'not_assessed'
 
 
 def test_design_endpoints_reuse_host_and_origin_guards(tmp_path):
@@ -320,5 +322,6 @@ def test_tampered_final_json_is_invalid_and_cannot_be_downloaded(tmp_path):
         (root / record['path']).write_bytes(b'{}')
         url = f"/api/ontology-assets/{ref['ontology_id']}/versions/{ref['version_id']}"
         eligibility = get(client, url + '/compatibility')
-        assert eligibility.status_code == 200 and eligibility.json['status'] == 'invalid'
+        # No application report exists; the actual export still enforces artifact integrity.
+        assert eligibility.status_code == 200 and eligibility.json['status'] == 'not_assessed'
         error(get(client, url + '/exports/json'), 409, 'artifact_integrity')
