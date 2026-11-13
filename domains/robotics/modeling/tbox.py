@@ -14,7 +14,7 @@ from .evidence import model_summary, source_digests
 from .prompts import PROMPT_VERSION, SYSTEM
 
 __all__ = ['validate_result', 'validate_properties', 'new_design', 'revise',
-           'confirm_classes', 'confirm_schema', 'edit_classes']
+           'confirm_classes', 'confirm_schema', 'edit_classes', 'edit_properties']
 
 
 def new_design(evidence, vocabulary, *, namespace='https://example.org/robotics-design#'):
@@ -166,6 +166,16 @@ def edit_classes(state):
     updated = deepcopy(state)
     updated.update(stage='classes', class_confirmation=None, schema_confirmation=None)
     return _advance(updated, _classes(state['result']))
+
+
+def edit_properties(state):
+    """Reopen only properties; retain the explicit class confirmation baseline."""
+    _check_state(state)
+    if state['stage'] not in ('properties', 'abox') or not state.get('class_confirmation'):
+        raise ModelingError('confirmation_required', '请先确认类别，再修订关系与属性。')
+    updated = deepcopy(state)
+    updated.update(stage='properties', schema_confirmation=None)
+    return _advance(updated, state['result'])
 
 
 def confirm_schema(state, *, snapshot_sha256):

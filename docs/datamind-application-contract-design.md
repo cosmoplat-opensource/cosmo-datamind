@@ -124,7 +124,7 @@ flowchart TD
 | [DR-074](../specs/decisions/DR-074-ontology-asset-lifecycle.md) | [IR-028](../specs/iterations/IR-028-ontology-asset-lifecycle.md) | 统一资产删除恢复、旧 key 兼容 | 核心可并行，接 IR-025／027 |
 | [DR-075](../specs/decisions/DR-075-ontology-detail-experience.md) | [IR-029](../specs/iterations/IR-029-ontology-detail-experience.md) | 详情页、行为树操作入口和修复导航 | 布局可先行，动作接前四项 |
 
-每个 IR 分契约评审、核心 RED/GREEN、HTTP/UI RED/GREEN、全量回归及人审交付。验收共 21 条；IR-025 T03 核心测试已转绿；T05 集成实现及全量回归通过，登记为 created-green-partial；T06 完成，IR-025 已于 2026-11-12 获用户确认 delivered，其余 17 条保留 planned_requirements，不声称功能通过。
+每个 IR 分契约评审、核心 RED/GREEN、HTTP/UI RED/GREEN、全量回归及人审交付。原方案验收共 21 条；IR-025 已于 2026-11-12 获用户确认 delivered。IR-026 的 5 条及新增的 2 条自动匹配要求已完成真实副本与全量回归（2333 passed／5 可选跳过、覆盖率 86.1%），2026-11-13 用户要求提交代码，确认 delivered；其余 12 条保留 planned_requirements，不声称功能通过。
 System Design Word 文档保留方案阶段概要，实施进度与测试状态以各 IR 和验收映射为准。
 
 ## 验证与运维

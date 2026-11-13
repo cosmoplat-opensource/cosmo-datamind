@@ -212,3 +212,28 @@ REVIEW_DEMO_DIR="$(mktemp -d /tmp/datamind-review-demo.XXXXXX)"
 ```
 
 两者使用隔离服务和存储；统一检查包含原功能回归、新状态/CLI 测试及新真实浏览器套件。前端状态测试需要 Node 在 PATH 中。
+
+## 模型辅助本体设计的思考配置
+
+机器人类别及关系与属性设计对 `deepseek-flash`、`deepseek-v4-flash`、`deepseek-v4-pro` 默认关闭思考，避免思考消耗全部输出预算而没有 JSON 正文。
+在部署环境或 `.env` 中设置 `DATAMIND_ROBOTICS_DESIGN_THINKING`，加载配置并重启服务后生效：
+
+| 值 | 本体设计请求行为 |
+|---|---|
+| `disabled`（默认） | 发送 `thinking.type=disabled`，移除该请求的 `reasoning_effort` |
+| `low` | 发送 `thinking.type=enabled` 和 `reasoning_effort=low` |
+| `inherit` | 不覆盖思考参数，沿用原运行时及 `DATAMIND_LLM_EXTRA_BODY` 设置 |
+
+专用配置在当前请求中覆盖全局透传的思考字段，其它透传字段保持不变。
+未验证协议的模型及不支持该能力的运行时保持原行为；错误配置值在联网前返回配置错误。
+本配置仅作用于机器人 TBox 设计，不改变数据本体构建、深度问数或行为树生成的模型参数；ABox 仍为确定性抽取。
+它不更换模型、不增加输出预算、不覆盖已有修订，也不取消结构与语义校验；关闭思考后的设计质量仍需按实际场景验收。
+DeepSeek 参数依据：[官方思考模式说明](https://api-docs.deepseek.com/guides/thinking_mode/)。
+
+## 仅修订关系与属性
+
+`POST /api/robotics/design-sessions/<session_id>/edit-properties` 接受 `request_id` 和当前整数 `expected_revision`。
+类别已确认时，可从实例阶段重新打开属性阶段，返回 `stage=properties`、`status=awaiting_input` 的新修订。
+保留类别确认及当前完整属性快照，撤销当前骨架确认和当前候选引用；原候选、父版本引用和历史文件保留。
+该操作不调用模型、不自动确认；后续消息仍须携带 `expected_stage=properties`，确认骨架后重新提取 ABox。
+相同请求可幂等重放；类别未确认、存在活动运行或修订过期时拒绝操作。

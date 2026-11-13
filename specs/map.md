@@ -232,7 +232,7 @@ Consult @specs/map.md to find relevant context.
 [T01 应用契约基础 v1](contracts/application-contracts-v1.md)：已冻结；[T02 RED 评审](../docs/audits/IR-025-t02-red-review.md)。
 
 - [DR-071 应用契约注册与分层检查](decisions/DR-071-application-contract-registry.md) ／ [IR-025](iterations/IR-025-application-contract-registry.md)：delivered（2026-11-12 用户确认）。
-- [DR-072 机器人应用检查与可追溯补全](decisions/DR-072-robotics-application-adaptation.md) ／ [IR-026](iterations/IR-026-robotics-application-adaptation.md)：proposed。
+- [DR-072 机器人应用检查与可追溯补全](decisions/DR-072-robotics-application-adaptation.md) ／ [IR-026](iterations/IR-026-robotics-application-adaptation.md)：T01 [规约](contracts/robotics-application-adaptation-v1.md) 已冻结，T05 [集成 GREEN](../docs/audits/IR-026-t05-green-review.md) 的 57 项已审测试及全量 13 段通过，70 项核心仍绿；T06 [真实副本验收](../docs/audits/IR-026-t06-delivery-review.md) 及全量 13 段已通过（2333 passed／5 可选跳过，覆盖率 86.1%），自动匹配与人工例外已纳入，2026-11-13 用户要求提交代码，确认 delivered。
 - [DR-073 深度问数应用契约兼容](decisions/DR-073-deepqa-application-compatibility.md) ／ [IR-027](iterations/IR-027-deepqa-application-compatibility.md)：proposed。
 - [DR-074 本体删除恢复与历史保留](decisions/DR-074-ontology-asset-lifecycle.md) ／ [IR-028](iterations/IR-028-ontology-asset-lifecycle.md)：proposed。
 - [DR-075 本体详情与应用修复体验](decisions/DR-075-ontology-detail-experience.md) ／ [IR-029](iterations/IR-029-ontology-detail-experience.md)：proposed。

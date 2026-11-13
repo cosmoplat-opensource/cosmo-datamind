@@ -355,3 +355,20 @@ aside.rv-sidebar {display:block;width:auto;border:1px solid var(--line);border-r
 .rd-table th {position:sticky;top:0;background:#f4f6fc;}
 .rd-table small {display:block;color:#6b7280;margin-top:4px;}
 [data-testid="robotics-design-diff"] {margin:16px 0;padding:16px;background:#f7f9fc;border-radius:10px;}
+
+/* DR-072: named application gaps and user-confirmed modelling suggestions. */
+.rc-issue {margin:10px 0;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#fafbff;overflow-wrap:anywhere;}
+.rc-issue p {margin:0;line-height:1.7;}
+.rc-issue small {display:block;margin-top:6px;color:var(--sub);line-height:1.7;}
+
+/* DR-070 / DR-072: visible generation feedback and confirmation before further edits. */
+.rd-progress {display:flex;align-items:center;gap:12px;padding:16px;margin:12px 0;border:1px solid #dbe1ff;border-radius:10px;background:#f5f7ff;font-size:14px;}
+.rd-progress[hidden],.rd-confirm-bar[hidden] {display:none;}
+.rd-progress-spinner {width:20px;height:20px;flex-shrink:0;border:3px solid #dce1ff;border-top-color:var(--acc);border-radius:50%;animation:rd-wait-spin .8s linear infinite;}
+@keyframes rd-wait-spin {to {transform:rotate(360deg);}}
+.rd-confirm-bar {position:sticky;top:64px;z-index:4;display:flex;align-items:center;justify-content:space-between;gap:16px;margin:12px 0;padding:14px 16px;border:1px solid #dbe1ff;border-radius:10px;background:#f5f7ff;box-shadow:0 3px 12px #172a5310;}
+.rd-confirm-bar>span {font-size:14px;font-weight:600;}
+[data-testid="robotics-design"] .rd-confirm-bar button {margin:0;background:var(--acc);color:#fff;border-color:var(--acc);font-weight:600;}
+.rd-editor>summary {cursor:pointer;color:var(--sub);font-size:13px;padding:10px 0;}
+@media(max-width:600px){.rd-confirm-bar{flex-wrap:wrap;gap:10px}.rd-confirm-bar button{width:100%}}
+@media(prefers-reduced-motion:reduce){.rd-progress-spinner{animation:none;}}

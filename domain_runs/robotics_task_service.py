@@ -147,8 +147,11 @@ class TaskService:
                 with self.storage.transaction() as reader:
                     return self._graph(state, reader, inspect_structure=inspect_structure)
             version = self.governance._version(conn, state['ontology_id'], state['version_id'])
+            from ontology_assets.robotics_application import is_application
+            if is_application(version):state['application_contract']=version['metadata']['application_contract']
             graph = self.governance._graph(conn, version)
-            if inspect_structure:
+            consumer.check_mode(graph,state['mode'])
+            if inspect_structure and not is_application(version):
                 task_knowledge.inspect_structure(graph, state['mode'])
             return graph
         except (ValueError, OSError, KeyError) as exc:
@@ -216,6 +219,9 @@ class TaskService:
         items = projection['items']
         optional = [g for g in items if g['kind'] == 'applicability'] if state['generation_policy'] == 'offline' else []
         required = [g for g in items if g not in optional]
+        # DR-072: confirm current business/configuration facts before reviewing their applicability.
+        if state.get('application_contract') and any(g['kind']!='applicability' for g in required):
+            required = [g for g in required if g['kind']!='applicability']
         status = projection['status']
         if status == 'needs_information' and not required:
             status = 'ready'

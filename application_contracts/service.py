@@ -6,6 +6,7 @@ import sqlite3
 import uuid
 
 from ontology_assets.storage import Storage
+from srv_context import _RDF_LOCK
 from . import evaluate, make_basis, compare_freshness, require_ready
 from .models import ContractError, require, identifier, revision, digest
 
@@ -64,7 +65,7 @@ class CheckService:
         if spec['availability'] != 'available': raise ContractError('application_unavailable', '应用暂不可用。')
         fingerprint = digest({'entrypoint': entrypoint, 'asset_refs': asset_refs, 'context': context})
         try:
-            with self._storage().transaction(write=True) as conn:
+            with _RDF_LOCK, self._storage().transaction(write=True) as conn:
                 old = conn.execute('SELECT fingerprint,check_id FROM application_check_requests WHERE request_id=?', (request_id,)).fetchone()
                 if old:
                     require(old[0] == fingerprint, 'request_conflict')
@@ -87,7 +88,7 @@ class CheckService:
         fingerprint = digest({'check_id': check_id, 'issue_id': issue_id, 'action_id': action_id,
                               'input': input, 'expected_revision': expected_revision})
         try:
-            with self._storage().transaction(write=True) as conn:
+            with _RDF_LOCK, self._storage().transaction(write=True) as conn:
                 old = conn.execute('SELECT fingerprint,response FROM application_repair_requests WHERE request_id=?', (request_id,)).fetchone()
                 if old:
                     require(old[0] == fingerprint, 'request_conflict')

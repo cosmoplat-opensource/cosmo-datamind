@@ -7,7 +7,7 @@ from application_contracts.adapters import registry as defaults, Resolver
 
 
 def init_app(app, *, root, registry=None, resolver=None, enabled=True):
-    registry = defaults() if registry is None else registry
+    registry = defaults(root) if registry is None else registry
     resolver = Resolver(root) if resolver is None else resolver
     bp = Blueprint('application_contracts', __name__)
     def service(write=False):

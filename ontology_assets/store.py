@@ -88,17 +88,27 @@ class AssetStore:
 
     def _add_version(self, conn, ontology_id, content, *, payload_kind, parent_version_id=None,
                      source_asset_ids=None, metadata=None):
+        from .robotics_application import is_application, load as load_application, save as save_application
+        if metadata is not None and not isinstance(metadata,dict):raise ValueError('metadata 必须是对象。')
+        metadata = {} if metadata is None else dict(metadata)
+        parent_document = None
         asset = _required(conn, "SELECT * FROM assets WHERE ontology_id=?", (ontology_id,))
         validate_payload(asset["domain"], payload_kind, content)
         if parent_version_id is not None:
-            _required(conn, "SELECT version_id FROM versions WHERE ontology_id=? AND version_id=?",
-                      (ontology_id, parent_version_id))
+            parent = _version(_required(conn, "SELECT * FROM versions WHERE ontology_id=? AND version_id=?",
+                      (ontology_id, parent_version_id)))
+            if is_application(parent):
+                _, _, parent_document = load_application(self.storage, conn, parent)
+                metadata['application_contract'] = parent['metadata']['application_contract']
+                if metadata.get('build_run_id'):
+                    metadata['origin_build_run_id'] = metadata.pop('build_run_id')
         sources = [] if source_asset_ids is None else source_asset_ids
         if not isinstance(sources, list) or any(not isinstance(s, str) for s in sources):
             raise ValueError("source_asset_ids 必须是来源 ID 列表。")
         for sid in sources:
             source = _required(conn, "SELECT * FROM sources WHERE source_asset_id=?", (sid,))
-            self.storage.read_bytes(source["path"], source["sha256"])
+            if parent_document is None or source['role'] not in ('behavior_tree', 'node_models'):
+                self.storage.read_bytes(source["path"], source["sha256"])
         metadata = {} if metadata is None else metadata
         if not isinstance(metadata, dict):
             raise ValueError("metadata 必须是对象。")
@@ -114,7 +124,12 @@ class AssetStore:
         conn.execute("""INSERT INTO versions VALUES (
             :version_id,:ontology_id,:parent_version_id,:payload_kind,:payload_sha256,:byte_size,:path,
             :source_asset_ids,:metadata,:publication_state,:publication_mode,:validation,:created_at)""", record)
-        return _version(record)
+        version = _version(record)
+        if parent_document is not None:
+            parent_document.setdefault('completions', []).append({'parent_version_id': parent_version_id,
+                'task_completion': metadata.get('task_completion'), 'created_at': record['created_at']})
+            save_application(self.storage, conn, version, parent_document)
+        return version
 
     def add_version(self, ontology_id, content, *, payload_kind, parent_version_id=None,
                     source_asset_ids=None, metadata=None):
@@ -162,6 +177,11 @@ class AssetStore:
         # DR-064: use the same lock as server SPARQL/SHACL, not a per-store lock.
         with _RDF_LOCK:
             self.storage.read_bytes(record["path"], record["payload_sha256"])
+            from .robotics_application import is_application, load, verify_sources
+            if is_application(record):
+                with self.storage.transaction() as conn:
+                    load(self.storage, conn, record)
+                    verify_sources(self.storage, conn, record)
             context = load_ontology(Path(confine(self.storage.root, record["path"])), mode=mode)
         if record['metadata'].get('evidence_policy'):
             from domains.robotics.evidence import policy, POLICY

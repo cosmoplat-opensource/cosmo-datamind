@@ -129,7 +129,7 @@
     const query = new URLSearchParams(global.location.hash.startsWith('#build?') ? global.location.hash.split('?')[1] : '');
     const recipe = query.get('recipe') === 'robotics' ? 'robotics' : 'data', runId = query.get('run');
     const sessionId=query.get('session');
-    const key = recipe + ':' + (sessionId || runId || '');
+    const key = recipe + ':' + (sessionId || runId || '') + ':' + (query.get('check')||query.get('adaptation')||'');
     if (active && routeKey === key) return;
     active?.dispose(); routeKey = key;
     const doc = global.document, select = doc.getElementById('rb_recipe'), panel = doc.getElementById('rb_panel');
@@ -140,7 +140,7 @@
     panel.hidden = !robotic;
     const ui = global.RoboticsAssets;
     select.onchange = () => { global.location.hash = select.value === 'robotics' ? '#build?recipe=robotics' : '#build'; };
-    if(robotic&&sessionId){panel.innerHTML='<section class="card" id="design_host"></section>';active=global.RoboticsDesign.mount(panel.firstChild,sessionId);select.disabled=false;return;}
+    if(robotic&&sessionId){panel.innerHTML='<section class="card" id="design_host"></section>';active=global.RoboticsDesign.mount(panel.firstChild,sessionId,{checkId:query.get('check'),adaptationId:query.get('adaptation')});select.disabled=false;return;}
     panel.innerHTML = `<header class="rb-hero"><div class="rb-hero-copy"><svg aria-hidden="true" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="18" r="2.5"/><path d="M11 7 6 16M13 7l5 9M8 18h8"/></svg><div><h2>机器人本体构建</h2><p>从已有行为树整理技能、参数与业务知识，为任务生成准备本体。</p><div class="rb-pipeline"><span>上传 XML</span><i>→</i><span>构建与检查</span><i>→</i><span>生成行为树</span></div></div></div><span class="rb-hero-badge">构建模板<br><b>UR 抓移放</b></span></header>
       <div class="rb-workspace"><div class="rb-source-panel card"><div class="rb-section-title"><h3>构建来源</h3><span class="rb-soft-tag">2 份 XML</span></div>
       <form id="rb_form" class="rb-form" novalidate hidden>

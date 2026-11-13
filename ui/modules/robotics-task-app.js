@@ -72,7 +72,7 @@
         }catch(e){if(active===view&&e.name!=='AbortError'){notice.hidden=false;notice.className='rt-error';notice.textContent=e.message;}}};
       }catch(e){error(e);}})();return;
     }
-    if(params.get('session')||params.get('asset')||params.get('version'))return;
+    if(params.get('session')||params.get('asset')||params.get('version')||params.get('adaptation')||params.get('check'))return;
     host.innerHTML='<p class="rta-empty" role="status">正在加载可用本体…</p>';
     (async()=>{try{
       const [catalog,cap]=await Promise.all([read('/api/ontology-assets?domain=robotics',abort.signal),read('/api/robotics/task-capabilities',abort.signal)]);

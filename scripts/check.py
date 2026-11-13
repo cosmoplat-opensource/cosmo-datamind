@@ -50,11 +50,10 @@ def isolated_env(directory):
 
 def run_check(name, args, env, reports, results):
     start = time.monotonic()
-    # DR-065 / DR-066: IR-020 adds actual build/store/compiler task scenarios.
-    # The 1642-case suite exceeded 1500s before completion without assertion failures.
-    # Allow a bounded 35 minutes for the expanded suite under coverage tracing.
-    # Test selection, coverage gates and other check budgets remain unchanged.
-    timeout = 2100 if name == "unit" else 360
+    # DR-072: T03's 2232 cases took 2017s under coverage. T05 adds 52 service/task
+    # cases, including repeated immutable JSON/RDF validation and complete task flows.
+    # Budget one bounded hour; preserve test selection, coverage gates and other budgets.
+    timeout = 3600 if name == "unit" else 360
     with (reports / f"{name}.log").open("w", encoding="utf-8") as log:
         process = subprocess.Popen(args, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT,
                                    start_new_session=True)

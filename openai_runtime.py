@@ -26,10 +26,24 @@ Moonshot、vLLM 自建……),就无从接入:这与"开箱可用"相悖,也把�
 """
 import json
 import os
+import time
+import logging
+import re
 import urllib.request
+from llm_diagnostics import safe_diagnostic, transport_diagnostic, describe
+
+_LOG=logging.getLogger(__name__)
 
 # DR-070: routing and the platform runtime share the same default model identity.
 DEFAULT_MODEL = 'gpt-4o-mini'
+
+# DR-070: verified thinking-toggle protocols only; never infer a provider from
+# the OpenAI-compatible transport alone or change a reasoning-only model.
+_TBOX_THINKING_MODELS = frozenset(('deepseek-flash', 'deepseek-v4-flash', 'deepseek-v4-pro'))
+
+
+class ThinkingConfigurationError(ValueError):
+    """Invalid backend TBox policy; fail before sending a model request."""
 
 
 def _int_env(name, default):
@@ -43,7 +57,8 @@ def _extra_body():
     用途是不改代码就能传服务商特有参数——典型是推理型模型的思考开关：
     DeepSeek/GLM 系列 `{"thinking":{"type":"disabled"}}`、Qwen `{"enable_thinking":false}`。
     背景：本体抽取的长提示词会让推理型模型把 max_tokens 全花在思考上，正文为空
-    （实测 deepseek-v4-flash 思考 246s 后返回空 content），关掉思考即可稳定产出 JSON。
+    （实测 deepseek-v4-flash 思考 246s 后返回空 content），关闭思考可降低预算耗尽风险。
+    机器人 TBox 的独立策略会在该调用中覆盖思考字段，其它调用仍沿用此全局透传。
     解析失败时忽略并回空，不让一处配置笔误拖垮所有调用。"""
     raw = (os.environ.get("DATAMIND_LLM_EXTRA_BODY") or "").strip()
     if not raw:
@@ -70,39 +85,68 @@ class OpenAICompatRuntime:
         return bool(self.base and self.key)
 
     def run_turn(self, session_id, message, timeout=300, model=None):
-        """返回 (ok, text)。与既有驱动同签名,故上游调用点零改动。"""
-        if not self.available():
-            return False, "未配置 DATAMIND_LLM_BASE / DATAMIND_LLM_KEY"
-        body = json.dumps({
-            "model": model or self.model,
-            "messages": [{"role": "user", "content": message}],
-            "temperature": 0,
-            # 推理型模型(glm-4.5/5、o 系列)会把预算先花在 reasoning 上,4096 常常
-            # 只够思考、正文只剩几十字 —— 表现为"规划失败"却查不出原因。故可配且默认放宽。
-            "max_tokens": _int_env("DATAMIND_LLM_MAX_TOKENS", 16384),
-            **_extra_body(),
-        }).encode("utf-8")
-        req = urllib.request.Request(
-            self.base + "/chat/completions", data=body,
-            headers={"Authorization": "Bearer " + self.key,
-                     "Content-Type": "application/json"})
+        """Keep the existing two-tuple runtime API; detailed evidence is opt-in."""
+        ok,text,_=self.run_turn_detailed(session_id,message,timeout=timeout,model=model)
+        return ok,text
+
+    def run_tbox_turn_detailed(self, session_id, message, timeout=300, model=None):
+        """DR-070: per-call TBox policy, separate from QA/task runtime defaults."""
+        mode = os.environ.get('DATAMIND_ROBOTICS_DESIGN_THINKING', 'disabled').strip().lower()
+        if mode not in ('disabled', 'low', 'inherit'):
+            raise ThinkingConfigurationError(
+                'DATAMIND_ROBOTICS_DESIGN_THINKING 仅支持 disabled、low、inherit。')
+        return self.run_turn_detailed(session_id, message, timeout=timeout, model=model,
+                                      thinking_mode=mode)
+
+    def run_turn_detailed(self, session_id, message, timeout=300, model=None, *, thinking_mode=None):
+        """DR-070: return only allowlisted metadata alongside the usual result."""
+        started=time.monotonic()
+        maximum=_int_env('DATAMIND_LLM_MAX_TOKENS',16384)
+        def outcome(ok,text,diagnostic):
+            diagnostic=safe_diagnostic({**diagnostic,'max_tokens':maximum,
+                'elapsed_ms':round((time.monotonic()-started)*1000)})
+            identifier=session_id if isinstance(session_id,str) and re.fullmatch(r'(?:design|task)_[0-9a-f]{32}',session_id) else '(untracked)'
+            _LOG.info('LLM response metadata session=%s %s',identifier,json.dumps(diagnostic,ensure_ascii=False))
+            return ok,text if ok else describe(diagnostic),diagnostic
+        if not self.available():return outcome(False,'',{'code':'model_unconfigured'})
+        body={'model':model or self.model,'messages':[{'role':'user','content':message}],
+            'temperature':0,'max_tokens':maximum,**_extra_body()}
+        if body.get('model') in _TBOX_THINKING_MODELS and thinking_mode in ('disabled', 'low'):
+            # Change this request only, after global extra_body; no env/runtime mutation.
+            body['thinking'] = {'type': 'disabled' if thinking_mode == 'disabled' else 'enabled'}
+            if thinking_mode == 'disabled':
+                body.pop('reasoning_effort', None)
+            else:
+                body['reasoning_effort'] = 'low'
+            _LOG.info('TBox thinking policy mode=%s', thinking_mode)
+        maximum=body.get('max_tokens',maximum)
+        req=urllib.request.Request(self.base+'/chat/completions',data=json.dumps(body).encode('utf-8'),
+            headers={'Authorization':'Bearer '+self.key,'Content-Type':'application/json'})
+        status=None
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as r:
-                d = json.loads(r.read())
-        except Exception as e:
-            # 剔除可能含 Key 的细节,只回传类型与摘要
-            return False, f"{type(e).__name__}: {str(e)[:160]}"
+            with urllib.request.urlopen(req,timeout=timeout) as response:
+                status=getattr(response,'status',200)
+                raw=response.read()
+        except Exception as exc:return outcome(False,'',transport_diagnostic(exc))
         try:
-            msg = (d.get("choices") or [{}])[0].get("message") or {}
-            txt = (msg.get("content") or "").strip()
-        except Exception:
-            return False, "响应结构异常"
-        if not txt:
-            # 推理型模型可能把 token 预算耗在 reasoning_content 上而 content 为空。
-            # 必须当失败:回传空串会让上游拿空计划继续跑,变成难排查的静默故障。
-            rc = (msg.get("reasoning_content") or "")[:80]
-            return False, f"模型返回空 content(推理占满预算?){' · 思考片段: ' + rc if rc else ''}"
-        return True, txt
+            data=json.loads(raw)
+            choices=data.get('choices')
+            if not isinstance(choices,list) or not choices or not isinstance(choices[0],dict):raise ValueError('choices')
+            choice=choices[0];msg=choice.get('message')
+            if not isinstance(msg,dict):raise ValueError('message')
+            content=msg.get('content') or ''
+            if not isinstance(content,str):raise ValueError('content')
+            text=content.strip();reasoning=msg.get('reasoning_content')
+            usage=data.get('usage') if isinstance(data.get('usage'),dict) else {}
+            details=usage.get('completion_tokens_details') if isinstance(usage.get('completion_tokens_details'),dict) else {}
+            diagnostic={'code':'model_success' if text else 'model_empty_content','http_status':status,
+                'finish_reason':choice.get('finish_reason'),'content_chars':len(text),
+                'reasoning_chars':len(reasoning) if isinstance(reasoning,str) else 0,
+                **{k:usage.get(k) for k in ('prompt_tokens','completion_tokens','total_tokens')},
+                'reasoning_tokens':details.get('reasoning_tokens')}
+            return outcome(bool(text),text,diagnostic)
+        except (ValueError,TypeError,AttributeError,IndexError):
+            return outcome(False,'',{'code':'model_invalid_response','http_status':status})
 
     def run_turn_stream(self, session_id, message, timeout=300, model=None, on_delta=None,
                         on_reasoning=None):
