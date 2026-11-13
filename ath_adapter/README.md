@@ -1,0 +1,64 @@
+# ATH 接入：DataMind 作为受保护的服务提供方
+
+本目录让外部智能体经 [ATH（智能体可信握手协议）](https://github.com/ath-protocol) 的网关访问 DataMind。
+DataMind 本身不改、只监听本机；本适配层是对智能体开放的唯一入口，负责用户侧授权和按范围放行。
+
+```
+智能体 ──ATH 握手──▶ ATH 网关 ──OAuth 2.0──▶ 适配层 (8093) ──本机──▶ DataMind (8092)
+```
+
+## 适配层做什么
+
+- **授权服务器**：授权页（DataMind 用户登录并勾选授予的范围）、一次性授权码、PKCE S256、令牌端点、RFC 8414 元数据。
+- **资源服务器**：每个接口对应一个范围，令牌里没有该范围即拒绝；未列出的接口一律 404。
+- **MCP 桥接**：`POST /mcp` 转给 `mcp_build_server.py`。构建作业由 DataMind 服务端持有（DR-101），
+  桥接进程结束不影响构建，之后凭作业号可查。
+- **A2A**：`POST /a2a`（A2A 0.3.0 的 `message/send`）和 AgentCard。
+- **审计**：每次授权、发令牌、放行和拒绝追加写入 `audit.jsonl`。
+
+## 范围与接口
+
+| 范围 | 允许的访问 |
+|---|---|
+| `datamind:catalog.read` | `GET /api/sysinfo`、`/api/tables`、`/api/overview`、`/api/glossary`；A2A 技能 `catalog.tables` |
+| `datamind:ontology.read` | `GET /api/graphs`、`/api/graph/<key>`、`/api/metrics`；A2A 技能 `ontology.graphs` |
+| `datamind:sparql.query` | `POST /api/sparql` |
+| `datamind:build.read` | MCP 的只读工具（数据源、技能、构建产物、作业进度、验收、人审队列）；A2A 技能 `build.list` |
+| `datamind:build.run` | MCP 的 `start_build`（唯一的写操作） |
+
+没有开放的能力：评审与编辑（确认、否决关系，改动词，确认指标计算规则）、删除图谱、引擎与连接配置、深度问数。
+前三类只能由人在 DataMind 界面里做。继续构建不会移出或改写人工决定过的关系（DR-097），
+所以拿到 `datamind:build.run` 的智能体也改不了人审结论。
+
+## 运行
+
+```bash
+./start.sh                                   # DataMind，8092
+python3 -m ath_adapter.provider              # 适配层，8093
+```
+
+| 环境变量 | 缺省 | 含义 |
+|---|---|---|
+| `DATAMIND_URL` | `http://127.0.0.1:8092` | DataMind 地址 |
+| `DATAMIND_ATH_PORT` | `8093` | 适配层端口（只监听 127.0.0.1） |
+| `ATH_GATEWAY_URL` | `http://localhost:3000` | ATH 网关地址，写进 AgentCard |
+| `ATH_GATEWAY_CALLBACK` | `http://localhost:3000/ath/callback` | 首次启动时登记的回调地址 |
+| `DATAMIND_ATH_STATE` | `workdir/ath_state` | 状态目录：OAuth 客户端密钥、用户口令哈希、初始口令、审计日志，文件权限 0600，不入库 |
+| `DATAMIND_ATH_ORGANIZATION` | `COSMO DataMind` | AgentCard 里的组织名 |
+
+首次启动生成网关用的客户端密钥和一个用户 `analyst`，初始口令写在状态目录的 `initial_password.json`。
+授权码和令牌只在内存里，重启适配层后失效。
+
+## 测试
+
+- 单元测试 `tests/unit/test_ath_adapter.py`：不需要网关和运行中的 DataMind，随 `scripts/check.py --suite unit` 运行。
+- 端到端 `ath_adapter/e2e/run_e2e.py`：需要 DataMind 在 8092、ATH 参考网关的本地检出（`ATH_GATEWAY_DIR`）、
+  PyJWT，以及官方 Python SDK（`ATH_SDK=official`，缺省）或自带客户端（`ATH_SDK=own`）。
+  报告写到 `.check-results/ath/`。它不在常规检查里。
+
+## 已知限制
+
+- 转发时不带数据来源，智能体只能访问默认库。
+- 深度问数没有对应的范围。
+- 适配层的审计日志与 DataMind 的编辑记录是两套，没有打通。
+- 令牌是不透明字符串、存在内存里，适配层只能单进程运行。

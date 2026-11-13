@@ -639,6 +639,19 @@
         "tests/unit/test_mcp_build_server.py::test_wait_build_returns_when_finished",
         "tests/unit/test_mcp_build_server.py::test_wait_build_gives_up_at_its_deadline_while_still_running"
       ]
+    },
+    {
+      "id": "ATH-01",
+      "criterion": "ATH 适配层只按令牌里的范围放行已登记的接口:未登记接口、缺范围、路径穿越、无令牌均被拒绝;授权页不能加入未知范围或跳过 PKCE;授权码一次有效,令牌响应不可缓存",
+      "tests": [
+        "tests/unit/test_ath_adapter.py::test_consent_page_drops_unknown_params_and_sets_frame_headers",
+        "tests/unit/test_ath_adapter.py::test_path_traversal_is_rejected",
+        "tests/unit/test_ath_adapter.py::test_unknown_endpoint_and_missing_scope",
+        "tests/unit/test_ath_adapter.py::test_approve_cannot_add_unknown_scopes_or_skip_pkce",
+        "tests/unit/test_ath_adapter.py::test_malformed_basic_auth_is_invalid_client",
+        "tests/unit/test_ath_adapter.py::test_token_response_is_not_cacheable",
+        "tests/unit/test_ath_adapter.py::test_agent_card_points_at_gateway"
+      ]
     }
   ]
 }

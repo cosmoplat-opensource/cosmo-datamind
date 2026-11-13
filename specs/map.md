@@ -34,6 +34,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 ## 索引
 
 ### 决定 / Decisions
+- [DR-102 · ATH 适配层进入产品仓库](decisions/DR-102-ath-adapter-in-repo.md)
 - [DR-101 · 构建作业由服务端持有，连接只是订阅者](decisions/DR-101-server-held-build-jobs.md)
 - [DR-100 · 孤儿记录与抽样证据不再直接认定为 verified；导出 IRI 保留中文名](decisions/DR-100-orphans-samples-and-iris.md)
 - [DR-099 · 证据强度补漏：单值子键、指标的独立参照、指标 id、否决模式回流](decisions/DR-099-evidence-strength.md)
