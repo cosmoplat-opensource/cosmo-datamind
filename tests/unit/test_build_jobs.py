@@ -107,3 +107,82 @@ def test_followers_get_a_heartbeat_while_a_step_is_silent():
             gate.set()
     assert [e["type"] for e in got if e["type"] != "tick"] == ["step", "done"]
     assert any(e["type"] == "tick" for e in got)
+
+
+# ── 作业落盘、重启后可查、取消、发起方留痕(DR-103) ─────────────────────
+
+def _forget_jobs():
+    """模拟服务重启:进程内的作业登记清空,磁盘上的记录还在。"""
+    with server._BUILD_JOBS_LOCK:
+        server._BUILD_JOBS.clear()
+
+
+def test_a_finished_job_can_still_be_read_after_a_restart(source):
+    job_id = server.app.test_client().post("/api/build/jobs", json=_body(source)).get_json()["job_id"]
+    final, events = _poll(job_id)
+    _forget_jobs()
+    again = server.app.test_client().get(f"/api/build/jobs/{job_id}").get_json()
+    assert again["state"] == "done" and again["events"] == events
+    assert again["done"]["graph_key"] == final["done"]["graph_key"]
+    assert again["request"]["body"]["q"] == "构建计量本体"            # 留有原请求,可据此重新发起
+
+
+def test_a_job_that_was_running_at_restart_is_reported_as_interrupted(tmp_path, monkeypatch):
+    monkeypatch.setattr(server, "WORK", str(tmp_path))
+    gate = threading.Event()
+
+    def slow():
+        yield 'data: {"type": "step", "step": "intake", "ok": true}\n\n'
+        gate.wait(10)
+    job = server._build_job_start(slow)
+    time.sleep(0.2)                                       # 首条事件已落盘
+    _forget_jobs()
+    d = server.app.test_client().get(f"/api/build/jobs/{job['id']}").get_json()
+    assert d["state"] == "interrupted" and "重启" in d["error"]
+    assert [e["type"] for e in d["events"]] == ["step", "error"]
+    assert server.app.test_client().get(f"/api/build/jobs/{job['id']}").get_json()["state"] == "interrupted"
+    gate.set()
+
+
+def test_cancel_stops_the_build_and_runs_its_cleanup(tmp_path, monkeypatch):
+    monkeypatch.setattr(server, "WORK", str(tmp_path))
+    proceed, closed = threading.Event(), threading.Event()
+
+    def stream():
+        try:
+            yield 'data: {"type": "step", "step": "intake", "ok": true}\n\n'
+            proceed.wait(10)
+            yield 'data: {"type": "step", "step": "llm_extract", "ok": true}\n\n'
+            yield 'data: {"type": "done", "graph_key": "built_never"}\n\n'
+        finally:
+            closed.set()
+    job = server._build_job_start(stream)
+    client = server.app.test_client()
+    r = client.post(f"/api/build/jobs/{job['id']}/cancel")
+    assert r.status_code == 202 and r.get_json()["cancel_requested"] is True
+    proceed.set()                                         # 取消在下一步之间生效
+    job["thread"].join(5)
+    d = client.get(f"/api/build/jobs/{job['id']}").get_json()
+    assert d["state"] == "cancelled" and d["done"] is None and closed.is_set()
+    assert d["events"][-1].get("cancelled") is True
+    assert client.post(f"/api/build/jobs/{job['id']}/cancel").status_code == 409      # 已结束的作业不能再取消
+
+
+def test_cancel_and_lookup_reject_unknown_or_malformed_ids(tmp_path, monkeypatch):
+    monkeypatch.setattr(server, "WORK", str(tmp_path))
+    client = server.app.test_client()
+    assert client.post("/api/build/jobs/bj_0000000000/cancel").status_code == 404
+    for bad in ("..%2Fengine_config", "bj_../../x", "bj_ZZZ"):
+        assert client.get("/api/build/jobs/" + bad).status_code == 404
+
+
+def test_who_started_a_build_is_recorded_on_the_job_and_in_the_graph(source):
+    r = server.app.test_client().post("/api/build/jobs", json=_body(source), headers={
+        "X-DataMind-Actor": "ath:agent-7:analyst", "X-Request-Id": "req-123"})
+    final, _events = _poll(r.get_json()["job_id"])
+    assert final["request"]["actor"] == "ath:agent-7:analyst" and final["request"]["request_id"] == "req-123"
+    key = final["done"]["graph_key"]
+    started = server.load_ir(key)["build_manifest"]["initiated_by"]
+    assert started == {"actor": "ath:agent-7:analyst", "request_id": "req-123", "job_id": final["job_id"]}
+    audit = server.app.test_client().get("/api/ont/audit/" + key).get_json()
+    assert audit["builds"][-1]["initiated_by"]["actor"] == "ath:agent-7:analyst"

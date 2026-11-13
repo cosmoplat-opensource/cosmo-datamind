@@ -3964,6 +3964,10 @@ def ont_audit(key):
                     "by": o.get("reviewer") or "(未署名)", "ts": o.get("ts"),
                     "source": o.get("source", "api"), "reason": o.get("reason", "")}
                    for i, o in list(enumerate(ops))[-20:]][::-1],
+        # DR-103 构建记录与编辑记录并列:谁、经什么渠道、凭哪个请求号发起了每一轮构建
+        "builds": [{"round": h.get("round"), "at": h.get("at"), "request": str(h.get("request") or "")[:200],
+                    "method": h.get("method"), "initiated_by": h.get("initiated_by") or {"actor": "", "request_id": ""}}
+                   for h in ((load_ir(key) or {}).get("build_history") or []) if isinstance(h, dict)][-20:],
         "note": "审计视图基于编辑日志;日志是回放的单一真相,撤销会同步移除条目——"
                 "故本视图反映的是当前生效的变更集,不是历史全量操作流水",
     })
@@ -8398,6 +8402,7 @@ def _merge_ir(base, new):
                "skills": new_mf.get("skills"), "cqs": new_mf.get("cqs"),
                "references": new_mf.get("references"),
                "method": new_mf.get("method"), "evidence": new_mf.get("evidence"),
+               **({"initiated_by": new_mf["initiated_by"]} if new_mf.get("initiated_by") else {}),
                "merge": dict(stat)}                       # 本轮实际并入了什么,一并留痕
         hist.append(rec)
         out["build_history"] = hist[-50:]
@@ -8516,6 +8521,12 @@ def build_inquire():
     base_graph = re.sub(r"[^A-Za-z0-9_]", "", str(body.get("base_graph") or ""))[:40]
     if base_graph and not base_graph.startswith("built_"):
         return jsonify({"error": "只能在自建本体(built_*)上迭代"}), 400
+    # DR-103 发起方留痕:经 ATH 适配层等上游进来的请求带调用方与请求号,记入作业与图谱的构建记录。
+    # DataMind 自身不做认证,这两个值是调用方声明的,用来与上游的审计日志对账。
+    _printable = lambda v, n: "".join(ch for ch in str(v or "") if ch.isprintable())[:n]       # noqa: E731
+    _actor = _printable(request.headers.get("X-DataMind-Actor"), 120)
+    _req_id = _printable(request.headers.get("X-Request-Id"), 80)
+    _job_box = {}
     _obs = {}                                   # DR-066:本次构建的追踪(在生成器里创建)
     def sse(o):
         _r = _obs.get("run")
@@ -8771,10 +8782,21 @@ def build_inquire():
                 proc = subprocess.Popen([sys.executable, _confined(HERE, "quick_build.py"), db, _bp, gname,
                                          ACTION_TYPES_F] + ([json.dumps(scope_tables)] if scope_tables else []),
                                         cwd=HERE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-                for line in iter(proc.stdout.readline, ""):
-                    line = line.strip()
-                    if line: yield push("construct", True, line[:120])
-                proc.wait(timeout=10)
+                try:
+                    for line in iter(proc.stdout.readline, ""):
+                        line = line.strip()
+                        if line: yield push("construct", True, line[:120])
+                    proc.wait(timeout=10)
+                finally:
+                    # DR-103 构建被取消或连接方关闭生成器时走到这里:结束子进程,清掉中间产物。
+                    # 此前这种情况下子进程无人回收,<key>.building.json 留在图谱目录里被列成一张图。
+                    if proc.poll() is None:
+                        proc.kill()
+                        try: proc.wait(timeout=5)
+                        except subprocess.TimeoutExpired: pass
+                        if _bp != outp:
+                            try: os.remove(_bp)
+                            except OSError: pass
             except Exception as e:
                 yield push("construct", False, f"构建异常:{str(e)[:90]}")
             ir = _load_json(_bp)
@@ -8819,6 +8841,10 @@ def build_inquire():
             stability=stability, method=method,
             evidence={"tables": ntab, "docs": ev["n_docs"], "refs": ev["refs"], "files": ev["files"]},
             created_at=_t.strftime("%Y-%m-%dT%H:%M:%S%z"), references=references)
+        if _actor or _req_id:
+            _who = {"actor": _actor, "request_id": _req_id, "job_id": (_job_box.get("job") or {}).get("id", "")}
+            ir["build_manifest"]["initiated_by"] = _who
+            if ir.get("build_history"): ir["build_history"][-1]["initiated_by"] = _who
         # ④′ 迭代模式:并入既有本体。放在验收检查之前,好让质量评估针对合并后的完整本体,
         # 而不是只评估本轮增量——否则「本轮没提到的部分」会被算成缺失。
         _review_snap = {}
@@ -8982,7 +9008,9 @@ def build_inquire():
     # DR-101 构建由服务端作业持有:本响应只是订阅者。连接断开(浏览器关闭、MCP 进程退出、代理超时)
     # 不再中断构建;作业号写在响应头里,之后可用 /api/build/jobs/<id> 查询或续看。
     from flask import Response
-    job = _build_job_start(gen_observed, meta={"q": q[:200], "source": source, "base_graph": base_graph})
+    _job_box["job"] = job = _build_job_start(gen_observed, meta={
+        "q": q[:200], "source": source, "base_graph": base_graph, "actor": _actor, "request_id": _req_id,
+        "body": body})                          # 原请求留在作业记录里:中断或取消后可据此重新发起
     return Response(_build_job_follow(job), mimetype="text/event-stream",
                     headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no", "X-Build-Job": job["id"]})
 
@@ -8995,24 +9023,67 @@ _BUILD_JOBS_KEPT = 40                # 留存的作业数;超出时淘汰最早�
 _BUILD_JOB_HEARTBEAT = 15.0          # 订阅者在没有新事件时每隔这么多秒收到一条 tick
 
 
+_BUILD_JOB_ID = re.compile(r"^bj_[0-9a-f]{10}$")
+_BUILD_JOB_ENDED = {"done": "done", "error": "error"}
+
+
+def _build_job_file(job_id, work=None):
+    return os.path.join(work or WORK, "build_jobs", job_id + ".json")
+
+
+def _build_job_save(job):
+    """作业记录落盘(DR-103):服务重启后仍可查。调用方持有 job["cond"]。写失败只记日志,不影响构建。"""
+    try:
+        path = _build_job_file(job["id"], job["work"])
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        _atomic_json(path, {k: job[k] for k in ("id", "state", "meta", "created", "finished", "events")})
+        job["saved"] = time.time()
+    except OSError:
+        app.logger.exception("构建作业 %s 落盘失败", job["id"])
+
+
+def _build_job_prune(work):
+    """磁盘上只留最近的作业记录。"""
+    try:
+        d = os.path.join(work, "build_jobs")
+        files = sorted((os.path.join(d, f) for f in os.listdir(d) if _BUILD_JOB_ID.match(f[:-5]) and f.endswith(".json")),
+                       key=os.path.getmtime)
+        for f in files[:-_BUILD_JOBS_KEPT]:
+            os.remove(f)
+    except OSError:
+        pass
+
+
 def _build_job_start(make_stream, meta=None):
     """登记作业并在后台线程里跑完 make_stream()(产出 SSE 文本块的生成器)。返回作业记录。
 
     线程带着调用方的上下文变量运行(数据来源、请求上下文),与 _bounded 相同。
-    流没有以 done 或 error 结束、或中途抛异常时,补一条 error 事件:半程不算完成(DR-056)。"""
+    流没有以 done 或 error 结束、或中途抛异常时,补一条 error 事件:半程不算完成(DR-056)。
+    作业记录落盘(开始、结束、每个步骤;其余事件至多每 2 秒一次);收到取消请求后在两步之间关闭生成器,
+    生成器里的 finally 照常执行。"""
     job = {"id": "bj_" + uuid.uuid4().hex[:10], "state": "running", "events": [], "meta": dict(meta or {}),
-           "created": time.time(), "finished": None, "cond": threading.Condition()}
+           "created": time.time(), "finished": None, "cond": threading.Condition(), "cancel": False,
+           "work": WORK, "saved": 0.0}
 
     def add(ev):
         with job["cond"]:
             job["events"].append(ev)
-            if ev.get("type") in ("done", "error"):
-                job["state"] = "done" if ev["type"] == "done" else "error"
+            if ev.get("type") in _BUILD_JOB_ENDED:
+                job["state"] = "cancelled" if ev.get("cancelled") else _BUILD_JOB_ENDED[ev["type"]]
+            # 步骤事件逐条落盘(一次构建几十条);日志、状态这类高频事件至多每 2 秒落一次
+            if job["state"] != "running" or ev.get("type") == "step" or time.time() - job["saved"] > 2:
+                _build_job_save(job)
             job["cond"].notify_all()
 
     def run():
+        stream = None
         try:
-            for chunk in make_stream():
+            stream = make_stream()
+            for chunk in stream:
+                if job["cancel"]:
+                    stream.close()                               # 触发生成器内的 finally(临时文件、子进程的清理)
+                    add({"type": "error", "error": "构建已取消", "cancelled": True})
+                    break
                 if not isinstance(chunk, str) or not chunk.startswith("data: "):
                     continue
                 try:
@@ -9021,7 +9092,7 @@ def _build_job_start(make_stream, meta=None):
                     continue
                 if isinstance(ev, dict):
                     add(ev)
-                    if ev.get("type") in ("done", "error"):
+                    if ev.get("type") in _BUILD_JOB_ENDED:
                         break
         except Exception as e:                                   # noqa: BLE001
             app.logger.exception("构建作业 %s 异常中止", job["id"])
@@ -9030,9 +9101,12 @@ def _build_job_start(make_stream, meta=None):
         finally:
             with job["cond"]:
                 if job["state"] == "running":
-                    job["events"].append({"type": "error", "error": "构建未完成:过程在给出结果前结束"})
-                    job["state"] = "error"
+                    cancelled = job["cancel"]
+                    job["events"].append({"type": "error", "cancelled": True, "error": "构建已取消"} if cancelled else
+                                         {"type": "error", "error": "构建未完成:过程在给出结果前结束"})
+                    job["state"] = "cancelled" if cancelled else "error"
                 job["finished"] = time.time()
+                _build_job_save(job)
                 job["cond"].notify_all()
 
     with _BUILD_JOBS_LOCK:
@@ -9040,10 +9114,39 @@ def _build_job_start(make_stream, meta=None):
         ended = [k for k, j in _BUILD_JOBS.items() if j["state"] != "running"]
         while len(_BUILD_JOBS) > _BUILD_JOBS_KEPT and ended:
             _BUILD_JOBS.pop(ended.pop(0), None)
+    with job["cond"]:
+        _build_job_save(job)
+    _build_job_prune(job["work"])
     _ctx = contextvars.copy_context()
     job["thread"] = threading.Thread(target=lambda: _ctx.run(run), daemon=True, name="build-" + job["id"])
     job["thread"].start()
     return job
+
+
+def _build_job_lookup(job_id):
+    """按作业号取作业:先看本进程,再看磁盘。磁盘上仍标着「运行中」而本进程里没有的作业,
+    是服务重启时正在执行的:构建线程已经不在,如实标为已中断(DR-103)。"""
+    if not _BUILD_JOB_ID.match(job_id or ""):
+        return None
+    job = _BUILD_JOBS.get(job_id)
+    if job is not None:
+        return job
+    try:
+        with open(_build_job_file(job_id), encoding="utf-8") as f:
+            rec = json.load(f)
+    except (OSError, ValueError):
+        return None
+    job = {"id": job_id, "state": rec.get("state") or "error", "events": list(rec.get("events") or []),
+           "meta": rec.get("meta") or {}, "created": rec.get("created") or 0, "finished": rec.get("finished"),
+           "cond": threading.Condition(), "cancel": False, "work": WORK, "saved": 0.0}
+    if job["state"] == "running":
+        job["events"].append({"type": "error", "interrupted": True,
+                              "error": "服务重启,构建中断;已写入的图谱文件不受影响,可重新发起"})
+        job["state"], job["finished"] = "interrupted", job["finished"] or time.time()
+        with job["cond"]:
+            _build_job_save(job)
+    with _BUILD_JOBS_LOCK:
+        return _BUILD_JOBS.setdefault(job_id, job)
 
 
 def _build_job_follow(job, start=0, heartbeat=None):
@@ -9074,8 +9177,10 @@ def _build_job_view(job, after=0):
         total, state = len(job["events"]), job["state"]
     done = next((e for e in reversed(events if after == 0 else job["events"]) if e.get("type") == "done"), None)
     err = next((e.get("error") for e in reversed(job["events"]) if e.get("type") == "error"), None)
-    return {"job_id": job["id"], "state": state, "events": events, "next": total, "done": done,
-            "error": err if state == "error" else None, "request": job["meta"],
+    return {"job_id": job["id"], "state": state, "events": events, "next": total,
+            "done": done if state == "done" else None,
+            "error": err if state not in ("running", "done") else None, "request": job["meta"],
+            "cancel_requested": bool(job["cancel"]) and state == "running",
             "elapsed": round((job["finished"] or time.time()) - job["created"], 1)}
 
 
@@ -9093,9 +9198,9 @@ def build_job_submit():
 def build_job_get(job_id):
     """查询构建作业:状态、第 after 条之后的事件、结束时的 done 事件。wait=秒数 时最多等这么久,
     有新事件或作业结束即返回(上限 25 秒)。"""
-    job = _BUILD_JOBS.get(job_id)
+    job = _build_job_lookup(job_id)
     if job is None:
-        return jsonify({"error": "构建作业不存在(可能已随服务重启清除)"}), 404
+        return jsonify({"error": "构建作业不存在"}), 404
     try:
         after = max(0, int(request.args.get("after") or 0))
         wait = max(0.0, min(25.0, float(request.args.get("wait") or 0)))
@@ -9106,6 +9211,20 @@ def build_job_get(job_id):
             if after >= len(job["events"]) and job["state"] == "running":
                 job["cond"].wait(wait)
     return jsonify(_build_job_view(job, after))
+
+
+@app.post("/api/build/jobs/<job_id>/cancel")
+def build_job_cancel(job_id):
+    """请求取消构建。取消在两个步骤之间生效:正在执行的一步(模型抽取、语义复核可达数分钟)跑完后才停。
+    已写入的图谱文件不回滚;继续构建在写入前被取消时,原图谱保持不变。"""
+    job = _build_job_lookup(job_id)
+    if job is None:
+        return jsonify({"error": "构建作业不存在"}), 404
+    with job["cond"]:
+        if job["state"] != "running":
+            return jsonify({"error": "作业已结束,不能取消", "state": job["state"]}), 409
+        job["cancel"] = True
+    return jsonify({"job_id": job_id, "state": "running", "cancel_requested": True}), 202
 
 
 @app.post("/api/build/quality")

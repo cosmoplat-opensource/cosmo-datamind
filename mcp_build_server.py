@@ -113,6 +113,9 @@ def _fetch_job(job_id, wait=0):
            "elapsed": d.get("elapsed") or 0}
     for ev in d.get("events") or []:
         _record_event(job, ev)
+    if job["status"] in ("cancelled", "interrupted"):
+        # 已取消、服务重启时中断:都没有产物可确认,按失败报给 Agent,原因用服务端给的说明
+        job["status"], job["error"] = "error", d.get("error") or job["error"] or "构建未完成"
     if job["status"] == "error" and not job["error"]:
         job["error"] = d.get("error") or "构建未完成"
     if job["status"] == "done" and not job["done"]:

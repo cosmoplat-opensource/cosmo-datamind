@@ -186,6 +186,12 @@ class TestStartBuild:
         text, err = mcp.call_tool("get_build", {"job_id": "bj_fake01"})
         assert err and "数据源为空" in text
 
+    @pytest.mark.parametrize("state,why", [("cancelled", "构建已取消"), ("interrupted", "服务重启,构建中断")])
+    def test_cancelled_or_interrupted_job_is_reported_as_failed_with_the_reason(self, monkeypatch, state, why):
+        seen = self._fake_server(monkeypatch, [{"type": "error", "error": why}], state=state)
+        text, err = mcp.call_tool("get_build", {"job_id": "bj_fake01"})
+        assert err and why in text and seen["gets"]
+
     def test_get_build_unknown_job_is_an_error(self, monkeypatch):
         self._fake_server(monkeypatch, [])
         text, err = mcp.call_tool("get_build", {"job_id": "bj_nope"})

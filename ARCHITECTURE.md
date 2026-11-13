@@ -9,8 +9,8 @@
 │  前端 (ui/index.html + ui/modules/styles, 原生 JS/CSS)        │
 │   27 页 × hash 路由 · G6 图谱 · ECharts · 统一助手 $/esc/J    │
 ├─────────────────────────────────────────────────────────────┤
-│  HTTP 层 (Flask, 单端口 8092) · 共 140 路由                    │
-│   server.py 122 + bp_engine 5 + bp_actions 7 + bp_metrics 4 + bp_semantic 2 │
+│  HTTP 层 (Flask, 单端口 8092) · 共 141 路由                    │
+│   server.py 123 + bp_engine 5 + bp_actions 7 + bp_metrics 4 + bp_semantic 2 │
 │   生产入口:wsgi.py → Gunicorn(gthread);可另配 Nginx 反向代理 │
 │   app 级 before_request CSRF 守卫(对 blueprint 同样生效)      │
 │   共享层: srv_context(路径/只读连接/原子写/写锁)              │
