@@ -6,7 +6,7 @@
   2. 治理边界——把关系置为 verified/asserted、把指标置为 certified、删除图谱
      都不得作为工具暴露,否则 Agent 就能改写只有数据裁决和人工评审才能产生的结论状态。
 
-另有作业生命周期:start_build 立即返回、SSE 无 done 不算完成(DR-056 同规)。
+另有作业生命周期:作业由服务端持有(DR-101),start_build 立即返回,没有 done 事件不算完成(DR-056 同规)。
 """
 import json
 import time
@@ -35,13 +35,6 @@ def _init(version=None):
     return json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": params})
 
 
-@pytest.fixture(autouse=True)
-def _clean_jobs():
-    with mcp._JOBS_LOCK:
-        mcp._JOBS.clear()
-    yield
-    with mcp._JOBS_LOCK:
-        mcp._JOBS.clear()
 
 
 class TestProtocolNegotiation:
@@ -123,25 +116,26 @@ class TestBaseResolution:
 
 
 class TestStartBuild:
-    def _fake_stream(self, monkeypatch, events, result_error=None):
-        seen = {}
+    """构建作业由 DataMind 服务端持有(DR-101):这里只提交和查询,作业不在 MCP 进程里。"""
 
-        def fake(path, payload, on_event, timeout=90):
-            seen.update(path=path, payload=payload)
-            for ev in events:
-                on_event(ev)
-            return len(events), result_error
-        monkeypatch.setattr(mcp, "_http_stream", fake)
+    def _fake_server(self, monkeypatch, events, state="done", submit_error=None):
+        seen = {"posts": [], "gets": []}
+
+        def fake(method, path, payload=None, timeout=20):
+            if method == "POST":
+                seen["posts"].append((path, payload))
+                return (None, submit_error) if submit_error else ({"job_id": "bj_fake01", "state": "running"}, None)
+            seen["gets"].append(path)
+            if "bj_fake01" not in path:
+                return None, "构建作业不存在"
+            return {"job_id": "bj_fake01", "state": state, "events": events, "next": len(events), "elapsed": 3.2}, None
+        monkeypatch.setattr(mcp, "_http", fake)
         return seen
 
-    def _wait_done(self, job_id, timeout=5.0):
-        deadline = time.time() + timeout
-        while time.time() < deadline:
-            job = mcp._JOBS.get(job_id)
-            if job is not None and job["status"] != "running":
-                return job
-            time.sleep(0.02)
-        return mcp._JOBS.get(job_id)
+    def _start(self, **args):
+        text, err = mcp.call_tool("start_build", {"q": "建本体", **args})
+        assert not err and "job_id=" in text, text
+        return text.split("job_id=")[1].split("(")[0].strip()
 
     def test_requires_q(self):
         text, err = mcp.call_tool("start_build", {})
@@ -151,8 +145,8 @@ class TestStartBuild:
         text, err = mcp.call_tool("start_build", {"q": "建销售本体", "source": "../etc"})
         assert err and "source" in text
 
-    def test_job_runs_and_reports_done(self, monkeypatch):
-        seen = self._fake_stream(monkeypatch, [
+    def test_job_is_submitted_to_the_server_and_reports_done(self, monkeypatch):
+        seen = self._fake_server(monkeypatch, [
             {"type": "step", "step": "intake", "ok": True, "info": "接收诉求"},
             {"type": "status", "text": "数据验证中"},
             {"type": "done", "graph_key": "built_ab12cd", "name": "销售本体",
@@ -160,65 +154,59 @@ class TestStartBuild:
              "stats": {"objects": 9, "links": 10, "verified": 6},
              "quality": {"result": "review", "summary": {"blocking_issues": 0, "review_items": 3}}},
         ])
-        text, err = mcp.call_tool("start_build",
-                                  {"q": "建销售本体", "source": "demo",
-                                   "skills": ["ontology-semi-auto"], "cqs": ["上月销售额多少?"]})
-        assert not err and "job_id=" in text
-        job_id = text.split("job_id=")[1].split("(")[0].strip()
-        job = self._wait_done(job_id)
-        assert job["status"] == "done" and job["graph_key"] == "built_ab12cd"
-        assert job["stats"]["verified"] == 6
-        assert seen["path"] == "/api/build/inquire"
-        assert seen["payload"]["q"] == "建销售本体" and seen["payload"]["source"] == "demo"
-        assert seen["payload"]["skills"] == ["ontology-semi-auto"]
-        assert seen["payload"]["cqs"] == ["上月销售额多少?"]
+        job_id = self._start(q="建销售本体", source="demo", skills=["ontology-semi-auto"], cqs=["上月销售额多少?"])
+        assert job_id == "bj_fake01"
+        path, payload = seen["posts"][0]
+        assert path == "/api/build/jobs"
+        assert payload["q"] == "建销售本体" and payload["source"] == "demo"
+        assert payload["skills"] == ["ontology-semi-auto"] and payload["cqs"] == ["上月销售额多少?"]
+        text, err = mcp.call_tool("get_build", {"job_id": job_id})
+        assert not err and "built_ab12cd" in text and "verified 6" in text and "待复核" in text
 
-    def test_stream_without_done_is_an_error_not_success(self, monkeypatch):
-        """DR-056 同规:构建 SSE 必须有 done 才算完成;半程流不得冒充成功。"""
-        self._fake_stream(monkeypatch, [
-            {"type": "step", "step": "intake", "ok": True, "info": "接收诉求"},
-            {"type": "log", "text": "抽取中"},
-        ])
-        text, _ = mcp.call_tool("start_build", {"q": "建本体"})
-        job_id = text.split("job_id=")[1].split("(")[0].strip()
-        job = self._wait_done(job_id)
-        assert job["status"] == "error" and "done" in job["error"]
+    def test_job_survives_the_process_that_started_it(self, monkeypatch):
+        """另一个进程(没有任何本地状态)凭作业号就能查到结果:桥接层每个请求起一个进程时必须如此。"""
+        self._fake_server(monkeypatch, [{"type": "done", "graph_key": "built_x", "stats": {}, "quality": {}}])
+        assert not hasattr(mcp, "_JOBS")
+        text, err = mcp.call_tool("get_build", {"job_id": "bj_fake01"})
+        assert not err and "built_x" in text
+
+    def test_submit_failure_is_reported_not_swallowed(self, monkeypatch):
+        self._fake_server(monkeypatch, [], submit_error="只能在自建本体(built_*)上迭代")
+        text, err = mcp.call_tool("start_build", {"q": "建本体", "base_graph": "demo"})
+        assert err and "built_" in text
+
+    def test_state_done_without_a_done_event_is_an_error_not_success(self, monkeypatch):
+        """DR-056 同规:必须有 done 事件才算完成;半程流不得冒充成功。"""
+        self._fake_server(monkeypatch, [{"type": "step", "step": "intake", "ok": True, "info": "接收诉求"}])
+        text, err = mcp.call_tool("get_build", {"job_id": "bj_fake01"})
+        assert err and "done" in text
 
     def test_error_event_marks_job_failed(self, monkeypatch):
-        self._fake_stream(monkeypatch, [{"type": "error", "error": "数据源为空"}])
-        text, _ = mcp.call_tool("start_build", {"q": "建本体"})
-        job_id = text.split("job_id=")[1].split("(")[0].strip()
-        job = self._wait_done(job_id)
-        assert job["status"] == "error" and "数据源为空" in job["error"]
+        self._fake_server(monkeypatch, [{"type": "error", "error": "数据源为空"}], state="error")
+        text, err = mcp.call_tool("get_build", {"job_id": "bj_fake01"})
+        assert err and "数据源为空" in text
 
-    def test_get_build_unknown_job_is_an_error(self):
-        text, err = mcp.call_tool("get_build", {"job_id": "jb_nope"})
+    def test_get_build_unknown_job_is_an_error(self, monkeypatch):
+        self._fake_server(monkeypatch, [])
+        text, err = mcp.call_tool("get_build", {"job_id": "bj_nope"})
         assert err and "未找到" in text
 
     def test_get_build_running_shows_progress(self, monkeypatch):
-        """流未结束时作业保持 running,get_build 返回最近过程事件而非结论。"""
-        import threading
-        release = threading.Event()
-
-        def blocking_stream(path, payload, on_event, timeout=90):
-            on_event({"type": "step", "step": "intake", "ok": True, "info": "接收诉求"})
-            release.wait(3.0)                    # 挂住流,作业停在 running
-            return 1, None
-        monkeypatch.setattr(mcp, "_http_stream", blocking_stream)
-        text, _ = mcp.call_tool("start_build", {"q": "建本体"})
-        job_id = text.split("job_id=")[1].split("(")[0].strip()
-        time.sleep(0.1)
-        text, err = mcp.call_tool("get_build", {"job_id": job_id})
+        self._fake_server(monkeypatch, [{"type": "step", "step": "intake", "ok": True, "info": "接收诉求"}],
+                          state="running")
+        text, err = mcp.call_tool("get_build", {"job_id": "bj_fake01"})
         assert not err and "构建进行中" in text and "接收诉求" in text
-        release.set()
 
     def test_wait_build_returns_when_finished(self, monkeypatch):
-        self._fake_stream(monkeypatch, [{"type": "done", "graph_key": "built_x",
-                                         "stats": {}, "quality": {}}])
-        text, _ = mcp.call_tool("start_build", {"q": "建本体"})
-        job_id = text.split("job_id=")[1].split("(")[0].strip()
-        text, err = mcp.call_tool("wait_build", {"job_id": job_id, "timeout": 5})
-        assert not err and "built_x" in text
+        seen = self._fake_server(monkeypatch, [{"type": "done", "graph_key": "built_x", "stats": {}, "quality": {}}])
+        text, err = mcp.call_tool("wait_build", {"job_id": "bj_fake01", "timeout": 5})
+        assert not err and "built_x" in text and "wait=" in seen["gets"][0]
+
+    def test_wait_build_gives_up_at_its_deadline_while_still_running(self, monkeypatch):
+        self._fake_server(monkeypatch, [], state="running")
+        t0 = time.time()
+        text, err = mcp.call_tool("wait_build", {"job_id": "bj_fake01", "timeout": 1})
+        assert not err and "构建进行中" in text and time.time() - t0 < 5
 
 
 class TestRenderers:

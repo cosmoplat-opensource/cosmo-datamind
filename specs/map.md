@@ -34,6 +34,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 ## 索引
 
 ### 决定 / Decisions
+- [DR-101 · 构建作业由服务端持有，连接只是订阅者](decisions/DR-101-server-held-build-jobs.md)
 - [DR-100 · 孤儿记录与抽样证据不再直接认定为 verified；导出 IRI 保留中文名](decisions/DR-100-orphans-samples-and-iris.md)
 - [DR-099 · 证据强度补漏：单值子键、指标的独立参照、指标 id、否决模式回流](decisions/DR-099-evidence-strength.md)
 - [DR-098 · 问数校验补漏：连接写法、范围、不存在的列、降级与投票](decisions/DR-098-qa-gate-hardening.md)
@@ -139,7 +140,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - `SPEC.md` — 对**平台** web/ 的逆向规格(平台契约,非 DataMind;前缀不同勿混用)。
 
 ## 现状校准
-- 计数(2026-10-12):**138 路由**(server.py 120 + bp_engine 5 + bp_actions 7 + bp_metrics 4 + bp_semantic 2)/ **565 集成断言** /
+- 计数(2026-10-12):**140 路由**(server.py 122 + bp_engine 5 + bp_actions 7 + bp_metrics 4 + bp_semantic 2)/ **565 集成断言** /
   **1279 项 pytest 测试**（多数据库功能复核）/ DR-001…DR-082、DR-093…DR-095 · IR-001…IR-013。
   DR-093 增加数据目录、问题驱动概念/主题、声明角色外键独立核验与业务语义人审；DR-095 增加多库上下文，场景回归为 51 项。
   DR-076 起 `examples/demo_metrics.db` 由 `scripts/build_demo_108_db.py` 按业务过程仿真生成(108 表 / 308,230 行)。

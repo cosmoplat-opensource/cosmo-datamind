@@ -613,6 +613,32 @@
         "tests/unit/test_turtle_iris.py::test_names_that_differ_only_in_punctuation_do_not_share_an_iri",
         "tests/unit/test_turtle_iris.py::test_ascii_names_keep_their_previous_iris"
       ]
+    },
+    {
+      "id": "BUILD-JOB-01",
+      "criterion": "构建提交后立即返回作业号并在服务端跑完;事件流断开后构建继续;晚到的订阅者能看到完整过程并可从偏移续看;异常或没有 done 的流以 error 结束;静默步骤期间订阅者收到心跳",
+      "tests": [
+        "tests/unit/test_build_jobs.py::test_submitted_job_returns_at_once_and_finishes_on_the_server",
+        "tests/unit/test_build_jobs.py::test_build_continues_after_the_stream_is_dropped",
+        "tests/unit/test_build_jobs.py::test_a_late_subscriber_sees_the_whole_run_and_can_resume_from_an_offset",
+        "tests/unit/test_build_jobs.py::test_invalid_request_is_rejected_without_creating_a_job",
+        "tests/unit/test_build_jobs.py::test_unknown_job_is_not_found",
+        "tests/unit/test_build_jobs.py::test_a_crash_in_the_build_ends_the_job_with_an_error_event",
+        "tests/unit/test_build_jobs.py::test_a_stream_that_ends_without_done_is_an_error_not_success",
+        "tests/unit/test_build_jobs.py::test_followers_get_a_heartbeat_while_a_step_is_silent"
+      ]
+    },
+    {
+      "id": "BUILD-JOB-02",
+      "criterion": "MCP 构建工具向服务端提交和查询作业,自身不保存作业:另一个进程凭作业号可查到结果;提交失败如实返回;没有 done 事件不算完成",
+      "tests": [
+        "tests/unit/test_mcp_build_server.py::test_job_is_submitted_to_the_server_and_reports_done",
+        "tests/unit/test_mcp_build_server.py::test_job_survives_the_process_that_started_it",
+        "tests/unit/test_mcp_build_server.py::test_submit_failure_is_reported_not_swallowed",
+        "tests/unit/test_mcp_build_server.py::test_state_done_without_a_done_event_is_an_error_not_success",
+        "tests/unit/test_mcp_build_server.py::test_wait_build_returns_when_finished",
+        "tests/unit/test_mcp_build_server.py::test_wait_build_gives_up_at_its_deadline_while_still_running"
+      ]
     }
   ]
 }

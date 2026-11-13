@@ -7,7 +7,7 @@
   - list_build_skills   读:内置/自定义构建技能(注入 prompt 的建模方法)
   - list_built_graphs   读:历史构建产物(对象/关系/verified 计数与验收结果)
   - start_build         写(唯一):发起一次半自动构建,立即返回 job id
-  - get_build / wait_build  读:跟踪构建作业(SSE 过程事件/汇总/验收结果)
+  - get_build / wait_build  读:跟踪构建作业(过程事件/汇总/验收结果)
   - get_quality         读:对产物重跑确定性验收(pass/review/fail)
   - review_queue        读:人审队列(candidate/语义存疑等待人处理)
 
@@ -25,17 +25,16 @@
 
 构建耗时以分钟计,不能在一次工具调用里同步等完:start_build 返回 job id,
 Agent 用 get_build 轮询或 wait_build 阻塞等待(单次至多 120s,可反复调用)。
+构建作业由 DataMind 服务端持有(DR-101):本进程退出不影响构建,作业号在另一个进程里同样可查。
 """
 import json
 import os
 import re
 import sys
-import threading
 import time
 import urllib.request
 import urllib.error
 import urllib.parse
-import uuid
 
 _LOG_CTRL = re.compile(r"\r\n|[\r\n\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 
@@ -61,15 +60,9 @@ def _default_base():
 BASE = (os.environ.get("DATAMIND_URL") or _default_base()).rstrip("/")
 SUPPORTED_PROTOS = ("2025-06-18", "2025-03-26", "2024-11-05")
 
-# 构建作业上限:单个构建的服务端硬预算(LLM 抽取 640s + 取证/验收)远小于此;
-# 包一层总闸是为了 SSE 在异常时不会把作业永久挂在 running。
-_JOB_DEADLINE_SECONDS = 1800
 _WAIT_CAP_SECONDS = 120            # 单次 wait_build 的阻塞上限,超过让 Agent 再调
 _EVENTS_KEPT = 200                 # 每作业留存的过程事件条数(只保留最近,防长跑撑爆内存)
-_JOBS_KEPT = 40                    # 作业登记留存上限,超限淘汰最早的已完成作业
 
-_JOBS: dict = {}
-_JOBS_LOCK = threading.Lock()
 
 QUALITY_TEXT = {"pass": "通过", "review": "待复核", "fail": "不通过"}
 
@@ -98,55 +91,34 @@ def _http(method, path, payload=None, timeout=20):
         return None, "DataMind 服务不可达(%s);请确认服务已启动、DATAMIND_URL 配置正确" % type(e).__name__
 
 
-def _http_stream(path, payload, on_event, timeout=90):
-    """POST SSE 端点,逐事件回调 on_event(dict);返回 (事件数, 错误或 None)。
-
-    DataMind 的构建完成语义要求 SSE 必须出现 done 事件(DR-056);连接中断、
-    读超时都按错误返回,由调用方把作业标为失败,不得把半程流当成已完成。
-    """
-    req = urllib.request.Request(BASE + path, method="POST",
-                                 headers={"Content-Type": "application/json",
-                                          "Accept": "text/event-stream"},
-                                 data=json.dumps(payload).encode())
-    count = 0
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            for raw in r:
-                line = raw.decode("utf-8", "replace").strip()
-                if not line.startswith("data:"):
-                    continue
-                try:
-                    ev = json.loads(line[5:].strip())
-                except Exception:
-                    continue
-                count += 1
-                on_event(ev)
-                if isinstance(ev, dict) and ev.get("type") in ("done", "error"):
-                    return count, None
-        return count, None
-    except Exception as e:
-        _log("[datamind-build] SSE 流中断:%r" % (e,))
-        return count, "构建数据流中断(%s)" % type(e).__name__
-
-
-# ── 构建作业登记 ────────────────────────────────────────────────────────
-def _evict_jobs_locked():
-    done = [k for k, j in _JOBS.items() if j["status"] != "running"]
-    while len(_JOBS) > _JOBS_KEPT and done:
-        _JOBS.pop(done.pop(0), None)
-
-
+# ── 构建作业(由 DataMind 服务端持有,DR-101)────────────────────────────
+# 作业不放在本进程里:本服务器经 stdio 运行,宿主随时可能结束它(每个请求起一个进程的桥接也是如此)。
+# 构建交给服务端的 /api/build/jobs,这里只提交、查询;本进程退出不影响构建,作业号在别的进程里同样可查。
 def start_job(payload):
-    """登记作业并起后台线程消费 SSE;返回 job id。payload 已由调用方校验。"""
-    job_id = "jb_" + uuid.uuid4().hex[:8]
-    job = {"status": "running", "events": [], "summary": None, "stats": None,
-           "quality": None, "graph_key": None, "name": None, "method": None,
-           "error": None, "done": False, "started": time.time()}
-    with _JOBS_LOCK:
-        _JOBS[job_id] = job
-        _evict_jobs_locked()
-    threading.Thread(target=_run_job, args=(job_id, payload), daemon=True).start()
-    return job_id
+    """向服务端提交构建;返回 (job_id, 错误或 None)。payload 已由调用方校验。"""
+    d, err = _http("POST", "/api/build/jobs", payload, timeout=30)
+    if err:
+        return None, err
+    return (d or {}).get("job_id"), None
+
+
+def _fetch_job(job_id, wait=0):
+    """读取服务端作业并整理成渲染用的记录;返回 (job, 错误或 None)。"""
+    q = "?after=0" + ("&wait=%d" % wait if wait else "")
+    d, err = _http("GET", "/api/build/jobs/" + urllib.parse.quote(job_id, safe="") + q, timeout=max(20, wait + 10))
+    if err:
+        return None, err
+    job = {"status": d.get("state") or "running", "events": [], "summary": None, "stats": None, "quality": None,
+           "graph_key": None, "name": None, "method": None, "error": None, "done": False,
+           "elapsed": d.get("elapsed") or 0}
+    for ev in d.get("events") or []:
+        _record_event(job, ev)
+    if job["status"] == "error" and not job["error"]:
+        job["error"] = d.get("error") or "构建未完成"
+    if job["status"] == "done" and not job["done"]:
+        # DR-056 同规:必须有 done 事件才算完成;状态与事件不一致时按失败处理
+        job["status"], job["error"] = "error", "构建数据流在完成前结束(未收到 done 事件),产物未确认"
+    return job, None
 
 
 def _record_event(job, ev):
@@ -173,40 +145,14 @@ def _record_event(job, ev):
     del job["events"][:-_EVENTS_KEPT]
 
 
-def _run_job(job_id, payload):
-    job = _JOBS.get(job_id)
+def _render_job(job_id, wait=0):
+    job, err = _fetch_job(job_id, wait)
     if job is None:
-        return
-    deadline = time.time() + _JOB_DEADLINE_SECONDS
-
-    def on_event(ev):
-        if time.time() > deadline:
-            job["error"] = "构建超过总时限 %ds,放弃等待(SSE 未完成)" % _JOB_DEADLINE_SECONDS
-            return
-        _record_event(job, ev)
-
-    _n, err = _http_stream("/api/build/inquire", payload, on_event)
-    if err and not job["error"]:
-        job["error"] = err
-    if job["error"]:
-        job["status"] = "error"
-    elif job["done"]:
-        job["status"] = "done"
-    else:
-        # DR-056 同规:构建 SSE 必须有 done 才算完成;半程流不得冒充成功。
-        job["status"] = "error"
-        job["error"] = "构建数据流在完成前结束(未收到 done 事件),产物未确认"
-    job["elapsed"] = round(time.time() - job["started"], 1)
-
-
-def _render_job(job_id):
-    job = _JOBS.get(job_id)
-    if job is None:
-        return "未找到构建作业 %s(作业随 MCP server 进程存活;server 重启后需重新发起构建)" % job_id, True
+        return "未找到构建作业 %s:%s(作业记录在 DataMind 服务端,服务重启后需重新发起构建)" % (job_id, err), True
     if job["status"] == "running":
         tail = job["events"][-5:]
         return ("构建进行中 · 已用时 %ds · 过程事件 %d 条(最近):\n%s\n用 get_build 或 wait_build 继续跟踪。"
-                % (int(time.time() - job["started"]), len(job["events"]),
+                % (int(job["elapsed"]), len(job["events"]),
                    "\n".join(tail) if tail else "(尚无事件)")), False
     if job["status"] == "error":
         return ("构建失败:%s\n过程尾部:\n%s"
@@ -418,7 +364,9 @@ def call_tool(name, args):
             payload["base_graph"] = str(args["base_graph"])
         if isinstance(args.get("references"), dict):
             payload["references"] = args["references"]
-        job_id = start_job(payload)
+        job_id, jerr = start_job(payload)
+        if jerr or not job_id:
+            return "构建未能发起:%s" % (jerr or "服务端未返回作业号"), True
         return ("构建作业已发起:job_id=%s(source=%s)。构建耗时通常 2-10 分钟,"
                 "用 wait_build(可重复调用,单次至多 %d 秒)或 get_build 跟踪。"
                 % (job_id, payload["source"], _WAIT_CAP_SECONDS)), False
@@ -431,12 +379,11 @@ def call_tool(name, args):
         except (TypeError, ValueError):
             wait = _WAIT_CAP_SECONDS
         deadline = time.time() + wait
-        while time.time() < deadline:
-            job = _JOBS.get(job_id)
-            if job is not None and job["status"] != "running":
-                break
-            time.sleep(0.5)
-        return _render_job(job_id)
+        while True:                                  # 服务端单次最多等 25 秒:分段长轮询直到结束或到时
+            left = deadline - time.time()
+            text, is_err = _render_job(job_id, wait=int(max(0, min(25, left))))
+            if is_err or "构建进行中" not in text or left <= 0:
+                return text, is_err
     if name == "get_quality":
         g = str(args.get("graph") or "").strip()
         d, err = _http("POST", "/api/build/quality", {"graph": g})

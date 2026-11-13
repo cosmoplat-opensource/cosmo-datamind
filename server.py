@@ -8979,9 +8979,134 @@ def build_inquire():
                 _obs["finished"] = True
                 _obs["run"].finish("error", error=type(exc).__name__)
             raise
-    from flask import Response, stream_with_context
-    return Response(stream_with_context(gen_observed()), mimetype="text/event-stream",
-                    headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+    # DR-101 构建由服务端作业持有:本响应只是订阅者。连接断开(浏览器关闭、MCP 进程退出、代理超时)
+    # 不再中断构建;作业号写在响应头里,之后可用 /api/build/jobs/<id> 查询或续看。
+    from flask import Response
+    job = _build_job_start(gen_observed, meta={"q": q[:200], "source": source, "base_graph": base_graph})
+    return Response(_build_job_follow(job), mimetype="text/event-stream",
+                    headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no", "X-Build-Job": job["id"]})
+
+
+# ── 构建作业(DR-101) ────────────────────────────────────────────────────
+# 作业记录在本进程内存里(gunicorn 单 worker):进程重启后作业不再可查,已写入的图谱文件不受影响。
+_BUILD_JOBS: dict[str, dict] = {}
+_BUILD_JOBS_LOCK = threading.Lock()
+_BUILD_JOBS_KEPT = 40                # 留存的作业数;超出时淘汰最早结束的
+_BUILD_JOB_HEARTBEAT = 15.0          # 订阅者在没有新事件时每隔这么多秒收到一条 tick
+
+
+def _build_job_start(make_stream, meta=None):
+    """登记作业并在后台线程里跑完 make_stream()(产出 SSE 文本块的生成器)。返回作业记录。
+
+    线程带着调用方的上下文变量运行(数据来源、请求上下文),与 _bounded 相同。
+    流没有以 done 或 error 结束、或中途抛异常时,补一条 error 事件:半程不算完成(DR-056)。"""
+    job = {"id": "bj_" + uuid.uuid4().hex[:10], "state": "running", "events": [], "meta": dict(meta or {}),
+           "created": time.time(), "finished": None, "cond": threading.Condition()}
+
+    def add(ev):
+        with job["cond"]:
+            job["events"].append(ev)
+            if ev.get("type") in ("done", "error"):
+                job["state"] = "done" if ev["type"] == "done" else "error"
+            job["cond"].notify_all()
+
+    def run():
+        try:
+            for chunk in make_stream():
+                if not isinstance(chunk, str) or not chunk.startswith("data: "):
+                    continue
+                try:
+                    ev = json.loads(chunk[6:])
+                except ValueError:
+                    continue
+                if isinstance(ev, dict):
+                    add(ev)
+                    if ev.get("type") in ("done", "error"):
+                        break
+        except Exception as e:                                   # noqa: BLE001
+            app.logger.exception("构建作业 %s 异常中止", job["id"])
+            if job["state"] == "running":
+                add({"type": "error", "error": "构建中断:%s" % type(e).__name__})
+        finally:
+            with job["cond"]:
+                if job["state"] == "running":
+                    job["events"].append({"type": "error", "error": "构建未完成:过程在给出结果前结束"})
+                    job["state"] = "error"
+                job["finished"] = time.time()
+                job["cond"].notify_all()
+
+    with _BUILD_JOBS_LOCK:
+        _BUILD_JOBS[job["id"]] = job
+        ended = [k for k, j in _BUILD_JOBS.items() if j["state"] != "running"]
+        while len(_BUILD_JOBS) > _BUILD_JOBS_KEPT and ended:
+            _BUILD_JOBS.pop(ended.pop(0), None)
+    _ctx = contextvars.copy_context()
+    job["thread"] = threading.Thread(target=lambda: _ctx.run(run), daemon=True, name="build-" + job["id"])
+    job["thread"].start()
+    return job
+
+
+def _build_job_follow(job, start=0, heartbeat=None):
+    """从第 start 条事件起逐条产出 SSE 文本块,直到作业结束。只读作业记录,不需要请求上下文。
+    没有新事件时按 heartbeat 间隔发 tick:耗时几分钟的步骤(语义复核、交叉复核)期间,
+    前端与代理据此知道连接仍然有效。"""
+    beat = _BUILD_JOB_HEARTBEAT if heartbeat is None else heartbeat
+    i, t0 = start, time.time()
+    while True:
+        with job["cond"]:
+            if i >= len(job["events"]) and job["state"] == "running":
+                job["cond"].wait(beat)
+            batch = job["events"][i:]
+            ended = job["state"] != "running"
+        if not batch and not ended:
+            yield "data: " + json.dumps({"type": "tick", "elapsed": round(time.time() - t0, 1)}) + "\n\n"
+            continue
+        for ev in batch:
+            yield "data: " + json.dumps(ev, ensure_ascii=False, default=str) + "\n\n"
+        i += len(batch)
+        if ended and i >= len(job["events"]):
+            return
+
+
+def _build_job_view(job, after=0):
+    with job["cond"]:
+        events = list(job["events"][max(0, after):])
+        total, state = len(job["events"]), job["state"]
+    done = next((e for e in reversed(events if after == 0 else job["events"]) if e.get("type") == "done"), None)
+    err = next((e.get("error") for e in reversed(job["events"]) if e.get("type") == "error"), None)
+    return {"job_id": job["id"], "state": state, "events": events, "next": total, "done": done,
+            "error": err if state == "error" else None, "request": job["meta"],
+            "elapsed": round((job["finished"] or time.time()) - job["created"], 1)}
+
+
+@app.post("/api/build/jobs")
+def build_job_submit():
+    """提交一次构建并立即返回作业号(202)。请求体与 /api/build/inquire 相同;进度用 GET /api/build/jobs/<id> 查。"""
+    resp = build_inquire()
+    job_id = resp.headers.get("X-Build-Job") if hasattr(resp, "headers") else None
+    if not job_id:
+        return resp                                              # 参数校验未过:原样返回错误
+    return jsonify({"job_id": job_id, "state": "running"}), 202
+
+
+@app.get("/api/build/jobs/<job_id>")
+def build_job_get(job_id):
+    """查询构建作业:状态、第 after 条之后的事件、结束时的 done 事件。wait=秒数 时最多等这么久,
+    有新事件或作业结束即返回(上限 25 秒)。"""
+    job = _BUILD_JOBS.get(job_id)
+    if job is None:
+        return jsonify({"error": "构建作业不存在(可能已随服务重启清除)"}), 404
+    try:
+        after = max(0, int(request.args.get("after") or 0))
+        wait = max(0.0, min(25.0, float(request.args.get("wait") or 0)))
+    except ValueError:
+        return jsonify({"error": "after 须为非负整数,wait 须为秒数"}), 400
+    if wait:
+        with job["cond"]:
+            if after >= len(job["events"]) and job["state"] == "running":
+                job["cond"].wait(wait)
+    return jsonify(_build_job_view(job, after))
+
 
 @app.post("/api/build/quality")
 def build_quality_check():
