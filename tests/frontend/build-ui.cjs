@@ -67,6 +67,12 @@ function stream(text) {
     if (offset === bytes.length) controller.close(); else controller.enqueue(bytes.slice(offset, ++offset));
   }}), {headers:{'Content-Type':'text/event-stream'}});
 }
+function streamWithJob(text, jobId) {
+  const bytes = new TextEncoder().encode(text); let sent = false;
+  return new Response(new ReadableStream({pull(controller) { if (sent) controller.close(); else { sent = true; controller.enqueue(bytes); } }}),
+    {headers:{'Content-Type':'text/event-stream', 'X-Build-Job':jobId}});
+}
+function json(body, status = 200) { return new Response(JSON.stringify(body), {status, headers:{'Content-Type':'application/json'}}); }
 function deferred() { let resolve; const promise = new Promise(r => { resolve = r; }); return {promise, resolve}; }
 
 const cases = {
@@ -93,6 +99,50 @@ const cases = {
     await f.ctx.bcUpload();
     assert.match(f.state.messages.at(-1),/失败.*CSV 列名重复/);
     assert.ok(!f.state.messages.at(-1).includes('已上传'));
+  },
+  async dropped_stream_is_followed_from_the_server_job() {
+    const f = fixture(), urls = [];
+    f.ctx.fetch = async url => { urls.push(String(url));
+      if (String(url) === '/api/build/inquire') return streamWithJob('data: {"type":"step","step":"intake","ok":true,"info":"接收诉求"}\n\n', 'bj_0123456789');
+      return json({state:'done', next:3, elapsed:5, events:[{type:'step',step:'critic',ok:true,info:'验收'},{type:'done',graph_key:'built_test',name:'订单'}]}); };
+    await f.ctx.bcInquire();
+    assert.equal(f.state.rendered.length, 1, 'the build finished on the server; a dropped stream must not be reported as a failure');
+    assert.match(urls[1], /\/api\/build\/jobs\/bj_0123456789\?after=1&wait=/);
+    assert.ok(!f.$('#bc_log').children[0].innerHTML.includes('bc-failure'));
+    assert.equal(f.state.saved.get('bc_job') || '', '');
+  },
+  async reload_resumes_a_running_build() {
+    const f = fixture(), urls = [];
+    f.state.saved.set('bc_job', JSON.stringify({id:'bj_0123456789', q:'构建订单本体', src:'demo', ts:1}));
+    f.ctx.fetch = async url => { urls.push(String(url));
+      return json(urls.length === 1 ? {state:'running', next:1, elapsed:3, events:[{type:'step',step:'intake',ok:true,info:'接收诉求'}]}
+                                    : {state:'done', next:2, elapsed:9, events:[{type:'done',graph_key:'built_test',name:'订单'}]}); };
+    await f.ctx.bcResume();
+    assert.equal(f.state.rendered.length, 1);
+    assert.match(urls[0], /bj_0123456789\?after=0/); assert.match(urls[1], /after=1/);
+    assert.match(f.$('#bc_log').innerHTML, /构建订单本体/);
+    assert.equal(f.state.saved.get('bc_job') || '', ''); assert.equal(f.run('BC_BUSY'), false);
+  },
+  async reload_reports_an_interrupted_build() {
+    const f = fixture();
+    f.state.saved.set('bc_job', JSON.stringify({id:'bj_0123456789', q:'构建订单本体', src:'demo', ts:1}));
+    f.ctx.fetch = async () => json({state:'interrupted', error:'服务重启,构建中断', next:2, elapsed:4,
+      events:[{type:'step',step:'intake',ok:true}, {type:'error',error:'服务重启,构建中断',interrupted:true}]});
+    await f.ctx.bcResume();
+    assert.equal(f.state.rendered.length, 0);
+    assert.match(f.$('#bc_log').children[0].innerHTML, /服务重启/);
+    assert.equal(f.state.saved.get('bc_job') || '', ''); assert.equal(f.$('#bc_send').disabled, false);
+  },
+  async reload_with_nothing_pending_does_nothing() {
+    const f = fixture(); await f.ctx.bcResume();
+    assert.equal(f.$('#bc_log').children.length, 0); assert.equal(f.run('BC_BUSY'), false);
+  },
+  async cancel_asks_the_server_to_stop() {
+    const f = fixture(); let call; f.run("BC_JOB='bj_0123456789'");
+    f.ctx.fetch = async (url, opts) => { call = {url:String(url), method:opts.method}; return json({cancel_requested:true}, 202); };
+    await f.ctx.bcCancelJob();
+    assert.equal(call.url, '/api/build/jobs/bj_0123456789/cancel'); assert.equal(call.method, 'POST');
+    assert.match(f.state.messages.at(-1), /取消/);
   },
   async truncated_stream() {
     const f = fixture(); f.ctx.fetch = async () => stream('data: {"type":"status","text":"处理中"}\n\n');

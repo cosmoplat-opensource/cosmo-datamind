@@ -20,6 +20,9 @@ ROOT = Path(__file__).resolve().parents[2]
     "built_load_failure", "sources_load_failure", "skills_load_failure", "failed_delete_preserves_base",
     "engine_empty_registry",
     "upload_failure_is_not_success",
+    "dropped_stream_is_followed_from_the_server_job", "reload_resumes_a_running_build",
+    "reload_reports_an_interrupted_build", "reload_with_nothing_pending_does_nothing",
+    "cancel_asks_the_server_to_stop",
 ])
 def test_build_ui_behavior(case):
     node = shutil.which("node")
