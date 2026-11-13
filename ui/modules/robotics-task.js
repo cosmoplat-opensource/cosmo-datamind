@@ -103,17 +103,29 @@
     if(name!=='robotics-task')return;
     const host=global.document.getElementById('rt_task');if(!host)return;
     const params=new URLSearchParams(global.location.hash.split('?')[1]||'');
+    if(params.get('adaptation')){active={controller:global.RoboticsApplication.mount(host,params)};return;}
     if(params.get('run')||!['session','asset','version'].some(key=>params.has(key)))return;
     if(!params.get('session') && params.get('asset') && (params.get('assess') || params.get('check')) && !params.get('prepare')){
       const view={};active=view;
       (async()=>{try{
         let response;
         if(params.get('check')) response=await json(global.fetch.bind(global),'/api/application-checks/'+encodeURIComponent(params.get('check')));
-        else response=await json(global.fetch.bind(global),'/api/application-checks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({entrypoint:'robotics.generate_behavior_tree',asset_refs:[{ontology_id:params.get('asset'),version_id:params.get('version')}],context:{mode:params.get('mode')||'real'},request_id:global.crypto.randomUUID()})});
+        else response=await json(global.fetch.bind(global),'/api/application-checks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({entrypoint:'robotics.generate_behavior_tree',asset_refs:[{ontology_id:params.get('asset'),version_id:params.get('version')}],context:{mode:params.get('mode')||'real',...(params.get('task')?{task_ref:{session_id:params.get('task')}}:{})},request_id:global.crypto.randomUUID()})});
         if(active!==view)return;
         const r=response.report;
         global.history.replaceState(null,'',link(params.get('asset'),params.get('version'),params.get('mode')||'real')+'&check='+encodeURIComponent(r.check_id));
-        host.innerHTML=`<section class="card ra-section" data-testid="application-check" data-check-id="${esc(r.check_id)}"><h2>行为树应用检查</h2><p>${r.preparation_status==='available'?'可准备任务':'未满足应用要求'}</p>${r.issues.map(i=>`<p>${esc(i.message)}</p>`).join('')}${r.preparation_status==='available'?`<a class="ra-button" href="${esc(link(params.get('asset'),params.get('version'),params.get('mode')||'real')+'&prepare=1')}">继续描述任务</a>`:''}<p>执行未验证</p></section>`;
+        host.innerHTML=`<section class="card ra-section" data-testid="application-check" data-check-id="${esc(r.check_id)}"><h2>行为树应用检查</h2><p>${r.preparation_status==='available'?'可准备任务':'未满足应用要求'}</p>${r.issues.map(i=>global.RoboticsApplication.renderIssue(i)).join('')}${(()=>{const seen=new Set();return r.issues.flatMap(i=>i.repair_actions.filter(a=>a.availability==='available').map(a=>{if(seen.has(a.action_id))return '';seen.add(a.action_id);return `<button type="button" class="ra-button" data-action-id="${esc(a.action_id)}" data-issue-id="${esc(i.issue_id)}" ${response.freshness!=='current'?'disabled':''}>${esc(a.label)}</button>`;})).join('');})()}${r.preparation_status==='available'?`<a class="ra-button" href="${esc(link(params.get('asset'),params.get('version'),params.get('mode')||'real')+'&prepare=1')}">继续描述任务</a>`:''}<p>执行未验证</p></section>`;
+        host.querySelectorAll('[data-action-id]').forEach(button=>button.onclick=async()=>{
+          if(button.disabled)return;button.disabled=true;
+          try{
+            const issue=r.issues.find(i=>i.issue_id===button.dataset.issueId),action=issue.repair_actions.find(a=>a.action_id===button.dataset.actionId);
+            const requestId=button.dataset.requestId||(button.dataset.requestId=global.crypto.randomUUID());
+            const reply=await json(global.fetch.bind(global),'/api/application-checks/'+encodeURIComponent(r.check_id)+'/repairs',
+              {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({issue_id:issue.issue_id,action_id:action.action_id,input:{},expected_revision:action.target.expected_revision,request_id:requestId})});
+            if(active!==view)return;
+            if(reply.kind==='navigate'&&reply.href.startsWith('#')){const href=await global.RoboticsDesign.beginRepair(reply,requestId);if(active===view)global.location.hash=href;}
+          }catch(e){if(active===view){button.disabled=false;const notice=global.document.createElement('p');notice.setAttribute('role','alert');notice.textContent=e.message;host.append(notice);}}
+        });
       }catch(e){if(active===view)host.innerHTML=`<p role="alert">${esc(e.message)}</p>`;}})();return;
     }
     const view={controller:null,text:'',creates:{},configEdit:null,capabilities:null,timer:null,initial:true};active=view;
@@ -136,7 +148,7 @@
       const noteValue=kind=>state.noteDrafts[kind]??(s.adaptation_notes||[]).filter(n=>n.kind===kind&&n.version_id===s.version_id&&JSON.stringify(n.task)===JSON.stringify(s.task)).at(-1)?.text??'';
       const saveError=error?.operation==='completion' && gaps.length;
       const configError=error?.operation==='configurations' && editing;
-      const alert=error?`<p class="rt-error" role="alert" tabindex="-1">${saveError?'保存未成功：':''}${esc(error.message)}</p>`:'';
+      const alert=error?`<p class="rt-error" role="alert" tabindex="-1">${saveError?'保存未成功：':''}${esc(error.message)}</p>${error.code==='application_not_ready'?`<a class="ra-button" href="${esc(link(s.ontology_id,s.version_id,s.mode)+'&assess=1&task='+encodeURIComponent(s.session_id))}">检查当前任务的应用要求</a>`:''}`:'';
       const stillCurrent=()=>{const current=view.controller.snapshot().session;return active===view && current?.session_id===s.session_id && current?.revision===s.revision;};
       host.innerHTML=`<header class="rt-heading"><div><span class="rt-eyebrow">机器人任务 · ${s.mode==='demo'?'独立演示':'行为树生成'}</span><h3>${esc(s.asset_name||'行为树生成')}</h3><p data-testid="task-current-version">当前：<strong>${Number.isInteger(s.version_number)?'版本 '+s.version_number:'编号加载中'}</strong></p></div><button type="button" class="ghost" data-new>新任务</button></header>
         ${s.status==='idle'?'<div class="rt-welcome"><div class="rt-welcome-mark" aria-hidden="true">◇</div><h1>从一句任务，到行为树</h1><p>描述要操作的零件和目标位置，已有知识直接复用。<br>有需要补充的地方，我们会在下方提示。</p><div class="rt-flow"><span>描述任务</span><i>→</i><span>补齐信息</span><i>→</i><span>查看结果</span></div></div>':''}

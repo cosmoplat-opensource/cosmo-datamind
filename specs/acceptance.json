@@ -1,5 +1,5 @@
 {
-  "iteration": "IR-014 / IR-015 / IR-016 / IR-017（delivered） / IR-018（delivered） / IR-019（T07 GREEN，T08 暂缓） / IR-020（T05 GREEN，待 T06 人审交付） / IR-024（delivered） / IR-025（delivered，2026-11-12 用户确认）",
+  "iteration": "IR-014 / IR-015 / IR-016 / IR-017（delivered） / IR-018（delivered） / IR-019（T07 GREEN，T08 暂缓） / IR-020（T05 GREEN，待 T06 人审交付） / IR-024（delivered） / IR-025（delivered，2026-11-12 用户确认）；IR-026（T05 集成 GREEN，全量回归通过，待 T06）",
   "requirements": [
     {
       "id": "ALG-01",
@@ -1983,54 +1983,222 @@
       "t06_scope_note": "Common framework verified; 21 targeted host/build tests and 2 real HTTP samples pass. Robot-specific diagnostics/repair remain IR-026; delivery checkboxes await human acceptance.",
       "accepted_on": "2026-11-12",
       "human_acceptance": "用户确认本轮公共框架交付没有问题，授权提交代码并继续下一步；IR-026～029 的领域范围独立验收。"
-    }
-  ],
-  "planned_requirements": [
+    },
     {
       "id": "RAC-01",
       "iteration": "IR-026",
       "decision": "DR-072",
-      "status": "proposed",
+      "status": "delivered",
       "criterion": "现有 llm自动构建版本可直接浏览；点击行为树入口后只读诊断 TBox、执行元数据和业务关联缺项，原字节不变。",
-      "test_status": "planned-not-created",
-      "tests": []
+      "test_status": "created-green",
+      "tests": [
+        "tests/unit/test_robotics_application_roles.py::test_explicit_full_iri_map_is_readonly_and_preserves_term_kinds",
+        "tests/unit/test_robotics_application_roles.py::test_missing_explicit_role_is_schema_issue_not_missing_business_instance",
+        "tests/unit/test_robotics_application_roles.py::test_untrusted_or_ambiguous_role_mapping_cannot_authorize_adaptation",
+        "tests/unit/test_robotics_application_roles.py::test_names_do_not_override_incompatible_domain_range_or_inheritance",
+        "tests/unit/test_robotics_application_roles.py::test_user_confirmed_renamed_class_requires_semantics_not_lexical_match",
+        "tests/unit/test_robotics_application_roles.py::test_execution_stage_does_not_require_unselected_task_business_roles",
+        "tests/unit/test_robotics_application_artifacts.py::test_adaptation_preserves_inputs_and_retains_real_execution_semantics",
+        "tests/unit/test_robotics_application_artifacts.py::test_missing_class_roles_produce_schema_repair_not_a_fake_executable_graph",
+        "tests/unit/test_robotics_application_service.py::test_prepare_is_explicit_role_confirmation_without_asset_or_run_changes",
+        "tests/unit/test_robotics_application_service.py::test_missing_role_rebase_clears_old_confirmation_and_keeps_original_version",
+        "tests/unit/test_robotics_application_http.py::test_real_host_diagnosis_has_located_execution_action_without_model_or_asset_writes",
+        "tests/unit/test_robotics_application_http.py::test_missing_schema_action_navigates_to_original_design_without_auto_revision",
+        "tests/unit/test_robotics_application_http.py::test_explicit_repair_automatically_matches_and_queues_once",
+        "tests/unit/test_robotics_application_http.py::test_repair_request_cannot_use_stale_report_or_other_action",
+        "tests/frontend/robotics-design-browser.py::test_application_adaptation_build_enters_library_without_application_selection",
+        "tests/frontend/robotics-design-browser.py::test_application_adaptation_auto_matches_and_reload_never_resubmits",
+        "tests/frontend/robotics-design-browser.py::test_application_adaptation_missing_tbox_opens_class_revision_without_model_call"
+      ],
+      "t01_contract": "specs/contracts/robotics-application-adaptation-v1.md",
+      "t01_status": "frozen-by-user-continuation",
+      "validation_report": "docs/audits/IR-026-t06-results.json",
+      "test_review": "accepted-by-user-T05-continuation",
+      "coverage_note": "T06: 11 real user-ontology copy flow checks and actual Gunicorn/Chromium copy acceptance passed. All 13 full regression stages passed: unit 2333 passed/5 optional upstream engine skips; coverage 86.1%; robotics browsers 18+16+12+29 passed. Existing behavior tests/fixtures unchanged. User requested code commit after T06 review on 2026-11-13; delivery accepted.",
+      "prior_red_validation_report": "docs/audits/IR-026-t04-red-results.json",
+      "prior_green_validation_report": "docs/audits/IR-026-t03-green-results.json",
+      "prior_core_red_validation_report": "docs/audits/IR-026-t02-red-results.json",
+      "prior_integration_green_validation_report": "docs/audits/IR-026-t05-green-results.json",
+      "human_acceptance": "2026-11-13 用户收到 T06 交付评审与全量结果后要求提交代码，确认本轮交付。"
     },
     {
       "id": "RAC-02",
       "iteration": "IR-026",
       "decision": "DR-072",
-      "status": "proposed",
+      "status": "delivered",
       "criterion": "完善后同一 XML 和业务配置下新旧生成的执行结构、参数语义一致。",
-      "test_status": "planned-not-created",
-      "tests": []
+      "test_status": "created-green",
+      "tests": [
+        "tests/unit/test_robotics_application_execution.py::test_execution_retains_document_order_calls_names_and_subtree_targets",
+        "tests/unit/test_robotics_application_execution.py::test_binding_kinds_preserve_parent_interface_local_reads_and_output_writes",
+        "tests/unit/test_robotics_application_execution.py::test_six_public_values_trace_to_unique_literals_and_keep_raw_units",
+        "tests/unit/test_robotics_application_artifacts.py::test_adaptation_preserves_inputs_and_retains_real_execution_semantics",
+        "tests/unit/test_robotics_application_artifacts.py::test_original_individuals_have_explicit_semantic_identity_mapping",
+        "tests/unit/test_robotics_application_artifacts.py::test_internal_configuration_and_fixed_flow_match_source_except_public_values",
+        "tests/unit/test_robotics_application_artifacts.py::test_existing_legacy_compiler_is_an_independent_six_parameter_oracle",
+        "tests/unit/test_robotics_application_workflow.py::test_real_business_choices_and_confirmations_generate_without_recreating_old_examples",
+        "tests/unit/test_robotics_application_workflow.py::test_replacing_perception_configuration_updates_total_json_and_xml_with_original_compiler",
+        "tests/frontend/robotics-design-browser.py::test_application_adaptation_browser_worker_downloads_and_returns_to_existing_task_ui"
+      ],
+      "t01_contract": "specs/contracts/robotics-application-adaptation-v1.md",
+      "t01_status": "frozen-by-user-continuation",
+      "validation_report": "docs/audits/IR-026-t06-results.json",
+      "test_review": "accepted-by-user-T05-continuation",
+      "coverage_note": "T06: 11 real user-ontology copy flow checks and actual Gunicorn/Chromium copy acceptance passed. All 13 full regression stages passed: unit 2333 passed/5 optional upstream engine skips; coverage 86.1%; robotics browsers 18+16+12+29 passed. Existing behavior tests/fixtures unchanged. User requested code commit after T06 review on 2026-11-13; delivery accepted.",
+      "prior_red_validation_report": "docs/audits/IR-026-t04-red-results.json",
+      "prior_green_validation_report": "docs/audits/IR-026-t03-green-results.json",
+      "prior_core_red_validation_report": "docs/audits/IR-026-t02-red-results.json",
+      "prior_integration_green_validation_report": "docs/audits/IR-026-t05-green-results.json",
+      "human_acceptance": "2026-11-13 用户收到 T06 交付评审与全量结果后要求提交代码，确认本轮交付。"
     },
     {
       "id": "RAC-03",
       "iteration": "IR-026",
       "decision": "DR-072",
-      "status": "proposed",
+      "status": "delivered",
       "criterion": "只修改公开配置；变量歧义、类型冲突和缺技能顺序阻止生成。",
-      "test_status": "planned-not-created",
-      "tests": []
+      "test_status": "created-green",
+      "tests": [
+        "tests/unit/test_robotics_application_execution.py::test_execution_retains_document_order_calls_names_and_subtree_targets",
+        "tests/unit/test_robotics_application_execution.py::test_repeated_motion_calls_have_distinct_identity_and_bindings",
+        "tests/unit/test_robotics_application_execution.py::test_binding_kinds_preserve_parent_interface_local_reads_and_output_writes",
+        "tests/unit/test_robotics_application_execution.py::test_same_variable_spelling_in_different_scopes_does_not_merge_references",
+        "tests/unit/test_robotics_application_execution.py::test_six_public_values_trace_to_unique_literals_and_keep_raw_units",
+        "tests/unit/test_robotics_application_execution.py::test_setblackboard_public_position_uses_value_not_output_key",
+        "tests/unit/test_robotics_application_execution.py::test_ports_preserve_types_directions_and_declared_default_presence",
+        "tests/unit/test_robotics_application_execution.py::test_unsupported_structure_is_source_located_and_never_guessed",
+        "tests/unit/test_robotics_application_execution.py::test_public_variable_requires_unique_static_producer_before_use",
+        "tests/unit/test_robotics_application_execution.py::test_invalid_ports_block_with_entity_and_source_evidence",
+        "tests/unit/test_robotics_application_execution.py::test_stale_confirmation_or_source_facts_cannot_authorize_reextraction",
+        "tests/unit/test_robotics_application_artifacts.py::test_public_configuration_compiles_through_existing_validator_only",
+        "tests/unit/test_robotics_application_artifacts.py::test_corrupt_design_basis_is_blocked_without_producing_partial_artifacts",
+        "tests/unit/test_robotics_application_artifacts.py::test_adaptation_does_not_fall_back_to_legacy_builder_or_example_population",
+        "tests/unit/test_robotics_application_service.py::test_corruption_after_admission_fails_without_partial_application_version",
+        "tests/unit/test_robotics_application_service.py::test_head_change_after_confirmation_rejects_submission",
+        "tests/unit/test_robotics_application_service.py::test_head_change_during_queued_work_does_not_publish_over_concurrent_branch",
+        "tests/unit/test_robotics_application_http.py::test_confirm_http_rejects_client_authority_fields_before_mutation",
+        "tests/unit/test_robotics_application_http.py::test_submit_http_revision_is_nonnegative_integer",
+        "tests/unit/test_robotics_application_http.py::test_new_routes_reuse_host_and_origin_guards",
+        "tests/unit/test_robotics_application_workflow.py::test_replacing_perception_configuration_updates_total_json_and_xml_with_original_compiler"
+      ],
+      "t01_contract": "specs/contracts/robotics-application-adaptation-v1.md",
+      "t01_status": "frozen-by-user-continuation",
+      "validation_report": "docs/audits/IR-026-t06-results.json",
+      "test_review": "accepted-by-user-T05-continuation",
+      "coverage_note": "T06: 11 real user-ontology copy flow checks and actual Gunicorn/Chromium copy acceptance passed. All 13 full regression stages passed: unit 2333 passed/5 optional upstream engine skips; coverage 86.1%; robotics browsers 18+16+12+29 passed. Existing behavior tests/fixtures unchanged. User requested code commit after T06 review on 2026-11-13; delivery accepted.",
+      "prior_red_validation_report": "docs/audits/IR-026-t04-red-results.json",
+      "prior_green_validation_report": "docs/audits/IR-026-t03-green-results.json",
+      "prior_core_red_validation_report": "docs/audits/IR-026-t02-red-results.json",
+      "prior_integration_green_validation_report": "docs/audits/IR-026-t05-green-results.json",
+      "human_acceptance": "2026-11-13 用户收到 T06 交付评审与全量结果后要求提交代码，确认本轮交付。"
     },
     {
       "id": "RAC-04",
       "iteration": "IR-026",
       "decision": "DR-072",
-      "status": "proposed",
+      "status": "delivered",
       "criterion": "业务缺项可进入补全，未补齐不能生成；完整 JSON 与 OWL 同版本一致。",
-      "test_status": "planned-not-created",
-      "tests": []
+      "test_status": "created-green",
+      "tests": [
+        "tests/unit/test_robotics_application_artifacts.py::test_no_old_illustrative_business_or_device_instances_are_invented",
+        "tests/unit/test_robotics_application_artifacts.py::test_user_extension_knowledge_is_not_discarded_or_turned_into_an_execution_role",
+        "tests/unit/test_robotics_application_artifacts.py::test_total_json_preserves_current_graph_original_design_and_version_lineage",
+        "tests/unit/test_robotics_application_artifacts.py::test_unknown_or_inconsistent_total_json_cannot_restore_as_valid",
+        "tests/unit/test_robotics_application_artifacts.py::test_pure_adapt_and_export_do_not_publish_or_overwrite_original_v1_bytes",
+        "tests/unit/test_robotics_application_service.py::test_confirm_then_submit_and_execute_creates_one_lineaged_candidate",
+        "tests/unit/test_robotics_application_service.py::test_idempotent_replay_does_not_create_duplicate_versions_or_runs",
+        "tests/unit/test_robotics_application_service.py::test_same_request_id_with_different_prepare_input_conflicts",
+        "tests/unit/test_robotics_application_service.py::test_revision_conflicts_and_unconfirmed_submit_have_no_side_effect",
+        "tests/unit/test_robotics_application_service.py::test_concurrent_submit_admits_one_durable_run",
+        "tests/unit/test_robotics_application_service.py::test_failed_version_write_rolls_back_blobs_and_allows_explicit_retry",
+        "tests/unit/test_robotics_application_service.py::test_completed_state_and_bundle_survive_independent_process_without_repair_replay",
+        "tests/unit/test_robotics_application_service.py::test_get_on_missing_root_and_old_schema_does_not_create_or_migrate",
+        "tests/unit/test_robotics_application_http.py::test_http_prepare_automatically_queues_fixed_downloads_and_readonly_restore",
+        "tests/unit/test_robotics_application_http.py::test_read_missing_and_disabled_new_routes_do_not_initialize_storage",
+        "tests/unit/test_robotics_application_http.py::test_v2_tampering_is_rejected_without_affecting_old_v1_download",
+        "tests/unit/test_robotics_application_workflow.py::test_real_business_choices_and_confirmations_generate_without_recreating_old_examples",
+        "tests/unit/test_robotics_application_workflow.py::test_return_to_original_task_uses_cas_and_explicit_new_version_binding",
+        "tests/unit/test_robotics_application_workflow.py::test_original_task_revision_change_blocks_late_return",
+        "tests/unit/test_robotics_application_workflow.py::test_failed_completion_does_not_leave_new_version_or_half_json",
+        "tests/frontend/robotics-design-browser.py::test_application_adaptation_complete_task_reuses_same_session_and_business_mapping_forms"
+      ],
+      "t01_contract": "specs/contracts/robotics-application-adaptation-v1.md",
+      "t01_status": "frozen-by-user-continuation",
+      "validation_report": "docs/audits/IR-026-t06-results.json",
+      "test_review": "accepted-by-user-T05-continuation",
+      "coverage_note": "T06: 11 real user-ontology copy flow checks and actual Gunicorn/Chromium copy acceptance passed. All 13 full regression stages passed: unit 2333 passed/5 optional upstream engine skips; coverage 86.1%; robotics browsers 18+16+12+29 passed. Existing behavior tests/fixtures unchanged. User requested code commit after T06 review on 2026-11-13; delivery accepted.",
+      "prior_red_validation_report": "docs/audits/IR-026-t04-red-results.json",
+      "prior_green_validation_report": "docs/audits/IR-026-t03-green-results.json",
+      "prior_core_red_validation_report": "docs/audits/IR-026-t02-red-results.json",
+      "prior_integration_green_validation_report": "docs/audits/IR-026-t05-green-results.json",
+      "human_acceptance": "2026-11-13 用户收到 T06 交付评审与全量结果后要求提交代码，确认本轮交付。"
     },
     {
       "id": "RAC-05",
       "iteration": "IR-026",
       "decision": "DR-072",
-      "status": "proposed",
+      "status": "delivered",
       "criterion": "生成不需要访问原 XML；旧 UR 路径和离线／严格模式语义不退化。",
-      "test_status": "planned-not-created",
-      "tests": []
+      "test_status": "created-green",
+      "tests": [
+        "tests/unit/test_robotics_application_artifacts.py::test_total_json_alone_restores_rdf_semantics_without_file_or_network_access",
+        "tests/unit/test_robotics_application_artifacts.py::test_original_valid_generic_design_is_not_accepted_by_legacy_consumer",
+        "tests/unit/test_robotics_application_artifacts.py::test_existing_legacy_compiler_is_an_independent_six_parameter_oracle",
+        "tests/unit/test_robotics_application_service.py::test_writable_upgrade_preserves_old_rows_original_fields_and_artifact_bytes",
+        "tests/unit/test_robotics_application_workflow.py::test_archived_original_xml_is_not_needed_for_prepare_complete_generate_or_history",
+        "tests/unit/test_robotics_application_workflow.py::test_strict_mode_remains_blocked_without_applicability_evidence",
+        "tests/unit/test_robotics_application_workflow.py::test_explicit_synthetic_evidence_can_complete_strict_software_flow_without_claiming_field_execution",
+        "tests/unit/test_robotics_application_workflow.py::test_real_design_cannot_be_silently_reinterpreted_as_demo_during_adaptation",
+        "tests/unit/test_robotics_application_workflow.py::test_existing_legacy_demo_rejects_real_task_without_model_calls"
+      ],
+      "t01_contract": "specs/contracts/robotics-application-adaptation-v1.md",
+      "t01_status": "frozen-by-user-continuation",
+      "validation_report": "docs/audits/IR-026-t06-results.json",
+      "test_review": "accepted-by-user-T05-continuation",
+      "coverage_note": "T06: 11 real user-ontology copy flow checks and actual Gunicorn/Chromium copy acceptance passed. All 13 full regression stages passed: unit 2333 passed/5 optional upstream engine skips; coverage 86.1%; robotics browsers 18+16+12+29 passed. Existing behavior tests/fixtures unchanged. User requested code commit after T06 review on 2026-11-13; delivery accepted.",
+      "prior_red_validation_report": "docs/audits/IR-026-t04-red-results.json",
+      "prior_green_validation_report": "docs/audits/IR-026-t03-green-results.json",
+      "prior_core_red_validation_report": "docs/audits/IR-026-t02-red-results.json",
+      "prior_integration_green_validation_report": "docs/audits/IR-026-t05-green-results.json",
+      "human_acceptance": "2026-11-13 用户收到 T06 交付评审与全量结果后要求提交代码，确认本轮交付。"
     },
+    {
+      "id": "RAC-AUTO-01",
+      "decision": "DR-072",
+      "criterion": "用户显式发起执行适配后，已知词表中的规范角色通过覆盖和语义校验即由后端自动受理一个持久运行；UI 不要求确认，原版本保留，自动方式可追溯，读取和重放不重复生成。",
+      "tests": [
+        "tests/unit/test_robotics_automatic_adaptation.py::test_canonical_match_queues_on_explicit_repair_and_saves_automatic_provenance",
+        "tests/unit/test_robotics_automatic_adaptation.py::test_concurrent_same_repair_creates_one_job",
+        "tests/unit/test_robotics_automatic_adaptation.py::test_unknown_vocabulary_does_not_auto_approve_even_with_same_ids",
+        "tests/unit/test_robotics_automatic_adaptation.py::test_automatic_extraction_failure_stays_failed_until_explicit_retry",
+        "tests/frontend/robotics-design-browser.py::test_application_adaptation_auto_matches_and_reload_never_resubmits"
+      ],
+      "iteration": "IR-026",
+      "status": "delivered",
+      "test_status": "created-green",
+      "validation_report": "docs/audits/IR-026-t06-results.json",
+      "human_acceptance": "2026-11-13 用户收到 T06 交付评审与全量结果后要求提交代码，确认本轮交付。",
+      "coverage_note": "T06: 11 real user-ontology copy flow checks and actual Gunicorn/Chromium copy acceptance passed. All 13 full regression stages passed: unit 2333 passed/5 optional upstream engine skips; coverage 86.1%; robotics browsers 18+16+12+29 passed. Existing behavior tests/fixtures unchanged. User requested code commit after T06 review on 2026-11-13; delivery accepted."
+    },
+    {
+      "id": "RAC-AUTO-02",
+      "decision": "DR-072",
+      "criterion": "异名或无法确定的角色不猜测映射，由用户选择实际本体概念后一次确认并生成；校验或客户端授权声明被拒绝时不保存确认、不创建运行。",
+      "tests": [
+        "tests/unit/test_robotics_automatic_adaptation.py::test_unknown_correspondence_waits_for_one_manual_submit",
+        "tests/unit/test_robotics_automatic_adaptation.py::test_invalid_manual_mapping_cannot_enqueue_or_persist_confirmation",
+        "tests/unit/test_robotics_automatic_adaptation.py::test_manual_http_confirmation_and_queue_are_one_idempotent_request",
+        "tests/frontend/robotics-design-browser.py::test_unresolved_role_allows_manual_selection_and_one_confirm_generate"
+      ],
+      "iteration": "IR-026",
+      "status": "delivered",
+      "test_status": "created-green",
+      "validation_report": "docs/audits/IR-026-t06-results.json",
+      "human_acceptance": "2026-11-13 用户收到 T06 交付评审与全量结果后要求提交代码，确认本轮交付。",
+      "coverage_note": "T06: 11 real user-ontology copy flow checks and actual Gunicorn/Chromium copy acceptance passed. All 13 full regression stages passed: unit 2333 passed/5 optional upstream engine skips; coverage 86.1%; robotics browsers 18+16+12+29 passed. Existing behavior tests/fixtures unchanged. User requested code commit after T06 review on 2026-11-13; delivery accepted."
+    }
+  ],
+  "planned_requirements": [
     {
       "id": "DQC-01",
       "iteration": "IR-027",
@@ -2138,6 +2306,63 @@
       "criterion": "新旧详情和数据本体入口无回归，完整 JSON／OWL 下载仍绑定固定版本。",
       "test_status": "planned-not-created",
       "tests": []
+    },
+    {
+      "id": "ROB-LLM-01",
+      "decision": "DR-070",
+      "criterion": "机器人类别及关系与属性设计独立配置思考策略，已验证 DeepSeek 模型默认关闭思考，可选低强度或沿用原参数；其它应用及未验证模型保持原行为，非法配置联网前报错。",
+      "tests": [
+        "tests/unit/test_robotics_design_thinking.py::test_tbox_policy_overrides_only_thinking_fields",
+        "tests/unit/test_robotics_design_thinking.py::test_supported_deepseek_models_disable_thinking_for_tbox",
+        "tests/unit/test_robotics_design_thinking.py::test_unverified_model_protocols_are_not_given_deepseek_overrides",
+        "tests/unit/test_robotics_design_thinking.py::test_tbox_call_does_not_mutate_general_or_streaming_calls",
+        "tests/unit/test_robotics_design_thinking.py::test_invalid_policy_fails_before_http_without_fallback",
+        "tests/unit/test_robotics_design_thinking.py::test_real_design_pipeline_scopes_policy_to_both_tbox_stages"
+      ]
+    },
+    {
+      "id": "RAC-UI-01",
+      "decision": "DR-072",
+      "criterion": "行为树应用检查明确定位缺少的类别、关系、数据属性及相应角色语义，修订导航携带已保存的报告并保持本体和工件不变。",
+      "tests": [
+        "tests/unit/test_robotics_schema_repair_guidance.py::test_missing_role_identifies_kind_name_and_required_semantics",
+        "tests/unit/test_robotics_schema_repair_guidance.py::test_schema_report_preserves_named_gaps_and_repair_carries_report_identity"
+      ]
+    },
+    {
+      "id": "RAC-UI-02",
+      "decision": "DR-072",
+      "criterion": "修订建议仅以建模输入框浅色占位文字显示，按阶段精简列出本设计此前检查的相关缺项；Tab 填入后可编辑，保留自定义文本与正常焦点操作，确认发送前不调用模型，刷新恢复提示且不串入其它设计。",
+      "tests": [
+        "tests/unit/test_robotics_schema_repair_ui.py::test_schema_repair_context_and_suggestions",
+        "tests/frontend/robotics-design-browser.py::test_schema_gap_completion_requires_tab_then_explicit_send_and_preserves_stage",
+        "tests/frontend/robotics-design-browser.py::test_repair_hint_tab_keeps_user_text_and_shift_tab_and_restores_after_reload",
+        "tests/frontend/robotics-design-browser.py::test_repair_context_cannot_show_another_designs_gaps"
+      ]
+    },
+    {
+      "id": "RAC-UI-03",
+      "decision": "DR-072",
+      "criterion": "修订按全部骨架缺项定位阶段；只有关系或数据属性问题时保留已确认类别直接进入属性阶段，混合缺项先类别；普通读取和刷新不创建修订，发送前不调用模型，未确认类别不能被快捷跳过。",
+      "tests": [
+        "tests/unit/test_robotics_repair_stages.py::test_edit_properties_retains_class_confirmation_and_full_property_snapshot",
+        "tests/unit/test_robotics_repair_stages.py::test_repair_stage_uses_all_gaps_and_prioritizes_classes",
+        "tests/unit/test_robotics_repair_stages.py::test_old_report_cpp_type_can_be_classified_using_frozen_vocabulary",
+        "tests/unit/test_robotics_repair_stages.py::test_edit_properties_http_is_explicit_idempotent_and_keeps_archived_candidate",
+        "tests/unit/test_robotics_repair_stages.py::test_properties_shortcut_cannot_bypass_unconfirmed_classes",
+        "tests/unit/test_robotics_repair_stages.py::test_property_repair_rejects_active_design_without_changing_queued_run",
+        "tests/frontend/robotics-design-browser.py::test_cpp_type_gap_opens_properties_without_reconfirming_classes_or_calling_model",
+        "tests/frontend/robotics-design-browser.py::test_adaptation_property_repair_link_also_opens_properties_and_reload_does_not_edit"
+      ]
+    },
+    {
+      "id": "RAC-UI-04",
+      "decision": "DR-072",
+      "criterion": "模型运行时显示等待动画和真实状态；设计完成后顶部优先展示确认操作，收起输入并清除本轮旧建议，仍可展开继续修改，刷新及展开不触发模型调用。",
+      "tests": [
+        "tests/frontend/robotics-design-browser.py::test_model_running_shows_animation_and_completion_promotes_confirmation",
+        "tests/frontend/robotics-design-browser.py::test_cpp_type_gap_opens_properties_without_reconfirming_classes_or_calling_model"
+      ]
     }
   ]
 }

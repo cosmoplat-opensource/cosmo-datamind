@@ -251,10 +251,11 @@ class DesignService:
             return self._reply(conn, record, request_id, fingerprint)
 
     def _local(self, session_id, operation, *, request_id, expected_revision, snapshot_sha256=None):
+        editing = operation in ('edit_classes', 'edit_properties')
         with self.storage.transaction(write=True) as conn:
             record = self._get(conn, session_id)
             args = {'expected_revision': expected_revision}
-            if operation != 'edit_classes':
+            if not editing:
                 args['snapshot_sha256'] = snapshot_sha256
             fingerprint, replay = self._request(conn, session_id, request_id, operation, args)
             if replay is not None:
@@ -263,12 +264,12 @@ class DesignService:
             self._check_snapshot(conn, record)
             try:
                 function = getattr(tbox, operation)
-                state = function(record['state']) if operation == 'edit_classes' else function(
+                state = function(record['state']) if editing else function(
                     record['state'], snapshot_sha256=snapshot_sha256)
             except ModelingError as exc:
                 raise _error(exc.code, str(exc), issues=exc.issues) from None
             record.update(state=state, updated_at=_now(), error=None, status='awaiting_input')
-            if operation == 'edit_classes':
+            if editing:
                 record['output_asset_ref'] = None
             self._save_revision(conn, record)
             if operation == 'confirm_schema':
@@ -281,6 +282,9 @@ class DesignService:
 
     def edit_classes(self, session_id, *, request_id, expected_revision):
         return self._local(session_id, 'edit_classes', request_id=request_id, expected_revision=expected_revision)
+
+    def edit_properties(self, session_id, *, request_id, expected_revision):
+        return self._local(session_id, 'edit_properties', request_id=request_id, expected_revision=expected_revision)
 
     def confirm_schema(self, session_id, *, request_id, expected_revision, snapshot_sha256):
         return self._local(session_id, 'confirm_schema', request_id=request_id,
@@ -351,6 +355,10 @@ class DesignService:
             'configuration_changed': '模型身份已变化，请恢复原配置或新建设计。',
             'unsupported_source': 'XML 包含当前抽取器不支持的结构。'}.get(code, '本轮设计失败，原有效修订已保留，可显式重试。')
         issues = deepcopy(getattr(exc, 'issues', None) or []) if code == 'unsupported_source' else []
+        if code=='model_request_failed':
+            from llm_diagnostics import safe_diagnostic, describe
+            issues=[safe_diagnostic(i) for i in (getattr(exc,'issues',None) or [])[:1]]
+            if issues:message=describe(issues[0])+'原有效修订已保留，可显式重试。'
         outcome = {'status': 'error', 'error': {'code': code, 'message': message, 'issues': issues},
                    'execution_readiness': 'not_verified'}
         with self.storage.transaction(write=True) as conn:

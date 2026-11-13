@@ -197,7 +197,7 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True):
 
     def run_row(runs, run_id):
         row = runs.get_run(run_id)
-        if row['operation'] not in ('build_ontology', 'design_tbox', 'extract_abox'):
+        if row['operation'] not in ('build_ontology', 'design_tbox', 'extract_abox', 'adapt_execution'):
             raise KeyError(run_id)
         return row
 
@@ -247,12 +247,15 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True):
     @bp.get('/api/domain-runs/<run_id>/artifacts/<artifact_id>')
     def download(run_id, artifact_id):
         runs = runtime.runs()
-        run_row(runs, run_id)
+        row = run_row(runs, run_id)
         records = [a for a in runs.artifacts(run_id) if a['artifact_id'] == artifact_id]
         if not records:
             raise KeyError(artifact_id)
         record = records[0]
         try:
+            if row['operation']=='adapt_execution' and row['output_asset_ref']:
+                from ontology_assets.robotics_application import ApplicationAssets
+                ApplicationAssets(root).payload(**row['output_asset_ref'])
             # Refuse symlink redirection even when its target has the same digest.
             relative = Path(record['path'])
             if relative.is_absolute() or '..' in relative.parts:
@@ -316,6 +319,7 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True):
         fields = {'messages': {'text','request_id','expected_revision','expected_stage'},
             'confirm-classes': {'request_id','expected_revision','snapshot_sha256'},
             'edit-classes': {'request_id','expected_revision'},
+            'edit-properties': {'request_id','expected_revision'},
             'confirm-schema': {'request_id','expected_revision','snapshot_sha256'},
             'retry': {'request_id','expected_revision','failed_run_id'}}
         body = request.get_json() if request.is_json else None
@@ -343,7 +347,9 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True):
     def design_export(ontology_id, version_id, format):
         _query_fields(set())
         if format!='json': raise _invalid()
-        raw = design_read(lambda: design_assets().export_json(ontology_id, version_id))
+        from ontology_assets.robotics_application import ApplicationAssets, is_application
+        reader = ApplicationAssets(root) if is_application(runtime.assets().get_version(ontology_id,version_id)) else design_assets()
+        raw = design_read(lambda: reader.export_json(ontology_id, version_id))
         return send_file(io.BytesIO(raw), mimetype='application/json', as_attachment=True,
             download_name='design.json', max_age=0)
 
@@ -394,6 +400,10 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True):
                   'asset': assets.get_asset(ontology_id), 'build_run_id': rid,
                   'sources': [assets.get_source(sid) for sid in row['source_asset_ids']]}
         is_design = row['metadata'].get('design_contract') is not None
+        from ontology_assets.robotics_application import ApplicationAssets, is_application
+        application = is_application(row)
+        if application:
+            result['application_design'] = design_read(lambda: ApplicationAssets(root).detail(ontology_id,version_id))
         if is_design:
             result['design'] = design_read(lambda: design_assets().detail(ontology_id, version_id))
         if result['asset']['domain']=='robotics':
@@ -405,7 +415,7 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True):
             result['result'] = build['result']
         if result['asset']['domain'] == 'robotics':
             result['payload_url'] = url_for('robotics_review.payload', ontology_id=ontology_id, version_id=version_id)
-            current_artifacts = [] if is_design else bp_robotics_review.version_artifacts(runtime, ontology_id, version_id)
+            current_artifacts = [] if is_design or application else bp_robotics_review.version_artifacts(runtime, ontology_id, version_id)
             if current_artifacts or not rid:
                 result['artifacts'] = current_artifacts
         return jsonify(runtime.public(result))
@@ -416,5 +426,7 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True):
     app.register_blueprint(bp)
     from bp_application_contracts import init_app as init_applications
     init_applications(app, root=root, enabled=enabled)
+    from bp_robotics_application import init_app as init_adaptations
+    init_adaptations(app,runtime)
     app.extensions['robotics'] = runtime
     return runtime

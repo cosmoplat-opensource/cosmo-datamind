@@ -84,7 +84,12 @@ class GovernanceService:
 
     def _graph(self, conn, record):
         content = self._bytes(record)
-        self._sources(conn, record['source_asset_ids'])
+        from .robotics_application import is_application, load, verify_sources
+        if is_application(record):
+            content = load(self.storage, conn, record)[0]
+            verify_sources(self.storage, conn, record)
+        else:
+            self._sources(conn, record['source_asset_ids'])
         validate_payload('robotics', 'robotics_rdf', content)
         graph = Graph().parse(data=content, format='xml')
         if record['metadata'].get('evidence_policy') and evidence.policy(graph) != evidence.POLICY:

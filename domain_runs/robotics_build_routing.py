@@ -6,7 +6,7 @@ import math
 import os
 from urllib.parse import urlsplit
 
-from openai_runtime import DEFAULT_MODEL
+from openai_runtime import DEFAULT_MODEL, ThinkingConfigurationError
 from .build_service import BuildRequestError
 
 PROVIDERS = ('openai', 'hermes', 'claude-code', 'openclaw')
@@ -61,16 +61,29 @@ class BuildRoute:
                 or isinstance(timeout, bool) or not isinstance(timeout, (int, float))
                 or not math.isfinite(timeout) or timeout <= 0):
             raise BuildRequestError('invalid_request', '模型调用需要有效会话、文本和正数超时。')
-        # DR-070 §13: one provider and one request; parsing/format repair lives in TBox.
+        # DR-070: per-call evidence, without shared mutable runtime error state.
+        from llm_diagnostics import safe_diagnostic, transport_diagnostic, describe
+        diagnostic=None
         try:
-            ok, content = self._runtime.run_turn(session_id, prompt, timeout=timeout,
-                                                 model=self._public['model']['model'])
-            if ok is not True or not isinstance(content, str) or not content.strip():
-                raise ValueError('invalid response')
-        except Exception:
-            # Raw provider exceptions and false replies may contain credentials.
-            raise BuildRequestError('model_request_failed',
-                '模型请求失败或返回空响应；未切换模型或回退离线构建，请检查引擎后重试。', 502) from None
+            # BuildRoute serves TBox proposals only. Other applications call the
+            # shared runtime normally and retain their own thinking defaults.
+            detailed=getattr(self._runtime,'run_tbox_turn_detailed',None)
+            if not callable(detailed):
+                detailed=getattr(self._runtime,'run_turn_detailed',None)
+            if callable(detailed):
+                ok,content,diagnostic=detailed(session_id,prompt,timeout=timeout,model=self._public['model']['model'])
+                diagnostic=safe_diagnostic(diagnostic)
+            else:
+                ok,content=self._runtime.run_turn(session_id,prompt,timeout=timeout,model=self._public['model']['model'])
+        except ThinkingConfigurationError:
+            raise BuildRequestError('configuration_error',
+                '机器人本体设计思考配置无效；DATAMIND_ROBOTICS_DESIGN_THINKING 仅支持 disabled、low、inherit。',
+                503) from None
+        except Exception as exc:
+            ok,content=False,None;diagnostic=transport_diagnostic(exc)
+        if ok is not True or not isinstance(content,str) or not content.strip():
+            diagnostic=diagnostic or {'code':'model_empty_content' if ok is True and isinstance(content,str) else 'model_runtime_error'}
+            raise BuildRequestError('model_request_failed',describe(diagnostic),502,issues=[diagnostic]) from None
         return content
 
 

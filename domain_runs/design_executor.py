@@ -14,6 +14,8 @@ class DesignExecutor:
     def __init__(self, root):
         self.root = Path(root)
         self.service = DesignService(root)
+        from .robotics_application_service import ApplicationService
+        self.application = ApplicationService(root)
         self.stop_event = threading.Event()
         self.thread = None
 
@@ -37,13 +39,21 @@ class DesignExecutor:
                     self.stop_event.wait(.1)
             if self.stop_event.is_set(): return
             self.service.recover_interrupted()
+            for rid in self.application.runs.recover_interrupted(operation='adapt_execution'):
+                with self.application._atomic(write=True) as conn:
+                    run=self.application.runs.get_run(rid)
+                    state=self.application._get(conn,run['session_ref']['id'])
+                    state.update(status='interrupted',revision=state['revision']+1)
+                    self.application._put(conn,state)
             while not self.stop_event.is_set():
                 try:
                     run = self.service.claim_next()
                     if run:
                         self.service.execute(run['run_id'])
                     else:
-                        self.stop_event.wait(.1)
+                        adaptation=self.application.claim_next()
+                        if adaptation:self.application.execute(adaptation['run_id'])
+                        else:self.stop_event.wait(.1)
                 except Exception:
                     _LOG.exception('设计运行执行失败，等待恢复')
                     self.stop_event.wait(.5)

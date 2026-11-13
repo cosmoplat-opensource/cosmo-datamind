@@ -45,6 +45,8 @@ def _manifest(run, artifacts):
         data.update(build_input=run["build_input"], output_asset_ref=run["output_asset_ref"])
     if run.get("design_input") is not None:
         data.update(design_input=run["design_input"], output_asset_ref=run["output_asset_ref"])
+    if run['operation'] == 'adapt_execution':
+        data['output_asset_ref'] = run['output_asset_ref']
     data["artifacts"] = [{field: item[field] for field in ARTIFACT_FIELDS}
                          for item in artifacts if item["kind"] != "manifest"]
     return data
@@ -61,9 +63,15 @@ class RunStore:
                                     (ontology_id, version_id)))
         self.storage.read_bytes(version["path"], version["payload_sha256"])
         sources = []
+        from ontology_assets.robotics_application import is_application, load, verify_sources
+        application = is_application(version)
+        if application:
+            load(self.storage, conn, version)
+            verify_sources(self.storage, conn, version)
         for sid in version["source_asset_ids"]:
             source = _required(conn, "SELECT * FROM sources WHERE source_asset_id=?", (sid,))
-            self.storage.read_bytes(source["path"], source["sha256"])
+            if not application or source['role'] not in ('behavior_tree', 'node_models'):
+                self.storage.read_bytes(source["path"], source["sha256"])
             sources.append({key: source[key] for key in ("source_asset_id", "role", "media_type", "sha256", "byte_size")})
         validation = version["validation"] or {}
         return {"ontology_id": ontology_id, "version_id": version_id, "domain": asset["domain"],

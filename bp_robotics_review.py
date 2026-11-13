@@ -301,6 +301,11 @@ def init_app(app, runtime):
     def payload(ontology_id, version_id):
         service(ontology_id)
         assets=runtime.assets()
+        from ontology_assets.robotics_application import is_application, ApplicationAssets
+        if is_application(assets.get_version(ontology_id,version_id)):
+            try:raw=ApplicationAssets(runtime.root).payload(ontology_id,version_id)
+            except ValueError as exc:raise BuildRequestError('artifact_integrity','应用工件损坏。',409) from exc
+            return send_file(io.BytesIO(raw),mimetype='application/rdf+xml',as_attachment=True,download_name='candidate.owl')
         if assets.get_version(ontology_id,version_id)['metadata'].get('design_contract'):
             from ontology_assets.robotics_design import DesignAssets
             try:
