@@ -13,6 +13,9 @@ unmodified DataMind (default http://127.0.0.1:8092):
       GET  /api/sysinfo|tables|overview|glossary            datamind:catalog.read
       GET  /api/graphs|graph/<key>|metrics                  datamind:ontology.read
       POST /api/sparql                                      datamind:sparql.query
+      POST /api/chat                                        datamind:qa.ask
+    Every forwarded call carries the token's data source (chosen by the user on the consent page), the
+    caller (ath:<client>:<user>) and a request id that also appears in this adapter's audit log.
       POST /mcp   MCP JSON-RPC (tools/list, tools/call) bridged to DataMind's MCP build server;
                   read tools need datamind:build.read, start_build needs datamind:build.run
       POST /a2a   A2A 0.3.0 JSON-RPC message/send; each skill maps to one scope
@@ -37,6 +40,7 @@ import hmac
 import html
 import json
 import os
+import re
 import secrets
 import subprocess
 import sys
@@ -69,6 +73,7 @@ SCOPES = {
     "datamind:sparql.query": "对本体执行只读 SPARQL 查询",
     "datamind:build.read": "查看本体构建数据源、产物、验收结果与人审队列",
     "datamind:build.run": "发起一次本体半自动构建（唯一写操作）",
+    "datamind:qa.ask": "就所授权数据来源的本体提问（深度问数，只读查询；每次提问会调用问数引擎）",
 }
 ROUTES = [  # (method, path prefix, required scope)
     ("GET", "/api/sysinfo", "datamind:catalog.read"),
@@ -79,7 +84,10 @@ ROUTES = [  # (method, path prefix, required scope)
     ("GET", "/api/graph/", "datamind:ontology.read"),
     ("GET", "/api/metrics", "datamind:ontology.read"),
     ("POST", "/api/sparql", "datamind:sparql.query"),
+    ("POST", "/api/chat", "datamind:qa.ask"),
 ]
+ROUTE_TIMEOUT = {"/api/chat": 240}  # deep QA plans, runs and narrates; other routes answer within 60 s
+DEFAULT_SOURCE = "demo"
 MCP_TOOL_SCOPE = {"start_build": "datamind:build.run"}  # every other tool: datamind:build.read
 
 app = Flask(__name__)
@@ -151,6 +159,33 @@ def _purge():
             del store[k]
 
 
+def _sources():
+    """Data sources the user can grant: DataMind's ready SQLite sources.  Falls back to the default source."""
+    try:
+        with urllib.request.urlopen(DATAMIND + "/api/build/sources", timeout=10) as r:
+            rows = json.loads(r.read())
+        got = [{"id": str(x["id"]), "name": str(x.get("name") or x["id"])} for x in rows
+               if isinstance(x, dict) and x.get("id") and x.get("kind") == "sqlite" and x.get("ready")]
+    except (OSError, ValueError, KeyError, TypeError):
+        got = []
+    return got or [{"id": DEFAULT_SOURCE, "name": "示例主库"}]
+
+
+def _context(tok):
+    """What every upstream call carries: the token's data source, who is calling, and a request id that
+    is written to this adapter's audit log and to DataMind's build records (DR-104)."""
+    return {"source": tok.get("source") or DEFAULT_SOURCE,
+            # header-safe: client ids and user names are percent-encoded outside [A-Za-z0-9._~-]
+            "actor": "ath:%s:%s" % (urllib.parse.quote(str(tok.get("client_id") or "-"), safe=""),
+                                    urllib.parse.quote(str(tok.get("user") or "-"), safe="")),
+            "request_id": secrets.token_hex(8)}
+
+
+def _upstream_headers(ctx):
+    return {"Content-Type": "application/json", "X-DataMind-Source": ctx["source"],
+            "X-DataMind-Actor": ctx["actor"], "X-Request-Id": ctx["request_id"]}
+
+
 # ---------------------------------------------------------------- authorization server
 @app.get("/.well-known/oauth-authorization-server")
 def metadata():
@@ -181,13 +216,15 @@ def authorize():
     hidden = "".join(f'<input type="hidden" name="{k}" value="{html.escape(q[k])}">' for k in AUTHORIZE_PARAMS if k in q)
     boxes = "".join(f'<label><input type="checkbox" name="grant" value="{s}" checked> <code>{s}</code> {html.escape(SCOPES[s])}</label><br>'
                     for s in requested)  # requested scopes are all keys of SCOPES at this point
+    options = "".join(f'<option value="{html.escape(x["id"])}">{html.escape(x["name"])}（{html.escape(x["id"])}）</option>'
+                      for x in _sources())
     page = f"""<!doctype html><meta charset="utf-8"><title>COSMO-DataMind 授权确认</title>
 <style>body{{font-family:Helvetica,"PingFang SC",sans-serif;max-width:560px;margin:40px auto;color:#1f2329}}
 h2{{color:#4A5FF3}}label{{line-height:2}}button{{background:#4A5FF3;color:#fff;border:0;padding:8px 20px;border-radius:4px}}</style>
 <h2>COSMO-DataMind · 智能体访问授权</h2>
 <p>一个经 ATH 网关登记的智能体请求代表你访问 DataMind。你可以取消勾选不愿授予的权限。</p>
 <form method="post" action="/authorize/approve">{hidden}
-<p>{boxes}</p><p>用户名 <input name="username"> 密码 <input name="password" type="password"></p>
+<p>{boxes}</p><p>数据来源 <select name="source">{options}</select>（智能体只能访问这一个数据来源及其本体）</p><p>用户名 <input name="username"> 密码 <input name="password" type="password"></p>
 <button name="decision" value="approve">同意</button> <button name="decision" value="deny">拒绝</button></form>"""
     resp = Response(page, mimetype="text/html")
     resp.headers.update({"X-Frame-Options": "DENY", "Content-Security-Policy": "frame-ancestors 'none'", "Cache-Control": "no-store"})
@@ -215,13 +252,17 @@ def approve():
         return jsonify(error="invalid_request", error_description="PKCE S256 required"), 400
     if not granted:
         return redirect(f"{redirect_uri}{sep}{urllib.parse.urlencode({'error': 'access_denied', 'state': state})}")
+    source = f.get("source") or DEFAULT_SOURCE
+    if source not in {x["id"] for x in _sources()}:
+        return jsonify(error="invalid_request", error_description="unknown data source"), 400
     code = secrets.token_urlsafe(24)
     with _lock:
         _purge()
         _codes[code] = {"client_id": f.get("client_id"), "redirect_uri": redirect_uri, "scopes": granted,
                         "user": f.get("username"), "challenge": f.get("code_challenge"), "exp": time.time() + CODE_TTL,
-                        "resource": f.get("resource")}
-    audit("consent.approved", client_id=f.get("client_id"), user=f.get("username"), requested=requested, granted=granted)
+                        "resource": f.get("resource"), "source": source}
+    audit("consent.approved", client_id=f.get("client_id"), user=f.get("username"), requested=requested, granted=granted,
+          source=source)
     return redirect(f"{redirect_uri}{sep}{urllib.parse.urlencode({'code': code, 'state': state})}")
 
 
@@ -245,8 +286,9 @@ def token():
         return jsonify(error="invalid_grant", error_description="PKCE verification failed"), 400
     access = secrets.token_urlsafe(32)
     with _lock:
-        _tokens[access] = {"user": rec["user"], "client_id": cid, "scopes": rec["scopes"], "exp": time.time() + TOKEN_TTL}
-    audit("token.issued", client_id=cid, user=rec["user"], scopes=rec["scopes"])
+        _tokens[access] = {"user": rec["user"], "client_id": cid, "scopes": rec["scopes"],
+                           "source": rec.get("source") or DEFAULT_SOURCE, "exp": time.time() + TOKEN_TTL}
+    audit("token.issued", client_id=cid, user=rec["user"], scopes=rec["scopes"], source=rec.get("source") or DEFAULT_SOURCE)
     resp = jsonify(access_token=access, token_type="Bearer", expires_in=TOKEN_TTL, scope=" ".join(rec["scopes"]))
     resp.headers.update({"Cache-Control": "no-store", "Pragma": "no-cache"})  # RFC 6749 §5.1
     return resp
@@ -277,23 +319,29 @@ def resource(rest):
         return _deny(404, "endpoint_not_exposed", user=tok["user"])
     if need not in tok["scopes"]:
         return _deny(403, "insufficient_scope", required=need, user=tok["user"])
-    url = DATAMIND + path + ("?" + request.query_string.decode() if request.query_string else "")
+    ctx = _context(tok)
+    # The data source comes from the token only: a caller-supplied header or ?src= must not widen it.
+    query = urllib.parse.urlencode([(k, v) for k, v in request.args.items(multi=True) if k != "src"])
+    url = DATAMIND + path + ("?" + query if query else "")
     data = request.get_data() if request.method == "POST" else None
-    req = urllib.request.Request(url, data=data, method=request.method, headers={"Content-Type": "application/json"})
+    req = urllib.request.Request(url, data=data, method=request.method, headers=_upstream_headers(ctx))
     t0 = time.time()
     try:
-        with urllib.request.urlopen(req, timeout=60) as r:
+        with urllib.request.urlopen(req, timeout=ROUTE_TIMEOUT.get(path, 60)) as r:
             body, status = r.read(), r.status
     except urllib.error.HTTPError as e:
         body, status = e.read(), e.code
-    audit("resource.allowed", path=path, method=request.method, user=tok["user"], scope=need, status=status,
-          ms=round(1000 * (time.time() - t0)))
+    audit("resource.allowed", path=path, method=request.method, user=tok["user"], client_id=tok.get("client_id"),
+          scope=need, status=status, ms=round(1000 * (time.time() - t0)), **ctx)
     return Response(body, status=status, mimetype="application/json")
 
 
-def _mcp_call(messages):
-    """Run DataMind's stdio MCP build server for one exchange and return its JSON-RPC responses."""
+def _mcp_call(messages, ctx=None):
+    """Run DataMind's stdio MCP build server for one exchange and return its JSON-RPC responses.
+    ctx (data source, actor, request id) reaches DataMind through the server's environment."""
     env = dict(os.environ, DATAMIND_URL=DATAMIND)
+    if ctx:
+        env.update(DATAMIND_SOURCE=ctx["source"], DATAMIND_ACTOR=ctx["actor"], DATAMIND_REQUEST_ID=ctx["request_id"])
     lines = "".join(json.dumps(m) + "\n" for m in messages)
     try:
         out = subprocess.run([sys.executable, MCP_SERVER], input=lines, capture_output=True, text=True, timeout=180, env=env)
@@ -320,12 +368,22 @@ def mcp():
     init = {"jsonrpc": "2.0", "id": "_init", "method": "initialize",
             "params": {"protocolVersion": "2024-11-05", "capabilities": {}, "clientInfo": {"name": "datamind-ath-bridge", "version": "0.1"}}}
     note = {"jsonrpc": "2.0", "method": "notifications/initialized"}
+    ctx = _context(tok)
     if msg.get("method") == "tools/call":
         tool = (msg.get("params") or {}).get("name", "")
         need = MCP_TOOL_SCOPE.get(tool, "datamind:build.read")
         if need not in tok["scopes"]:
             audit("mcp.denied", tool=tool, required=need, user=tok["user"])
             return jsonify(jsonrpc="2.0", id=msg.get("id"), error={"code": -32001, "message": "insufficient_scope", "data": {"required": need}}), 403
+        if tool == "start_build":
+            # A build runs on the token's data source: fill it in when absent, refuse any other.
+            params = msg.setdefault("params", {})
+            args = params.get("arguments") if isinstance(params.get("arguments"), dict) else {}
+            if args.get("source") not in (None, "", ctx["source"]):
+                audit("mcp.denied", tool=tool, required="source:" + ctx["source"], user=tok["user"], **ctx)
+                return jsonify(jsonrpc="2.0", id=msg.get("id"), error={
+                    "code": -32001, "message": "source_not_authorized", "data": {"authorized": ctx["source"]}}), 403
+            params["arguments"] = {**args, "source": ctx["source"]}
     elif msg.get("method") == "tools/list":
         if "datamind:build.read" not in tok["scopes"] and "datamind:build.run" not in tok["scopes"]:
             audit("mcp.denied", method="tools/list", required="datamind:build.read", user=tok["user"])
@@ -333,9 +391,16 @@ def mcp():
     else:
         return jsonify(jsonrpc="2.0", id=msg.get("id"), error={"code": -32601, "message": "method not exposed"}), 404
     t0 = time.time()
-    res = [r for r in _mcp_call([init, note, msg]) if r.get("id") == msg.get("id")]
+    res = [r for r in _mcp_call([init, note, msg], ctx) if r.get("id") == msg.get("id")]
+    text = ""
+    try:
+        text = res[0]["result"]["content"][0]["text"] if res else ""
+    except (KeyError, IndexError, TypeError):
+        pass
+    job = re.search(r"job_id=(bj_[0-9a-f]{10})", text or "")
     audit("mcp.allowed", method=msg.get("method"), tool=(msg.get("params") or {}).get("name"), user=tok["user"],
-          ms=round(1000 * (time.time() - t0)))
+          client_id=tok.get("client_id"), ms=round(1000 * (time.time() - t0)),
+          **({"job_id": job.group(1)} if job else {}), **ctx)
     if not res:
         return jsonify(jsonrpc="2.0", id=msg.get("id"), error={"code": -32603, "message": "no response from MCP server"}), 502
     return jsonify(res[0])
@@ -362,17 +427,20 @@ def agent_card():
                    skills=[{"id": k, "name": v[1], "description": f"{v[1]}（需要作用域 {v[0]}）", "tags": [v[0]]} for k, v in A2A_SKILLS.items()])
 
 
-def _a2a_run(skill):
+def _a2a_run(skill, ctx=None):
+    def get(path):
+        req = urllib.request.Request(DATAMIND + path, headers=_upstream_headers(ctx) if ctx else {})
+        return urllib.request.urlopen(req, timeout=60)
     if skill == "catalog.tables":
-        with urllib.request.urlopen(DATAMIND + "/api/tables", timeout=60) as r:
+        with get("/api/tables") as r:
             tables = json.loads(r.read())
         return {"count": len(tables), "tables": [t.get("name", t) if isinstance(t, dict) else t for t in tables][:20]}
     if skill == "ontology.graphs":
-        with urllib.request.urlopen(DATAMIND + "/api/graphs", timeout=60) as r:
+        with get("/api/graphs") as r:
             return {"graphs": json.loads(r.read())}
     res = _mcp_call([{"jsonrpc": "2.0", "id": "_init", "method": "initialize", "params": {"protocolVersion": "2024-11-05", "capabilities": {}, "clientInfo": {"name": "datamind-a2a", "version": "0.1"}}},
                      {"jsonrpc": "2.0", "method": "notifications/initialized"},
-                     {"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "list_built_graphs", "arguments": {}}}])
+                     {"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "list_built_graphs", "arguments": {}}}], ctx)
     text = next((r["result"]["content"][0]["text"] for r in res if r.get("id") == 1 and "result" in r), "")
     if not text:
         raise ValueError("no response from the MCP build server")
@@ -402,7 +470,8 @@ def a2a():
     task_id = secrets.token_hex(8)
     stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     try:
-        data = _a2a_run(skill)
+        ctx = _context(tok)
+        data = _a2a_run(skill, ctx)
     except (OSError, ValueError, KeyError, IndexError) as e:  # upstream DataMind or MCP server failure
         audit("a2a.failed", skill=skill, user=tok["user"], error=type(e).__name__)
         return jsonify(jsonrpc="2.0", id=msg.get("id"), result={
@@ -410,7 +479,8 @@ def a2a():
             "status": {"state": "failed", "timestamp": stamp,
                        "message": {"kind": "message", "role": "agent", "messageId": f"{task_id}-err",
                                    "parts": [{"kind": "text", "text": f"DataMind 调用失败：{type(e).__name__}"}]}}})
-    audit("a2a.allowed", skill=skill, scope=need, user=tok["user"], ms=round(1000 * (time.time() - t0)))
+    audit("a2a.allowed", skill=skill, scope=need, user=tok["user"], client_id=tok.get("client_id"),
+          ms=round(1000 * (time.time() - t0)), **ctx)
     return jsonify(jsonrpc="2.0", id=msg.get("id"), result={
         "kind": "task", "id": task_id, "contextId": m.get("contextId") or task_id,
         "status": {"state": "completed", "timestamp": stamp},

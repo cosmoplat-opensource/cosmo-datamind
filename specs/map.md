@@ -34,6 +34,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 ## 索引
 
 ### 决定 / Decisions
+- [DR-104 · ATH：令牌限定数据来源、深度问数范围、请求号贯通](decisions/DR-104-ath-source-binding-qa-scope-audit-link.md)
 - [DR-103 · 构建作业落盘、可取消，发起方留痕](decisions/DR-103-durable-cancellable-build-jobs.md)
 - [DR-102 · ATH 适配层进入产品仓库](decisions/DR-102-ath-adapter-in-repo.md)
 - [DR-101 · 构建作业由服务端持有，连接只是订阅者](decisions/DR-101-server-held-build-jobs.md)

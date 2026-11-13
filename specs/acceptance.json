@@ -676,6 +676,32 @@
       "tests": [
         "tests/unit/test_build_jobs.py::test_who_started_a_build_is_recorded_on_the_job_and_in_the_graph"
       ]
+    },
+    {
+      "id": "ATH-02",
+      "criterion": "令牌限定一个数据来源:授权页由用户选择并只接受已列出的来源;转发时带令牌的来源,调用方自带的来源被丢弃;经 MCP 的构建只能建在该来源上",
+      "tests": [
+        "tests/unit/test_ath_adapter.py::test_consent_lets_the_user_pick_a_source_and_binds_it_to_the_token",
+        "tests/unit/test_ath_adapter.py::test_requests_carry_the_tokens_data_source_actor_and_a_request_id",
+        "tests/unit/test_ath_adapter.py::test_a_caller_cannot_override_the_data_source",
+        "tests/unit/test_ath_adapter.py::test_a_build_through_mcp_is_pinned_to_the_tokens_source_and_logged_with_its_job"
+      ]
+    },
+    {
+      "id": "ATH-03",
+      "criterion": "深度问数需要单独的范围 datamind:qa.ask,没有该范围时不向上游发请求;有该范围时带令牌的数据来源转发,等待上限不低于 180 秒",
+      "tests": [
+        "tests/unit/test_ath_adapter.py::test_asking_questions_needs_its_own_scope_and_gets_a_longer_timeout"
+      ]
+    },
+    {
+      "id": "ATH-04",
+      "criterion": "每个放行请求的请求号与调用方同时出现在适配层审计日志和发往 DataMind 的请求头里;经 MCP 发起的构建在审计日志里带作业号;MCP 服务器从环境变量转发来源、调用方和请求号",
+      "tests": [
+        "tests/unit/test_ath_adapter.py::test_requests_carry_the_tokens_data_source_actor_and_a_request_id",
+        "tests/unit/test_ath_adapter.py::test_a_build_through_mcp_is_pinned_to_the_tokens_source_and_logged_with_its_job",
+        "tests/unit/test_ath_adapter.py::test_mcp_server_forwards_source_actor_and_request_id_from_its_environment"
+      ]
     }
   ]
 }

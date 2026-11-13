@@ -71,9 +71,21 @@ _DECISION_NOTE = ("关系/指标状态只由服务端数据裁决与人工评审
                   "本服务器不提供改写状态的工具。")
 
 
+def _caller_headers():
+    """宿主经环境变量给出的调用上下文(DR-104):限定的数据来源、调用方、请求号,原样带给 DataMind。
+    ATH 适配层用它把智能体限定在用户授权的数据来源上,并让构建记录能与适配层的审计日志对上。"""
+    out = {}
+    for var, header in (("DATAMIND_SOURCE", "X-DataMind-Source"), ("DATAMIND_ACTOR", "X-DataMind-Actor"),
+                        ("DATAMIND_REQUEST_ID", "X-Request-Id")):
+        v = "".join(ch for ch in (os.environ.get(var) or "") if ch.isprintable() and ch not in "\r\n")[:120]
+        if v:
+            out[header] = v
+    return out
+
+
 def _http(method, path, payload=None, timeout=20):
     req = urllib.request.Request(BASE + path, method=method,
-                                 headers={"Content-Type": "application/json"},
+                                 headers={"Content-Type": "application/json", **_caller_headers()},
                                  data=json.dumps(payload).encode() if payload is not None else None)
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
