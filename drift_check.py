@@ -120,7 +120,7 @@ def check(ir, db_path):
                     "fix": "关系证据失效:须重新做取值重叠裁决,或降级为 candidate 待人审",
                 })
 
-    cnt = {}
+    cnt: dict = {}
     for it in issues:
         cnt[it["type"]] = cnt.get(it["type"], 0) + 1
     total = n_obj_bound + n_col_checked + len(rels)

@@ -119,7 +119,7 @@ def validate_proposal(data, max_objects=MAX_OBJECTS, max_relations=MAX_RELATIONS
         raw_objects = []
     if not isinstance(raw_relations, (list, tuple)):
         raw_relations = []
-    objects = []
+    objects: list = []
     for item in raw_objects:
         if isinstance(item, dict) and isinstance(item.get("name"), str) and item["name"].strip():
             if len(objects) < max_objects:
@@ -128,7 +128,7 @@ def validate_proposal(data, max_objects=MAX_OBJECTS, max_relations=MAX_RELATIONS
                 dropped["objects"] += 1
         else:
             dropped["objects"] += 1
-    relations = []
+    relations: list = []
     for item in raw_relations:
         if (isinstance(item, dict)
                 and isinstance(item.get("source"), str) and item["source"].strip()

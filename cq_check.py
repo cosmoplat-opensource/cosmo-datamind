@@ -108,7 +108,7 @@ def anchor_objects(question, ir):
 def _adj(ir, strong_only):
     """无向邻接表。strong_only=True 时只保留证据充分的边。"""
     rels, sk, tk = _rels(ir)
-    g = {}
+    g: dict = {}
     for r in rels:
         if strong_only and not relation_is_strong(r):
             continue

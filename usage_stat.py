@@ -72,7 +72,8 @@ def report(workdir, ir, graph):
         rels, sk, tk = ir["links"], "source", "target"
     else:
         rels, sk, tk = ir.get("relations", []), "source_concept", "target_concept"
-    strong, weak = {}, {}
+    strong: dict = {}
+    weak: dict = {}
     for r in rels:
         st = (r.get("status") or "")
         for side in (r.get(sk), r.get(tk)):

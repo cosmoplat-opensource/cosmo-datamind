@@ -133,7 +133,7 @@ def evaluate(rules, obj_key, facts):
 
     # 冲突检测:同一 action 被赋予不同 decision,或同一 severity 层级给出相反结论
     conflicts = []
-    by_action = {}
+    by_action: dict = {}
     for f in fired:
         if f.get("action"):
             by_action.setdefault(f["action"], []).append(f)
@@ -168,7 +168,7 @@ def consistency_check(rules):
                            "fix": "规则 id 须唯一,否则回溯时无法定位依据"})
         seen[rid] = r
     # 同对象同字段的阈值区间是否存在矛盾(如 >=100 判 A、>=100 判 B)
-    sig = {}
+    sig: dict = {}
     for r in rules:
         key = (r.get("on"), tuple(sorted(
             (c.get("field"), c.get("op"), str(c.get("value")))

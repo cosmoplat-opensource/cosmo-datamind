@@ -173,7 +173,7 @@ def main():
     ir_path = _checked_ir(IR)
     ir = json.load(open(ir_path, encoding="utf-8"))
     # 1) 收集 IR 内已有的权威列名翻译作精确覆盖
-    exact = {}
+    exact: dict = {}
     for o in ir.get("objects", []):
         for a in o.get("attrs", []):
             if norm(a.get("cn"), a.get("col")):

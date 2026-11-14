@@ -329,7 +329,7 @@ python3 -m venv .venv
 .venv/bin/python -m pip install --upgrade pip==26.2
 .venv/bin/pip install -r requirements-dev.txt
 .venv/bin/python -m pytest tests/ -q      # 单测 + 文档与规格映射自检
-.venv/bin/coverage run -m pytest tests/ -q && .venv/bin/coverage report   # 覆盖率低于81.0%时失败
+.venv/bin/coverage run -m pytest tests/ -q && .venv/bin/coverage report   # 全部模块低于74.0%时失败;分层下限见 scripts/check.py
 
 # 集成层:需先起服务（用生产 WSGI 路径验证）
 .venv/bin/gunicorn -c gunicorn.conf.py wsgi:application &

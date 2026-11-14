@@ -246,7 +246,8 @@ def collect(tab_cols=None, sql_texts=None, glossary_rows=None, qa_skills=None, g
     sources["qa_skill"] += len(c); cands += c; skipped += s
     c, s = from_gold_set(gold_items, tab_cols)
     sources["gold"] += len(c); cands += c; skipped += s
-    merged, index = [], {}
+    merged: list = []
+    index: dict = {}
     for c in cands:
         if not (c.get("measure") or {}).get("agg"):
             merged.append(c)

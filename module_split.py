@@ -122,7 +122,7 @@ def by_domain(ir):
             "members": [{"key": k, "cn": meta[k].get("cn") or meta[k].get("name"),
                          "table": meta[k].get("table")} for k in comp],
         })
-    mods.sort(key=lambda m: -m["size"])
+    mods.sort(key=lambda m: -int(m["size"]))  # type: ignore[call-overload]
     if isolated:
         mods.append({
             "module": "未归组(孤岛)", "size": len(isolated), "cohesion": 0.0,

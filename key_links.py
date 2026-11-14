@@ -172,7 +172,7 @@ def propose(tab_cols, objects, round_tables, existing=(), probe=None, max_propos
     cl = {(str(t), str(c)): str(v or "") for (t, c), v in (col_labels or {}).items()}
     # 租户键只在它铺满全库时(四分之一以上的表都有)才按「只在关联表上提」处理;偶尔出现的工厂编号是普通引用
     _ntab = max(1, len(tab_cols))
-    _colfreq = {}
+    _colfreq: dict = {}
     for _t, _cs in tab_cols.items():
         for _c, _ in _cs:
             _colfreq[_norm(_c)] = _colfreq.get(_norm(_c), 0) + 1
@@ -276,7 +276,7 @@ def propose(tab_cols, objects, round_tables, existing=(), probe=None, max_propos
             ov, pc = _best_col(ct, cc, pt)
             if pc and (ov is None or ov >= _WEAK_FLOOR):
                 add(ct, cc, pt, pc, f"字段注释点名:{ct}.{cc} 关联 {pt}", (2, ov or 0.0))
-    _cn_owner = {}
+    _cn_owner: dict = {}
     for t in t2o:
         if len(cn[t]) >= 2 and not _ASSOC.search(core[t]):
             _cn_owner.setdefault(cn[t], []).append(t)

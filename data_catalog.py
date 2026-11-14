@@ -107,7 +107,7 @@ def null_profile(con, table, column, sample=20000):
 def enrich(con, ir):
     docs, tables = doc_dictionary(con), schema(con)
     lower = {t.casefold(): t for t in tables}
-    entity_of = {}
+    entity_of: dict = {}
     for r in ir.get("relations") or []:
         ev = r.get("evidence") or {}
         key = ev.get("child_key")
