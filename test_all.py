@@ -1328,6 +1328,12 @@ _t4 = {}; _srvmod.build_context(_q33, trace=_t4, graph_keys=["built_9c3fd1", "bu
 chk("AO9 多选图谱→合并为一套锚定本体", _t4["ontology"]["objects"] > _t1["ontology"]["objects"])
 # 形状无关:构建产物用 relations[source_concept] + objects[name],示例用 links[source] + id
 _bir = _srvmod.load_ir_edited("built_9c3fd1") or _srvmod.load_ir("built_9c3fd1")
+# 随仓的这张图已重新取证(DR-113),自增键巧合的关系现在是候选。这里要测的是「旧产物把巧合标成
+# verified 时,问数侧仍不拿它的键做 JOIN」,所以在内存里把这几条还原成旧产物的样子,不改文件。
+import copy as _cp33
+_bir = _cp33.deepcopy(_bir)
+for _r33 in _bir.get("relations", []):
+    if (_r33.get("evidence") or {}).get("name_ok") is False: _r33["status"] = "verified"
 _bt = [o.get("table") for o in _bir.get("objects", []) if o.get("table")]
 _bp = []; _bh = _srvmod._join_hints(_bir, _bt, pairs=_bp)
 chk("AO10 构建产物形状也能出 JOIN 提示(此前恒为 0)", len(_bh) > 0)
