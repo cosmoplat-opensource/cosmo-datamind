@@ -34,6 +34,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 ## 索引
 
 ### 决定 / Decisions
+- [DR-113 · 随仓分发的构建产物都要过得了质量闸](decisions/DR-113-shipped-graphs-meet-the-evidence-rule.md)
 - [DR-112 · 探索性测试查出的界面缺陷](decisions/DR-112-ui-fixes-from-exploratory-testing.md)
 - [DR-111 · 探索性测试查出的后端缺陷](decisions/DR-111-api-robustness-from-exploratory-testing.md)
 - [DR-110 · ATH 适配层加固](decisions/DR-110-ath-adapter-hardening.md)
