@@ -62,7 +62,9 @@ python3 -m ath_adapter.provider              # 适配层，8093
 - 单元测试 `tests/unit/test_ath_adapter.py`：不需要网关和运行中的 DataMind，随 `scripts/check.py --suite unit` 运行。
 - 端到端 `ath_adapter/e2e/run_e2e.py`：需要 DataMind 在 8092、ATH 参考网关的本地检出（`ATH_GATEWAY_DIR`）、
   PyJWT，以及官方 Python SDK（`ATH_SDK=official`，缺省）或自带客户端（`ATH_SDK=own`）。
-  报告写到 `.check-results/ath/`。它不在常规检查里。
+  报告写到 `.check-results/ath/`。它不在常规检查里。共 39 项：31 项握手、授权与安全检查经网关完成；
+  8 项核验数据来源限定、问数授权、构建作业、审计贯通和人审结论保持，其中 6 项因本部署不向经网关的智能体开放
+  `build.run` 与 `qa.ask`，改以网关的 OAuth 客户端身份直接对适配层走授权码流程。
 
 ## 已知限制
 

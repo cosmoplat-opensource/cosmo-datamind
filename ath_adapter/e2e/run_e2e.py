@@ -160,6 +160,121 @@ def user_consents(authorization_url, grant=None, decision="approve"):
     return callback, st, hdr.get("Location"), body
 
 
+def direct_token(scopes, source="demo"):
+    """Adapter-only OAuth flow (authorization code + PKCE) as the gateway's OAuth client, without the ATH gateway.
+    Used for capabilities this deployment's app-side policy does not offer to agents through the gateway
+    (starting builds, asking questions).  Returns the access token, or None when the adapter refuses."""
+    import base64, hashlib, secrets  # noqa: E401
+    secret = json.loads((STATE / "clients.json").read_text())["ath-gateway"]["client_secret"]
+    verifier = secrets.token_urlsafe(48)
+    challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b"=").decode()
+    cb = f"{GW}/ath/callback"
+    q = {"response_type": "code", "client_id": "ath-gateway", "redirect_uri": cb, "scope": " ".join(scopes),
+         "state": "direct", "code_challenge": challenge, "code_challenge_method": "S256"}
+    st, _, page = raw("GET", f"{PROV}/authorize?" + urllib.parse.urlencode(q))
+    assert st == 200, f"consent page {st}"
+    form = {html.unescape(k): html.unescape(v) for k, v in re.findall(r'<input type="hidden" name="([^"]+)" value="([^"]*)"', page.decode())}
+    creds = json.loads((STATE / "initial_password.json").read_text())
+    fields = list(form.items()) + [("username", creds["user"]), ("password", creds["password"]), ("decision", "approve"), ("source", source)]
+    fields += [("grant", x) for x in scopes]
+    st, hdr, _ = raw("POST", f"{PROV}/authorize/approve", urllib.parse.urlencode(fields), {"Content-Type": "application/x-www-form-urlencoded"})
+    if st not in (301, 302, 303):
+        return None
+    code = urllib.parse.parse_qs(urllib.parse.urlsplit(hdr.get("Location")).query).get("code", [""])[0]
+    st, _, body = raw("POST", f"{PROV}/token", urllib.parse.urlencode({
+        "grant_type": "authorization_code", "code": code, "redirect_uri": cb, "client_id": "ath-gateway",
+        "client_secret": secret, "code_verifier": verifier}), {"Content-Type": "application/x-www-form-urlencoded"})
+    return json.loads(body)["access_token"] if st == 200 else None
+
+
+def prov(method, path, token, body=None):
+    """One call to the adapter with a bearer token; returns (status, parsed JSON or None)."""
+    st, _, data = raw(method, PROV + path, json.dumps(body).encode() if body is not None else None,
+                      {"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
+    try:
+        return st, json.loads(data)
+    except ValueError:
+        return st, None
+
+
+def mcp_tool(token, name, args, rid=1):
+    st, d = prov("POST", "/mcp", token, {"jsonrpc": "2.0", "id": rid, "method": "tools/call", "params": {"name": name, "arguments": args}})
+    text = ((d or {}).get("result") or {}).get("content", [{}])[0].get("text", "") if st == 200 else json.dumps(d, ensure_ascii=False)
+    return st, text
+
+
+def wait_job(token, job, timeout=900):
+    t0 = time.time()
+    while time.time() - t0 < timeout:
+        _, text = mcp_tool(token, "wait_build", {"job_id": job, "timeout": 60}, rid=40)   # a new MCP process per call
+        if "构建进行中" not in text:
+            return text
+    return "超时：构建仍在进行"
+
+
+def new_capability_checks(c):
+    """Checks added with DR-097/101/103/104: source binding, question answering, server-held builds, audit link,
+    and that an agent-triggered rebuild keeps human review decisions."""
+    def dm(method, path, body=None):
+        st, _, data = raw(method, DM + path, json.dumps(body).encode() if body is not None else None, {"Content-Type": "application/json"})
+        return st, json.loads(data)
+
+    # ---- data source bound to the token
+    plain = c.proxy("datamind", "GET", "/api/tables")
+    forced = c.proxy("datamind", "GET", "/api/tables?src=uploads")
+    record("数据来源：调用方自带的来源参数被丢弃，结果仍来自令牌绑定的来源",
+           isinstance(plain, list) and [t.get("name") for t in forced] == [t.get("name") for t in plain], f"{len(plain)} 张表")
+    record("数据来源：授权页提交未列出的来源被拒", direct_token(["datamind:catalog.read"], source="conn_not_listed") is None)
+
+    # ---- question answering needs its own scope
+    try:
+        c.proxy("datamind", "POST", "/api/chat", {"q": "各月收入趋势"})
+        record("问数：令牌无 qa.ask，经网关提问被拒", False)
+    except A.ATHClientError as e:
+        record("问数：令牌无 qa.ask，经网关提问被拒", e.status == 403, f"{e.status}")
+    tok = direct_token(["datamind:qa.ask", "datamind:build.run", "datamind:build.read"])
+    st, ans = prov("POST", "/api/chat", tok, {"q": "各月收入趋势"})
+    record("问数：有 qa.ask 的令牌得到答案，响应标明是否为引擎未响应时的内置模板结果",
+           st == 200 and bool(ans.get("results")) and isinstance(ans.get("degraded", False), bool),
+           f"结果 {len(ans.get('results') or [])} 组；degraded={ans.get('degraded', False)}")
+
+    # ---- builds are held by the server and pinned to the token's source
+    st, text = mcp_tool(tok, "start_build", {"q": "构建销售与生产本体", "source": "uploads"})
+    record("构建：令牌绑定来源之外的数据来源被拒", st == 403, f"{st}")
+    st, text = mcp_tool(tok, "start_build", {"q": "构建销售与生产本体", "name": "ATH端到端"})
+    job = (re.search(r"job_id=(bj_[0-9a-f]{10})", text) or [None, ""])[1]
+    final = wait_job(tok, job) if job else text
+    key = (re.search(r"key=(built_\w+)", final) or [None, ""])[1]
+    record("构建：经 MCP 发起后发起进程即结束，之后凭作业号在新进程中查到构建完成", bool(job and key), final.splitlines()[0][:150])
+
+    # ---- one request id in both audit trails
+    mine = [json.loads(x) for x in (STATE / "audit.jsonl").read_text().splitlines() if '"mcp.allowed"' in x and job and job in x]
+    st, aud = dm("GET", "/api/ont/audit/" + key) if key else (0, {})
+    built = ((aud.get("builds") or [{}])[-1]).get("initiated_by") or {}
+    record("审计贯通：同一请求号与作业号出现在适配层审计日志和 DataMind 的图谱构建记录中",
+           bool(mine) and built.get("request_id") == mine[-1].get("request_id") and built.get("job_id") == job
+           and str(built.get("actor", "")).startswith("ath:"), json.dumps(built, ensure_ascii=False))
+
+    # ---- an agent-triggered rebuild keeps human review decisions
+    st, rv = dm("GET", "/api/ont/review?graph=" + key) if key else (0, {})
+    row = next((r for r in rv.get("rows") or [] if r.get("status") == "candidate" and not r.get("human_review")), None)
+    if not row:
+        record("人审保值：智能体发起继续构建后，人工确认过的关系仍在图谱中且保持人工结论", False, "构建产物中没有可供确认的候选关系")
+        return
+    target = f"rel:{row['s']}->{row['t']}"
+    dm("POST", "/api/ont/apply", {"graph": key, "reviewer": "e2e-reviewer",
+                                  "op": {"op": "confirm_relation", "target": target, "reason": "端到端测试：业务确认"}})
+    st, text = mcp_tool(tok, "start_build", {"q": "补充生产相关对象", "base_graph": key})
+    job2 = (re.search(r"job_id=(bj_[0-9a-f]{10})", text) or [None, ""])[1]
+    final2 = wait_job(tok, job2) if job2 else text
+    st, rv2 = dm("GET", "/api/ont/review?graph=" + key)
+    kept = next((r for r in rv2.get("rows") or [] if r["s"] == row["s"] and r["t"] == row["t"]), None)
+    record("人审保值：智能体发起继续构建后，人工确认过的关系仍在图谱中且保持人工结论",
+           "构建完成" in final2 and bool(kept) and kept.get("human_review") == "approved" and kept.get("status") in ("asserted", "verified")
+           and not rv2.get("replay_failed"),
+           f"{target} → {(kept or {}).get('status')} / {(kept or {}).get('human_review')}；回放失败 {len(rv2.get('replay_failed') or [])} 条")
+
+
 def handshake(client, scopes, grant=None):
     t = {}
     t0 = time.time(); auth = client.authorize("datamind", scopes); t["authorize_ms"] = 1000 * (time.time() - t0)
@@ -246,6 +361,8 @@ def main():
     record("A2A：message/send（catalog.tables）返回已完成任务", t1.get("result", {}).get("status", {}).get("state") == "completed", f"{t1['result']['artifacts'][0]['parts'][0]['data'].get('count')} 张表")
     t2 = a2a(c, "build.list", 12)
     record("A2A：message/send（build.list）返回已完成任务，该技能内部调用 MCP 工具", t2.get("result", {}).get("status", {}).get("state") == "completed", t2["result"]["artifacts"][0]["parts"][0]["data"].get("summary", "")[:80])
+
+    new_capability_checks(c)
 
     # ---- negative tests on the handshake
     forged = Client(GW, AGENT_ID, attacker, user_token=user_token)
