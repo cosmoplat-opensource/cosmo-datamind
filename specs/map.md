@@ -34,6 +34,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 ## 索引
 
 ### 决定 / Decisions
+- [DR-107 · 评审台展示证据、列出分流移出的关系、支持批量评审](decisions/DR-107-review-workbench-evidence-and-batch.md)
 - [DR-106 · 覆盖率与类型检查的门槛覆盖路由层](decisions/DR-106-gates-cover-route-layer.md)
 - [DR-105 · 构建页凭作业号接续，可取消](decisions/DR-105-build-page-resumes-jobs.md)
 - [DR-104 · ATH：令牌限定数据来源、深度问数范围、请求号贯通](decisions/DR-104-ath-source-binding-qa-scope-audit-link.md)

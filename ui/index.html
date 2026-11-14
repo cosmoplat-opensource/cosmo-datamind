@@ -192,7 +192,7 @@ a{color:var(--acc)}
 .sk-card.sel{border-color:var(--acc);background:#F7F9FF}
 .sk-card .nm{font-size:14px;font-weight:600;color:var(--txt)} .sk-card .badge{font-size:11px;background:#EEF2FF;color:var(--acc);border-radius:4px;padding:1px 6px;margin-left:6px}
 .sk-card .ds{font-size:12px;color:var(--sub);margin-top:4px}
-</style><link rel="stylesheet" href="/assets/styles/responsive.css"><link rel="stylesheet" href="/assets/styles/database-scope.css?v=1"><link rel="stylesheet" href="/assets/styles/qa-anchor.css?v=1"></head><body>
+</style><link rel="stylesheet" href="/assets/styles/responsive.css"><link rel="stylesheet" href="/assets/styles/database-scope.css?v=1"><link rel="stylesheet" href="/assets/styles/review.css?v=1"><link rel="stylesheet" href="/assets/styles/qa-anchor.css?v=1"></head><body>
 <header class="topbar">
  <div class="wm">◈ COSMO DataMind <small>数据智脑 · 治理 × 本体 × 问数</small></div>
  <div class="tools">
@@ -740,7 +740,8 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
 <script src="/assets/modules/catalog.js"></script>
 <script src="/assets/modules/database-scope.js?v=1"></script>
 <script src="/assets/modules/build-references.js?v=4"></script>
-<script src="/assets/modules/build-stream.js?v=3"></script>
+<script src="/assets/modules/build-stream.js?v=4"></script>
+<script src="/assets/modules/review.js?v=1"></script>
 <script src="/assets/modules/build-prep.js?v=4"></script>
 <!-- 问数作用域模块先于主脚本执行，避免 #chat 首屏初始化竞态；版本号打破旧标签缓存。 -->
 <script src="/assets/modules/qa-ontology.js?v=5"></script>
@@ -1003,18 +1004,7 @@ async function rvLoad(){RV_KEY=$('#rv_sel').value;if(!RV_KEY)return;
  if(d.error){$('#rv_body').innerHTML=`<div class="muted">${esc(d.error)}</div>`;return;}
  const semanticEl=$('#rv_semantic');if(semanticEl){semanticEl.style.display=(d.semantic||[]).length?'block':'none';semanticEl.innerHTML=rvSemanticHTML(d.semantic||[]);}
  const c=d.counts;$('#rv_kpis').innerHTML=`<span class="tag warn">待审 ${c.pending}</span> <span class="tag ok">已通过 ${c.approved}</span> <span class="tag evt">已否决 ${c.rejected}</span> <span class="muted" style="margin-left:6px">共 ${c.total} 条${c.disputed?` · 语义存疑 ${c.disputed}`:''}</span>`+((d.replay_failed||[]).length?` <span class="tag warn" title="${esc(d.replay_failed.map(f=>f.op+' '+f.target+':'+f.error).join('\n'))}">${d.replay_failed.length} 条人审记录未能应用</span>`:'');
-const SB={verified:'已验证',asserted:'人工断言',candidate:'待取证',inferred:'推理得出',gap:'待补',rejected:'已否决'};
- $('#rv_body').innerHTML='<table><tr><th>关系</th><th>动词</th><th>状态</th><th>取值重合</th><th>语义评审</th><th>人审</th><th>操作</th></tr>'+d.rows.map(r=>{
-  const tgt=r.s+'->'+r.t;const stTag=r.status==='verified'?'ok':r.status==='asserted'?'warn':'evt';
-  return `<tr style="${r.pending?'background:#FFFBEB':''}"><td>${esc(r.sn)} → ${esc(r.tn)}<div class="muted" style="font-size:11px;overflow-wrap:anywhere">${esc(r.s)} → ${esc(r.t)}</div></td>
-  <td>${esc(r.verb)}</td><td><span class="tag ${stTag}">${SB[r.status]||esc(r.status)||'-'}</span></td>
-  <td>${r.overlap!=null?esc(r.overlap)+'%':'<span class=muted>-</span>'}</td>
-  <td>${r.semantic==='pass'?'<span class="tag ok">通过</span>':r.semantic==='fail'?'<span class="tag warn">存疑</span>':'<span class=muted>-</span>'}</td>
-  <td>${r.human_review==='approved'?'<span class="tag ok">已通过</span>':r.human_review==='rejected'?'<span class="tag evt">已否决</span>':'<span class="tag warn">待审</span>'}${r.by?`<div class="muted" style="font-size:11px">${esc(r.by)}${r.time?' · '+esc(r.time):''}</div>`:''}${r.reason?`<div class="muted" style="font-size:11px">${esc(r.reason)}</div>`:''}</td>
-  <td>${r.status!=='rejected'?`<button class="ghost" onclick="rvOp('confirm_relation',${jsAttr(tgt)})">通过</button>
-   <button class="ghost" onclick="rvOp('reject_relation',${jsAttr(tgt)})">否决</button>
-   <button class="ghost" onclick="rvVerb(${jsAttr(tgt)},${jsAttr(r.verb)})">改动词</button>
-   <button class="ghost" style="color:#b91c1c" onclick="rvDelRel(${jsAttr(tgt)})">删除</button>`:`<button class="ghost" onclick="rvOp('confirm_relation',${jsAttr(tgt)})">恢复为断言</button>`}</td></tr>`;}).join('')+'</table>';
+ rvRender(d);                       // 关系表、证据、筛选与批量操作在 modules/review.js
  const ob=$('#rv_objs');if(ob){ob.style.display='block';
   ob.innerHTML=`<h3 style="margin:0 0 8px">对象(${d.counts.objects} · 候选 ${d.counts.obj_candidate})<span class="muted" style="font-weight:400;font-size:12px;margin-left:8px">确认候选对象，或删除错误对象(级联删其关系，可撤销)</span></h3>`+
   '<table><tr><th>对象</th><th>类型</th><th>状态</th><th>绑定表</th><th>评审记录</th><th>操作</th></tr>'+(d.objects||[]).map(o=>
@@ -1042,6 +1032,7 @@ const RVM_META={confirm_relation:['人审通过','评审意见(可选)',false],r
  confirm_semantic:['确认业务含义','请核对定义、单位和适用范围；公式执行核验独立进行',false],
  reject_semantic:['否决业务提议','否决原因(必填)',true],
  remove_relation:['删除关系','删除原因(必填)',true],verb:['修改关系动词','修改说明(可选)',false],
+ add_relation:['加回为人工断言','加回的业务依据(必填)',true],
  confirm:['确认候选对象','评审意见(可选)',false],remove_object:['删除对象(级联删除其全部关系)','删除原因(必填)',true]};
 function rvmOpen(op,target,sub,params,graphPage){const[title,clabel,need]=RVM_META[op]||[op,'评审意见',false];
  RVM={op,target,params:params||{},needReason:need,graphPage:!!graphPage};
@@ -1059,10 +1050,14 @@ async function rvmSubmit(){if(!RVM)return;
  if(RVM.op==='verb'){const v=$('#rvm_verb').value.trim();if(!v||v.length>12){toast('动词需 1~12 字',false);$('#rvm_verb').focus();return;}params={verb:v};}
  try{localStorage.setItem('rv_reviewer',who);}catch(e){}
  if($('#rv_who'))$('#rv_who').value=who;
- const graph=RVM.graphPage?GRAPH_CUR.key:RV_KEY;
- const d=await J('/api/ont/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph,reviewer:who,op:{op:RVM.op,target:RVM.target,params,reason}})}).catch(e=>({error:''+e}));
+ const graph=RVM.graphPage?GRAPH_CUR.key:RV_KEY,source=RVM.graphPage?'graph':'review';   // 审计来源:评审台或图谱页,不再记成外部调用
+ if(RVM.busy)return;RVM.busy=true;$('#rvm_ok').disabled=true;                             // 防止双击提交两次
+ const payload=RVM.batch?{graph,reviewer:who,source,ops:RVM.batch.map(target=>({op:RVM.op,target,reason}))}
+  :{graph,reviewer:who,source,op:{op:RVM.op,target:RVM.target,params,reason}};
+ const d=await J('/api/ont/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).catch(e=>({error:''+e}));
+ $('#rvm_ok').disabled=false;if(RVM)RVM.busy=false;
  if(d.error){toast(d.error,false);return;}
- const gp=RVM.graphPage;rvmClose();toast('已记录(评审人:'+who+') · 可撤销',true);
+ const gp=RVM.graphPage,n=RVM.batch?RVM.batch.length:1;rvmClose();toast((n>1?'已记录 '+n+' 条':'已记录')+'(评审人:'+who+') · 可撤销',true);
  if(gp){$('#g_detail').style.display='none';drawGraph(GRAPH_CUR.key);}else rvLoad();}
 function rvOp(op,tgt){rvmOpen(op,'rel:'+tgt,'关系 '+tgt);}
 function rvDelRel(tgt){rvmOpen('remove_relation','rel:'+tgt,'关系 '+tgt);}

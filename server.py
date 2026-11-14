@@ -2731,6 +2731,52 @@ def ont_rejected_patterns():
     """人审否决过的关系模式(即注入构建提示的『已知误判模式』),供页面展示与审计。"""
     return jsonify({"patterns": _rejected_patterns(limit=int(request.args.get("limit") or 8))})
 
+def _review_evidence(l):
+    """关系证据里供评审者判断的部分(只取结构化字段,不带整份证据)。"""
+    ev = l.get("evidence") or {}
+    orph = ev.get("orphans") or ev.get("orphan_tolerant") or {}
+    out = {k: ev.get(k) for k in ("child_key", "parent_key", "child_distinct", "matched_distinct", "parent_unique",
+                                   "child_unique", "name_ok", "direction", "evidence_complete", "source", "decision",
+                                   "condition", "verified_on_sample")}
+    out["overlap"] = ev.get("overlap", l.get("overlap"))
+    ov = out["overlap"]
+    # 子键取值里在父表找不到的比例:证据里有记录就用记录的,否则由重叠率得出
+    out["orphan_rate"] = orph.get("orphan_rate") if orph.get("orphan_rate") is not None else (
+        round(1 - ov / 100.0, 3) if isinstance(ov, (int, float)) and not isinstance(ov, bool) and 0 <= ov <= 100 else None)
+    out["sample_limited"] = ev.get("sample_limited") or None
+    out["valid_rows"] = (ev.get("valid_rows") or {}).get("rule")
+    return {k: v for k, v in out.items() if v is not None}
+
+
+def _relation_samples(ir, src, tgt, ev, limit=5):
+    """子键里能在父表找到、找不到的取值各取几例(只读、限时),供评审者判断孤儿记录是脏数据还是根本不是引用。"""
+    tab = {str(o.get("id") or o.get("name")): _obj_table(o) for o in ir.get("objects", [])}
+    ct, pt = _safe_ident(tab.get(src)), _safe_ident(tab.get(tgt))
+    ck, pk = _safe_ident(ev.get("child_key")), _safe_ident(ev.get("parent_key"))
+    if not (ct and pt and ck and pk):
+        return {"error": "复合键或未绑定表的关系暂不提供取值样例"}
+    db = _source_graph_path(ir)
+    if not db:
+        return {"error": "该图谱的数据来源不可用"}
+    out = {"child": f"{ct}.{ck}", "parent": f"{pt}.{pk}", "matched": [], "unmatched": []}
+    try:
+        con = ro_connect(db)
+    except (OSError, sqlite3.Error) as e:
+        return {"error": "数据来源打不开:" + type(e).__name__}
+    try:
+        deadline = time.time() + 4
+        con.set_progress_handler(lambda: 1 if time.time() > deadline else 0, 10000)
+        base = (f'SELECT DISTINCT c."{ck}" FROM "{ct}" c WHERE c."{ck}" IS NOT NULL AND TRIM(CAST(c."{ck}" AS TEXT)) <> \'\' '
+                f'AND {{neg}} EXISTS (SELECT 1 FROM "{pt}" p WHERE CAST(p."{pk}" AS TEXT) = CAST(c."{ck}" AS TEXT)) LIMIT {int(limit)}')
+        for name, neg in (("matched", ""), ("unmatched", "NOT")):
+            out[name] = [str(v)[:80] for (v,) in con.execute(base.format(neg=neg))]
+    except sqlite3.Error as e:
+        out["error"] = "取样未完成:" + ("超时" if "interrupted" in str(e) else type(e).__name__)
+    finally:
+        con.close()
+    return out
+
+
 @app.get("/api/ont/review")
 def ont_review():
     """人机协同人审队列:全部关系 + 状态/语义评审/取值重合/人审结论;待审 = 未人审的 candidate 或语义存疑"""
@@ -2743,11 +2789,17 @@ def ont_review():
     for o in ir.get("objects", []):
         oid = str(o.get("id") or o.get("name"))
         disp[oid] = o.get("cn") or o.get("name") or oid
+    tab = {str(o.get("id") or o.get("name")): (_obj_table(o) or "") for o in ir.get("objects", [])}
     rows = []
     for l in rels:
         s, t = str(l.get(ks)), str(l.get(kt))
         st, sem, hr = l.get("status", ""), l.get("semantic", ""), l.get("human_review", "")
         rows.append({"s": s, "t": t, "sn": disp.get(s, s), "tn": disp.get(t, t),
+                     # DR-107 评审依据:取证的键、取值统计、孤儿与抽样情况、裁决说明、分流给出的「还缺什么」
+                     "evidence": _review_evidence(l), "note": str(l.get("note") or "")[:400],
+                     "why_review": str((l.get("review") or {}).get("reason") or "")[:300],
+                     "priority": (l.get("review") or {}).get("priority"),
+                     "child_table": tab.get(s, ""), "parent_table": tab.get(t, ""),
                      "verb": l.get("verb", "关联"), "card": l.get("card", ""), "status": st,
                      "semantic": sem, "overlap": l.get("overlap", l.get("overlap_pct")),
                      "human_review": hr, "reason": l.get("review_reason", ""),
@@ -2772,8 +2824,19 @@ def ont_review():
                 for kind in ('concepts', 'themes', 'derived', 'caveats') for c in ir.get(kind) or []]
     counts['semantic_pending'] = sum(c.get('status') != 'rejected' and (c.get('status') not in ('asserted', 'certified')
                                       or c.get('binding_status') in ('stale', 'unresolved')) for c in semantic)
+    # 分流移出图谱的关系(自动驳回、无数据暂缓):此前没有任何读取方,评审者看不到它们被移走(DR-107)
+    aside = []
+    for side, decision in (("rejected_relations", "reject"), ("deferred_relations", "defer")):
+        for l in ir.get(side) or []:
+            if not isinstance(l, dict): continue
+            s, t = str(l.get(ks) or l.get("source_concept")), str(l.get(kt) or l.get("target_concept"))
+            aside.append({"s": s, "t": t, "sn": disp.get(s, s), "tn": disp.get(t, t), "verb": l.get("verb", "关联"),
+                          "decision": (l.get("triage") or {}).get("decision") or decision,
+                          "reason": str((l.get("triage") or {}).get("reason") or "")[:300],
+                          "evidence": _review_evidence(l)})
+    counts["set_aside"] = len(aside)
     return jsonify({"graph": key, "counts": counts, "rows": rows, "objects": objs, 'semantic': semantic,
-                    "replay_failed": edit_replay_failures(key)})
+                    "set_aside": aside, "replay_failed": edit_replay_failures(key)})
 
 def _metric_graph_ir():
     """指标类端点的图谱选择:``graph`` 参数缺省为示例;非法键返回 None(调用方回 400)。"""
@@ -3138,6 +3201,8 @@ def _keep_reviewed(ir, snapshot):
 def ont_apply():
     """白名单编辑(confirm/rename/verb/add_*/remove_*/set_*),按图谱记操作日志,可撤销"""
     body = request.json or {}
+    if "ops" in body:
+        return _ont_apply_batch(body)
     key, op = body.get("graph") or _active_graph_key(), body.get("op") or {}
     _kind = op.get("op")
     try:
@@ -3166,6 +3231,36 @@ def ont_apply():
         _atomic_json(_edits_path(key), ed)
         n = len(ed["ops"])
     return jsonify({"ok": True, "ops": n})
+
+def _ont_apply_batch(body):
+    """一次提交多条人审决定(DR-107):先在副本上逐条试应用,任何一条不成立则整批不记;全部成立后一次写入。
+    只接受人审与本地编辑算子,必须署名。来源缺省记为 review。"""
+    key, ops = body.get("graph") or _active_graph_key(), body.get("ops")
+    reviewer = str(body.get("reviewer") or "").strip()[:40]
+    if not isinstance(ops, list) or not ops or len(ops) > 500:
+        return jsonify({"error": "ops 须为 1 到 500 条操作的列表"}), 400
+    if not reviewer:
+        return jsonify({"error": "批量评审必须填写评审人"}), 400
+    src = str(body.get("source") or "review").strip()[:20]
+    src = src if src in ("chat", "review", "graph", "api") else "api"
+    ir = load_ir_edited(key)
+    if not ir: return jsonify({"error": "图谱不存在"}), 404
+    stamp, prepared = time.strftime("%Y-%m-%d %H:%M"), []
+    for i, raw in enumerate(ops):
+        if not isinstance(raw, dict) or raw.get("op") not in (REVIEW_OPS + LOCAL_OPS):
+            return jsonify({"error": f"第 {i + 1} 条不是可批量提交的操作", "failed_index": i}), 400
+        op = {"op": raw["op"], "target": str(raw.get("target") or "")[:300], "params": raw.get("params") or {},
+              "reason": str(raw.get("reason") or "")[:300], "reviewer": reviewer, "ts": stamp, "source": src}
+        try: apply_any(ir, op)
+        except Exception as e:                                  # noqa: BLE001
+            return jsonify({"error": f"第 {i + 1} 条应用失败: {e}", "failed_index": i}), 400
+        prepared.append(op)
+    with _WRITE_LOCK:
+        ed = _load_edits(key); ed["ops"].extend(prepared)
+        _atomic_json(_edits_path(key), ed)
+        n = len(ed["ops"])
+    return jsonify({"ok": True, "applied": len(prepared), "ops": n})
+
 
 @app.post("/api/ont/undo")
 def ont_undo():
@@ -3642,7 +3737,7 @@ def ont_relation(key):
             categories[oid] = obj.get("bfo") or ontology_grounding.default_category(obj.get("kind"))
     grounding = _iof_edge_ann(l, l.get("verb"), categories.get(src), categories.get(tgt),
                               _bfo_enabled_for_ir(ir))
-    return jsonify({"source": src, "target": tgt, "verb": l.get("verb"), "status": l.get("status"),
+    detail = {"source": src, "target": tgt, "verb": l.get("verb"), "status": l.get("status"),
                     "evidence_status": l.get("evidence_status") or l.get("status"),
                     "semantic_status": l.get("semantic_status") or l.get("semantic", ""),
                     "candidate": l.get("candidate"), "note": l.get("note", ""), "card": l.get("card", ""),
@@ -3654,7 +3749,10 @@ def ont_relation(key):
                     "grounding_status": grounding["grounding_status"],
                     "grounding_reason": grounding["grounding_reason"],
                     "temporal": grounding["temporal"],
-                    "semantic": l.get("semantic", "")})   # IOF/BFO 映射检查 + 语义复核标注
+                    "semantic": l.get("semantic", "")}
+    if request.args.get("samples"):                 # DR-107 评审时按需取样,不随每次详情请求查库
+        detail["samples"] = _relation_samples(ir, src, tgt, ev)
+    return jsonify(detail)   # IOF/BFO 映射检查 + 语义复核标注
 
 # IOF 风格 SHACL 形状:非原始类须有定义、每个类须有标签(本体质量校验,借鉴 IOF『非原始类须有定义』)
 _IOF_SHACL = """@prefix sh:     <http://www.w3.org/ns/shacl#> .
