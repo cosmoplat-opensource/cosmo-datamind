@@ -218,8 +218,6 @@ class Audit:
             ("vendor_traversal_denied", "/vendor/%2e%2e/%2e%2e/server.py", (400, 404)),
             ("asset_traversal_denied", "/assets/modules/%2e%2e/%2e%2e/server.py", (400, 404)),
             ("asset_source_denied", "/assets/server.py", (404,)),
-            ("doc_traversal_denied", "/doc/%2e%2e", (400, 404)),
-            ("output_absolute_path_denied", "/api/outputs/file?p=/__codex_http_probe_missing", (403,)),
             ("graph_key_traversal_denied", "/api/ont/review?graph=..%2F__codex_http_probe_missing", (400,)),
             ("preview_identifier_denied", "/api/conn/preview?src=demo&table=bad%22name", (400,)),
         ]:

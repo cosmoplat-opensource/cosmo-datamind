@@ -184,11 +184,22 @@ def test_action_records_keep_database_and_do_not_mix_in_other_scope(scoped_datab
 
 
 def test_quick_build_request_uses_registered_source_and_preserves_provenance(scoped_databases, monkeypatch, tmp_path):
+    import io
     import quick_build
     argv=[]
-    monkeypatch.setattr(server,'run_job',lambda cmd,**kw: argv.extend(cmd) or 'job_test')
+
+    class _Proc:                                   # 兜底构建的子进程替身:只记录命令行,不产出文件
+        stdout=io.StringIO('')
+
+        def wait(self,timeout=None): return 0
+
+        def poll(self): return 0
+    monkeypatch.setattr(server,'_llm_extract_ontology',lambda *a,**k: None)
+    monkeypatch.setattr(server,'_build_intent',lambda *a,**k: {})
+    monkeypatch.setattr(server.subprocess,'Popen',lambda cmd,**kw: argv.extend(cmd) or _Proc())
     client=server.app.test_client()
-    r=client.post('/api/build/run',headers={'X-DataMind-Source':'conn_b'},json={'name':'Test'})
+    r=client.post('/api/build/inquire',json={'q':'构建本体','source':'conn_b','name':'Test'})
+    r.get_data()                                   # 读完事件流:构建在服务端作业里跑完
     assert r.status_code==200 and argv[2]==scoped_databases[1]
     ir=quick_build.build(scoped_databases[1],str(tmp_path/'graph.json'),'Test',source={'id':'conn_b','name':'Source B'})
     assert ir['build_manifest']['source']['id']=='conn_b'

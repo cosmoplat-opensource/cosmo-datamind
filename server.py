@@ -630,28 +630,11 @@ _configure_actions(table_list, scope_fields=lambda: _source_record_fields() if _
                    scope_matches=lambda record: not _active_source() or _source_record_matches(record))
 app.register_blueprint(_bp_actions)
 
-# ── 后台作业(技能运行/本体构建)──
-JOBS: dict[str, dict[str, Any]] = {}
 # _WRITE_LOCK 已收敛到 srv_context(server 与 blueprint 共用同一把锁)
 # rdflib 的 SPARQL 解析器基于 pyparsing,其 packrat 缓存/语法状态为进程级全局且非线程安全:
 # 多请求并发跑 SPARQL(或 SPARQL 与 pyshacl 内部 SPARQL 相撞)会污染语法,报出
 # 『Expected SelectQuery, found OPTIONAL』『postParse2() missing arg』等假语法错。故串行化所有 SPARQL 语法操作。
 _RDF_LOCK = threading.Lock()
-def run_job(cmd, cwd=None, env=None, tag=""):
-    jid = uuid.uuid4().hex[:8]
-    logf = os.path.join(WORK, f"job_{jid}.log")
-    if len(JOBS) > 200:                                   # 防无界增长:超 200 淘汰最早
-        for k in list(JOBS)[:len(JOBS) - 200]: JOBS.pop(k, None)
-    JOBS[jid] = {"id": jid, "tag": tag, "status": "running", "log": logf, "cmd": " ".join(cmd)[:200], "ts": time.time()}
-    def _run():
-        with open(logf, "w") as f:
-            try:
-                p = subprocess.run(cmd, cwd=cwd, env={**os.environ, **(env or {})}, stdout=f, stderr=subprocess.STDOUT, timeout=1800)
-                JOBS[jid]["status"] = "done" if p.returncode == 0 else f"exit_{p.returncode}"
-            except Exception as e:
-                f.write(f"\nJOB ERROR: {e}"); JOBS[jid]["status"] = "error"
-    threading.Thread(target=_run, daemon=True).start()
-    return jid
 
 def _bounded(fn, secs, default=None):
     """守护线程内跑 fn,最多等 secs 秒;超时则放弃并返回 default,保证外层请求永不卡死。"""
@@ -2589,14 +2572,6 @@ def ui_version():
     except Exception as e:
         return jsonify({"v": 0, "error": str(e)})
 
-@app.get("/doc/<name>")
-def doc(name):
-    """服务 ui/ 下的文档页(根因分析等),仅限 .html,防穿越"""
-    if not re.match(r"^[A-Za-z0-9_-]+$", name): return "bad", 400
-    p = _confined(os.path.join(HERE, "ui"), name + ".html")
-    if not os.path.exists(p): return "not found", 404
-    return send_file(p)
-
 @app.get("/vendor/<path:f>")
 def vendor(f):
     """本地静态库(echarts 等),不依赖外网 CDN"""
@@ -2730,6 +2705,8 @@ def ont_accuracy():
 def ont_rejected_patterns():
     """人审否决过的关系模式(即注入构建提示的『已知误判模式』),供页面展示与审计。"""
     return jsonify({"patterns": _rejected_patterns(limit=int(request.args.get("limit") or 8))})
+
+
 
 def _review_evidence(l):
     """关系证据里供评审者判断的部分(只取结构化字段,不带整份证据)。"""
@@ -3306,55 +3283,6 @@ def _forged_path(fid):
         p = _confined(d, fid + ".json")
         if os.path.exists(p): return p
     return _confined(FORGED_DIR, fid + ".json")
-@app.get("/api/ont/forged")
-def ont_forged():
-    out, seen = [], set()
-    for dirp in _forged_dirs():
-        for p2 in sorted(glob.glob(os.path.join(dirp, "*.json"))):
-            fid = os.path.basename(p2)[:-5]
-            if fid in seen: continue          # 同 id 以先扫到的(当前写入目录)为准
-            seen.add(fid)
-            try:
-                doc = json.load(open(p2)); sc = doc.get("scenario") or {}
-                out.append({"id": fid, "name": sc.get("name") or doc.get("name"),
-                            "objects": len(doc.get("objects", [])), "links": len(doc.get("links", []))})
-            except Exception: pass
-    return jsonify({"ontologies": out})
-
-@app.get("/api/ont/forged/<fid>")
-def ont_forged_one(fid):
-    if not re.match(r"^[\w\-\u4e00-\u9fff·]+$", fid): return jsonify({"error": "bad id"}), 400
-    p2 = _forged_path(fid)
-    if not os.path.exists(p2): return jsonify({"error": "不存在"}), 404
-    return jsonify(json.load(open(p2)))
-
-@app.post("/api/ont/save")
-def ont_save():
-    """保存当前(含编辑)IR 为版本 → 平台本体库 data/forged/(与 serve_claw 同存储)"""
-    body = request.json or {}
-    key, name = body.get("graph") or _active_graph_key(), (body.get("name") or "").strip()
-    if not name or len(name) > 40: return jsonify({"error": "需要 name(≤40字)"}), 400
-    ir = load_ir_edited(key)
-    if not ir: return jsonify({"error": "图谱不存在"}), 404
-    fid = "onto_" + uuid.uuid4().hex[:8]
-    ir.setdefault("scenario", {})["name"] = name
-    os.makedirs(FORGED_DIR, exist_ok=True)
-    with _WRITE_LOCK:                                    # 原子写 + 串行化,避免中途崩溃截断已存本体版本(对齐 DR-006 写入原子性)
-        _atomic_json(os.path.join(FORGED_DIR, fid + ".json"), ir)
-    return jsonify({"ok": True, "id": fid, "name": name})
-
-@app.post("/api/ont/forged/delete")
-def ont_forged_delete():
-    fid = (request.json or {}).get("id", "")
-    if not re.match(r"^[\w\-]+$", fid): return jsonify({"error": "bad id"}), 400
-    p2 = _forged_path(fid)
-    if not os.path.exists(p2): return jsonify({"error": "不存在"}), 404
-    os.remove(p2)
-    # 同删 .ttl 伴生文件,避免孤儿。按 json 的实际所在目录取 —— 产物可能在引擎目录,
-    # 而写入目录是 workdir,拿写入目录去拼会漏删
-    ttl = p2[:-5] + ".ttl"
-    if os.path.exists(ttl): os.remove(ttl)
-    return jsonify({"ok": True})
 
 @app.get("/api/ont/runtimes")
 def ont_runtimes():
@@ -3370,13 +3298,6 @@ def ont_runtimes():
                                  "接 OpenAI 兼容端点需同时配 DATAMIND_LLM_BASE 与 DATAMIND_LLM_KEY。"
                                  % (cur, "、".join(av) or "无"))})
     except Exception as e: return jsonify({"error": str(e)}), 500
-
-@app.get("/api/ont/skill/<name>")
-def ont_skill_detail(name):
-    if not re.match(r"^[\w\-]+$", name): return jsonify({"error": "bad"}), 400
-    item = skill_registry.find(name, _BUILTIN_SKILL_ROOTS)
-    if not item: return jsonify({"error": "不存在"}), 404
-    return jsonify({"name": name, "content": open(item["skill_md"], encoding="utf-8", errors="replace").read()})
 
 # _atomic_json / _atomic_text 已收敛到 srv_context(见文件头 import)
 CHATS_F = os.path.join(WORK, "ont_chats.json")
@@ -3466,48 +3387,6 @@ def ont_chat():
         cur = _chats(); cur[sid] = sess; _chats_w(cur)
     return jsonify({"reply": reply, "suggested_op": op})
 
-@app.post("/api/ont/skills/install")
-def ont_skill_install():
-    """装技能到 agent 工作区(openclaw workspace),对齐平台 skills/install"""
-    slug = (request.json or {}).get("slug", "")
-    # \w 含中文与下划线但不含 / \ .,故 slug 天然是单一目录名;下方 _confined 在
-    # rmtree/copytree 这两个**破坏性** sink 前再裁一次——此处一旦逃逸就是任意目录删除。
-    if not re.match(r"^[\w\-]+$", slug): return jsonify({"error": "bad slug"}), 400
-    item = skill_registry.find(slug, _BUILTIN_SKILL_ROOTS)
-    if not item: return jsonify({"error": "技能不存在"}), 404
-    src = item["directory"]
-    skill_root = os.path.expanduser("~/.openclaw/workspace/skills")
-    dst = _confined(skill_root, slug)
-    import shutil
-    os.makedirs(os.path.dirname(dst), exist_ok=True)
-    if os.path.exists(dst): shutil.rmtree(dst)
-    shutil.copytree(src, dst)
-    return jsonify({"ok": True, "installed": dst})
-
-@app.post("/api/ont/skills/write")
-def ont_skill_write():
-    """写/建 SKILL.md(技能库编辑,对齐平台 skills/write)"""
-    body = request.json or {}
-    name, content = body.get("name", ""), body.get("content", "")
-    if not re.match(r"^[\w\-]+$", name) or not content.strip(): return jsonify({"error": "需要合法 name+content"}), 400
-    # 装了引擎就写引擎的技能库(编辑上游技能),否则写自己的 custom_skills。
-    # 此前无条件 makedirs 到引擎目录:父目录可写时会凭空造出一棵假引擎目录树
-    # (随后 /api/build/skills 就把这个空壳当成已装引擎),只读位置则 500 裸栈。
-    if os.path.isdir(PLATFORM):
-        d = _confined(os.path.join(PLATFORM, "web", "skills_seed"), name)
-        scope = "engine"
-    else:
-        d = _BUILD_SKILL_D
-        scope = "custom"
-    try:
-        os.makedirs(d, exist_ok=True)
-        # 目录与文件名两级都过 _confined:name 已过 ^[\w\-]+$,这里是 sink 处的纵深防御
-        path = _confined(d, "SKILL.md" if scope == "engine" else name + ".md")
-        _atomic_text(path, content)
-    except OSError as e:
-        return jsonify({"error": "技能写入失败:%s" % str(e)[:120]}), 500
-    return jsonify({"ok": True, "path": path, "scope": scope})
-
 @app.post("/api/ont/chat/stream")
 def ont_chat_stream():
     """SSE 流式对话:阶段事件 + 最终回复(引擎仍阻塞,流式透出状态)"""
@@ -3549,73 +3428,6 @@ def ont_chat_stream():
             except Exception:
                 yield f'data: {{"type":"status","text":"引擎运行中 {int(time.time()-t0)}s…"}}\n\n'
     return Response(stream_with_context(gen()), mimetype="text/event-stream")
-
-@app.post("/api/ont/forge")
-def ont_forge():
-    """原生锻造:当前(含编辑)IR → OWL Turtle + 结构校验(+pyshacl 若装) → 存入本体库(IR+TTL)"""
-    body = request.json or {}
-    key, name = body.get("graph") or _active_graph_key(), (body.get("name") or "").strip()
-    if not name: return jsonify({"error": "需要 name"}), 400
-    ir = load_ir_edited(key)
-    if not ir: return jsonify({"error": "图谱不存在"}), 404
-    try:
-        ttl = _ir_to_turtle(key, ir)                     # 统一走 IOF 注释化 Turtle(与导出/SPARQL 同底)
-        import rdflib
-        g = rdflib.Graph(); g.parse(data=ttl, format="turtle")
-    except ImportError:
-        return jsonify({"error": "锻造需要 rdflib(pip3 install rdflib)"}), 503
-    except Exception as e:
-        return jsonify({"error": f"OWL 生成失败: {e}"}), 400
-    shacl = "未装 pyshacl(跳过)"
-    try:
-        import pyshacl, rdflib as _rl
-        sg = _rl.Graph(); sg.parse(data=_IOF_SHACL, format="turtle")   # IOF 形状约束校验
-        with _RDF_LOCK:   # pyshacl 内部跑 SPARQL,同受 pyparsing 非线程安全影响,串行化
-            conforms, _, txt = pyshacl.validate(g, shacl_graph=sg, inference="none")
-        nviol = (txt or "").count("Constraint Violation")
-        shacl = "conforms" if conforms else f"{nviol} violations"
-    except ImportError: pass
-    except Exception as e: shacl = f"shacl error: {str(e)[:60]}"
-    fid = "onto_" + uuid.uuid4().hex[:8]
-    ir.setdefault("scenario", {})["name"] = name
-    os.makedirs(FORGED_DIR, exist_ok=True)
-    with _WRITE_LOCK:                                     # 原子写(对齐 DR-006 写入原子性)
-        _atomic_json(os.path.join(FORGED_DIR, fid + ".json"), ir)
-        _atomic_text(os.path.join(FORGED_DIR, fid + ".ttl"), ttl)
-    return jsonify({"ok": True, "id": fid, "triples": len(g), "shacl": shacl})
-
-@app.get("/api/ont/rules")
-def ont_rules():
-    """构成规则:建模规则映射 + 从当前IR派生的真实计数(与平台 rules.js 的计数规则相同,不臆造)"""
-    key = request.args.get("graph", _active_graph_key())
-    ir = load_ir_edited(key) or {}
-    objs, links = ir.get("objects", []), ir.get("links", []) or ir.get("relations", [])
-    kinds = {}
-    for o in objs: kinds[o.get("kind", "object")] = kinds.get(o.get("kind", "object"), 0) + 1
-    ml = ir.get("metric_layers") or {}
-    verified = sum(1 for l in links if (l.get("status") == "verified"))
-    cand = sum(1 for o in objs if o.get("candidate"))   # 仅显式 candidate=True 计为候选;DR-001 建成对象默认为已确认
-    return jsonify({"graph": key, "counts": {
-        "objects": len(objs), "links": len(links), "verified": verified,
-        "candidate_objs": cand, "confirmed_objs": len(objs) - cand, "kinds": kinds,
-        "metrics": {k: len(v) for k, v in ml.items()},
-        "hierarchy": len((ir.get("hierarchy") or {}).get("families", [])), "gaps": len(ir.get("gaps", []))},
-        "methodology": [
-            {"name": "斯坦福七步法", "map": "确定范围→复用→列举术语→定义类→类层次→定义属性→创建实例;对应 抽取列结构/枚举表→对象定义→hierarchy families→attrs→绑定实数据"},
-            {"name": "Palantir 操作型本体四层", "map": "对象↔表 / 属性↔列 / 链接↔FK+取值重叠(≥60%∧列名有据=verified) / 指标↔DWS列(原子/派生/复合)"},
-            {"name": "W3C RDF/OWL+SHACL", "map": "导出类、数据属性、对象属性和 SKOS 指标；执行 RDF 解析与 SHACL 校验"},
-            {"name": "证据状态规范", "map": "verified 仅由数据裁决;人工/LLM 断言记 asserted/candidate;弱证据送审;编辑走白名单op+可撤销"}],
-        "pipeline": [
-            {"stage": "领域与源界定", "io": "数据源探活 → 表清单/连接", "rule": "真实查询探活(非端口探测)"},
-            {"stage": "复用领域知识包", "io": "指标Excel/术语 → glossary", "rule": "知识包驱动命名与指标分层"},
-            {"stage": "列举术语·对象与属性", "io": "表结构 → 对象+属性(中文)", "rule": "SchemaDump 单连接;过滤分区伪列"},
-            {"stage": "关系发现·取值重叠", "io": "候选键对 → verified/candidate", "rule": "重叠≥60% ∧ 列名有据(name_score≥1);父键唯一度≥0.95;子键 distinct≥3"},
-            {"stage": "类层次发现", "io": "对象 → hierarchy families", "rule": "证据化类层次(IR-007)"},
-            {"stage": "动作·事件·指标分层", "io": "日志/API/DWS → 事件/动作/指标", "rule": "原子/派生/复合三层(DR-001)"},
-            {"stage": "W3C 标准导出+校验", "io": "IR → OWL/JSON-LD + SHACL", "rule": "执行 RDF 解析与 SHACL conforms 检查"}],
-        "owl_projection": {"owlClass": len(objs), "owlObjProp": len(links), "owlDataProp": sum(len(o.get("attrs", [])) for o in objs),
-            "owlFunctional": sum(1 for l in links if str(l.get("card", "")).startswith("N:1")),
-            "skos": (ml.get("atomic") and len(ml["atomic"]) or 0) + (ml.get("derived") and len(ml["derived"]) or 0)}})
 
 @app.post("/api/ont/runtime")
 def ont_runtime_set():
@@ -3945,63 +3757,6 @@ def ont_cq():
     except Exception as e:
         return jsonify({"error": f"验收问题核验失败: {e}"}), 500
 
-@app.post("/api/ont/chain")
-def ont_chain():
-    """穿透链路核验(DR-025):逐段判定一条业务追溯链路通不通。
-
-    《本体智能研究报告》四个行业案例方法同构——定义 5-6 类核心实体后,
-    关键在建立一条纵向穿透链路(停电事件—设备—线路—用户 / 订单—资源—工单—用户 /
-    飞机—子系统—零部件—供应商 / 客户—账户—交易—关联方)。本体的价值不在对象多,
-    而在能否从一端穿到另一端;首尾通但中段断的链路在业务上是断的,故逐段判定。
-
-    请求: {"graph": "<键>", "chain": ["停电事件", "配电设备", "线路", "用户"]}
-    """
-    body = request.get_json(silent=True) or {}
-    key = (body.get("graph") or "").strip()
-    if not key: return jsonify({"error": "缺 graph(不默认任何图谱)"}), 400
-    if _bad_gkey(key): return jsonify({"error": "非法图谱键"}), 400
-    chain = body.get("chain") or []
-    if not isinstance(chain, list) or len(chain) < 2:
-        return jsonify({"error": "缺 chain(至少 2 个节点的对象名列表)"}), 400
-    if len(chain) > 20: return jsonify({"error": "chain 过长(上限 20 节点)"}), 400
-    ir = load_ir_edited(key)
-    if not ir: return jsonify({"error": "图谱不存在"}), 404
-    try:
-        import cq_check
-        rep = cq_check.check_chain(chain, ir)
-        rep["graph"] = key
-        rep["gaps"] = cq_check.chain_gaps(rep)
-        return jsonify(rep)
-    except Exception as e:
-        return jsonify({"error": f"链路核验失败: {e}"}), 500
-
-
-@app.get("/api/ont/drift/<key>")
-def ont_drift(key):
-    """概念漂移与关系断裂检测(DR-025):本体还对不对得上数据源。
-
-    《本体智能研究报告》阶段六点名「引入自动化检测工具监控本体与数据源的一致性,
-    及时发现概念漂移与关系断裂」。本体建成之日与库一致,但库会继续演进——
-    表改名、列删除、主键换名,此时本体不报错,只在问数时静默产出错误 SQL。
-
-    确定性 schema 比对,不调 LLM;只报事实不自动修复(漂移的正解可能是改本体、
-    也可能是数据源回滚,须人判断)。
-    """
-    if _bad_gkey(key): return jsonify({"error": "非法图谱键"}), 400
-    ir = load_ir_edited(key)
-    if not ir: return jsonify({"error": "图谱不存在"}), 404
-    db = _source_graph_path(ir) or _active_db()
-    if not os.path.exists(db):
-        return jsonify({"error": "数据源不可用,无法比对", "checked": False}), 503
-    try:
-        import drift_check
-        rep = drift_check.check(ir, db)
-        rep["graph"] = key
-        rep["gaps"] = drift_check.gaps_from(rep)
-        return jsonify(rep)
-    except Exception as e:
-        return jsonify({"error": f"漂移检测失败: {e}"}), 500
-
 @app.get("/api/ont/usage/<key>")
 def ont_usage(key):
     """本体使用度与建模优先级(DR-026):以使用数据驱动建模迭代。
@@ -4018,6 +3773,7 @@ def ont_usage(key):
         return jsonify(usage_stat.report(WORK, ir, key))
     except Exception as e:
         return jsonify({"error": f"使用度统计失败: {e}"}), 500
+
 
 @app.get("/api/ont/audit/<key>")
 def ont_audit(key):
@@ -4070,178 +3826,6 @@ def ont_audit(key):
                 "故本视图反映的是当前生效的变更集,不是历史全量操作流水",
     })
 
-_RULES_F = os.path.join(WORK, "ont_rules.json")
-
-def _load_rules(key):
-    try:
-        d = json.load(open(_RULES_F, encoding="utf-8"))
-        return d.get(key, []) if isinstance(d, dict) else []
-    except Exception:
-        return []
-
-def _save_rules(key, rules):
-    with _WRITE_LOCK:
-        try:
-            d = json.load(open(_RULES_F, encoding="utf-8"))
-            if not isinstance(d, dict): d = {}
-        except Exception:
-            d = {}
-        d[key] = rules
-        _atomic_json(_RULES_F, d)
-
-@app.get("/api/ont/rulebook/<key>")
-def ont_rulebook(key):
-    """业务规则与约束清单(DR-028 · 报告语义层第四要素)+ 静态一致性校验。"""
-    if _bad_gkey(key): return jsonify({"error": "非法图谱键"}), 400
-    import rule_engine
-    rules = _load_rules(key)
-    return jsonify({"graph": key, "rules": rules,
-                    "consistency": rule_engine.consistency_check(rules)})
-
-@app.post("/api/ont/rulebook/<key>")
-def ont_rulebook_save(key):
-    """新增/更新一条业务规则。结构非法一律拒收——规则是逻辑边界,带病入库会污染全部下游判定。"""
-    if _bad_gkey(key): return jsonify({"error": "非法图谱键"}), 400
-    import rule_engine
-    r = (request.get_json(silent=True) or {}).get("rule") or {}
-    err = rule_engine.validate_rule(r)
-    if err: return jsonify({"error": f"规则非法: {err}"}), 400
-    ir = load_ir_edited(key)
-    if not ir: return jsonify({"error": "图谱不存在"}), 404
-    keys = {o.get("id") or o.get("name") for o in ir.get("objects", [])}
-    if r["on"] not in keys:
-        return jsonify({"error": f"作用对象 {r['on']} 不在本体中 —— 规则须锚定到已建模的对象"}), 400
-    r["ts"] = time.strftime("%Y-%m-%d %H:%M")
-    who = ((request.get_json(silent=True) or {}).get("author") or "").strip()[:40]
-    if who: r["author"] = who
-    rules = [x for x in _load_rules(key) if x.get("id") != r["id"]] + [r]
-    if len(rules) > 500: return jsonify({"error": "规则过多(上限 500)"}), 400
-    _save_rules(key, rules)
-    return jsonify({"ok": True, "total": len(rules),
-                    "consistency": rule_engine.consistency_check(rules)})
-
-@app.post("/api/ont/rulebook/<key>/delete")
-def ont_rulebook_del(key):
-    if _bad_gkey(key): return jsonify({"error": "非法图谱键"}), 400
-    rid = (request.get_json(silent=True) or {}).get("id", "")
-    rules = _load_rules(key)
-    left = [x for x in rules if x.get("id") != rid]
-    if len(left) == len(rules): return jsonify({"error": "规则不存在"}), 404
-    _save_rules(key, left)
-    return jsonify({"ok": True, "total": len(left)})
-
-@app.post("/api/ont/decide/<key>")
-def ont_decide(key):
-    """决策层求值(DR-028):由规则推导隐含结论,每条结论可回溯至具体规则依据。
-
-    报告决策层要求「逻辑推理基于语义层的概念关系与业务规则,推导出未显式记录的
-    隐含结论」「形成完整可追溯的决策路径——每一条结论均可回溯至具体规则依据」。
-    确定性求值,不调 LLM:规则是业务写死的逻辑边界,用模型推理会把概率当逻辑。
-    """
-    if _bad_gkey(key): return jsonify({"error": "非法图谱键"}), 400
-    body = request.get_json(silent=True) or {}
-    obj = (body.get("object") or "").strip()
-    facts = body.get("facts")
-    if not obj: return jsonify({"error": "缺 object(作用对象)"}), 400
-    if not isinstance(facts, dict) or not facts:
-        return jsonify({"error": "缺 facts(该实例的字段字典)"}), 400
-    import rule_engine
-    res = rule_engine.evaluate(_load_rules(key), obj, facts)
-    res["graph"] = key
-    return jsonify(res)
-
-@app.get("/api/ont/health/<key>")
-def ont_health(key):
-    """本体图结构检查(DR-030 · 报告阶段六「异常关系检测」与「定期评审结构一致性」)。
-
-    与既有三项检测互补——它们都不看图结构本身:
-      验收问题答「够不够用」· 漂移答「还对不对得上数据」· 元数据覆盖答「定义填没填全」
-    而一个三项全过的本体,结构上仍可能是病的:一半对象是孤岛、存在自反关系、
-    同一对语义重复连了多条边。这些不会让任何现有检查报错,却会让问数召回选错表。
-
-    分级:dangling/self_loop/status_conflict 是阻断问题(IR 不自洽);
-    isolated/hub/duplicate/bidirectional 是待核查信号。结构一致性分只由阻断问题扣分——
-    否则业务枢纽对象会被不恰当地扣分，导致评分失去区分度。
-    """
-    if _bad_gkey(key): return jsonify({"error": "非法图谱键"}), 400
-    ir = load_ir_edited(key)
-    if not ir: return jsonify({"error": "图谱不存在"}), 404
-    try:
-        import health_check
-        rep = health_check.check(ir)
-        rep["graph"] = key
-        rep["gaps"] = health_check.gaps_from(rep)
-        return jsonify(rep)
-    except Exception as e:
-        return jsonify({"error": f"图结构检查失败: {e}"}), 500
-
-@app.get("/api/ont/compat/<key>")
-def ont_compat(key):
-    """向后兼容性检查(DR-031 · 报告阶段五/六「版本管理与向后兼容性保障」)。
-
-    比较**基线 IR** 与**当前编辑后 IR**:发布这批草案编辑会破坏什么。
-
-    本体是语义契约——问数靠它召回表与计算规则、规则靠它锚定对象、动作靠它绑表、
-    穿透链路靠它连通。删掉一个对象可能让几条规则失效、几个动作绑不到表,
-    而这些往往直到线上报错才被发现。
-
-    重点在**下游影响**而非结构 diff:只报「删了 3 个对象」没有决策价值,
-    报「删掉的对象上挂着 2 条规则和 1 个动作」才让人知道该不该删。
-    不阻断变更——兼容性是决策依据不是权限,判断权在人。
-
-    可选 ?against=<另一图谱键> 改为与另一图谱比较。
-    """
-    if _bad_gkey(key): return jsonify({"error": "非法图谱键"}), 400
-    against = (request.args.get("against") or "").strip()
-    if against and _bad_gkey(against): return jsonify({"error": "非法对比图谱键"}), 400
-    new_ir = load_ir_edited(key)
-    if not new_ir: return jsonify({"error": "图谱不存在"}), 404
-    base_ir = load_ir_edited(against) if against else load_ir(key)
-    if not base_ir: return jsonify({"error": "基线图谱不存在"}), 404
-    try:
-        import compat_check
-        rules = _load_rules(key)
-        try:
-            actions = json.load(open(os.path.join(WORK, "action_types.json"), encoding="utf-8"))
-            actions = actions if isinstance(actions, list) else []
-        except Exception:
-            actions = []
-        try:
-            qas = json.load(open(os.path.join(WORK, "qa_skills.json"), encoding="utf-8"))
-            qas = qas if isinstance(qas, list) else []
-        except Exception:
-            qas = []
-        rep = compat_check.check(base_ir, new_ir, rules, actions, qas)
-        rep["graph"] = key
-        rep["baseline"] = against or f"{key}(未编辑基线)"
-        return jsonify(rep)
-    except Exception as e:
-        return jsonify({"error": f"兼容性检查失败: {e}"}), 500
-
-@app.get("/api/ont/modules/<key>")
-def ont_modules(key):
-    """本体模块化划分建议(DR-031 · 报告阶段二「模块化策略:按领域或按层次拆分」)。
-
-    我们的本体是一张平图,108 个对象平铺没有模块边界。后果很具体:
-    改一处不知影响范围、想按域交给不同团队维护无从下手、新人打开图谱建立不了认知。
-
-    ?strategy=by_domain(默认,连通分量+词根聚类)或 by_layer(数仓分层)。
-    只建议不落盘:模块边界最终是业务决策,算法只给结构上的自然分界——
-    自动切分会把一个错误的边界固化进本体。
-    """
-    if _bad_gkey(key): return jsonify({"error": "非法图谱键"}), 400
-    st = (request.args.get("strategy") or "by_domain").strip()
-    if st not in ("by_domain", "by_layer"):
-        return jsonify({"error": "strategy 需为 by_domain 或 by_layer"}), 400
-    ir = load_ir_edited(key)
-    if not ir: return jsonify({"error": "图谱不存在"}), 404
-    try:
-        import module_split
-        rep = module_split.suggest(ir, st)
-        rep["graph"] = key
-        return jsonify(rep)
-    except Exception as e:
-        return jsonify({"error": f"模块划分失败: {e}"}), 500
 
 @app.get("/api/ont/completeness/<key>")
 def ont_completeness(key):
@@ -4276,9 +3860,35 @@ def ont_completeness(key):
                          0.15 * frac(obj["withBFO"], nn) +
                          0.20 * frac(grounded, len(edges))), 1) if nn else 0.0
     gaps = [n["name"] for n in nodes if not (n.get("definition") or "").strip()][:20]   # 待补定义清单
-    return jsonify({"key": key, "metric": "metadata_coverage", "score": score,
-                    "objects": obj, "relations": rel, "gaps": gaps,
-                    "note": "覆盖率用于元数据补全排查，不等同于本体完备性或正确性"})
+    out = {"key": key, "metric": "metadata_coverage", "score": score,
+           "objects": obj, "relations": rel, "gaps": gaps,
+           "note": "覆盖率用于元数据补全排查，不等同于本体完备性或正确性"}
+    if request.args.get("shacl"):                  # 形状校验按需执行:要生成并解析整张图,不随每次覆盖率请求跑
+        out["shacl"] = _shacl_report(key, ir)
+    return jsonify(out)
+
+
+def _shacl_report(key, ir):
+    """导出的 Turtle 能否被解析、是否符合 IOF 风格的形状约束(每个类有标签,非原始类有定义)。
+    此前这项校验只在「锻造」接口里执行;该接口去掉后改由覆盖率接口按需给出(DR-109)。"""
+    try:
+        import rdflib
+        g = rdflib.Graph(); g.parse(data=_ir_to_turtle(key, ir), format="turtle")
+    except ImportError:
+        return {"status": "unavailable", "detail": "未安装 rdflib"}
+    except Exception as e:                                       # noqa: BLE001
+        return {"status": "error", "detail": "导出的 Turtle 无法解析:" + str(e)[:120]}
+    try:
+        import pyshacl
+        sg = rdflib.Graph(); sg.parse(data=_IOF_SHACL, format="turtle")
+        with _RDF_LOCK:   # pyshacl 内部跑 SPARQL,与 SPARQL 接口共用同一把锁(pyparsing 非线程安全)
+            conforms, _, txt = pyshacl.validate(g, shacl_graph=sg, inference="none")
+    except ImportError:
+        return {"status": "unavailable", "detail": "未安装 pyshacl", "triples": len(g)}
+    except Exception as e:                                       # noqa: BLE001
+        return {"status": "error", "detail": str(e)[:120], "triples": len(g)}
+    violations = (txt or "").count("Constraint Violation")
+    return {"status": "conforms" if conforms else "violations", "violations": 0 if conforms else violations, "triples": len(g)}
 
 def _ir_write_path(key):
     """图谱键 → 可回写的 IR JSON 路径;只读平台源(cq 的 .js)或非法键返 None,绝不逃逸。"""
@@ -4520,6 +4130,7 @@ def ont_rebuild():
     return jsonify({"ok": True, "objects": len(ir.get("objects", [])) if ir else 0,
                     "discarded_ops": n_ops,
                     "backup": os.path.basename(discarded) if discarded else ""})
+
 
 @app.post("/api/sparql")
 def sparql():
@@ -5628,6 +5239,10 @@ def _run_eval(model=None, limit=None):
     _atomic_json(_eval_result_file(), out)
     EVAL_JOB.update(running=False, progress="完成")
 
+@app.get("/api/eval/set")
+def eval_set():
+    return jsonify({"items": _eval_items(), "n": len(_eval_items())})
+
 @app.post("/api/eval/run")
 def eval_run():
     """启动一轮三组评测(后台线程,每题落盘);可传 model 覆盖本轮出 SQL 的模型、limit 限题数。"""
@@ -5650,10 +5265,6 @@ def eval_status():
 def eval_results():
     try: return jsonify(json.load(open(_eval_result_file())))
     except Exception: return jsonify({"empty": True, "note": "尚未跑过评测"})
-
-@app.get("/api/eval/set")
-def eval_set():
-    return jsonify({"items": _eval_items(), "n": len(_eval_items())})
 
 QA_FB = os.path.join(WORK, "qa_feedback.json")
 
@@ -5827,7 +5438,7 @@ def sysinfo():
         info["runtimes"] = available()
         info["current_driver"] = os.environ.get("CLAW_DRIVER") or "hermes"
     except Exception: info["runtimes"] = []
-    info["jobs"] = len(JOBS)
+    info["jobs"] = sum(1 for j in _BUILD_JOBS.values() if j["state"] == "running")   # 正在执行的构建作业
     info["qa_cache"] = len(_QA_CACHE)
     try: info["tables"] = len(table_list())
     except Exception: info["tables"] = 0
@@ -5950,21 +5561,6 @@ def build_asset_delete():
             except Exception:
                 pass                     # 表清理失败不阻断文件删除，前端以返回值区分
     return jsonify({"ok": True, "removed": fn, "dropped_table": dropped})
-
-@app.post("/api/build/run")
-def build_run():
-    """构建本体:source=demo(主库)|uploads(上传库);快速数据驱动构建(表→对象,命名启发+FK/重叠),产物注册为新图谱"""
-    body = request.json or {}
-    src = body.get("source") or (_active_source() or {}).get('id') or 'uploads'
-    # 图谱名会作为 argv 传给子进程,先裁成安全 argv(同 /api/build/inquire 的处置)
-    name = _safe_argv(body.get("name") or f"构建图谱{time.strftime('%m%d%H%M')}", cap=60, default="构建图谱")
-    db, source_name = _resolve_src(src)
-    if not db or not os.path.exists(db): return jsonify({"error": "所选数据库不可用，请检查数据连接"}), 400
-    key = "built_" + uuid.uuid4().hex[:6]
-    jid = run_job([sys.executable, _confined(HERE, "quick_build.py"), db,
-                   _confined(WORK, key + ".json"), name, ACTION_TYPES_F, '', json.dumps({'id': src, 'name': source_name}, ensure_ascii=False)],
-                  cwd=HERE, tag=f"build:{name}")
-    return jsonify({"job": jid, "graph_key": key})
 
 # ── 本体构建·问询台:多源数据源 + 多库连接 + 技能编排 + Hermes agentic 构建 ──
 _BUILD_CONN_F = os.path.join(WORK, "build_connections.json")
@@ -7010,8 +6606,6 @@ def _dg_checklist_gate(items, allow_set, tables):
         (flagged if bad else kept).append({"item": s, "unknown_refs": bad[:3]} if bad else s)
     return kept, flagged
 
-_ACC_MIN_N = 5          # 样本下限:低于此不报准确率——小样本百分比是噪声,不是证据
-_ACC_CACHE = {"ts": 0, "val": None}
 
 def _iter_all_irs():
     """遍历所有可读图谱的 IR(种子 + 构建/锻造产物),用于跨图谱聚合人审历史。"""
@@ -7029,6 +6623,9 @@ def _iter_all_irs():
         except Exception:
             ir = _load_json(pth)
         if isinstance(ir, dict): yield k, ir
+
+_ACC_MIN_N = 5          # 样本下限:低于此不报准确率——小样本百分比是噪声,不是证据
+_ACC_CACHE = {"ts": 0, "val": None}
 
 def _review_history(force=False):
     """⑥ 可解释性第三问「历史上类似情况准确率?」——聚合人审结论。
@@ -7065,6 +6662,7 @@ def _review_history(force=False):
            "by_verb": {k: rate(v) for k, v in sorted(by_verb.items(), key=lambda x: -(x[1]["approved"] + x[1]["rejected"]))[:12]}}
     _ACC_CACHE.update(ts=time.time(), val=val)
     return val
+
 
 def _rejected_patterns(limit=8):
     """读取人工否决过的关系模式，作为后续构建的已知误判模式。
@@ -9657,71 +9255,6 @@ def viz_save():
         boards = [b for b in _load_boards() if b.get("id") != bid]
         boards.insert(0, board); _atomic_json(_VIZ_BOARDS_F, boards[:50])
     return jsonify({"ok": True, "id": bid})
-
-@app.post("/api/viz/delete")
-def viz_delete():
-    bid = (request.json or {}).get("id")
-    with _WRITE_LOCK:
-        _atomic_json(_VIZ_BOARDS_F, [b for b in _load_boards() if b.get("id") != bid])
-    return jsonify({"ok": True})
-
-@app.get("/api/skills")
-def skills():
-    out = [{"name": item["name"],
-            "desc": (_BUILD_SKILL_DESC.get(item["name"]) or item["description"])[:140],
-            "runnable": item["runnable"]}
-           for item in _builtin_skill_entries()]
-    return jsonify(out)
-
-@app.post("/api/skill/run")
-def skill_run():
-    body = request.json or {}
-    name = body.get("name", ""); args = body.get("args", "")
-    if not re.match(r"^[\w\-]+$", name): return jsonify({"error": "非法技能名"}), 400   # 防穿越:与同族端点一致
-    d = _builtin_skill_dir(name)
-    if not d or not os.path.exists(os.path.join(d, "run.sh")): return jsonify({"error": "该技能无 run.sh"}), 400
-    # 参数改用**白名单**:此前的黑名单(;&|`$)漏掉了换行、\、引号、> < 等,而 run.sh 内部
-    # 若把参数二次求值(eval/未加引号展开),这些字符同样能拼出命令。参数本就只用于传
-    # 标识/路径片段,限成字母数字与 _-./=:, 足够,且把注入面收敛到可枚举的集合。
-    if args and not re.match(r"^[\w\-./=:,\s]*$", args):
-        return jsonify({"error": "参数含非法字符(仅允许字母数字与 _-./=:, 及空格)"}), 400
-    jid = run_job(["bash", os.path.join(d, "run.sh")] + args.split(), cwd=d, tag=f"skill:{name}",
-                  env={"GOV_TOKEN": os.environ.get("GOV_TOKEN", "")})
-    return jsonify({"job": jid})
-
-@app.get("/api/jobs")
-def jobs(): return jsonify(sorted(JOBS.values(), key=lambda j: -j["ts"])[:20])
-
-@app.get("/api/job/<jid>")
-def job(jid):
-    j = JOBS.get(jid)
-    if not j: return jsonify({"error": "no job"}), 404
-    tail = ""
-    if os.path.exists(j["log"]):
-        tail = open(j["log"], errors="replace").read()[-4000:]
-    return jsonify({**j, "tail": tail})
-
-@app.get("/api/outputs")
-def outputs():
-    out = []
-    for base, label in ((OUTPUTS, "outputs"),):
-        if not os.path.isdir(base): continue
-        for p in sorted(glob.glob(os.path.join(base, "**", "*"), recursive=True)):
-            if os.path.isfile(p) and os.path.getsize(p) < 20_000_000:
-                # 只回相对名:绝对路径会把部署目录结构泄露给前端,而下载只需要 name
-                # (/api/outputs/file 已改为按 name 在成果库内解析)。
-                out.append({"group": label, "name": os.path.relpath(p, base), "kb": round(os.path.getsize(p) / 1024, 1)})
-    return jsonify(out[:400])
-
-@app.get("/api/outputs/file")
-def outputs_file():
-    """下载成果库文件。入参是**成果库内的相对路径**,不是任意绝对路径。"""
-    p = request.args.get("p", "")
-    allowed = [OUTPUTS]
-    # 相对路径按成果库根解析;绝对路径仍接受(兼容旧前端),但一律要落在白名单目录内。
-    rp = os.path.realpath(p if os.path.isabs(p) else os.path.join(OUTPUTS, p))
-    if not any(rp.startswith(os.path.realpath(a) + os.sep) for a in allowed): return "forbidden", 403
-    return send_file(rp)
 
 # ── 指标契约 blueprint(DR-054):契约查看 / 人工确认计算规则 / 重跑核验 / 维度可达性 ──
 from bp_metrics import bp_metrics as _bp_metrics, configure_metrics as _configure_metrics  # noqa: E402

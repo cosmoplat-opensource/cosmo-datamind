@@ -31,7 +31,7 @@ COSMO DataMind 先用模型批量提出候选项，再用数据库约束和完�
 | **构建 Agent 接口** | 半自动构建经 MCP 对外(`mcp_build_server.py`):外部 Agent 可发起构建、跟踪作业、读验收结果与人审队列;**发起构建是唯一写工具**——verified/asserted/certified 只能由数据裁决与人工产生,Agent 无状态改写工具 |
 | **标准导出** | OWL2 / RDF / SHACL / SKOS / JSON-LD,并提供 SPARQL 端点;另可导出 **Apache Ossie**(原 OSI)语义模型与本体 YAML(按官方 schema 0.2.0.dev0 快照生成,示例本体已通过其官方 validator)与关系型语义层投影 |
 | **问数评测** | 参考问题集 × 三组同题对照(无检索增强 / 图谱增强 / 本体增强),度量正确率、出处引用率与本体约束拦截数 |
-| **本体体检** | 能力核验(CQ)、数据源漂移、图结构检查(孤岛/自反/重复边/超级节点)、向后兼容影响面、模块化建议 —— 全部确定性计算,不调 LLM |
+| **本体体检** | 能力核验(CQ)、图结构检查(孤岛/自反/重复边/超级节点)、导出形状校验(SHACL) —— 全部确定性计算,不调 LLM |
 
 ## 数据库切换
 
@@ -93,7 +93,7 @@ python3 server.py                  # 仅本地开发，前台运行 → http://1
 
 ```bash
 curl http://127.0.0.1:8092/api/overview      # KPI 概览(无库时含 warning 字段)
-python3 test_all.py                          # 系统级回归(源码定义 565 个检查点;需服务已启动)
+python3 test_all.py                          # 系统级回归(源码定义 470 个检查点;需服务已启动)
 ```
 
 开发与 CI 推荐使用隔离入口，自动复制已提交的验证种子到临时目录并禁用本机模型配置：
@@ -333,7 +333,7 @@ python3 -m venv .venv
 
 # 集成层:需先起服务（用生产 WSGI 路径验证）
 .venv/bin/gunicorn -c gunicorn.conf.py wsgi:application &
-.venv/bin/python test_all.py            # 系统级回归(源码定义 565 个检查点)
+.venv/bin/python test_all.py            # 系统级回归(源码定义 470 个检查点)
 .venv/bin/python test_ui.py             # 全 UI 走查:页面渲染 + 子 UI 交互(需 playwright)
 .venv/bin/python test_ui_ops.py         # UI 逐步实操:切引擎/建本体/对话改本体/审计/问数/选本体锚定
 ```

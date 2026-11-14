@@ -130,18 +130,6 @@ function appOverviewFallback(data) {
   }
 }
 
-async function appLibrary() {
-  const graphs = await J('/api/graphs');
-  if (!Array.isArray(graphs)) { $('#lib_list').textContent = graphs.error || '本体列表不可用'; return; }
-  if (!graphs.length) { $('#lib_list').textContent = '当前数据库尚无本体，请先在本体构建中生成。'; return; }
-  $('#lib_list').innerHTML = '<table><tr><th>名称</th><th>对象数</th><th>关系数</th><th>操作</th></tr>'
-    + graphs.map(o=>`<tr><td>${esc(o.name)}</td><td>${o.nodes}</td><td>${o.edges}</td><td>`
-      + `<a href="#" onclick="event.preventDefault();bcView(${jsAttr(o.id)})">查看</a> · `
-      + `<a href="#" onclick="event.preventDefault();dqStartFromOntology(${jsAttr(o.id)})">问数</a>`
-      + (o.cat==='scenario' ? ` · <a href="#" onclick="event.preventDefault();if(confirm('删除此本体？'))libDel(${jsAttr(o.id.replace(/^forged_/,''))})">删除</a>` : '')
-      + '</td></tr>').join('') + '</table>';
-}
-
 function appMetricChart(el, data) {
   const rows = data.data.rows || [], cols = data.data.columns || [];
   if (!rows.length) { el.textContent = '当前查询没有返回数据'; return; }

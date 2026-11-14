@@ -216,25 +216,20 @@ a{color:var(--acc)}
   <div class="nav" data-p="claw">本体对话</div>
   <div class="nav" data-p="review">本体评审</div>
   <div class="nav" data-p="ontquality">元数据覆盖</div>
-  <div class="nav" data-p="library">本体库</div>
   <div class="nav" data-p="sparql">SPARQL 查询</div></div>
 <div class="nav-group"><div class="gh" onclick="dqGroup(this)">指标平台 <span class="ar">▾</span></div>
-  <div class="nav" data-p="metrics">指标中心</div>
-  <div class="nav" data-p="rules">构成规则</div></div>
+  <div class="nav" data-p="metrics">指标中心</div></div>
 <div class="nav-group"><div class="gh" onclick="dqGroup(this)">数据治理 <span class="ar">▾</span></div>
   <div class="nav" data-p="quality">数据质量</div>
   <div class="nav" data-p="glossary">术语管理</div></div>
 <div class="nav-group"><div class="gh" onclick="dqGroup(this)">智能问数 <span class="ar">▾</span></div>
   <div class="nav" data-p="chat">深度问数</div>
   <div class="nav" data-p="qaeval">问数评测</div></div>
-<div class="nav-group"><div class="gh" onclick="dqGroup(this)">技能 <span class="ar">▾</span></div>
-  <div class="nav" data-p="skills">技能中心</div></div>
 <div class="nav-group"><div class="gh" onclick="dqGroup(this)">动作执行 <span class="ar">▾</span></div>
   <div class="nav" data-p="actioncenter">动作中心</div></div>
 <div class="nav-group"><div class="gh" onclick="dqGroup(this)">开发 <span class="ar">▾</span></div>
   <div class="nav" data-p="sqldev">SQL 工作台</div></div>
 <div class="nav-group"><div class="gh" onclick="dqGroup(this)">运维管理 <span class="ar">▾</span></div>
-  <div class="nav" data-p="jobs">作业中心</div>
   <div class="nav" data-p="enginecfg">引擎设置</div></div>
 <div style="flex:1"></div><div class="muted" style="padding-left:8px">v1 · 本地原型<br>智能引擎 · 多智能体编排</div>
 </aside>
@@ -410,10 +405,6 @@ a{color:var(--acc)}
    <div class="card" style="flex:1"><h3>成熟度分布</h3><div id="oq_mat"></div></div>
    <div class="card" style="flex:1"><h3>待补定义(前20)</h3><div id="oq_gaps"></div></div>
   </div></div>
- <div class="page" id="p_rules"><h2>构成规则 <span class="muted">自动构建流水线 × 三套建模规则(计数从当前IR派生，不臆造)</span></h2>
-  <div class="row" style="margin-bottom:10px">运行时引擎: <select id="rt_sel" onchange="rtSet()" style="width:160px"></select><span class="muted" id="rt_info"></span></div>
-  <div id="rules_body"></div></div>
-
  <div class="page" id="p_chat">
   <div class="dq-tabbar">
    <span class="dq-collapse" onclick="dqToggleSide()" title="折叠/展开会话栏">☰</span>
@@ -655,12 +646,6 @@ a{color:var(--acc)}
    </div>
   </div></div>
 
- <div class="page" id="p_skills"><h2>技能中心 <span class="muted">skills_seed 构建技能</span></h2>
-  <div id="sk_list"></div>
-  <div class="card"><h3>运行技能</h3><div class="row"><select id="sk_sel" style="width:280px"></select>
-   <input id="sk_args" placeholder="参数，如 --ir workdir/demo_ir.json --out /tmp/x"><button onclick="skillRun()">运行</button></div>
-   <pre id="sk_log" style="margin-top:8px;max-height:300px;display:none"></pre></div></div>
-
  <div class="page" id="p_claw"><h2>本体对话 <span class="muted">对话式本体完善(问答+白名单编辑+可撤销)· 可修改本体 + 变更审计</span></h2>
   <div class="row" style="margin-bottom:10px;align-items:center"><label for="claw_graph" style="white-space:nowrap">当前图谱</label>
    <select id="claw_graph" style="width:360px" aria-label="本体对话当前图谱"></select>
@@ -680,9 +665,6 @@ a{color:var(--acc)}
     <button class="ghost" onclick="clawAudit()">刷新审计</button></div>
    <div id="claw_audit" class="muted">点「刷新审计」查看谁改了什么</div></div></div>
 
- <div class="page" id="p_library"><h2>本体库 <span class="muted">锻造/构建的本体版本(/api/ont/forged)</span></h2>
-  <div class="card scroll" id="lib_list"></div></div>
-
  <div class="page" id="p_glossary"><h2>术语管理 <span class="muted">英文↔中文业务词典(表名/列名/短语/词元)，深度问数与中文化的语义基座</span></h2>
   <div class="card"><div class="row" style="margin-bottom:10px"><input id="gl_q" placeholder="搜索英文/中文术语…" style="width:280px" oninput="glRender()">
    <select id="gl_type" onchange="glRender()" style="width:120px"><option value="">全部类型</option><option>表名</option><option>列名</option><option>短语</option><option>词元</option></select>
@@ -700,9 +682,6 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
  <div class="page" id="p_quality"><h2>数据质量 <span class="muted">空表/无列/业务指标预警(基于真实数据)· 对齐平台『数据治理·告警中心』</span></h2>
   <div class="kpis" id="quality_kpis" style="grid-template-columns:repeat(4,1fr)"></div>
   <div class="card scroll" id="quality_list" style="max-height:calc(100vh - 300px)"></div></div>
-
- <div class="page" id="p_jobs"><h2>作业中心 <span class="muted">后台作业(技能运行/本体构建/部署)· 对齐平台『资源管理·作业』</span></h2>
-  <div class="card scroll" id="jobs_list" style="max-height:calc(100vh - 220px)"></div></div>
 
  <div class="page" id="p_sparql"><h2>SPARQL 查询 <span class="muted">对本体 OWL 图谱做语义查询(经典引擎 rdflib)</span></h2>
   <div class="card"><textarea id="sq_q" style="height:120px;font-family:monospace">SELECT ?cls ?label WHERE { ?cls a <http://www.w3.org/2002/07/owl#Class>. OPTIONAL{?cls <http://www.w3.org/2000/01/rdf-schema#label> ?label} } LIMIT 20</textarea>
@@ -753,14 +732,12 @@ document.querySelectorAll('.nav').forEach(n=>n.onclick=()=>{const p=n.dataset.p;
 const loaded={};
 async function load(p){if(loaded[p])return;loaded[p]=1;
  if(p==='home')home();if(p==='catalog')catalog();if(p==='graph')graphs();if(p==='chat')chatInit();
- if(p==='metrics')metrics();if(p==='skills')skills();
+ if(p==='metrics')metrics();
  if(p==='claw'){await clawGraphs();clawSessions();clawEdits();clawAudit();try{$('#claw_who').value=localStorage.getItem('claw_who')||''}catch(_){}}
- if(p==='library')library();if(p==='rules')rules();
  if(p==='build')bcInit();if(p==='conn')cnInit();if(p==='viz')vzInit();if(p==='review')reviewInit();if(p==='actioncenter')acCenter();if(p==='enginecfg')egLoad();
  if(p==='qaeval')qeLoad();if(p==='sqldev')sdInit();
  if(p==='glossary')glossaryLoad();
  if(p==='quality')qualityLoad();
- if(p==='jobs')jobsLoad();
  if(p==='ontquality')ontQualityLoad();}
 async function ontQualityLoad(){const gs=await J('/api/graphs');const cur=$('#oq_sel').value;
  $('#oq_sel').innerHTML=graphOptions(gs,g=>g.name);if(cur&&gs.some(g=>g.id===cur))$('#oq_sel').value=cur;
@@ -793,10 +770,6 @@ async function qualityLoad(){const d=await J('/api/quality');const L=d.levels||{
  $('#quality_kpis').innerHTML=[['已检表数',d.scanned??'-','#4A5FF3'],['通过',d.passed??'-','#16a34a'],['预警',L.warn||0,'#d97706'],['错误',L.error||0,'#dc2626']].map(([l,n,c])=>`<div class="kpi"><div class="n" style="color:${c}">${n}</div><div class="l">${l}</div></div>`).join('');
  $('#quality_list').innerHTML='<table><tr><th>对象</th><th>规则</th><th>级别</th><th>详情</th></tr>'+
   (d.checks||[]).map(c=>`<tr><td>${esc(c.target)}</td><td>${esc(c.rule)}</td><td><span class="tag ${c.level==='error'?'warn':c.level==='warn'?'warn':'ok'}">${c.level}</span></td><td>${esc(c.detail)}</td></tr>`).join('')+'</table>'+(!(d.checks||[]).length?'<div class="muted" style="padding:10px">全部检查通过 ✓</div>':'');}
-// 作业中心
-async function jobsLoad(){const js=await J('/api/jobs');
- $('#jobs_list').innerHTML='<table><tr><th>作业ID</th><th>标签</th><th>状态</th><th>命令</th></tr>'+
-  (js||[]).map(j=>`<tr><td><code>${esc(j.id)}</code></td><td>${esc(j.tag||'-')}</td><td><span class="tag ${j.status==='done'?'ok':/error|exit/.test(j.status)?'warn':'evt'}">${esc(j.status)}</span></td><td class="muted">${esc((j.cmd||'').slice(0,60))}</td></tr>`).join('')+'</table>'+(!(js||[]).length?'<div class="muted" style="padding:10px">暂无作业</div>':'');}
 let GLOSS=[];
 async function glossaryLoad(){const d=await J('/api/glossary');GLOSS=d.terms||[];glRender();}
 function glRender(){const q=($('#gl_q').value||'').toLowerCase();const tp=$('#gl_type').value;
@@ -1372,28 +1345,6 @@ function showNodeDetail(n){if(!n)return;const rel=GRAPH_CUR.edges.filter(x=>x.s=
   const mine=(ts||[]).filter(t=>t.id===n.action_id||(t.object_table&&tbl.includes(t.object_table.toLowerCase()))||t.object===n.name);
   if(mine.length)el.innerHTML='<h3 style="margin-top:10px" class="gd-h">已配置动作('+mine.length+')</h3>'
    +mine.map(t=>`<div class="step">${esc(t.cn)} <span class="tag ${t.risk==='high'?'warn':'ok'}" style="margin-left:4px">${t.risk==='high'?'须审批':'直接登记'}</span> <a href="#" onclick="event.preventDefault();acOpen(${jsAttr(t.id)})">发起 ↗</a></div>`).join('');}).catch(()=>{});}
-async function rules(){const d=await J('/api/ont/rules?graph=demo');
- // 后端故障时 J() 返回 {error}，缺 counts/methodology —— 与全站守卫一致，先判后用
- if(d.error||!d.counts){$('#rules_body').innerHTML=`<div class="muted">${esc(d.error||'规则数据不可用')}</div>`;return;}
- const c=d.counts;
- const rt=await J('/api/ont/runtimes');
- const rts=(rt&&Array.isArray(rt.runtimes))?rt.runtimes:[];
- $('#rt_sel').innerHTML=rts.length?rts.map(r=>`<option value="${esc(r)}" ${r===rt.current?'selected':''}>${esc(engName(r))}</option>`).join('')
-   :'<option value="">(无可用运行时)</option>';
- $('#rt_info').textContent=rts.length?('当前: '+engName(rt.current)+((rt.current_ready===false)?' — 未注册':''))
-   :'未接入大模型：请在「引擎设置」配置 OpenAI 兼容端点';
- $('#rules_body').innerHTML=`<div class="kpis"><div class="kpi"><div class="n">${c.objects}</div><div class="l">对象</div></div>
-  <div class="kpi"><div class="n">${c.links}</div><div class="l">关系(${c.verified}已核验)</div></div>
-  <div class="kpi"><div class="n">${c.confirmed_objs}</div><div class="l">已确认对象</div></div>
-  <div class="kpi"><div class="n">${(c.metrics.atomic||0)+(c.metrics.derived||0)+(c.metrics.composite||0)}</div><div class="l">指标</div></div>
-  <div class="kpi"><div class="n">${c.hierarchy}</div><div class="l">类层次族</div></div></div>`+
-  d.methodology.map(m=>`<div class="card"><h3>${esc(m.name)}</h3><div class="muted">${esc(m.map)}</div></div>`).join('')
-  +`<div class="card"><h3>OWL2 投影(与后端 export_owl 一致)</h3><div class="row" style="flex-wrap:wrap">`+
-  Object.entries(d.owl_projection).map(([k2,v])=>`<span class="tag ok">${esc(k2)}: ${esc(v)}</span>`).join('')+`</div></div>`
-  +`<div class="card"><h3>7 阶段构建流水线</h3>`+
-  d.pipeline.map((st,i)=>`<div class="step"><b>${i+1}. ${esc(st.stage)}</b>— ${esc(st.io)}<br><span class="muted">判定: ${esc(st.rule)}</span></div>`).join('')+`</div>`;}
-async function rtSet(){const d=await J('/api/ont/runtime',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:$('#rt_sel').value})});
- $('#rt_info').textContent=d.error||('当前: '+d.current);}
 // 指标状态(DR-054):certified 业务已确认 > verified 已核验 > candidate 待核验；旧形状指标只有启发式计算规则
 const MST={certified:['ok','业务已确认'],verified:['ok','已核验'],candidate:['warn','待核验'],deprecated:['evt','已停用'],heuristic:['warn','旧规则(启发式)']};
 function mStatus(x){return x.status||(x.measure&&x.measure.agg?'candidate':'heuristic');}
@@ -2270,20 +2221,6 @@ async function vzSaveBoard(){if(!VZ_BOARD.length){toast('看板为空，先添�
  const id=$('#vz_board_sel').value||undefined;
  const d=await J('/api/viz/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,name,charts:VZ_BOARD})}).catch(e=>({error:''+e}));
  if(d.error){toast(d.error);return}toast('看板已保存');await vzBoardsLoad();$('#vz_board_sel').value=d.id;}
-async function skills(){const ss=await J('/api/skills');
- $('#sk_list').innerHTML=ss.map(s=>`<div class="card"><b style="cursor:pointer;color:#4A5FF3" onclick="skDetail(${jsAttr(s.name)})">${esc(s.name)}</b>
-  <button class="ghost" style="float:right;padding:3px 10px;font-size:12px" onclick="skInstall(${jsAttr(s.name)})">装入agent工作区</button>${s.runnable?'<span class="tag ok">可运行</span>':''}<div class="muted" style="margin-top:4px">${esc(s.desc)}</div></div>`).join('');
- $('#sk_sel').innerHTML=ss.filter(s=>s.runnable).map(s=>`<option>${esc(s.name)}</option>`).join('');}
-async function skillRun(){const d=await J('/api/skill/run',{method:'POST',headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({name:$('#sk_sel').value,args:$('#sk_args').value})});
- if(d.error){toast(d.error);return} watchJob(d.job,'#sk_log');}
-async function skInstall(n){const d=await J('/api/ont/skills/install',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug:n})});
- toast(d.error||('已装入: '+d.installed));}
-async function skDetail(n){const d=await J('/api/ont/skill/'+n);
- const w=window.open('','_blank');w.document.write('<pre style="white-space:pre-wrap;font-family:monospace;padding:20px">'+d.content.replace(/</g,'&lt;')+'</pre>');}
-function watchJob(jid,sel,onDone){const el=$(sel);el.style.display='block';
- const t=setInterval(async()=>{const j=await J('/api/job/'+jid);el.textContent=`[${j.status}] ${j.tag}\n`+(j.tail||'');el.scrollTop=1e9;
-  if(j.status!=='running'){clearInterval(t);if(j.status==='done'&&onDone)onDone();}},2500);}
 let CLAW_ID=null;
 function clawGraph(){return ($('#claw_graph')&&$('#claw_graph').value)||'demo';}
 async function clawGraphs(pref){const gs=await J('/api/graphs');const sel=$('#claw_graph');
@@ -2344,15 +2281,6 @@ async function clawAudit(){const d=await J('/api/ont/audit/'+encodeURIComponent(
    d.recent.map(r=>`<tr><td>${esc(r.op)}</td><td>${esc(r.target||'')}</td><td>${esc(r.by)}</td><td>${esc(r.source)}</td><td class="muted">${esc(r.ts||'')}</td><td class="muted">${esc(r.reason||'')}</td></tr>`).join('')+'</table></div>';}
  h+=`<div class="muted" style="margin-top:6px;font-size:11px">${esc(d.note||'')}</div>`;
  $('#claw_audit').innerHTML=h;}
-async function library(){if(window.APP_DATA&&APP_DATA.ready)return appLibrary();const d=await J('/api/ont/forged');
- const rows=(d.ontologies||d.list||[]);
- $('#lib_list').innerHTML='<table><tr><th>ID</th><th>名称</th><th>对象数</th><th>关系数</th><th>操作</th></tr>'+
-  rows.map(o=>`<tr><td>${esc(o.id)}</td><td>${esc(o.name||'')}</td><td>${o.objects??o.entities??'-'}</td><td>${o.links??'-'}</td>
-   <td><a href="#" onclick="event.preventDefault();bcView('forged_'+${jsAttr(o.id)})">查看↗</a>
-   <a href="#" style="margin-left:8px" onclick="event.preventDefault();dqStartFromOntology('forged_'+${jsAttr(o.id)})">问数</a>
-   <a href="#" style="color:#b91c1c;margin-left:8px" onclick="event.preventDefault();if(confirm('删除 '+${jsAttr(o.id)}+'?'))libDel(${jsAttr(o.id)})">删除</a></td></tr>`).join('')+'</table>';}
-async function libDel(id){const d=await J('/api/ont/forged/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
- if(d.error)toast(d.error);library();}
 async function sparqlRun(){$('#sq_info').textContent='查询中…';
  const d=await J('/api/sparql',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:$('#sq_q').value})}).catch(e=>({error:''+e}));
  if(d.error){$('#sq_info').textContent=d.error+(d.hint?' — '+d.hint:'');$('#sq_out').innerHTML='';return}

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """共享测试夹具(IR-007 TDD 基础设施)。
 
-单测直接 import 根目录的确定性模块(health_check / rule_engine / …);
+单测直接 import 根目录的确定性模块(health_check / cq_check / …);
 pythonpath 由 pyproject 的 [tool.pytest.ini_options] 注入。
 夹具刻意最小:一个两对象一关系的健康 IR、一个规则集、一个可复用的临时 SQLite 建库器。
 """

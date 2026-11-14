@@ -4,7 +4,7 @@
 
 系统里并存两种 IR 形状:示例图谱用 ``links``(端点键 source/target),构建产物用
 ``relations``(端点键 source_concept/target_concept)。这条兼容规则此前在
-server / cq_check / drift_check / compat_check / module_split / health_check
+server / cq_check / health_check
 六处各抄一份——形状一旦扩展(如第三种端点键),就要改六个地方且极易漏改。
 对象可指代名称的取名规则同理,cq_check 与 intent_check 各有一份且**不一致**:
 intent_check 少收了 app 形状的 ``tables``,多表概念在意图核验里无法按表名指代。

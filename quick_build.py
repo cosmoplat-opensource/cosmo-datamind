@@ -295,7 +295,7 @@ def _build(db, out, name, action_types=None, tables=None, source=None):
             except (OSError, ValueError, TypeError):
                 # 与服务端 load_action_types 同一规则:缺档/坏档=无已登记动作。
                 # 全新 workdir 没有该文件——此前直接 FileNotFoundError 让整轮
-                # 构建崩掉,/api/build/run 与 LLM 超时回退路径全部无产物。
+                # 构建崩掉,LLM 超时回退路径无产物。
                 action_types = []
         action_ontology.project_registered_actions(ir, action_types)
     print(f"[quick_build] 最终对象 {len(ir['objects'])} 个 · 关系 {len(ir['relations'])} 条 · "

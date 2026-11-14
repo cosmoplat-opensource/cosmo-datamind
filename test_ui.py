@@ -4,7 +4,7 @@
      pip install playwright && playwright install chromium
      python3 server.py &   # 先起服务(DATAMIND_URL 可覆盖地址)
      python3 test_ui.py
-   覆盖:22 页逐页渲染(激活可见/内容非空/零 pageerror)+ 子 UI 交互
+   覆盖:18 页逐页渲染(激活可见/内容非空/零 pageerror)+ 子 UI 交互
    (弹窗开合/表单执行/详情点击/筛选过滤/图表渲染/技能复用问数)。"""
 import asyncio, json, sys
 from tests.browser_runtime import close_browser, managed_playwright
@@ -15,9 +15,9 @@ import os
 BASE = os.environ.get("DATAMIND_URL") or "http://%s:%s" % (
     os.environ.get("DATAMIND_HOST") or "localhost", os.environ.get("DATAMIND_PORT") or "8092")
 PAGES = ["home","graph","metrics","catalog","quality","glossary","sqldev","sparql",
-         "chat","review","build","library","actioncenter","qaeval",
-         "enginecfg","conn","viz","jobs","rules",
-         "ontquality","skills","claw"]
+         "chat","review","build","actioncenter","qaeval",
+         "enginecfg","conn","viz",
+         "ontquality","claw"]
 
 R = {"pass": [], "fail": []}
 ALL_ERRORS = []          # 全程累计的页面错误(只增不清),收尾统一汇总
@@ -72,7 +72,7 @@ async def main():
             前置页面的真实报错得以保留在最终汇总里,不被后续步骤掩盖。"""
             return [e for e in errors[base:] if "favicon" not in e]
 
-        # ── 阶段一:22 页逐页走查 ──────────────────────────────
+        # ── 阶段一:18 页逐页走查 ──────────────────────────────
         print("== 阶段一:全页面渲染 ==")
         for p in PAGES:
             base = mark()
@@ -187,10 +187,6 @@ async def main():
         (ok if geo and geo["tx"]>=120 else bad)("build 技能描述有可读宽度(未被挤成竖排)",
                                                 f"{geo}")
         (ok if geo and geo["h"]<=160 else bad)("build 单张技能卡高度正常", f"{geo}")
-        # library:已构建本体
-        await go("library")
-        t = await ev("document.getElementById('p_library').innerText", '')
-        (ok if ("built_" in t or "本体" in t) else bad)("library 本体库")
         # actioncenter:KPI+类型表+类型编辑弹窗
         await go("actioncenter", 2000)
         t = await ev("document.getElementById('p_actioncenter').innerText", '')
@@ -228,14 +224,10 @@ async def main():
             c = await ev("!!document.querySelector('#p_viz canvas')", False)
             (ok if c else bad)("viz 出图(canvas)")
         else: bad("viz 无运行按钮", str(btn))
-        # jobs / ontquality / skills
-        await go("jobs"); ok("jobs 渲染") if (await ev("document.getElementById('p_jobs').innerText.length", 0))>10 else bad("jobs","empty")
+        # ontquality
         await go("ontquality", 2500)
         t = await ev("document.getElementById('p_ontquality').innerText", '')
         (ok if ("100" in t or "完备" in t) else bad)("ontquality 完备度评分", t[:50])
-        await go("skills")
-        t = await ev("document.getElementById('p_skills').innerText", '')
-        (ok if "ontology" in t else bad)("skills 技能中心", t[:50])
         # claw:本体对话 + 审计面板(DR-027)
         await go("claw", 2500)
         t = await ev("document.getElementById('p_claw').innerText", '')
@@ -269,7 +261,7 @@ async def main():
           return bad;})()"""
         sq_all = []
         for _pn in ("home","build","chat","graph","review","quality","metrics",
-                    "catalog","skills","enginecfg","actioncenter","library"):
+                    "catalog","enginecfg","actioncenter"):
             await go(_pn, 1500)
             sq_all += await ev(SQUEEZE, [])
         (ok if not sq_all else bad)("全站无文本被挤成竖排", "; ".join(sq_all[:3]))

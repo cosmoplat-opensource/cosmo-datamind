@@ -13,7 +13,7 @@ function fixture(){
  vm.runInContext(fs.readFileSync(path.join(root,'ui/modules/database-scope.js'),'utf8'),ctx);
  vm.runInContext(fs.readFileSync(path.join(root,'ui/modules/qa-history.js'),'utf8'),ctx);
  const ui=fs.readFileSync(path.join(root,'ui/index.html'),'utf8');
- vm.runInContext(ui.slice(ui.indexOf('let VZ_DATA=null'),ui.indexOf('async function skills()')),ctx);
+ vm.runInContext(ui.slice(ui.indexOf('let VZ_DATA=null'),ui.indexOf('let CLAW_ID=null;')),ctx);
  return {c,ctx,$,saved,messages,run:s=>vm.runInContext(s,ctx)};
 }
 const cases={

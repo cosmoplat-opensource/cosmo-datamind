@@ -29,11 +29,12 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - **深度问数**:SSE 流式执行记录 + 渐进出图,缓存键含上传指纹,离线时降级为模板,见 [[DR-004-deep-qa-sse]]。
 - **前端**:对齐 iiot-platform/design-system 设计 token(#4A5FF3/#409EFF、圆角 4px、PingFang);**工业级去 emoji**(accent bar + 单色 SVG + 状态点),见 [[DR-005-frontend-design-system]]。
 - **安全**:只读 SQL、全局 CSRF 守卫、图谱键路径穿越校验、命令白名单、SPARQL 禁 SERVICE/FROM 外链,见 [[DR-006-security-model]]。
-- **寻址**:22 个子页经 `#<page>` hash 直接寻址 + 深链,见 [[DR-007-url-hash-routing]]。
+- **寻址**:18 个子页经 `#<page>` hash 直接寻址 + 深链,见 [[DR-007-url-hash-routing]]。
 
 ## 索引
 
 ### 决定 / Decisions
+- [DR-109 · 再去掉四个页面、27 条接口和四个不再有调用方的模块](decisions/DR-109-prune-pages-routes-and-unused-modules.md)
 - [DR-108 · 去掉五个只读或演示性质的页面和一条无调用方的路由](decisions/DR-108-remove-read-only-and-demo-pages.md)
 - [DR-107 · 评审台展示证据、列出分流移出的关系、支持批量评审](decisions/DR-107-review-workbench-evidence-and-batch.md)
 - [DR-106 · 覆盖率与类型检查的门槛覆盖路由层](decisions/DR-106-gates-cover-route-layer.md)
@@ -143,11 +144,11 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - `README.md` — 模块能力总览与实测部署命令。
 - `ARCHITECTURE.md` — 分层/数据流/统一约定/安全模型/已知边界(架构说明)
 - `AUDIT.md` — 逐轮自测/复审记录(IR 的原始日志,已归纳进 iterations/)。
-- `test_all.py` — 系统级回归，源码定义 565 个检查点。
+- `test_all.py` — 系统级回归，源码定义 470 个检查点。
 - `SPEC.md` — 对**平台** web/ 的逆向规格(平台契约,非 DataMind;前缀不同勿混用)。
 
 ## 现状校准
-- 计数(2026-10-12):**140 路由**(server.py 123 + bp_engine 5 + bp_actions 7 + bp_metrics 3 + bp_semantic 2)/ **565 集成断言** /
+- 计数(2026-10-12):**113 路由**(server.py 96 + bp_engine 5 + bp_actions 7 + bp_metrics 3 + bp_semantic 2)/ **470 集成断言** /
   **1279 项 pytest 测试**（多数据库功能复核）/ DR-001…DR-082、DR-093…DR-095 · IR-001…IR-013。
   DR-093 增加数据目录、问题驱动概念/主题、声明角色外键独立核验与业务语义人审；DR-095 增加多库上下文，场景回归为 51 项。
   DR-076 起 `examples/demo_metrics.db` 由 `scripts/build_demo_108_db.py` 按业务过程仿真生成(108 表 / 308,230 行)。
@@ -193,7 +194,7 @@ Consult @specs/map.md to find relevant context.
   而本系统此前只有元数据覆盖检查与问数评测(端到端正确率),缺「够不够用」这一环。
   判定为确定性图计算(锚定→路径→边状态),三态 answerable/partial/unanswerable,
   不可答自动回流 gaps。
-- **DR-025 漂移与链路**:`drift_check.py` + `GET /api/ont/drift/<key>`、
+- **DR-025 漂移与链路**(相关接口与模块已由 DR-109 去掉):`drift_check.py` + `GET /api/ont/drift/<key>`、
   `cq_check.check_chain` + `POST /api/ont/chain`。前者对齐报告阶段六点名的
   「监控本体与数据源一致性,发现概念漂移与关系断裂」(四类:表/列/主键/关系键缺失);
   后者对齐四个行业案例同构的建模模式(5-6 类实体 + 一条纵向穿透链路),逐段判定给出断点。
@@ -208,7 +209,7 @@ Consult @specs/map.md to find relevant context.
   CQ 锚定/意图锚定/问数上下文评分与文本;审计按人/类型/来源聚合并标出风险
   (删除类、人审试图指定 verified)。本体对话页恢复(此前误删)并内置审计面板。
   套件 354 断言 · UI 走查 57 项。
-- **DR-028 规则与决策层**:`rule_engine.py` + `/api/ont/rulebook/<key>`(CRUD+静态一致性)
+- **DR-028 规则与决策层**(相关接口与模块已由 DR-109 去掉):`rule_engine.py` + `/api/ont/rulebook/<key>`(CRUD+静态一致性)
   与 `/api/ont/decide/<key>`(规则求值)。第三遍对照报告改按**三层架构**核对,
   发现语义层第四要素「规则与约束」与整个**决策层**缺失。确定性推理不调 LLM,
   每条结论带 trace 可回溯至规则/字段/阈值;同动作不同结论报冲突而不静默择一。
@@ -221,7 +222,7 @@ Consult @specs/map.md to find relevant context.
   报告改按**五大价值**核对,发现阶段六「异常关系检测」空白。七类图结构异常分两级
   (阻断问题影响评分/提示只列出);历史示例中阻断问题为 0，但 108 个对象中有 50 个孤岛——
   此前任何检查都发现不了。套件 394 断言 · UI 走查 57 · UI 实操 21。
-- **DR-031 兼容与模块化**:`compat_check.py` + `GET /api/ont/compat/<key>`(三级判定,
+- **DR-031 兼容与模块化**(相关接口与模块已由 DR-109 去掉):`compat_check.py` + `GET /api/ont/compat/<key>`(三级判定,
   重点是命中哪些已注册的规则/动作/技能)、`module_split.py` + `GET /api/ont/modules/<key>`
   (by_domain 连通分量+词根 / by_layer 数仓分层)。至此报告第四遍找出的三处空白全部补齐。
   套件 496 断言 · UI 走查 57 · UI 实操 47。

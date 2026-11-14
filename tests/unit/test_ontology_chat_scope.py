@@ -10,7 +10,7 @@ UI = (pathlib.Path(__file__).resolve().parents[2] / "ui" / "index.html").read_te
 
 def test_chat_ui_has_explicit_graph_selector_and_no_demo_hardcode():
     assert 'id="claw_graph"' in UI
-    claw_code = UI[UI.index("let CLAW_ID"):UI.index("async function library")]
+    claw_code = UI[UI.index("let CLAW_ID"):UI.index("async function sparqlRun")]
     assert "clawGraph()" in claw_code
     assert "graph:'demo'" not in claw_code
     assert "graph=demo" not in claw_code
@@ -18,7 +18,7 @@ def test_chat_ui_has_explicit_graph_selector_and_no_demo_hardcode():
 
 
 def test_chat_ui_refreshes_session_and_audit_after_mutation():
-    claw_code = UI[UI.index("let CLAW_ID"):UI.index("async function library")]
+    claw_code = UI[UI.index("let CLAW_ID"):UI.index("async function sparqlRun")]
     apply_body = claw_code[claw_code.index("async function clawApply"):claw_code.index("async function clawDel")]
     undo_body = claw_code[claw_code.index("async function clawUndo"):claw_code.index("function clawSaveWho")]
     ask_body = claw_code[claw_code.index("async function clawAsk"):claw_code.index("async function clawApply")]
