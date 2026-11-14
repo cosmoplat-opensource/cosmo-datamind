@@ -196,6 +196,7 @@ a{color:var(--acc)}
 <header class="topbar">
  <div class="wm">◈ COSMO DataMind <small>数据智脑 · 治理 × 本体 × 问数</small></div>
  <div class="tools">
+  <span class="pill nav-toggle" onclick="document.querySelector('aside').classList.toggle('open')">菜单</span>
   <span class="pill" onclick="location.hash='chat'">深度问数</span>
   <span class="pill solid" id="rt_pill" title="当前运行时驱动">引擎就绪</span>
   <span class="av">IM</span>
@@ -314,7 +315,7 @@ a{color:var(--acc)}
   <div class="card"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">图谱 <select id="rv_sel" style="min-width:280px;max-width:440px" onchange="rvLoad()"></select>
    评审人 <input id="rv_who" placeholder="姓名或工号(必填)" style="width:150px" onchange="rvSaveWho()" title="记录到每条评审操作与元素上">
    <span id="rv_kpis"></span><span style="flex:1"></span>
-   <button class="ghost" onclick="rvUndo()">撤销上一步</button><button class="ghost" onclick="rvLoad()">刷新</button></div></div>
+   <button class="ghost" id="rv_undo" onclick="rvUndo()" disabled title="还没有可撤销的操作">撤销上一步</button><button class="ghost" onclick="rvLoad()">刷新</button></div></div>
   <div class="card scroll" id="rv_objs" style="margin-top:12px;display:none"></div>
   <div class="card scroll" id="rv_semantic" style="margin-top:12px;display:none"></div>
   <div class="card scroll" id="rv_fb" style="margin-top:12px;display:none"></div>
@@ -714,7 +715,10 @@ function toast(msg,ok){document.getElementById('app_toast')?.remove();const t=do
 const KIND={object:{c:'#16a34a',n:'对象'},event:{c:'#7c3aed',n:'事件'},action:{c:'#d97706',n:'动作'},asset:{c:'#0ea5e9',n:'资产'},role:{c:'#db2777',n:'角色'},ice:{c:'#7c6ff0',n:'信息内容实体'}};
 const KCOL=k=>(KIND[k]||{c:'#5b9dff'}).c, KNM=k=>(KIND[k]||{n:k}).n;
 // 页面切换 + URL 寻址：每个子页对应 #<page> hash，可直接寻址/前进后退/刷新保持
-function goPage(p){const nav=document.querySelector('[data-p="'+p+'"]');if(!nav)return false;
+// 弹窗挂在 body 上,不随页面隐藏:切页时一并关掉,否则会留在新页面上挡住操作
+function closeDialogs(){document.querySelectorAll('.dq-modal').forEach(m=>{m.style.display='none'});try{RVM=null}catch(e){}
+ const a=document.querySelector('aside');if(a)a.classList.remove('open');}
+function goPage(p){const nav=document.querySelector('[data-p="'+p+'"]');if(!nav)return false;closeDialogs();
  document.querySelectorAll('.nav').forEach(x=>x.classList.remove('on'));nav.classList.add('on');
  document.querySelectorAll('.page').forEach(pg=>pg.classList.remove('on'));const el=$('#p_'+p);if(el)el.classList.add('on');
  const revisit=!!loaded[p];load(p);
@@ -919,14 +923,15 @@ async function rvLoad(){RV_KEY=$('#rv_sel').value;if(!RV_KEY)return;
  const semanticEl=$('#rv_semantic');if(semanticEl){semanticEl.style.display=(d.semantic||[]).length?'block':'none';semanticEl.innerHTML=rvSemanticHTML(d.semantic||[]);}
  const c=d.counts;$('#rv_kpis').innerHTML=`<span class="tag warn">待审 ${c.pending}</span> <span class="tag ok">已通过 ${c.approved}</span> <span class="tag evt">已否决 ${c.rejected}</span> <span class="muted" style="margin-left:6px">共 ${c.total} 条${c.disputed?` · 语义存疑 ${c.disputed}`:''}</span>`+((d.replay_failed||[]).length?` <span class="tag warn" title="${esc(d.replay_failed.map(f=>f.op+' '+f.target+':'+f.error).join('\n'))}">${d.replay_failed.length} 条人审记录未能应用</span>`:'');
  rvRender(d);                       // 关系表、证据、筛选与批量操作在 modules/review.js
+ $('#rv_undo').disabled=!(d.undoable>0);$('#rv_undo').title=d.undoable>0?`可撤销 ${d.undoable} 步`:'还没有可撤销的操作';
  const ob=$('#rv_objs');if(ob){ob.style.display='block';
-  ob.innerHTML=`<h3 style="margin:0 0 8px">对象(${d.counts.objects} · 候选 ${d.counts.obj_candidate})<span class="muted" style="font-weight:400;font-size:12px;margin-left:8px">确认候选对象，或删除错误对象(级联删其关系，可撤销)</span></h3>`+
-  '<table><tr><th>对象</th><th>类型</th><th>状态</th><th>绑定表</th><th>评审记录</th><th>操作</th></tr>'+(d.objects||[]).map(o=>
+  ob.innerHTML=`<details${d.counts.obj_candidate?' open':''}><summary style="cursor:pointer;font-weight:600">对象(${d.counts.objects} · 候选 ${d.counts.obj_candidate})<span class="muted" style="font-weight:400;font-size:12px;margin-left:8px">确认候选对象，或删除错误对象(级联删其关系，可撤销)</span></summary>`+
+  '<table style="margin-top:8px"><tr><th>对象</th><th>类型</th><th>状态</th><th>绑定表</th><th>评审记录</th><th>操作</th></tr>'+(d.objects||[]).map(o=>
    `<tr style="${o.candidate?'background:#FFFBEB':''}"><td>${esc(o.name)}<div class="muted" style="font-size:11px">${esc(o.id)}</div></td>
     <td>${esc(KNM(o.kind))}</td><td>${o.candidate?'<span class="tag warn">候选</span>':'<span class="tag ok">已确认</span>'}</td>
     <td class="muted" style="font-size:11px">${esc((o.tables||[]).join('、'))||'-'}</td>
     <td>${o.by?`<div class="muted" style="font-size:11px">${esc(o.by)}${o.time?' · '+esc(o.time):''}</div>`:''}${o.reason?`<div class="muted" style="font-size:11px">${esc(o.reason)}</div>`:'<span class="muted" style="font-size:11px">-</span>'}</td>
-    <td>${o.candidate?`<button class="ghost" onclick="rvObjConfirm(${jsAttr(o.id)})">确认</button> `:''}<button class="ghost" style="color:#b91c1c" onclick="rvObjDel(${jsAttr(o.id)})">删除</button></td></tr>`).join('')+'</table>';}}
+    <td>${o.candidate?`<button class="ghost" onclick="rvObjConfirm(${jsAttr(o.id)})">确认</button> `:''}<button class="ghost" onclick="rvObjDel(${jsAttr(o.id)})">删除</button></td></tr>`).join('')+'</table></details>';}}
 function rvSemanticHTML(items){
  const labels={concepts:'业务概念',themes:'分析主题',derived:'派生公式建议',caveats:'取数建议'};
  return '<h3>业务语义复核</h3><div class="muted">取数查询有数据支持与业务含义确认分别记录。确认公式含义后，仍需执行指标计算核验。</div>'+
@@ -2002,7 +2007,7 @@ async function bcUpload(){const fs=$('#bc_files').files;if(!fs.length)return;
  $('#bc_files').value='';if(d.error){toast(d.error);return}
  const failed=(d.tables||[]).filter(t=>t.error),made=(d.tables||[]).filter(t=>!t.error);
  if(failed.length){toast('上传失败：'+failed.map(t=>t.table+' · '+t.error).join('；')+((d.saved||[]).length?'；其余 '+d.saved.length+' 个文件已保存':''),false);bcSources();return;}
- toast('已上传 '+(d.saved||[]).length+' 个文件'+(made.length?(' · 建表 '+made.map(t=>t.table).join('/')):''));bcSources();}
+ toast('已上传 '+(d.saved||[]).length+' 个文件'+(made.length?(' · 建表 '+made.map(t=>t.table).join('/')):'')+((d.notes||[]).length?' · '+d.notes.length+' 个文件仅存档未建表':''));bcSources();}
 async function bcSkillUpload(){const fs=$('#bc_skfile').files;if(!fs.length)return;
  const fd=new FormData();for(const f of fs)fd.append('files',f);
  const d=await J('/api/build/skill/upload',{method:'POST',body:fd}).catch(e=>({error:''+e}));

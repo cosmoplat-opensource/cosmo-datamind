@@ -96,6 +96,7 @@ class _Upstream:
 
         class _R:
             status = 200
+            headers = {"Content-Type": "application/json"}
 
             def read(_s):
                 return body

@@ -66,6 +66,8 @@ GATEWAY = os.environ.get("ATH_GATEWAY_URL", "http://localhost:3000").rstrip("/")
 AUTHORIZE_PARAMS = ("response_type", "client_id", "redirect_uri", "scope", "state", "code_challenge",
                     "code_challenge_method", "resource")
 CODE_TTL, TOKEN_TTL = 300, 3600
+LOGIN_MAX_FAILURES, LOGIN_LOCK_SECONDS = 5, 300  # consecutive wrong passwords before a user is locked out
+PUBLIC_URL = os.environ.get("DATAMIND_ATH_PUBLIC_URL", "").rstrip("/")  # issuer when reached through a proxy
 
 SCOPES = {
     "datamind:catalog.read": "读取数据目录：库表清单、概览、业务术语",
@@ -94,6 +96,7 @@ app = Flask(__name__)
 _lock = threading.Lock()
 _codes: dict[str, dict] = {}
 _tokens: dict[str, dict] = {}
+_login_failures: dict[str, dict] = {}
 
 
 # ---------------------------------------------------------------- local state (clients, users, audit)
@@ -130,8 +133,12 @@ def bootstrap():
 
 def audit(event, **fields):
     rec = {"ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "event": event, **fields}
-    with _lock, open(STATE / "audit.jsonl", "a", encoding="utf-8") as f:
-        f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    path = STATE / "audit.jsonl"
+    with _lock:
+        fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
+        with os.fdopen(fd, "a", encoding="utf-8") as f:
+            os.fchmod(f.fileno(), 0o600)  # also tightens a log created by an earlier version
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
 
 def _client_ok(client_id, client_secret):
@@ -164,6 +171,8 @@ def _sources():
     try:
         with urllib.request.urlopen(DATAMIND + "/api/build/sources", timeout=10) as r:
             rows = json.loads(r.read())
+        if isinstance(rows, dict):  # DataMind answers {"sources": [...], "assets": [...]}
+            rows = rows.get("sources") or []
         got = [{"id": str(x["id"]), "name": str(x.get("name") or x["id"])} for x in rows
                if isinstance(x, dict) and x.get("id") and x.get("kind") == "sqlite" and x.get("ready")]
     except (OSError, ValueError, KeyError, TypeError):
@@ -187,10 +196,40 @@ def _upstream_headers(ctx):
 
 
 # ---------------------------------------------------------------- authorization server
+def _base_url():
+    """The issuer.  A configured public URL wins; otherwise the request's Host is used only when it is this
+    adapter's own loopback address, so a forged Host header cannot plant itself in the metadata."""
+    if PUBLIC_URL:
+        return PUBLIC_URL
+    host = request.host.lower()
+    if host in (f"127.0.0.1:{PORT}", f"localhost:{PORT}", f"[::1]:{PORT}"):
+        return f"http://{host}"
+    return f"http://127.0.0.1:{PORT}"
+
+
+def _locked(username):
+    """Seconds a user is still locked out for (0 = not locked)."""
+    with _lock:
+        rec = _login_failures.get(username)
+        left = (rec or {}).get("until", 0) - time.time()
+        return max(0, int(left) + 1) if left > 0 else 0
+
+
+def _login_failed(username):
+    with _lock:
+        if len(_login_failures) > 10000:  # unknown user names must not grow this without bound
+            _login_failures.clear()
+        rec = _login_failures.setdefault(username, {"n": 0, "until": 0})
+        rec["n"] += 1
+        if rec["n"] >= LOGIN_MAX_FAILURES:
+            rec.update(n=0, until=time.time() + LOGIN_LOCK_SECONDS)
+
+
 @app.get("/.well-known/oauth-authorization-server")
 def metadata():
-    base = request.host_url.rstrip("/")
+    base = _base_url()
     return jsonify(issuer=base, authorization_endpoint=f"{base}/authorize", token_endpoint=f"{base}/token",
+                   revocation_endpoint=f"{base}/revoke", introspection_endpoint=f"{base}/introspect",
                    response_types_supported=["code"], grant_types_supported=["authorization_code"],
                    code_challenge_methods_supported=["S256"], scopes_supported=list(SCOPES),
                    token_endpoint_auth_methods_supported=["client_secret_basic", "client_secret_post"])
@@ -242,10 +281,18 @@ def approve():
     if f.get("decision") != "approve":
         audit("consent.denied", client_id=f.get("client_id"), scopes=f.get("scope"))
         return redirect(f"{redirect_uri}{sep}{urllib.parse.urlencode({'error': 'access_denied', 'state': state})}")
-    user = _load("users.json", {}).get(f.get("username", ""))
+    username = f.get("username", "")[:80]
+    wait = _locked(username)
+    if wait:
+        audit("consent.login_locked", username=username)
+        return Response("口令连续输错次数过多，请稍后再试", status=429, headers={"Retry-After": str(wait)})
+    user = _load("users.json", {}).get(username)
     if not user or not hmac.compare_digest(user["hash"], _hash(f.get("password", ""), user["salt"])):
-        audit("consent.login_failed", username=f.get("username"))
+        _login_failed(username)
+        audit("consent.login_failed", username=username)
         return Response("用户名或密码错误", status=401)
+    with _lock:
+        _login_failures.pop(username, None)
     requested = [s for s in f.get("scope", "").split() if s in SCOPES]
     granted = [s for s in f.getlist("grant") if s in requested]  # the user may narrow, never widen
     if not f.get("code_challenge") or f.get("code_challenge_method") != "S256":
@@ -294,6 +341,38 @@ def token():
     return resp
 
 
+@app.post("/revoke")
+def revoke():
+    """RFC 7009.  A client may revoke only its own tokens; an unknown token is not an error (§2.2)."""
+    cid, sec = _client_auth()
+    if not _client_ok(cid, sec):
+        return jsonify(error="invalid_client"), 401
+    tok = request.form.get("token", "")
+    with _lock:
+        rec = _tokens.get(tok)
+        if rec and rec.get("client_id") == cid:
+            del _tokens[tok]
+            revoked = rec
+        else:
+            revoked = None
+    if revoked:
+        audit("token.revoked", client_id=cid, user=revoked.get("user"))
+    return jsonify({})
+
+
+@app.post("/introspect")
+def introspect():
+    """RFC 7662, for the client the token was issued to."""
+    cid, sec = _client_auth()
+    if not _client_ok(cid, sec):
+        return jsonify(error="invalid_client"), 401
+    rec = _tokens.get(request.form.get("token", ""))
+    if not rec or rec["exp"] <= time.time() or rec.get("client_id") != cid:
+        return jsonify(active=False)
+    return jsonify(active=True, scope=" ".join(rec["scopes"]), client_id=cid, username=rec["user"],
+                   exp=int(rec["exp"]), token_type="Bearer", source=rec.get("source") or DEFAULT_SOURCE)
+
+
 # ---------------------------------------------------------------- resource server
 def _bearer():
     auth = request.headers.get("Authorization", "")
@@ -322,18 +401,23 @@ def resource(rest):
     ctx = _context(tok)
     # The data source comes from the token only: a caller-supplied header or ?src= must not widen it.
     query = urllib.parse.urlencode([(k, v) for k, v in request.args.items(multi=True) if k != "src"])
-    url = DATAMIND + path + ("?" + query if query else "")
+    # rest arrives percent-decoded: re-encode it so spaces and non-ASCII keys are legal and an encoded
+    # "?" or "#" stays part of the path instead of becoming a query string or a fragment upstream
+    url = DATAMIND + urllib.parse.quote(path, safe="/") + ("?" + query if query else "")
     data = request.get_data() if request.method == "POST" else None
     req = urllib.request.Request(url, data=data, method=request.method, headers=_upstream_headers(ctx))
     t0 = time.time()
     try:
         with urllib.request.urlopen(req, timeout=ROUTE_TIMEOUT.get(path, 60)) as r:
-            body, status = r.read(), r.status
+            body, status, ctype = r.read(), r.status, r.headers.get("Content-Type")
     except urllib.error.HTTPError as e:
-        body, status = e.read(), e.code
+        body, status, ctype = e.read(), e.code, e.headers.get("Content-Type")
+    except (OSError, ValueError) as e:  # DataMind down, timed out, or the URL could not be built
+        audit("resource.upstream_failed", path=path, user=tok["user"], error=type(e).__name__, **ctx)
+        return jsonify(error="upstream_unavailable", request_id=ctx["request_id"]), 502
     audit("resource.allowed", path=path, method=request.method, user=tok["user"], client_id=tok.get("client_id"),
           scope=need, status=status, ms=round(1000 * (time.time() - t0)), **ctx)
-    return Response(body, status=status, mimetype="application/json")
+    return Response(body, status=status, content_type=ctype or "application/json")
 
 
 def _mcp_call(messages, ctx=None):
@@ -369,8 +453,11 @@ def mcp():
             "params": {"protocolVersion": "2024-11-05", "capabilities": {}, "clientInfo": {"name": "datamind-ath-bridge", "version": "0.1"}}}
     note = {"jsonrpc": "2.0", "method": "notifications/initialized"}
     ctx = _context(tok)
+    bad = {"jsonrpc": "2.0", "id": msg.get("id"), "error": {"code": -32602, "message": "invalid params"}}
     if msg.get("method") == "tools/call":
-        tool = (msg.get("params") or {}).get("name", "")
+        if not isinstance(msg.get("params"), dict) or not isinstance(msg["params"].get("name"), str):
+            return jsonify(bad), 400
+        tool = msg["params"]["name"]
         need = MCP_TOOL_SCOPE.get(tool, "datamind:build.read")
         if need not in tok["scopes"]:
             audit("mcp.denied", tool=tool, required=need, user=tok["user"])
@@ -391,6 +478,9 @@ def mcp():
     else:
         return jsonify(jsonrpc="2.0", id=msg.get("id"), error={"code": -32601, "message": "method not exposed"}), 404
     t0 = time.time()
+    if "id" not in msg:  # a JSON-RPC notification: run it, answer nothing
+        _mcp_call([init, note, msg], ctx)
+        return Response(status=204)
     res = [r for r in _mcp_call([init, note, msg], ctx) if r.get("id") == msg.get("id")]
     text = ""
     try:
@@ -458,8 +548,23 @@ def a2a():
         return jsonify(jsonrpc="2.0", id=None, error={"code": -32700, "message": "parse error"}), 400
     if msg.get("method") != "message/send":
         return jsonify(jsonrpc="2.0", id=msg.get("id"), error={"code": -32601, "message": "method not supported"}), 404
-    m = (msg.get("params") or {}).get("message") or {}
-    skill = (m.get("metadata") or {}).get("skill") or next((p.get("data", {}).get("skill") for p in m.get("parts", []) if p.get("kind") == "data"), None)
+    bad = {"jsonrpc": "2.0", "id": msg.get("id"), "error": {"code": -32602, "message": "invalid params"}}
+    params = msg.get("params")
+    m = params.get("message") if isinstance(params, dict) else None
+    if not isinstance(m, dict) or not isinstance(m.get("metadata") or {}, dict) or not isinstance(m.get("parts") or [], list):
+        return jsonify(bad), 400
+    skill = (m.get("metadata") or {}).get("skill")
+    if skill is None:
+        for part in m.get("parts") or []:
+            if isinstance(part, dict) and part.get("kind") == "data":
+                if not isinstance(part.get("data"), dict):
+                    return jsonify(bad), 400
+                skill = part["data"].get("skill")
+                break
+            if not isinstance(part, dict):
+                return jsonify(bad), 400
+    if skill is not None and not isinstance(skill, str):
+        return jsonify(bad), 400
     if skill not in A2A_SKILLS:
         return jsonify(jsonrpc="2.0", id=msg.get("id"), error={"code": -32602, "message": f"unknown skill {skill}"}), 400
     need = A2A_SKILLS[skill][0]

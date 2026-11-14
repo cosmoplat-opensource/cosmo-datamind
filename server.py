@@ -279,8 +279,35 @@ def _json_object_guard():
     # All JSON write APIs use named fields. Reject malformed/scalar/array payloads
     # before route code calls .get(), while retaining multipart upload support.
     if request.method not in ("GET", "HEAD", "OPTIONS") and request.is_json:
-        if not isinstance(request.get_json(silent=True), dict):
+        body = request.get_json(silent=True)
+        if not isinstance(body, dict):
             return jsonify({"error": "请求体必须为有效的 JSON 对象"}), 400
+        # 标识类字段只能是字符串或数字:传成列表/对象时路由里的正则、字典查找会直接抛异常(500)
+        for field in ("graph", "key", "id", "base_graph"):
+            if field in body and not isinstance(body[field], (str, int, type(None))) or isinstance(body.get(field), bool):
+                return jsonify({"error": f"字段 {field} 须为字符串", "field": field}), 400
+
+
+@app.after_request
+def _security_headers(resp):
+    # 基线响应头:禁止类型嗅探、禁止被其他站点嵌入、不向外站带来源地址。页面大量使用内联事件处理,
+    # 所以内容安全策略只限制嵌入方,不限制脚本来源。
+    resp.headers.setdefault("X-Content-Type-Options", "nosniff")
+    resp.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    resp.headers.setdefault("Referrer-Policy", "same-origin")
+    resp.headers.setdefault("Content-Security-Policy", "frame-ancestors 'self'")
+    return resp
+
+
+@app.errorhandler(Exception)
+def _unhandled(error):
+    # 接口的未预期异常统一回 JSON,细节只进日志(可能含路径、SQL、连接信息),不回给调用方
+    if callable(getattr(error, "get_response", None)) and isinstance(getattr(error, "code", None), int):
+        return error                 # 框架自己的 HTTP 错误(404、405、413 等)照原样返回
+    app.logger.exception("unhandled error on %s %s", request.method, request.path)
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "服务内部错误,已记录;请稍后重试或联系管理员"}), 500
+    return "Internal Server Error", 500
 
 # ── IR 加载(本体图谱源:示例 数据本体 / 应用本体 / 构建产物)──
 IR_SOURCES = {
@@ -566,6 +593,22 @@ def ir_to_graph(key, ir):
     return {"nodes": nodes, "edges": edges}
 
 # ── SQLite 工具(只读查询)──
+_MAX_VALUE_BYTES = 10_000_000     # 引擎层:单个值超过即报错
+_MAX_CELL_CHARS = 20_000          # 返回层:单元格超过即截断并标注
+
+
+def _clip_cell(v):
+    """→ (可序列化的值, 是否截断)。二进制列转十六进制文本;过长的值截断并注明原长。"""
+    if isinstance(v, (bytes, bytearray, memoryview)):
+        raw = bytes(v)
+        if len(raw) * 2 > _MAX_CELL_CHARS:
+            return raw[:_MAX_CELL_CHARS // 2].hex() + f"…(二进制,已截断,原长 {len(raw)} 字节)", True
+        return raw.hex(), False
+    if isinstance(v, str) and len(v) > _MAX_CELL_CHARS:
+        return v[:_MAX_CELL_CHARS] + f"…(已截断,原长 {len(v)} 字符)", True
+    return v, False
+
+
 def q(sql, db=None, limit=500, attach_uploads=False, clean=None):
     # 以只读模式打开(mode=ro):即便 SQL 含写操作,引擎层也会拒绝,杜绝改/删库
     path = db or _qa_db()
@@ -586,10 +629,21 @@ def q(sql, db=None, limit=500, attach_uploads=False, clean=None):
     # 语句级超时:防笛卡尔积/慢查询拖垮进程(约 8s 后中断)
     deadline = [time.time() + 8.0]
     con.set_progress_handler(lambda: 1 if time.time() > deadline[0] else 0, 10000)
+    # 单个值的上限:挡住 zeroblob / 递归拼接造出的几百 MB 的值,否则一条查询就能占满内存
+    try: con.setlimit(sqlite3.SQLITE_LIMIT_LENGTH, _MAX_VALUE_BYTES)
+    except (AttributeError, sqlite3.Error): pass
     try:
         cur = con.execute(sql)
-        rows = [dict(r) for r in cur.fetchmany(limit)]
+        rows, cut = [], 0
+        for r in cur.fetchmany(limit):
+            row = dict(r)
+            for k, v in row.items():
+                shown, was_cut = _clip_cell(v)
+                if was_cut or shown is not v:
+                    row[k] = shown; cut += was_cut
+            rows.append(row)
         out = {"columns": [c[0] for c in cur.description or []], "rows": rows}
+        if cut: out["truncated_cells"] = cut
         if applied: out["cleaning"] = applied
         if notes: out["cleaning_notes"] = notes
         return out
@@ -2813,7 +2867,8 @@ def ont_review():
                           "evidence": _review_evidence(l)})
     counts["set_aside"] = len(aside)
     return jsonify({"graph": key, "counts": counts, "rows": rows, "objects": objs, 'semantic': semantic,
-                    "set_aside": aside, "replay_failed": edit_replay_failures(key)})
+                    "set_aside": aside, "replay_failed": edit_replay_failures(key),
+                    "undoable": len(_load_edits(key).get("ops") or [])})
 
 def _metric_graph_ir():
     """指标类端点的图谱选择:``graph`` 参数缺省为示例;非法键返回 None(调用方回 400)。"""
@@ -3181,6 +3236,8 @@ def ont_apply():
     if "ops" in body:
         return _ont_apply_batch(body)
     key, op = body.get("graph") or _active_graph_key(), body.get("op") or {}
+    if not isinstance(op, dict):
+        return jsonify({"error": "op 须为对象,形如 {\"op\": \"confirm_relation\", \"target\": \"rel:A->B\"}", "field": "op"}), 400
     _kind = op.get("op")
     try:
         import serve_claw as SC
@@ -3765,7 +3822,7 @@ def ont_save():
 
 @app.post("/api/ont/forged/delete")
 def ont_forged_delete():
-    fid = (request.json or {}).get("id", "")
+    fid = str((request.json or {}).get("id") or "")
     if not re.match(r"^[\w\-]+$", fid): return jsonify({"error": "bad id"}), 400
     p2 = _forged_path(fid)
     if not os.path.exists(p2): return jsonify({"error": "不存在"}), 404
@@ -4465,15 +4522,23 @@ def sparql():
         def _run():
             with _RDF_LOCK:   # 串行化 SPARQL 解析+执行,规避 pyparsing 语法状态并发污染
                 qres = g.query(query)
+                if qres.type == "ASK":
+                    return "ASK", [], [], bool(qres.askAnswer)
+                if qres.type in ("CONSTRUCT", "DESCRIBE"):   # 结果是一张图:按 主/谓/宾 三列给出
+                    triples = [{"s": str(s), "p": str(p), "o": str(o)} for s, p, o in qres][:500]
+                    return qres.type, ["s", "p", "o"], triples, None
                 vs = [str(v) for v in (qres.vars or [])]
-                return vs, [{v: str(r[i]) for i, v in enumerate(vs)} for r in qres][:500]
+                return "SELECT", vs, [{v: (str(r[i]) if r[i] is not None else "") for i, v in enumerate(vs)} for r in qres][:500], None
         out, err, timed_out = _bounded_ex(_run, 8, default=None)   # 限时执行,防止病态查询占满 CPU
         if timed_out:
             return jsonify({"error": "SPARQL 执行超时(>8s):查询过重或图谱过大,请增加过滤或 LIMIT"}), 400
         if err is not None:   # 语法/语义错误——如实回报,不再伪装成超时
             return jsonify({"error": f"SPARQL 查询错误: {str(err)[:200]}"}), 400
-        vars_, rows = out
-        return jsonify({"type": "SELECT", "vars": vars_, "rows": rows, "total": len(rows), "graph": key})
+        kind, vars_, rows, answer = out
+        if kind == "ASK":
+            return jsonify({"type": "ASK", "boolean": answer, "vars": ["结果"],
+                            "rows": [{"结果": "是" if answer else "否"}], "total": 1, "graph": key})
+        return jsonify({"type": kind, "vars": vars_, "rows": rows, "total": len(rows), "graph": key})
     except Exception as e:
         return jsonify({"error": f"SPARQL 失败: {str(e)[:200]}"}), 400
 
@@ -5778,14 +5843,64 @@ def agents():
 
 # ── 本体构建(上传多源数据 / 指向数据库 → 调技能)──
 def _upload_table_name(filename):
+    """文件名 → 表名。保留中文,其余符号逐个换成下划线:纯英文文件名的表名与此前完全一致,
+    中文文件名不再变成一串下划线(「订单 表(1)」→ 订单_表_1_)。"""
+    return re.sub(r"[^A-Za-z0-9_一-鿿]", "_", filename.rsplit(".", 1)[0])[:40]
+
+
+def _upload_table_name_legacy(filename):
+    """此前的规则(中文也换成下划线)。只用于删除资料时清掉按旧规则建的表。"""
     return re.sub(r"[^A-Za-z0-9_]", "_", filename.rsplit(".", 1)[0])[:40]
+
+
+def _decode_upload(raw):
+    """→ (文本, 编码名)。先按 UTF-8(含 BOM),不行再按 GB18030(覆盖 GBK/GB2312,国内导出文件常见)。"""
+    for enc in ("utf-8-sig", "gb18030"):
+        try:
+            return raw.decode(enc), ("utf-8" if enc == "utf-8-sig" else enc)
+        except UnicodeDecodeError:
+            continue
+    raise ValueError("无法识别文件编码(支持 UTF-8 与 GBK/GB18030),请另存为 UTF-8 后重传")
+
+
+def _sniff_delimiter(text, default=","):
+    """分隔符:表头里出现次数最多、且前几行列数一致的那个。只在明显不是默认分隔符时才换。"""
+    import csv as _csv, io
+    lines = [ln for ln in text.splitlines()[:20] if ln.strip()]
+    if not lines or default in lines[0]:
+        return default
+    for cand in (";", "\t", "|"):
+        if cand == default or cand not in lines[0]:
+            continue
+        widths = {len(r) for r in _csv.reader(io.StringIO("\n".join(lines)), delimiter=cand)}
+        if len(widths) == 1 and widths.pop() > 1:
+            return cand
+    return default
+
+
+_INT_RE, _REAL_RE = re.compile(r"-?(0|[1-9]\d{0,17})\Z"), re.compile(r"-?(0|[1-9]\d*)\.\d+\Z|-?(0|[1-9]\d*)(\.\d+)?[eE][-+]?\d+\Z")
+
+
+def _column_types(rows, width):
+    """逐列判型:非空值全是整数 → INTEGER;全是数值 → REAL;否则 TEXT。
+    带前导零的编码(007)、超长数字串(证件号)、空列一律保持 TEXT,不改变原值。"""
+    types = []
+    for i in range(width):
+        vals = [r[i].strip() for r in rows if r[i].strip()]
+        if vals and all(_INT_RE.match(v) for v in vals):
+            types.append("INTEGER")
+        elif vals and all(_INT_RE.match(v) or _REAL_RE.match(v) for v in vals):
+            types.append("REAL")
+        else:
+            types.append("TEXT")
+    return types
 
 
 @app.post("/api/build/upload")
 def build_upload():
     """上传 CSV/TSV → 入 uploads.db 成表(多源里结构化部分;其余文件存档供技能读取)"""
     os.makedirs(os.path.dirname(UPLOAD_DB), exist_ok=True)
-    saved, tables = [], []
+    saved, tables, notes = [], [], []
     import csv as _csv, io
     with _WRITE_LOCK:                                     # 串行化上传写,避免 uploads.db "database is locked"
         con = sqlite3.connect(UPLOAD_DB)                  # 置于 with 内:connect 抛错也由上下文管理器释放锁
@@ -5797,14 +5912,17 @@ def build_upload():
                     previous = None
                     wrote_file = False
                     try:
-                        txt = raw.decode("utf-8-sig")
-                        rows = list(_csv.reader(io.StringIO(txt), delimiter="\t" if fn.lower().endswith(".tsv") else ","))
+                        txt, encoding = _decode_upload(raw)
+                        delimiter = _sniff_delimiter(txt, "\t" if fn.lower().endswith(".tsv") else ",")
+                        rows = list(_csv.reader(io.StringIO(txt), delimiter=delimiter))
                         if len(rows) < 2 or not rows[0]:
                             raise ValueError("CSV/TSV 需要表头和至少一行数据")
                         t = _upload_table_name(fn)
                         hdr = [re.sub(r"[^A-Za-z0-9_一-鿿]", "_", h) or f"c{i}" for i, h in enumerate(rows[0])]
                         if len({h.casefold() for h in hdr}) != len(hdr):
                             raise ValueError("CSV 列名重复或清洗后冲突，请修改表头")
+                        if len(hdr) > 1000:
+                            raise ValueError(f"列数过多({len(hdr)} 列),单表最多 1000 列,请拆分后上传")
                         if any(len(row) != len(hdr) for row in rows[1:]):
                             raise ValueError("CSV 数据行列数与表头不一致，请检查文件")
                         for other in glob.glob(os.path.join(WORK, "uploads_*")):
@@ -5821,13 +5939,20 @@ def build_upload():
                         # Explicit BEGIN keeps DROP/CREATE transactional too.
                         con.execute("BEGIN")
                         con.execute(f'DROP TABLE IF EXISTS "{t}"')
-                        con.execute(f'CREATE TABLE "{t}" ({", ".join(chr(34)+h+chr(34)+" TEXT" for h in hdr)})')
-                        con.executemany(f'INSERT INTO "{t}" VALUES ({",".join("?"*len(hdr))})', rows[1:])
+                        types = _column_types(rows[1:], len(hdr))
+                        con.execute(f'CREATE TABLE "{t}" ({", ".join(chr(34)+h+chr(34)+" "+ty for h, ty in zip(hdr, types))})')
+                        # 数值列里的空串存成 NULL(否则一格空值就让整列按文本比较);文本列原样保留
+                        data = [[(v.strip() or None) if ty != "TEXT" else v for v, ty in zip(row, types)] for row in rows[1:]]
+                        con.executemany(f'INSERT INTO "{t}" VALUES ({",".join("?"*len(hdr))})', data)
                         _atomic_bytes(path, raw)
                         wrote_file = True
                         con.commit()
                         saved.append(fn)
-                        tables.append({"table": t, "rows": len(rows) - 1})
+                        info = {"table": t, "rows": len(rows) - 1}
+                        if encoding != "utf-8": info["encoding"] = encoding
+                        if delimiter not in (",", "\t") or (delimiter == "\t" and not fn.lower().endswith(".tsv")):
+                            info["delimiter"] = delimiter
+                        tables.append(info)
                     except Exception as e:
                         con.rollback()
                         if wrote_file:
@@ -5839,9 +5964,12 @@ def build_upload():
                 else:
                     _atomic_bytes(path, raw)
                     saved.append(fn)
+                    notes.append({"file": fn, "note": "已存档,未解析为表(只有 CSV/TSV 会建表)"})
         finally:
             con.close()
-    return jsonify({"saved": saved, "tables": tables})
+    out = {"saved": saved, "tables": tables}
+    if notes: out["notes"] = notes
+    return jsonify(out)
 
 @app.post("/api/build/asset/delete")
 def build_asset_delete():
@@ -5867,6 +5995,12 @@ def build_asset_delete():
                 con = sqlite3.connect(UPLOAD_DB)
                 try:
                     con.execute(f'DROP TABLE IF EXISTS "{t}"')
+                    old = _upload_table_name_legacy(fn)
+                    in_use = {_upload_table_name(os.path.basename(p)[8:]).casefold()
+                              for p in glob.glob(os.path.join(WORK, "uploads_*"))
+                              if p.lower().endswith((".csv", ".tsv"))}
+                    if old != t and old.casefold() not in in_use:      # 按旧规则建的表,且没有别的资料在用这个名字
+                        con.execute(f'DROP TABLE IF EXISTS "{old}"')
                     con.commit()
                     dropped = t
                 finally:
@@ -6594,7 +6728,7 @@ def build_history(key):
 @app.post("/api/build/delete")
 def build_delete():
     """删除一个已构建本体产物"""
-    k = (request.json or {}).get("key", "")
+    k = str((request.json or {}).get("key") or "")
     if not re.match(r"^built_[\w]+$", k): return jsonify({"error": "非法 key"}), 400
     p = _confined(WORK, k + ".json")
     try:
@@ -9196,6 +9330,12 @@ def _build_job_view(job, after=0):
 @app.post("/api/build/jobs")
 def build_job_submit():
     """提交一次构建并立即返回作业号(202)。请求体与 /api/build/inquire 相同;进度用 GET /api/build/jobs/<id> 查。"""
+    body = request.json or {}
+    if not isinstance(body.get("q"), str) or not body["q"].strip():
+        return jsonify({"error": "请输入构建诉求", "field": "q"}), 400
+    source = body.get("source") or (_active_source() or {}).get("id") or "uploads"
+    if source not in ("demo", "uploads") and not any(c.get("id") == source for c in _load_conns()):
+        return jsonify({"error": "数据源不存在,请先上传数据或连接库", "field": "source"}), 400
     resp = build_inquire()
     job_id = resp.headers.get("X-Build-Job") if hasattr(resp, "headers") else None
     if not job_id:

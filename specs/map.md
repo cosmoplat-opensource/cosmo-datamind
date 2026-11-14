@@ -34,6 +34,9 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 ## 索引
 
 ### 决定 / Decisions
+- [DR-112 · 探索性测试查出的界面缺陷](decisions/DR-112-ui-fixes-from-exploratory-testing.md)
+- [DR-111 · 探索性测试查出的后端缺陷](decisions/DR-111-api-robustness-from-exploratory-testing.md)
+- [DR-110 · ATH 适配层加固](decisions/DR-110-ath-adapter-hardening.md)
 - [DR-109 · 去掉四个页面和 12 条已被取代的接口](decisions/DR-109-prune-pages-routes-and-unused-modules.md)
 - [DR-108 · 去掉五个只读或演示性质的页面和一条无调用方的路由](decisions/DR-108-remove-read-only-and-demo-pages.md)
 - [DR-107 · 评审台展示证据、列出分流移出的关系、支持批量评审](decisions/DR-107-review-workbench-evidence-and-batch.md)

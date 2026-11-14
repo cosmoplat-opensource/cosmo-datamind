@@ -9,7 +9,8 @@ DataMind 本身不改、只监听本机；本适配层是对智能体开放的�
 
 ## 适配层做什么
 
-- **授权服务器**：授权页（DataMind 用户登录并勾选授予的范围）、一次性授权码、PKCE S256、令牌端点、RFC 8414 元数据。
+- **授权服务器**：授权页（DataMind 用户登录并勾选授予的范围）、一次性授权码、PKCE S256、令牌端点、RFC 8414 元数据、
+  令牌撤销（`POST /revoke`，RFC 7009）与自省（`POST /introspect`，RFC 7662）。同一用户连续输错 5 次口令锁定 5 分钟。
 - **资源服务器**：每个接口对应一个范围，令牌里没有该范围即拒绝；未列出的接口一律 404。
 - **MCP 桥接**：`POST /mcp` 转给 `mcp_build_server.py`。构建作业由 DataMind 服务端持有（DR-101），
   桥接进程结束不影响构建，之后凭作业号可查。
@@ -53,6 +54,7 @@ python3 -m ath_adapter.provider              # 适配层，8093
 | `ATH_GATEWAY_CALLBACK` | `http://localhost:3000/ath/callback` | 首次启动时登记的回调地址 |
 | `DATAMIND_ATH_STATE` | `workdir/ath_state` | 状态目录：OAuth 客户端密钥、用户口令哈希、初始口令、审计日志，文件权限 0600，不入库 |
 | `DATAMIND_ATH_ORGANIZATION` | `COSMO DataMind` | AgentCard 里的组织名 |
+| `DATAMIND_ATH_PUBLIC_URL` | 空 | 经反向代理对外提供时的地址，写进元数据的 `issuer`；不设时只认本机回环地址 |
 
 首次启动生成网关用的客户端密钥和一个用户 `analyst`，初始口令写在状态目录的 `initial_password.json`。
 授权码和令牌只在内存里，重启适配层后失效。
@@ -72,4 +74,5 @@ python3 -m ath_adapter.provider              # 适配层，8093
 - 调用方和请求号由适配层带给 DataMind，DataMind 自身不验证；绕过适配层直接访问 8092 的调用方可以伪造它们。
 - 审计日志仍是两份文件（适配层的 `audit.jsonl` 与 DataMind 的作业、构建记录），靠请求号对账，没有合并成一份。
 - 深度问数走同步接口，单次最长等待 240 秒；流式过程不经适配层转发。
-- 令牌是不透明字符串、存在内存里，适配层只能单进程运行。
+- 令牌是不透明字符串、存在内存里，适配层只能单进程运行；口令锁定计数也在内存里，重启后清零。
+- DataMind 不可达时资源接口返回 502 `upstream_unavailable`。

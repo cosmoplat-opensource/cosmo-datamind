@@ -192,6 +192,9 @@ def _render_job(job_id, wait=0):
 # ── 只读渲染(纯函数,便于单测)─────────────────────────────────────────
 def _render_sources(d):
     srcs = d.get("sources") or []
+    bound = _caller_headers().get("X-DataMind-Source")
+    if bound:  # 宿主把调用方限定在一个数据来源上(DR-104):别的来源连名字也不列出
+        srcs = [s for s in srcs if str(s.get("id")) == bound]
     lines = ["数据源 %d 个 · 证据资产 %d 项" % (len(srcs), len(d.get("assets") or []))]
     for s in srcs:
         lines.append("- id=%s 「%s」 %s · 表 %s · %s"

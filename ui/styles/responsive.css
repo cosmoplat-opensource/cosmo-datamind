@@ -1,10 +1,15 @@
 /* DR-043：跨页面窄屏布局集中维护，避免每个页面在 index.html 里各自打补丁。 */
+.nav-toggle{display:none}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 @media (max-width:820px){
  body{height:auto;min-height:100vh;overflow-y:auto}
  .topbar .wm small{display:none}
  .shell{flex-direction:column;overflow:visible}
  aside{width:100%;flex-direction:column;gap:2px;border-right:0;border-bottom:1px solid var(--line);padding:8px 12px;max-height:44vh;overflow-y:auto}
  aside .ucard{display:none}
+ .nav-toggle{display:inline-flex}
+ /* DR-112:菜单默认收起,只留数据库切换;点顶栏「菜单」展开,选中页面后自动收起 */
+ aside:not(.open) .nav,aside:not(.open) .nav-group{display:none}
  aside .nav{padding:7px 12px;font-size:13px}
  aside>div[style*="flex:1"]{display:none} aside>.muted{display:none}
  main{padding:14px 12px;overflow:visible}

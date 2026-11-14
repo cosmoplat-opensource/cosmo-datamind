@@ -756,6 +756,61 @@
         "tests/unit/test_prune_keeps_capabilities.py::test_routes_with_real_dependents_are_kept",
         "tests/unit/test_prune_keeps_capabilities.py::test_shape_validation_is_available_on_demand_from_the_coverage_endpoint"
       ]
+    },
+    {
+      "id": "ATH-HARDEN-01",
+      "criterion": "授权页列出全部就绪的 SQLite 数据来源;审计日志仅属主可读写;口令连续输错后锁定;上游不可达与畸形请求不返回 500;issuer 不取自任意 Host 头;令牌可撤销、可自省;被限定来源的调用方看不到其他来源",
+      "tests": [
+        "tests/unit/test_ath_hardening.py::test_consent_page_offers_every_ready_sqlite_source",
+        "tests/unit/test_ath_hardening.py::test_audit_log_is_owner_only",
+        "tests/unit/test_ath_hardening.py::test_repeated_wrong_passwords_lock_the_account_for_a_while",
+        "tests/unit/test_ath_hardening.py::test_upstream_unreachable_is_a_502_not_a_crash",
+        "tests/unit/test_ath_hardening.py::test_an_encoded_question_mark_cannot_smuggle_query_parameters",
+        "tests/unit/test_ath_hardening.py::test_malformed_mcp_calls_get_a_json_rpc_error",
+        "tests/unit/test_ath_hardening.py::test_malformed_a2a_messages_get_a_json_rpc_error",
+        "tests/unit/test_ath_hardening.py::test_issuer_is_not_taken_from_an_arbitrary_host_header",
+        "tests/unit/test_ath_hardening.py::test_a_revoked_token_stops_working",
+        "tests/unit/test_ath_hardening.py::test_source_listing_is_limited_to_the_bound_source"
+      ]
+    },
+    {
+      "id": "API-ROBUST-01",
+      "criterion": "查询结果的单个值有大小上限;标识字段类型不对返回 400;接口的未预期异常返回 JSON 且不泄露细节;SPARQL 的 ASK 返回布尔值、CONSTRUCT 返回三元组;无效的构建请求不建作业;响应带基线安全头",
+      "tests": [
+        "tests/unit/test_api_robustness.py::test_a_huge_value_is_refused_by_the_engine",
+        "tests/unit/test_api_robustness.py::test_long_cells_are_truncated_and_flagged",
+        "tests/unit/test_api_robustness.py::test_wrongly_typed_fields_are_a_client_error",
+        "tests/unit/test_api_robustness.py::test_an_unexpected_failure_on_an_api_route_is_reported_as_json",
+        "tests/unit/test_api_robustness.py::test_ask_returns_a_boolean",
+        "tests/unit/test_api_robustness.py::test_construct_returns_triples",
+        "tests/unit/test_api_robustness.py::test_an_invalid_build_request_does_not_create_a_job",
+        "tests/unit/test_api_robustness.py::test_responses_carry_baseline_security_headers"
+      ]
+    },
+    {
+      "id": "UPLOAD-02",
+      "criterion": "GBK 文件可导入;分号分隔的文件按列拆开;中文文件名的表名可读且英文文件名的表名不变;数值列得到数值类型而编码保持文本;只存档未建表的文件有说明;按旧规则建的表在删除资料时一并清掉",
+      "tests": [
+        "tests/unit/test_api_robustness.py::test_gbk_file_is_imported",
+        "tests/unit/test_api_robustness.py::test_semicolon_separated_file_is_split_into_columns",
+        "tests/unit/test_api_robustness.py::test_a_comma_file_with_semicolons_in_values_is_left_alone",
+        "tests/unit/test_api_robustness.py::test_chinese_file_name_keeps_a_readable_table_name",
+        "tests/unit/test_api_robustness.py::test_numeric_columns_get_numeric_types_and_codes_stay_text",
+        "tests/unit/test_api_robustness.py::test_unparsed_files_and_bad_files_say_what_happened",
+        "tests/unit/test_api_robustness.py::test_deleting_an_upload_also_removes_a_table_made_under_the_old_naming_rule"
+      ]
+    },
+    {
+      "id": "UI-FIX-03",
+      "criterion": "切页时关闭弹窗;无可撤销操作时撤销按钮禁用;评审页对象表默认折叠;窄屏菜单收在按钮后;遵从减少动态效果的系统设置",
+      "tests": [
+        "tests/unit/test_ui_exploratory_fixes.py::test_switching_pages_closes_open_dialogs",
+        "tests/unit/test_ui_exploratory_fixes.py::test_review_reports_how_many_edits_can_be_undone",
+        "tests/unit/test_ui_exploratory_fixes.py::test_object_table_is_folded_unless_something_needs_confirming",
+        "tests/unit/test_ui_exploratory_fixes.py::test_narrow_screens_fold_the_menu_behind_a_toggle",
+        "tests/unit/test_ui_exploratory_fixes.py::test_reduced_motion_preference_is_honoured",
+        "tests/unit/test_ui_exploratory_fixes.py::test_upload_feedback_mentions_files_that_were_only_archived"
+      ]
     }
   ]
 }
