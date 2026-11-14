@@ -11,8 +11,8 @@ import pathlib
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
 # 规范值(集中定义)。改动路由/断言数时,必须同步改这里 + ARCHITECTURE.md/specs/map.md。
-EXPECT_ROUTES = 113
-EXPECT_ASSERTIONS = 470
+EXPECT_ROUTES = 128
+EXPECT_ASSERTIONS = 548
 
 
 def _server_route_count():

@@ -1,54 +1,53 @@
-# DR-109 · 再去掉四个页面、27 条接口和四个不再有调用方的模块
+# DR-109 · 去掉四个页面和 12 条已被取代的接口
 
 状态：已实现。日期：2026-11-14。
-关联：UI-PRUNE-02、DR-108、DR-010、DR-101；删除范围经使用者确认。
+关联：UI-PRUNE-02、DR-108、DR-101；删除范围经使用者确认，并按「不能让关键功能失效」复核过一轮。
 
-## 决定
+## 判据
+
+只去掉**已有替代入口**或**只为被删页面服务**的东西。没有替代入口的独立能力，即使界面没有接入，也保留接口。
+
+## 去掉的
 
 **页面（4 个）**：本体库、技能中心、作业中心、构成规则。页面数 22 → 18。
-技能的查看与编辑仍在构建页的技能编排里；构建进度在构建页，作业由服务端持有（DR-101）；
-运行时切换在引擎设置里。
 
-**接口（27 条）**：
+**接口（12 条）**：
 
-| 类别 | 接口 |
+| 接口 | 替代入口 |
 |---|---|
-| 锻造与本体库 | `/api/ont/forge`、`/api/ont/save`、`/api/ont/forged`、`/api/ont/forged/<id>`、`/api/ont/forged/delete` |
-| 技能中心 | `/api/skills`、`/api/skill/run`、`/api/ont/skill/<name>`、`/api/ont/skills/install`、`/api/ont/skills/write` |
-| 作业中心与旧构建入口 | `/api/jobs`、`/api/job/<id>`、`/api/build/run` |
-| 成果文件 | `/api/outputs`、`/api/outputs/file`、`/doc/<name>` |
-| 本体治理（界面未接入） | `/api/ont/chain`、`/api/ont/drift/<key>`、`/api/ont/health/<key>`、`/api/ont/compat/<key>`、`/api/ont/modules/<key>`、`/api/ont/rulebook/<key>`（读、写）、`/api/ont/rulebook/<key>/delete`、`/api/ont/decide/<key>` |
-| 其他 | `/api/ont/rules`、`/api/viz/delete` |
+| `/api/build/run`、`/api/jobs`、`/api/job/<id>` | 构建统一走 `/api/build/jobs`（DR-101）；纯数据驱动构建仍是它的降级路径 |
+| `/api/skills`、`/api/skill/run`、`/api/ont/skill/<name>`、`/api/ont/skills/install`、`/api/ont/skills/write` | 技能的查看、编辑、沉淀在构建页的技能编排（`/api/build/skills` 一组）。带参数运行技能脚本的入口不再提供 |
+| `/api/outputs`、`/api/outputs/file`、`/doc/<name>` | 成果库页面此前已去掉；`ui/` 下没有可供 `/doc` 提供的文档页 |
+| `/api/ont/rules` | 只为构成规则页提供统计；运行时切换在引擎设置里 |
 
-路由数 140 → 113。集成套件里对应的检查点一并去掉，565 → 470。
+路由数 140 → 128。集成套件 565 → 548 个检查点。
+随之去掉通用后台作业（`run_job`、`JOBS`）；`/api/sysinfo` 的作业数改为正在执行的构建作业数。
 
-**模块（4 个）**：`rule_engine.py`、`drift_check.py`、`compat_check.py`、`module_split.py` 及其单元测试。
-上述治理接口去掉后，这四个模块在生产代码里不再有调用方。`cq_check`、`health_check` 仍被构建验收使用，`usage_stat` 仍被问数使用，保留。
+## 复核后保留的
 
-**随之去掉的内部代码**：通用后台作业（`run_job`、`JOBS`）、规则库的读写函数。`/api/sysinfo` 的作业数改为正在执行的构建作业数。
-
-## 保留下来的，以及原因
-
-原计划删除、核对调用方后保留：
+第一版删除方案里还包括下面这些，复核时逐条查了调用方和替代入口，全部保留：
 
 | 接口 | 保留原因 |
 |---|---|
-| `/api/ont/cq` | 部署验收脚本用它与本地重放结果逐项对照 |
-| `/api/ont/rebuild` | 上游智能体技能按这个接口丢弃草案层，并依赖它要求显式确认 |
-| `/api/eval/set` | 数据来源的验收测试通过它读取当前来源的评测题集 |
-| `/api/ont/usage/<key>` | 问数持续记录对象使用度，这是唯一的读取入口 |
-| `/api/ont/accuracy`、`/api/ont/rejected-patterns` | 不在确认的删除范围内 |
+| `/api/viz/delete` | 已保存看板的唯一删除途径；现场验收脚本靠它清理自己建的看板 |
+| `/api/ont/save`、`/api/ont/forge`、`/api/ont/forged`、`/api/ont/forged/<id>`、`/api/ont/forged/delete` | 把人工编辑后的本体存成版本、锻造为 Turtle 并校验，没有别的入口；已有的版本需要能删 |
+| `/api/ont/drift/<key>`、`/api/ont/chain` | 数据源漂移与链路核验（DR-025） |
+| `/api/ont/rulebook/<key>`（读、写、删）、`/api/ont/decide/<key>` | 规则与确定性推理（DR-028） |
+| `/api/ont/health/<key>` | 图结构检查的按需入口（DR-030） |
+| `/api/ont/compat/<key>`、`/api/ont/modules/<key>` | 向后兼容影响面与模块化建议（DR-031） |
+| `/api/ont/cq` | 部署验收脚本逐项对照 |
+| `/api/ont/rebuild` | 上游智能体技能按此接口丢弃草案层 |
+| `/api/eval/set` | 数据来源的验收测试读取评测题集 |
+| `/api/ont/usage/<key>` | 问数记录的使用度由它读出 |
 
-## 形状校验改由覆盖率接口给出
+模块 `rule_engine.py`、`drift_check.py`、`compat_check.py`、`module_split.py` 及其单元测试随之保留。
 
-导出 Turtle 的 SHACL 形状校验此前只在「锻造」接口里执行。接口去掉后，
-`GET /api/ont/completeness/<key>?shacl=1` 按需返回校验结果（是否符合、违反条数、三元组数）；
-不带该参数时不执行，避免每次读取覆盖率都生成并解析整张图。界面上暂时没有入口。
+## 新增
+
+`GET /api/ont/completeness/<key>?shacl=1` 按需返回导出 Turtle 的 SHACL 校验结果（是否符合、违反条数、三元组数），
+不必为了校验而先锻造出一个版本。不带该参数时不执行。
 
 ## 影响
 
-- 已经锻造的本体（`forged_*`）仍可在图谱列表里打开、查询，但不能再新建或在界面上删除。
-- 能带参数运行技能脚本的入口随技能中心一起去掉，对应的参数注入风险不再存在。
-- 规则约束与确定性推理、数据源漂移检查、向后兼容检查、模块化建议这四项能力从产品中移除。
-  README 与架构文档里的能力描述已同步。需要时可从版本历史恢复。
-- 外部调用方若依赖上述接口，会得到 404。
+- 本体库页面去掉后，本体版本的列表与删除只有接口，没有界面入口；版本仍会出现在图谱列表里，可打开、查询、导出。
+- 外部调用方若依赖上表「去掉的」12 条接口，会得到 404。

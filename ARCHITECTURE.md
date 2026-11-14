@@ -9,8 +9,8 @@
 │  前端 (ui/index.html + ui/modules/styles, 原生 JS/CSS)        │
 │   18 页 × hash 路由 · G6 图谱 · ECharts · 统一助手 $/esc/J    │
 ├─────────────────────────────────────────────────────────────┤
-│  HTTP 层 (Flask, 单端口 8092) · 共 113 路由                    │
-│   server.py 96 + bp_engine 5 + bp_actions 7 + bp_metrics 3 + bp_semantic 2 │
+│  HTTP 层 (Flask, 单端口 8092) · 共 128 路由                    │
+│   server.py 111 + bp_engine 5 + bp_actions 7 + bp_metrics 3 + bp_semantic 2 │
 │   生产入口:wsgi.py → Gunicorn(gthread);可另配 Nginx 反向代理 │
 │   app 级 before_request CSRF 守卫(对 blueprint 同样生效)      │
 │   共享层: srv_context(路径/只读连接/原子写/写锁)              │
@@ -22,8 +22,9 @@
 │         → dao_core数据验证→参照注释→指标反解/核验→build_quality验收→人审 │
 │   问数: _anchor_ir(选中图谱=锚定源) → build_context(带轨迹)   │
 │         → agent_sql_plan → 本体约束校验(表/JOIN 键/扇出) → q() → 双盲意图 → 叙事 │
-│   体检: cq_check 能力核验 · health_check 图结构              │
-│   决策: 动作层(类型化+风险分级)                              │
+│   体检: cq_check 能力核验 · drift_check 漂移 · health_check    │
+│         图结构 · compat_check 兼容 · module_split 模块化       │
+│   决策: rule_engine 规则+确定性推理 · 动作层(类型化+风险分级)│
 │   导出: _ir_to_turtle → RDF 解析 + SHACL 校验 (DR-010)        │
 ├─────────────────────────────────────────────────────────────┤
 │  执行层                                                      │
@@ -71,9 +72,13 @@
 | `srv_actions.py` | 动作共享层:注册表/日志读取、参数 schema 校验 | DR-043/020 |
 | `bp_actions.py` | 动作类型/发起/审批 blueprint(7 路由;目录函数由主应用注入) | DR-043/020 |
 | `cq_check.py` | 能力核验(CQ):本体够不够回答业务问题;穿透链路是否贯通 | DR-024/025 |
+| `drift_check.py` | 概念漂移:本体还对不对得上数据源(表/列/主键/关系四类) | DR-025 |
 | `intent_check.py` | 双盲意图检测:问句通道 vs SQL 通道各自锚定,比对是否答非所问 | DR-026 |
 | `usage_stat.py` | 本体使用度埋点(只读旁路,不记录问句原文) | DR-026 |
+| `rule_engine.py` | 业务规则 + 确定性推理,每条结论带 trace;冲突只报不裁 | DR-028 |
 | `health_check.py` | 图结构检查：悬空/自反/状态矛盾(阻断问题)+ 孤岛/枢纽/重复边(待复核信号) | DR-030 |
+| `compat_check.py` | 向后兼容:结构 diff + **下游影响**(命中哪些规则/动作/技能) | DR-031 |
+| `module_split.py` | 模块化建议(按领域连通分量 / 按数仓分层),只建议不落盘 | DR-031 |
 | `openai_runtime.py` | OpenAI 兼容驱动(GLM/DeepSeek/Qwen/vLLM),空内容判失败不回传空串 | DR-029 |
 | `mcp_action_server.py` | 对外 MCP:发起动作是唯一写工具,审批不开放;另有只读语义工具(概念检索/指标计算规则/按 certified 指标取数);协议版本按规范协商,工具带 `annotations` 行为提示 | DR-015/053/055 |
 | `mcp_build_server.py` | 对外 MCP(构建):发起构建是唯一写工具,verified/asserted/certified 与删除不开放;start_build 立即返回作业 id,SSE 必须有 done 才算完成(DR-056 同规);验收复跑与人审队列只读 | DR-058/016 |
@@ -123,7 +128,7 @@
 | 层 | 内容 | 是否需起服务 |
 |---|---|---|
 | 单元层 `tests/` | 确定性模块边界/纯函数 + MCP 协议合规 + 缓存失效面 + 文档计数自检 | 否(离线) |
-| 集成层 `test_all.py` | 源码定义 470 个检查点,覆盖路由正常路径、边界与安全约束 | 是 |
+| 集成层 `test_all.py` | 源码定义 548 个检查点,覆盖路由正常路径、边界与安全约束 | 是 |
 | UI 层 | `test_ui.py`(全页走查)·`test_ui_ops.py`(浏览器逐步实操) | 是(需 playwright) |
 
 自动化校验:`pyproject.toml` 统一 pytest/coverage/ruff(只选 F/B 抓真缺陷)/mypy ·
@@ -132,7 +137,7 @@ pyflakes 零告警 · 构建产物经 RDF 解析与 SHACL 校验 · 元数据覆
 
 ### 5.1 集成套件的环境依赖(勿误判为回归)
 
-`test_all.py` 源码定义 **470 个检查点**。若出现下列 **5 项**失败,先查环境再查代码——
+`test_all.py` 源码定义 **548 个检查点**。若出现下列 **5 项**失败,先查环境再查代码——
 它们同出一源:`workdir/engine_config.json` 持久化的 `driver` 在当前环境**未注册**
 (如 `driver="openai"` 但未配置 OpenAI 兼容端点凭据),编辑引擎据 DR-003/029 显式报错而非伪装可用。
 

@@ -22,8 +22,8 @@ markers = [
 branch = true
 # 全部生产模块都计入覆盖率(DR-106);路由层与确定性模块分别设下限,见下方 report 一节与 scripts/check.py。
 source = [
-  "health_check", "cq_check",
-  "intent_check", "usage_stat", "quick_build", "openai_runtime",
+  "health_check", "cq_check", "drift_check", "rule_engine", "module_split",
+  "compat_check", "intent_check", "usage_stat", "quick_build", "openai_runtime",
   "dao_core", "hallucination_eval", "definition_eval", "store", "srv_context", "srv_hardening",
   "ir_relational", "skill_registry", "build_quality", "ontology_grounding", "action_ontology",
   "ir_shape", "content_quality", "mcp_action_server", "mcp_build_server",
@@ -75,12 +75,12 @@ warn_unused_ignores = true
 # 类型检查实际只看模块顶层。下列模块在开启后无错误,新增模块应加入此表;server.py 等仍有存量错误,暂不在内。
 module = [
     "dao_core", "srv_context", "sqlite_evidence", "ir_shape", "ir_relational", "store", "ontology_domain",
-    "database_scope", "relation_triage", "key_links", "code_contracts", "content_quality",
+    "database_scope", "relation_triage", "key_links", "code_contracts", "compat_check", "content_quality",
     "definition_eval", "hallucination_eval", "intent_check", "observability", "ontology_grounding",
     "openai_runtime", "skill_registry", "action_ontology", "mcp_action_server", "metric_pipeline",
     "srv_actions", "srv_engine", "bp_actions", "bp_engine", "bp_metrics", "bp_semantic", "wsgi",
-    "ath_adapter.provider", "cq_check", "data_catalog", "metric_mining",
-    "translate_cn", "llm_json", "concept_profile", "usage_stat",
+    "ath_adapter.provider", "cq_check", "data_catalog", "drift_check", "metric_mining", "module_split",
+    "translate_cn", "llm_json", "rule_engine", "concept_profile", "usage_stat",
 ]
 check_untyped_defs = true
 

@@ -24,7 +24,7 @@ async def test_database_switch(args):
         context=await browser.new_context(viewport={'width':1440,'height':1000})
         page=await context.new_page(); page.on('pageerror',lambda e:errors.append(str(e)))
         model_paths={'/api/chat','/api/chat/stream','/api/diagnose/stream','/api/ont/chat',
-                     '/api/ont/chat/stream','/api/build/inquire','/api/build/run','/api/eval/run'}
+                     '/api/ont/chat/stream','/api/build/inquire','/api/build/jobs','/api/eval/run'}
         page.on('request',lambda r:model_requests.append(r.url) if r.method=='POST' and r.url.split('?')[0].removeprefix(args.url) in model_paths else None)
         async def api(path,source,body=None):
             headers={'X-DataMind-Source':source}

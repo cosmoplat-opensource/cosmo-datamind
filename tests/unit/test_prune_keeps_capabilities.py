@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-"""删除页面与接口后仍须保留的能力(DR-109):导出形状校验不随「锻造」接口一起消失;
-被去掉的接口确实不再存在;有脚本、技能或验收测试在用的接口没有被误删。"""
+"""删除页面与接口后仍须保留的能力(DR-109):被取代的接口确实不再存在;独立能力(本体治理、版本保存与锻造、看板删除)和
+有脚本、技能或验收测试在用的接口没有被误删;形状校验可单独按需取得。"""
 import pytest
 
 import server
@@ -21,12 +21,10 @@ def _rules():
 
 
 @pytest.mark.parametrize("path", [
-    "/api/build/run", "/api/ont/save", "/api/ont/forge", "/api/ont/forged", "/api/ont/forged/delete",
-    "/api/ont/skills/write", "/api/ont/skills/install", "/api/ont/skill/<name>", "/api/skills", "/api/skill/run",
-    "/api/jobs", "/api/job/<jid>", "/api/outputs", "/api/outputs/file", "/doc/<name>", "/api/viz/delete",
-    "/api/ont/rules", "/api/ont/chain", "/api/ont/drift/<key>", "/api/ont/rulebook/<key>",
-    "/api/ont/rulebook/<key>/delete", "/api/ont/decide/<key>", "/api/ont/health/<key>", "/api/ont/compat/<key>",
-    "/api/ont/modules/<key>", "/api/metric/dimensions",
+    "/api/build/run", "/api/jobs", "/api/job/<jid>",                       # 由 /api/build/jobs 取代
+    "/api/skills", "/api/skill/run", "/api/ont/skill/<name>",               # 技能在构建页的技能编排里
+    "/api/ont/skills/write", "/api/ont/skills/install",
+    "/api/outputs", "/api/outputs/file", "/doc/<name>", "/api/ont/rules", "/api/metric/dimensions",
 ])
 def test_removed_routes_are_gone(path):
     assert path not in _rules()
@@ -39,6 +37,10 @@ def test_removed_routes_are_gone(path):
     "/api/ont/usage/<key>",   # 问数记录的使用度由它读出
     "/api/ont/accuracy", "/api/ont/rejected-patterns",
     "/api/agents", "/api/routes", "/api/sysinfo",
+    "/api/viz/delete",        # 已保存看板的唯一删除途径,现场验收脚本用它清理
+    "/api/ont/save", "/api/ont/forge", "/api/ont/forged", "/api/ont/forged/<fid>", "/api/ont/forged/delete",
+    "/api/ont/chain", "/api/ont/drift/<key>", "/api/ont/health/<key>", "/api/ont/compat/<key>",
+    "/api/ont/modules/<key>", "/api/ont/rulebook/<key>", "/api/ont/rulebook/<key>/delete", "/api/ont/decide/<key>",
     "/api/build/jobs", "/api/build/inquire",
 ])
 def test_routes_with_real_dependents_are_kept(path):

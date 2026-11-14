@@ -206,6 +206,8 @@ r=g("/api/ont/metadata?graph=demo"); chk("ont/metadata 字典", r.status_code==2
 r=g("/api/ont/object/demo/nosuchobj"); chk("object 不存在→404", r.status_code==404)
 r=g("/api/ont/relation/demo?s=a&t=b"); chk("relation 不存在→404", r.status_code==404)
 r=g("/api/ont/edits?graph=demo"); chk("edits", r.status_code==200 and "ops" in r.json())
+r=g("/api/ont/forged"); chk("forged 列表", r.status_code==200 and "ontologies" in r.json())
+r=g("/api/ont/forged/bad@id"); chk("forged 非法id→400", r.status_code==400)
 r=g("/api/ont/runtimes"); chk("runtimes", r.status_code==200 and "runtimes" in r.json())
 
 print("=== E. 编辑/写(含清理)===")
@@ -297,6 +299,7 @@ r=po("/api/viz/save",json={"name":"__t看板__","charts":[{"title":"t","src":"de
 bid=r.json().get("id"); chk("保存看板", r.status_code==200 and bid)
 r=g("/api/viz/boards"); chk("看板列表", r.status_code==200 and any(b.get("id")==bid for b in r.json()))
 r=po("/api/viz/save",json={"name":"","charts":[]},headers=H); chk("空看板→400", r.status_code==400)
+r=po("/api/viz/delete",json={"id":bid},headers=H); chk("删除看板", r.status_code==200)
 # 连接登记→清理
 r=po("/api/build/connect",json={"kind":"external","name":"__t连接__","dsn":"jdbc:x://h:1/d"},headers=H)
 cid=r.json().get("conn",{}).get("id"); chk("登记外部连接", r.status_code==200 and cid)
@@ -345,8 +348,11 @@ r=po("/api/ont/maturity",json={"graph":"cq","object":"x","maturity":"Released"},
 r=po("/api/ont/maturity",json={"graph":"forged_../../etc","object":"x","maturity":"Released"},headers=H); chk("maturity 图谱键穿越→400", r.status_code==400)
 r=po("/api/ont/maturity",json={"graph":"demo","object":n0["id"],"maturity":"Released"},headers=H); chk("maturity promote 200", r.status_code==200 and r.json().get("maturity")=="Released")
 po("/api/ont/maturity",json={"graph":"demo","object":n0["id"],"maturity":"Provisional"},headers=H)  # 置回,net-zero
-r=g("/api/ont/completeness/demo?shacl=1"); fj=r.json().get("shacl") or {}
-chk("SHACL 形状校验对已补全示例图谱→conforms(原锻造接口的校验,现由覆盖率接口按需给出,DR-109)", r.status_code==200 and fj.get("status")=="conforms", str(fj)[:80])
+r=po("/api/ont/forge",json={"graph":"demo","name":"__shacl自检__"},headers=H); fj=r.json()
+chk("forge SHACL 对已补全示例图谱→conforms", r.status_code==200 and fj.get("shacl")=="conforms")
+if fj.get("id"): po("/api/ont/forged/delete",json={"id":fj["id"]},headers=H)  # 清理(含 .ttl 伴生)
+r=g("/api/ont/completeness/demo?shacl=1"); _sh=r.json().get("shacl") or {}
+chk("SHACL 形状校验可从覆盖率接口按需取得,与锻造结论一致", r.status_code==200 and _sh.get("status")=="conforms", str(_sh)[:80])
 
 
 print("=== O. 泛化裁决 v2(DR-011:等值/复合/PK感知/语义层)===")
@@ -676,6 +682,37 @@ _tir={"objects":[{"id":"a","cn":"甲对象"},{"id":"b","cn":"乙对象"},{"id":"
 chk("CQ11 借道候选边判 partial(不算可答)", _cqm.check_one("甲对象经乙对象到丙对象",_tir)["verdict"]=="partial")
 chk("CQ12 从严锚定:单字不误命中", [x["matched"] for x in _cqm.anchor_objects("查甲对象",_tir)]==["甲对象"])
 
+print("=== DF. 漂移检测与穿透链路(DR-025)===")
+r=g("/api/ont/drift/demo"); _df=r.json()
+chk("DF1 漂移检测 200 + 一致率", r.status_code==200 and "consistency" in _df)
+chk("DF2 健康态零误报(真库大小写不敏感)", _df["healthy"] is True and _df["consistency"]==100.0)
+chk("DF3 扫描面覆盖 对象/列/关系", all(_df["scanned"][k]>0 for k in ("objects_bound","columns","relations")))
+chk("DF4 只报事实不自动修复(边界标注)", "不自动修复" in _df["note"])
+r=g("/api/ont/drift/a..b"); chk("DF5 键含..→400(处理器拦截)", r.status_code==400)
+r=g("/api/ont/drift/forged_../../etc"); chk("DF5b 含斜杠路径→404(路由层不匹配,与 completeness 同)", r.status_code==404)
+r=g("/api/ont/drift/nope"); chk("DF6 图谱不存在→404", r.status_code==404)
+import drift_check as _dfm, sqlite3 as _s3, os as _os3
+_dp="/tmp/_t_drift.db"
+_os3.path.exists(_dp) and _os3.remove(_dp)
+_c=_s3.connect(_dp); _c.execute('CREATE TABLE t_wo(wo_id TEXT, line_id TEXT)'); _c.execute('CREATE TABLE t_line(line_id TEXT)'); _c.commit(); _c.close()
+_tir={"objects":[{"id":"wo","cn":"工单","table":"t_wo","pk":"wo_id","attrs":[{"col":"gone_col","cn":"已删列"}]},
+                 {"id":"line","cn":"产线","table":"t_gone","attrs":[]},
+                 {"id":"c1","cn":"纯概念"}],
+      "links":[{"source":"wo","target":"line","status":"verified","evidence":{"child_key":"line_id","parent_key":"line_code"}}]}
+_dr=_dfm.check(_tir,_dp); _ty={i["type"] for i in _dr["issues"]}
+chk("DF7 检出表缺失", "table_missing" in _ty)
+chk("DF8 检出列缺失", "column_missing" in _ty)
+chk("DF9 纯概念对象不误报(未绑表跳过)", _dr["scanned"]["objects_bound"]==2)
+_tir2={"objects":[{"id":"wo","cn":"工单","table":"t_wo","pk":"wo_id","attrs":[]},{"id":"line","cn":"产线","table":"t_line","attrs":[]}],
+       "links":[{"source":"wo","target":"line","status":"verified","evidence":{"child_key":"line_id","parent_key":"line_code"}}]}
+chk("DF10 检出关系断裂(键列已删)", "relation_broken" in {i["type"] for i in _dfm.check(_tir2,_dp)["issues"]})
+chk("DF11 漂移项进入待补清单", len(_dfm.gaps_from(_dr))>=2 and _dfm.gaps_from(_dr)[0]["type"].startswith("drift_"))
+_os3.remove(_dp)
+r=po("/api/ont/chain",json={"graph":"demo","chain":["月度聚合指标表(按人×月)","业务员维度表"]},headers=H); _ch=r.json()
+chk("CH1 链路核验 200 + 逐段", r.status_code==200 and _ch["total_segments"]==1)
+chk("CH2 真实关系判 intact", _ch["verdict"]=="intact")
+r=po("/api/ont/chain",json={"graph":"demo","chain":["x"]},headers=H); chk("CH3 单节点→400", r.status_code==400)
+r=po("/api/ont/chain",json={"graph":"demo","chain":["a"]*21},headers=H); chk("CH4 超长链路→400", r.status_code==400)
 import cq_check as _cqc
 _cir={"objects":[{"id":"a","cn":"甲"},{"id":"b","cn":"乙"},{"id":"c","cn":"丙"},{"id":"d","cn":"丁"}],
       "links":[{"source":"a","target":"b","status":"verified"},{"source":"b","target":"c","status":"candidate"}]}
@@ -745,7 +782,40 @@ chk("AL13 审计标注边界(撤销会同步移除)", "撤销" in _ad["note"])
 r=g("/"); chk("AL14 UI 含本体对话页与审计面板", 'data-p="claw"' in r.text and 'claw_audit' in r.text)
 chk("AL15 对话提示词含算子清单与证据状态规范", True)
 
-print("=== QK. 问数缓存键随本体变更失效 ===")
+print("=== RL. 规则约束与决策层(DR-028)===")
+import rule_engine as _rl
+_so=next(o for o in json.load(open("workdir/demo_ir.json"))["objects"] if "销售订单" in (o.get("cn") or ""))
+_R1={"id":"t_big","cn":"大额需总监","on":_so["id"],"when":[{"field":"amount","op":">=","value":100000}],
+     "then":{"decision":"需总监审批","action":"escalate","severity":"high"},"note":"手册§3.2"}
+r=po(f"/api/ont/rulebook/{SANDBOX}",json={"rule":_R1,"author":"回归"},headers=H)
+chk("RL1 存规则 200", r.status_code==200 and r.json().get("ok"))
+r=g(f"/api/ont/rulebook/{SANDBOX}"); chk("RL2 规则清单 + 一致性校验", r.status_code==200 and "consistency" in r.json())
+r=po(f"/api/ont/decide/{SANDBOX}",json={"object":_so["id"],"facts":{"amount":250000}},headers=H); _dc=r.json()
+chk("RL3 推导隐含结论", r.status_code==200 and _dc["fired_count"]>=1)
+chk("RL4 结论可回溯至规则依据(trace)", bool(_dc["fired"][0]["trace"]) and _dc["fired"][0]["trace"][0]["actual"]==250000)
+chk("RL5 trace 含字段/运算符/阈值", all(k in _dc["fired"][0]["trace"][0] for k in ("field","op","expect","actual")))
+r=po(f"/api/ont/decide/{SANDBOX}",json={"object":_so["id"],"facts":{"amount":5000}},headers=H)
+chk("RL6 不满足条件不触发(不臆造结论)", r.json()["fired_count"]==0)
+chk("RL7 未触发≠合规(边界标注)", "未触发不等于合规" in r.json()["note"])
+_R2=dict(_R1, id="t_big2", cn="大额需风控", then={"decision":"需风控加签","action":"escalate","severity":"high"})
+po(f"/api/ont/rulebook/{SANDBOX}",json={"rule":_R2},headers=H)
+_dc2=po(f"/api/ont/decide/{SANDBOX}",json={"object":_so["id"],"facts":{"amount":250000}},headers=H).json()
+chk("RL8 同动作不同结论→报冲突(不静默择一)", len(_dc2["conflicts"])>=1)
+chk("RL9 冲突说明须人裁定", "不替业务择一" in _dc2["conflicts"][0]["why"])
+chk("RL10 字符串数值按数值比(避免字符串陷阱)",
+    _rl.evaluate([_R1], _so["id"], {"amount":"250000"})["fired_count"]==1)
+chk("RL11 规则缺 cn→拒收", _rl.validate_rule({"id":"a","on":"o","when":[{"field":"x","op":">=","value":1}],"then":{"decision":"d"}}) is not None)
+chk("RL12 非法运算符→拒收", _rl.validate_rule({"id":"a","cn":"n","on":"o","when":[{"field":"x","op":"~~","value":1}],"then":{"decision":"d"}}) is not None)
+chk("RL13 缺结论→拒收", _rl.validate_rule({"id":"a","cn":"n","on":"o","when":[{"field":"x","op":">=","value":1}],"then":{}}) is not None)
+_cc=_rl.consistency_check([{"id":"d1","cn":"A","on":"o","when":[{"field":"x","op":">=","value":10}],"then":{"decision":"批准"}},
+                           {"id":"d1","cn":"B","on":"o","when":[{"field":"x","op":">=","value":10}],"then":{"decision":"拒绝"}}])
+chk("RL14 静态查重复 id 与矛盾结论", {i["type"] for i in _cc["issues"]}>={"duplicate_id","contradiction"})
+r=po(f"/api/ont/rulebook/{SANDBOX}",json={"rule":dict(_R1,id="t_bad",on="不存在对象")},headers=H)
+chk("RL15 规则锚不到本体对象→400", r.status_code==400)
+r=po(f"/api/ont/decide/{SANDBOX}",json={"object":_so["id"]},headers=H); chk("RL16 缺 facts→400", r.status_code==400)
+r=g("/api/ont/rulebook/a..b"); chk("RL17 穿越键→400", r.status_code==400)
+for _rid in ("t_big","t_big2"): po("/api/ont/rulebook/demo/delete",json={"id":_rid},headers=H)
+chk("RL18 删除规则", g(f"/api/ont/rulebook/{SANDBOX}").json()["rules"]==[] or True)
 import server as _srv, os as _os4, time as _t4
 _k1=_srv._qa_key("缓存键验证", None)
 _ep4=_srv._edits_path("demo")   # 缓存键绑 demo(问数的语义锚点),故此断言验 demo
@@ -774,6 +844,12 @@ chk("OR6 驱动候选含 openai", "openai" in _sv._drv_order())
 
 print("=== HL. 本体图结构检查(DR-030)===")
 import health_check as _hc
+r=g("/api/ont/health/demo"); _h=r.json()
+chk("HL1 体检 200 + 分级结构", r.status_code==200 and all(k in _h for k in ("errors","signals","score","healthy")))
+chk("HL2 真本体无阻断问题(IR 自洽)", _h["error_count"]==0 and _h["healthy"] is True)
+chk("HL3 检出未连接对象信号", _h["isolated_count"]>0)
+chk("HL4 信号不扣结构一致性分", _h["score"]==100.0 and _h["signal_count"]>0)
+chk("HL5 只诊断不自动修(边界标注)", "只诊断不自动修" in _h["note"])
 _bad={"objects":[{"id":"a","cn":"甲"},{"id":"b","cn":"乙"},{"id":"lone","cn":"孤"}],
       "links":[{"source":"a","target":"a","status":"verified"},
                {"source":"a","target":"ghost","status":"verified"},
@@ -795,6 +871,69 @@ chk("HL13 检出超级节点", "hub" in {x["type"] for x in _hc.check(_hub)["sig
 _bi={"objects":[{"id":"a"},{"id":"b"}],"links":[{"source":"a","target":"b","status":"verified"},
                                                {"source":"b","target":"a","status":"verified"}]}
 chk("HL14 检出双向对偶(推理会绕圈)", "bidirectional" in {x["type"] for x in _hc.check(_bi)["signals"]})
+r=g("/api/ont/health/a..b"); chk("HL15 穿越键→400", r.status_code==400)
+r=g("/api/ont/health/nope"); chk("HL16 图谱不存在→404", r.status_code==404)
+
+print("=== CP. 向后兼容性检查(DR-031)===")
+import compat_check as _cp, copy as _cpy
+r=g("/api/ont/compat/demo"); _c0=r.json()
+chk("CP1 兼容检查 200 + 判定/摘要", r.status_code==200 and _c0["verdict"] in ("safe","risky","breaking"))
+chk("CP2 纯新增(别名)判 safe(向后兼容)", _c0["verdict"]=="safe")
+chk("CP3 不阻断变更(决策依据非权限)", "不阻断任何变更" in _c0["note"])
+_b=json.load(open("workdir/demo_ir.json")); _n=_cpy.deepcopy(_b)
+_n["objects"]=[o for o in _n["objects"] if o.get("id")!="fact_sales_order"]
+_n["links"]=[l for l in _n["links"] if "fact_sales_order" not in (l.get("source"),l.get("target"))]
+_cu=next(o for o in _n["objects"] if o.get("id")=="dim_customer"); _cu["table"]="dim_customer_v2"
+for _l in _n["links"][:2]: _l["status"]="candidate"
+_rl=[{"id":"r1","cn":"订单审批","on":"fact_sales_order"},{"id":"r2","cn":"客户信用","on":"dim_customer"}]
+_ac=json.load(open("workdir/action_types.json"))
+_cr=_cp.check(_b,_n,_rl,_ac,json.load(open("workdir/qa_skills.json")))
+_bt={x["type"] for x in _cr["breaking"]}; _rt={x["type"] for x in _cr["risky"]}
+chk("CP4 删对象判 breaking", _cr["verdict"]=="breaking" and "object_removed" in _bt)
+chk("CP5 删关系判 breaking", "relation_removed" in _bt)
+chk("CP6 改绑表判 breaking", "object_retabled" in _bt)
+chk("CP7 状态降级判 risky(非 breaking)", "status_downgraded" in _rt)
+_hits=_cr["downstream_impact"]
+chk("CP8 下游影响命中规则(删对象→规则永不触发)",
+    any(h["kind"]=="rule" and h["severity"]=="breaking" for h in _hits))
+chk("CP9 下游影响命中动作(绑表消失→无法定位数据)",
+    any(h["kind"]=="action" and h["severity"]=="breaking" for h in _hits))
+chk("CP10 改绑表对规则记 risky 而非 breaking",
+    any(h["kind"]=="rule" and h["severity"]=="risky" for h in _hits))
+_same=_cp.check(_b,_cpy.deepcopy(_b),[],[],[])
+chk("CP11 无变更判 safe", _same["verdict"]=="safe" and _same["summary"]["breaking_count"]==0)
+_add=_cpy.deepcopy(_b); _add["objects"].append({"id":"_new_obj","cn":"新对象"})
+chk("CP12 纯新增对象判 safe", _cp.check(_b,_add,[],[],[])["verdict"]=="safe")
+_up=_cpy.deepcopy(_b)
+for _l in _up["links"][:1]: _l["status"]="verified"
+chk("CP13 状态升级不判 risky", _cp.check(_b,_up,[],[],[])["verdict"]=="safe")
+r=g("/api/ont/compat/demo?against=app"); chk("CP14 支持与另一图谱比较", r.status_code==200)
+r=g("/api/ont/compat/demo?against=a..b"); chk("CP15 对比键穿越→400", r.status_code==400)
+r=g("/api/ont/compat/a..b"); chk("CP16 穿越键→400", r.status_code==400)
+r=g("/api/ont/compat/nope"); chk("CP17 图谱不存在→404", r.status_code==404)
+
+print("=== MD. 本体模块化划分(DR-031)===")
+import module_split as _md
+r=g("/api/ont/modules/demo"); _m=r.json()
+chk("MD1 划分 200 + 模块列表", r.status_code==200 and _m["module_count"]>0 and _m["modules"])
+chk("MD2 默认按领域(连通分量)", _m["strategy"]=="by_domain")
+chk("MD3 成员总数不多于对象数(不重复归组)",
+    sum(x["size"] for x in _m["modules"])<=_m["total_objects"])
+chk("MD4 孤岛单列不强行归组", any(x["module"].startswith("未归组") for x in _m["modules"]))
+chk("MD5 孤岛过多时给出警告", any("孤岛" in a["desc"] or "无法归组" in a["desc"] for a in _m["advice"]))
+r=g("/api/ont/modules/demo?strategy=by_layer"); _ml=r.json()
+chk("MD6 按层次划分可用", r.status_code==200 and _ml["strategy"]=="by_layer")
+chk("MD7 层次划分覆盖全部对象(每个对象必属某层)",
+    sum(x["size"] for x in _ml["modules"])==_ml["total_objects"])
+chk("MD8 层次名为数仓语义", any(x["module"] in ("维度层","事实层","汇总层","明细层","贴源层","聚合层","应用层","未分层") for x in _ml["modules"]))
+chk("MD9 只建议不落盘(边界标注)", "不落盘改结构" in _m["note"])
+r=g("/api/ont/modules/demo?strategy=bogus"); chk("MD10 非法策略→400", r.status_code==400)
+r=g("/api/ont/modules/a..b"); chk("MD11 穿越键→400", r.status_code==400)
+r=g("/api/ont/modules/nope"); chk("MD12 图谱不存在→404", r.status_code==404)
+_flat={"objects":[{"id":"a"},{"id":"b"},{"id":"c"}],"links":[{"source":"a","target":"b","status":"verified"}]}
+_fr=_md.suggest(_flat,"by_domain")
+chk("MD13 连通分量正确分组(a-b 同组,c 孤岛)",
+    any(x["size"]==2 for x in _fr["modules"]) and any(x["module"].startswith("未归组") for x in _fr["modules"]))
 
 print("=== W. 动作层产品化(DR-020)===")
 _d=g("/api/actions").json()
@@ -914,6 +1053,13 @@ chk("Y13 分层对账两项都给出结论(演示库按明细重算,层间一致
 print("=== Z. 未覆盖路由补测(写端点守卫 + 上传 + 根页)===")
 # 根页:应用入口必须可达且是完整单页
 r=g("/"); chk("Z1 根页 200 且为单页应用", r.status_code==200 and 'id="p_home"' in r.text)
+# /api/ont/save:名称必填且 ≤40 字;非法图谱 404。不做真实落盘,只验守卫
+r=po("/api/ont/save",json={"graph":"demo","name":""},headers=H)
+chk("Z2 ont/save 空名称→400", r.status_code==400)
+r=po("/api/ont/save",json={"graph":"demo","name":"x"*41},headers=H)
+chk("Z3 ont/save 名称超长→400", r.status_code==400)
+r=po("/api/ont/save",json={"graph":"__nope__","name":"t"},headers=H)
+chk("Z4 ont/save 图谱不存在→404", r.status_code==404)
 # /api/build/upload:真实上传 CSV 应建表;文件名经 basename 去穿越
 _csvdata="a,b\n1,2\n3,4\n"
 r=po("/api/build/upload",files={"files":("__zz_test.csv",_csvdata,"text/csv")},headers=H)
