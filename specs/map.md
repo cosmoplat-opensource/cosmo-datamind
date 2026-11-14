@@ -29,11 +29,12 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - **深度问数**:SSE 流式执行记录 + 渐进出图,缓存键含上传指纹,离线时降级为模板,见 [[DR-004-deep-qa-sse]]。
 - **前端**:对齐 iiot-platform/design-system 设计 token(#4A5FF3/#409EFF、圆角 4px、PingFang);**工业级去 emoji**(accent bar + 单色 SVG + 状态点),见 [[DR-005-frontend-design-system]]。
 - **安全**:只读 SQL、全局 CSRF 守卫、图谱键路径穿越校验、命令白名单、SPARQL 禁 SERVICE/FROM 外链,见 [[DR-006-security-model]]。
-- **寻址**:27 个子页经 `#<page>` hash 直接寻址 + 深链,见 [[DR-007-url-hash-routing]]。
+- **寻址**:22 个子页经 `#<page>` hash 直接寻址 + 深链,见 [[DR-007-url-hash-routing]]。
 
 ## 索引
 
 ### 决定 / Decisions
+- [DR-108 · 去掉五个只读或演示性质的页面和一条无调用方的路由](decisions/DR-108-remove-read-only-and-demo-pages.md)
 - [DR-107 · 评审台展示证据、列出分流移出的关系、支持批量评审](decisions/DR-107-review-workbench-evidence-and-batch.md)
 - [DR-106 · 覆盖率与类型检查的门槛覆盖路由层](decisions/DR-106-gates-cover-route-layer.md)
 - [DR-105 · 构建页凭作业号接续，可取消](decisions/DR-105-build-page-resumes-jobs.md)
@@ -146,7 +147,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - `SPEC.md` — 对**平台** web/ 的逆向规格(平台契约,非 DataMind;前缀不同勿混用)。
 
 ## 现状校准
-- 计数(2026-10-12):**141 路由**(server.py 123 + bp_engine 5 + bp_actions 7 + bp_metrics 4 + bp_semantic 2)/ **565 集成断言** /
+- 计数(2026-10-12):**140 路由**(server.py 123 + bp_engine 5 + bp_actions 7 + bp_metrics 3 + bp_semantic 2)/ **565 集成断言** /
   **1279 项 pytest 测试**（多数据库功能复核）/ DR-001…DR-082、DR-093…DR-095 · IR-001…IR-013。
   DR-093 增加数据目录、问题驱动概念/主题、声明角色外键独立核验与业务语义人审；DR-095 增加多库上下文，场景回归为 51 项。
   DR-076 起 `examples/demo_metrics.db` 由 `scripts/build_demo_108_db.py` 按业务过程仿真生成(108 表 / 308,230 行)。

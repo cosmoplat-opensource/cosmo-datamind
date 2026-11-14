@@ -209,8 +209,7 @@ a{color:var(--acc)}
 <div class="nav" data-p="viz">数据可视化</div>
 <div class="nav-group"><div class="gh" onclick="dqGroup(this)">数据资产 <span class="ar">▾</span></div>
   <div class="nav" data-p="conn">数据连接</div>
-  <div class="nav" data-p="catalog">数据目录</div>
-  <div class="nav" data-p="layers">数仓分层</div></div>
+  <div class="nav" data-p="catalog">数据目录</div></div>
 <div class="nav-group"><div class="gh" onclick="dqGroup(this)">本体工程 <span class="ar">▾</span></div>
   <div class="nav" data-p="graph">本体图谱</div>
   <div class="nav" data-p="build">本体构建</div>
@@ -227,20 +226,16 @@ a{color:var(--acc)}
   <div class="nav" data-p="glossary">术语管理</div></div>
 <div class="nav-group"><div class="gh" onclick="dqGroup(this)">智能问数 <span class="ar">▾</span></div>
   <div class="nav" data-p="chat">深度问数</div>
-  <div class="nav" data-p="assistant">业务助手</div>
   <div class="nav" data-p="qaeval">问数评测</div></div>
-<div class="nav-group"><div class="gh" onclick="dqGroup(this)">智能体与技能 <span class="ar">▾</span></div>
-  <div class="nav" data-p="agents">智能体列表</div>
+<div class="nav-group"><div class="gh" onclick="dqGroup(this)">技能 <span class="ar">▾</span></div>
   <div class="nav" data-p="skills">技能中心</div></div>
 <div class="nav-group"><div class="gh" onclick="dqGroup(this)">动作执行 <span class="ar">▾</span></div>
   <div class="nav" data-p="actioncenter">动作中心</div></div>
-<div class="nav-group"><div class="gh" onclick="dqGroup(this)">开发与服务 <span class="ar">▾</span></div>
-  <div class="nav" data-p="sqldev">SQL 工作台</div>
-  <div class="nav" data-p="apis">API 服务目录</div></div>
+<div class="nav-group"><div class="gh" onclick="dqGroup(this)">开发 <span class="ar">▾</span></div>
+  <div class="nav" data-p="sqldev">SQL 工作台</div></div>
 <div class="nav-group"><div class="gh" onclick="dqGroup(this)">运维管理 <span class="ar">▾</span></div>
   <div class="nav" data-p="jobs">作业中心</div>
-  <div class="nav" data-p="enginecfg">引擎设置</div>
-  <div class="nav" data-p="sysadmin">系统管理</div></div>
+  <div class="nav" data-p="enginecfg">引擎设置</div></div>
 <div style="flex:1"></div><div class="muted" style="padding-left:8px">v1 · 本地原型<br>智能引擎 · 多智能体编排</div>
 </aside>
 <main>
@@ -334,14 +329,6 @@ a{color:var(--acc)}
   <div class="card" id="eg_runtimes" style="margin-top:12px"><div class="muted">加载中…</div></div>
   <div class="card" id="eg_tasks" style="margin-top:12px"><div class="muted">加载中…</div></div>
   <div class="card" id="eg_keys" style="margin-top:12px"><div class="muted">加载中…</div></div></div>
-
- <div class="page" id="p_assistant"><h2>业务助手 <span class="muted">按角色组装 问数 / 诊断 / 动作 / 待办 · 对齐平台『智能问数场景 · 业务助手』</span></h2>
-  <div class="row" id="as_roles" style="gap:8px;margin-bottom:12px"></div>
-  <div class="kpis" id="as_todo" style="grid-template-columns:repeat(4,1fr);margin-bottom:12px"></div>
-  <div class="grid2" style="grid-template-columns:1fr 1fr;align-items:start;gap:12px">
-   <div class="card"><h3 style="margin-top:0">常用问题 <span class="muted" style="font-size:12px">点击直达深度问数</span></h3><div id="as_qs"></div></div>
-   <div><div class="card"><h3 style="margin-top:0">异常诊断 <span class="muted" style="font-size:12px">点击直达根因诊断</span></h3><div id="as_diag"></div></div>
-    <div class="card" style="margin-top:12px"><h3 style="margin-top:0">我的动作 <span class="muted" style="font-size:12px">直达动作中心发起</span></h3><div id="as_acts"></div></div></div></div></div>
 
  <div class="page" id="p_qaeval"><h2>问数评测 <span class="muted">参考问题集 × 三组对照(A 朴素文本转 SQL / B 图谱增强 / C 本体全量)· 自动判分：答案正确率 / 出处引用率 / 本体约束拦截</span></h2>
   <div class="card"><div class="row" style="align-items:center;gap:10px">
@@ -696,18 +683,11 @@ a{color:var(--acc)}
  <div class="page" id="p_library"><h2>本体库 <span class="muted">锻造/构建的本体版本(/api/ont/forged)</span></h2>
   <div class="card scroll" id="lib_list"></div></div>
 
- <div class="page" id="p_agents"><h2>智能体列表 <span class="muted">深度问数内置体 + 沉淀技能 + 构建技能包</span></h2>
-  <div class="card"><div class="row" style="margin-bottom:10px"><input id="ag_q" placeholder="按名称筛选…" style="width:260px" oninput="agRender()"><span class="muted" id="ag_info"></span></div>
-   <div class="scroll" id="ag_list"></div></div></div>
-
  <div class="page" id="p_glossary"><h2>术语管理 <span class="muted">英文↔中文业务词典(表名/列名/短语/词元)，深度问数与中文化的语义基座</span></h2>
   <div class="card"><div class="row" style="margin-bottom:10px"><input id="gl_q" placeholder="搜索英文/中文术语…" style="width:280px" oninput="glRender()">
    <select id="gl_type" onchange="glRender()" style="width:120px"><option value="">全部类型</option><option>表名</option><option>列名</option><option>短语</option><option>词元</option></select>
    <span class="muted" id="gl_info"></span></div>
    <div class="scroll" style="max-height:calc(100vh - 260px)" id="gl_list"></div></div></div>
-
- <div class="page" id="p_layers"><h2>数仓分层 <span class="muted">按 ODS/DIM/DWD/DWS/FACT/AGG 分层组织的 108 张表(对齐平台『数据建模·数仓分层』)</span></h2>
-  <div id="layers_body"></div></div>
 
  <div class="page" id="p_sqldev"><h2>SQL 工作台 <span class="muted">只读 SELECT/WITH 查询(引擎级防写)· 主库/上传库(up.*)/外部库实连 · 对齐平台『数据开发』</span></h2>
   <div class="card"><div class="row" style="margin-bottom:8px;align-items:center"><span class="muted" style="font-size:12px">数据源</span>
@@ -721,15 +701,8 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
   <div class="kpis" id="quality_kpis" style="grid-template-columns:repeat(4,1fr)"></div>
   <div class="card scroll" id="quality_list" style="max-height:calc(100vh - 300px)"></div></div>
 
- <div class="page" id="p_apis"><h2>API 服务目录 <span class="muted">本系统全部 HTTP 接口(按域分组)· 对齐平台『数据服务』</span></h2>
-  <div class="card"><div class="row" style="margin-bottom:10px"><input id="api_q" placeholder="搜索接口路径…" style="width:280px" oninput="apisRender()"><span class="muted" id="api_info"></span></div>
-   <div class="scroll" id="api_list" style="max-height:calc(100vh - 260px)"></div></div></div>
-
  <div class="page" id="p_jobs"><h2>作业中心 <span class="muted">后台作业(技能运行/本体构建/部署)· 对齐平台『资源管理·作业』</span></h2>
   <div class="card scroll" id="jobs_list" style="max-height:calc(100vh - 220px)"></div></div>
-
- <div class="page" id="p_sysadmin"><h2>系统管理 <span class="muted">健康/引擎/库/缓存概况 · 对齐平台『系统管理』</span></h2>
-  <div id="sys_body"></div></div>
 
  <div class="page" id="p_sparql"><h2>SPARQL 查询 <span class="muted">对本体 OWL 图谱做语义查询(经典引擎 rdflib)</span></h2>
   <div class="card"><textarea id="sq_q" style="height:120px;font-family:monospace">SELECT ?cls ?label WHERE { ?cls a <http://www.w3.org/2002/07/owl#Class>. OPTIONAL{?cls <http://www.w3.org/2000/01/rdf-schema#label> ?label} } LIMIT 20</textarea>
@@ -773,7 +746,6 @@ function goPage(p){const nav=document.querySelector('[data-p="'+p+'"]');if(!nav)
   if(p==='review')reviewInit();
   if(p==='actioncenter')acLogLoad();
   if(p==='ontquality')ontQualityLoad();
-  if(p==='assistant')asLoad();
   if(p==='qaeval')qeLoad();
  }catch(e){}}
  return true;}
@@ -785,10 +757,10 @@ async function load(p){if(loaded[p])return;loaded[p]=1;
  if(p==='claw'){await clawGraphs();clawSessions();clawEdits();clawAudit();try{$('#claw_who').value=localStorage.getItem('claw_who')||''}catch(_){}}
  if(p==='library')library();if(p==='rules')rules();
  if(p==='build')bcInit();if(p==='conn')cnInit();if(p==='viz')vzInit();if(p==='review')reviewInit();if(p==='actioncenter')acCenter();if(p==='enginecfg')egLoad();
- if(p==='assistant')asLoad();if(p==='qaeval')qeLoad();if(p==='sqldev')sdInit();
- if(p==='agents')agentsLoad();if(p==='glossary')glossaryLoad();
- if(p==='layers')layersLoad();if(p==='quality')qualityLoad();
- if(p==='apis')apisLoad();if(p==='jobs')jobsLoad();if(p==='sysadmin')sysLoad();
+ if(p==='qaeval')qeLoad();if(p==='sqldev')sdInit();
+ if(p==='glossary')glossaryLoad();
+ if(p==='quality')qualityLoad();
+ if(p==='jobs')jobsLoad();
  if(p==='ontquality')ontQualityLoad();}
 async function ontQualityLoad(){const gs=await J('/api/graphs');const cur=$('#oq_sel').value;
  $('#oq_sel').innerHTML=graphOptions(gs,g=>g.name);if(cur&&gs.some(g=>g.id===cur))$('#oq_sel').value=cur;
@@ -806,16 +778,6 @@ async function oqUpgrade(btn){const k=$('#oq_sel').value;if(!k)return;const t0=b
  try{const a=await P('/api/ont/enrich');btn.textContent='接地关系…';const b=await P('/api/ont/reground');
   (window.toast||alert)('处理完成:'+[a.note,b.note].filter(Boolean).join(' · '));ontQualityRender();
  }catch(e){(window.toast||alert)('升级失败:'+e);}finally{btn.disabled=false;btn.textContent=t0;}}
-// 数仓分层
-const LAYER_DEF=[['ODS','ods_','贴源层'],['STG','stg_','暂存层'],['DIM','dim_','维度层'],['DWD','dwd_','明细层'],['DWS','dws_','汇总层'],['FACT','fact_','事实表'],['AGG','agg_','聚合层']];
-async function layersLoad(){const ts=await J('/api/tables');const used=new Set();
- let html='';for(const [name,pre,desc] of LAYER_DEF){const rows=ts.filter(t=>t.name.toLowerCase().startsWith(pre));rows.forEach(t=>used.add(t.name));
-  if(!rows.length)continue;
-  html+=`<div class="card"><h3>${name} · ${desc} <span class="muted">${rows.length} 张表 · ${rows.reduce((a,b)=>a+b.rows,0).toLocaleString()} 行</span></h3>
-   <div class="row" style="flex-wrap:wrap;gap:8px">`+rows.map(t=>`<span class="tag" style="background:#EEF2FF;color:#4A5FF3;cursor:pointer" onclick="document.querySelector('[data-p=catalog]').click();setTimeout(()=>tbl(${esc(JSON.stringify(t.name))}),400)">${esc(t.name)} <span class="muted">${t.rows}</span></span>`).join('')+`</div></div>`;}
- const other=ts.filter(t=>!used.has(t.name));
- if(other.length)html+=`<div class="card"><h3>其它 <span class="muted">${other.length} 张</span></h3><div class="row" style="flex-wrap:wrap;gap:8px">`+other.map(t=>`<span class="tag" style="background:#F4F4F5">${esc(t.name)}</span>`).join('')+`</div></div>`;
- $('#layers_body').innerHTML=html;}
 // SQL 工作台(C7：可选外部库实连数据源)
 async function sdInit(){try{const d=await J('/api/build/sources');const ss=(d.sources||[]).filter(s=>s.kind!=='api');
  $('#sd_src').innerHTML=ss.map(s=>`<option value="${esc(s.id)}">${esc(s.name)}${s.kind!=='sqlite'?' · '+esc((s.kind||'').toUpperCase())+' 实连':''}</option>`).join('')||'<option value="demo">示例主库</option>';const selected=APP_DATA.draft?.sqlSource||appSourceId();if(ss.some(x=>x.id===selected))$('#sd_src').value=selected;}catch(_){}}
@@ -831,31 +793,10 @@ async function qualityLoad(){const d=await J('/api/quality');const L=d.levels||{
  $('#quality_kpis').innerHTML=[['已检表数',d.scanned??'-','#4A5FF3'],['通过',d.passed??'-','#16a34a'],['预警',L.warn||0,'#d97706'],['错误',L.error||0,'#dc2626']].map(([l,n,c])=>`<div class="kpi"><div class="n" style="color:${c}">${n}</div><div class="l">${l}</div></div>`).join('');
  $('#quality_list').innerHTML='<table><tr><th>对象</th><th>规则</th><th>级别</th><th>详情</th></tr>'+
   (d.checks||[]).map(c=>`<tr><td>${esc(c.target)}</td><td>${esc(c.rule)}</td><td><span class="tag ${c.level==='error'?'warn':c.level==='warn'?'warn':'ok'}">${c.level}</span></td><td>${esc(c.detail)}</td></tr>`).join('')+'</table>'+(!(d.checks||[]).length?'<div class="muted" style="padding:10px">全部检查通过 ✓</div>':'');}
-// API 目录
-let APIS=[];
-async function apisLoad(){const d=await J('/api/routes');APIS=d.routes||[];apisRender();}
-function apisRender(){const q=($('#api_q').value||'').toLowerCase();const rows=APIS.filter(r=>!q||r.path.toLowerCase().includes(q));
- $('#api_info').textContent=`共 ${APIS.length} 个接口，筛出 ${rows.length}`;
- const MC={GET:'ok',POST:'evt',PUT:'warn',DELETE:'warn'};
- $('#api_list').innerHTML='<table><tr><th>路径</th><th>方法</th><th>分组</th></tr>'+
-  rows.map(r=>`<tr><td><code>${esc(r.path)}</code></td><td>${r.methods.map(m=>`<span class="tag ${MC[m]||''}">${m}</span>`).join('')}</td><td class="muted">${esc(r.group)}</td></tr>`).join('')+'</table>';}
 // 作业中心
 async function jobsLoad(){const js=await J('/api/jobs');
  $('#jobs_list').innerHTML='<table><tr><th>作业ID</th><th>标签</th><th>状态</th><th>命令</th></tr>'+
   (js||[]).map(j=>`<tr><td><code>${esc(j.id)}</code></td><td>${esc(j.tag||'-')}</td><td><span class="tag ${j.status==='done'?'ok':/error|exit/.test(j.status)?'warn':'evt'}">${esc(j.status)}</span></td><td class="muted">${esc((j.cmd||'').slice(0,60))}</td></tr>`).join('')+'</table>'+(!(js||[]).length?'<div class="muted" style="padding:10px">暂无作业</div>':'');}
-// 系统管理
-async function sysLoad(){const s=await J('/api/sysinfo');
- const rows=[['健康',s.health],['端口',s.port],['数据库',s.db_ok?'✓ 就绪':'✗ 缺失'],['数据表',s.tables],['智能引擎',(s.runtimes||[]).map(engName).join(' / ')],['当前引擎',engName(s.current_driver)],['后台作业',s.jobs],['问数缓存',s.qa_cache],['Python',s.python],['平台',s.platform]];
- $('#sys_body').innerHTML='<div class="kpis" style="grid-template-columns:repeat(4,1fr)">'+
-  [['数据表',s.tables],['引擎数',(s.runtimes||[]).length],['作业',s.jobs],['缓存',s.qa_cache]].map(([l,n])=>`<div class="kpi"><div class="n">${n}</div><div class="l">${l}</div></div>`).join('')+'</div>'+
-  '<div class="card"><table>'+rows.map(([k,v])=>`<tr><td class="muted" style="width:160px">${esc(k)}</td><td><b>${esc(v)}</b></td></tr>`).join('')+'</table></div>';}
-let AGENTS=[];
-async function agentsLoad(){const d=await J('/api/agents');AGENTS=d.agents||[];agRender();}
-function agRender(){const q=($('#ag_q').value||'').toLowerCase();const rows=AGENTS.filter(a=>!q||a.name.toLowerCase().includes(q)||(a.desc||'').toLowerCase().includes(q));
- $('#ag_info').textContent=`共 ${rows.length} 个智能体`;
- const TC={'内置':'ok','沉淀':'idx','技能包':'def'};
- $('#ag_list').innerHTML='<table><tr><th>名称</th><th>描述</th><th>类型</th><th>作者</th><th>修改时间</th></tr>'+
-  rows.map(a=>`<tr><td><b>${esc(a.name)}</b></td><td>${esc(a.desc)}</td><td><span class="tag ${TC[a.type]||''}">${esc(a.type)}</span></td><td>${esc(a.author)}</td><td class="muted">${esc(a.ts||'-')}</td></tr>`).join('')+'</table>';}
 let GLOSS=[];
 async function glossaryLoad(){const d=await J('/api/glossary');GLOSS=d.terms||[];glRender();}
 function glRender(){const q=($('#gl_q').value||'').toLowerCase();const tp=$('#gl_type').value;
@@ -1358,37 +1299,6 @@ async function egSaveKey(v){const el=$('#eg_k_'+v);const val=(el&&el.value.trim(
 async function egClearKey(v){if(await egPost({keys:{[v]:''}})){toast('Key 已清除',true);egLoad();}}
 async function egSaveTask(t){const v=($('#eg_tm_'+t)&&$('#eg_tm_'+t).value.trim())||'';
  if(await egPost({task_models:{[t]:v}})){toast(v?('任务模型已覆盖:'+v+'(即刻生效)'):'已恢复跟随引擎缺省',true);egLoad();}}
-// ══════ 业务助手(C10：按角色组装 问数/诊断/动作/待办；对齐平台『业务助手』场景)══════
-const AS_ROLES={
- prod:{name:'生产主管',qs:['各月产量与计划达成情况如何?','2025年各产线的累计产量对比','最近的月度销售收入与毛利趋势'],
-  diag:['3 号线生产工单的合格率明显下降，可能是什么原因?','本月生产工单的产量落后于计划，帮我找找原因'],acts:['dispatch_inspection','adjust_delivery','adjust_temp_zone']},
- quality:{name:'质量工程师',qs:['各月退货数量与退货原因分布','产出一等品率的月度趋势','退货金额占销售额的比例趋势'],
-  diag:['退货量近期上升，可能是什么原因?','生产工单的一等品率波动大，帮我诊断'],acts:['dispatch_inspection','freeze_batch','supplier_scar']},
- equip:{name:'设备运维',qs:['各设备的运行状态分布','各产线设备数量与功率汇总','设备安装年限分布情况'],
-  diag:['设备故障导致产线停机，如何排查?'],acts:['report_repair']}};
-let AS_CUR=localStorage.getItem('as_role')||'prod';
-async function asLoad(){
- $('#as_roles').innerHTML=Object.entries(AS_ROLES).map(([k,r])=>
-  `<button class="${k===AS_CUR?'':'ghost'}" onclick="asRole(${jsAttr(k)})">${esc(r.name)}</button>`).join('')
-  +`<span class="muted" style="font-size:12px;margin-left:8px">角色只是入口组装 —— 能力仍是同一套本体/问数/动作</span>`;
- const R=AS_ROLES[AS_CUR];
- $('#as_qs').innerHTML=R.qs.map(q=>`<div class="cn-row" style="cursor:pointer" onclick="asAsk(${jsAttr(q)})"><span style="flex:1">${esc(q)}</span><span class="muted" style="font-size:11px">问数 →</span></div>`).join('');
- $('#as_diag').innerHTML=R.diag.map(q=>`<div class="cn-row" style="cursor:pointer" onclick="asDiag(${jsAttr(q)})"><span style="flex:1">${esc(q)}</span><span class="muted" style="font-size:11px">诊断 →</span></div>`).join('');
- let acts=[];try{acts=((await J('/api/actions')).types||[]);}catch(_){}
- $('#as_acts').innerHTML=acts.filter(a=>R.acts.includes(a.id)).map(a=>
-  `<div class="cn-row" style="cursor:pointer" onclick="asAct()"><span style="flex:1">${esc(a.cn)} <span class="tag ${a.risk==='high'?'warn':'ok'}" style="font-size:11px">${a.risk==='high'?'高风险·须审批':'低风险·直接登记'}</span></span><span class="muted" style="font-size:11px">发起 →</span></div>`).join('')||'<div class="muted">该角色暂无关联动作</div>';
- // 待办聚合：四个入口的实时计数(全部来自现有 API，无新状态)
- let rv=0,ac=0,fb=0,ev='—';
- try{rv=((await J('/api/ont/review')).counts||{}).pending||0;}catch(_){}
- try{ac=(await J('/api/actions')).pending||0;}catch(_){}
- try{fb=((await J('/api/chat/feedback')).items||[]).filter(x=>!x.resolved&&x.verdict==='needs_work').length;}catch(_){}
- try{const e=await J('/api/eval/results');if(e&&e.arms&&e.arms.C)ev=e.arms.C.correct+'/'+(e.n||e.items.length);}catch(_){}
- $('#as_todo').innerHTML=[['待人审关系',rv,'#d97706','review'],['待批动作',ac,'#dc2626','actioncenter'],['反馈待处理',fb,'#4A5FF3','review'],['评测正确率(C 组)',ev,'#16a34a','qaeval']]
-  .map(([l,n,c,p])=>`<div class="kpi" style="cursor:pointer" onclick="goPage(${jsAttr(p)});location.hash=${jsAttr(p)}"><div class="n" style="color:${c}">${n}</div><div class="l">${l} ↗</div></div>`).join('');}
-function asRole(k){AS_CUR=k;try{localStorage.setItem('as_role',k)}catch(_){}asLoad();}
-function asAsk(q){goPage('chat');location.hash='chat';setTimeout(()=>{const b=$('#mode_deep');if(b)b.click();const i=$('#chat_q');if(i){i.value=q;i.focus();}},350);}
-function asDiag(q){goPage('chat');location.hash='chat';setTimeout(()=>{const b=$('#mode_diag');if(b)b.click();const i=$('#chat_q');if(i){i.value=q;i.focus();}},350);}
-function asAct(){goPage('actioncenter');location.hash='actioncenter';}
 // ══════ 问数评测(C9：三组对照跑分)══════
 let QE_TIMER=null;
 async function qeLoad(){qeRender(await J('/api/eval/results').catch(()=>({empty:true})));qePoll();}

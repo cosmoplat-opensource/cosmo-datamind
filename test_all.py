@@ -670,7 +670,7 @@ chk("V19 query src=demo", r.status_code==200 and r.json()["rows"][0]["a"]==1)
 r=po("/api/query",json={"sql":"DROP TABLE x","src":"demo"})
 chk("V20 query 写语句仍拒", r.status_code==400)
 # V21 业务助手/评测页导航存在(UI 冒烟)
-r=g("/"); chk("V21 UI 含 业务助手+问数评测 页", 'data-p="assistant"' in r.text and 'data-p="qaeval"' in r.text)
+r=g("/"); chk("V21 UI 含 问数评测 页,且不再含已去掉的业务助手页(DR-108)", 'data-p="qaeval"' in r.text and 'data-p="assistant"' not in r.text)
 chk("V22 UI 含 计算规则卡/流式渲染代码", "metric_cards" in r.text and "narrative_delta" in r.text)
 
 print("=== CQ. 能力问题核验(DR-024)===")

@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """指标契约 blueprint(DR-054)。
 
-路由(4):GET /api/metric/contract、POST /api/metric/status、POST /api/metric/adjudicate、
-GET /api/metric/dimensions。人工只能授予 certified / deprecated;verified 只能由核验产生,
+路由(3):GET /api/metric/contract(含可用维度)、POST /api/metric/status、POST /api/metric/adjudicate。
+人工只能授予 certified / deprecated;verified 只能由核验产生,
 本 blueprint 不提供把指标直接置为 verified 的途径。
 """
 import time
@@ -48,19 +48,6 @@ def metric_contract_view():
         out["caliber"] = metric_contract.describe(m)
         out["allowed_dimensions"] = metric_contract.allowed_dimensions(m, ir)
     return jsonify(out)
-
-
-@bp_metrics.get("/api/metric/dimensions")
-def metric_dimensions():
-    key = (request.args.get("graph") or _deps['default_graph']()).strip()
-    name = (request.args.get("name") or "").strip()
-    ir = _deps["load_graph"](key)
-    if ir is None: return jsonify({"error": "非法图谱键"}), 400
-    _, _, m = _find(ir or {}, name)
-    if not m: return jsonify({"error": "指标不存在"}), 404
-    if not metric_contract.is_contract(m):
-        return jsonify({"error": "该指标尚无契约(旧形状),不能推导维度可达性"}), 400
-    return jsonify({"graph": key, "metric": name, **metric_contract.allowed_dimensions(m, ir)})
 
 
 @bp_metrics.post("/api/metric/status")

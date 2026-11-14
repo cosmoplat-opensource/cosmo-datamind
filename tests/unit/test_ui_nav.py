@@ -115,10 +115,11 @@ class TestCatalogAndResponsiveBehavior:
 
 class TestNavGrouping:
     def test_every_page_reachable_and_count_stable(self):
-        """重排分组不得丢页:27 个页面模块必须仍可从侧栏抵达。"""
+        """重排分组不得丢页:22 个页面模块必须仍可从侧栏抵达(DR-108 去掉了 5 个只读或演示性质的页面)。"""
         groups, top = _groups()
         allp = top + [p for _, ps in groups for p in ps]
-        assert len(allp) == 27, f"页面数 {len(allp)} ≠ 27"
+        assert len(allp) == 22, f"页面数 {len(allp)} ≠ 22"
+        assert not {"layers", "apis", "sysadmin", "agents", "assistant"} & set(allp)
         assert len(set(allp)) == len(allp), "存在重复的 data-p"
 
     def test_ontology_pages_in_one_group(self):
