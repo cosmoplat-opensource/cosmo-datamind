@@ -359,6 +359,21 @@ def schema_missing(db_path, contract, *, connection=None):
     return [f"列不存在:{table}.{w}" for w in wanted if w and w.lower() not in cols]
 
 
+_ALGEBRA = {
+    "sum": ("additive", "可以相加"), "count": ("additive", "可以相加"),
+    "min": ("rollup", "可以从细粒度取最值上卷,不能相加"), "max": ("rollup", "可以从细粒度取最值上卷,不能相加"),
+    "avg": ("reconstructible", "不能直接相加或再求平均,要用合计除以计数重算"),
+    "count_distinct": ("opaque", "不能相加也不能上卷,换粒度要回到明细重算"),
+}
+
+
+def algebra(contract):
+    """这个指标换粒度时能怎么汇总(DR-130),由聚合方式推出,不需要另填字段。
+    additive 可加;rollup 可上卷不可加;reconstructible 拆成合计与计数后重算;opaque 只能回到明细重算。"""
+    kind, text = _ALGEBRA.get(((contract or {}).get("measure") or {}).get("agg") or "", ("", ""))
+    return {"kind": kind, "text": ("汇总:" + text) if text else ""}
+
+
 def describe(contract):
     """契约的一行计算规则文本(供计算规则卡与问数上下文):SUM(amount) WHERE status != 'cancelled' 按 order_date/month。"""
     m = contract.get("measure") or {}
@@ -373,6 +388,8 @@ def describe(contract):
     t = contract.get("time") or {}
     if t.get("col"):
         parts.append(f"按 {t['col']}/{(t.get('grain') or ['month'])[0]}")
+    if algebra(contract)["text"]:
+        parts.append("· " + algebra(contract)["text"])
     return " ".join(parts)
 
 

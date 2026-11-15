@@ -162,3 +162,22 @@ def test_allowed_dimensions_follow_verified_relations_and_flag_fan_out():
     parent_side = M.normalize({"name": "客户数", "entity": "customer", "measure": {"col": "cust_id", "agg": "count"}}, IR)
     d2 = M.allowed_dimensions(parent_side, IR)
     assert d2["objects"][0]["fan_out_risk"] is True
+
+
+# ── 指标的汇总方式(DR-130) ─────────────────────────────────────────
+
+@pytest.mark.parametrize("agg,kind,word", [
+    ("sum", "additive", "可以相加"), ("count", "additive", "可以相加"),
+    ("min", "rollup", "不能相加"), ("max", "rollup", "不能相加"),
+    ("avg", "reconstructible", "不能直接相加或再求平均"), ("count_distinct", "opaque", "回到明细重算"),
+])
+def test_how_a_metric_may_be_rolled_up_follows_from_its_aggregation(agg, kind, word):
+    m = M.normalize({"name": "指标", "table": "t", "measure": {"col": "v", "agg": agg}})
+    got = M.algebra(m)
+    assert got["kind"] == kind and word in got["text"]
+    assert got["text"] in M.describe(m)
+
+
+def test_a_metric_without_a_declared_aggregation_has_no_rollup_rule():
+    m = M.normalize({"name": "旧指标", "table": "t", "value_col": "v"})
+    assert M.algebra(m) == {"kind": "", "text": ""}

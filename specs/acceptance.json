@@ -1105,6 +1105,41 @@
       "tests": [
         "tests/unit/test_evidence_card_ui.py::test_evidence_card_behavior"
       ]
+    },
+    {
+      "id": "QA-FANOUT-02",
+      "criterion": "同一张父表下同时关联两张子表,或两张子表按共同的键直接关联时,对子表的列求和、求均、计数以及 COUNT(*) 被拦下并说明改法;聚合里的表达式和只属于一张表的不带表名的列同样检查;去重计数、最值、先聚合再关联的写法不拦",
+      "tests": [
+        "tests/unit/test_fanout_gate.py::test_two_child_tables_of_one_parent_multiply_each_other",
+        "tests/unit/test_fanout_gate.py::test_two_child_tables_joined_directly_on_the_shared_key_are_many_to_many",
+        "tests/unit/test_fanout_gate.py::test_row_counts_across_two_child_tables_are_blocked_but_distinct_counts_pass",
+        "tests/unit/test_fanout_gate.py::test_one_child_table_alone_is_still_fine",
+        "tests/unit/test_fanout_gate.py::test_pre_aggregated_children_pass",
+        "tests/unit/test_fanout_gate.py::test_an_expression_over_a_parent_column_is_also_blocked",
+        "tests/unit/test_fanout_gate.py::test_an_unqualified_column_is_attributed_when_only_one_table_has_it",
+        "tests/unit/test_fanout_gate.py::test_unqualified_columns_are_not_guessed"
+      ]
+    },
+    {
+      "id": "METRIC-ALGEBRA-01",
+      "criterion": "指标换粒度时的汇总方式由聚合方式推出并写进计算规则文本:求和与计数可加,最值可上卷不可加,平均值需重算,去重计数回到明细;没有声明聚合的指标不给",
+      "tests": [
+        "tests/unit/test_metric_contract.py::test_how_a_metric_may_be_rolled_up_follows_from_its_aggregation",
+        "tests/unit/test_metric_contract.py::test_a_metric_without_a_declared_aggregation_has_no_rollup_rule"
+      ]
+    },
+    {
+      "id": "QA-STATUS-01",
+      "criterion": "查数结果分取到数据、空、失败三种状态:空结果核对所读表的行数并注明不能据此认为业务上不存在;失败的查询在依据卡和答案记录里列出;有数据的结果给出实际取数截至的日期;核对不了时不编",
+      "tests": [
+        "tests/unit/test_query_status.py::test_the_tables_a_query_reads_are_found_by_the_database_itself",
+        "tests/unit/test_query_status.py::test_an_empty_result_says_whether_the_table_or_the_filter_is_empty",
+        "tests/unit/test_query_status.py::test_a_failed_query_is_reported_and_kept_apart_from_an_empty_one",
+        "tests/unit/test_query_status.py::test_each_result_says_how_recent_the_data_it_read_is",
+        "tests/unit/test_query_status.py::test_a_declared_time_column_is_used_when_the_query_does_not_name_one",
+        "tests/unit/test_query_status.py::test_results_without_sql_and_broken_connections_are_left_alone",
+        "tests/unit/test_query_status.py::test_an_answer_shows_failed_and_empty_queries_on_its_card"
+      ]
     }
   ]
 }
