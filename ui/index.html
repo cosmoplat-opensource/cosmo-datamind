@@ -1081,8 +1081,8 @@ function acLogRender(){const items=AC_LOG;
     <button class="ghost" onclick="acLogCsv()">导出 CSV</button></div></div>`
   +(rows.length?'<table><tr><th>时间</th><th>动作</th><th>状态</th><th>操作人</th><th>审批人/意见</th><th>效果</th></tr>'
    +rows.slice(0,60).map(x=>`<tr><td class="muted" style="font-size:11px;white-space:nowrap">${esc(x.ts)}</td><td>${esc(x.action_cn)}</td>
-    <td><span class="tag ${(SB[x.status]||['warn'])[0]}">${(SB[x.status]||['',x.status])[1]}</span></td><td>${esc(x.operator)}</td>
-    <td class="muted" style="font-size:11px">${esc(x.approver||'-')}${x.approve_comment?' · '+esc(x.approve_comment):''}</td>
+    <td><span class="tag ${(SB[x.status]||['warn'])[0]}">${(SB[x.status]||['',x.status])[1]}</span>${x.status==='unknown'?` <button class="ghost ac-resolve" style="padding:1px 8px;font-size:11px" onclick="acResolve('${esc(x.id)}')">处置</button>`:''}</td><td>${esc(x.operator)}</td>
+    <td class="muted" style="font-size:11px">${esc(x.approver||'-')}${x.approve_comment?' · '+esc(x.approve_comment):''}${x.resolved_by?`<div>处置:${esc(x.resolved_by)} · ${esc(x.resolve_comment||'')} · ${esc(x.resolve_ts||'')}</div>`:''}</td>
     <td class="muted" style="font-size:11px">${esc((x.effects||[]).join(' / '))||'-'}</td></tr>`).join('')+'</table>'
    :'<div class="muted">'+(items.length?'无匹配记录(调整筛选)':'暂无记录 —— 在动作类型卡上「发起」，或从诊断结果一键派工')+'</div>');
  const el=$('#acf_kw');if(el&&kw){el.focus();el.setSelectionRange(kw.length,kw.length);}}
@@ -1107,6 +1107,12 @@ async function acOpen(tid,prefill){if($('#acm_ok'))$('#acm_ok').textContent='提
  $('#ac_modal').style.display='flex';}
 function acmClose(){$('#ac_modal').style.display='none';ACM=null;}
 async function acmSubmit(){if(!ACM)return;
+ if(ACM.mode==='resolve'){const operator=$('#acm_op').value.trim();const outcome=$('#acm_p_outcome').value;const comment=$('#acm_p_comment').value.trim();
+  if(!outcome){toast('请选择核对结果',false);return;}if(!operator){toast('处置人必填',false);$('#acm_op').focus();return;}if(!comment){toast('核对依据必填',false);$('#acm_p_comment').focus();return;}
+  const d=await J('/api/action/resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:ACM.id,outcome,operator,comment})}).catch(e=>({error:''+e}));
+  if(d.error){toast(d.error,false);return;}
+  try{localStorage.setItem('rv_reviewer',operator);}catch(e){}
+  acmClose();toast(outcome==='executed'?'已记为已执行':'已记为未执行',true);acLogLoad();return;}
  if(ACM.mode==='approve'){const approver=$('#acm_op').value.trim();const comment=($('#acm_p_comment')&&$('#acm_p_comment').value.trim())||'';
   if(!approver){toast('审批人必填',false);return;}
   const d=await J('/api/action/approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:ACM.id,decision:ACM.decision,approver,comment})}).catch(e=>({error:''+e}));
@@ -1308,6 +1314,14 @@ async function egTest(r,btn){const out=$('#eg_t_'+r);out.textContent='测试中(
  btn.disabled=false;
  out.innerHTML=d.ok?`<span style="color:#16a34a">✓ 连通 · ${d.seconds}s · 回复:${esc((d.reply||'').slice(0,40))}</span>`
   :`<span style="color:#b91c1c">✗ 不可用 · ${d.seconds||''}s · ${esc((d.reply||d.error||'').slice(0,120))}</span>`;}
+function acResolve(id){const x=AC_LOG.find(r=>r.id===id);if(!x)return;ACM={mode:'resolve',id};
+ $('#acm_title').textContent='处置结果未知的动作:'+(x.action_cn||'');
+ $('#acm_sub').textContent='执行器已收到请求,但没有拿到完整的回执。请先到业务系统核对这次动作实际有没有生效,再在这里记下结论。系统不会重新发起。';
+ $('#acm_fields').innerHTML=`<div class="muted" style="font-size:12px;margin-bottom:10px">记录 ${esc(x.id)} · ${esc(x.ts||'')} · 参数:${esc(Object.entries(x.params||{}).map(([k,v])=>k+'='+v).join(';')||'无')}</div>
+  <div style="margin-bottom:10px">核对结果(必填)<br><select id="acm_p_outcome" style="width:100%;margin-top:4px"><option value="">请选择</option><option value="executed">已执行(业务系统里已生效)</option><option value="failed">未执行(业务系统里没有生效)</option></select></div>
+  <div style="margin-bottom:10px">核对依据(必填)<br><textarea id="acm_p_comment" rows="3" style="width:100%;margin-top:4px;resize:vertical" placeholder="在哪个系统、看到了什么"></textarea></div>`;
+ if($('#acm_ok'))$('#acm_ok').textContent='记下处置结论';
+ $('#acm_op').value=localStorage.getItem('rv_reviewer')||'';$('#ac_modal').style.display='flex';}
 function acApprove(id,decision){ACM={mode:'approve',id,decision};
  $('#acm_ok').textContent=decision==='approve'?'提交审批(批准)':'提交审批(驳回)';
  $('#acm_title').textContent=decision==='approve'?'批准登记该动作':'驳回该动作';

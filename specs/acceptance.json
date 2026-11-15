@@ -975,6 +975,88 @@
         "tests/unit/test_qa_decision.py::test_server_asks_the_model_only_after_the_vocabulary_gives_up",
         "tests/unit/test_qa_decision.py::test_without_an_engine_the_assist_call_returns_nothing_quickly"
       ]
+    },
+    {
+      "id": "RELEASE-02",
+      "criterion": "发布绑定内容修订:发布后人工修改或重新构建使修订号变化,状态回到草稿;撤回的图谱在所有模式下不能问数;发布时留一份按修订号命名的不变副本;两次并行的继续构建都保留结果,后写回的一次另存为新图谱并说明来源",
+      "tests": [
+        "tests/unit/test_release_gate.py::test_the_revision_follows_content_not_the_length_of_the_build_history",
+        "tests/unit/test_release_gate.py::test_a_withdrawn_graph_is_blocked_in_every_mode",
+        "tests/unit/test_release_gate.py::test_a_human_edit_after_publishing_also_needs_republishing",
+        "tests/unit/test_release_gate.py::test_publishing_keeps_an_immutable_copy_named_by_revision",
+        "tests/unit/test_build_jobs.py::test_two_continue_builds_on_the_same_base_both_keep_their_results"
+      ]
+    },
+    {
+      "id": "ACTION-EXEC-02",
+      "criterion": "调用执行器之前记录已落盘为执行中;回执明确成功才记已执行,超时、中断或回执不完整记结果未知,不自动重发;结果未知由署名的人写明依据后处置,动作中心有入口;试算只到达标了只做试算的执行器,高风险动作和没有执行器的动作在调用前拒绝;试算回执声明写回时记为失败;调用不跟随跳转、不用环境代理",
+      "tests": [
+        "tests/unit/test_action_executors.py::test_the_record_is_on_disk_as_executing_before_the_executor_is_called",
+        "tests/unit/test_action_executors.py::test_a_receipt_without_a_clear_ok_is_not_treated_as_executed",
+        "tests/unit/test_action_executors.py::test_a_lost_or_broken_response_is_recorded_as_unknown",
+        "tests/unit/test_action_executors.py::test_a_call_that_never_got_a_receipt_shows_up_as_unknown_after_a_restart",
+        "tests/unit/test_action_executors.py::test_an_approved_high_risk_action_is_executing_until_its_receipt_arrives",
+        "tests/unit/test_action_executors.py::test_an_unknown_record_is_settled_by_a_named_person_with_a_reason",
+        "tests/unit/test_action_executors.py::test_simulation_only_reaches_executors_marked_simulate_only",
+        "tests/unit/test_action_executors.py::test_simulation_refuses_high_risk_actions_and_actions_without_executors",
+        "tests/unit/test_action_executors.py::test_a_simulation_that_claims_to_have_written_back_is_not_a_success",
+        "tests/unit/test_action_executors.py::test_executor_calls_do_not_follow_redirects_or_use_environment_proxies",
+        "tests/unit/test_action_executors.py::test_the_action_centre_offers_to_resolve_an_unknown_outcome"
+      ]
+    },
+    {
+      "id": "QA-WHATIF-02",
+      "criterion": "问数发起的推演只以只读试算的方式调用执行器;经适配层进来的请求不能触发推演;模型辅助分型的选项里没有试算;执行器未标只做试算、没有执行器、结果未知时分别如实说明",
+      "tests": [
+        "tests/unit/test_qa_decision.py::test_server_passes_the_real_invoke_and_the_operator",
+        "tests/unit/test_qa_decision.py::test_a_caller_that_came_through_the_agent_adapter_cannot_trigger_a_what_if",
+        "tests/unit/test_qa_decision.py::test_an_executor_not_marked_simulate_only_is_not_called_from_a_question",
+        "tests/unit/test_qa_decision.py::test_an_unknown_outcome_is_reported_as_unknown_not_as_a_result",
+        "tests/unit/test_qa_decision.py::test_the_model_is_never_offered_a_what_if_option"
+      ]
+    },
+    {
+      "id": "ROUTE-TRACE-02",
+      "criterion": "从路线推出的追踪主线每一步只认路线写明的角色,与按方向核验路线用同一条关系;没写角色而有多条可用关系时不任取一条并说明原因;依据卡写出所用角色,路线走不到底时说明停在哪一步",
+      "tests": [
+        "tests/unit/test_qa_decision.py::test_the_trace_follows_the_role_named_in_the_route",
+        "tests/unit/test_qa_decision.py::test_an_unnamed_role_between_two_candidate_relations_is_not_guessed",
+        "tests/unit/test_qa_decision.py::test_a_trace_reports_the_role_it_used_and_where_the_route_stopped"
+      ]
+    },
+    {
+      "id": "QA-WHATIF-03",
+      "criterion": "推演的参数必须唯一确定:同名对象、匹配到多条的规格片段、多个日期都列出候选由使用者选,选择经问句带回;没写年份的日期按数据日期推算并写明,不存在的日期如实报告;回答与依据卡列出实际使用的参数和数据日期",
+      "tests": [
+        "tests/unit/test_qa_decision.py::test_two_customers_with_the_same_name_are_offered_as_a_choice",
+        "tests/unit/test_qa_decision.py::test_a_customer_named_by_its_number_is_unique",
+        "tests/unit/test_qa_decision.py::test_two_dates_in_one_question_are_offered_as_a_choice",
+        "tests/unit/test_qa_decision.py::test_dates_are_resolved_against_the_data_clock_and_say_what_was_assumed",
+        "tests/unit/test_qa_decision.py::test_a_date_that_does_not_exist_is_reported_not_moved",
+        "tests/unit/test_qa_decision.py::test_a_specification_fragment_matching_several_rows_is_not_resolved_to_the_smallest_id"
+      ]
+    },
+    {
+      "id": "ANSWER-RECORD-02",
+      "criterion": "数值匹配检查符号、显式单位和所属行:符号相反、单位换算不符、数值属于另一行的数字被报告;匹配上的数字记下对应结果的行列或汇总方式;提示称为数值匹配",
+      "tests": [
+        "tests/unit/test_answer_record.py::test_a_wrong_sign_or_a_number_from_another_row_is_reported",
+        "tests/unit/test_answer_record.py::test_signed_and_row_attributed_numbers_pass",
+        "tests/unit/test_answer_record.py::test_an_explicit_unit_is_converted_against_the_column_unit",
+        "tests/unit/test_answer_record.py::test_each_matched_number_says_where_it_came_from",
+        "tests/unit/test_answer_record.py::test_text_without_checkable_numbers_is_not_checked"
+      ]
+    },
+    {
+      "id": "QA-REVIEW-E2E-01",
+      "criterion": "贯通验收:图谱有首道、末道工序两条关系,两个同名客户,问句有两个交期;经问数入口,追踪取末道工序;推演在客户和交期都确定之前不调用执行器、不留记录,确定后以只读试算调用一次;动作记录、表格、依据卡上的参数与结果一致;经适配层的请求和未标只做试算的执行器不触发调用;写错符号的数字被报告",
+      "tests": [
+        "tests/unit/test_qa_review_acceptance.py::test_trace_uses_the_role_named_in_the_route_end_to_end",
+        "tests/unit/test_qa_review_acceptance.py::test_what_if_asks_until_customer_and_date_are_unique_then_simulates_once",
+        "tests/unit/test_qa_review_acceptance.py::test_a_request_that_came_through_the_agent_adapter_cannot_simulate",
+        "tests/unit/test_qa_review_acceptance.py::test_an_executor_that_is_not_simulate_only_is_never_called_from_a_question",
+        "tests/unit/test_qa_review_acceptance.py::test_a_wrong_number_in_the_summary_is_reported_as_a_value_mismatch"
+      ]
     }
   ]
 }

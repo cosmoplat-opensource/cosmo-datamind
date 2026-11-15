@@ -34,8 +34,13 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 ## 索引
 
 ### 决定 / Decisions
+- [DR-128 · 数值匹配:检查符号、显式单位和所属行](decisions/DR-128-value-match-sign-unit-row.md)
+- [DR-127 · 推演的参数必须唯一确定](decisions/DR-127-what-if-parameters-must-be-unique.md)
+- [DR-126 · 追踪按路线指定的角色取关系](decisions/DR-126-trace-follows-route-roles.md)
+- [DR-125 · 问数推演只做只读试算;动作按回执确定结果](decisions/DR-125-read-only-simulation-and-action-receipts.md)
+- [DR-124 · 发布绑定内容修订,撤回即停用,并行的继续构建不互相覆盖](decisions/DR-124-release-bound-to-revision.md)
 - [DR-123 · 固定词表认不出时由模型辅助分型](decisions/DR-123-model-assisted-question-typing.md)
-- [DR-122 · 答案的结果记录与同源数字核对](decisions/DR-122-answer-record-and-number-check.md)
+- [DR-122 · 答案的结果记录与数字核对(核对部分由 DR-128 修订)](decisions/DR-122-answer-record-and-number-check.md)
 - [DR-121 · 工艺路线可以直接用于追踪](decisions/DR-121-route-as-trace-main-line.md)
 - [DR-120 · 可执行动作与问数推演](decisions/DR-120-executable-actions-and-what-if.md)
 - [DR-119 · 问数使用决策层](decisions/DR-119-qa-uses-the-decision-layer.md)

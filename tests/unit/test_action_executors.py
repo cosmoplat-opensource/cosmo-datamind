@@ -4,6 +4,7 @@
 import io
 import json
 import urllib.error
+from pathlib import Path
 
 import pytest
 
@@ -248,3 +249,9 @@ def test_executor_calls_do_not_follow_redirects_or_use_environment_proxies(monke
     req = urllib.request.Request("http://127.0.0.1:8096/trial")
     with pytest.raises(urllib.error.HTTPError):
         bp_actions._NoRedirect().redirect_request(req, None, 302, "Found", {}, "http://example.com/elsewhere")
+
+
+def test_the_action_centre_offers_to_resolve_an_unknown_outcome():
+    ui = (Path(__file__).resolve().parents[2] / "ui/index.html").read_text(encoding="utf-8")
+    assert "x.status==='unknown'" in ui and "acResolve(" in ui and "'/api/action/resolve'" in ui
+    assert "核对依据(必填)" in ui and "系统不会重新发起" in ui
