@@ -741,12 +741,14 @@ def run_explain(question, ir, rules, anchored, pinned=()):
     return {"results": [], "narrative": text, "evidence_card": card}
 
 
-def _verified(ir, child, parent):
+def _verified(ir, child, parent, role=""):
+    """两张表对应的对象之间已验证或人工确认的关系;主线的这一跳指定了角色时只认那个角色(DR-126)。"""
     idx = _obj_by_table(ir)
     cn = str((idx.get(child.lower()) or {}).get("name") or child)
     pn = str((idx.get(parent.lower()) or {}).get("name") or parent)
     for r in (ir or {}).get("relations") or []:
-        if {r.get("source_concept"), r.get("target_concept")} == {cn, pn} and r.get("status") in ("verified", "asserted", "exists"):
+        if {r.get("source_concept"), r.get("target_concept")} == {cn, pn} and r.get("status") in ("verified", "asserted", "exists") \
+                and (not role or str(r.get("role") or "") == role):
             return r
     return None
 
@@ -772,11 +774,12 @@ def run_trace(route, ir, rules, connect, today, validate=None):
         if not (_ident(t) and _ident(fk) and _ident(pk) and parent in rows_of):
             lines.append(f"主线声明不完整({t}),未继续追踪。")
             break
-        rel = _verified(ir, t, parent)
+        rel = _verified(ir, t, parent, str(hop.get("role") or ""))
         vals = list(dict.fromkeys(r.get(pk) for r in rows_of[parent] if r.get(pk) is not None))[:500]
         order = f' ORDER BY "{hop["order_by"]}"' if _ident(hop.get("order_by")) else ""
         shown_sql = f'SELECT * FROM "{t}" WHERE "{fk}" IN ({", ".join(_lit(v) for v in vals[:20])}{", …" if len(vals) > 20 else ""}){order}'
-        basis.append({"kind": "relation", "text": f"{t}.{fk} → {parent}.{pk}",
+        basis.append({"kind": "relation", "text": f"{t}.{fk} → {parent}.{pk}" + (f"（{hop['role']}）" if hop.get("role") else ""),
+                      **({"role": hop["role"]} if hop.get("role") else {}),
                       "status": rel.get("status") if rel else "未在本体中验证", "overlap": (rel or {}).get("overlap")})
         if not rel:
             lines.append(f"{t} 与 {parent} 的连接未在本体中验证,未继续追踪。")
@@ -840,6 +843,9 @@ def run_trace(route, ir, rules, connect, today, validate=None):
         prev = t
         if not rows:
             break
+    if isinstance(mc.get("stopped"), dict):          # 从工艺路线推出的主线没能走到底:说明停在哪、为什么
+        sp = mc["stopped"]
+        lines.append(f"路线在「{sp.get('after')}」之后无法继续到「{sp.get('before')}」:{sp.get('reason')}。")
     st = mc.get("status") or {}
     if _ident(st.get("table")) and _ident(st.get("key")) and _has_table(connect, st["table"]):
         srow = _rows(connect, f'SELECT * FROM "{st["table"]}" WHERE "{st["key"]}" = ?', (rid,), 1)

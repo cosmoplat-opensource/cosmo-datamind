@@ -492,3 +492,48 @@ def test_without_an_engine_the_assist_call_returns_nothing_quickly(monkeypatch):
     monkeypatch.setattr(agent_runtime, "available", lambda: [])
     server._QA_ROUTE_CACHE.clear()
     assert server._qa_route_ask("任意提示", ["demo"]) is None and server._QA_ROUTE_CACHE == {}
+
+
+# ── 追踪与工艺验收用同一条关系(DR-126) ─────────────────────────────
+
+ROLE_IR = {"objects": [{"name": "工单", "table": "wo", "pk": "wo_id", "cn": "工单"}, {"name": "工序", "table": "op", "cn": "工序"}],
+           "relations": [
+               {"source_concept": "工单", "target_concept": "工序", "role": "首道工序", "status": "verified",
+                "evidence": {"child_key": "first_op_id", "parent_key": "op_id"}},
+               {"source_concept": "工单", "target_concept": "工序", "role": "末道工序", "status": "verified",
+                "evidence": {"child_key": "last_op_id", "parent_key": "op_id"}}]}
+
+
+def test_the_trace_follows_the_role_named_in_the_route():
+    import cq_check
+    last = {"id": "r", "steps": ["工单", "工序"], "roles": ["末道工序"]}
+    hop = od.main_chain_from_route(ROLE_IR, last)["hops"][0]
+    assert (hop["pk"], hop["role"], hop["direction"]) == ("last_op_id", "末道工序", "parent")
+    first = od.main_chain_from_route(ROLE_IR, dict(last, roles=["首道工序"]))["hops"][0]
+    assert first["pk"] == "first_op_id"
+    assert cq_check.check_route(["工单", "工序"], ROLE_IR, ["末道工序"])["segments"][0]["role"] == hop["role"]   # 验收与追踪用的是同一个角色
+
+
+def test_an_unnamed_role_between_two_candidate_relations_is_not_guessed():
+    chain = od.main_chain_from_route(ROLE_IR, {"id": "r", "steps": ["工单", "工序"]})
+    assert chain == {}                                                    # 第一段就有歧义:不生成主线
+    ir = {"objects": ROLE_IR["objects"] + [{"name": "设备", "table": "eq", "cn": "设备"}],
+          "relations": [ROLE_IR["relations"][0],
+                        {"source_concept": "工序", "target_concept": "设备", "role": "主设备", "status": "verified", "evidence": {"child_key": "eq_id", "parent_key": "eq_id"}},
+                        {"source_concept": "工序", "target_concept": "设备", "role": "备用设备", "status": "verified", "evidence": {"child_key": "spare_eq_id", "parent_key": "eq_id"}}]}
+    chain = od.main_chain_from_route(ir, {"id": "r", "steps": ["工单", "工序", "设备"], "roles": ["首道工序"]})
+    assert [h["table"] for h in chain["hops"]] == ["op"]
+    assert chain["stopped"] == {"after": "工序", "before": "设备", "reason": "这两步之间有不止一条可用的关系,请在路线里指明角色"}
+
+
+def test_a_trace_reports_the_role_it_used_and_where_the_route_stopped(make_sqlite):
+    db = make_sqlite({"wo": ("wo_id TEXT PRIMARY KEY, first_op_id TEXT, last_op_id TEXT", [("W1", "OP1", "OP9")]),
+                      "op": ("op_id TEXT PRIMARY KEY, op_name TEXT", [("OP1", "绕线"), ("OP9", "试验")])})
+    connect = lambda: sqlite3.connect(f"file:{db}?mode=ro", uri=True)      # noqa: E731
+    ir = dict(ROLE_IR, routes=[{"id": "r", "cn": "到末道工序", "steps": ["工单", "工序"], "roles": ["末道工序"], "status": "candidate"}])
+    route = qd.classify("工单 W1 现在到哪了?", ir, [], [], connect)
+    assert route == {"type": "trace", "root_id": "W1"}
+    ans = qd.answer("工单 W1 现在到哪了?", ir, [], [], route, connect, set())
+    assert [r["op_name"] for r in ans["results"][0]["data"]["rows"]] == ["试验"]          # 取的是末道工序,不是首道
+    basis = ans["evidence_card"]["basis"][0]
+    assert basis["role"] == "末道工序" and "末道工序" in basis["text"] and "last_op_id" in basis["text"]

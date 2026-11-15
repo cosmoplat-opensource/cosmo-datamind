@@ -153,32 +153,53 @@ def main_chain_from_route(ir, route):
         return {}
     steps: list[dict] = [objs[n] for n in names]
 
-    def link(a, b):
-        """a、b 之间可用于取数的关系 → (b 表上的列, a 表上的列);没有返回 None。"""
+    roles = [str(x or "").strip() for x in (route or {}).get("roles") or []]
+
+    def link(a, b, role):
+        """a、b 之间用于取数的关系 → (b 表上的列, a 表上的列, 角色, 方向);没有返回 None;
+        路线没指明角色而两步之间有不止一条可用关系时返回 "ambiguous":不替使用者挑一条。
+        与按方向核验路线时用的是同一条关系:路线指定了角色,就只认那个角色(DR-126)。"""
         an, bn = a.get("name"), b.get("name")
+        found = []
         for r in ir.get("relations") or []:
             ev = r.get("evidence") or {}
             ck, pk = str(ev.get("child_key") or ""), str(ev.get("parent_key") or "")
             if r.get("status") not in ("verified", "asserted") or not ck or not pk or "," in ck or "," in pk:
                 continue
+            rel_role = str(r.get("role") or "")
+            if role and rel_role != role:
+                continue
             if (r.get("source_concept"), r.get("target_concept")) == (bn, an):       # b 是子表
-                return ck, pk
-            if (r.get("source_concept"), r.get("target_concept")) == (an, bn):       # b 是父表
-                return pk, ck
-        return None
+                found.append((ck, pk, rel_role, "child"))
+            elif (r.get("source_concept"), r.get("target_concept")) == (an, bn):     # b 是父表
+                found.append((pk, ck, rel_role, "parent"))
+        if len(found) > 1:
+            return "ambiguous"
+        return found[0] if found else None
 
-    first = link(steps[0], steps[1])
-    root_key = steps[0].get("pk") or (first[1] if first else None)
+    def stop(chain, a, b, why):
+        chain["stopped"] = {"after": a.get("cn") or a.get("name"), "before": b.get("cn") or b.get("name"), "reason": why}
+
+    first = link(steps[0], steps[1], roles[0] if roles else "")
+    root_key = steps[0].get("pk") or (first[1] if isinstance(first, tuple) else None)
     if not root_key or "," in str(root_key):
         return {}
     hops: list[dict] = []
     chain: dict = {"root": {"table": steps[0]["table"], "key": str(root_key), "label": steps[0].get("cn") or steps[0].get("name")},
                    "hops": hops, "derived_from_route": (route or {}).get("id")}
-    for a, b in zip(steps, steps[1:], strict=False):
-        cols = link(a, b)
-        if not cols:
+    for i, (a, b) in enumerate(zip(steps, steps[1:], strict=False)):
+        role = roles[i] if i < len(roles) else ""
+        cols = link(a, b, role)
+        if cols == "ambiguous":
+            stop(chain, a, b, "这两步之间有不止一条可用的关系,请在路线里指明角色")
             break
-        hop = {"table": b["table"], "fk": cols[0], "parent": a["table"], "pk": cols[1], "label": b.get("cn") or b.get("name")}
+        if not cols:
+            stop(chain, a, b, f"没有已验证的「{role}」关系" if role else "没有已验证的关系")
+            break
+        hop = {"table": b["table"], "fk": cols[0], "parent": a["table"], "pk": cols[1],
+               "label": b.get("cn") or b.get("name"), "direction": cols[3]}
+        if cols[2]:
+            hop["role"] = cols[2]
         if b.get("pk"):
             hop["key"] = b["pk"]
         hops.append(hop)
