@@ -2428,7 +2428,7 @@ def _validate_sql_ontology(sql, ir, strict=False):
         if ca == cb: continue
         if (ta, ca, tb, cb) not in relkeys:
             return False, f"JOIN 键 {ta}.{ca}={tb}.{cb} 不在本体已验证关系上(关联未经数据验证,已拦截)"
-    # ③ 扇出关卡(DR-055):1:N JOIN 后对父侧列做 SUM/AVG/COUNT(列),结果会随子表行数放大。
+    # ③ 重复计数(扇出)检查(DR-055):1:N JOIN 后对父侧列做 SUM/AVG/COUNT(列),结果会随子表行数放大。
     #    本体证据记录了父键唯一性,所以方向是已知的——这是关系证据除了「能不能 JOIN」之外的第二个用途。
     #    COUNT(DISTINCT …) 与 MIN/MAX 不受扇出影响,不拦;未限定表名的列无法归属,不猜。
     #    DR-130 补三种情况:聚合里是表达式(SUM(c.x * 1.0));列没写表名但只有一张表有这一列;
@@ -5948,7 +5948,7 @@ def _run_eval_thread(model=None, limit=None):
 def _run_eval(model=None, limit=None):
     items = _eval_items()[: (limit or 99)]
     ir = _active_ir()
-    arms = [("A", "朴素 Text2SQL(仅英文表列)", lambda it: _ctx_naive(), False),
+    arms = [("A", "基线 Text2SQL(仅英文表列)", lambda it: _ctx_naive(), False),
             ("B", "图谱增强(中文语义+关系)", lambda it: _ctx_graph(it["q"]), False),
             ("C", "本体全量(语义+关系+指标+术语+本体约束校验)", lambda it: build_context(it["q"]), True)]
     EVAL_JOB.update(running=True, done=0, total=len(items) * len(arms),

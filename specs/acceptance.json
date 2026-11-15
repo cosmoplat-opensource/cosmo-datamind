@@ -1,5 +1,5 @@
 {
-  "iteration": "IR-014 / IR-015 / IR-016",
+  "iteration": "IR-014 / IR-015",
   "requirements": [
     {
       "id": "ALG-01",
@@ -1141,6 +1141,76 @@
         "tests/unit/test_query_status.py::test_the_only_time_column_of_a_table_is_used_when_nothing_else_says_which",
         "tests/unit/test_query_status.py::test_results_without_sql_and_broken_connections_are_left_alone",
         "tests/unit/test_query_status.py::test_an_answer_shows_failed_and_empty_queries_on_its_card"
+      ]
+    },
+    {
+      "id": "QA-FANOUT-03",
+      "criterion": "重复计数检查按查询块判断:父表的列只作条件或逐行乘数时不拦;子查询、CTE 各看各的关联;EXISTS / IN 半连接不算第二张子表;自关联按键判断父侧;同一张子表关联两次照样拦;提示里建议的子查询写法能通过校验",
+      "tests": [
+        "tests/unit/test_fanout_gate.py::test_parent_column_used_only_as_a_condition_or_multiplier_is_not_blocked",
+        "tests/unit/test_fanout_gate.py::test_each_query_block_is_checked_against_its_own_joins",
+        "tests/unit/test_fanout_gate.py::test_an_unqualified_column_inside_a_subquery_is_not_charged_to_the_outer_join",
+        "tests/unit/test_fanout_gate.py::test_semi_joins_do_not_count_as_a_second_child_table",
+        "tests/unit/test_fanout_gate.py::test_the_same_child_table_joined_twice_also_multiplies",
+        "tests/unit/test_fanout_gate.py::test_a_self_reference_takes_the_parent_side_from_the_key_not_from_the_join_order",
+        "tests/unit/test_fanout_gate.py::test_the_rewrite_suggested_by_the_block_message_is_itself_accepted"
+      ]
+    },
+    {
+      "id": "QA-STATUS-02",
+      "criterion": "改写成功或仍被展示的查询不计为失败;名字里带 time 的数值列不当作时间列,取值不像日期时换下一列;汇总结果为空值按空结果处理;按规则判定的答案不加空结果说明",
+      "tests": [
+        "tests/unit/test_query_status.py::test_a_query_that_was_repaired_or_shown_anyway_is_not_reported_as_failed",
+        "tests/unit/test_query_status.py::test_a_numeric_column_with_time_in_its_name_is_not_a_date",
+        "tests/unit/test_query_status.py::test_the_next_time_column_is_tried_when_the_first_one_holds_no_dates",
+        "tests/unit/test_query_status.py::test_an_aggregate_that_comes_back_null_is_treated_as_an_empty_result",
+        "tests/unit/test_query_status.py::test_rule_based_answers_explain_their_own_empty_results"
+      ]
+    },
+    {
+      "id": "QA-SCOPE-02",
+      "criterion": "追踪校验状态表的范围,推演校验参数间接取值的表;库里不存在的表不报为不在所选范围内",
+      "tests": [
+        "tests/unit/test_qa_decision.py::test_a_trace_also_checks_the_status_table_before_reading",
+        "tests/unit/test_qa_decision.py::test_a_what_if_also_checks_the_table_a_parameter_is_looked_up_through",
+        "tests/unit/test_qa_decision.py::test_a_table_that_does_not_exist_is_not_reported_as_outside_the_selection"
+      ]
+    },
+    {
+      "id": "ANSWER-RECORD-04",
+      "criterion": "数值匹配:区间的两端可以是结果里任何一行的值但仍须有出处;列名写在数字后面时以它为准;指标的汇总方式对未归一的契约不报错",
+      "tests": [
+        "tests/unit/test_answer_record.py::test_the_bounds_of_a_range_may_come_from_any_row",
+        "tests/unit/test_answer_record.py::test_numbers_under_the_right_column_still_pass",
+        "tests/unit/test_metric_contract.py::test_roll_up_text_tolerates_contracts_that_were_not_normalised"
+      ]
+    },
+    {
+      "id": "UI-SAFETY-01",
+      "criterion": "界面源码:内联处理器的参数不用 HTML 转义后的文本;来自服务端的文本转义后才写进页面;请求失败不显示成空的成功结果;样式变量都有定义;页面文字不含开发备注和未实现的功能;动作结果未知不显示成功提示",
+      "tests": [
+        "tests/meta/test_ui_safety.py::test_inline_handlers_do_not_put_html_escaped_text_inside_js_strings",
+        "tests/meta/test_ui_safety.py::test_server_strings_are_escaped_before_reaching_innerhtml",
+        "tests/meta/test_ui_safety.py::test_failed_requests_are_not_rendered_as_empty_success",
+        "tests/meta/test_ui_safety.py::test_unknown_confidence_does_not_break_the_diagnosis_card",
+        "tests/meta/test_ui_safety.py::test_style_variables_and_grids_match_their_use",
+        "tests/meta/test_ui_safety.py::test_no_developer_notes_or_unfinished_features_in_page_copy",
+        "tests/meta/test_ui_safety.py::test_unknown_action_outcome_is_not_shown_as_success"
+      ]
+    },
+    {
+      "id": "UI-CHART-01",
+      "criterion": "结果图表:横轴取值有重复且另有一个文字列的长表按该列拆成多条序列,缺的组合留空;宽表每个数值列一条序列;分组过多时不拆",
+      "tests": [
+        "tests/unit/test_chart_series_ui.py::test_chart_series",
+        "tests/unit/test_chart_series_ui.py::test_the_page_loads_the_module_and_uses_it_for_result_charts"
+      ]
+    },
+    {
+      "id": "DATA-CONTEXT-01",
+      "criterion": "主库换成别的库以后,内置示例本体绑定的表都不在当前库里时不算当前库的本体,也不作默认问数本体;对得上时照旧",
+      "tests": [
+        "tests/unit/test_database_scope.py::test_builtin_ontologies_that_do_not_describe_the_main_database_are_not_its_default"
       ]
     }
   ]

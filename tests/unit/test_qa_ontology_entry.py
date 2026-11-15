@@ -115,5 +115,5 @@ def test_ui_has_direct_entry_dynamic_scope_and_conversation_snapshot():
     assert "graphNames: dqScopeNames(DQ_DS)" in QA_UI
     assert "availableCount: dqScopeAvailable(DQ_DS)" in QA_UI
     assert "anchor.ontology.names" in QA_UI
-    assert "新对话将持续使用该本体" in QA_UI
+    assert "新对话沿用该本体" in QA_UI
     assert "全选可问数图谱" in UI

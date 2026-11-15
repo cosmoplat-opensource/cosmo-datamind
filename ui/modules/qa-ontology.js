@@ -88,7 +88,7 @@ function dqHeroScoped() {
   const status = names.length
     ? `<div class="step" style="display:inline-block;text-align:left;margin:8px auto 14px"><b>当前本体：</b>${source}`
       + (usable == null ? ' · 绑定表状态将在数据源列表加载后更新。' : ` · <b>${usable}</b> 张绑定表可查询。`)
-      + `新对话将持续使用该本体，不会自动切回示例本体。</div>`
+      + `新对话沿用该本体。</div>`
     : '';
   const examples = names.length ? '' : `<div class="egs">${EG_Q.map(q => `<span class="eg" onclick="dqAskEg(${esc(JSON.stringify(q))})">${esc(q)}</span>`).join('')}</div>`;
   return `<div class="dq-hero"><h1>${title}</h1>`

@@ -28,12 +28,13 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - **引擎**:运行时经 `agent_runtime`(CLAW_DRIVER 选 hermes/claude-code/openclaw),多引擎依次降级;**对外统一中性名**(智能引擎/备选/经典),不暴露底层库名,见 [[DR-003-runtime-neutral-naming]]。
 - **深度问数**:SSE 流式执行记录 + 渐进出图,缓存键含上传指纹,离线时降级为模板,见 [[DR-004-deep-qa-sse]]。
 - **前端**:对齐 iiot-platform/design-system 设计 token(#4A5FF3/#409EFF、圆角 4px、PingFang);**工业级去 emoji**(accent bar + 单色 SVG + 状态点),见 [[DR-005-frontend-design-system]]。
-- **安全**:只读 SQL、全局 CSRF 守卫、图谱键路径穿越校验、命令白名单、SPARQL 禁 SERVICE/FROM 外链,见 [[DR-006-security-model]]。
+- **安全**:只读 SQL、全局 CSRF 校验、图谱键路径穿越校验、命令白名单、SPARQL 禁 SERVICE/FROM 外链,见 [[DR-006-security-model]]。
 - **寻址**:18 个子页经 `#<page>` hash 直接寻址 + 深链,见 [[DR-007-url-hash-routing]]。
 
 ## 索引
 
 ### 决定 / Decisions
+- [DR-131 · 重复计数检查按查询块判断、界面的失败态与转义、文档与当前界面对齐](decisions/DR-131-fanout-per-block-ui-failures-docs.md)
 - [DR-130 · 两张子表互相放大、指标的汇总方式、查数结果三态、实际取数日期](decisions/DR-130-join-multiplication-query-states-data-date.md)
 - [DR-129 · 发布重新验收、读数前校验范围、无回执的服务端错误、列名匹配、候选可用键盘选](decisions/DR-129-recheck-on-publish-scope-receipts-columns.md)
 - [DR-128 · 数值匹配:检查符号、显式单位和所属行](decisions/DR-128-value-match-sign-unit-row.md)
@@ -161,14 +162,15 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 
 ## 上游素材(真相来源)
 - `../上游本体引擎/` — 引擎(agent_runtime/export_owl/serve_claw)、技能(skills_seed)、方法论(其 `系统设计.md` 与 `specs/`)。DataMind 复用其 engine 与技能。
-- `DATAMIND_DB` — 实际只读数据源；仓库不默认附带 `demo_metrics.db`，可用 `examples/sample_db.sql` 创建最小示例库。
+- `DATAMIND_DB` — 实际只读数据源；仓库附带 `examples/demo_metrics.db`（108 表示例库），另可用 `examples/sample_db.sql` 创建 6 张表的最小示例库。
 - `README.md` — 模块能力总览与实测部署命令。
 - `ARCHITECTURE.md` — 分层/数据流/统一约定/安全模型/已知边界(架构说明)
-- `AUDIT.md` — 逐轮自测/复审记录(IR 的原始日志,已归纳进 iterations/)。
+- `docs/audits/` — 各轮审计与复核报告。
 - `test_all.py` — 系统级回归，源码定义 548 个检查点。
-- `SPEC.md` — 对**平台** web/ 的逆向规格(平台契约,非 DataMind;前缀不同勿混用)。
 
 ## 现状校准
+- 计数(2026-11-15):140 路由 / 548 集成检查点 / 1758 项 pytest 测试 / 场景回归 51 项;决策记录到 DR-131。
+  隔离环境下 `scripts/check.py --suite all` 的结果:集成 536 通过、6 项条件跳过(无上游引擎),界面走查 47 通过,界面实操 48 通过、3 项跳过(未配置外部模型端点)。
 - 计数(2026-10-12):**140 路由**(server.py 113 + bp_engine 5 + bp_actions 8 + bp_metrics 3 + bp_semantic 2 + bp_decision 9)/ **548 集成断言** /
   **1279 项 pytest 测试**（多数据库功能复核）/ DR-001…DR-082、DR-093…DR-095 · IR-001…IR-013。
   DR-093 增加数据目录、问题驱动概念/主题、声明角色外键独立核验与业务语义人审；DR-095 增加多库上下文，场景回归为 51 项。
@@ -283,8 +285,5 @@ Consult @specs/map.md to find relevant context.
   规划超时写死 60s(推理型模型必超)、`tables[]` 未归一(自建本体被判无绑表而回退)、
   本体缺 attrs 时上下文无列名(模型只能猜列)。
 
-五问互补:够不够用(CQ)· 通不通(链路)· 对不对得上数据(漂移)·
-答的是不是问的(双盲)· 结构健不健康(体检)。
-
-四问互补:CQ 答「够不够用」· 链路答「通不通」· 漂移答「还对不对得上数据」·
-双盲答「答的是不是问的」。
+五项检查各管一面：验收问题(CQ)检查本体能否回答业务问题，链路检查关系路径是否连通，漂移检查本体与数据源是否仍然一致，
+双盲意图检测检查回答是否偏离问题，图结构检查检查本体的结构问题。

@@ -1,7 +1,7 @@
 # ATH 接入：DataMind 作为受保护的服务提供方
 
 本目录让外部智能体经 [ATH（智能体可信握手协议）](https://github.com/ath-protocol) 的网关访问 DataMind。
-DataMind 只监听本机，核心接口不变（为构建作业和构建发起方记录做了配合改动）；本适配层是对智能体开放的唯一入口，负责用户侧授权和按范围放行。
+DataMind 只监听本机，原有接口不变；为支持经智能体发起的构建，增加了由服务端持有的构建作业和构建发起方记录（DR-103、DR-104）。本适配层是对智能体开放的唯一入口，负责用户侧授权和按范围放行。
 
 ```
 智能体 ──ATH 握手──▶ ATH 网关 ──OAuth 2.0──▶ 适配层 (8093) ──本机──▶ DataMind (8092)
@@ -24,20 +24,20 @@ DataMind 只监听本机，核心接口不变（为构建作业和构建发起�
 | `datamind:catalog.read` | `GET /api/sysinfo`、`/api/tables`、`/api/overview`、`/api/glossary`；A2A 技能 `catalog.tables` |
 | `datamind:ontology.read` | `GET /api/graphs`、`/api/graph/<key>`、`/api/metrics`；A2A 技能 `ontology.graphs` |
 | `datamind:sparql.query` | `POST /api/sparql` |
-| `datamind:build.read` | MCP 的只读工具（数据源、技能、构建产物、作业进度、验收、人审队列）；A2A 技能 `build.list` |
+| `datamind:build.read` | MCP 的只读工具（数据源、技能、构建产物、作业进度、验收、人工审核队列）；A2A 技能 `build.list` |
 | `datamind:build.run` | MCP 的 `start_build`（唯一的写操作） |
 | `datamind:qa.ask` | `POST /api/chat`（深度问数，只读查询；响应里的 `degraded` 标明是否为引擎未响应时的内置模板结果） |
 
 **数据来源随令牌限定。** 用户在授权页上选一个数据来源，令牌只对这一个来源有效：
 适配层转发每个请求时带上它，调用方自己带的来源参数被丢弃；经 MCP 发起的构建只能建在这个来源上。
 
-**请求号贯通。** 每个放行的请求生成一个请求号，写进适配层的审计日志，并随请求带给 DataMind。
+**请求号全程传递。** 每个放行的请求生成一个请求号，写进适配层的审计日志，并随请求带给 DataMind。
 经 ATH 发起的构建，其作业记录和图谱的构建记录里有同一个请求号和调用方（`ath:<客户端>:<用户>`），
 在图谱的审计视图（`/api/ont/audit/<key>` 的 `builds`）里可以查到。
 
 没有开放的能力：评审与编辑（确认、否决关系，改动词，确认指标计算规则）、删除图谱、引擎与连接配置、取消构建。
 评审与编辑、删除、配置只能由人在 DataMind 界面里做。继续构建不会移出或改写人工决定过的关系（DR-097），
-所以拿到 `datamind:build.run` 的智能体也改不了人审结论。
+所以取得 `datamind:build.run` 的智能体也不能改动人工评审结论。
 
 ## 运行
 
@@ -65,7 +65,7 @@ python3 -m ath_adapter.provider              # 适配层，8093
 - 端到端 `ath_adapter/e2e/run_e2e.py`：需要 DataMind 在 8092、ATH 参考网关的本地检出（`ATH_GATEWAY_DIR`）、
   PyJWT，以及官方 Python SDK（`ATH_SDK=official`，缺省）或自带客户端（`ATH_SDK=own`）。
   报告写到 `.check-results/ath/`。它不在常规检查里。共 39 项：31 项握手、授权与安全检查经网关完成；
-  8 项核验数据来源限定、问数授权、构建作业、审计贯通和人审结论保持，其中 6 项因本部署不向经网关的智能体开放
+  8 项核验数据来源限定、问数授权、构建作业、审计追溯和人工评审结论保持，其中 6 项因本部署不向经网关的智能体开放
   `build.run` 与 `qa.ask`，改以网关的 OAuth 客户端身份直接对适配层走授权码流程。
 
 ## 已知限制

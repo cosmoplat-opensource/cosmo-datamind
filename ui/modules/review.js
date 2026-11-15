@@ -37,7 +37,7 @@ function rvEvidenceHTML(r) {
     const sides = Object.entries(ev.sample_limited || {}).map(([k, v]) => (k === 'child' ? '子表' : '父表') + v).join('、');
     add('证据范围', `<span class="tag warn">不完整</span> ${esc(sides || '取证被截断或未完成')}${ev.verified_on_sample ? '；在抽样数据上成立，须在全量数据上核对' : ''}`);
   }
-  if (r.note) add('裁决说明', esc(r.note));
+  if (r.note) add('判定说明', esc(r.note));
   if (r.why_review) add('还缺什么', esc(r.why_review));
   if (r.reason || r.by) add('评审记录', esc([r.by, r.time, r.reason].filter(Boolean).join(' · ')));
   const key = rvKey(r), sm = RV.samples[key];
@@ -101,7 +101,7 @@ function rvDraw() {
      <button class="ghost" ${picked.length ? '' : 'disabled'} onclick="rvBatch('reject_relation')">否决所选</button>
      <button class="ghost" onclick="rvPickAll(${picked.length === shown.length && shown.length ? 'false' : 'true'})">${picked.length === shown.length && shown.length ? '取消全选' : '全选本页'}</button></div>`
     + (shown.length
-      ? `<table class="rv-table"><tr><th></th><th>关系</th><th>动词</th><th>状态</th><th>取值重合</th><th>语义评审</th><th>人审</th><th>操作</th></tr>${shown.map(rvRowHTML).join('')}</table>`
+      ? `<table class="rv-table"><tr><th></th><th>关系</th><th>动词</th><th>状态</th><th>取值重合</th><th>语义评审</th><th>人工审核</th><th>操作</th></tr>${shown.map(rvRowHTML).join('')}</table>`
       : `<div class="muted" style="padding:14px 4px">${d.rows.length ? '没有符合筛选条件的关系。' : '这张图谱还没有关系。'}</div>`)
     + (rows.length > shown.length ? `<div style="margin:10px 0"><button class="ghost" onclick="rvMore()">再显示 ${Math.min(RV_PAGE, rows.length - shown.length)} 条</button></div>` : '')
     + rvAsideHTML(d.set_aside);

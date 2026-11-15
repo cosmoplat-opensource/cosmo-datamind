@@ -97,6 +97,8 @@ def _numbers(text, ignore=""):
         out.append({"token": tok, "value": val, "decimals": _decimals(tok), "percent": tok.endswith("%"), "unit": unit,
                     "negative": tok.startswith("-"),
                     "down": bool(_DOWN.search(cleaned[max(start, m.start() - 10):m.start()] + cleaned[m.end():min(end, m.end() + 5)])),
+                    "range": bool(re.search(r"\d%?\s*(?:[–—~～-]|至|到)\s*$", cleaned[max(start, m.start() - 4):m.start()])
+                                  or re.match(r"\s*(?:[–—~～-]|至|到)\s*-?\d", cleaned[m.end():m.end() + 4])),
                     "clause": str(text or "")[start:end], "pos": m.start() - start})
     return out
 
@@ -294,6 +296,8 @@ def check_narrative(narrative, results, question="", extra=()):
                 # 整张表的汇总值、依据卡里的值;最大 / 最小值本身是别的行的值,句子里说了「最高、最低」才算
                 extreme = re.search(r"最[高大低小多少]|峰值|第一|垫底", n["clause"]) is not None
                 src, why = _find(n, [d for d in derived if extreme or not d[2].endswith(("最大值", "最小值"))])
+            if not src and why != "sign" and n.get("range"):
+                src, why = _find(n, cells)             # 区间的两端可以是任何一行的值(DR-131)
             if not src and why != "sign":
                 other, _w = _find(dict(n, down=True), cells)
                 if other:

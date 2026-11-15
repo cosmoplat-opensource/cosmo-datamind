@@ -326,7 +326,7 @@ a{color:var(--acc)}
   <div class="card" id="eg_tasks" style="margin-top:12px"><div class="muted">加载中…</div></div>
   <div class="card" id="eg_keys" style="margin-top:12px"><div class="muted">加载中…</div></div></div>
 
- <div class="page" id="p_qaeval"><h2>问数评测 <span class="muted">参考问题集 × 三组对照(A 朴素文本转 SQL / B 图谱增强 / C 本体全量)· 自动判分：答案正确率 / 出处引用率 / 本体约束拦截</span></h2>
+ <div class="page" id="p_qaeval"><h2>问数评测 <span class="muted">参考问题集 × 三组对照(A 基线:直接生成 SQL / B 图谱增强 / C 本体全量)· 自动判分：答案正确率 / 出处引用率 / 本体约束拦截</span></h2>
   <div class="card"><div class="row" style="align-items:center;gap:10px">
     <button id="qe_run" onclick="qeRun()">跑一轮评测</button>
     <span class="muted" style="font-size:12px">模型覆盖(可空=跟随引擎)</span><input id="qe_model" placeholder="如 claude-haiku-4-5-20251001" style="width:220px">
@@ -334,7 +334,7 @@ a{color:var(--acc)}
    <div class="muted" style="font-size:11.5px;margin-top:6px">评测在后台运行(约 8-20 分钟，取决于模型)；每题即时落盘，可中途查看部分结果。参考答案值全部经主库实测校准。</div></div>
   <div class="kpis" id="qe_kpis" style="grid-template-columns:repeat(3,1fr);margin-top:12px"></div>
   <div class="card scroll" id="qe_body" style="margin-top:12px"><div class="muted">加载中…</div></div></div>
- <div class="page" id="p_actioncenter"><h2>动作中心 <span class="muted">类型化参数 · 低风险直接登记 / 高风险人审批 · 决策记录全审计 · 当前不写回业务系统</span></h2>
+ <div class="page" id="p_actioncenter"><h2>动作中心 <span class="muted">类型化参数 · 低风险直接登记，高风险须人工审批 · 操作均有记录 · 当前不写回业务系统</span></h2>
   <div class="card" id="ac_types"><div class="muted">加载中…</div></div>
   <div class="card scroll" id="ac_pending" style="margin-top:12px;display:none"></div>
   <div class="card scroll" id="ac_log" style="margin-top:12px"><div class="muted">加载中…</div></div></div>
@@ -373,7 +373,7 @@ a{color:var(--acc)}
  </div></div>
  <div id="act_modal" class="dq-modal" style="display:none"><div class="dq-modal-box" style="max-width:560px;padding:18px 20px">
   <h3 style="margin:0 0 4px" id="actm_title">新建动作类型</h3>
-  <div class="muted" style="font-size:12px;margin-bottom:12px">类型化参数 + 风险分级；高风险动作发起后须人审批。自建类型可编辑/删除，历史审计始终保留。</div>
+  <div class="muted" style="font-size:12px;margin-bottom:12px">类型化参数 + 风险分级；高风险动作发起后须人工审批。自建类型可编辑/删除，历史审计始终保留。</div>
   <div class="row" style="gap:8px;margin-bottom:10px"><input id="actm_cn" placeholder="动作名称(如：冻结生产批次)" style="flex:1">
    <select id="actm_risk" style="width:150px"><option value="high">高风险·须审批</option><option value="low">低风险·直接登记</option></select></div>
   <div class="row" style="gap:8px;margin-bottom:10px"><input id="actm_obj" placeholder="绑定业务表(可空，如 fact_production_order)" style="flex:1">
@@ -647,7 +647,7 @@ a{color:var(--acc)}
    </div>
   </div></div>
 
- <div class="page" id="p_claw"><h2>本体对话 <span class="muted">对话式本体完善(问答+白名单编辑+可撤销)· 可修改本体 + 变更审计</span></h2>
+ <div class="page" id="p_claw"><h2>本体对话 <span class="muted">对话式本体完善(问答 + 限定范围的编辑操作 + 可撤销)· 可修改本体 + 变更审计</span></h2>
   <div class="row" style="margin-bottom:10px;align-items:center"><label for="claw_graph" style="white-space:nowrap">当前图谱</label>
    <select id="claw_graph" style="width:360px" aria-label="本体对话当前图谱"></select>
    <span class="muted">问答、编辑、撤销和审计仅作用于所选图谱</span></div>
@@ -666,7 +666,7 @@ a{color:var(--acc)}
     <button class="ghost" onclick="clawAudit()">刷新审计</button></div>
    <div id="claw_audit" class="muted">点「刷新审计」查看谁改了什么</div></div></div>
 
- <div class="page" id="p_glossary"><h2>术语管理 <span class="muted">英文↔中文业务词典(表名/列名/短语/词元)，深度问数与中文化的语义基座</span></h2>
+ <div class="page" id="p_glossary"><h2>术语管理 <span class="muted">英文↔中文业务词典(表名/列名/短语/词元)，深度问数与中文化共用的词典</span></h2>
   <div class="card"><div class="row" style="margin-bottom:10px"><input id="gl_q" placeholder="搜索英文/中文术语…" style="width:280px" oninput="glRender()">
    <select id="gl_type" onchange="glRender()" style="width:120px"><option value="">全部类型</option><option>表名</option><option>列名</option><option>短语</option><option>词元</option></select>
    <span class="muted" id="gl_info"></span></div>
@@ -694,10 +694,10 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
 <script src="/assets/modules/database-scope.js?v=1"></script>
 <script src="/assets/modules/build-references.js?v=4"></script>
 <script src="/assets/modules/build-stream.js?v=4"></script>
-<script src="/assets/modules/review.js?v=1"></script>
+<script src="/assets/modules/review.js?v=2"></script>
 <script src="/assets/modules/build-prep.js?v=4"></script>
 <!-- 问数作用域模块先于主脚本执行，避免 #chat 首屏初始化竞态；版本号打破旧标签缓存。 -->
-<script src="/assets/modules/qa-ontology.js?v=5"></script>
+<script src="/assets/modules/qa-ontology.js?v=6"></script>
 <script src="/assets/modules/qa-history.js?v=1"></script>
 <script src="/assets/modules/qa-anchor.js?v=4"></script>
 <script src="/assets/modules/evidence-card.js?v=2"></script>
@@ -808,7 +808,7 @@ async function home(){const d=await J('/api/overview');
 async function objDetail(k,oid){const d=await J('/api/ont/object/'+encodeURIComponent(k)+'/'+encodeURIComponent(oid));
  const w=window.open('','_blank');w.document.write(`<style>body{font-family:sans-serif;padding:20px;background:#f5f7fb}table{border-collapse:collapse}td,th{border:1px solid #dbe4fb;padding:4px 8px}</style>
  <h2>${esc(d.cn||d.name)} <small>${esc(d.kind)} · ${esc(d.table||'')}</small></h2>`+((d.bfo||d.definition)?`<div style="background:#eef2fb;padding:9px 12px;border-radius:6px;margin:8px 0;line-height:1.7"><b>BFO 范畴</b>: ${esc(d.bfo||'-')} &nbsp;·&nbsp; <b>成熟度</b>: ${esc(d.maturity||'-')}${d.isPrimitive?' &nbsp;·&nbsp; <b>原始概念</b>':''}${d.definition?`<br><b>定义</b>(属加种差): ${esc(d.definition)}`:''}${d.example?`<br><b>正例</b>: ${esc(d.example)}`:''}${d.counterExample?`<br><b>反例</b>: ${esc(d.counterExample)}`:''}${(d.provenance&&d.provenance.directSource)?`<br><b>来源</b>(directSource): ${esc(d.provenance.directSource)}`:''}</div>`:'')+`<h3>属性(${(d.attrs||[]).length})</h3>
- <table><tr><th>列</th><th>中文</th><th>类型</th><th>来源</th></tr>`+(d.attrs||[]).map(a=>`<tr><td>${esc(a.col)}</td><td>${esc(a.cn||'')}</td><td>${esc(a.type||'')}</td><td>${esc((a.sources||[]).join('/'))}</td></tr>`).join('')+`</table>`+(d.reused_from?`<h3>ISA-95 对齐(候选，待人审)</h3><div>${esc(JSON.stringify(d.reused_from))}</div>`:'')+(d.foundational_kind?`<h3>UFO 基础类型(候选)</h3><div>${esc(JSON.stringify(d.foundational_kind))}</div>`:'')+`<h3>证据来源</h3><pre>${esc(JSON.stringify(d.evidence,null,1))}</pre>`);}
+ <table><tr><th>列</th><th>中文</th><th>类型</th><th>来源</th></tr>`+(d.attrs||[]).map(a=>`<tr><td>${esc(a.col)}</td><td>${esc(a.cn||'')}</td><td>${esc(a.type||'')}</td><td>${esc((a.sources||[]).join('/'))}</td></tr>`).join('')+`</table>`+(d.reused_from?`<h3>ISA-95 对齐(候选，待人工审核)</h3><div>${esc(JSON.stringify(d.reused_from))}</div>`:'')+(d.foundational_kind?`<h3>UFO 基础类型(候选)</h3><div>${esc(JSON.stringify(d.foundational_kind))}</div>`:'')+`<h3>证据来源</h3><pre>${esc(JSON.stringify(d.evidence,null,1))}</pre>`);}
 let gChart;
 function expOnt(fmt){location='/api/graph/'+document.querySelector('#g_sel').value+'/export.'+fmt;}
 function gReadable(){if(!gChart)return;gChart.__view='readable';try{gChart.zoomTo(Math.max(.85,gChart.getZoom()));
@@ -928,7 +928,7 @@ async function rvLoad(){RV_KEY=$('#rv_sel').value;if(!RV_KEY)return;
  const d=await J('/api/ont/review?graph='+encodeURIComponent(RV_KEY)).catch(e=>({error:''+e}));
  if(d.error){$('#rv_body').innerHTML=`<div class="muted">${esc(d.error)}</div>`;return;}
  const semanticEl=$('#rv_semantic');if(semanticEl){semanticEl.style.display=(d.semantic||[]).length?'block':'none';semanticEl.innerHTML=rvSemanticHTML(d.semantic||[]);}
- const c=d.counts;$('#rv_kpis').innerHTML=`<span class="tag warn">待审 ${c.pending}</span> <span class="tag ok">已通过 ${c.approved}</span> <span class="tag evt">已否决 ${c.rejected}</span> <span class="muted" style="margin-left:6px">共 ${c.total} 条${c.disputed?` · 语义存疑 ${c.disputed}`:''}</span>`+((d.replay_failed||[]).length?` <span class="tag warn" title="${esc(d.replay_failed.map(f=>f.op+' '+f.target+':'+f.error).join('\n'))}">${d.replay_failed.length} 条人审记录未能应用</span>`:'');
+ const c=d.counts;$('#rv_kpis').innerHTML=`<span class="tag warn">待审 ${c.pending}</span> <span class="tag ok">已通过 ${c.approved}</span> <span class="tag evt">已否决 ${c.rejected}</span> <span class="muted" style="margin-left:6px">共 ${c.total} 条${c.disputed?` · 语义存疑 ${c.disputed}`:''}</span>`+((d.replay_failed||[]).length?` <span class="tag warn" title="${esc(d.replay_failed.map(f=>f.op+' '+f.target+':'+f.error).join('\n'))}">${d.replay_failed.length} 条人工审核记录未能应用</span>`:'');
  rvRender(d);                       // 关系表、证据、筛选与批量操作在 modules/review.js
  $('#rv_undo').disabled=!(d.undoable>0);$('#rv_undo').title=d.undoable>0?`可撤销 ${d.undoable} 步`:'还没有可撤销的操作';
  const ob=$('#rv_objs');if(ob){ob.style.display='block';
@@ -954,7 +954,7 @@ function rvWho(){return ($('#rv_who')&&$('#rv_who').value.trim())||localStorage.
 function rvSaveWho(){try{localStorage.setItem('rv_reviewer',$('#rv_who').value.trim());}catch(e){}}
 // ── 页面内评审表单(评审人 + 评审意见 可见输入；不依赖浏览器原生弹窗，防被"阻止对话框"设置吞掉)──
 let RVM=null;   // {op,target,params,needReason,graphPage}
-const RVM_META={confirm_relation:['人审通过','评审意见(可选)',false],reject_relation:['人审否决','否决原因(必填)',true],
+const RVM_META={confirm_relation:['审核通过','评审意见(可选)',false],reject_relation:['审核否决','否决原因(必填)',true],
  confirm_semantic:['确认业务含义','请核对定义、单位和适用范围；公式执行核验独立进行',false],
  reject_semantic:['否决业务提议','否决原因(必填)',true],
  remove_relation:['删除关系','删除原因(必填)',true],verb:['修改关系动词','修改说明(可选)',false],
@@ -1305,12 +1305,12 @@ async function qeRun(){const model=$('#qe_model').value.trim();
  if(d.error){toast(d.error,false);return}
  toast('评测已启动(后台运行，每题即时落盘)',true);qePoll();}
 function qeRender(d){
- if(!d||d.empty||!(d.items||[]).length){$('#qe_kpis').innerHTML='';$('#qe_body').innerHTML=(appSourceId()!=='demo'?'<div class="muted" style="padding:10px">当前数据库使用自动生成的简单计数检查题，仅用于功能验收，不代表业务问数准确率。</div>':'')+'<div class="muted" style="padding:10px">尚未跑过评测 —— 点上方「跑一轮评测」。三组同题对照:A 只给英文表列(朴素基线),B 加中文语义+本体关系，C 本体全量(再叠加指标/术语/本体约束校验)。</div>';return;}
+ if(!d||d.empty||!(d.items||[]).length){$('#qe_kpis').innerHTML='';$('#qe_body').innerHTML=(appSourceId()!=='demo'?'<div class="muted" style="padding:10px">当前数据库使用自动生成的简单计数检查题，仅用于功能验收，不代表业务问数准确率。</div>':'')+'<div class="muted" style="padding:10px">尚未跑过评测 —— 点上方「跑一轮评测」。三组同题对照:A 只给英文表名和列名(基线),B 加中文语义+本体关系，C 本体全量(再叠加指标/术语/本体约束校验)。</div>';return;}
  const n=(d.items||[]).length;const A=d.arms||{};
  $('#qe_kpis').innerHTML=['A','B','C'].map(k=>{const a=A[k]||{};return `<div class="kpi"><div class="n" style="color:${k==='C'?'#16a34a':k==='B'?'#4A5FF3':'#6B7690'}">${a.correct||0}/${n}</div>
   <div class="l">${k} 组 · ${esc((a.name||'').split('(')[0])}<br><span style="font-size:11px">出处引用 ${a.cite||0}/${n}${k==='C'?` · 本体约束拦截 ${a.gate_block||0}`:''}</span></div></div>`;}).join('');
  $('#qe_body').innerHTML=`<div class="muted" style="font-size:11.5px;margin-bottom:8px">题集:${esc(d.dataset_type==='source_count_smoke'?'当前库简单计数检查':'业务参考题集')} · 模型:${esc(d.model||'')} · ${esc(d.ts||'')} · 判分=数值容差/字符串等值；出处=SQL 必须引用参考答案所需表</div>`
-  +'<table><tr><th>题目</th><th>参考集</th><th>A 朴素</th><th>B 图谱</th><th>C 本体全量</th></tr>'
+  +'<table><tr><th>题目</th><th>参考集</th><th>A 基线</th><th>B 图谱</th><th>C 本体全量</th></tr>'
   +(d.items||[]).map(it=>'<tr><td style="max-width:260px">'+esc(it.q)+'</td><td><code>'+esc(String(it.gold))+'</code></td>'
    +['A','B','C'].map(k=>{const r=(it.arms||{})[k]||{};const mk=r.correct?'<span style="color:#16a34a">✓</span>':r.gate_block?'<span style="color:#d97706">拦</span>':'<span style="color:#dc2626">✗</span>';
     return `<td title="${esc(r.sql||r.err||'')}">${mk} <span class="muted" style="font-size:11px">${r.value!=null?esc(String(r.value)).slice(0,16):esc((r.err||'').slice(0,14))}</span>${r.cite?'':' <span class="muted" style="font-size:11px">出处✗</span>'}</td>`;}).join('')+'</tr>').join('')+'</table>';}
@@ -1816,7 +1816,7 @@ async function bcIterWelcome(key,name,epoch=BC.contextEpoch){   // 底本上下�
   <div style="font-size:15px;color:var(--txt);font-weight:600;margin-top:6px">在「${esc(name||key)}」上继续构建</div>
   <div style="margin-top:6px;font-size:12.5px">当前 <b>${d&&d.objects!=null?d.objects:'—'}</b> 个对象 · <b>${d&&d.relations!=null?d.relations:'—'}</b> 条关系${rounds.length?` · 已构建 <b>${rounds.length}</b> 轮`:''}。<br>
    继承构建参照:<b>${esc(window.bcRefsText?bcRefsText(d.references):'—')}</b>（可在左侧覆盖）。<br>
-   本轮结果<b>并入这张本体</b>:新增对象与关系、按更强证据升级状态；已确立的「已验证」「人工断言」与人审结论不被覆盖，也不会删除既有内容。</div>
+   本轮结果<b>并入这张本体</b>:新增对象与关系、按更强证据升级状态；已确立的「已验证」「人工断言」与人工审核结论不被覆盖，也不会删除既有内容。</div>
   ${rounds.length?'<div style="margin-top:10px;font-size:11.5px;color:var(--sub);text-align:left">历次建模诉求</div>':''}
   <div class="bc-egs">${hist}</div>
   <div style="margin-top:10px;font-size:11.5px;color:var(--sub);text-align:left">本轮可以这样提</div>
@@ -2077,7 +2077,7 @@ function bcResultHTML(done,viewId='bcpreview_'+(++BC_VIZ_SEQ)){const s=done.stat
    <div class="hd"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22a058;margin-right:7px;vertical-align:middle"></span>${done.iterated?`已并入本体「${esc(done.name)}」${done.iterations?` · 第 ${esc(done.iterations)} 轮`:''}`:`本体「${esc(done.name)}」构建完成`}</span><span class="muted" style="font-size:11px">${esc(done.elapsed)}s</span></div>
    ${done.iterated&&done.merge?`<div style="margin:8px 14px 0;padding:7px 10px;border:1px solid #cfe0ff;background:#f2f7ff;border-radius:6px;font-size:11.5px;color:#24406e">
     本轮并入：新增 <b>${esc(done.merge.objects_added||0)}</b> 个对象 · 新增 <b>${esc(done.merge.relations_added||0)}</b> 条关系 · 证据升级 <b>${esc(done.merge.relations_upgraded||0)}</b> 条 · 补全字段 <b>${esc(done.merge.objects_enriched||0)}</b> 处<br>
-    <span class="muted">保留原结论 ${esc(done.merge.relations_kept||0)} 条；已确立的「已验证」「人工断言」与人审结论未被覆盖，既有内容未删除。下方统计为合并后的整张本体。</span></div>`:''}
+    <span class="muted">保留原结论 ${esc(done.merge.relations_kept||0)} 条；已确立的「已验证」「人工断言」与人工审核结论未被覆盖，既有内容未删除。下方统计为合并后的整张本体。</span></div>`:''}
    <div style="padding:8px 14px 0;display:flex;gap:6px;flex-wrap:wrap">
     <span class="tag ${isllm?'':'warn'}" style="${isllm?'background:#F0EBFB;color:#7c50e6':''}">${esc(done.method||'大语言模型辅助提议')}</span>
     ${evtxt?`<span class="tag" style="background:#F4F6FB;color:#606a7b">证据 ${esc(evtxt)}</span>`:''}
@@ -2094,7 +2094,7 @@ function bcResultHTML(done,viewId='bcpreview_'+(++BC_VIZ_SEQ)){const s=done.stat
     <div class="bc-viz" id="${esc(viewId)}"></div>
     <div class="bc-vizdet" id="${esc(viewId)}_detail"><span class="k">点击上方节点或连线查看详情</span></div></div>
    <div class="bc-acts"><button onclick="bcView(${jsAttr(done.graph_key)})">在本体图谱中查看 ↗</button>
-    <button class="ghost" onclick="goReview(${jsAttr(done.graph_key)})">进入人审 ↗</button></div></div>`;}
+    <button class="ghost" onclick="goReview(${jsAttr(done.graph_key)})">进入评审 ↗</button></div></div>`;}
 function bcRenderResult(log,done){const viewId='bcpreview_'+(++BC_VIZ_SEQ);log.insertAdjacentHTML('beforeend',bcResultHTML(done,viewId));bcRenderViz(done.graph_key,viewId);}
 // ── 构建对话历史(localStorage，类比深度问数)──
 let BC_CONV=null;

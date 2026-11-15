@@ -178,3 +178,12 @@ def test_numbers_under_the_right_column_still_pass(text):
 def test_the_column_check_names_both_columns():
     issue = ar.check_narrative("A厂覆盖 9.0 天。", [PLANT])["issues"][0]
     assert "库存" in issue["detail"] and "覆盖天数" in issue["detail"]
+
+
+def test_the_bounds_of_a_range_may_come_from_any_row():
+    """区间的两端(DR-131):「各客户利润在 3521.8–4200.0 之间,其中华东电力最低」里的 4200.0 是别的行的值,不算张冠李戴。"""
+    for text in ("各客户利润在 3521.8–4200.0 之间,其中华东电力处在低位。", "华东电力所在的这组客户利润为 3521.8 至 4200.0。",
+                 "华东电力等客户同比 3.1%~12.5%。"):
+        assert ar.check_narrative(text, [PROFIT])["unverified"] == [], text
+    assert ar.check_narrative("华东电力利润 4200.0。", [PROFIT])["issues"][0]["kind"] == "other_row"       # 不是区间:照旧报
+    assert ar.check_narrative("华东电力利润在 3521.8–9999.9 之间。", [PROFIT])["unverified"] == ["9999.9"]    # 区间端点也要有出处

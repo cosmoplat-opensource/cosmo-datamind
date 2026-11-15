@@ -1,5 +1,7 @@
 # DR-120 · 可执行动作与问数推演
 
+> 2026-11-15：问数推演改为只做只读试算、动作结果按回执确定，见 [DR-125](DR-125-read-only-simulation-and-action-receipts.md)；没有回执的服务端错误记为结果未知，见 [DR-129](DR-129-recheck-on-publish-scope-receipts-columns.md)。
+
 状态：已实现。日期：2026-11-15。
 关联：ACTION-EXEC-01、QA-WHATIF-01、DR-020、DR-119。
 

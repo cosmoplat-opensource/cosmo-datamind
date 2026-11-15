@@ -1,5 +1,7 @@
 # DR-125 · 问数推演只做只读试算；动作按回执确定结果
 
+> 2026-11-15：没有结构化回执的服务端错误改记为结果未知，见 [DR-129](DR-129-recheck-on-publish-scope-receipts-columns.md)。
+
 状态：已实现。日期：2026-11-15。
 关联：ACTION-EXEC-02、QA-WHATIF-02、DR-120、DR-123。
 
