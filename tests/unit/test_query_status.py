@@ -111,3 +111,10 @@ def test_an_answer_shows_failed_and_empty_queries_on_its_card(db, monkeypatch):
     flags = " ".join(d["evidence_card"]["flags"])
     assert "退货金额" in flags and "筛选条件没有命中" in flags
     assert ["实际取数截至", "orders.order_date 最新 2026-11-08"] in d["evidence_card"]["kv"]
+
+
+def test_a_month_column_also_counts_as_a_time_column(make_sqlite):
+    path = make_sqlite({"sales": ("cust_id TEXT, month TEXT, profit REAL", [("C1", "2026-09", 1.0), ("C1", "2026-10", 2.0)])})
+    r = _res("利润", "SELECT cust_id, profit FROM sales WHERE month = '2026-10'", [{"cust_id": "C1", "profit": 2.0}])
+    qs.annotate([r], [], _connect(path))
+    assert r["data_as_of"] == [{"table": "sales", "column": "month", "latest": "2026-10"}]

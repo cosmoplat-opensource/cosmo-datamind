@@ -14,7 +14,7 @@ import sqlite3
 import time
 
 _IDENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
-_TIME_NAME = re.compile(r"(date|time|_at$|_dt$|_ts$|日期|时间)", re.I)
+_TIME_NAME = re.compile(r"(date|time|_at$|_dt$|_ts$|(^|_)(month|period|ym|yyyymm)($|_)|日期|时间|月份|年月|期间|账期)", re.I)
 _DATE_VALUE = re.compile(r"^\d{4}[-/]?\d{2}")
 _BUDGET_S = 3.0
 
