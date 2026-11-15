@@ -143,14 +143,15 @@ def main_chain_from_route(ir, route):
     下一步是子表时按它的外键往下查;下一步是父表时按父键查。走不下去就停在那里,已得到的部分照常可用。
     根对象的标识列取对象声明的主键,否则取第一段关系里根对象一侧的父键;都没有时不生成主线。
     """
-    objs = {}
+    objs: dict = {}
     for o in ir.get("objects") or []:
         for k in ("id", "name", "table"):
             if o.get(k):
                 objs.setdefault(str(o[k]), o)
-    steps = [objs.get(str(s)) for s in (route or {}).get("steps") or []]
-    if len(steps) < 2 or not all(steps) or not all(o.get("table") for o in steps):
+    names = [str(s) for s in (route or {}).get("steps") or []]
+    if len(names) < 2 or any(n not in objs or not objs[n].get("table") for n in names):
         return {}
+    steps: list[dict] = [objs[n] for n in names]
 
     def link(a, b):
         """a、b 之间可用于取数的关系 → (b 表上的列, a 表上的列);没有返回 None。"""
@@ -170,8 +171,9 @@ def main_chain_from_route(ir, route):
     root_key = steps[0].get("pk") or (first[1] if first else None)
     if not root_key or "," in str(root_key):
         return {}
-    chain = {"root": {"table": steps[0]["table"], "key": str(root_key), "label": steps[0].get("cn") or steps[0].get("name")},
-             "hops": [], "derived_from_route": (route or {}).get("id")}
+    hops: list[dict] = []
+    chain: dict = {"root": {"table": steps[0]["table"], "key": str(root_key), "label": steps[0].get("cn") or steps[0].get("name")},
+                   "hops": hops, "derived_from_route": (route or {}).get("id")}
     for a, b in zip(steps, steps[1:], strict=False):
         cols = link(a, b)
         if not cols:
@@ -179,8 +181,8 @@ def main_chain_from_route(ir, route):
         hop = {"table": b["table"], "fk": cols[0], "parent": a["table"], "pk": cols[1], "label": b.get("cn") or b.get("name")}
         if b.get("pk"):
             hop["key"] = b["pk"]
-        chain["hops"].append(hop)
-    return chain if chain["hops"] else {}
+        hops.append(hop)
+    return chain if hops else {}
 
 
 def main_chain(ir):
