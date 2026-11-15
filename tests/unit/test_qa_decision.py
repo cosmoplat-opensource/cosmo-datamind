@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """问数使用决策层(DR-119):约束与规则按锚定对象带入、未接入属性拦截、业务词解析、问题分型、
 判定 / 解释 / 追踪 / 异常汇总的确定性求解,以及依据卡。全部在合成库上运行,不调模型。"""
+import datetime as dt
 import sqlite3
 
 import pytest
@@ -537,3 +538,82 @@ def test_a_trace_reports_the_role_it_used_and_where_the_route_stopped(make_sqlit
     assert [r["op_name"] for r in ans["results"][0]["data"]["rows"]] == ["试验"]          # 取的是末道工序,不是首道
     basis = ans["evidence_card"]["basis"][0]
     assert basis["role"] == "末道工序" and "末道工序" in basis["text"] and "last_op_id" in basis["text"]
+
+
+# ── 推演的参数必须唯一确定(DR-127) ───────────────────────────────────
+
+@pytest.fixture
+def twin_world(world):
+    """两个同名客户;动作用客户编号。"""
+    con = sqlite3.connect(world["db"])
+    con.execute("CREATE TABLE customers (cust_id TEXT PRIMARY KEY, name TEXT, city TEXT)")
+    con.executemany("INSERT INTO customers VALUES (?,?,?)", [("C001", "华东电力", "南京"), ("C002", "华东电力", "上海"), ("C003", "北方重工", "沈阳")])
+    con.commit()
+    con.close()
+    world["ir"]["param_grounding"] = {"customer": {"table": "customers", "key": "cust_id", "match": ["name"], "show": ["city"]},
+                                      "due_date": {"type": "date"}}
+    return world
+
+
+def _never(*a):
+    raise AssertionError("参数没有确定之前不应调用动作")
+
+
+def test_two_customers_with_the_same_name_are_offered_as_a_choice(twin_world):
+    q = "如果华东电力新增一张订单,12月5日能否按期交付?"
+    _route_, ans = _whatif(twin_world, q, _never)
+    card = ans["evidence_card"]
+    assert card["type"] == "clarify" and "对应 2 个客户" in ans["narrative"] and "C001(华东电力·南京)" in ans["narrative"]
+    assert [n["q"] for n in card["next"]] == [f"{q}(客户取 C001)", f"{q}(客户取 C002)"]
+    assert dict(card["kv"])["交期"] == "2026-12-05"                       # 已经确定的参数照常列出
+    calls = []
+    _route_, ans = _whatif(twin_world, card["next"][1]["q"], lambda *a: calls.append(a) or (200, {"id": "r", "status": "executed", "execution_mode": "simulate", "result": {"ok": True, "summary": "可按期"}}))
+    assert calls == [("act_trial", {"customer": "C002", "due_date": "2026-12-05"}, "计划员")]
+    kv = dict(ans["evidence_card"]["kv"])
+    assert kv["客户"] == "C002" and kv["交期"] == "2026-12-05" and kv["数据日期"].startswith("2026-11-10")
+
+
+def test_a_customer_named_by_its_number_is_unique(twin_world):
+    calls = []
+    _whatif(twin_world, "如果客户 C001 新增一张订单,12月5日能否按期交付?", lambda *a: calls.append(a) or (200, {}))
+    assert calls[0][1]["customer"] == "C001"
+
+
+def test_two_dates_in_one_question_are_offered_as_a_choice(twin_world):
+    q = "如果北方重工新增一张订单,原定12月5日,现在想提前到11月28日,能否按期交付?"
+    _route_, ans = _whatif(twin_world, q, _never)
+    card = ans["evidence_card"]
+    assert card["type"] == "clarify" and "问句里有 2 个日期" in ans["narrative"]
+    assert [n["q"] for n in card["next"]] == [f"{q}(交期取 2026-12-05)", f"{q}(交期取 2026-11-28)"]
+    calls = []
+    _whatif(twin_world, card["next"][1]["q"], lambda *a: calls.append(a) or (200, {}))
+    assert calls[0][1] == {"customer": "C003", "due_date": "2026-11-28"}
+
+
+@pytest.mark.parametrize("text,expect,note", [
+    ("1月5日", "2027-01-05", "按 2027 年理解"),             # 跨年:今年的 1 月 5 日已经过去
+    ("11月10日", "2026-11-10", "按 2026 年理解"),            # 当天不算过去
+    ("2027年2月28日", "2027-02-28", ""),
+    ("本月底", "2026-11-30", "推算"),
+    ("下个月底", "2026-12-31", "推算"),
+    ("年底", "2026-12-31", "推算"),
+    ("两周后", "2026-11-24", "起算"),
+])
+def test_dates_are_resolved_against_the_data_clock_and_say_what_was_assumed(text, expect, note):
+    v, why, cands = qd.ground_param("due_date", {"type": "date"}, f"如果新增一张订单,{text}能否交付?", None, dt.date(2026, 11, 10), "交期")
+    assert (v, cands) == (expect, []) and note in why
+
+
+@pytest.mark.parametrize("text", ["11月31日", "2027年2月30日", "13月1日"])
+def test_a_date_that_does_not_exist_is_reported_not_moved(text):
+    v, why, _c = qd.ground_param("due_date", {"type": "date"}, f"如果新增一张订单,{text}能否交付?", None, dt.date(2026, 11, 10), "交期")
+    assert v is None and "不是有效日期" in why
+
+
+def test_a_specification_fragment_matching_several_rows_is_not_resolved_to_the_smallest_id(make_sqlite):
+    db = make_sqlite({"products": ("pid TEXT PRIMARY KEY, spec TEXT", [("P2", "SZ11-63MVA/110kV"), ("P1", "SFZ-63MVA/110kV"), ("P3", "S13-20MVA/35kV")])})
+    connect = lambda: sqlite3.connect(db)                                  # noqa: E731
+    spec = {"table": "products", "key": "pid", "match": ["spec"]}
+    v, why, cands = qd.ground_param("product", spec, "如果新增一台 63MVA/110kV 的订单能否交付?", connect, dt.date(2026, 11, 10), "产品")
+    assert v is None and "对应 2 个产品" in why and [c["value"] for c in cands] == ["P1", "P2"]
+    assert qd.ground_param("product", spec, "如果新增一台 20MVA/35kV 的订单能否交付?", connect, dt.date(2026, 11, 10), "产品")[0] == "P3"

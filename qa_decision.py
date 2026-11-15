@@ -24,7 +24,7 @@
                     "hops": [{table, fk, parent?, pk?, key?, label, order_by?, start?, end?, step?, resource?, show[],
                               lookups: [{table, local, key, show: {列: 显示名}}], flag?: {column, value, label}}],
                     "status": {table, key, show: {列: 显示名}}}
-  param_grounding  {参数名: {"table", "key", "match": [列], "label"?, "via": {table, key, column}?} | {"type": "date"}}
+  param_grounding  {参数名: {"table", "key", "match": [列], "show"?: [候选里一并显示的列], "via": {table, key, column}?} | {"type": "date"}}
   concepts[].aliases、caveats[].objects
 """
 from __future__ import annotations
@@ -872,48 +872,106 @@ def _date(y, m, d):
         return None
 
 
-def _date_slot(question, today):
-    q = question or ""
-    m = re.search(r"(20\d{2})[-/年.](\d{1,2})[-/月.](\d{1,2})", q)
-    if m:
+_PIN_END = r"[^\s,,;;))]+"
+
+
+def _pin(question, cn):
+    """使用者在问句里写明的取值:「(交期取 2026-12-20)」。澄清卡片上的候选项就是这样把选择带回来的。"""
+    m = re.search(re.escape(cn) + r"取\s*(" + _PIN_END + ")", question or "") if cn else None
+    return m[1] if m else None
+
+
+def _date_slots(question, today):
+    """问句里出现的所有日期 → ([(ISO 日期, 原文, 说明)], [不是有效日期的原文])。同一天只算一次。"""
+    q = re.sub(r"[一-鿿]{1,8}取\s*" + _PIN_END, " ", question or "")     # 写明给别的参数的取值不算
+    found: list[tuple[str, str, str]] = []
+    invalid: list[str] = []
+
+    def add(d, text, note=""):
+        if d and d.isoformat() not in [x[0] for x in found]:
+            found.append((d.isoformat(), text, note))
+
+    def full(m):
         d = _date(int(m[1]), int(m[2]), int(m[3]))
-        return d.isoformat() if d else None
-    m = re.search(r"(\d{1,2})月(\d{1,2})[日号]", q)
-    if m:
+        add(d, m[0]) if d else invalid.append(m[0])
+        return " "
+    q = re.sub(r"(20\d{2})[-/年.](\d{1,2})[-/月.](\d{1,2})[日号]?", full, q)
+
+    def short(m):
         d = _date(today.year, int(m[1]), int(m[2]))
         if not d:
-            return None
-        if d < today:
-            d = _date(today.year + 1, d.month, d.day)
-        return d.isoformat() if d else None
-    m = re.search(r"([0-9]+|[一二两三四五六七八九十半]{1,3})\s*(个月|周|天)(以?后|之后)", q)
-    if m:
+            invalid.append(m[0])
+        else:
+            if d < today:                      # 没写年份而这一天今年已经过了:按明年,并在说明里写出来
+                d = _date(today.year + 1, d.month, d.day)
+            add(d, m[0], f"问句没有写年份,按 {d.year} 年理解" if d else "")
+        return " "
+    q = re.sub(r"(\d{1,2})月(\d{1,2})[日号]", short, q)
+    for m in re.finditer(r"([0-9]+|[一二两三四五六七八九十半]{1,3})\s*(个月|周|天)(以?后|之后)", q):
         n = _num(m[1])
         if n:
-            return (today + dt.timedelta(days=int(n * (30 if m[2] == "个月" else 7 if m[2] == "周" else 1)))).isoformat()
-    if "下个月底" in q or "下月底" in q:
-        return _month_range(today, 1)[1].isoformat()
-    if "年底" in q:
-        return dt.date(today.year, 12, 31).isoformat()
-    return None
+            add(today + dt.timedelta(days=int(n * (30 if m[2] == "个月" else 7 if m[2] == "周" else 1))), m[0], f"从 {today.isoformat()} 起算")
+    for m in re.finditer(r"下个?月底|(?:本|这个?)月底|(?<!月)月底|年底", q):
+        d = dt.date(today.year, 12, 31) if m[0] == "年底" else _month_range(today, 1 if m[0].startswith("下") else 0)[1]
+        add(d, m[0], f"按 {today.isoformat()} 推算")
+    return found, invalid
 
 
-def ground_param(name, spec, question, connect, today):
-    """返回 (取值, 说明, 候选);取不到时取值为 None。"""
-    if (spec or {}).get("type") == "date":
-        v = _date_slot(question, today)
-        return v, (f"由问句得到日期 {v}" if v else ""), []
+def _cand_label(r, k, cols):
+    return "·".join(dict.fromkeys(str(r[c]) for c in cols if c != k and r.get(c) not in (None, "")))
+
+
+def ground_param(name, spec, question, connect, today, cn=""):
+    """返回 (取值, 说明, 候选)。取值必须唯一确定(DR-127):问句对应不止一个取值时取值为 None,
+    说明里写原因,候选是 [{"value", "label"}],由使用者选;不替使用者挑一个。"""
+    spec = spec or {}
+    pinned = _pin(question, cn)
+    if spec.get("type") == "date":
+        if pinned:
+            got, bad = _date_slots(pinned, today)
+            if len(got) == 1:
+                return got[0][0], f"使用者指定{cn} = {got[0][0]}", []
+            return None, f"「{pinned}」不是有效日期", []
+        got, bad = _date_slots(question, today)
+        if len(got) == 1:
+            iso, text, why = got[0]
+            return iso, f"问句中的「{text}」→ {iso}" + (f"({why})" if why else ""), []
+        if len(got) > 1:
+            return None, f"问句里有 {len(got)} 个日期", [{"value": iso, "label": text} for iso, text, _why in got]
+        return None, (f"问句中的「{bad[0]}」不是有效日期" if bad else ""), []
     t, k = spec.get("table"), spec.get("key")
     match = [c for c in spec.get("match") or [k] if _ident(c)]
     if not (t and k and _ident(t) and _ident(k) and match and _has_table(connect, t)):
         return None, "", []
-    rows = _rows(connect, f'SELECT {", ".join(chr(34) + c + chr(34) for c in dict.fromkeys([k] + match))} FROM "{t}"', limit=20000)
+    show = [c for c in spec.get("show") or [] if _ident(c)]
+    cols = list(dict.fromkeys([k] + match + show))
+    rows = _rows(connect, f'SELECT {", ".join(chr(34) + c + chr(34) for c in cols)} FROM "{t}"', limit=20000)
+    by_key: dict = {}
+    for r in rows:
+        by_key.setdefault(str(r[k]), r)
+
+    def cands(keys):
+        return [{"value": by_key[x][k], "label": _cand_label(by_key[x], k, cols)} for x in sorted(keys)[:6]]
+
+    if pinned:
+        if pinned in by_key:
+            return by_key[pinned][k], f"使用者指定{cn} = {pinned}", []
+        return None, f"没有编号为「{pinned}」的{cn}", []
     q = question or ""
-    exact = [(len(str(r.get(c) or "")), r, str(r.get(c))) for r in rows for c in match
+    hit_key = {x for x in by_key if len(x) >= 2 and _contains(q, x)}
+    if len(hit_key) == 1:                         # 问句里直接写了编号:唯一
+        x = next(iter(hit_key))
+        return by_key[x][k], f"问句中的「{x}」→ {t}.{k} = {x}", []
+    exact = [(str(r.get(c)), str(r[k])) for r in rows for c in match
              if len(str(r.get(c) or "")) >= 2 and _contains(q, str(r.get(c)))]
     if exact:
-        _, r, v = max(exact, key=lambda x: x[0])
-        return r[k], f"问句中的「{v}」→ {t}.{k} = {r[k]}", []
+        longest = max(len(v) for v, _x in exact)
+        v = next(v for v, _x in exact if len(v) == longest)
+        keys = {x for val, x in exact if len(val) == longest}
+        if len(keys) == 1:
+            x = next(iter(keys))
+            return by_key[x][k], f"问句中的「{v}」→ {t}.{k} = {x}", []
+        return None, f"问句中的「{v}」对应 {len(keys)} 个{cn or t}", cands(keys)
     via = spec.get("via") or {}
     if all(_ident(via.get(x)) for x in ("table", "key", "column")) and _has_table(connect, via["table"]):
         for tok in dict.fromkeys(x.strip("./-_") for x in _CODE.findall(q)):
@@ -922,32 +980,44 @@ def ground_param(name, spec, question, connect, today):
                 return got[0]["v"], f"{via['table']} {tok} 的 {via['column']} = {got[0]['v']}", []
     specs = sorted({x for x in re.findall(r"[A-Za-z0-9][A-Za-z0-9/._-]{3,}", q) if re.search(r"[A-Za-z]", x) and re.search(r"\d", x)},
                    key=len, reverse=True)
-    for tok in specs:                 # 规格类片段(如 63MVA/110kV)包含在取值里:多条时取编号最小的一条并说明
-        same = sorted((r for r in rows if any(tok in str(r.get(c) or "") for c in match)), key=lambda r: str(r[k]))
-        if same:
-            return same[0][k], f"问句中的「{tok}」匹配到 {len(same)} 条 {t},取 {same[0][k]}", []
-    label = spec.get("label") or (match[1] if len(match) > 1 else k)
-    return None, "", [f"{r[k]}({r.get(label, '')})" for r in rows[:5]]
+    for tok in specs:                 # 规格类片段(如 63MVA/110kV)包含在取值里:只有一条时才采用
+        keys = {str(r[k]) for r in rows if any(tok in str(r.get(c) or "") for c in match)}
+        if len(keys) == 1:
+            x = next(iter(keys))
+            return by_key[x][k], f"问句中的「{tok}」→ {t}.{k} = {x}", []
+        if keys:
+            return None, f"问句中的「{tok}」对应 {len(keys)} 个{cn or t}", cands(keys)
+    return None, "", cands(list(by_key)[:5])
 
 
 def run_whatif(route, question, ir, connect, invoke, today, operator, actions):
     act = route["action"]
     pg = (ir or {}).get("param_grounding") or {}
-    params, notes, missing = {}, [], []
+    params, notes, missing, shown = {}, [], [], []
     for p in act.get("params") or []:
         spec = pg.get(p["name"])
-        v, note, cands = ground_param(p["name"], spec, question, connect, today) if spec else (None, "", [])
+        v, note, cands = ground_param(p["name"], spec, question, connect, today, p.get("cn") or p["name"]) if spec else (None, "", [])
         if v is not None:
             params[p["name"]] = v
+            shown.append((p.get("cn") or p["name"], v))
             if note:
                 notes.append(note)
-        elif p.get("required"):
-            missing.append((p, cands))
+        elif p.get("required") or note:           # 必填的没取到;或者选填的有歧义、写错了:都先问清楚,不带着猜的值去算
+            missing.append((p, note, cands))
+    clock = _clock(ir, connect)
+    shown.append(("数据日期", f"{clock[0].isoformat()}({clock[1]})"))
     if missing:
-        ask = ";".join(f"{p['cn']}" + (f"(例如 {'、'.join(c)})" if c else "") for p, c in missing)
-        text = f"要用动作「{act['cn']}」推演,还需要:{ask}。请在问句里补上后再问。"
-        card = _card("clarify", text, [{"kind": "action", "cn": act["cn"], "text": act.get("desc"), "params": params}],
-                     kv=list(params.items()))
+        def ask_one(p, note, cands):
+            opts = "、".join(f"{c['value']}({c['label']})" if c.get("label") and str(c["label"]) != str(c["value"]) else str(c["value"])
+                            for c in cands)
+            if note and cands:
+                return f"{p['cn']}:{note},请选一个:{opts}"
+            return f"{p['cn']}" + (f":{note}" if note else "") + (f"(例如 {opts})" if opts else "")
+        text = f"要用动作「{act['cn']}」推演,还需要确定:{';'.join(ask_one(*m) for m in missing)}。没有调用任何动作。"
+        nxt = [{"kind": "question", "label": f"{p['cn']}:{c['value']}" + (f"({c['label']})" if c.get("label") and str(c["label"]) != str(c["value"]) else ""),
+                "q": f"{question}({p['cn']}取 {c['value']})"} for p, note, cands in missing if note for c in cands]
+        card = _card("clarify", text, [{"kind": "action", "cn": act["cn"], "text": act.get("desc"), "params": params, "notes": notes}],
+                     kv=shown, next_=nxt)
         return {"results": [], "narrative": text, "evidence_card": card}
     if act.get("risk") == "high":
         text = f"「{act['cn']}」是高风险动作,问数不直接发起;参数已从问句取得,请到动作中心发起并走审批。"
@@ -980,7 +1050,7 @@ def run_whatif(route, question, ir, connect, invoke, today, operator, actions):
     detail: dict = res["trial"] if isinstance(res.get("trial"), dict) else res
     table = next((v for v in (detail.get("plan"), res.get("schemes"), res.get("tasks"), detail.get("tasks"))
                   if isinstance(v, list) and v and isinstance(v[0], dict)), [])
-    kv = [(EXECUTOR_FIELDS[k], detail.get(k)) for k in ("promise", "earliest_finish", "late_days") if detail.get(k) is not None]
+    kv = shown + [(EXECUTOR_FIELDS[k], detail.get(k)) for k in ("promise", "earliest_finish", "late_days") if detail.get(k) is not None]
     if res.get("recommended"):
         kv.append((EXECUTOR_FIELDS["recommended"], res["recommended"]))
     others = [a for a in bound_actions(actions, ir) if a["id"] != act["id"] and a.get("object") == act.get("object") and a.get("risk") != "high"]
