@@ -1330,6 +1330,43 @@ def _qa_lookup_card(question, results, ir, prep, metric_cards, narrative):
         return None
 
 
+def _qa_attach_record(resp, question, keys):
+    """DR-122 给答案配上结果记录:每个结果一个编号,依据卡引用同一个编号;文字说明里的数字到结果里找出处,
+    找不到的在依据卡上提示。出错不影响答案。"""
+    import answer_record
+    try:
+        try: release = getattr(_request_g, "graph_release", "") or ""
+        except RuntimeError: release = ""
+        source = ""
+        try: source = str((_active_source() or {}).get("id") or "")
+        except Exception: source = ""
+        results = resp.get("results") or []
+        rec = answer_record.build(results, graphs=keys, release=release, source=source)
+        card = resp.get("evidence_card") if isinstance(resp.get("evidence_card"), dict) else None
+        extra = []
+        if card:
+            by_sql = {r.get("sql"): r["result_id"] for r in results if r.get("sql")}
+            for b in card.get("basis") or []:
+                if isinstance(b, dict) and b.get("kind") == "sql" and b.get("text") in by_sql:
+                    b["result_id"] = by_sql[b["text"]]
+                if isinstance(b, dict) and isinstance(b.get("params"), dict):
+                    extra += list(b["params"].values())
+                if isinstance(b, dict) and b.get("count") is not None:
+                    extra.append(b["count"])
+            extra += [v for _k, v in card.get("kv") or []]
+        check = answer_record.check_narrative(resp.get("narrative") or "", results, question, extra)
+        rec["narrative_check"] = check
+        flag = answer_record.flag_text(check)
+        if flag and card is not None:
+            card.setdefault("flags", []).append(flag)
+        if flag:
+            observability.count("qa.narrative_unverified")
+        resp["answer_record"] = rec
+    except Exception:            # noqa: BLE001 —— 记录是附加信息,不能让答案失败
+        pass
+    return resp
+
+
 _QA_ROUTE_CN = {"lookup": "查数(NL2SQL)", "judge": "判定(规则求值)", "whatif": "推演(调用动作)", "explain": "解释(约束与规则)",
                 "trace": "追踪(沿主线)", "unlit": "数据未接入", "monitor": "异常汇总(规则本)"}
 
@@ -5006,8 +5043,8 @@ def _chat_impl():
         steps.append({"step": "decision_error", "ok": False, "info": "决策层出错,改按查数处理 · " + _dq["error"]})
     if _ans is not None:                            # 非查数类型:确定性求解的结果不进缓存(规则与数据随时会变)
         anchor["explanation"] = _qa_anchor_explanation(anchor)
-        return jsonify({"steps": steps, **_ans, "note": "", "summary": _ans["narrative"][:1200],
-                        "metric_cards": _metric_cards(question, ir_gate), "anchor": anchor})
+        return jsonify(_qa_attach_record({"steps": steps, **_ans, "note": "", "summary": _ans["narrative"][:1200],
+                                          "metric_cards": _metric_cards(question, ir_gate), "anchor": anchor}, question, gate_keys))
     _xtext, _xn = _exemplar_text(q_eff)                     # DR-084 相似问题的已验证查询
     if _xn:
         ctx += "\n\n" + _xtext
@@ -5142,6 +5179,7 @@ def _chat_impl():
             "summary": summary, "metric_cards": _record_metric_usage(_metric_cards(question, ir_gate), gate_keys[0]),
             "anchor": anchor}
     resp["evidence_card"] = _qa_lookup_card(question, results, ir_gate, _dq, resp["metric_cards"], text)
+    _qa_attach_record(resp, question, gate_keys)
     if degraded: resp["degraded"] = True
     if results and not bypass_cache and not degraded:   # 强制刷新请求既不读缓存，也不回写缓存;降级答案不缓存
         _qa_cache_store(cache_key, resp)
@@ -5215,9 +5253,9 @@ def chat_stream():
             yield push("decision_error", False, "决策层出错,改按查数处理 · " + _dq["error"])
         if _ans is not None:
             anchor["explanation"] = _qa_anchor_explanation(anchor)
-            yield sse({"type": "done", "steps": steps, **_ans, "note": "", "summary": _ans["narrative"][:1200],
-                       "metric_cards": _metric_cards(question, ir_gate), "anchor": anchor, "cached": False,
-                       "elapsed": round(_t.time() - t0, 1), "session": session})
+            _done = _qa_attach_record({"steps": steps, **_ans, "note": "", "summary": _ans["narrative"][:1200],
+                                       "metric_cards": _metric_cards(question, ir_gate), "anchor": anchor}, question, _gate_keys)
+            yield sse({"type": "done", **_done, "cached": False, "elapsed": round(_t.time() - t0, 1), "session": session})
             return
         _xtext, _xn = _exemplar_text(q_eff)                 # DR-084 相似问题的已验证查询
         if _xn:
@@ -5388,6 +5426,7 @@ def chat_stream():
                 "summary": summary, "metric_cards": _record_metric_usage(_metric_cards(question, ir_gate), _gate_keys[0]),
                 "anchor": anchor}   # 随 done 落一份:命中缓存与历史回放时锚定视图不丢
         resp["evidence_card"] = _qa_lookup_card(question, results, ir_gate, _dq, resp["metric_cards"], text)
+        _qa_attach_record(resp, question, _gate_keys)
         if degraded: resp["degraded"] = True
         if results and not bypass_cache and not degraded:
             _qa_cache_store(cache_key, resp)

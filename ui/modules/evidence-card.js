@@ -25,7 +25,7 @@ function trace(t){ return (t||[]).map(c => `${e(c.field)} ${e(c.op)} ${e(JSON.st
 function params(p){ const kv = Object.entries(p || {}); return kv.length ? `<div class="evc-p">${kv.map(([x, y]) => `<code>${e(x)}=${e(y)}</code>`).join('')}</div>` : ''; }
 function basis(b){
   const k = `<span class="evc-k">${e(KIND[b.kind] || b.kind)}</span>`;
-  if(b.kind === 'sql') return b.text ? `<li>${k}${e(b.title || '')}<details><summary>SQL</summary><pre>${e(b.text)}</pre></details></li>` : '';
+  if(b.kind === 'sql') return b.text ? `<li>${k}${e(b.title || '')}${b.result_id ? ` <span class="evc-ev" title="表格、文字说明与本卡引用的是同一个结果">结果 ${e(b.result_id)}</span>` : ''}<details><summary>SQL</summary><pre>${e(b.text)}</pre></details></li>` : '';
   if(b.kind === 'rule') return `<li>${k}<b>${e(b.cn || b.id)}</b> <code>${e(b.id || '')}</code>:${e(b.text)}${b.count != null ? ` · 命中 ${e(b.count)}` : ''}${b.trace ? `<div class="evc-ev">例:${trace(b.trace)}</div>` : ''}</li>`;
   if(b.kind === 'constraint') return `<li>${k}<b>${e(b.cn)}</b>:${e(b.text)}${params(b.params)}${b.evidence ? `<div class="evc-ev">依据 ${e(b.evidence)}</div>` : ''}</li>`;
   if(b.kind === 'action') return `<li>${k}<b>${e(b.cn)}</b>${b.record_id ? ` · 记录 <code>${e(b.record_id)}</code>` : ''}${params(b.params)}
