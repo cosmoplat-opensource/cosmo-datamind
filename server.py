@@ -1299,14 +1299,22 @@ def _qa_decision_prep(question, ir, keys, anchor):
     return prep
 
 
-def _qa_decision_answer(question, ir, prep, validate=None):
+def _qa_operator(body):
+    """推演发起的动作记在谁名下:请求体 operator 或请求头 X-DataMind-User;经适配层进来的记调用方;都没有时记为"问数助手"。"""
+    who = str((body or {}).get("operator") or request.headers.get("X-DataMind-User")
+              or request.headers.get("X-DataMind-Actor") or "").strip()[:40]
+    return who or "问数助手"
+
+
+def _qa_decision_answer(question, ir, prep, validate=None, operator="问数助手"):
     """非查数类型的答案;返回 None 表示交回 NL2SQL(含求解出错,原因记入 prep["error"])。"""
+    import bp_actions
     import qa_decision
     if prep["route"]["type"] == "lookup":
         return None
     try:
         return qa_decision.answer(question, ir, prep["rules"], prep["actions"], prep["route"], prep["connect"],
-                                  prep["anchored"], validate=validate)
+                                  prep["anchored"], validate=validate, invoke=bp_actions.invoke, operator=operator)
     except Exception as exc:            # noqa: BLE001
         prep["error"] = f"{type(exc).__name__}: {exc}"[:160]
         return None
@@ -1322,7 +1330,7 @@ def _qa_lookup_card(question, results, ir, prep, metric_cards, narrative):
         return None
 
 
-_QA_ROUTE_CN = {"lookup": "查数(NL2SQL)", "judge": "判定(规则求值)", "explain": "解释(约束与规则)",
+_QA_ROUTE_CN = {"lookup": "查数(NL2SQL)", "judge": "判定(规则求值)", "whatif": "推演(调用动作)", "explain": "解释(约束与规则)",
                 "trace": "追踪(沿主线)", "unlit": "数据未接入", "monitor": "异常汇总(规则本)"}
 
 
@@ -1337,7 +1345,8 @@ def _qa_decision_steps(prep):
     r = prep["route"]
     if r["type"] != "lookup" or prep["n"]:
         out.append(("route", True, "问题类型 · " + _QA_ROUTE_CN.get(r["type"], r["type"])
-                    + (f" · 规则 {r['rule'].get('cn')}" if r.get("rule") else "") + (f" · {r['root_id']}" if r.get("root_id") else "")))
+                    + (f" · 规则 {r['rule'].get('cn')}" if r.get("rule") else "") + (f" · 动作 {r['action'].get('cn')}" if r.get("action") else "")
+                    + (f" · {r['root_id']}" if r.get("root_id") else "")))
     if prep.get("error"):
         out.append(("decision_error", False, "决策层出错,改按查数处理 · " + prep["error"]))
     return out
@@ -4989,10 +4998,10 @@ def _chat_impl():
     for _st in _qa_decision_steps(_dq):
         steps.append({"step": _st[0], "ok": _st[1], "info": _st[2]})
     if _dq["route"]["type"] != "lookup" and _PLAN_VARIANT.get():
-        return jsonify({"routed_skip": True})       # 多路候选:非查数类型只由默认一路求解
+        return jsonify({"routed_skip": True})       # 多路候选:非查数类型只由默认一路求解(推演会调用动作,不能重复发起)
     _strict = bool(graph_keys and gate_keys != ["demo"] and not fallback)
     _ans = _qa_decision_answer(question, ir_gate, _dq,
-                               lambda _s: _qa_validate_sql(_s, ir_gate, strict=_strict, focus_tables=focus_tables))
+                               lambda _s: _qa_validate_sql(_s, ir_gate, strict=_strict, focus_tables=focus_tables), _qa_operator(body))
     if _dq.get("error") and not any(x["step"] == "decision_error" for x in steps):
         steps.append({"step": "decision_error", "ok": False, "info": "决策层出错,改按查数处理 · " + _dq["error"]})
     if _ans is not None:                            # 非查数类型:确定性求解的结果不进缓存(规则与数据随时会变)
@@ -5201,7 +5210,7 @@ def chat_stream():
             yield push(*_st)
         _strict = bool(graph_keys and _gate_keys != ["demo"] and not _gate_fallback)
         _ans = _qa_decision_answer(question, ir_gate, _dq,
-                                   lambda _s: _qa_validate_sql(_s, ir_gate, strict=_strict, focus_tables=focus_tables))
+                                   lambda _s: _qa_validate_sql(_s, ir_gate, strict=_strict, focus_tables=focus_tables), _qa_operator(body))
         if _dq.get("error") and not any(x["step"] == "decision_error" for x in steps):
             yield push("decision_error", False, "决策层出错,改按查数处理 · " + _dq["error"])
         if _ans is not None:

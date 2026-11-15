@@ -13,15 +13,18 @@
      解释      须命中约束或规则;引用约束参数与依据,使用提醒作补充
      追踪      按 ``main_chain`` 逐跳查询;每一跳须是本体中已验证或人工确认的关系
      异常汇总  规则本全部规则的判定计数
-   推演(调用动作做试算)需要动作执行器,主线没有,不在本模块里。
+     推演      只考虑作用对象在本图谱中、且必填参数都声明了 ``param_grounding`` 的动作;从问句取参数,调用低风险动作,
+               高风险动作只给出参数与动作中心入口;动作没有配置执行器时如实说明只做了登记
 5. 每个答案附依据卡(结论、依据、关键值、提示、下一步)。
 
 图谱中的可选声明:
   clock            {"table", "today", "window_end"?}
-  main_chain       {"root": {table, key, label, show[]},
+  main_chain       可省略:没有声明时从图谱的工艺路线(routes)推出,见 ontology_decision.main_chain。
+                   {"root": {table, key, label, show[]},
                     "hops": [{table, fk, parent?, pk?, key?, label, order_by?, start?, end?, step?, resource?, show[],
                               lookups: [{table, local, key, show: {列: 显示名}}], flag?: {column, value, label}}],
                     "status": {table, key, show: {列: 显示名}}}
+  param_grounding  {参数名: {"table", "key", "match": [列], "label"?, "via": {table, key, column}?} | {"type": "date"}}
   concepts[].aliases、caveats[].objects
 """
 from __future__ import annotations
@@ -30,6 +33,7 @@ import datetime as dt
 import re
 import sqlite3
 
+import ontology_decision
 import rule_engine
 
 # ------------------------------------------------------------------ 基础
@@ -38,6 +42,8 @@ _CN_DIGIT = {"零": 0, "一": 1, "两": 2, "二": 2, "三": 3, "四": 4, "五": 
 _SQL_OPS = {"==": "=", "!=": "<>", ">": ">", ">=": ">=", "<": "<", "<=": "<="}
 ROWWISE_CAP = 20000          # 规则不能编译成 SQL 时逐行求值的上限
 KEY_CAP = 20000              # 一条规则记录命中键的上限
+# 动作执行器返回结构里问数会读的字段(执行器约定见 bp_actions)及其显示名
+EXECUTOR_FIELDS = {"promise": "承诺结论", "earliest_finish": "最早完工", "late_days": "相对交期(天,正数为晚)", "recommended": "推荐方案"}
 
 
 def _objects(ir):
@@ -317,13 +323,25 @@ def resolve_terms(question, ir, connect):
 
 
 # ------------------------------------------------------------------ 4. 问题分型
+_WHATIF = re.compile(
+    r"(能否|能不能|可不可以|可否|是否能|能够|来得及)[^。?？]{0,10}(承诺|按期|交付|交货|插|排进|接单|完成)"
+    r"|插单|插进|插入一张"
+    r"|(如果|假如|要是|假设|万一)[^。?？]{0,24}(停机|停了|坏了|修不好|不修|故障|插|新增|新来|加一张|来一张|延期|推迟)"
+    r"|(修不好|不修了|一直停|停机|停了|坏了|故障)[^。?？]{0,12}(影响|波及|会怎样)"
+    r"|新增(?!了)[^。?？]{0,16}订单[^。?？]{0,24}(能否|能不能|会|影响|行不行|可以吗|来得及)"
+    r"|新来[^。?？]{0,10}订单")
+_LOOKUP_CUE = re.compile(r"几次|次数|记录|历史|时长|上周|上个月|上月|去年|昨天|前天|统计|汇总")   # 问已发生的事,不是推演
 _TRACE = re.compile(r"到哪|进度|哪道工序|卡在|走到|执行到|现在在|当前在|做到|进行到")
 _EXPLAIN = re.compile(r"为什么|为何|依据是什么|怎么算|如何计算|是怎么得出|凭什么|怎么判定|规则是什么")   # "原因是什么"常是问备注字段,不算
 _CAUSAL = re.compile(r"下降|上升|增长|减少|变化|波动|比[^。?？]{0,8}(高|低|多|少)")             # 问数据变化的原因,交给查数
 _JUDGE = re.compile(r"哪些|有没有|是否|名单|有哪")
 _RANK = re.compile(r"最|前\s*\d|top|TOP|排名|排序|平均|合计|总计|总共|一共|共有|多少|几[批个张台项条次道]|数量|占比|趋势|统计")
 _MONITOR = re.compile(r"(有哪些|有什么|有没有|新增|最新)[^。?？]{0,4}(异常|告警|预警|风险)")
+_SYN = [(re.compile(r"修不好|坏了|停了|不修|故障|停机"), "停机 影响"),
+        (re.compile(r"承诺|按期|交期|来得及|接单|插单|新增.{0,16}订单"), "插单 试算 承诺"),
+        (re.compile(r"方案|对比|怎么插|怎么排"), "方案 对比")]
 _GENERIC = {"工序", "订单", "机台", "任务", "物料", "为什", "什么", "怎么", "多少", "哪些", "时间"}
+ACTION_MIN_SCORE = 4          # 至少两个字二元组与动作名重合(同义词扩展计入)
 
 
 def _single_ask(q):
@@ -333,7 +351,7 @@ def _single_ask(q):
 
 
 def _root_ids(question, ir, connect):
-    mc = (ir or {}).get("main_chain") or {}
+    mc = ontology_decision.main_chain(ir or {})
     root = mc.get("root") or {}
     t, k = root.get("table"), root.get("key")
     if not (t and k and _ident(t) and _ident(k) and connect and _has_table(connect, t)):
@@ -361,25 +379,50 @@ def match_rule(question, rules):
     return best
 
 
-def match_action(text, actions, min_score=2):
-    """与一段文字最接近的已登记动作(按名称与说明的字二元组重合);用于在依据卡里给出「下一步可发起的动作」。"""
-    qb = _bigrams(text or "")
+def bound_actions(actions, ir):
+    """可用于推演的动作:已启用、作用对象在本图谱中、所有必填参数都在 param_grounding 中有声明。"""
+    pg = (ir or {}).get("param_grounding") or {}
+    if not pg:
+        return []
+    idx = _obj_by_table(ir)
+    out = []
+    for a in actions or []:
+        if a.get("enabled") is False:
+            continue
+        objs = [str(a.get(k) or "").lower() for k in ("object_table", "object")]
+        if not any(o and o in idx for o in objs):
+            continue
+        if all(p.get("name") in pg for p in a.get("params") or [] if p.get("required")):
+            out.append(a)
+    return out
+
+
+def match_action(question, actions, synonyms=True, min_score=ACTION_MIN_SCORE):
+    q = question or ""
+    for rx, extra in (_SYN if synonyms else []):
+        if rx.search(q):
+            q += " " + extra
+    qb = _bigrams(q)
     best, score = None, 0
     for a in actions or []:
         if a.get("enabled") is False:
             continue
-        sc = 2 * len(_bigrams(a.get("cn")) & qb) + len(_bigrams(a.get("desc")) & qb)
-        if sc > score:
-            best, score = a, sc
+        s = 2 * len(_bigrams(a.get("cn")) & qb) + len(_bigrams(a.get("desc")) & qb)
+        if s > score:
+            best, score = a, s
     return best if score >= min_score else None
 
 
 def classify(question, ir, rules, actions, connect):
-    """确定性分型,返回 {"type": ..., ...}。"""
+    """确定性分型,返回 {"type": ..., ...}。actions 为全部动作类型,推演只考虑与本图谱绑定且参数都有接地声明的。"""
     q = question or ""
     gate = lighting_gate(q, ir)
     if gate:
         return {"type": "unlit", "gate": gate}
+    if _WHATIF.search(q) and not _EXPLAIN.search(q) and not _LOOKUP_CUE.search(q):
+        act = match_action(q, bound_actions(actions, ir))
+        if act:
+            return {"type": "whatif", "action": act}
     ids = _root_ids(q, ir, connect) if _TRACE.search(q) else []
     if ids and _single_ask(q):
         return {"type": "trace", "root_id": ids[0]}
@@ -489,7 +532,7 @@ def monitor_snapshot(rules, connect):
 
 
 # ------------------------------------------------------------------ 依据卡
-_TYPE_CN = {"lookup": "查数", "judge": "判定", "explain": "解释", "trace": "追踪", "unlit": "数据未接入",
+_TYPE_CN = {"lookup": "查数", "judge": "判定", "whatif": "推演", "explain": "解释", "trace": "追踪", "unlit": "数据未接入",
             "monitor": "异常汇总", "clarify": "需补充信息"}
 
 
@@ -514,7 +557,7 @@ def _next_for_rules(fired_rules, actions):
     out = []
     for r in fired_rules:
         act = (r.get("then") or {}).get("action")
-        a = match_action(f"{r.get('cn')} {(r.get('then') or {}).get('decision', '')} {act or ''}", actions, min_score=2)
+        a = match_action(f"{r.get('cn')} {(r.get('then') or {}).get('decision', '')} {act or ''}", actions, synonyms=False, min_score=2)
         if a:
             out.append({"kind": "action", "label": f"{a['cn']}({'需审批' if a.get('risk') == 'high' else '低风险'})",
                         "action_id": a["id"], "href": "#actioncenter"})
@@ -586,7 +629,7 @@ def run_judge(route, connect, actions, ir, validate):
     if ev["count"] > len(ev["rows"]):
         flags.append(f"下表只列出前 {len(ev['rows'])} 行")
     nxt = _next_for_rules([r], actions)
-    root = ((ir or {}).get("main_chain") or {}).get("root") or {}
+    root = (ontology_decision.main_chain(ir or {})).get("root") or {}
     if ev["rows"] and root.get("key") in ev["rows"][0]:        # 沿主线追踪第一条命中
         rid = ev["rows"][0][root["key"]]
         nxt.insert(0, {"kind": "question", "label": f"追踪 {rid}", "q": f"{root.get('label') or ''} {rid} 现在到哪了?"})
@@ -656,7 +699,7 @@ def _verified(ir, child, parent):
 
 
 def run_trace(route, ir, rules, connect, today, validate=None):
-    mc = (ir or {}).get("main_chain") or {}
+    mc = ontology_decision.main_chain(ir or {})
     root = mc.get("root") or {}
     rid = route["root_id"]
     if not (_ident(root.get("table")) and _ident(root.get("key"))):
@@ -762,8 +805,126 @@ def mc_hop_key(mc, table):
     return next((h.get("key") for h in mc.get("hops") or [] if h.get("table") == table), None)
 
 
+# ---- 推演:参数接地
+def _date(y, m, d):
+    try:
+        return dt.date(y, m, d)
+    except ValueError:
+        return None
+
+
+def _date_slot(question, today):
+    q = question or ""
+    m = re.search(r"(20\d{2})[-/年.](\d{1,2})[-/月.](\d{1,2})", q)
+    if m:
+        d = _date(int(m[1]), int(m[2]), int(m[3]))
+        return d.isoformat() if d else None
+    m = re.search(r"(\d{1,2})月(\d{1,2})[日号]", q)
+    if m:
+        d = _date(today.year, int(m[1]), int(m[2]))
+        if not d:
+            return None
+        if d < today:
+            d = _date(today.year + 1, d.month, d.day)
+        return d.isoformat() if d else None
+    m = re.search(r"([0-9]+|[一二两三四五六七八九十半]{1,3})\s*(个月|周|天)(以?后|之后)", q)
+    if m:
+        n = _num(m[1])
+        if n:
+            return (today + dt.timedelta(days=int(n * (30 if m[2] == "个月" else 7 if m[2] == "周" else 1)))).isoformat()
+    if "下个月底" in q or "下月底" in q:
+        return _month_range(today, 1)[1].isoformat()
+    if "年底" in q:
+        return dt.date(today.year, 12, 31).isoformat()
+    return None
+
+
+def ground_param(name, spec, question, connect, today):
+    """返回 (取值, 说明, 候选);取不到时取值为 None。"""
+    if (spec or {}).get("type") == "date":
+        v = _date_slot(question, today)
+        return v, (f"由问句得到日期 {v}" if v else ""), []
+    t, k = spec.get("table"), spec.get("key")
+    match = [c for c in spec.get("match") or [k] if _ident(c)]
+    if not (t and k and _ident(t) and _ident(k) and match and _has_table(connect, t)):
+        return None, "", []
+    rows = _rows(connect, f'SELECT {", ".join(chr(34) + c + chr(34) for c in dict.fromkeys([k] + match))} FROM "{t}"', limit=20000)
+    q = question or ""
+    exact = [(len(str(r.get(c) or "")), r, str(r.get(c))) for r in rows for c in match
+             if len(str(r.get(c) or "")) >= 2 and _contains(q, str(r.get(c)))]
+    if exact:
+        _, r, v = max(exact, key=lambda x: x[0])
+        return r[k], f"问句中的「{v}」→ {t}.{k} = {r[k]}", []
+    via = spec.get("via") or {}
+    if all(_ident(via.get(x)) for x in ("table", "key", "column")) and _has_table(connect, via["table"]):
+        for tok in dict.fromkeys(x.strip("./-_") for x in _CODE.findall(q)):
+            got = _rows(connect, f'SELECT "{via["column"]}" AS v FROM "{via["table"]}" WHERE "{via["key"]}" = ? LIMIT 1', (tok,), 1)
+            if got and got[0]["v"]:
+                return got[0]["v"], f"{via['table']} {tok} 的 {via['column']} = {got[0]['v']}", []
+    specs = sorted({x for x in re.findall(r"[A-Za-z0-9][A-Za-z0-9/._-]{3,}", q) if re.search(r"[A-Za-z]", x) and re.search(r"\d", x)},
+                   key=len, reverse=True)
+    for tok in specs:                 # 规格类片段(如 63MVA/110kV)包含在取值里:多条时取编号最小的一条并说明
+        same = sorted((r for r in rows if any(tok in str(r.get(c) or "") for c in match)), key=lambda r: str(r[k]))
+        if same:
+            return same[0][k], f"问句中的「{tok}」匹配到 {len(same)} 条 {t},取 {same[0][k]}", []
+    label = spec.get("label") or (match[1] if len(match) > 1 else k)
+    return None, "", [f"{r[k]}({r.get(label, '')})" for r in rows[:5]]
+
+
+def run_whatif(route, question, ir, connect, invoke, today, operator, actions):
+    act = route["action"]
+    pg = (ir or {}).get("param_grounding") or {}
+    params, notes, missing = {}, [], []
+    for p in act.get("params") or []:
+        spec = pg.get(p["name"])
+        v, note, cands = ground_param(p["name"], spec, question, connect, today) if spec else (None, "", [])
+        if v is not None:
+            params[p["name"]] = v
+            if note:
+                notes.append(note)
+        elif p.get("required"):
+            missing.append((p, cands))
+    if missing:
+        ask = ";".join(f"{p['cn']}" + (f"(例如 {'、'.join(c)})" if c else "") for p, c in missing)
+        text = f"要用动作「{act['cn']}」推演,还需要:{ask}。请在问句里补上后再问。"
+        card = _card("clarify", text, [{"kind": "action", "cn": act["cn"], "text": act.get("desc"), "params": params}],
+                     kv=list(params.items()))
+        return {"results": [], "narrative": text, "evidence_card": card}
+    if act.get("risk") == "high":
+        text = f"「{act['cn']}」是高风险动作,问数不直接发起;参数已从问句取得,请到动作中心发起并走审批。"
+        card = _card("whatif", text, [{"kind": "action", "cn": act["cn"], "text": act.get("desc"), "params": params, "notes": notes}],
+                     kv=list(params.items()), next_=[{"kind": "action", "label": f"发起「{act['cn']}」(需审批)", "action_id": act["id"],
+                                                     "href": "#actioncenter"}])
+        return {"results": [], "narrative": text, "evidence_card": card}
+    code, body = invoke(act["id"], params, operator)
+    body = body or {}
+    res = body.get("result") or {}
+    base = {"kind": "action", "cn": act["cn"], "params": params, "notes": notes, "record_id": body.get("id")}
+    if code >= 400 or body.get("status") == "failed" or res.get("ok") is False:
+        why = body.get("error") or res.get("summary") or res.get("error") or "执行失败"
+        text = f"动作「{act['cn']}」执行失败:{why}"
+        return {"results": [], "narrative": text, "evidence_card": _card("whatif", text, [base])}
+    if body.get("execution_mode") != "executor":
+        text = f"动作「{act['cn']}」已登记(编号 {body.get('id')}),但没有配置执行器,未做推演。"
+        return {"results": [], "narrative": text, "evidence_card": _card("whatif", text, [base])}
+    detail: dict = res["trial"] if isinstance(res.get("trial"), dict) else res
+    table = next((v for v in (detail.get("plan"), res.get("schemes"), res.get("tasks"), detail.get("tasks"))
+                  if isinstance(v, list) and v and isinstance(v[0], dict)), [])
+    kv = [(EXECUTOR_FIELDS[k], detail.get(k)) for k in ("promise", "earliest_finish", "late_days") if detail.get(k) is not None]
+    if res.get("recommended"):
+        kv.append((EXECUTOR_FIELDS["recommended"], res["recommended"]))
+    others = [a for a in bound_actions(actions, ir) if a["id"] != act["id"] and a.get("object") == act.get("object") and a.get("risk") != "high"]
+    nxt = [{"kind": "question", "label": f"用「{a['cn']}」", "q": f"{question}(用「{a['cn']}」)"} for a in others[:2]]
+    text = (res.get("summary") or f"动作「{act['cn']}」已执行") + (f"\n\n参数:{';'.join(notes)}" if notes else "")
+    card = _card("whatif", res.get("summary") or act["cn"],
+                 [{**base, "path": detail.get("decision_path") or [], "validation": res.get("validation"),
+                   "real_writeback": body.get("real_writeback")}],
+                 kv=kv, next_=nxt, links=[{"label": "动作记录", "href": "#actioncenter"}])
+    return {"results": [_result(act["cn"], "", table)] if table else [], "narrative": text, "evidence_card": card}
+
+
 # ------------------------------------------------------------------ 入口
-def answer(question, ir, rules, actions, route, connect, anchored, validate=None):
+def answer(question, ir, rules, actions, route, connect, anchored, validate=None, invoke=None, operator="问数助手"):
     """非查数类型的完整答案;返回 None 表示交回 NL2SQL。validate(sql) -> (ok, why) 为本体约束校验(可选)。"""
     t = route["type"]
     rules = rules_on_tables(rules, ir)
@@ -780,4 +941,6 @@ def answer(question, ir, rules, actions, route, connect, anchored, validate=None
         return run_explain(question, ir, rules, anchored)
     if t == "trace":
         return run_trace(route, ir, rules, connect, today, validate)
+    if t == "whatif" and invoke is not None:
+        return run_whatif(route, question, ir, connect, invoke, today, operator, actions)
     return None

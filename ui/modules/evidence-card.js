@@ -4,8 +4,8 @@
 (function(){
 'use strict';
 const e = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const KIND = {rule:'规则', constraint:'约束', sql:'查询', lighting:'数据', metric:'指标', relation:'关系', caveat:'提醒'};
-const TYPE_COLOR = {lookup:'#4A5FF3', judge:'#7A4FD6', explain:'#2E8B62', trace:'#005AAA', unlit:'#C0392B', monitor:'#7A4FD6'};
+const KIND = {rule:'规则', constraint:'约束', sql:'查询', action:'动作', lighting:'数据', metric:'指标', relation:'关系', caveat:'提醒'};
+const TYPE_COLOR = {lookup:'#4A5FF3', judge:'#7A4FD6', whatif:'#D9772B', explain:'#2E8B62', trace:'#005AAA', unlit:'#C0392B', monitor:'#7A4FD6', clarify:'#8A8F99'};
 let STYLED = false;
 function style(){
   if(STYLED) return; STYLED = true;
@@ -28,6 +28,10 @@ function basis(b){
   if(b.kind === 'sql') return b.text ? `<li>${k}${e(b.title || '')}<details><summary>SQL</summary><pre>${e(b.text)}</pre></details></li>` : '';
   if(b.kind === 'rule') return `<li>${k}<b>${e(b.cn || b.id)}</b> <code>${e(b.id || '')}</code>:${e(b.text)}${b.count != null ? ` · 命中 ${e(b.count)}` : ''}${b.trace ? `<div class="evc-ev">例:${trace(b.trace)}</div>` : ''}</li>`;
   if(b.kind === 'constraint') return `<li>${k}<b>${e(b.cn)}</b>:${e(b.text)}${params(b.params)}${b.evidence ? `<div class="evc-ev">依据 ${e(b.evidence)}</div>` : ''}</li>`;
+  if(b.kind === 'action') return `<li>${k}<b>${e(b.cn)}</b>${b.record_id ? ` · 记录 <code>${e(b.record_id)}</code>` : ''}${params(b.params)}
+    ${(b.notes || []).length ? `<div class="evc-ev">${e(b.notes.join(';'))}</div>` : ''}
+    ${(b.path || []).length ? `<ol>${b.path.map(p => `<li>${e(p.check)}:<b>${e(p.result)}</b>${p.constraint ? ` <span class="evc-ev">(${e(p.constraint)})</span>` : ''}${(p.detail || []).length ? `<div class="evc-ev">${e(p.detail.slice(0,4).join(';'))}</div>` : ''}</li>`).join('')}</ol>` : ''}
+    ${b.validation ? `<div class="evc-ev">${e(b.validation)}</div>` : ''}</li>`;
   if(b.kind === 'lighting') return `<li>${k}尚未接入:${e(b.text)} · 需要 <b>${e(b.needs)}</b>${b.why ? `<div class="evc-ev">${e(b.why)}</div>` : ''}</li>`;
   if(b.kind === 'metric') return `<li>${k}<b>${e(b.name)}</b>:${e(b.text || '')} <span class="evc-ev">状态 ${e(b.status || '未标注')}</span></li>`;
   if(b.kind === 'relation') return `<li>${k}${e(b.text)} <span class="evc-ev">${e(b.status)}${b.overlap != null ? ' · 重叠 ' + e(b.overlap) + '%' : ''}</span></li>`;

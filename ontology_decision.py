@@ -136,6 +136,66 @@ def route_cqs(ir):
     return out
 
 
+def main_chain_from_route(ir, route):
+    """把一条工艺路线(概念层)换成追踪用的主线声明(数据层),这样路线只需声明一次(DR-121)。
+
+    相邻两步之间要有已验证或人工确认、且带单列连接键的关系,方向不限:
+    下一步是子表时按它的外键往下查;下一步是父表时按父键查。走不下去就停在那里,已得到的部分照常可用。
+    根对象的标识列取对象声明的主键,否则取第一段关系里根对象一侧的父键;都没有时不生成主线。
+    """
+    objs = {}
+    for o in ir.get("objects") or []:
+        for k in ("id", "name", "table"):
+            if o.get(k):
+                objs.setdefault(str(o[k]), o)
+    steps = [objs.get(str(s)) for s in (route or {}).get("steps") or []]
+    if len(steps) < 2 or not all(steps) or not all(o.get("table") for o in steps):
+        return {}
+
+    def link(a, b):
+        """a、b 之间可用于取数的关系 → (b 表上的列, a 表上的列);没有返回 None。"""
+        an, bn = a.get("name"), b.get("name")
+        for r in ir.get("relations") or []:
+            ev = r.get("evidence") or {}
+            ck, pk = str(ev.get("child_key") or ""), str(ev.get("parent_key") or "")
+            if r.get("status") not in ("verified", "asserted") or not ck or not pk or "," in ck or "," in pk:
+                continue
+            if (r.get("source_concept"), r.get("target_concept")) == (bn, an):       # b 是子表
+                return ck, pk
+            if (r.get("source_concept"), r.get("target_concept")) == (an, bn):       # b 是父表
+                return pk, ck
+        return None
+
+    first = link(steps[0], steps[1])
+    root_key = steps[0].get("pk") or (first[1] if first else None)
+    if not root_key or "," in str(root_key):
+        return {}
+    chain = {"root": {"table": steps[0]["table"], "key": str(root_key), "label": steps[0].get("cn") or steps[0].get("name")},
+             "hops": [], "derived_from_route": (route or {}).get("id")}
+    for a, b in zip(steps, steps[1:], strict=False):
+        cols = link(a, b)
+        if not cols:
+            break
+        hop = {"table": b["table"], "fk": cols[0], "parent": a["table"], "pk": cols[1], "label": b.get("cn") or b.get("name")}
+        if b.get("pk"):
+            hop["key"] = b["pk"]
+        chain["hops"].append(hop)
+    return chain if chain["hops"] else {}
+
+
+def main_chain(ir):
+    """追踪用的主线:图谱显式声明的优先;没有时从第一条在用且能走通的工艺路线推出。都没有返回空字典。"""
+    declared = (ir or {}).get("main_chain")
+    if isinstance(declared, dict) and declared.get("root"):
+        return declared
+    for r in (ir or {}).get("routes") or []:
+        if isinstance(r, dict) and r.get("status") != "deprecated":
+            chain = main_chain_from_route(ir, r)
+            if chain:
+                return chain
+    return {}
+
+
 # ── 点亮矩阵 ────────────────────────────────────────────────────────────
 def normalize_lighting(entry):
     if not isinstance(entry, dict) or entry.get("status") not in LIGHT:

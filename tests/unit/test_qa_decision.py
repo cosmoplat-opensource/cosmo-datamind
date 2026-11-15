@@ -250,3 +250,139 @@ def test_lookup_answers_on_the_builtin_graph_carry_an_evidence_card(monkeypatch)
     d = server.app.test_client().post("/api/chat", json={"q": "各月收入趋势"}).get_json()
     assert d.get("results") and d["evidence_card"]["type"] == "lookup"
     assert d["evidence_card"]["basis"][0]["kind"] == "sql" and d["evidence_card"]["basis"][0]["text"] == d["results"][0]["sql"]
+
+
+# ── 推演(DR-120) ───────────────────────────────────────────────────
+
+TRIAL = {"id": "act_trial", "cn": "插单试算", "desc": "试算新增订单能否按期交付", "object": "订单", "risk": "low", "enabled": True,
+         "params": [{"name": "customer", "cn": "客户", "type": "text", "required": True},
+                    {"name": "due_date", "cn": "交期", "type": "text", "required": True}]}
+RELEASE = {"id": "act_release", "cn": "插单发布", "desc": "把插单试算的结果发布到生产计划", "object": "订单", "risk": "high",
+           "enabled": True, "params": [{"name": "customer", "cn": "客户", "type": "text", "required": True}]}
+UNBOUND = {"id": "act_other", "cn": "插单试算(别的库)", "desc": "试算新增订单", "object": "别处的对象", "risk": "low", "enabled": True,
+           "params": []}
+
+
+@pytest.fixture
+def trial_world(world):
+    world["ir"]["param_grounding"] = {"customer": {"table": "orders", "key": "customer", "match": ["customer"]},
+                                      "due_date": {"type": "date"}}
+    return world
+
+
+def _whatif(w, q, invoke, actions=(TRIAL, RELEASE, UNBOUND)):
+    route = qd.classify(q, w["ir"], RULES, list(actions), w["connect"])
+    ans = qd.answer(q, w["ir"], RULES, list(actions), route, w["connect"], set(), invoke=invoke, operator="计划员")
+    return route, ans
+
+
+def test_a_what_if_question_grounds_parameters_and_runs_the_low_risk_action_once(trial_world):
+    calls = []
+
+    def invoke(action_id, params, operator):
+        calls.append((action_id, params, operator))
+        return 200, {"id": "rec1", "status": "executed", "execution_mode": "executor", "real_writeback": False,
+                     "result": {"ok": True, "summary": "可按期,最早 12 月 3 日完工",
+                                "trial": {"promise": "可承诺", "earliest_finish": "2026-12-03", "late_days": -2,
+                                          "plan": [{"工序": "绕线", "开工": "2026-11-16"}]}}}
+    route, ans = _whatif(trial_world, "如果客户A新增一张订单,12月5日能否按期交付?", invoke)
+    assert route["type"] == "whatif" and route["action"]["id"] == "act_trial"
+    assert calls == [("act_trial", {"customer": "客户A", "due_date": "2026-12-05"}, "计划员")]
+    card = ans["evidence_card"]
+    assert card["type"] == "whatif" and dict(card["kv"])["承诺结论"] == "可承诺"
+    assert card["basis"][0]["record_id"] == "rec1" and card["basis"][0]["real_writeback"] is False
+    assert ans["results"][0]["data"]["rows"] == [{"工序": "绕线", "开工": "2026-11-16"}]
+    assert "可按期" in ans["narrative"]
+
+
+def test_missing_parameters_are_asked_for_instead_of_guessed(trial_world):
+    calls = []
+    route, ans = _whatif(trial_world, "如果新增一张订单能否按期交付?", lambda *a: calls.append(a) or (200, {}))
+    assert route["type"] == "whatif" and calls == []
+    assert ans["evidence_card"]["type"] == "clarify" and "客户" in ans["narrative"] and "交期" in ans["narrative"]
+
+
+def test_a_high_risk_action_is_never_started_from_a_question(trial_world):
+    calls = []
+    _route_, ans = _whatif(trial_world, "如果客户A新增一张订单,能否插单发布?", lambda *a: calls.append(a) or (200, {}),
+                           actions=(RELEASE,))
+    assert calls == [] and "高风险" in ans["narrative"]
+    assert ans["evidence_card"]["next"][0]["href"] == "#actioncenter"
+
+
+def test_an_action_without_an_executor_says_it_was_only_recorded(trial_world):
+    invoke = lambda *a: (200, {"id": "rec2", "status": "executed", "execution_mode": "decision_capture", "real_writeback": False})   # noqa: E731
+    _route_, ans = _whatif(trial_world, "如果客户A新增一张订单,12月5日能否按期交付?", invoke)
+    assert "没有配置执行器" in ans["narrative"] and ans["results"] == []
+
+
+def test_an_executor_failure_is_reported_with_its_reason(trial_world):
+    invoke = lambda *a: (200, {"id": "rec3", "status": "failed", "execution_mode": "executor",   # noqa: E731
+                               "result": {"ok": False, "summary": "没有可用的干燥炉"}})
+    _route_, ans = _whatif(trial_world, "如果客户A新增一张订单,12月5日能否按期交付?", invoke)
+    assert "执行失败" in ans["narrative"] and "没有可用的干燥炉" in ans["narrative"]
+
+
+@pytest.mark.parametrize("q", ["客户A上个月新增了几张订单?", "停机时长最长的设备是哪台?", "为什么新增订单不能按期交付?"])
+def test_questions_about_what_already_happened_are_not_what_if(trial_world, q):
+    assert qd.classify(q, trial_world["ir"], RULES, [TRIAL], trial_world["connect"])["type"] != "whatif"
+
+
+def test_graphs_without_parameter_grounding_never_route_to_what_if(world):
+    route = qd.classify("如果客户A新增一张订单,12月5日能否按期交付?", world["ir"], RULES, [TRIAL], world["connect"])
+    assert route["type"] != "whatif"
+    assert qd.bound_actions([TRIAL, UNBOUND], world["ir"]) == []
+
+
+def test_server_passes_the_real_invoke_and_the_operator(wired, monkeypatch):
+    wired["ir"]["param_grounding"] = {"customer": {"table": "orders", "key": "customer", "match": ["customer"]}, "due_date": {"type": "date"}}
+    import bp_actions
+    import srv_actions
+    monkeypatch.setattr(srv_actions, "load_action_types", lambda: [TRIAL])
+    seen = []
+    monkeypatch.setattr(bp_actions, "invoke", lambda aid, params, op: seen.append((aid, op)) or (200, {
+        "id": "r", "status": "executed", "execution_mode": "executor", "result": {"ok": True, "summary": "可按期"}}))
+    q = "如果客户A新增一张订单,12月5日能否按期交付?"
+    with server.app.test_request_context("/api/chat", method="POST", json={"q": q, "operator": "张工"}):
+        prep = _prep(wired, q)
+        ans = server._qa_decision_answer(q, wired["ir"], prep, None, server._qa_operator({"operator": "张工"}))
+    assert prep["route"]["type"] == "whatif" and seen == [("act_trial", "张工")] and ans["evidence_card"]["type"] == "whatif"
+
+
+# ── 工艺路线即追踪主线(DR-121) ─────────────────────────────────────
+
+import ontology_decision as od    # noqa: E402
+
+
+def _route_only(world):
+    ir = {k: v for k, v in world["ir"].items() if k != "main_chain"}
+    ir["routes"] = [{"id": "main", "cn": "订单执行路线", "steps": ["订单", "工序任务", "工序"], "status": "candidate"}]
+    return ir
+
+
+def test_a_declared_route_is_enough_to_trace(world):
+    ir = _route_only(world)
+    chain = od.main_chain(ir)
+    assert chain["root"] == {"table": "orders", "key": "order_no", "label": "订单"} and chain["derived_from_route"] == "main"
+    assert [(h["table"], h["fk"], h["parent"], h["pk"]) for h in chain["hops"]] == [
+        ("tasks", "order_no", "orders", "order_no"), ("operations", "op_code", "tasks", "op_code")]
+    route = qd.classify("订单 P1001 现在到哪道工序了?", ir, RULES, ACTIONS, world["connect"])
+    assert route == {"type": "trace", "root_id": "P1001"}
+    ans = qd.answer("订单 P1001 现在到哪道工序了?", ir, RULES, ACTIONS, route, world["connect"], set())
+    titles = [r["title"] for r in ans["results"]]
+    assert titles == ["P1001 的工序任务", "P1001 的工序"]
+    assert len(ans["results"][0]["data"]["rows"]) == 3 and len(ans["results"][1]["data"]["rows"]) == 3
+
+
+def test_an_explicit_main_chain_wins_over_the_route(world):
+    ir = dict(_route_only(world), main_chain=world["ir"]["main_chain"])
+    assert "derived_from_route" not in od.main_chain(ir) and od.main_chain(ir)["hops"][0]["order_by"] == "plan_start"
+
+
+def test_derivation_stops_where_the_relations_stop_and_ignores_retired_routes(world):
+    ir = _route_only(world)
+    ir["relations"] = [ir["relations"][0], dict(ir["relations"][1], status="candidate")]
+    assert [h["table"] for h in od.main_chain(ir)["hops"]] == ["tasks"]              # 第二段只是候选,不沿它取数
+    ir["routes"][0]["status"] = "deprecated"
+    assert od.main_chain(ir) == {}
+    assert od.main_chain({"objects": [], "routes": [{"id": "x", "steps": ["a", "b"]}]}) == {}
