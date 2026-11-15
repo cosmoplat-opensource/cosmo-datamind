@@ -96,7 +96,7 @@ def parent_key(pt, child_col, stem):
 
 
 def _checked_paths(db, out):
-    """入参路径体检:源库须为已存在的普通文件,产物路径不得含上级目录引用且父目录须存在。
+    """入参路径检查:源库须为已存在的普通文件,产物路径不得含上级目录引用且父目录须存在。
 
     本脚本既由人在命令行调用,也由 server 以子进程调用(argv 里带着用户可影响的路径)。
     在此处一次判死,好过在两个调用侧各判一遍——也让「路径从哪来」不再影响结论。
@@ -335,5 +335,5 @@ if __name__ == "__main__":
             raise ValueError("本轮表清单须为表名字符串组成的 JSON 列表")
         _source = json.loads(sys.argv[6]) if len(sys.argv) > 6 and sys.argv[6] else None
         build(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4] if len(sys.argv) > 4 else None, _tables, _source)
-    except ValueError as e:            # 路径体检不过:给一行清楚的原因,不抛裸栈
+    except ValueError as e:            # 路径检查不过:给一行清楚的原因,不抛裸栈
         print(f"[quick_build] 参数错误:{e}", file=sys.stderr); sys.exit(2)

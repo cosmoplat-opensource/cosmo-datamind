@@ -344,7 +344,7 @@ def text_for_prompt(hints, scope=None, cap=2500):
         lines.append(f"- {v['table']}.{v['key']} 有 {v['duplicate_rows']} 行版本重复:{v['action']}")
     if not lines:
         return ""
-    return ("[概念层线索(构建体检自动识别;表与概念不是一一对应)]\n" + "\n".join(lines))[:cap]
+    return ("[概念层线索(构建前检查自动识别;表与概念不是一一对应)]\n" + "\n".join(lines))[:cap]
 
 
 def collect(db, max_tables=5000):

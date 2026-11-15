@@ -14,10 +14,16 @@ import sqlite3
 import time
 
 _IDENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
-# 时间列按名字里的整词认:order_date、created_time、stat_month 是;downtime_minutes、update_count 不是
-_TIME_NAME = re.compile(r"((^|_)(date|time|datetime|timestamp|day|dt|ts|month|period|ym|yyyymm)($|_)|_at$|日期|时间|月份|年月|期间|账期)", re.I)
-# 取值要像日期:2026-11-08、2026/11、202611、20261108;纯数字的计数、时间戳不算
-_DATE_VALUE = re.compile(r"^(?:(?:19|20)\d{2}[-/](?:0?[1-9]|1[0-2])(?:[-/]\d{1,2})?(?:[ T].*)?|(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:[0-3]\d)?)$")
+# 时间列按名字认:最后一个词是 date / time / month 等(order_date、stat_month),或连写、驼峰写法以它们结尾
+# (createtime、bizdate、updatedAt)。downtime、runtime 这类时长,以及 day_count、time_cost、period_no 不算
+_TIME_NAME = re.compile(
+    r"((^|_)(date|time|datetime|timestamp|dt|month|ym|yyyymm|period)$"
+    r"|(?<!down)(?<!up)(?<!run)(?<!life)(?<!lead)(?<!over)(?<!cycle)(?<!idle)(?<!wait)(date|time|datetime|timestamp)$"
+    r"|_at$|[a-z]At$|日期|时间|月份|年月|期间|账期)")
+_TIME_NAME_I = re.compile(r"((^|_)(date|time|datetime|timestamp|dt|month|ym|yyyymm|period)$|_at$)", re.I)
+# 取值要像日期:2026-11-08、2026/11、2026.11.08、2026年11月、202611、20261108、20261108103000;计数、时间戳不算
+_DATE_VALUE = re.compile(r"^(?:(?:19|20)\d{2}(?:[-/.](?:0?[1-9]|1[0-2])(?:[-/.]\d{1,2})?|年(?:0?[1-9]|1[0-2])月(?:\d{1,2}日)?)(?:[ T].*)?"
+                         r"|(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:[0-3]\d(?:[0-2]\d[0-5]\d[0-5]\d)?)?)$")
 _BUDGET_S = 3.0
 
 
@@ -85,6 +91,10 @@ def _declared_time(ir, table):
     return None
 
 
+def _is_time(name):
+    return bool(_TIME_NAME.search(name) or _TIME_NAME_I.search(name) or _TIME_NAME.search(name.lower()))
+
+
 def as_of(sql, tables, connect, ir=None):
     """这条查询读到的数据新到哪一天 → [{"table", "column", "latest"}]。
     时间列取查询里用到的那一列;查询没用到时取对象上声明的时间列;再没有,表里只有一个时间列时取它;否则不给日期。"""
@@ -93,11 +103,11 @@ def as_of(sql, tables, connect, ir=None):
         if not _IDENT.match(t):
             continue
         cols = [c for c in _columns(connect, t) if _IDENT.match(c)]
-        used = [c for c in cols if _TIME_NAME.search(c) and re.search(r"(?<![A-Za-z0-9_])" + re.escape(c) + r"(?![A-Za-z0-9_])", sql)]
+        used = [c for c in cols if _is_time(c) and re.search(r"(?<![A-Za-z0-9_])" + re.escape(c) + r"(?![A-Za-z0-9_])", sql)]
         declared = _declared_time(ir, t)
-        timelike = [c for c in cols if _TIME_NAME.search(c)]
+        timelike = [c for c in cols if _is_time(c)]
         candidates = used or ([declared] if declared in cols else (timelike if len(timelike) == 1 else []))
-        for col in candidates[:3]:               # 名字像时间列但存的不是日期(时间戳、时长)时,换下一列
+        for col in candidates[:2]:               # 名字像时间列但存的不是日期(时间戳、时长)时,换下一列
             latest = _scalar(connect, f'SELECT MAX("{col}") FROM "{t}"')
             if latest is not None and _DATE_VALUE.match(str(latest).strip()):
                 out.append({"table": t, "column": col, "latest": str(latest).strip()[:10]})
@@ -131,9 +141,16 @@ def _failed(steps):
     return out
 
 
-def _no_value(rows):
-    """没有行,或只有一行且各列都是空值(SUM / AVG 在没有命中的行时返回的就是这样一行)。"""
-    return not rows or (len(rows) == 1 and isinstance(rows[0], dict) and all(v is None for v in rows[0].values()))
+_AGGREGATE = re.compile(r"\b(?:sum|avg|min|max|total)\s*\(", re.I)
+
+
+def _no_value(rows, sql=""):
+    """没有行;或者是汇总查询,只有一行且各列都是空值(SUM / AVG 在没有命中的行时返回的就是这样一行)。
+    明细查询里某一行的某一列为空是正常数据,不算。"""
+    if not rows:
+        return True
+    return (len(rows) == 1 and isinstance(rows[0], dict) and all(v is None for v in rows[0].values())
+            and bool(_AGGREGATE.search(sql or "")) and not re.search(r"\bgroup\s+by\b", sql or "", re.I))
 
 
 def annotate(results, steps, connect, ir=None, explain_empty=True):
@@ -146,11 +163,11 @@ def annotate(results, steps, connect, ir=None, explain_empty=True):
         if not isinstance(r, dict):
             continue
         rows = ((r.get("data") or {}).get("rows")) or []
-        empty = _no_value(rows)
+        sql = str(r.get("sql") or "")
+        empty = _no_value(rows, sql)
         r["status"] = "empty" if empty else "data"
         n_data += not empty
         n_empty += empty
-        sql = str(r.get("sql") or "")
         if not sql or (empty and not explain_empty):
             continue
         tables = tables_read(sql, connect)

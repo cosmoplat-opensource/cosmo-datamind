@@ -116,7 +116,7 @@ class TestSkillPackage:
         """构建流程写在通用方法技能里,领域技能只引用它。"""
         items = {i["name"]: i for i in skill_registry.discover([os.path.join(ROOT, "skills_seed")])}
         body = skill_registry.skill_body(open(items["ontology-build-method"]["skill_md"], encoding="utf-8").read())
-        for step in ("体检", "画像与参照", "概念层", "分轮映射", "裁决", "交叉复核与清洗", "验收"):
+        for step in ("检查", "画像与参照", "概念层", "分轮映射", "裁决", "交叉复核与清洗", "验收"):
             assert step in body, step
         energy = skill_registry.skill_body(open(items["energy-carbon-ontology"]["skill_md"], encoding="utf-8").read())
         assert "ontology-build-method" in energy and "ontology-cross-check" in energy

@@ -99,7 +99,7 @@ function dqAnchorGraph(a,m){
   const tb=String(o.table||''),label=dqObjectName(o),shown=label.length>10?label.slice(0,9)+'…':label;
   svg+=`<g><title>${esc(label)} · ${esc(tb)} · ${esc(o.reason||'')}</title><rect x="${p.x-NW/2}" y="${p.y-NH/2}" width="${NW}" height="${NH}" rx="7" fill="${on?'#effaf3':c[1]}" stroke="${on?'#16924b':c[0]}" stroke-width="${on?2.4:1}"${m.complete&&!on?' opacity="0.58"':''}/>`+
    `<text x="${p.x}" y="${p.y-4}" text-anchor="middle" font-size="13" font-weight="${on?'650':'500'}" fill="#273244">${esc(shown)}${on?' ✓':''}</text>`+
-   `<text x="${p.x}" y="${p.y+15}" text-anchor="middle" font-size="11" fill="#566277">${esc(tb.length>22?tb.slice(0,21)+'…':tb)}</text></g>`;});
+   `<text x="${p.x}" y="${p.y+15}" text-anchor="middle" font-size="12" fill="#566277">${esc(tb.length>22?tb.slice(0,21)+'…':tb)}</text></g>`;});
  svg+='</svg>';
  const est={};rels.forEach(r=>{est[r.status]=(est[r.status]||0)+1;});
  const legend=Object.keys(est).map(k=>{const s=EST[k]||EST.gap;return `<span><i style="display:inline-block;width:14px;border-top:2px ${estDash(s)?'dashed':'solid'} ${s.c};margin-right:4px"></i>${esc(s.n)} ${est[k]}</span>`;}).join('');

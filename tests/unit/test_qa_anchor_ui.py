@@ -49,9 +49,9 @@ def test_backend_explanation_counts_real_join_keywords_and_deduplicates_tables()
 
 
 def test_ui_module_load_order_and_plain_language_information_architecture():
-    assert '/assets/styles/qa-anchor.css?v=1' in UI
-    assert '/assets/modules/qa-anchor.js?v=4' in UI
-    assert UI.index('/assets/modules/qa-anchor.js?v=4') < UI.index('<script>const $=')
+    assert '/assets/styles/qa-anchor.css?v=2' in UI
+    assert '/assets/modules/qa-anchor.js?v=5' in UI
+    assert UI.index('/assets/modules/qa-anchor.js?v=5') < UI.index('<script>const $=')
     for text in ("SQL 最终直接使用", "为什么选入规划上下文", "候选不等于实际使用",
                  "本次 SQL 没有执行 JOIN", "查看关系图（技术证据）"):
         assert text in MODULE

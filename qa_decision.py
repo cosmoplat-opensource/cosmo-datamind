@@ -89,7 +89,7 @@ def _scalar(connect, sql, args=()):
 
 def _has_table(connect, t):
     try:
-        return bool(_rows(connect, "SELECT name FROM sqlite_master WHERE type IN ('table','view') AND name = ?", (t,), 1))
+        return bool(_rows(connect, "SELECT name FROM sqlite_master WHERE type IN ('table','view') AND name = ? COLLATE NOCASE", (t,), 1))
     except sqlite3.Error:
         return False
 

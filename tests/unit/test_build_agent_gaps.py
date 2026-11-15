@@ -179,7 +179,7 @@ def test_dimension_with_basis_passes():
     assert intent_check.dimension_check("各产线区域的过站数", sql2, _wip_ir()) == []
 
 
-# ── 构建体检:第三方工具表默认不进计划 ───────────────────────────
+# ── 构建前检查:第三方工具表默认不进计划 ───────────────────────────
 
 def test_tool_tables_excluded_from_plan(make_sqlite):
     import build_prep

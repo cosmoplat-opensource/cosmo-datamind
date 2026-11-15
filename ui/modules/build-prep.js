@@ -1,7 +1,7 @@
-/* 构建前预处理(DR-060)：外部库只读抽样、构建体检、分轮计划与逐轮构建。
-   体检只读、不调模型；逐轮构建复用 bcInquire，每轮在上一轮的本体上继续构建。 */
+/* 构建前预处理(DR-060)：外部库只读抽样、构建前检查、分轮计划与逐轮构建。
+   检查只读、不调模型；逐轮构建复用 bcInquire，每轮在上一轮的本体上继续构建。 */
 (function () {
-  // 体检报告存在各自的卡片元素上(el._report)：页面上可能有多张体检卡片，按钮必须用自己那张的计划
+  // 检查报告存在各自的卡片元素上(el._report)：页面上可能有多张检查卡片，按钮必须用自己那张的计划
   const PREP = {running: false, abort: false};
   const LV = {warn: '<span class="bp-lv warn">注意</span>', info: '<span class="bp-lv info">提示</span>'};
 
@@ -17,12 +17,12 @@
   }
 
   async function bcPrep() {
-    if (BC_BUSY || PREP.running) { toast('构建进行中，请稍候再体检'); return; }
-    const el = card(`<div class="bp-h">构建体检 · <b>${esc(BC.srcName || BC.src)}</b></div><div class="muted">正在读取表结构、识别建模规律、核对上传资料…</div>`);
+    if (BC_BUSY || PREP.running) { toast('构建进行中，请稍候再检查'); return; }
+    const el = card(`<div class="bp-h">构建前检查 · <b>${esc(BC.srcName || BC.src)}</b></div><div class="muted">正在读取表结构、识别建模规律、核对上传资料…</div>`);
     const d = await J('/api/build/prep', {method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({source: BC.src})}).catch(e => ({error: String(e)}));
     if (!d || d.error) {
-      el.innerHTML = `<div class="bp-h">构建体检 · <b>${esc(BC.srcName || BC.src)}</b></div><div role="alert" class="bp-err">${esc(d && d.error || '体检失败')}</div>`
+      el.innerHTML = `<div class="bp-h">构建前检查 · <b>${esc(BC.srcName || BC.src)}</b></div><div role="alert" class="bp-err">${esc(d && d.error || '检查失败')}</div>`
         + (d && d.external ? `<button class="ghost" onclick="bcSampleDlg(${jsAttr(BC.src)})">只读抽样到本地</button>` : '');
       return;
     }
@@ -51,7 +51,7 @@
     // 只预填使用者自己写的诉求；输入框里的默认示例诉求属于示例主库，带到别的数据源会误导建模
     const typed = ($('#bc_q').value || '').trim();
     const goal = typed && typed !== ((BC.def && BC.def.build_query) || '').trim() ? typed : '';
-    el.innerHTML = `<div class="bp-h">构建体检 · <b>${esc(d.source.name)}</b></div>
+    el.innerHTML = `<div class="bp-h">构建前检查 · <b>${esc(d.source.name)}</b></div>
       <div class="bp-sum"><span><b>${s.tables}</b> 张表</span><span><b>${s.columns}</b> 个字段</span><span><b>${s.rows.toLocaleString()}</b> 行</span>
         <span>声明外键 <b>${s.declared_fks}</b></span><span>空表 <b>${d.empty_tables}</b></span>
         <span>${s.has_comments ? `注释 表 ${s.table_comment_pct}% · 字段 ${s.column_comment_pct}%` : '无库表注释'}</span></div>
@@ -89,8 +89,8 @@
   async function run(btn) {
     const box = btn.closest('.bc-prep'), d = box && box._report;
     if (!d || PREP.running || BC_BUSY) return;
-    // 体检之后切换了数据源：表清单属于原数据源，不能拿去另一个数据源上构建
-    if (d.source && d.source.id !== BC.src) { toast(`当前数据源已不是「${d.source.name}」，请重新体检后再逐轮构建`); return; }
+    // 检查之后切换了数据源：表清单属于原数据源，不能拿去另一个数据源上构建
+    if (d.source && d.source.id !== BC.src) { toast(`当前数据源已不是「${d.source.name}」，请重新检查后再逐轮构建`); return; }
     const picked = [...box.querySelectorAll('input[data-round]')].filter(x => x.checked).map(x => +x.dataset.round);
     const rounds = (d.plan || []).filter(p => picked.includes(p.round));
     if (!rounds.length) { toast('请至少勾选一轮'); return; }

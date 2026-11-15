@@ -84,7 +84,7 @@
 | `mcp_build_server.py` | 对外 MCP(构建):发起构建是唯一写工具,verified/asserted/certified 与删除不开放;start_build 立即返回作业 id,SSE 必须有 done 才算完成(DR-056 同规);验收复跑与人工审核队列只读 | DR-058/016 |
 | `llm_json.py` | LLM 回复 JSON 抽取的集中定义:字符串感知配平扫描+最小修复(尾逗号/非有限值),本体提议形状契约与剔除计数 | DR-058 |
 | `metric_contract.py` | **指标契约**:确定性编译 SQL、目录核对、只读执行、与参照比对;`verified` 只来自「可执行∧与参照一致」,`certified` 只能由人工确认 | DR-054 |
-| `metric_mining.py` | 指标反解:历史 SQL / 指标定义表 / 沉淀 SQL / 参考基准 → 带来源的候选与参照;含 JOIN 不猜计算规则 | DR-054 |
+| `metric_mining.py` | 指标反解:历史 SQL / 指标定义表 / 已保存的 SQL / 参考基准 → 带来源的候选与参照;含 JOIN 不猜计算规则 | DR-054 |
 | `metric_pipeline.py` | 反解→归一→核验→并入 IR 的编排;`readjudicate` 复用已存参照重跑 | DR-054 |
 | `ontology_decision.py` | 工艺路线层与决策层:工艺路线、约束(硬/软、单位、目的、例外、依据)、点亮矩阵、审计;路线由验收检查按方向核验 | DR-117 |
 | `qa_decision.py` | 问数使用决策层:约束与规则按锚定对象带入、未接入属性拦截、业务词解析、问题分型;判定、解释、追踪、异常汇总的确定性求解;推演(调用配置了执行器的动作);固定词表认不出时由模型在图谱声明的选项里选;依据卡 | DR-119/120/123 |

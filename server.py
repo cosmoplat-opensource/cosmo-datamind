@@ -1256,7 +1256,7 @@ def _qa_exemplars(question, k=None):
             rows = []
         _EXEMPLAR_CACHE[db_path] = rows
     same = re.sub(r"\s+", " ", question or "").strip().lower()
-    rows = [r for r in _EXEMPLAR_CACHE[db_path]          # 与当前问题完全相同的示例不作参考(完全相同的问题由沉淀技能复用处理)
+    rows = [r for r in _EXEMPLAR_CACHE[db_path]          # 与当前问题完全相同的示例不作参考(完全相同的问题由已保存技能复用处理)
             if re.sub(r"\s+", " ", r["question"]).strip().lower() != same]
     if not rows:
         return []
@@ -1699,8 +1699,8 @@ def _source_graph_keys(path):
         ir = load_ir_edited(key)
         if not ir or not database_scope.same_path(_source_graph_path(ir), path):
             continue                             # 读不到内容的不算
-        if key in IR_SOURCES and _graph_source_db(ir) is None and not _describes(ir, path):
-            continue                             # 内置示例本体没有登记数据源,换了主库后它描述的是另一个库(DR-131)
+        if _graph_source_db(ir) is None and not _describes(ir, path):
+            continue                             # 没有登记数据源的本体(内置示例、早期构建产物),换了主库后描述的是另一个库
         out.append(key)
     return out
 
@@ -1716,10 +1716,20 @@ def _describes(ir, path):
 
 def _active_graph_key(path=None):
     path = path or _active_db()
-    keys = _source_graph_keys(path)
     if database_scope.same_path(path, DB):
-        return 'demo' if 'demo' in keys or not keys else keys[0]
+        sig = (path, _stat_sig(path, *IR_SOURCES.get('demo', {}).get('paths', []), _edits_path('demo')))
+        if _DEMO_FITS.get('sig') != sig:             # 标准部署下每个请求都会走到这里:结论按文件指纹缓存,不逐个读图谱
+            ir = load_ir_edited('demo')
+            _DEMO_FITS.update(sig=sig, ok=bool(ir) and _describes(ir, path))
+        if _DEMO_FITS['ok']:
+            return 'demo'
+        keys = _source_graph_keys(path)
+        return keys[0] if keys else 'demo'
+    keys = _source_graph_keys(path)
     return keys[0] if keys else ''
+
+
+_DEMO_FITS: dict = {}
 
 
 def _active_ir(path=None):
@@ -1918,7 +1928,7 @@ def _qa_scope_error(requested_keys, actual_keys, fallback, profile):
     detail = "、".join(missing[:5]) + ("…" if len(missing) > 5 else "")
     if missing:
         return (f"本体「{names}」绑定的数据表尚未接入当前问数连接：{detail}。"
-                "请先在数据连接中接入并物化这些表，或选择带有可查询表的本体。")
+                "请先在数据连接中接入并导入这些表，或选择带有可查询表的本体。")
     return (f"本体「{names}」尚未绑定可查询的数据表，当前只能浏览和治理，不能直接问数。"
             "请先在本体构建或评审中完成对象与数据表绑定。")
 
@@ -2299,14 +2309,26 @@ def _validate_sql_ontology(sql, ir, strict=False):
     up = set()
     try: up = {x.split("(")[0][3:].lower() for x in _uploads_schema().split("; ") if x.startswith("up.")}
     except Exception: pass
+    # 与真实的表同名的 CTE 或子查询别名不享受豁免(DR-132):否则起一个同名的别名,就能让那张表上的
+    # 表白名单和连接键校验都被跳过。严格模式下 known 只含本体里的表,所以另取库里实际有的表。
+    real = set(known)
+    try: real |= {t["name"].lower() for t in table_list()}
+    except Exception: pass
+    ctes -= real
     alias, used = {}, []
     block_tables: dict = {}                      # 查询块 → [(别名, 表)]
-    for m in re.finditer(r"\b(?:from|join)\s+(up\.)?(%s)(?:\s+(?:as\s+)?(%s))?" % (_SQL_IDENT, _SQL_IDENT), s_tab, re.I):
+    def bind(al, full):
+        # 同一个别名在别的查询块里又指向 CTE 时,不覆盖它指向真实表的那次绑定(否则键校验按 CTE 跳过)
+        if not (al in alias and alias[al] not in ctes and full in ctes):
+            alias[al] = full
+    # FROM 后面可以直接跟括号:FROM (a JOIN b ON ...);括号里是子查询时由 _derived_table_aliases 处理
+    for m in re.finditer(r"\b(?:from|join)(?:\s+|\s*(?=\())(?:\(\s*)*(up\.)?(%s)(?:\s+(?:as\s+)?(%s))?" % (_SQL_IDENT, _SQL_IDENT), s_tab, re.I):
         pre, t, al = m.group(1), m.group(2).lower(), (m.group(3) or "").lower()
+        if t in ("select", "with", "values"): continue
         if al in _SQL_KW: al = ""
         full = ("up." + t) if pre else t
         used.append(full)
-        alias[al or t] = full
+        bind(al or t, full)
         block_tables.setdefault(blocks[m.start()], []).append((al or t, full))
         # 逗号连接(FROM a x, b y):后面的表同样登记,否则它们既不过表白名单,也不参与键校验(DR-098)
         pos = m.end(2) if not al else m.end()
@@ -2317,7 +2339,7 @@ def _validate_sql_ontology(sql, ir, strict=False):
             if ct in _SQL_KW: break
             if cal in _SQL_KW: cal = ""
             cfull = ("up." + ct) if cm.group(1) else ct
-            used.append(cfull); alias[cal or ct] = cfull
+            used.append(cfull); bind(cal or ct, cfull)
             block_tables.setdefault(blocks[m.start()], []).append((cal or ct, cfull))
             pos = cm.end(2) if not cal else cm.end()
     for full in used:
@@ -2381,15 +2403,19 @@ def _validate_sql_ontology(sql, ir, strict=False):
         if ta in ctes or tb in ctes or ta.startswith("up.") or tb.startswith("up."): continue
         # 父侧识别先于同名键放行:同名等值 JOIN 免验键,但扇出与键名无关
         _blk = blocks[m.start()]
+        _here = {al for al, _full in block_tables.get(_blk) or []}
+        _joined = a in _here and b in _here          # 关联子查询里引用外层别名的等式是筛选条件,不产生重复行
         _a_is_child = parents.get((ta, ca, tb, cb))
         parent = _a_is_child or parents.get((tb, cb, ta, ca))
-        if parent:
+        if parent and not _joined:
+            pass
+        elif parent:
             # 哪一侧是父,看等式两边哪一列是父键;自关联(员工→上级)两侧是同一张表,不能按表名判断
             _pa, _ca_al = (b, a) if _a_is_child else (a, b)
             joined_parents.setdefault(_blk, {}).setdefault(parent, set()).add(_pa)
             # DR-130 按别名记下「子 → 父」:同一个父表别名下挂了两个子表别名时,子表的行会互相放大
             child_edges.setdefault(_blk, {}).setdefault(_pa, {})[_ca_al] = (alias.get(_ca_al, _ca_al), parent)
-        elif ta != tb:
+        elif ta != tb and _joined:
             # 两边的键都是指向同一张父表的子键(都按工单号):两张子表直接关联是多对多
             _common = sorted({p for (t1, c1, p, _pk) in parents if (t1, c1) == (ta, ca)}
                              & {p for (t1, c1, p, _pk) in parents if (t1, c1) == (tb, cb)})
@@ -2461,8 +2487,9 @@ def _validate_sql_ontology(sql, ir, strict=False):
         first_alias = {}
         for al, full in here:
             first_alias.setdefault(full, al)
-        quals = [(q.lower(), c.lower()) for q, c in re.findall(r"(?<![\w.])(%s)\.(%s)\b" % (_SQL_IDENT, _SQL_IDENT), args)]
-        bare = re.sub(r"(?<![\w.])%s\.%s\b" % (_SQL_IDENT, _SQL_IDENT), " ", args)
+        vals = re.sub(r"\bwhen\b.*?\bthen\b", " ", args, flags=re.I | re.S)   # CASE 的条件不是被聚合的值
+        quals = [(q.lower(), c.lower()) for q, c in re.findall(r"(?<![\w.])(%s)\.(%s)\b" % (_SQL_IDENT, _SQL_IDENT), vals)]
+        bare = re.sub(r"(?<![\w.])%s\.%s\b" % (_SQL_IDENT, _SQL_IDENT), " ", vals)
         for tok in re.findall(r"(?<![\w.'])(%s)\b(?!\s*\()" % _SQL_IDENT, bare):
             if tok.lower() in owners:
                 quals.append((first_alias[owners[tok.lower()]], tok.lower()))
@@ -2486,9 +2513,14 @@ def _validate_sql_ontology(sql, ir, strict=False):
 
 
 def _query_blocks(sql):
-    """每个字符所在的查询块编号(最外层是 0)。括号里以 SELECT / WITH 开头的是一个新的查询块,其余括号沿用外层。"""
+    """每个字符所在的查询块编号(最外层是 0)。括号里以 SELECT / WITH 开头的是一个新的查询块,其余括号沿用外层;
+    UNION / INTERSECT / EXCEPT 之后是另一个查询块。"""
     out, stack, n = [], [0], 0
+    branch = {m.start() for m in re.finditer(r"\b(?:union|intersect|except)\b", sql, re.I)}
     for i, ch in enumerate(sql):
+        if i in branch:                              # UNION 等连接的各支是各自独立的查询
+            n += 1
+            stack[-1] = n
         if ch == "(":
             if re.match(r"\s*(?:select|with)\b", sql[i + 1:i + 40], re.I):
                 n += 1
@@ -5254,10 +5286,10 @@ def _chat_impl():
         steps.append({"step": "load_history", "ok": True, "info": f"带入 {len(history[-2:])} 轮上下文"})
     steps.append({"step": "build_context", "ok": True, "info": f"{len(ctx)}字符 schema"})
     plan = None
-    _sk = _match_qa_skill(question)                   # #5 沉淀技能复用(与流式链同语义)
+    _sk = _match_qa_skill(question)                   # #5 已保存技能复用(与流式链同语义)
     if _sk:
-        plan = {"analyses": (_sk.get("analyses") or [])[:4], "note": "沉淀技能复用"}
-        steps.append({"step": "skill_reuse", "ok": True, "info": f"命中沉淀技能,复用 {len(plan['analyses'])} 条已验证 SQL"})
+        plan = {"analyses": (_sk.get("analyses") or [])[:4], "note": "已保存技能复用"}
+        steps.append({"step": "skill_reuse", "ok": True, "info": f"命中已保存技能,复用 {len(plan['analyses'])} 条已验证 SQL"})
     # 硬性时间预算:引擎 90s 内不出计划就走内置模板,保证请求永不卡死
     if plan is None:
         _probe_scope = lambda _sql: _qa_scope_check(                               # noqa: E731
@@ -5308,7 +5340,7 @@ def _chat_impl():
                     if _ic2["verdict"] != "mismatch":
                         sql, _ic = _fx, _ic2
                         steps.append({"step": "intent_repair", "ok": True, "info": "按问句提到的业务对象重写查询"})
-            if _ic["verdict"] == "mismatch" and engine_plan:      # 沉淀技能复用的 SQL 只观测不阻断(DR-026)
+            if _ic["verdict"] == "mismatch" and engine_plan:      # 已保存技能复用的 SQL 只观测不阻断(DR-026)
                 unresolved.append(_ic)
                 held.append((a, sql, "查询与问句提到的业务对象对不上"))
                 steps.append({"step": "intent_repair", "ok": False, "info": "查询与问句对象仍对不上,不作为答案给出"})
@@ -5480,10 +5512,10 @@ def chat_stream():
                    f"沿本体关系召回 · 提供 {_nrel} 条候选 JOIN 依据(是否采用以最终 SQL 为准)" if _nrel else "选中表间暂无已验证关系,JOIN 由引擎按列名推断")
         yield push("build_context", True, f"组装库结构上下文 · {len(ctx)} 字符")
         plan = None
-        _sk = _match_qa_skill(question)               # #5 沉淀技能复用:命中即免引擎规划(秒级)
+        _sk = _match_qa_skill(question)               # #5 已保存技能复用:命中即免引擎规划(秒级)
         if _sk:
-            plan = {"analyses": (_sk.get("analyses") or [])[:4], "note": "沉淀技能复用"}
-            yield push("skill_reuse", True, f"命中沉淀技能「{(_sk.get('question') or '')[:24]}」· 复用 {len(plan['analyses'])} 条已验证 SQL,跳过引擎规划")
+            plan = {"analyses": (_sk.get("analyses") or [])[:4], "note": "已保存技能复用"}
+            yield push("skill_reuse", True, f"命中已保存技能「{(_sk.get('question') or '')[:24]}」· 复用 {len(plan['analyses'])} 条已验证 SQL,跳过引擎规划")
         else:
             yield sse({"type": "status", "text": "智能引擎生成 SQL 分析计划(约 40-90s)…"})
         # 引擎计划:后台线程跑,主循环轮询 plan_steps 实时外推 + 心跳
@@ -5558,7 +5590,7 @@ def chat_stream():
                         if _ic2["verdict"] != "mismatch":
                             sql, _ic = _fx, _ic2
                             yield push("intent_repair", True, f"[{idx}] 按问句提到的业务对象重写查询")
-                if _ic["verdict"] == "mismatch" and engine_plan:  # 沉淀技能复用的 SQL 只观测不阻断(DR-026)
+                if _ic["verdict"] == "mismatch" and engine_plan:  # 已保存技能复用的 SQL 只观测不阻断(DR-026)
                     unresolved.append(_ic)
                     yield push("intent_repair", False, f"[{idx}] 查询与问句对象仍对不上,不作为答案给出")
                     continue
@@ -5670,8 +5702,8 @@ def chat_stream():
 _QA_SKILLS_F = os.path.join(WORK, "qa_skills.json")
 
 def _match_qa_skill(question):
-    """#5 沉淀技能复用(修「存而不用」):问题归一化后与沉淀技能匹配(等值或互为包含),
-    命中即复用其已验证 SQL、跳过引擎规划 —— 沉淀自此参与回答,不再只是展示品。"""
+    """#5 已保存技能复用(修「存而不用」):问题归一化后与已保存技能匹配(等值或互为包含),
+    命中即复用其已验证 SQL、跳过引擎规划 —— 保存自此参与回答,不再只是展示品。"""
     try: store = json.load(open(_QA_SKILLS_F)) if os.path.exists(_QA_SKILLS_F) else []
     except Exception: return None
     norm = lambda s: re.sub(r"[\s??。.,,、;;::!!()()\-—]+", "", str(s or "")).lower()
@@ -6056,7 +6088,7 @@ def chat_feedback_resolve():
 
 @app.post("/api/chat/save_skill")
 def chat_save_skill():
-    """把一次深度问数(问题 + 生成的 SQL/图表规格)沉淀为可复用技能(对齐平台『沉淀为 Skill』)。"""
+    """把一次深度问数(问题 + 生成的 SQL/图表规格)保存为可复用技能(对齐平台『保存为 Skill』)。"""
     body = request.json or {}
     question = (body.get("question") or "").strip()
     results = body.get("results") or []
@@ -6195,13 +6227,13 @@ def sysinfo():
 
 @app.get("/api/agents")
 def agents():
-    """智能体列表:深度问数内置体 + 沉淀技能 + skills_seed(对齐平台『智能体列表』)"""
+    """智能体列表:深度问数内置体 + 已保存技能 + skills_seed(对齐平台『智能体列表』)"""
     out = [{"name": "demo-deep-qa", "desc": "基于 示例 本体图谱的深度问数编排智能体", "type": "内置", "author": "系统", "ts": ""}]
     try:
         qs = json.load(open(_QA_SKILLS_F)) if os.path.exists(_QA_SKILLS_F) else []
         for s in qs:
-            out.append({"name": (s.get("question") or s.get("id"))[:40], "desc": f'沉淀问数 · {len(s.get("analyses",[]))} 条 SQL',
-                        "type": "沉淀", "author": "用户", "ts": s.get("ts", "")})
+            out.append({"name": (s.get("question") or s.get("id"))[:40], "desc": f'保存的问数 · {len(s.get("analyses",[]))} 条 SQL',
+                        "type": "保存", "author": "用户", "ts": s.get("ts", "")})
     except Exception: pass
     try:
         # 与构建页共用注册表，确保本仓技能和可选上游技能的合并、去重与优先级一致。
@@ -6501,12 +6533,12 @@ def build_connect():
         conns.insert(0, conn); _atomic_json(_BUILD_CONN_F, conns[:30])
     return jsonify({"ok": True, "conn": _mask_conn(conn)})
 
-# ── 构建前预处理(DR-060):外部库只读抽样 + 构建体检 / 分轮计划 ──
+# ── 构建前预处理(DR-060):外部库只读抽样 + 构建前检查 / 分轮计划 ──
 _SAMPLE_BUSY = set()
 _SAMPLE_LOCK = threading.Lock()
 
 def _prep_texts():
-    """上传资料全文(文本类),供体检计算资料覆盖与漂移。"""
+    """上传资料全文(文本类),供检查计算资料覆盖与漂移。"""
     out = []
     for p in sorted(glob.glob(os.path.join(WORK, "uploads_*")))[:40]:
         fn = os.path.basename(p)[8:]
@@ -6517,7 +6549,7 @@ def _prep_texts():
 
 @app.post("/api/build/prep")
 def build_prep_check():
-    """构建体检:数据源概况、建模规律识别、资料覆盖、能源/碳排放参照建议、分轮计划。只读、不调模型。"""
+    """构建前检查:数据源概况、建模规律识别、资料覆盖、能源/碳排放参照建议、分轮计划。只读、不调模型。"""
     body = request.json or {}
     src = str(body.get("source") or "demo")
     try:
@@ -6527,7 +6559,7 @@ def build_prep_check():
     db, name = _resolve_src(src)
     if not db:
         conn = _find_conn(src)
-        hint = ("该数据源是外部库,请先点「只读抽样」导入本地后再体检"
+        hint = ("该数据源是外部库,请先点「只读抽样」导入本地后再检查"
                 if conn and conn.get("kind") not in ("sqlite", "api") else "数据源不可用")
         return jsonify({"error": hint, "external": bool(conn and conn.get("kind") not in ("sqlite", "api"))}), 400
     if not _sqlite_tables(db):
@@ -6775,7 +6807,7 @@ def build_skills():
     return jsonify(out)
 
 # ── 技能管理(DR-021 · DR-051):浏览/新建/编辑/删除;内置可改写与隐藏(覆盖层+墓碑,可恢复默认);
-#    技能正文真正注入构建建模规则,改写优先于出厂正文 ──
+#    技能正文真正注入构建建模规则,改写优先于默认内容 ──
 _SKILL_NAME_RE = re.compile(r"^[\w\-]{1,40}$")           # \w 含中文;禁路径字符
 
 def _builtin_skill_entries():
@@ -6802,7 +6834,7 @@ def _skill_tombs():
 
     内置技能的正文随仓分发(skills_seed/)或来自上游引擎目录,直接删文件有两个问题:
     一是仓库文件被改动,下次 git checkout 又回来,用户以为没删掉;二是上游目录不归
-    本服务管辖,根本删不得。故删除记为墓碑——列表里消失、构建不再注入,而出厂正文
+    本服务管辖,根本删不得。故删除记为墓碑——列表里消失、构建不再注入,而默认内容
     原样保留,随时可「恢复默认」。自定义技能仍是真删文件。
     """
     v = _load_json(_SKILL_TOMB_F)
@@ -6833,14 +6865,14 @@ def build_skill_get(name):
 
 @app.post("/api/build/skill/save")
 def build_skill_save():
-    """新建/编辑技能(在线编辑器)。内置技能同样可改:改动写成 workdir 覆盖件,出厂正文保留。"""
+    """新建/编辑技能(在线编辑器)。内置技能同样可改:改动写成 workdir 覆盖件,默认内容保留。"""
     body = request.json or {}
     name = str(body.get("name") or "").strip()
     content = str(body.get("content") or "")
     if not _SKILL_NAME_RE.match(name): return jsonify({"error": "技能名须为 1~40 字中英文/数字/下划线/连字符"}), 400
     if not content.strip(): return jsonify({"error": "技能内容不能为空"}), 400
     if len(content) > 200_000: return jsonify({"error": "技能内容过大(上限 200KB)"}), 400
-    # 内置技能同样可编辑:改动写成 workdir 里的覆盖件,出厂正文不动,故随时可恢复默认。
+    # 内置技能同样可编辑:改动写成 workdir 里的覆盖件,默认内容不动,故随时可恢复默认。
     # 直接改 skills_seed/ 会弄脏仓库且下次 checkout 即失效,上游引擎目录更不归本服务管辖。
     builtin = name in _builtin_skill_names()
     os.makedirs(_BUILD_SKILL_D, exist_ok=True)
@@ -6875,18 +6907,18 @@ def build_skill_delete():
         if p:
             os.remove(p)                     # 覆盖件是本服务写的,真删
         if builtin:
-            # 出厂正文随仓分发或来自上游目录,不动文件,记墓碑即可:列表消失、构建不注入,
+            # 默认内容随仓分发或来自上游目录,不动文件,记墓碑即可:列表消失、构建不注入,
             # 但「恢复默认」还能把它找回来。真删文件会弄脏仓库,且对上游目录无权限。
             tombs.add(name); _skill_tombs_save(tombs)
     return jsonify({"ok": True, "restorable": builtin})
 
 @app.post("/api/build/skill/restore")
 def build_skill_restore():
-    """恢复内置技能的出厂正文:撤销改写与删除。自定义技能无出厂版本,不适用。"""
+    """恢复内置技能的默认内容:撤销改写与删除。自定义技能无默认版本,不适用。"""
     name = str((request.json or {}).get("name") or "").strip()
     if not _SKILL_NAME_RE.match(name): return jsonify({"error": "非法技能名"}), 400
     if name not in _builtin_skill_names():
-        return jsonify({"error": "该技能没有出厂版本可恢复(自定义技能删除后不可恢复)"}), 400
+        return jsonify({"error": "该技能没有默认版本可恢复(自定义技能删除后不可恢复)"}), 400
     with _WRITE_LOCK:
         p = _custom_skill_path(name)
         if p: os.remove(p)
@@ -6897,7 +6929,7 @@ def build_skill_restore():
 
 @app.post("/api/build/skill/from_graph")
 def build_skill_from_graph():
-    """#3 构建产物→技能沉淀:从图谱提取 动词表/类型分布/定义风格 → 生成自定义技能(确定性,不经 LLM)。"""
+    """#3 构建产物→保存为技能:从图谱提取 动词表/类型分布/定义风格 → 生成自定义技能(确定性,不经 LLM)。"""
     from collections import Counter
     body = request.json or {}
     gk = body.get("graph") or ""
@@ -6913,8 +6945,8 @@ def build_skill_from_graph():
     gname = (_sc.get("name") if isinstance(_sc, dict) else _sc) or gk
     gname = str(gname).strip()[:30]
     name = str(body.get("name") or "").strip() or ("from-" + re.sub(r"[^\w\-]+", "-", gk)[:24])
-    lines = [f"---\ndescription: 从构建产物「{gname}」沉淀的建模规范(动词表/类型分布/定义风格)\n---\n",
-             f"## 来源\n构建产物 `{gk}`(对象 {len(ir.get('objects', []))} · 已验证/断言关系 {sum(verbs.values())}),沉淀于 {time.strftime('%Y-%m-%d')}。\n",
+    lines = [f"---\ndescription: 从构建产物「{gname}」保存的建模规范(动词表/类型分布/定义风格)\n---\n",
+             f"## 来源\n构建产物 `{gk}`(对象 {len(ir.get('objects', []))} · 已验证/断言关系 {sum(verbs.values())}),保存于 {time.strftime('%Y-%m-%d')}。\n",
              "## 关系动词表(建模时优先沿用)"]
     lines += [f"- {v}({n} 次)" for v, n in verbs.most_common(8)] or ["-(该图谱暂无已验证关系)"]
     lines.append("\n## 对象类型分布(kind 判定参照)")
@@ -7358,7 +7390,7 @@ def _glossary_rows(path, cap=400):
     return out
 
 def _metric_inputs():
-    """指标反解的输入(DR-054):上传的 .sql/.ddl 文本、Excel 指标定义表、沉淀技能 SQL、参考基准。
+    """指标反解的输入(DR-054):上传的 .sql/.ddl 文本、Excel 指标定义表、已保存技能 SQL、参考基准。
     → (sql_texts, glossary_rows, qa_skills, gold_items)"""
     sql_texts, rows = {}, []
     for p in sorted(glob.glob(os.path.join(WORK, "uploads_*"))):
@@ -8406,8 +8438,8 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
     """关系数据验证:LLM 提议的关系用真实数据裁决(取值重叠≥60%∧父键可辨→verified;有据无量→candidate)。
     产出与 ir_to_graph 兼容的 IR(objects 带 kind/table/attrs;relations 带 status)。
 
-    base_ir:继续构建时的底本。提示词要求模型沿用底本对象的原 name,因此底本对象
-    也是合法的关系端点——它们不在本轮 objects 里重复产出(合并时底本自会保留),
+    base_ir:继续构建时的基础本体。提示词要求模型沿用基础本体对象的原 name,因此基础本体对象
+    也是合法的关系端点——它们不在本轮 objects 里重复产出(合并时基础本体自会保留),
     表若也在本轮数据源中则照常数据裁决,否则留 candidate 并注明跨源待取证。"""
     tc = ev["tab_cols"]; low2real = {t.lower(): t for t in tc}
     # 列名在多少张表里出现:同名而父表并不拥有的共享列(模板列 legacy_code、明细表里的 order_id)不算键名依据(DR-074)
@@ -8531,7 +8563,7 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
             _bound[nt] = 1
     valid = {o["name"] for o in objects}
     categories = {o["name"]: o["bfo"] for o in objects}
-    base_only = {}                                   # 底本对象名 → 其绑定表(可能不在本轮数据源)
+    base_only = {}                                   # 基础本体对象名 → 其绑定表(可能不在本轮数据源)
     for bo in (base_ir or {}).get("objects", []) or []:
         bn = (bo.get("name") or "").strip()
         if bn and bn not in valid:
@@ -8559,7 +8591,7 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
     con = None
     query_errors = []
     ungrounded = {"both": 0, "one": 0}      # 关系两端未绑真实表的计数,用于解释无法裁决的原因
-    cross_source = 0                          # 端点来自底本、其表不在本轮数据源
+    cross_source = 0                          # 端点来自基础本体、其表不在本轮数据源
     no_data = 0                               # 两端有表但键列无任何非空取值(只有表结构的来源)
     def record_query_error(operation, table="", column="", exc=None):
         if len(query_errors) < 100:
@@ -8985,7 +9017,7 @@ def _merge_ir(base, new):
     stat = {"objects_added": 0, "objects_enriched": 0, "objects_rebound": 0,
             "relations_added": 0, "relations_upgraded": 0, "relations_kept": 0}
     # DR-069 同名对象两轮绑了不同的表:保留与对象名吻合的那张;按另一张表取的关系证据不能沿用
-    stale = set()                                    # 证据所依据的绑定已失效的对象名(底本侧或本轮侧)
+    stale = set()                                    # 证据所依据的绑定已失效的对象名(基础本体侧或本轮侧)
     stale_new = set()
 
     for o in new.get("objects", []) or []:
@@ -9014,7 +9046,7 @@ def _merge_ir(base, new):
         if r.get("status") == "verified":
             r["status"] = r["evidence_status"] = "candidate"
             r["note"] = f"{why};原裁决:" + str(r.get("note") or "")
-    for r in rels:                                   # 底本里按旧表取证的关系
+    for r in rels:                                   # 基础本体里按旧表取证的关系
         if {r.get("source_concept"), r.get("target_concept")} & stale:
             _demote(r, "端点对象已改绑到与名称吻合的表,按原表取的证据作废,须重新取证")
     for r in new.get("relations", []) or []:
@@ -9033,7 +9065,7 @@ def _merge_ir(base, new):
         else:
             stat["relations_kept"] += 1                        # 否则保留原结论,不降级
 
-    # 构建历史:out 从底本深拷贝而来,带的是底本的历史;本轮的 manifest 挂在 new 上。
+    # 构建历史:out 从基础本体深拷贝而来,带的是基础本体的历史;本轮的 manifest 挂在 new 上。
     # 若不显式接上,新一轮问了什么就彻底丢失——继续构建将失去可追溯的过程记录。
     new_mf = new.get("build_manifest")
     if isinstance(new_mf, dict):
@@ -9155,7 +9187,7 @@ def build_inquire():
     workload = filtered_workload
     workload_meta['questions_used'] = len(workload)
     stability = bool(body.get("stability"))    # M1 opt-in:二次独立生成量化一致性(构建耗时翻倍)
-    # 分轮构建的本轮范围(构建体检给出的计划):只影响给模型看的结构与文档锚定,数据裁决仍用全库
+    # 分轮构建的本轮范围(构建前检查给出的计划):只影响给模型看的结构与文档锚定,数据裁决仍用全库
     scope_tables = body.get("tables") or []
     if not isinstance(scope_tables, list) or len(scope_tables) > 300 or \
             not all(isinstance(x, str) and 0 < len(x) <= 128 for x in scope_tables):
@@ -9238,15 +9270,15 @@ def build_inquire():
         base_ir = None
         _base_sig = None
         if base_graph:
-            _base_sig = _stat_sig(_confined(WORK, base_graph + ".json"))      # 读底本时的指纹:收尾时据此发现并行的另一轮
+            _base_sig = _stat_sig(_confined(WORK, base_graph + ".json"))      # 读基础本体时的指纹:收尾时据此发现并行的另一轮
             base_ir = load_ir(base_graph)
             if not base_ir:
                 yield push("scope_base", False, f"本体「{base_graph}」不存在,无法迭代")
                 yield sse({"type": "error", "error": "待迭代的本体不存在"}); return
             key = base_graph
-            if not name:                                 # 继续构建沿用底本名称,不由模型重新命名(DR-069)
+            if not name:                                 # 继续构建沿用基础本体名称,不由模型重新命名(DR-069)
                 gname = _safe_argv(str((base_ir.get("scenario") or {}).get("name") or gname), cap=60, default=gname)
-            # 旧/程序化客户端不传 references 时，迭代默认继承底本最近一轮配置；
+            # 旧/程序化客户端不传 references 时，迭代默认继承基础本体最近一轮配置；
             # 显式传 none 或新配置则以本轮选择为准。
             if not references_explicit:
                 inherited = (base_ir.get("build_manifest") or {}).get("references")
@@ -9428,8 +9460,8 @@ def build_inquire():
                 #   gname—— 已过 _safe_argv。
                 # 且以 list 形式调用(不经 shell),元字符不会被解释。
                 # 迭代模式下写到临时文件:quick_build 会整体覆盖目标文件,若直接写 outp,
-                # 一旦构建在写盘后、合并前失败(异常/无产物),用户的底本就被一份未合并的
-                # 新产物覆盖且无从恢复。底本必须等合并成功后再由 _atomic_json 一次性替换。
+                # 一旦构建在写盘后、合并前失败(异常/无产物),用户的基础本体就被一份未合并的
+                # 新产物覆盖且无从恢复。基础本体必须等合并成功后再由 _atomic_json 一次性替换。
                 _bp = _confined(WORK, key + ".building.json") if base_ir is not None else outp
                 proc = subprocess.Popen([sys.executable, _confined(HERE, "quick_build.py"), db, _bp, gname,
                                          ACTION_TYPES_F] + ([json.dumps(scope_tables)] if scope_tables else []),
@@ -9508,7 +9540,7 @@ def build_inquire():
                             for r in ir.get("relations") or []
                             if isinstance(r, dict) and ir_shape.rel_id(r) in _reviewed}
             _mg["cn_disambiguated"] = _disambiguate_cn(ir)
-            # 本轮选择作用于合并后的整张图，避免底本残留上一次标准的专用字段。
+            # 本轮选择作用于合并后的整张图，避免基础本体残留上一次标准的专用字段。
             build_references.apply_profile(ir, references)
             yield push("merge", True,
                        f"并入已有本体 · 新增对象 {_mg['objects_added']} 个 · 补全字段 {_mg['objects_enriched']} 处 · "
@@ -9549,7 +9581,7 @@ def build_inquire():
             yield sse({'type': 'status', 'text':
                        f"输入整理 · 超出上限未处理 {workload_meta['questions_omitted']} 条 · "
                        f"无效输入 {workload_meta['invalid_questions']} 条 · 与验收问题重复排除 {workload_meta['cq_excluded']} 条"})
-        # ④″ 指标反解与核验(DR-054):历史 SQL / 指标定义表 / 沉淀 SQL / 参考基准 → 契约 → 只读执行 → 与参照比对。
+        # ④″ 指标反解与核验(DR-054):历史 SQL / 指标定义表 / 已保存的 SQL / 参考基准 → 契约 → 只读执行 → 与参照比对。
         # 指标自此与关系同等:verified 只来自可回放证据;失败不影响关系产物,但如实留痕。
         try:
             _mx = metric_pipeline.run(db, ir, ev.get("tab_cols"), *_metric_inputs())
@@ -9557,7 +9589,7 @@ def build_inquire():
             _mr = _mx["report"]; _ms = _mr["sources"]
             yield push("metric_mining", True,
                        f"指标反解 · 候选 {_mr['candidates']} 条(历史 SQL {_ms['sql']} · 指标定义表 {_ms['dashboard']} · "
-                       f"沉淀 SQL {_ms['qa_skill']} · 参考基准 {_ms['gold']}) · 含 JOIN 待人工拆解 {len(_mr['skipped'])} 条")
+                       f"已保存的 SQL {_ms['qa_skill']} · 参考基准 {_ms['gold']}) · 含 JOIN 待人工拆解 {len(_mr['skipped'])} 条")
             yield push("metric_adjudication", True,
                        f"指标核验 · verified {_mr['verified']} 条 · 可执行未核验 {_mr['executable_unverified']} 条 · "
                        f"未绑定计算规则 {_mr['unbound']} 条")
@@ -9608,7 +9640,7 @@ def build_inquire():
         ir["gaps"] = quality["gaps"]
         _conflict = False
         with _WRITE_LOCK:
-            # 继续构建期间底本被另一轮改过(并行的继续构建):不覆盖它,本轮结果另存为一张草案,两份都留着
+            # 继续构建期间基础本体被另一轮改过(并行的继续构建):不覆盖它,本轮结果另存为一张草案,两份都留着
             if base_ir is not None and _stat_sig(outp) != _base_sig:
                 _conflict = True
                 key = "built_" + uuid.uuid4().hex[:6]
@@ -9646,7 +9678,7 @@ def build_inquire():
                    # 迭代信息随 done 一起回传:完成卡要能说清「并入了哪张图、并入了多少」,
                    # 否则用户只看到「构建完成」,分不出这轮是新建了一张还是并进了原图。
                    "iterated": base_ir is not None,
-                   "conflict": _conflict,                        # 底本在构建期间被别的作业改过,本轮结果另存
+                   "conflict": _conflict,                        # 基础本体在构建期间被别的作业改过,本轮结果另存
                    "base_graph": base_graph or "", "merge": _mg if base_ir is not None else None,
                    "iterations": (ir.get("scenario") or {}).get("iterations"),
                    "method": method, "evidence": {"tables": ntab, "docs": ev["n_docs"], "refs": ev["refs"]},

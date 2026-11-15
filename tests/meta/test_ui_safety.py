@@ -56,3 +56,35 @@ def test_no_developer_notes_or_unfinished_features_in_page_copy():
 def test_unknown_action_outcome_is_not_shown_as_success():
     toast = INDEX[INDEX.index("function acToast"):][:600]
     assert "d.status==='unknown'" in toast and "结果未知" in toast
+
+
+# ── 可访问性(DR-132):弹窗、键盘操作、请求期间的按钮、最小字号 ─────────────────────────────
+
+UI_FILES = {**ALL, **{p.name: p.read_text(encoding="utf-8") for p in (ROOT / "ui" / "styles").glob("*.css")}}
+
+
+def test_modals_are_dialogs_that_close_on_escape_and_keep_focus_inside():
+    block = INDEX[INDEX.index("function modalA11y"):][:2600]
+    for needle in ("'role','dialog'", "'aria-modal','true'", "e.key==='Escape'", "e.key==='Tab'", "last.focus()"):
+        assert needle in block, needle
+    assert "modalA11y();" in INDEX
+
+
+def test_clickable_rows_and_icons_are_reachable_by_keyboard():
+    sel = re.search(r"const A11Y_SEL=`([^`]+)`", INDEX).group(1)
+    for needle in (".pill:not(#rt_pill)", ".dq-modal .mt", ".dq-modal-hd .x", 'span[title="关闭"]', ".dq-att .x", ".vz-card .x",
+                   ".cn-row .x", "tr[onclick]", "#cat_tags .tag"):
+        assert needle in sel, needle
+    assert "a11yLater" in INDEX                       # 动态渲染的内容也要补上
+
+
+def test_the_clicked_button_is_disabled_while_its_request_is_in_flight():
+    helper = INDEX[INDEX.index("const J=async"):][:1500]
+    assert "aria-busy" in helper and "disabled=true" in helper and "finally" in helper
+
+
+def test_no_text_is_smaller_than_12_pixels():
+    small = {name: sorted(set(re.findall(r"font-size:\s*(?:[0-9]|1[01])(?:\.\d+)?px", src))) for name, src in UI_FILES.items()}
+    assert not {k: v for k, v in small.items() if v}
+    svg = {name: sorted(set(re.findall(r'font-size="(?:[0-9]|1[01])(?:\.\d+)?"', src))) for name, src in UI_FILES.items()}
+    assert not {k: v for k, v in svg.items() if v}

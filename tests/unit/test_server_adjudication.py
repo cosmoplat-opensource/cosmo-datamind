@@ -254,10 +254,10 @@ def test_wide_explicit_pk_does_not_expand_automatic_combination_search(make_sqli
 
 
 class TestIterativeEndpoints:
-    """继续构建时,关系可以指向底本中已有的对象。
+    """继续构建时,关系可以指向基础本体中已有的对象。
 
     回归背景:提示词把已有本体交给模型并要求「沿用其原 name」,模型照做后,
-    _adjudicate_ir 却只承认本轮新抽出的对象作为端点——指向底本对象的关系在合并前
+    _adjudicate_ir 却只承认本轮新抽出的对象作为端点——指向基础本体对象的关系在合并前
     被静默丢弃。能碳 8 轮分域构建里,跨库关系 269 条中只剩 1 条。
     """
 
@@ -283,7 +283,7 @@ class TestIterativeEndpoints:
                                    base_ir=self._base())
         rels = {(r["source_concept"], r["target_concept"]): r for r in ir["relations"]}
         assert rels[("orders", "customers")]["status"] == "verified"
-        # 底本对象不重复产出——它已在底本里,合并时保留
+        # 基础本体对象不重复产出——它已在基础本体里,合并时保留
         assert [o["name"] for o in ir["objects"]] == ["orders"]
 
     def test_relation_to_base_object_outside_this_source_stays_candidate_with_reason(self, make_sqlite, monkeypatch):

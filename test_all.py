@@ -272,18 +272,18 @@ r=g("/assets/index.html"); chk("前端资源白名单不暴露 index", r.status_
 r=g("/assets/modules/%2e%2e/index.html"); chk("前端资源路径穿越→404", r.status_code==404)
 r=g("/api/quality"); j=r.json(); chk("数据质量", r.status_code==200 and "checks" in j and "levels" in j)
 r=g("/api/sysinfo"); j=r.json(); chk("系统信息", r.status_code==200 and j.get("tables",0)>0 and "runtimes" in j)
-r=g("/api/chat/skills"); chk("沉淀技能列表", r.status_code==200 and isinstance(r.json(),list))
-# 沉淀→查→端点反馈流程(带 Origin 过 CSRF,清理)
+r=g("/api/chat/skills"); chk("已保存技能列表", r.status_code==200 and isinstance(r.json(),list))
+# 保存→查→端点反馈流程(带 Origin 过 CSRF,清理)
 H={"Origin":B}   # 同源 Origin,用于通过 CSRF 守卫(基址唯一事实源 B)
-r=po("/api/chat/save_skill",json={"question":"__t沉淀__","results":[{"title":"t","sql":"SELECT 1","chart":{}}]},headers=H)
-sid=r.json().get("id"); chk("沉淀为Skill", r.status_code==200 and sid)
-r=po("/api/chat/save_skill",json={"question":"","results":[]},headers=H); chk("沉淀空→400", r.status_code==400)
-# 清理沉淀测试项
+r=po("/api/chat/save_skill",json={"question":"__t保存__","results":[{"title":"t","sql":"SELECT 1","chart":{}}]},headers=H)
+sid=r.json().get("id"); chk("保存为Skill", r.status_code==200 and sid)
+r=po("/api/chat/save_skill",json={"question":"","results":[]},headers=H); chk("保存内容为空→400", r.status_code==400)
+# 清理保存测试项
 try:
     import os as _os,json as _json
     f="workdir/qa_skills.json"
     if _os.path.exists(f):
-        d=[x for x in _json.load(open(f)) if x.get("question")!="__t沉淀__"]
+        d=[x for x in _json.load(open(f)) if x.get("question")!="__t保存__"]
         _json.dump(d,open(f,"w"),ensure_ascii=False)
 except: pass
 
@@ -845,7 +845,7 @@ chk("OR6 驱动候选含 openai", "openai" in _sv._drv_order())
 print("=== HL. 本体图结构检查(DR-030)===")
 import health_check as _hc
 r=g("/api/ont/health/demo"); _h=r.json()
-chk("HL1 体检 200 + 分级结构", r.status_code==200 and all(k in _h for k in ("errors","signals","score","healthy")))
+chk("HL1 检查 200 + 分级结构", r.status_code==200 and all(k in _h for k in ("errors","signals","score","healthy")))
 chk("HL2 真本体无阻断问题(IR 自洽)", _h["error_count"]==0 and _h["healthy"] is True)
 chk("HL3 检出未连接对象信号", _h["isolated_count"]>0)
 chk("HL4 信号不扣结构一致性分", _h["score"]==100.0 and _h["signal_count"]>0)
@@ -979,8 +979,8 @@ chk("X3 列表实时含新技能+描述", any(s["name"]=="reg-skill" and s["desc
 r=po("/api/build/skill/save",json={"name":"reg-skill","content":_md.replace("校验","复核")})
 chk("X4 编辑保存实时", r.status_code==200 and "复核" in g("/api/build/skill/reg-skill").json()["content"])
 chk("X5 ★自定义正文注入构建方法论", "复核" in _sv2._skill_method_text(["reg-skill"]))
-# 内置技能可改写:落成 workdir 覆盖件,出厂正文不动,故可恢复。改完必须在构建注入里生效——
-# 界面显示已改、构建仍用出厂正文,是比「不给改」更糟的不一致。
+# 内置技能可改写:落成 workdir 覆盖件,默认内容不动,故可恢复。改完必须在构建注入里生效——
+# 界面显示已改、构建仍用默认内容,是比「不给改」更糟的不一致。
 _ovr="---\ndescription: 覆盖版描述\n---\n\n覆盖版正文:动词统一用「覆盖校验」\n"
 r=po("/api/build/skill/save",json={"name":"ontology-semi-auto","content":_ovr})
 chk("X6a 内置技能可改写", r.status_code==200 and r.json().get("overridden") is True)
@@ -991,7 +991,7 @@ r=po("/api/build/skill/restore",json={"name":"ontology-semi-auto"})
 chk("X6e 恢复默认", r.status_code==200 and "覆盖校验" not in g("/api/build/skill/ontology-semi-auto").json()["content"])
 r=po("/api/build/skill/save",json={"name":"../evil","content":"x"})
 chk("X7 路径穿越名→400", r.status_code==400)
-# 内置技能可删除:记墓碑而非删出厂文件——列表消失、构建不再注入,但可恢复。
+# 内置技能可删除:记墓碑而非删默认文件——列表消失、构建不再注入,但可恢复。
 r=po("/api/build/skill/delete",json={"name":"ontology-semi-auto"})
 chk("X8a 内置可删除且标记可恢复", r.status_code==200 and r.json().get("restorable") is True)
 # 隐藏项仍随列表回传(带 hidden 标记),供「恢复默认」入口使用;此处按可见项判定。
@@ -1002,7 +1002,7 @@ chk("X8d 重复删→404", po("/api/build/skill/delete",json={"name":"ontology-s
 r=po("/api/build/skill/restore",json={"name":"ontology-semi-auto"})
 chk("X8e 恢复后回到列表", r.status_code==200 and "ontology-semi-auto" in {x["name"] for x in g("/api/build/skills").json()})
 # 「非空」不足以说明注入正确:一行硬编码摘要也非空。曾因回退摘要覆盖 SKILL.md,
-# 注入量从 1876 字掉到 70 字而全套测试仍全绿——故按「与出厂正文实际内容一致」判定。
+# 注入量从 1876 字掉到 70 字而全套测试仍全绿——故按「与默认内容实际内容一致」判定。
 _sk_md = open("skills_seed/ontology-semi-auto/SKILL.md", encoding="utf-8").read()
 _sk_probe = [ln.strip() for ln in _sk_md.split("\n")
              if len(ln.strip()) > 12 and not ln.strip().startswith(("#", "-", "`", "name:", "description:"))][:1]
@@ -1011,7 +1011,7 @@ chk("X8f 恢复后重新注入", _sk_inj.strip() != "")
 chk("X8f2 ★内置技能注入的是真正的 SKILL.md 正文(非一行摘要)",
     bool(_sk_probe) and _sk_probe[0][:24] in _sk_inj and len(_sk_inj) > 400,
     f"注入 {len(_sk_inj)} 字")
-chk("X8g 自定义技能无出厂版→400", po("/api/build/skill/restore",json={"name":"reg-skill"}).status_code==400)
+chk("X8g 自定义技能无默认版→400", po("/api/build/skill/restore",json={"name":"reg-skill"}).status_code==400)
 r=po("/api/build/skill/delete",json={"name":"reg-skill"})
 chk("X9 删自定义+列表移除", r.status_code==200 and "reg-skill" not in {s["name"] for s in g("/api/build/skills").json()})
 r=g("/")
@@ -1027,23 +1027,23 @@ chk("Y2 两跳链提示(⋈⋈ 经中间表)", any("⋈⋈" in x for x in _h))
 # 此前不限定范围时靠「BOM产线」「采购订单产线」误译拉进的无关两跳链通过,译名改正后该写法不再成立(DR-077)
 _y3=_sv2.build_context("累计产量最高的产线叫什么名字?",focus_tables=["fact_production_output","dim_production_line"])
 chk("Y3 build_context 两跳链贯通", "⋈⋈" in _y3 and "经中间表 fact_production_order" in _y3)
-# ⑤ 沉淀技能复用
+# ⑤ 已保存技能复用
 _skm=_sv2._match_qa_skill("产量的月度趋势如何?")
-chk("Y4 沉淀技能命中", bool(_skm and _skm.get("analyses")))
+chk("Y4 已保存技能命中", bool(_skm and _skm.get("analyses")))
 chk("Y5 不相关不误命中", _sv2._match_qa_skill("设备台数是多少") is None)
 r=po("/api/chat",json={"q":"产量的月度趋势如何?","nocache":True})
-chk("Y6 问数复用沉淀技能(skill_reuse 步)", r.status_code==200 and any(s["step"]=="skill_reuse" for s in r.json()["steps"]))
-# ③ 沉淀为技能
+chk("Y6 问数复用已保存技能(skill_reuse 步)", r.status_code==200 and any(s["step"]=="skill_reuse" for s in r.json()["steps"]))
+# ③ 保存为技能
 r=po("/api/build/skill/from_graph",json={"graph":"demo","name":"reg-distill"})
-chk("Y7 产物沉淀为技能", r.status_code==200 and r.json().get("ok"))
-chk("Y8 沉淀内容三件套", all(k in g("/api/build/skill/reg-distill").json()["content"] for k in ("关系动词表","对象类型分布","规范")))
+chk("Y7 产物保存为技能", r.status_code==200 and r.json().get("ok"))
+chk("Y8 保存内容三件套", all(k in g("/api/build/skill/reg-distill").json()["content"] for k in ("关系动词表","对象类型分布","规范")))
 po("/api/build/skill/delete",json={"name":"reg-distill"})
 # ① 对比端点
 r=po("/api/build/skill_compare",json={"skills_a":["no-such-skill"],"skills_b":[]})
 chk("Y9 对比:未知技能→400(或运行中 409)", r.status_code in (400,409))
 chk("Y10 对比:状态/结果端点", g("/api/build/skill_compare/status").status_code==200 and g("/api/build/skill_compare/results").status_code==200)
 r=g("/")
-chk("Y11 UI 含对比弹窗+沉淀按钮", 'id="skc_modal"' in r.text and "沉淀为技能" in r.text)
+chk("Y11 UI 含对比弹窗+保存按钮", 'id="skc_modal"' in r.text and "保存为技能" in r.text)
 r=g("/api/quality")
 chk("Y12 分层对账检查上线(评测发现固化)", any("分层对账" in c["rule"] for c in r.json()["checks"]))
 _rc=[c for c in r.json()["checks"] if "分层对账" in c["rule"]]

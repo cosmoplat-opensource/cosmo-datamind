@@ -196,7 +196,7 @@ def test_two_continue_builds_on_the_same_base_both_keep_their_results(source, mo
     barrier = threading.Barrier(2, timeout=30)
     real = server._gather_evidence
 
-    def both_read_the_base_first(*a, **k):          # 两个作业都读完底本之后再往下走
+    def both_read_the_base_first(*a, **k):          # 两个作业都读完基础本体之后再往下走
         try:
             barrier.wait()
         except threading.BrokenBarrierError:
@@ -206,7 +206,7 @@ def test_two_continue_builds_on_the_same_base_both_keep_their_results(source, mo
     jobs = [client.post("/api/build/jobs", json=dict(_body(source), base_graph=base)).get_json()["job_id"] for _ in range(2)]
     done = [_poll(j, timeout=120)[0]["done"] for j in jobs]
     keys = sorted(d["graph_key"] for d in done)
-    assert len(set(keys)) == 2 and base in keys                                   # 一个并回底本,另一个另存
+    assert len(set(keys)) == 2 and base in keys                                   # 一个并回基础本体,另一个另存
     forked = next(d for d in done if d["graph_key"] != base)
     assert forked["conflict"] is True and next(d for d in done if d["graph_key"] == base)["conflict"] is False
     assert server.load_ir(forked["graph_key"])["scenario"]["forked_from"] == base

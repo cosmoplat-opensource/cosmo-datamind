@@ -187,3 +187,15 @@ def test_the_bounds_of_a_range_may_come_from_any_row():
         assert ar.check_narrative(text, [PROFIT])["unverified"] == [], text
     assert ar.check_narrative("华东电力利润 4200.0。", [PROFIT])["issues"][0]["kind"] == "other_row"       # 不是区间:照旧报
     assert ar.check_narrative("华东电力利润在 3521.8–9999.9 之间。", [PROFIT])["unverified"] == ["9999.9"]    # 区间端点也要有出处
+
+
+def test_a_column_name_far_after_the_number_does_not_excuse_it():
+    """DR-132:列名紧跟在数字后面(中间只隔一个单位)才算;「覆盖天数 9.0 天而库存充足」仍然是张冠李戴。"""
+    check = ar.check_narrative("A厂覆盖天数 9.0 天而库存充足。", [PLANT])
+    assert [i["kind"] for i in check["issues"]] == ["other_column"], check
+    assert ar.check_narrative("A厂库存 9.0、39.7 天覆盖天数。", [PLANT])["unverified"] == []
+
+
+def test_a_change_from_one_value_to_another_is_not_a_range():
+    check = ar.check_narrative("华东电力利润从 3521.8 到 4200.0。", [PROFIT])
+    assert [i["kind"] for i in check["issues"]] == ["other_row"], check

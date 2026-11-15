@@ -34,6 +34,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 ## 索引
 
 ### 决定 / Decisions
+- [DR-132 · 同名别名不能绕过校验、界面可访问性、用语统一](decisions/DR-132-shadowed-aliases-accessibility-terms.md)
 - [DR-131 · 重复计数检查按查询块判断、界面的失败态与转义、文档与当前界面对齐](decisions/DR-131-fanout-per-block-ui-failures-docs.md)
 - [DR-130 · 两张子表互相放大、指标的汇总方式、查数结果三态、实际取数日期](decisions/DR-130-join-multiplication-query-states-data-date.md)
 - [DR-129 · 发布重新验收、读数前校验范围、无回执的服务端错误、列名匹配、候选可用键盘选](decisions/DR-129-recheck-on-publish-scope-receipts-columns.md)
@@ -93,9 +94,9 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - [DR-065 · 两种场景逐环节走通:代码契约、有效行四规则、按来源库问数](decisions/DR-065-end-to-end-parity-code-contracts-and-scoped-keys.md)
 - [DR-064 · 统一两种场景的半自动构建方法:概念层线索、场景画像与技能分层](decisions/DR-064-unified-method-across-scenarios.md)
 - [DR-063 · 构建后自动复核,问数时套用清洗规则](decisions/DR-063-auto-cross-check-and-qa-cleaning.md)
-- [DR-062 · 把流水线流程沉淀为技能:多通道交叉复核与数据清洗](decisions/DR-062-cross-check-and-cleaning-as-skills.md)
+- [DR-062 · 把流水线流程保存为技能:多通道交叉复核与数据清洗](decisions/DR-062-cross-check-and-cleaning-as-skills.md)
 - [DR-061 · 能源与碳排放领域技能,以及「一表一对象」建模方式的复核](decisions/DR-061-energy-carbon-skill-and-modeling-review.md)
-- [DR-060 · 构建前预处理:外部库只读抽样、构建体检与分轮构建](decisions/DR-060-build-preflight-sampling-and-rounds.md)
+- [DR-060 · 构建前预处理:外部库只读抽样、构建前检查与分轮构建](decisions/DR-060-build-preflight-sampling-and-rounds.md)
 - [DR-059 · 长文证据分块检索、跨轮关系入图、无数据取证与能源/碳排放行业参照](decisions/DR-059-long-document-evidence-and-energy-carbon-reference.md)
 - [DR-058 · 构建能力对外 MCP 化与 LLM 回复解析单一事实源(Agent 只能发起构建与阅读结论,不能改写结论状态)](decisions/DR-058-build-mcp-and-llm-json.md)
 - [DR-057 · 常驻部署与真实链路验收](decisions/DR-057-persistent-deployment-and-live-validation.md)
@@ -169,13 +170,13 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - `test_all.py` — 系统级回归，源码定义 548 个检查点。
 
 ## 现状校准
-- 计数(2026-11-15):140 路由 / 548 集成检查点 / 1758 项 pytest 测试 / 场景回归 51 项;决策记录到 DR-131。
+- 计数(2026-11-15):140 路由 / 548 集成检查点 / 1799 项 pytest 测试 / 场景回归 51 项;决策记录到 DR-132。
   隔离环境下 `scripts/check.py --suite all` 的结果:集成 536 通过、6 项条件跳过(无上游引擎),界面走查 47 通过,界面实操 48 通过、3 项跳过(未配置外部模型端点)。
 - 计数(2026-10-12):**140 路由**(server.py 113 + bp_engine 5 + bp_actions 8 + bp_metrics 3 + bp_semantic 2 + bp_decision 9)/ **548 集成断言** /
   **1279 项 pytest 测试**（多数据库功能复核）/ DR-001…DR-082、DR-093…DR-095 · IR-001…IR-013。
   DR-093 增加数据目录、问题驱动概念/主题、声明角色外键独立核验与业务语义人审；DR-095 增加多库上下文，场景回归为 51 项。
   DR-076 起 `examples/demo_metrics.db` 由 `scripts/build_demo_108_db.py` 按业务过程仿真生成(108 表 / 308,230 行)。
-  DR-060 新增构建前预处理:外部库只读抽样 `ext_sample`、构建体检与分轮计划 `build_prep`。
+  DR-060 新增构建前预处理:外部库只读抽样 `ext_sample`、构建前检查与分轮计划 `build_prep`。
   DR-059 新增长文分块检索 `doc_chunks`,以及能源管理 `energy_management`、碳排放核算 `carbon_accounting` 两个独立行业参照。
   新增共享层 `srv_context`/`srv_engine`、单一裁决核 `dao_core`、评测台 `hallucination_eval`/`definition_eval`、
   持久化抽象 `store`、构建参照 `build_references`、本地标准资产 `standard_assets`、blueprint `bp_engine` / `bp_actions`，以及前端目录/响应式/构建参照模块。
@@ -191,8 +192,8 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - 新增(DR-018):全部读方统一 `load_ir_edited`(单一当前真相)——修复 问数JOIN提示/总览/指标/表详情/graphs列表 读原始IR 的不一致;U 分区 18 断言锁定「写→图谱/总览/问数/SPARQL/评审/列表 即读→撤销复原」。套件 186 断言。
 - 新增(DR-019):深度问数十项升级 —— A1 术语词典进检索(term_expand 步)/ A2 SQL 本体约束拦截 `_validate_sql_ontology`(ontology_gate 步:表白名单+JOIN 键落本体关系)/ A3 指标计算规则卡(done.metric_cards)/ B4 按任务选模(task_models{plan/narrative/diagnose}+模型族保护)/ B5 多轮指代 `_carryover` / B6 叙述流式 narrative_delta / C7 外部库实连(pymysql;凭据 conn_secrets.json 0600 只写)/ C8 API 型数据源(api_fetch→up.api_* 物化)/ C9 问数评测(benchmark/qa_set.json 8 题参考集×三组,/api/eval/*,「问数评测」页)/ C10「业务助手」页(角色组装问数/诊断/动作/待办)。套件 212 断言。
 - 新增(DR-020):动作层产品化 —— 动作类型管理 CRUD(/api/action/type·update·delete,内置种子受保护、停用即刻拦截发起)/ 3 个行业动作种子(冻结批次·温区调参·供应商 SCAR,均绑真实库表)/ 问数答案卡「相关动作」直达发起(SQL 命中表 × object_table 匹配)/ 动作中心 KPI+类型编辑弹窗+审计筛选与 CSV 导出;MCP 读同一注册表零改动继承。套件 226 断言。
-- 新增(DR-021):构建技能管理 —— 浏览(内置附目录清单)/在线新建/编辑/两击删除(/api/build/skill/<name>·save·delete);**自定义技能正文注入构建方法论**(_skill_method_text,剥 front-matter,编辑后下次构建即生效)——修复「能上传但从未被消费」的死代码问题;内置技能可改写与隐藏(DR-051:workdir 覆盖层+删除墓碑,出厂正文保留,可恢复默认)。套件 236 断言(105 路由)。
-- 新增(DR-022):技能生态五项 —— ①技能对比实验(/api/build/skill_compare·status·results:同目标×两组技能各跑真实构建,对比 对象/关系/verified/动词/类型/定义覆盖;组失败如实展示不充数)②构建流水线 skill_inject 注入痕迹步 ③产物沉淀为技能(/api/build/skill/from_graph:动词表/类型分布/定义样例,确定性提取)④评测败题通用修复(⋈⋈ 两跳路径召回 + 均值分母/单值聚合的计算规范进 prompt)⑤存而不用审计(specs/audit-input-consumers.md;第 3 起死代码 qa_skills 已接上:_match_qa_skill 命中复用+skill_reuse 步)。套件 249 断言(109 路由;终跑 C 组 8/8)。
+- 新增(DR-021):构建技能管理 —— 浏览(内置附目录清单)/在线新建/编辑/两击删除(/api/build/skill/<name>·save·delete);**自定义技能正文注入构建方法论**(_skill_method_text,剥 front-matter,编辑后下次构建即生效)——修复「能上传但从未被消费」的死代码问题;内置技能可改写与隐藏(DR-051:workdir 覆盖层+删除墓碑,默认内容保留,可恢复默认)。套件 236 断言(105 路由)。
+- 新增(DR-022):技能生态五项 —— ①技能对比实验(/api/build/skill_compare·status·results:同目标×两组技能各跑真实构建,对比 对象/关系/verified/动词/类型/定义覆盖;组失败如实展示不充数)②构建流水线 skill_inject 注入痕迹步 ③产物保存为技能(/api/build/skill/from_graph:动词表/类型分布/定义样例,确定性提取)④评测败题通用修复(⋈⋈ 两跳路径召回 + 均值分母/单值聚合的计算规范进 prompt)⑤存而不用审计(specs/audit-input-consumers.md;第 3 起死代码 qa_skills 已接上:_match_qa_skill 命中复用+skill_reuse 步)。套件 249 断言(109 路由;终跑 C 组 8/8)。
 - 引擎在线依赖:深度问数与本体构建的 LLM 步骤依赖 `agent_runtime` 引擎在线;引擎限流(429)/超时时自动降级(深度问数走模板、构建走 quick_build),结果仍产出并如实标注。
 - 已知边界详见 `README.md` 末节(SPARQL 软超时、运行时切换 UI、G6/ECharts 本地内置等)。
 
@@ -286,4 +287,4 @@ Consult @specs/map.md to find relevant context.
   本体缺 attrs 时上下文无列名(模型只能猜列)。
 
 五项检查各管一面：验收问题(CQ)检查本体能否回答业务问题，链路检查关系路径是否连通，漂移检查本体与数据源是否仍然一致，
-双盲意图检测检查回答是否偏离问题，图结构检查检查本体的结构问题。
+双盲意图检测检查回答是否偏离问题，图结构检查发现本体的结构问题。

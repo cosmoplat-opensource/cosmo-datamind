@@ -3,7 +3,7 @@
    长表(月份、区域、毛利率):横轴取值有重复,且另有一个文字列时,按这个文字列拆成多条序列,
    否则各区域的点会被连成一条来回折返的线。分组过多(超过 12 个)时不拆,按原样画。 */
 (function () {
-  const isNum = v => typeof v === 'number' && Number.isFinite(v);
+  const isNum = v => (typeof v === 'number' && Number.isFinite(v)) || (typeof v === 'string' && v.trim() !== '' && Number.isFinite(+v));
   window.chartSeries = function (data, chart) {
     const rows = (data && data.rows) || [], cols = (data && data.columns) || [];
     const ch = chart || {};
@@ -18,6 +18,7 @@
     const g = groupCols[0], groups = [...new Set(rows.map(r => String(r[g])))];
     if (groups.length < 2 || groups.length > 12) return flat();
     const at = new Map(rows.map(r => [String(r[g]) + '\u0000' + r[x], r]));
+    if (at.size !== rows.length) return flat();      // 同一组、同一横轴取值有多行(未汇总的明细):按原样画,不丢行
     const series = [];
     for (const name of groups) {
       for (const y of ys) {

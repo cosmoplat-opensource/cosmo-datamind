@@ -65,15 +65,15 @@ def test_fallback_used_only_when_nothing_else_found(tmp_path):
 
 
 def test_custom_override_wins_over_builtin(tmp_path):
-    """用户改写优先于出厂正文(DR-051)。"""
+    """用户改写优先于默认内容(DR-051)。"""
     root = tmp_path / "seed" / "s1"
     root.mkdir(parents=True)
-    (root / "SKILL.md").write_text("---\nname: s1\n---\n\n出厂正文", encoding="utf-8")
+    (root / "SKILL.md").write_text("---\nname: s1\n---\n\n默认内容", encoding="utf-8")
     text, _ = skill_registry.method_text(
         ["s1"], (str(tmp_path / "seed"),),
         custom_loader=lambda n: "---\nname: s1\n---\n\n我的改写版",
         fallback_loader=lambda n: "摘要")
-    assert "我的改写版" in text and "出厂正文" not in text
+    assert "我的改写版" in text and "默认内容" not in text
 
 
 class TestFrontMatter:

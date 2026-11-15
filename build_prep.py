@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""构建体检:在半自动构建之前,先把数据源「看一遍」,给出问题清单与分轮计划。
+"""构建前检查:在半自动构建之前,先把数据源「看一遍」,给出问题清单与分轮计划。
 
 多库业务数据上的实践表明,直接把整个库交给构建,常同时遇到几类问题:
 没有声明外键、逻辑删除(软删除)的行让键看起来不唯一、多态引用只能部分重叠、审计列被误判为关系、
@@ -10,7 +10,7 @@
   profile(db)         数据源概况 + 建模规律识别 + 能源/碳排放信号
   doc_coverage(...)   上传资料对本库表的覆盖、资料里提到而库里没有的表(漂移)
   plan(...)           枢纽优先、每轮不超过 max_tables 的分轮计划
-  check(...)          汇总为一份体检报告
+  check(...)          汇总为一份检查报告
 
 识别结果只是提示,不改变数据与构建规则;排除哪些表、跑哪些轮次由使用者决定。
 """
@@ -387,7 +387,7 @@ def plan(prof, max_tables=45, exclude=(), families=None):
 
 
 def check(db, texts=(), max_tables=45):
-    """体检报告:概况、问题清单、资料覆盖、参照建议、分轮计划。"""
+    """检查报告:概况、问题清单、资料覆盖、参照建议、分轮计划。"""
     prof = profile(db)
     excluded = sorted(set(prof["scratch_tables"]) | set(prof["shard_tables"]) | set(prof.get("tool_tables") or ()))
     tables = list(prof["_cols"])

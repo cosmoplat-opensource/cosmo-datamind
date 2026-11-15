@@ -1,5 +1,7 @@
 # DR-131 · 重复计数检查按查询块判断，界面的失败态与转义，文档与当前界面对齐
 
+> 2026-11-15：子查询别名的豁免、聚合内容的判断、数值匹配的两条规则和默认本体的范围已由 [DR-132](DR-132-shadowed-aliases-accessibility-terms.md) 修订；「没有做的」里的可访问性四项也在 DR-132 处理。
+
 状态：已实现。日期：2026-11-15。
 关联：QA-FANOUT-03、QA-STATUS-02、QA-SCOPE-02、ANSWER-RECORD-04、UI-SAFETY-01、UI-CHART-01、DATA-CONTEXT-01；DR-055、DR-122、DR-128、DR-129、DR-130。
 

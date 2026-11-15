@@ -96,8 +96,8 @@ let BC_BUSY=false;
 async function bcInquire(opts){
  opts=opts&&typeof opts==='object'&&!(opts instanceof Event)?opts:{};
  if(BC_BUSY)return null;
- if(BC.contextLoading){toast('正在读取底本上下文，请稍候');return null;}
- if(BC.contextError){toast('底本上下文未加载，请重新选择本体或改为新建');return null;}
+ if(BC.contextLoading){toast('正在读取基础本体上下文，请稍候');return null;}
+ if(BC.contextError){toast('基础本体上下文未加载，请重新选择本体或改为新建');return null;}
  const auto=!!opts.q;
  // 按计划逐轮构建期间，两轮之间 BC_BUSY 会短暂为 false；手动发送不能插进计划中间
  if(!auto&&window.bcPlanRunning&&bcPlanRunning()){toast('正在按计划逐轮构建，请等待完成或先停止');return null;}
@@ -147,8 +147,8 @@ function bcTraceStart(q,baseName,refsText,resumed){
  const log=$('#bc_log');log.setAttribute('aria-busy','true');
  log.insertAdjacentHTML('beforeend',`<div class="bc-user">${esc(q)}</div>`);
  const trace=document.createElement('div');trace.className='bc-trace';
- trace.innerHTML=(baseName?`<div style="margin:0 0 7px;padding:5px 9px;border-left:3px solid var(--acc);background:#f2f7ff;border-radius:0 5px 5px 0;font-size:11.5px;color:#24406e">继续构建 · 本轮结果将并入「<b>${esc(baseName)}</b>」</div>`:'')
-  +`<div style="margin:0 0 7px;font-size:11.5px;color:var(--sub)">${resumed?'接续上次未看完的构建':'构建参照 · '+esc(refsText||'—')}</div>`
+ trace.innerHTML=(baseName?`<div style="margin:0 0 7px;padding:5px 9px;border-left:3px solid var(--acc);background:#f2f7ff;border-radius:0 5px 5px 0;font-size:12px;color:#24406e">继续构建 · 本轮结果将并入「<b>${esc(baseName)}</b>」</div>`:'')
+  +`<div style="margin:0 0 7px;font-size:12px;color:var(--sub)">${resumed?'接续上次未看完的构建':'构建参照 · '+esc(refsText||'—')}</div>`
   +'<div class="bc-steps"></div><div class="bc-status" role="status" aria-live="polite"><span class="bc-spin"></span> 多智能体引擎接入…</div>'
   +'<details class="bc-proc" style="display:none"><summary><span class="ar">▶</span>过程输出 <span class="muted pn">0 行</span></summary><div class="bc-proclog"></div></details>';
  log.appendChild(trace);log.scrollTop=1e9;
@@ -176,7 +176,7 @@ function bcTraceStart(q,baseName,refsText,resumed){
  return {trace,log,on,seen:()=>seen,
   cancellable(show){
    if(show&&!cancelEl){cancelEl=document.createElement('button');cancelEl.className='bc-cancel';cancelEl.textContent='取消构建';
-    cancelEl.style.cssText='margin:6px 0 0;font-size:11.5px;padding:3px 10px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--sub);cursor:pointer';
+    cancelEl.style.cssText='margin:6px 0 0;font-size:12px;padding:3px 10px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--sub);cursor:pointer';
     cancelEl.onclick=bcCancelJob;trace.appendChild(cancelEl);}
    if(cancelEl)cancelEl.style.display=show?'':'none';},
   finish(){status='';draw();if(nlog)procN.textContent=nlog+' 行 · 可展开回看（保留最近 1000 行）';},

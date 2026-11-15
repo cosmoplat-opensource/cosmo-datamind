@@ -171,3 +171,26 @@ def test_rule_based_answers_explain_their_own_empty_results(db):
     r = _res("超期工单", "SELECT * FROM orders WHERE amount > 9999", [])
     out = qs.annotate([r], [], _connect(db), explain_empty=False)
     assert r["status"] == "empty" and out["flags"] == []
+
+
+# ── DR-132 ────────────────────────────────────────────────────────────────────────────────
+
+def test_a_matched_row_with_an_empty_cell_is_not_an_empty_result(db):
+    r = _res("发货日期", "SELECT order_date AS ship_date FROM orders WHERE order_no = 'S1'", [{"ship_date": None}])
+    out = qs.annotate([r], [], _connect(db))
+    assert r["status"] == "data" and out["flags"] == []
+
+
+@pytest.mark.parametrize("name,ok", [("createtime", True), ("orderdate", True), ("CreateTime", True), ("updatedAt", True),
+                                     ("bizdate", True), ("event_date", True), ("stat_month", True), ("下单日期", True),
+                                     ("day_count", False), ("time_cost", False), ("period_no", False), ("ts_ms", False),
+                                     ("downtime", False), ("downtime_minutes", False), ("runtime", False), ("update_count", False)])
+def test_time_columns_are_recognised_by_name(name, ok):
+    assert qs._is_time(name) is ok
+
+
+@pytest.mark.parametrize("value,ok", [("2026-11-08", True), ("2026/11", True), ("202611", True), ("20261108", True),
+                                      ("2026-11-08 10:30:00", True), ("20261108103000", True), ("2026.11.08", True),
+                                      ("2026年11月", True), ("123456", False), ("1762000000", False), ("12.5", False)])
+def test_values_that_look_like_dates(value, ok):
+    assert bool(qs._DATE_VALUE.match(value)) is ok

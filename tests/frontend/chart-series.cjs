@@ -39,6 +39,15 @@ const cases = {
     const d = data(['month', 'region', 'sales', 'cost'], [['2026-04', '华东', 10, 6], ['2026-04', '华北', 8, 5]]);
     assert.deepEqual(load()(d, {x: 'month'}).series.map(s => s.name), ['华东 · sales', '华东 · cost', '华北 · sales', '华北 · cost']);
   },
+  repeated_group_and_x_pairs_are_plotted_as_they_are() {
+    const d = data(['day', 'shift', 'qty'], [['11-01', '早', 5], ['11-01', '早', 7], ['11-01', '晚', 3], ['11-02', '早', 4]]);
+    const out = load()(d, {x: 'day', y: ['qty']});
+    assert.equal(out.series.length, 1); assert.deepEqual(out.series[0].data, [5, 7, 3, 4]);
+  },
+  numbers_stored_as_text_are_still_plotted() {
+    const d = data(['month', 'sales', 'pct'], [['2026-04', '10.5', 3], ['2026-05', '12', 4]]);
+    assert.deepEqual(load()(d, {}).series.map(s => s.name), ['sales', 'pct']);
+  },
   too_many_groups_are_not_split() {
     const rows = []; for (let i = 0; i < 20; i++) rows.push(['2026-04', 'g' + i, i], ['2026-05', 'g' + i, i]);
     const out = load()(data(['month', 'g', 'v'], rows), {x: 'month', y: ['v']});

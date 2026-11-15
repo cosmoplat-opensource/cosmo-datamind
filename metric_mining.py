@@ -5,7 +5,7 @@
 没有成熟指标体系时,指标不该由模型凭空提议。三个入口都是已经在用的东西:
   ① 历史 SQL(视图 / ETL / 上传的 .sql 文件):聚合表达式即原子指标,GROUP BY 即维度;
   ② 看板与指标定义表(Excel 反解出的名称 / 说明 / 计算逻辑 / 维度 / 来源);
-  ③ 已沉淀的问数 SQL 与参考基准 —— 它们是被真实查询验证过的计算规则,天然是参照。
+  ③ 已保存的问数 SQL 与参考基准 —— 它们是被真实查询验证过的计算规则,天然是参照。
 
 本模块只做确定性文本解析(正则,不调模型),产物一律 ``candidate`` 且带 ``provenance``;
 能否升为 ``verified`` 由 ``metric_contract.adjudicate`` 执行核验决定。含 JOIN 的语句
@@ -193,7 +193,7 @@ def parse_glossary(rows, source="dashboard"):
 
 
 def from_qa_skills(store, tab_cols=None):
-    """沉淀技能里的已验证 SQL → 候选(参照即该 SQL)。"""
+    """已保存技能里的已验证 SQL → 候选(参照即该 SQL)。"""
     cands, skipped = [], []
     for sk in (store or []):
         if not isinstance(sk, dict):

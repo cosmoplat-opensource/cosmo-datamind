@@ -22,7 +22,7 @@
 ### 1.1 强项(勿动)
 - SDD 规约真实:`specs/` 34 DR + 6 IR,`ARCHITECTURE.md` 每模块对齐 DR,提交与 map/DR 同步。
 - 领域层优秀:11 个确定性无 LLM 模块(`cq_check`/`drift_check`/`intent_check`/`rule_engine`/`health_check`/`compat_check`/`module_split`/`usage_stat`/`openai_runtime`/`quick_build`/`translate_cn`),各 95–299 行、可独立单测。
-- 本体不变量自检成熟:够不够用(CQ)/通不通(链路)/对不对得上数据(漂移)/答的是不是问的(双盲)/结构健不健康(体检)——多数团队从不构建。
+- 本体不变量自检成熟:够不够用(CQ)/通不通(链路)/对不对得上数据(漂移)/答的是不是问的(双盲)/结构健不健康(检查)——多数团队从不构建。
 - 反幻觉认识论一致:`verified` 只由数据见证产生,LLM 不得自评,人审只到 `asserted`。
 
 ### 1.2 债务(三处集中)

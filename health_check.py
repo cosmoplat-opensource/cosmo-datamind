@@ -143,7 +143,7 @@ def check(ir):
         "error_count": len(errors), "signal_count": len(signals),
         "healthy": not errors,
         "score": score,
-        "note": "确定性图结构体检,不调 LLM;只诊断不自动修——孤岛可能是刚建未连,"
+        "note": "确定性图结构检查,不调 LLM;只诊断不自动修——孤岛可能是刚建未连,"
                 "超级节点可能本就是业务枢纽,判断权在人。结构一致性分只由阻断问题扣分,"
                 "信号类只列出不扣分，避免业务枢纽使结构分数失真",
     }

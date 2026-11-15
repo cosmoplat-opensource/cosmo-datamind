@@ -14,7 +14,7 @@
 
 两层判断:
   ① 结构 diff —— 相比基线,删了什么、改了什么、降级了什么
-  ② 下游影响 —— 这些变更命中了哪些**已注册的消费者**(规则/动作/沉淀技能)
+  ② 下游影响 —— 这些变更命中了哪些**已注册的消费者**(规则/动作/已保存技能)
 
 分级:
   breaking  删除或改绑:下游必然失效
@@ -134,7 +134,7 @@ def impact(changes, rules=None, actions=None, qa_skills=None, base_ir=None):
         for t in tables_gone:
             if t and t in low:
                 hits.append({"kind": "qa_skill", "id": s.get("question", "")[:30],
-                             "why": f"沉淀技能的 SQL 引用了被删对象的表 {t}",
+                             "why": f"已保存技能的 SQL 引用了被删对象的表 {t}",
                              "severity": "breaking"})
                 break
     return hits

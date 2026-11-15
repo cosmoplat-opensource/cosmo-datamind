@@ -1,5 +1,5 @@
 """库内数据字典(DR-077):没有只读抽样留下的 _dm_tables/_dm_columns 时,
-表与字段注释从库内的 dim_table_metadata / dim_column_metadata 读取,构建体检与构建取证都能用上。"""
+表与字段注释从库内的 dim_table_metadata / dim_column_metadata 读取,构建前检查与构建取证都能用上。"""
 from __future__ import annotations
 
 import build_prep

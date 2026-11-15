@@ -187,17 +187,17 @@ const cases = {
   async iteration_race() {
     const f = fixture(), a = deferred(), b = deferred();
     f.ctx.J = url => url.endsWith('/a') ? a.promise : b.promise;
-    const first = f.ctx.bcIterate('a','旧底本'), second = f.ctx.bcIterate('b','新底本');
+    const first = f.ctx.bcIterate('a','旧基础本体'), second = f.ctx.bcIterate('b','新基础本体');
     b.resolve({references:{id:'b'}, rounds:[]}); await second;
     a.resolve({references:{id:'a'}, rounds:[]}); await first;
     assert.equal(f.run('BC.base'), 'b'); assert.equal(f.state.references.id, 'b');
-    assert.match(f.$('#bc_log').innerHTML, /新底本/); assert.ok(!f.$('#bc_log').innerHTML.includes('旧底本'));
+    assert.match(f.$('#bc_log').innerHTML, /新基础本体/); assert.ok(!f.$('#bc_log').innerHTML.includes('旧基础本体'));
   },
   async clear_iteration_race() {
     const f = fixture(), wait = deferred(); f.ctx.J = () => wait.promise;
-    const pending = f.ctx.bcIterate('a','旧底本'); f.ctx.bcIterClear();
+    const pending = f.ctx.bcIterate('a','旧基础本体'); f.ctx.bcIterClear();
     wait.resolve({references:{id:'a'},rounds:[]}); await pending;
-    assert.equal(f.run('BC.base'), ''); assert.ok(!f.$('#bc_log').innerHTML.includes('旧底本'));
+    assert.equal(f.run('BC.base'), ''); assert.ok(!f.$('#bc_log').innerHTML.includes('旧基础本体'));
   },
   async busy_iteration_guard() {
     const f = fixture(); f.run("BC.base='a'; BC.baseName='订单'; BC_BUSY=true;");
@@ -231,7 +231,7 @@ const cases = {
   async failed_context_blocks_build() {
     const f = fixture(); f.ctx.J = async()=>({error:'历史读取失败'}); let calls = 0;
     f.ctx.fetch = async()=>{calls++;return stream('data: {"type":"done","graph_key":"built_bad"}\n\n');};
-    await f.ctx.bcIterate('missing','缺失的底本'); await f.ctx.bcInquire();
+    await f.ctx.bcIterate('missing','缺失的基础本体'); await f.ctx.bcInquire();
     assert.equal(calls,0, 'failed context must not silently use the previous references');
     f.ctx.bcIterClear(); assert.equal(f.$('#bc_send').disabled,false);
   },

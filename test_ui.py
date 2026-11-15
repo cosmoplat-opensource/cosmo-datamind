@@ -149,14 +149,14 @@ async def main():
         await pg.wait_for_timeout(2500)
         t = await ev("document.getElementById('p_sparql').innerText", '')
         (ok if ("http" in t or "结果" in t) else bad)("sparql 执行", t[:60])
-        # chat:命中沉淀技能(不出网,秒回)
+        # chat:命中已保存技能(不出网,秒回)
         await go("chat")
         q = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "workdir", "qa_skills.json")))[0]["question"]
         await pg.fill("#p_chat textarea, #p_chat input[type=text]", q)
         await pg.click("#p_chat button:has-text('发送'), #p_chat button:has-text('提问')")
         try:
-            await pg.wait_for_function("document.getElementById('p_chat').innerText.includes('沉淀')||document.getElementById('p_chat').innerText.length>800", timeout=30000)
-            ok("chat 沉淀技能复用作答")
+            await pg.wait_for_function("document.getElementById('p_chat').innerText.includes('保存')||document.getElementById('p_chat').innerText.length>800", timeout=30000)
+            ok("chat 已保存技能复用作答")
         except Exception: bad("chat 作答超时", "")
         # review:三态计数
         await go("review", 2000)
@@ -238,7 +238,7 @@ async def main():
         (ok if "变更" in aud else bad)("claw 审计面板出数", aud[:40])
         (ok if ("需复核" in aud or "来源" in aud) else bad)("claw 审计含来源/风险维度")
 
-        # ══ 全站布局体检:把"元素都在、就是没法看"这类故障变成可判定的几何量 ══
+        # ══ 全站布局检查:把"元素都在、就是没法看"这类故障变成可判定的几何量 ══
         # 起因是技能编排面板 —— 全局 input{width:100%} 把勾选框撑到 224px,同排文本
         # 被挤成 0 宽、逐字竖排;而当时的计数断言 25 个元素全绿。
         SQUEEZE = """(()=>{const bad=[];

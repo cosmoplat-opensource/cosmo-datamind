@@ -718,3 +718,8 @@ def test_a_table_that_does_not_exist_is_not_reported_as_outside_the_selection(wo
     scope = lambda t: (False, "不在范围内")          # noqa: E731
     assert qd._outside(["ghost", "tasks", None], scope, world["connect"]) == ["tasks"]
     assert qd._outside(["ghost", "tasks"], scope) == ["ghost", "tasks"]        # 没给连接时不判断存在与否
+
+
+def test_table_existence_is_checked_without_regard_to_case(world):
+    assert qd._has_table(world["connect"], "ORDERS") and not qd._has_table(world["connect"], "ghost")
+    assert qd._outside(["ORDERS"], lambda t: (False, ""), world["connect"]) == ["ORDERS"]

@@ -97,7 +97,8 @@ def _numbers(text, ignore=""):
         out.append({"token": tok, "value": val, "decimals": _decimals(tok), "percent": tok.endswith("%"), "unit": unit,
                     "negative": tok.startswith("-"),
                     "down": bool(_DOWN.search(cleaned[max(start, m.start() - 10):m.start()] + cleaned[m.end():min(end, m.end() + 5)])),
-                    "range": bool(re.search(r"\d%?\s*(?:[–—~～-]|至|到)\s*$", cleaned[max(start, m.start() - 4):m.start()])
+                    "range": not re.search(r"[从由自]\s*-?\d[\d,.]*%?\s*\S{0,3}?\s*(?:到|至)", cleaned[start:end])
+                             and bool(re.search(r"\d%?\s*(?:[–—~～-]|至|到)\s*$", cleaned[max(start, m.start() - 4):m.start()])
                                   or re.match(r"\s*(?:[–—~～-]|至|到)\s*-?\d", cleaned[m.end():m.end() + 4])),
                     "clause": str(text or "")[start:end], "pos": m.start() - start})
     return out
@@ -235,6 +236,9 @@ def _col_names(results):
     return names
 
 
+_UNIT_WORDS = "万元|亿元|元|万|亿|天|小时|分钟|秒|个|件|台|套|吨|千克|公斤|kg|人|次|条|单|张|笔|%|％"
+
+
 def _near_col(n, names):
     """这个数字前面最近点到的列(前面没有就取后面最近的);句子里没点任何列名返回 None。"""
     clause, pos = n["clause"], n.get("pos", 0)
@@ -257,10 +261,11 @@ def _other_column(n, pool, derived, names):
     hit_cols = [m.group(1) for c in pool if _find(n, [c])[0] for m in [re.search(r"「([^」]+)」$", c[2])] if m]
     if not hit_cols or near in hit_cols:
         return None
-    after = [(m.start(), col) for name, col in names.items() for m in re.finditer(re.escape(name), n["clause"])
-             if m.start() >= n.get("pos", 0)]
-    if after and min(after)[1] in hit_cols:          # 列名写在数字后面(「5300 元销售额」):数字后最近点到的就是它所在的列
-        return None
+    end = n.get("pos", 0) + len(n["token"])
+    for name, col in names.items():                  # 列名紧跟在数字后面,中间只隔一个单位(「5300 元销售额」)
+        m = re.match(r"\s*(?:%s)?\s*的?" % _UNIT_WORDS + re.escape(name), n["clause"][end:])
+        if m and col in hit_cols:
+            return None
     if _find(n, [d for d in derived if d[2].startswith(f"「{near}」")])[0]:      # 是所点那一列的合计、差值等
         return None
     return near, hit_cols[0]

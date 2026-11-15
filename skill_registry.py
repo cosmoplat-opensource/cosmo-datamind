@@ -97,7 +97,7 @@ def method_text(names, roots, custom_loader=None, per_skill_cap=3500, total_cap=
             continue
         text = ""
         # 用户改写优先于随仓内置:同名时以 workdir 里的覆盖件为准。
-        # 原先内置优先,导致「编辑内置技能」在查看页显示为已改、构建时却仍用出厂正文——
+        # 原先内置优先,导致「编辑内置技能」在查看页显示为已改、构建时却仍用默认内容——
         # 改一处不生效比不给改更容易误导人。
         if custom_loader:
             text = custom_loader(name) or ""

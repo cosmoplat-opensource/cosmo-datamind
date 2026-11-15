@@ -94,7 +94,7 @@
     },
     {
       "id": "UI-01",
-      "criterion": "构建断流可恢复、重复提交受控、底本切换无串线、结果安全呈现",
+      "criterion": "构建断流可恢复、重复提交受控、基础本体切换无串线、结果安全呈现",
       "tests": [
         "tests/unit/test_build_ui.py::test_build_ui_behavior"
       ]
@@ -223,7 +223,7 @@
     },
     {
       "id": "BENCH-01",
-      "criterion": "两种数据形态的合成库端到端跑体检、构建、复核、问数,关系状态、有效行规则与问数答案与标准答案一致;此前修过的缺陷恢复后能被检出",
+      "criterion": "两种数据形态的合成库端到端跑检查、构建、复核、问数,关系状态、有效行规则与问数答案与标准答案一致;此前修过的缺陷恢复后能被检出",
       "tests": [
         "tests/scenarios/test_scenarios.py::test_scenario_matches_golden_answers"
       ]
@@ -323,7 +323,7 @@
     },
     {
       "id": "DICT-01",
-      "criterion": "库内数据字典作为注释来源进入构建体检与构建取证;字段注释写明的父表支持或否决关系;问数上下文带上码表与列的实际取值,问句中的筛选值不被当作问句对象",
+      "criterion": "库内数据字典作为注释来源进入构建前检查与构建取证;字段注释写明的父表支持或否决关系;问数上下文带上码表与列的实际取值,问句中的筛选值不被当作问句对象",
       "tests": [
         "tests/unit/test_in_db_dictionary.py::test_prep_reads_in_db_dictionary",
         "tests/unit/test_in_db_dictionary.py::test_comment_contract_from_in_db_dictionary",
@@ -1211,6 +1211,57 @@
       "criterion": "主库换成别的库以后,内置示例本体绑定的表都不在当前库里时不算当前库的本体,也不作默认问数本体;对得上时照旧",
       "tests": [
         "tests/unit/test_database_scope.py::test_builtin_ontologies_that_do_not_describe_the_main_database_are_not_its_default"
+      ]
+    },
+    {
+      "id": "QA-GATE-ALIAS-01",
+      "criterion": "与真实的表同名的 CTE 名、子查询别名不豁免表白名单和连接键校验;指向真实表的别名不被指向 CTE 的绑定覆盖;FROM 后紧跟括号的表也登记",
+      "tests": [
+        "tests/unit/test_fanout_gate.py::test_a_subquery_or_cte_named_like_a_real_table_does_not_switch_off_the_key_check"
+      ]
+    },
+    {
+      "id": "QA-FANOUT-04",
+      "criterion": "CASE 的条件不算被聚合的列:按子表条件对父表列求和仍拦下;UNION 各支与关联子查询各自判断",
+      "tests": [
+        "tests/unit/test_fanout_gate.py::test_a_parent_column_summed_under_a_child_side_condition_is_still_blocked",
+        "tests/unit/test_fanout_gate.py::test_union_branches_and_correlated_subqueries_are_separate_blocks"
+      ]
+    },
+    {
+      "id": "QA-STATUS-03",
+      "criterion": "明细查询命中的行某列为空不算空结果;连写与驼峰写法的时间列能认出,计数与时长类的列不算;日期取值支持点分隔、年月汉字和 14 位时间串;判断表是否存在不分大小写",
+      "tests": [
+        "tests/unit/test_query_status.py::test_a_matched_row_with_an_empty_cell_is_not_an_empty_result",
+        "tests/unit/test_query_status.py::test_time_columns_are_recognised_by_name",
+        "tests/unit/test_query_status.py::test_values_that_look_like_dates",
+        "tests/unit/test_qa_decision.py::test_table_existence_is_checked_without_regard_to_case"
+      ]
+    },
+    {
+      "id": "ANSWER-RECORD-05",
+      "criterion": "数值匹配:列名紧跟在数字后面(最多隔一个单位)才以它为准;「从…到…」的变化不按区间处理",
+      "tests": [
+        "tests/unit/test_answer_record.py::test_a_column_name_far_after_the_number_does_not_excuse_it",
+        "tests/unit/test_answer_record.py::test_a_change_from_one_value_to_another_is_not_a_range"
+      ]
+    },
+    {
+      "id": "UI-A11Y-01",
+      "criterion": "弹窗是对话框,Esc 关闭,焦点限制在弹窗内并在关闭后返回;可点击的表格行与图标能用键盘操作;写请求在途时被点击的按钮置灰;界面文字不小于 12 像素",
+      "tests": [
+        "tests/meta/test_ui_safety.py::test_modals_are_dialogs_that_close_on_escape_and_keep_focus_inside",
+        "tests/meta/test_ui_safety.py::test_clickable_rows_and_icons_are_reachable_by_keyboard",
+        "tests/meta/test_ui_safety.py::test_the_clicked_button_is_disabled_while_its_request_is_in_flight",
+        "tests/meta/test_ui_safety.py::test_no_text_is_smaller_than_12_pixels"
+      ]
+    },
+    {
+      "id": "UI-CHART-02",
+      "criterion": "同一组、同一横轴取值有多行的明细按原样画;以文本存放的数字仍然作图;图谱列表请求失败不顶替已有缓存",
+      "tests": [
+        "tests/unit/test_chart_series_ui.py::test_chart_series",
+        "tests/unit/test_chart_series_ui.py::test_a_failed_graph_listing_does_not_replace_the_cached_list"
       ]
     }
   ]

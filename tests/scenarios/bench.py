@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """场景回归基准(DR-067):两种数据形态,端到端走真实代码路径,与标准答案比对。
 
-构建体检 → 上传代码 → 构建(含交叉复核)→ 问数,全部经 HTTP 接口走生产代码;只把调用模型的四处
+构建前检查 → 上传代码 → 构建(含交叉复核)→ 问数,全部经 HTTP 接口走生产代码;只把调用模型的四处
 (意图解析、抽取、语义评审、生成说明)换成固定输出——抽取返回一份「录制」的提议,
 其余返回不可用或固定文本。问数的 SQL 也由固定输出给出:一条会导致计数错误的,一条正确的。
 
@@ -152,7 +152,7 @@ def run_lakehouse(tmp):
                   narrative_llm=lambda *a, **k: "ok"):
         conn = _register(server, work, fx["db"], "湖仓回归库")
         prep = server.app.test_client().post("/api/build/prep", json={"source": conn}).get_json()
-        checks.append(Check(name, "体检识别为多厂多层湖仓", "lakehouse" in [k["id"] for k in prep.get("scenario", [])],
+        checks.append(Check(name, "检查识别为多厂多层湖仓", "lakehouse" in [k["id"] for k in prep.get("scenario", [])],
                             str([k["name"] for k in prep.get("scenario", [])])))
         fams = {f["core"]: f for f in concept_hints.collect(fx["db"])["families"]}
         wo = fams.get("work_order", {})
@@ -198,7 +198,7 @@ def run_business(tmp):
                   narrative_llm=lambda *a, **k: "ok"):
         conn = _register(server, work, fx["db"], "业务回归库")
         prep = server.app.test_client().post("/api/build/prep", json={"source": conn}).get_json()
-        checks.append(Check(name, "体检识别为元数据驱动业务库",
+        checks.append(Check(name, "检查识别为元数据驱动业务库",
                             "metadata_driven" in [k["id"] for k in prep.get("scenario", [])],
                             str([k["name"] for k in prep.get("scenario", [])])))
         split = next((s for s in concept_hints.collect(fx["db"])["category_splits"] if s["table"] == "inst_device"), {})

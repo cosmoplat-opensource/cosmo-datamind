@@ -280,7 +280,7 @@ _START_SCHEMA = {
         "stability": {"type": "boolean",
                       "description": "二次独立生成量化一致性(可选;构建耗时约翻倍)"},
         "base_graph": {"type": "string",
-                       "description": "在本体上迭代的底本 key(可选,仅限 built_* 产物)"},
+                       "description": "在本体上迭代的基础本体 key(可选,仅限 built_* 产物)"},
         "references": {"type": "object",
                        "description": "行业/本体标准参照配置(可选;不传沿用服务端默认)"},
     },

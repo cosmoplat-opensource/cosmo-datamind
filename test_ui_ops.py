@@ -370,12 +370,12 @@ async def main():
             body = await pg.inner_text("#bc_log")
             nm_dis = await pg.eval_on_selector("#bc_name", "e=>e.disabled")
             ph = await pg.eval_on_selector("#bc_q", "e=>e.placeholder")
-            (ok if base else bad)("继续构建设定底本", base or "BC.base 为空")
+            (ok if base else bad)("继续构建设定基础本体", base or "BC.base 为空")
             (ok if "继续构建" in btn else bad)("构建按钮改为「继续构建」", btn)
             (ok if "并入" in dest else bad)("底部标明产出去向", dest)
             # 最关键的一条:对话区本身要换成迭代语境,而不是继续显示「新建本体」的欢迎页
             (ok if "继续构建" in body and clicked in body else
-             bad)("对话区换为底本上下文", body[:60].replace("\n", " "))
+             bad)("对话区换为基础本体上下文", body[:60].replace("\n", " "))
             _merge_copy_ok = "并入" in body and "不被覆盖" in body and "删除既有" in body
             (ok if _merge_copy_ok else bad)(
                 "说明合并语义(并入/不覆盖/不删除既有)",

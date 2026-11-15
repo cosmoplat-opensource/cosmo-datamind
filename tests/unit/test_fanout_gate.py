@@ -174,3 +174,43 @@ def test_the_rewrite_suggested_by_the_block_message_is_itself_accepted():
     ok, why = _v("SELECT c.region, SUM(x.amount) FROM dim_customer c JOIN (SELECT cust_no, SUM(amount) AS amount "
                  "FROM fact_sales_order GROUP BY cust_no) x ON c.cust_id = x.cust_no GROUP BY 1")
     assert ok, why
+
+
+# ── DR-132:子查询别名不能顶替真实的表;条件里的列不算被聚合的列;UNION 各支、关联子查询各自判断 ──────────
+
+def test_a_subquery_or_cte_named_like_a_real_table_does_not_switch_off_the_key_check(make_sqlite, monkeypatch):
+    db = make_sqlite({"fact_sales_order": ("order_id INTEGER, cust_id TEXT, amount REAL", []),
+                      "dim_customer": ("cust_id TEXT, credit_limit REAL", []), "secret_table": ("x INTEGER", [])})
+    monkeypatch.setattr(server, "_qa_db", lambda: db)
+    monkeypatch.setattr(server, "table_list", lambda *a, **k: [{"name": n} for n in ("fact_sales_order", "dim_customer", "secret_table")])
+    bad = "SELECT o.order_id FROM fact_sales_order o JOIN dim_customer c ON o.amount = c.credit_limit"
+    assert not _v(bad)[0]
+    for tail in (" WHERE EXISTS (SELECT 1 FROM (SELECT 1 AS z) dim_customer)", " LEFT JOIN (SELECT 1 AS z) dim_customer ON 1=1",
+                 " WHERE EXISTS (SELECT 1 FROM (SELECT 1 AS z) c)"):
+        ok, why = _v(bad + tail)
+        assert not ok and "JOIN 键" in why, tail
+    ok, why = _v("WITH w AS (SELECT 1 z) " + bad + " WHERE EXISTS (SELECT 1 FROM w c)")
+    assert not ok and "JOIN 键" in why
+    ok, why = _v("SELECT * FROM secret_table WHERE EXISTS (SELECT 1 FROM (SELECT 1 AS z) secret_table)")
+    assert not ok and "secret_table" in why
+    ok, why = _v("SELECT 1 FROM (secret_table s JOIN dim_customer c ON s.x = c.cust_id)")
+    assert not ok and "secret_table" in why
+
+
+def test_a_parent_column_summed_under_a_child_side_condition_is_still_blocked():
+    base = " FROM fact_sales_order o JOIN dim_customer c ON o.cust_id = c.cust_id"
+    ok, why = _v("SELECT SUM(CASE WHEN o.status = 'A' THEN c.credit_limit END)" + base)
+    assert not ok and "扇出风险" in why
+    assert _v("SELECT SUM(CASE WHEN c.region = '华东' THEN o.amount ELSE 0 END)" + base)[0]
+
+
+def test_union_branches_and_correlated_subqueries_are_separate_blocks():
+    ok, why = _v("SELECT SUM(c.credit_limit) FROM dim_customer c UNION ALL "
+                 "SELECT SUM(o.amount) FROM fact_sales_order o JOIN dim_customer c ON o.cust_id = c.cust_id")
+    assert ok, why
+    ok, why = _v("SELECT o.order_id, (SELECT SUM(c.credit_limit) FROM dim_customer c WHERE c.cust_id = o.cust_id) "
+                 "FROM fact_sales_order o")
+    assert ok, why
+    ok, why = _v("SELECT 1 FROM dim_customer c UNION ALL SELECT SUM(c.credit_limit) FROM fact_sales_order o "
+                 "JOIN dim_customer c ON o.cust_id = c.cust_id")
+    assert not ok and "扇出风险" in why
