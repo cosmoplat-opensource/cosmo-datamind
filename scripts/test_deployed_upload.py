@@ -36,7 +36,7 @@ def main():
         initial = upload(b"id,amount\n1,10\n2,20\n")
         check("new CSV materialized", any(t.get("table") == table and t.get("rows") == 2 for t in initial.get("tables", [])))
         before = query()
-        check("uploaded rows queryable", before.get("rows") == [{"id": "1", "amount": "10"}, {"id": "2", "amount": "20"}])
+        check("uploaded rows queryable", before.get("rows") == [{"id": 1, "amount": 10}, {"id": 2, "amount": 20}])
         invalid = upload(b"id,id\n3,99\n")
         check("duplicate headers rejected", any(t.get("error") for t in invalid.get("tables", [])))
         check("failed refresh preserves original table", query() == before)

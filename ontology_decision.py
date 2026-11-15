@@ -141,7 +141,7 @@ def main_chain_from_route(ir, route):
 
     相邻两步之间要有已验证或人工确认、且带单列连接键的关系,方向不限:
     下一步是子表时按它的外键往下查;下一步是父表时按父键查。走不下去就停在那里,已得到的部分照常可用。
-    根对象的标识列取对象声明的主键,否则取第一段关系里根对象一侧的父键;都没有时不生成主线。
+    根对象的标识列取对象声明的主键,否则取它在已验证关系里作为父表时的父键;图谱里没有时留空,由取数一侧读表的主键。
     """
     objs: dict = {}
     for o in ir.get("objects") or []:
@@ -181,8 +181,14 @@ def main_chain_from_route(ir, route):
         chain["stopped"] = {"after": a.get("cn") or a.get("name"), "before": b.get("cn") or b.get("name"), "reason": why}
 
     first = link(steps[0], steps[1], roles[0] if roles else "")
-    root_key = steps[0].get("pk") or (first[1] if isinstance(first, tuple) else None)
-    if not root_key or "," in str(root_key):
+    # 根对象的标识列:对象声明的主键;否则别的已验证关系里它作为父表时的父键;否则第一段关系里它是父表时的父键。
+    # 根对象在第一段里是子表时,first[1] 是它的外键列,不能当标识列:留空,由取数一侧读表的主键。
+    as_parent = {str((r.get("evidence") or {}).get("parent_key") or "") for r in ir.get("relations") or []
+                 if r.get("target_concept") == steps[0].get("name") and r.get("status") in ("verified", "asserted")}
+    as_parent = {k for k in as_parent if k and "," not in k}
+    root_key = steps[0].get("pk") or (next(iter(as_parent)) if len(as_parent) == 1 else None) \
+        or (first[1] if isinstance(first, tuple) and first[3] == "child" else None) or ""
+    if "," in str(root_key):
         return {}
     hops: list[dict] = []
     chain: dict = {"root": {"table": steps[0]["table"], "key": str(root_key), "label": steps[0].get("cn") or steps[0].get("name")},

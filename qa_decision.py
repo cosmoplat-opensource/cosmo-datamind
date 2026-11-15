@@ -350,8 +350,21 @@ def _single_ask(q):
     return len(parts) == 1 and not re.search(r"和|及|并且|分别|对应|以及", q or "")
 
 
-def _root_ids(question, ir, connect):
+def _main_chain(ir, connect):
+    """追踪用的主线。根对象的标识列在图谱里没有声明时,取根表的单列主键;取不到就当作没有主线。"""
     mc = ontology_decision.main_chain(ir or {})
+    root = mc.get("root") or {}
+    if not mc or root.get("key"):
+        return mc
+    t = root.get("table")
+    if not (t and _ident(t) and connect and _has_table(connect, t)):
+        return {}
+    pk = [r["name"] for r in _rows(connect, f'PRAGMA table_info("{t}")') if r.get("pk")]
+    return {**mc, "root": {**root, "key": pk[0]}} if len(pk) == 1 else {}
+
+
+def _root_ids(question, ir, connect):
+    mc = _main_chain(ir, connect)
     root = mc.get("root") or {}
     t, k = root.get("table"), root.get("key")
     if not (t and k and _ident(t) and _ident(k) and connect and _has_table(connect, t)):
@@ -680,7 +693,7 @@ def run_judge(route, connect, actions, ir, validate):
     if ev["count"] > len(ev["rows"]):
         flags.append(f"下表只列出前 {len(ev['rows'])} 行")
     nxt = _next_for_rules([r], actions)
-    root = (ontology_decision.main_chain(ir or {})).get("root") or {}
+    root = _main_chain(ir, connect).get("root") or {}
     if ev["rows"] and root.get("key") in ev["rows"][0]:        # 沿主线追踪第一条命中
         rid = ev["rows"][0][root["key"]]
         nxt.insert(0, {"kind": "question", "label": f"追踪 {rid}", "q": f"{root.get('label') or ''} {rid} 现在到哪了?"})
@@ -754,7 +767,7 @@ def _verified(ir, child, parent, role=""):
 
 
 def run_trace(route, ir, rules, connect, today, validate=None):
-    mc = ontology_decision.main_chain(ir or {})
+    mc = _main_chain(ir, connect)
     root = mc.get("root") or {}
     rid = route["root_id"]
     if not (_ident(root.get("table")) and _ident(root.get("key"))):

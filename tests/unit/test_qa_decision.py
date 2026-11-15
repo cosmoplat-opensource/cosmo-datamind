@@ -617,3 +617,23 @@ def test_a_specification_fragment_matching_several_rows_is_not_resolved_to_the_s
     v, why, cands = qd.ground_param("product", spec, "如果新增一台 63MVA/110kV 的订单能否交付?", connect, dt.date(2026, 11, 10), "产品")
     assert v is None and "对应 2 个产品" in why and [c["value"] for c in cands] == ["P1", "P2"]
     assert qd.ground_param("product", spec, "如果新增一台 20MVA/35kV 的订单能否交付?", connect, dt.date(2026, 11, 10), "产品")[0] == "P3"
+
+
+def test_a_root_without_a_declared_key_takes_the_table_primary_key_not_the_foreign_key(make_sqlite):
+    """构建出来的对象通常不带主键声明;根对象在第一段关系里是子表时,不能把它的外键列当成标识列。"""
+    db = make_sqlite({"wo": ("wo_id TEXT PRIMARY KEY, first_op_id TEXT, last_op_id TEXT", [("W1", "OP1", "OP9")]),
+                      "op": ("op_id TEXT PRIMARY KEY, op_name TEXT", [("OP1", "绕线"), ("OP9", "试验")]),
+                      "nokey": ("a TEXT, b TEXT", [("x", "OP1")])})
+    connect = lambda: sqlite3.connect(f"file:{db}?mode=ro", uri=True)      # noqa: E731
+    objs = [{"name": "工单", "table": "wo", "cn": "工单"}, {"name": "工序", "table": "op", "cn": "工序"}]
+    ir = {"objects": objs, "relations": ROLE_IR["relations"],
+          "routes": [{"id": "r", "steps": ["工单", "工序"], "roles": ["末道工序"], "status": "candidate"}]}
+    assert od.main_chain(ir)["root"]["key"] == ""                         # 图谱里没有可用的标识列:留空,不取 last_op_id
+    route = qd.classify("工单 W1 现在到哪了?", ir, [], [], connect)
+    assert route == {"type": "trace", "root_id": "W1"}
+    ans = qd.answer("工单 W1 现在到哪了?", ir, [], [], route, connect, set())
+    assert [r["op_name"] for r in ans["results"][0]["data"]["rows"]] == ["试验"]
+    bare = {"objects": [{"name": "工单", "table": "nokey", "cn": "工单"}, objs[1]],
+            "relations": [{"source_concept": "工单", "target_concept": "工序", "status": "verified", "evidence": {"child_key": "b", "parent_key": "op_id"}}],
+            "routes": [{"id": "r", "steps": ["工单", "工序"]}]}
+    assert qd.classify("工单 x 现在到哪了?", bare, [], [], connect)["type"] != "trace"      # 表也没有主键:不追踪
