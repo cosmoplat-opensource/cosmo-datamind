@@ -834,6 +834,22 @@
         "tests/unit/test_relation_roles.py::test_triage_keep_set_is_per_role",
         "tests/unit/test_relation_roles.py::test_a_build_keeps_two_roles_proposed_between_the_same_tables"
       ]
+    },
+    {
+      "id": "RELEASE-01",
+      "criterion": "验收不通过的草案不能用于正式问数,同步、流式、诊断同判且不被缓存绕过;待评审草案可用并标明;人可预览而经适配层的调用方不能;发布需署名且验收通过,发布后再构建即回到草案;严格模式下只认已发布版本",
+      "tests": [
+        "tests/unit/test_release_gate.py::test_state_rules",
+        "tests/unit/test_release_gate.py::test_a_draft_that_failed_the_quality_check_is_refused",
+        "tests/unit/test_release_gate.py::test_the_streaming_and_diagnosis_entries_apply_the_same_rule",
+        "tests/unit/test_release_gate.py::test_a_draft_awaiting_review_is_usable_and_labelled",
+        "tests/unit/test_release_gate.py::test_a_failed_draft_can_be_previewed_by_a_person_but_not_through_an_agent",
+        "tests/unit/test_release_gate.py::test_a_cached_answer_does_not_bypass_the_rule",
+        "tests/unit/test_release_gate.py::test_publishing_needs_a_passing_check_and_a_named_person",
+        "tests/unit/test_release_gate.py::test_a_new_build_round_turns_a_published_graph_back_into_a_draft",
+        "tests/unit/test_release_gate.py::test_withdrawing_and_strict_mode",
+        "tests/unit/test_release_gate.py::test_built_list_shows_the_release_state"
+      ]
     }
   ]
 }

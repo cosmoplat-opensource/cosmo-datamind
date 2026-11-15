@@ -20,6 +20,7 @@ import metric_contract
 import metric_pipeline
 import action_ontology
 import ir_shape
+import ontology_release
 import skill_registry
 import ontology_grounding
 import content_quality
@@ -6699,8 +6700,97 @@ def build_built():
                     "objects": len(g["nodes"]), "events": ev, "links": len(g["edges"]), "verified": ver,
                     "quality_result": result, "quality_gate": result,
                     "rounds": len(hist),          # 构建轮次:让「继续构建」前就看得出这张图迭代过几轮
+                    "release": _release_state(k, ir),   # DR-115 发布状态:已发布 / 草案 / 不可用于正式问数
                     "ts": time.strftime("%m-%d %H:%M", time.localtime(os.path.getmtime(p)))})
     return jsonify(out)
+
+# ── 发布状态(DR-115):作业完成 ≠ 质量通过 ≠ 正式发布 ─────────────────────
+_QA_ENDPOINTS = {"chat", "chat_stream", "diagnose_stream"}        # 正式问数入口,同一条规则
+
+
+def _releases_path():
+    return os.path.join(WORK, "releases.json")
+
+
+def _release_records():
+    d = _load_json(_releases_path())
+    return d if isinstance(d, dict) else {}
+
+
+def _release_state(key, ir=None):
+    """一张图谱当前的发布状态。质量结论取构建时落在文件里的那份(发布状态跟着构建产物走,不跟着编辑草案走)。"""
+    ir = ir if ir is not None else (load_ir(key) or {})
+    strict = os.environ.get("DATAMIND_QA_REQUIRE_PUBLISHED", "").strip().lower() in ("1", "true", "yes")
+    return ontology_release.state(ir, _release_records().get(key), strict=strict)
+
+
+@app.before_request
+def _release_guard():
+    """正式问数只取用有资格的图谱:验收不通过的草案拒绝;严格模式下只认已发布的版本。
+    人可以带 preview 预览草案(结果标为预览);经上游适配层进来的调用方不能预览。"""
+    if request.endpoint not in _QA_ENDPOINTS: return None
+    body = request.get_json(silent=True) if request.is_json else {}
+    body = body if isinstance(body, dict) else {}
+    keys = _qa_scope(body)[1] or ["demo"]
+    states = {k: _release_state(k) for k in keys if load_ir(k) is not None}
+    blocked = {k: s for k, s in states.items() if not s["usable"]}
+    preview = bool(body.get("preview")) and not request.headers.get("X-DataMind-Actor")
+    if blocked and not preview:
+        observability.count("qa.release_blocked")
+        return jsonify({"error": "所选本体不能用于正式问数:" + "；".join(
+                            f"{k}({s['reason'] or '验收检查不通过'})" for k, s in blocked.items())
+                            + "。可在评审页查看阻断问题,修复后重新构建并发布。",
+                        "code": "graph_not_released", "graphs": sorted(blocked),
+                        "release": blocked}), 409
+    if blocked: label = "preview"
+    elif states and all(s["state"] == "published" for s in states.values()): label = "published"
+    else: label = "draft"
+    _request_g.graph_release = label
+    return None
+
+
+@app.after_request
+def _release_header(resp):
+    label = getattr(_request_g, "graph_release", None)
+    if label: resp.headers["X-DataMind-Graph-Release"] = label
+    return resp
+
+
+@app.get("/api/ont/release")
+def ont_release_get():
+    key = request.args.get("graph") or _active_graph_key()
+    if not key or _bad_gkey(key): return jsonify({"error": "非法图谱键"}), 400
+    ir = load_ir(key)
+    if ir is None: return jsonify({"error": "图谱不存在"}), 404
+    return jsonify({"graph": key, **_release_state(key, ir)})
+
+
+@app.post("/api/ont/release")
+def ont_release_set():
+    """发布或撤回一张图谱。发布是人的决定:要署名,且以当前内容(含人工编辑)重新做一次验收检查,不通过不能发布。"""
+    body = request.json or {}
+    key, action = str(body.get("graph") or ""), str(body.get("action") or "")
+    reviewer = str(body.get("reviewer") or "").strip()[:40]
+    if not key or _bad_gkey(key): return jsonify({"error": "非法图谱键"}), 400
+    if action not in ("publish", "withdraw"): return jsonify({"error": "action 须为 publish 或 withdraw"}), 400
+    if not reviewer: return jsonify({"error": "需要署名(reviewer):发布与撤回由具体的人负责"}), 400
+    ir = load_ir(key)
+    if ir is None: return jsonify({"error": "图谱不存在"}), 404
+    if action == "publish":
+        quality = ontology_release.quality_of(ir)
+        if quality == "fail":
+            return jsonify({"error": "验收检查不通过,不能发布;请先处理阻断问题并重新构建",
+                            "code": "quality_failed", "release": _release_state(key, ir)}), 409
+        rec = {"state": "published", "by": reviewer, "at": time.strftime("%Y-%m-%d %H:%M:%S"),
+               "round": ontology_release.round_of(ir), "quality": quality}
+    else:
+        rec = {"state": "withdrawn", "by": reviewer, "at": time.strftime("%Y-%m-%d %H:%M:%S")}
+    with _WRITE_LOCK:
+        recs = _release_records(); recs[key] = rec
+        _atomic_json(_releases_path(), recs)
+    observability.count("ont.release", action=action)
+    return jsonify({"ok": True, "graph": key, "release": _release_state(key, ir)})
+
 
 @app.get("/api/build/history/<key>")
 def build_history(key):
