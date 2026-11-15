@@ -85,7 +85,7 @@ def _declared_time(ir, table):
 
 def as_of(sql, tables, connect, ir=None):
     """这条查询读到的数据新到哪一天 → [{"table", "column", "latest"}]。
-    时间列取查询里用到的那一列;查询没用到时间列时取对象上声明的时间列;都没有就不给日期。"""
+    时间列取查询里用到的那一列;查询没用到时取对象上声明的时间列;再没有,表里只有一个时间列时取它;否则不给日期。"""
     out = []
     for t in tables[:6]:
         if not _IDENT.match(t):
@@ -93,7 +93,8 @@ def as_of(sql, tables, connect, ir=None):
         cols = [c for c in _columns(connect, t) if _IDENT.match(c)]
         used = [c for c in cols if _TIME_NAME.search(c) and re.search(r"(?<![A-Za-z0-9_])" + re.escape(c) + r"(?![A-Za-z0-9_])", sql)]
         declared = _declared_time(ir, t)
-        col = used[0] if used else (declared if declared in cols else None)
+        timelike = [c for c in cols if _TIME_NAME.search(c)]
+        col = used[0] if used else (declared if declared in cols else (timelike[0] if len(timelike) == 1 else None))
         if not col:
             continue
         latest = _scalar(connect, f'SELECT MAX("{col}") FROM "{t}"')

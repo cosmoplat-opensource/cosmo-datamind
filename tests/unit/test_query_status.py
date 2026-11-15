@@ -118,3 +118,14 @@ def test_a_month_column_also_counts_as_a_time_column(make_sqlite):
     r = _res("利润", "SELECT cust_id, profit FROM sales WHERE month = '2026-10'", [{"cust_id": "C1", "profit": 2.0}])
     qs.annotate([r], [], _connect(path))
     assert r["data_as_of"] == [{"table": "sales", "column": "month", "latest": "2026-10"}]
+
+
+def test_the_only_time_column_of_a_table_is_used_when_nothing_else_says_which(make_sqlite, db):
+    path = make_sqlite({"sales": ("cust_id TEXT, month TEXT, profit REAL", [("C1", "2026-09", 1.0), ("C1", "2026-10", 2.0)])})
+    r = _res("利润合计", "SELECT cust_id, SUM(profit) AS p FROM sales GROUP BY 1", [{"cust_id": "C1", "p": 3.0}])
+    qs.annotate([r], [], _connect(path))
+    assert r["data_as_of"] == [{"table": "sales", "column": "month", "latest": "2026-10"}]      # 全期合计也要说明数据到哪个月
+    two = make_sqlite({"jobs": ("job_no TEXT, plan_date TEXT, done_date TEXT", [("J1", "2026-11-01", "2026-11-05")])})
+    r = _res("作业", "SELECT job_no FROM jobs", [{"job_no": "J1"}])
+    qs.annotate([r], [], _connect(two))
+    assert "data_as_of" not in r                                # 有两个时间列又没指明用哪个:不猜
