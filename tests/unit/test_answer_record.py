@@ -62,7 +62,54 @@ def test_numbers_from_the_question_and_from_declared_values_are_not_flagged():
 
 def test_text_without_checkable_numbers_is_not_checked():
     assert ar.check_narrative("各月收入稳步上升。", [SALES]) == {"checked": 0, "unverified": []}
-    assert ar.flag_text({"unverified": []}) == "" and "以表格为准" in ar.flag_text({"unverified": ["12.4%"]})
+    flag = ar.flag_text({"unverified": ["12.4%"]})
+    assert ar.flag_text({"unverified": []}) == "" and "以表格为准" in flag and flag.startswith("数值匹配")
+
+
+# ── 数值匹配看符号、单位和所属行(DR-128) ─────────────────────────────
+
+PROFIT = {"title": "客户利润", "sql": "SELECT 1", "data": {"columns": ["客户", "利润", "同比"], "rows": [
+    {"客户": "华东电力", "利润": 3521.8, "同比": 12.5}, {"客户": "北方重工", "利润": -350.5, "同比": -8.2},
+    {"客户": "C10", "利润": 4200.0, "同比": 3.1}]}}
+
+
+@pytest.mark.parametrize("text,kind", [
+    ("北方重工利润 350.5。", "sign"),                            # 结果是 -350.5,文字写成了正的
+    ("华东电力利润 -3521.8。", "no_source"),                     # 结果是正的,文字写成了负的
+    ("华东电力同比 8.2%。", "other_row"),                        # 8.2 是北方重工那一行的(且是负的)
+    ("华东电力利润 4200.0。", "other_row"),                      # 把 C10 的数安到了华东电力头上
+])
+def test_a_wrong_sign_or_a_number_from_another_row_is_reported(text, kind):
+    check = ar.check_narrative(text, [PROFIT])
+    assert [i["kind"] for i in check["issues"]] == [kind] and check["unverified"]
+    assert "数值匹配" in ar.flag_text(check)
+
+
+@pytest.mark.parametrize("text", [
+    "北方重工利润 -350.5。",
+    "北方重工亏损 350.5,同比下降 8.2%。",                        # 用词表达了负号
+    "华东电力利润 3521.8,北方重工为 -350.5。",                   # 各说各的行
+    "华东电力和 C10 分别为 3521.8 和 4200.0。",                  # 一句里点了两行
+    "华东电力利润 3521.8,高于三家平均的 2457.1。",               # 行内的值 + 整张表的汇总
+    "华东电力利润 3521.8,三家合计 7371.3。",
+    "C10 的利润是 4200.0。",
+])
+def test_signed_and_row_attributed_numbers_pass(text):
+    assert ar.check_narrative(text, [PROFIT])["unverified"] == []
+
+
+def test_an_explicit_unit_is_converted_against_the_column_unit():
+    yuan = {"title": "金额", "sql": "s", "data": {"rows": [{"客户": "甲公司", "金额": 35000000.0}, {"客户": "乙公司", "金额": 1200.0}]}}
+    assert ar.check_narrative("甲公司金额 3500 万元。", [yuan])["unverified"] == []          # 列没写单位:换算成万
+    assert ar.check_narrative("甲公司金额 0.35 亿元。", [yuan])["unverified"] == []
+    assert ar.check_narrative("乙公司金额 3500。", [yuan])["unverified"] == ["3500"]          # 没写单位就不换算:3500 不等于 3500 万
+    assert ar.check_narrative("6 月收入 13521.8 亿元。", [SALES])["unverified"] == ["13521.8"]   # 列是万,文字写成了亿
+    assert ar.check_narrative("6 月收入 13521.8 万元,约 1.35 亿元。", [SALES])["unverified"] == []
+
+
+def test_each_matched_number_says_where_it_came_from():
+    check = ar.check_narrative("北方重工利润 -350.5,三家合计 7371.3。", [PROFIT])
+    assert check["matched"] == [{"token": "-350.5", "source": "客户利润 第 2 行「利润」"}, {"token": "7371.3", "source": "「利润」合计"}]
 
 
 def test_identifiers_dates_and_versions_are_not_treated_as_numbers():
