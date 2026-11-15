@@ -6912,11 +6912,29 @@ def _release_records():
     return d if isinstance(d, dict) else {}
 
 
+_REV_CACHE: dict[str, Any] = {}
+
+
+def _graph_revision(key):
+    """图谱当前内容(含人工编辑)的修订号。按文件与编辑记录的变更指纹缓存,内容没动不重算。"""
+    paths = [_confined(WORK, key + ".json")] if key.startswith("built_") else list(IR_SOURCES.get(key, {}).get("paths", []))
+    sig = _stat_sig(*paths, _edits_path(key))
+    hit = _REV_CACHE.get(key)
+    if hit and hit[0] == sig:
+        return hit[1]
+    rev = ontology_release.revision_of(load_ir_edited(key) or load_ir(key) or {})
+    if len(_REV_CACHE) > 200:
+        _REV_CACHE.clear()
+    _REV_CACHE[key] = (sig, rev)
+    return rev
+
+
 def _release_state(key, ir=None):
-    """一张图谱当前的发布状态。质量结论取构建时落在文件里的那份(发布状态跟着构建产物走,不跟着编辑草案走)。"""
+    """一张图谱当前的发布状态。质量结论取构建时落在文件里的那份;修订号取当前内容(含人工编辑)——
+    正式问数读到的就是这份内容,所以发布之后任何改动都会让它回到草案。"""
     ir = ir if ir is not None else (load_ir(key) or {})
     strict = os.environ.get("DATAMIND_QA_REQUIRE_PUBLISHED", "").strip().lower() in ("1", "true", "yes")
-    return ontology_release.state(ir, _release_records().get(key), strict=strict)
+    return ontology_release.state(ir, _release_records().get(key), strict=strict, revision=_graph_revision(key))
 
 
 @app.before_request
@@ -6976,10 +6994,17 @@ def ont_release_set():
         if quality == "fail":
             return jsonify({"error": "验收检查不通过,不能发布;请先处理阻断问题并重新构建",
                             "code": "quality_failed", "release": _release_state(key, ir)}), 409
+        rev = _graph_revision(key)
         rec = {"state": "published", "by": reviewer, "at": time.strftime("%Y-%m-%d %H:%M:%S"),
-               "round": ontology_release.round_of(ir), "quality": quality}
+               "revision": rev, "quality": quality}
+        # 留一份所发布内容的副本:文件名带修订号,不再改写,供事后核对「当时发布的是什么」
+        snap = _confined(os.path.join(WORK, "releases"), f"{key}@{rev}.json")
+        os.makedirs(os.path.dirname(snap), exist_ok=True)
+        if not os.path.exists(snap):
+            _atomic_json(snap, load_ir_edited(key) or ir)
     else:
-        rec = {"state": "withdrawn", "by": reviewer, "at": time.strftime("%Y-%m-%d %H:%M:%S")}
+        rec = {"state": "withdrawn", "by": reviewer, "at": time.strftime("%Y-%m-%d %H:%M:%S"),
+               "revision": _graph_revision(key)}
     with _WRITE_LOCK:
         recs = _release_records(); recs[key] = rec
         _atomic_json(_releases_path(), recs)
@@ -9039,7 +9064,9 @@ def build_inquire():
             yield push("skill_inject", bool(_mt), f"技能注入 · {_nseg} 段建模规则并入抽取 prompt(共 {len(_mt)} 字)" if _mt
                        else "技能注入 · 选中技能无可注入正文(内容为空?)")
         base_ir = None
+        _base_sig = None
         if base_graph:
+            _base_sig = _stat_sig(_confined(WORK, base_graph + ".json"))      # 读底本时的指纹:收尾时据此发现并行的另一轮
             base_ir = load_ir(base_graph)
             if not base_ir:
                 yield push("scope_base", False, f"本体「{base_graph}」不存在,无法迭代")
@@ -9407,7 +9434,18 @@ def build_inquire():
         quality = build_quality.evaluate(ir, cqs)
         ir["build_quality"] = quality
         ir["gaps"] = quality["gaps"]
-        _atomic_json(outp, ir)
+        _conflict = False
+        with _WRITE_LOCK:
+            # 继续构建期间底本被另一轮改过(并行的继续构建):不覆盖它,本轮结果另存为一张草案,两份都留着
+            if base_ir is not None and _stat_sig(outp) != _base_sig:
+                _conflict = True
+                key = "built_" + uuid.uuid4().hex[:6]
+                outp = _confined(WORK, key + ".json")
+                ir.setdefault("scenario", {})["forked_from"] = base_graph
+            _atomic_json(outp, ir)
+        if _conflict:
+            yield push("merge_conflict", False,
+                       f"本轮构建期间「{base_graph}」已被另一轮构建更新,为避免覆盖,本轮结果另存为草案 {key};请比较两份后决定保留哪些内容")
         qsum = quality["summary"]
         yield push("critic", quality["result"] != "fail",  # SSE 类型名为兼容旧客户端保留
                    f"验收检查:{build_quality.result_text(quality['result'])} · 阻断问题 {qsum['blocking_issues']} · "
@@ -9436,6 +9474,7 @@ def build_inquire():
                    # 迭代信息随 done 一起回传:完成卡要能说清「并入了哪张图、并入了多少」,
                    # 否则用户只看到「构建完成」,分不出这轮是新建了一张还是并进了原图。
                    "iterated": base_ir is not None,
+                   "conflict": _conflict,                        # 底本在构建期间被别的作业改过,本轮结果另存
                    "base_graph": base_graph or "", "merge": _mg if base_ir is not None else None,
                    "iterations": (ir.get("scenario") or {}).get("iterations"),
                    "method": method, "evidence": {"tables": ntab, "docs": ev["n_docs"], "refs": ev["refs"]},

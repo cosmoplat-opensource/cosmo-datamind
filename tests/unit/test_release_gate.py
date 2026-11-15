@@ -13,8 +13,8 @@ import server
 OBJS = [{"name": "客户", "table": "dim_customer", "kind": "object"}, {"name": "销售订单", "table": "fact_sales_order", "kind": "event"}]
 
 
-def _graph(tmp_path, key, result, rounds=1):
-    ir = {"scenario": {"name": key}, "objects": OBJS, "relations": [],
+def _graph(tmp_path, key, result, rounds=1, extra=()):
+    ir = {"scenario": {"name": key}, "objects": OBJS + list(extra), "relations": [],
           "build_quality": {"result": result, "summary": {"blocking_issues": 3 if result == "fail" else 0}},
           "build_history": [{"round": i + 1} for i in range(rounds)]}
     (tmp_path / f"{key}.json").write_text(json.dumps(ir, ensure_ascii=False), encoding="utf-8")
@@ -40,14 +40,36 @@ def _ask(graph, **extra):
 # ── 判定规则(不依赖 Web 层) ────────────────────────────────────────
 
 def test_state_rules():
+    passed = {"build_quality": {"result": "pass"}, "objects": [{"name": "a"}]}
+    rev = R.revision_of(passed)
     assert R.state({"build_quality": {"result": "fail"}}, None)["state"] == "blocked"
     assert R.state({"build_quality": {"result": "review"}}, None)["state"] == "draft"
     assert R.state({"objects": []}, None)["state"] == "draft"                       # 内置与早期产物没有质量记录
-    rec = {"state": "published", "round": 2}
-    assert R.state({"build_quality": {"result": "pass"}, "build_history": [1, 2]}, rec)["state"] == "published"
-    assert R.state({"build_quality": {"result": "pass"}, "build_history": [1, 2, 3]}, rec)["state"] == "draft"   # 发布后又构建过一轮
+    rec = {"state": "published", "revision": rev}
+    assert R.state(passed, rec)["state"] == "published" and R.state(passed, rec)["revision"] == rev
+    changed = {**passed, "objects": [{"name": "a"}, {"name": "b"}]}
+    assert R.state(changed, rec)["state"] == "draft"                                # 发布之后内容变了
     assert R.state({"build_quality": {"result": "review"}}, None, strict=True)["usable"] is False
-    assert R.state({"build_quality": {"result": "pass"}, "build_history": [1, 2]}, rec, strict=True)["usable"] is True
+    assert R.state(passed, rec, strict=True)["usable"] is True
+    assert R.state(passed, {"state": "published", "round": 2})["state"] == "draft"  # 旧格式的发布记录没有修订号,视为失效
+
+
+def test_the_revision_follows_content_not_the_length_of_the_build_history():
+    base = {"build_quality": {"result": "pass"}, "objects": [{"name": "a"}], "build_history": list(range(50))}
+    rec = {"state": "published", "revision": R.revision_of(base)}
+    more = {**base, "objects": [{"name": "a"}, {"name": "b"}], "build_history": list(range(1, 51))}   # 历史已到上限,条数不变
+    assert R.state(more, rec, strict=True)["state"] == "draft" and R.state(more, rec, strict=True)["usable"] is False
+    same = {**base, "build_history": list(range(7)), "scenario": {"iterations": 9}}                    # 只有过程记录变了
+    assert R.state(same, rec)["state"] == "published"
+
+
+def test_a_withdrawn_graph_is_blocked_in_every_mode():
+    ir = {"build_quality": {"result": "pass"}, "objects": [{"name": "a"}]}
+    for strict in (False, True):
+        st = R.state(ir, {"state": "withdrawn", "revision": R.revision_of(ir), "by": "发布人"}, strict=strict)
+        assert st["state"] == "blocked" and st["usable"] is False and "撤回" in st["reason"] and st["by"] == "发布人"
+    newer = {**ir, "objects": [{"name": "a"}, {"name": "b"}]}                        # 撤回之后又构建出新内容:是新的草案
+    assert R.state(newer, {"state": "withdrawn", "revision": R.revision_of(ir)})["state"] == "draft"
 
 
 # ── 正式问数 ────────────────────────────────────────────────────────
@@ -106,8 +128,30 @@ def test_publishing_needs_a_passing_check_and_a_named_person(work):
 def test_a_new_build_round_turns_a_published_graph_back_into_a_draft(work):
     key = _graph(work, "built_ok2", "pass", rounds=1)
     _release(key, "publish")
-    _graph(work, key, "pass", rounds=2)
+    _graph(work, key, "pass", rounds=2, extra=[{"name": "工序", "table": "dim_process", "kind": "object"}])
     assert server.app.test_client().get("/api/ont/release?graph=" + key).get_json()["state"] == "draft"
+
+
+def test_a_human_edit_after_publishing_also_needs_republishing(work):
+    key = _graph(work, "built_ok4", "pass")
+    _release(key, "publish")
+    c = server.app.test_client()
+    r = c.post("/api/ont/apply", json={"graph": key, "reviewer": "审核人",
+                                       "op": {"op": "set_alias", "target": "obj:客户", "params": {"aliases": ["买方"]}}})
+    assert r.status_code == 200, r.get_data(as_text=True)      # 别名是不依赖编辑引擎的本地算子
+    st = c.get("/api/ont/release?graph=" + key).get_json()
+    assert st["state"] == "draft" and "重新发布" in st["reason"]
+
+
+def test_publishing_keeps_an_immutable_copy_named_by_revision(work):
+    key = _graph(work, "built_ok5", "pass")
+    rel = _release(key, "publish").get_json()["release"]
+    snap = work / "releases" / f"{key}@{rel['revision']}.json"
+    assert rel["revision"].startswith("rev_") and snap.exists()
+    before = snap.read_bytes()
+    _graph(work, key, "pass", extra=[{"name": "工序", "table": "dim_process", "kind": "object"}])
+    _release(key, "publish")
+    assert snap.read_bytes() == before and len(list((work / "releases").glob(key + "@*.json"))) == 2
 
 
 def test_withdrawing_and_strict_mode(work, monkeypatch):
@@ -116,8 +160,11 @@ def test_withdrawing_and_strict_mode(work, monkeypatch):
     _release(key, "publish")
     monkeypatch.setenv("DATAMIND_QA_REQUIRE_PUBLISHED", "1")
     assert _ask(key).status_code == 200 and _ask(draft).status_code == 409
-    assert _release(key, "withdraw").get_json()["release"]["state"] == "draft"
+    assert _release(key, "withdraw").get_json()["release"]["state"] == "blocked"
     assert _ask(key).status_code == 409
+    monkeypatch.delenv("DATAMIND_QA_REQUIRE_PUBLISHED")
+    assert _ask(key).status_code == 409                          # 撤回是明确的决定:默认模式下也不再用于正式问数
+    assert _release(key, "publish").get_json()["release"]["state"] == "published" and _ask(key).status_code == 200
 
 
 def test_built_list_shows_the_release_state(work):

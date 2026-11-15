@@ -186,3 +186,28 @@ def test_who_started_a_build_is_recorded_on_the_job_and_in_the_graph(source):
     assert started == {"actor": "ath:agent-7:analyst", "request_id": "req-123", "job_id": final["job_id"]}
     audit = server.app.test_client().get("/api/ont/audit/" + key).get_json()
     assert audit["builds"][-1]["initiated_by"]["actor"] == "ath:agent-7:analyst"
+
+
+# ── 并行的继续构建不互相覆盖(DR-124) ──────────────────────────────────
+
+def test_two_continue_builds_on_the_same_base_both_keep_their_results(source, monkeypatch):
+    client = server.app.test_client()
+    base = _poll(client.post("/api/build/jobs", json=_body(source)).get_json()["job_id"])[0]["done"]["graph_key"]
+    barrier = threading.Barrier(2, timeout=30)
+    real = server._gather_evidence
+
+    def both_read_the_base_first(*a, **k):          # 两个作业都读完底本之后再往下走
+        try:
+            barrier.wait()
+        except threading.BrokenBarrierError:
+            pass
+        return real(*a, **k)
+    monkeypatch.setattr(server, "_gather_evidence", both_read_the_base_first)
+    jobs = [client.post("/api/build/jobs", json=dict(_body(source), base_graph=base)).get_json()["job_id"] for _ in range(2)]
+    done = [_poll(j, timeout=120)[0]["done"] for j in jobs]
+    keys = sorted(d["graph_key"] for d in done)
+    assert len(set(keys)) == 2 and base in keys                                   # 一个并回底本,另一个另存
+    forked = next(d for d in done if d["graph_key"] != base)
+    assert forked["conflict"] is True and next(d for d in done if d["graph_key"] == base)["conflict"] is False
+    assert server.load_ir(forked["graph_key"])["scenario"]["forked_from"] == base
+    assert server.load_ir(base) is not None and server.load_ir(forked["graph_key"])["relations"]
