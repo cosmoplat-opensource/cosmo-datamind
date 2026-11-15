@@ -87,6 +87,7 @@
 | `metric_mining.py` | 指标反解:历史 SQL / 指标定义表 / 沉淀 SQL / 参考基准 → 带来源的候选与参照;含 JOIN 不猜计算规则 | DR-054 |
 | `metric_pipeline.py` | 反解→归一→核验→并入 IR 的编排;`readjudicate` 复用已存参照重跑 | DR-054 |
 | `ontology_decision.py` | 工艺路线层与决策层:工艺路线、约束(硬/软、单位、目的、例外、依据)、点亮矩阵、审计;路线由验收检查按方向核验 | DR-117 |
+| `qa_decision.py` | 问数使用决策层:约束与规则按锚定对象带入、未接入属性拦截、业务词解析、问题分型;判定、解释、追踪、异常汇总的确定性求解;依据卡 | DR-119 |
 | `ontology_release.py` | 发布状态判定:已发布 / 草案 / 不可用于正式问数 | DR-115 |
 | `bp_decision.py` | 工艺路线层与决策层 blueprint(9 路由:约束、路线、点亮矩阵、审计) | DR-117 |
 | `bp_metrics.py` | 指标契约 blueprint(4 路由:契约/维度/人工确认计算规则/重跑核验);不提供直接置 verified 的途径 | DR-054 |

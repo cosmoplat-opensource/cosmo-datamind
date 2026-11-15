@@ -1275,6 +1275,74 @@ def _qa_exemplars(question, k=None):
     return [r for r in ranked[:k] if score(r) > 0]
 
 
+# ── 问数使用决策层(DR-119):约束与规则按锚定对象带入,问题分型,非查数类型由确定性求解作答 ──
+def _qa_decision_prep(question, ir, keys, anchor):
+    """锚定对象上的约束与规则、业务词解析、问题分型。任何异常都退回查数,原因记入 error。"""
+    import qa_decision
+    from srv_actions import load_action_types
+    prep = {"q_intent": question, "rules": [], "anchored": set(), "connect": lambda: ro_connect(_qa_db()), "context": "",
+            "n": 0, "used": {"constraints": [], "rules": []}, "terms_text": "", "terms": {"time": [], "aliases": []},
+            "actions": [], "route": {"type": "lookup"}, "caveats": [], "caveats_anchored": 0, "error": ""}
+    try:
+        prep["rules"] = _load_rules(keys[0]) if keys else []
+        prep["anchored"] = qa_decision.anchored_objects(ir, [o.get("table") for o in anchor.get("objects") or []])
+        prep["context"], prep["n"], prep["used"] = qa_decision.decision_context(question, ir, prep["rules"], prep["anchored"])
+        prep["caveats"], prep["caveats_anchored"] = qa_decision.caveats_for(ir, prep["anchored"], question)
+        prep["q_intent"] = qa_decision.alias_masked(question, ir)
+        prep["terms_text"], prep["terms"] = qa_decision.resolve_terms(question, ir, prep["connect"])
+        prep["actions"] = [a for a in load_action_types() if a.get("enabled") is not False]
+        prep["route"] = qa_decision.classify(question, ir, prep["rules"], prep["actions"], prep["connect"])
+    except Exception as exc:            # noqa: BLE001 —— 决策层出错不影响查数
+        prep["route"] = {"type": "lookup"}
+        prep["error"] = f"{type(exc).__name__}: {exc}"[:160]
+    observability.count("qa.route", type=prep["route"]["type"])        # 只记类型,不记问句
+    return prep
+
+
+def _qa_decision_answer(question, ir, prep, validate=None):
+    """非查数类型的答案;返回 None 表示交回 NL2SQL(含求解出错,原因记入 prep["error"])。"""
+    import qa_decision
+    if prep["route"]["type"] == "lookup":
+        return None
+    try:
+        return qa_decision.answer(question, ir, prep["rules"], prep["actions"], prep["route"], prep["connect"],
+                                  prep["anchored"], validate=validate)
+    except Exception as exc:            # noqa: BLE001
+        prep["error"] = f"{type(exc).__name__}: {exc}"[:160]
+        return None
+
+
+def _qa_lookup_card(question, results, ir, prep, metric_cards, narrative):
+    """查数答案的依据卡:实际执行的 SQL、用到的约束、指标口径状态、部分接入的对象、相关规则。出错不影响答案。"""
+    import qa_decision
+    try:
+        return qa_decision.lookup_card(question, results, ir, prep["used"], metric_cards, prep["anchored"], prep["caveats"],
+                                       prep["rules"], prep["actions"], narrative)
+    except Exception:
+        return None
+
+
+_QA_ROUTE_CN = {"lookup": "查数(NL2SQL)", "judge": "判定(规则求值)", "explain": "解释(约束与规则)",
+                "trace": "追踪(沿主线)", "unlit": "数据未接入", "monitor": "异常汇总(规则本)"}
+
+
+def _qa_decision_steps(prep):
+    out = []
+    if prep["n"]:
+        u = prep["used"]
+        out.append(("decision_layer", True, f"带入锚定对象上的约束 {len(u['constraints'])} 条、判定规则 {len(u['rules'])} 条"))
+    t = prep["terms"]
+    if t["time"] or t["aliases"]:
+        out.append(("resolve_terms", True, "业务词解析 · " + "、".join([x["word"] for x in t["time"]] + [x["word"] for x in t["aliases"]])))
+    r = prep["route"]
+    if r["type"] != "lookup" or prep["n"]:
+        out.append(("route", True, "问题类型 · " + _QA_ROUTE_CN.get(r["type"], r["type"])
+                    + (f" · 规则 {r['rule'].get('cn')}" if r.get("rule") else "") + (f" · {r['root_id']}" if r.get("root_id") else "")))
+    if prep.get("error"):
+        out.append(("decision_error", False, "决策层出错,改按查数处理 · " + prep["error"]))
+    return out
+
+
 def _exemplar_text(question):
     ex = _qa_exemplars(question)
     if not ex:
@@ -4914,6 +4982,23 @@ def _chat_impl():
     if _ctext:
         ctx += "\n\n" + _ctext
         steps.append({"step": "data_clean", "ok": True, "info": "带入清洗规则 · " + str(_ctext.count("\n- ")) + " 条(码表 / 自动更正 / 孤儿记录提示)"})
+    _dq = _qa_decision_prep(question, ir_gate, gate_keys, anchor)      # DR-119 按原问句分型(多轮指代补出的上文对象只给 NL2SQL)
+    for _blk in (_dq["context"], _dq["terms_text"]):
+        if _blk:
+            ctx += "\n\n" + _blk
+    for _st in _qa_decision_steps(_dq):
+        steps.append({"step": _st[0], "ok": _st[1], "info": _st[2]})
+    if _dq["route"]["type"] != "lookup" and _PLAN_VARIANT.get():
+        return jsonify({"routed_skip": True})       # 多路候选:非查数类型只由默认一路求解
+    _strict = bool(graph_keys and gate_keys != ["demo"] and not fallback)
+    _ans = _qa_decision_answer(question, ir_gate, _dq,
+                               lambda _s: _qa_validate_sql(_s, ir_gate, strict=_strict, focus_tables=focus_tables))
+    if _dq.get("error") and not any(x["step"] == "decision_error" for x in steps):
+        steps.append({"step": "decision_error", "ok": False, "info": "决策层出错,改按查数处理 · " + _dq["error"]})
+    if _ans is not None:                            # 非查数类型:确定性求解的结果不进缓存(规则与数据随时会变)
+        anchor["explanation"] = _qa_anchor_explanation(anchor)
+        return jsonify({"steps": steps, **_ans, "note": "", "summary": _ans["narrative"][:1200],
+                        "metric_cards": _metric_cards(question, ir_gate), "anchor": anchor})
     _xtext, _xn = _exemplar_text(q_eff)                     # DR-084 相似问题的已验证查询
     if _xn:
         ctx += "\n\n" + _xtext
@@ -4967,14 +5052,14 @@ def _chat_impl():
         # 因误判挡住正确答案的代价远高于标注一句存疑。
         try:
             import intent_check, usage_stat
-            _ic = intent_check.cross_check(question, sql, ir_gate)
+            _ic = intent_check.cross_check(_dq["q_intent"], sql, ir_gate)
             if _ic["verdict"] == "mismatch" and engine_plan:
                 # DR-073 答非所问:改用问句提到的对象的表重写一次,改后照样过本体约束校验
                 steps.append(intent_check.step_of(_ic))
                 _fx = _intent_repair(q_eff, ctx, sql, _ic)
                 if _fx and _qa_validate_sql(_fx, ir_gate, strict=bool(graph_keys and gate_keys != ["demo"] and not fallback),
                                             focus_tables=focus_tables)[0]:
-                    _ic2 = intent_check.cross_check(question, _fx, ir_gate)
+                    _ic2 = intent_check.cross_check(_dq["q_intent"], _fx, ir_gate)
                     if _ic2["verdict"] != "mismatch":
                         sql, _ic = _fx, _ic2
                         steps.append({"step": "intent_repair", "ok": True, "info": "按问句提到的业务对象重写查询"})
@@ -4984,7 +5069,7 @@ def _chat_impl():
                 steps.append({"step": "intent_repair", "ok": False, "info": "查询与问句对象仍对不上,不作为答案给出"})
                 continue
             steps.append(intent_check.step_of(_ic))
-            for _w in intent_check.dimension_check(question, sql, ir_gate):      # DR-069 维度词核对(只提示)
+            for _w in intent_check.dimension_check(_dq["q_intent"], sql, ir_gate):      # DR-069 维度词核对(只提示)
                 steps.append({"step": "dimension_check", "ok": False, "info": "维度存疑 · " + _w["reason"]})
                 dim_warns.append(_w)
             # DR-026 使用度埋点:复用双盲已反解出的对象,零额外解析开销;失败静默(旁路)
@@ -5047,6 +5132,7 @@ def _chat_impl():
     resp = {"steps": steps, "results": results, "narrative": text, "note": plan.get("note", ""),
             "summary": summary, "metric_cards": _record_metric_usage(_metric_cards(question, ir_gate), gate_keys[0]),
             "anchor": anchor}
+    resp["evidence_card"] = _qa_lookup_card(question, results, ir_gate, _dq, resp["metric_cards"], text)
     if degraded: resp["degraded"] = True
     if results and not bypass_cache and not degraded:   # 强制刷新请求既不读缓存，也不回写缓存;降级答案不缓存
         _qa_cache_store(cache_key, resp)
@@ -5107,6 +5193,23 @@ def chat_stream():
         if _ctext:
             ctx += "\n\n" + _ctext
             yield push("data_clean", True, "带入清洗规则 · " + str(_ctext.count("\n- ")) + " 条(码表 / 自动更正 / 孤儿记录提示)")
+        _dq = _qa_decision_prep(question, ir_gate, _gate_keys, anchor)  # DR-119 按原问句分型
+        for _blk in (_dq["context"], _dq["terms_text"]):
+            if _blk:
+                ctx += "\n\n" + _blk
+        for _st in _qa_decision_steps(_dq):
+            yield push(*_st)
+        _strict = bool(graph_keys and _gate_keys != ["demo"] and not _gate_fallback)
+        _ans = _qa_decision_answer(question, ir_gate, _dq,
+                                   lambda _s: _qa_validate_sql(_s, ir_gate, strict=_strict, focus_tables=focus_tables))
+        if _dq.get("error") and not any(x["step"] == "decision_error" for x in steps):
+            yield push("decision_error", False, "决策层出错,改按查数处理 · " + _dq["error"])
+        if _ans is not None:
+            anchor["explanation"] = _qa_anchor_explanation(anchor)
+            yield sse({"type": "done", "steps": steps, **_ans, "note": "", "summary": _ans["narrative"][:1200],
+                       "metric_cards": _metric_cards(question, ir_gate), "anchor": anchor, "cached": False,
+                       "elapsed": round(_t.time() - t0, 1), "session": session})
+            return
         _xtext, _xn = _exemplar_text(q_eff)                 # DR-084 相似问题的已验证查询
         if _xn:
             ctx += "\n\n" + _xtext
@@ -5197,14 +5300,14 @@ def chat_stream():
             yield push("ontology_gate", True, f"[{idx}] 本体校验通过 · 表与 JOIN 键均在本体边界内")
             try:                                     # DR-026 双盲意图检测(只观测不阻断)+ 使用度埋点
                 import intent_check, usage_stat
-                _ic = intent_check.cross_check(question, sql, ir_gate)
+                _ic = intent_check.cross_check(_dq["q_intent"], sql, ir_gate)
                 if _ic["verdict"] == "mismatch" and engine_plan:
                     # DR-073 答非所问:改用问句提到的对象的表重写一次,改后照样过本体约束校验
                     yield push("intent_crosscheck", False, f"[{idx}] " + intent_check.step_of(_ic)["info"])
                     _fx = _intent_repair(q_eff, ctx, sql, _ic)
                     if _fx and _qa_validate_sql(_fx, ir_gate, strict=bool(graph_keys and _gate_keys != ["demo"] and not _gate_fallback),
                                                 focus_tables=focus_tables)[0]:
-                        _ic2 = intent_check.cross_check(question, _fx, ir_gate)
+                        _ic2 = intent_check.cross_check(_dq["q_intent"], _fx, ir_gate)
                         if _ic2["verdict"] != "mismatch":
                             sql, _ic = _fx, _ic2
                             yield push("intent_repair", True, f"[{idx}] 按问句提到的业务对象重写查询")
@@ -5214,7 +5317,7 @@ def chat_stream():
                     continue
                 yield push("intent_crosscheck", _ic["verdict"] in ("aligned", "unknown"),
                            f"[{idx}] " + intent_check.step_of(_ic)["info"])
-                for _w in intent_check.dimension_check(question, sql, ir_gate):  # DR-069 维度词核对(只提示)
+                for _w in intent_check.dimension_check(_dq["q_intent"], sql, ir_gate):  # DR-069 维度词核对(只提示)
                     yield push("dimension_check", False, f"[{idx}] 维度存疑 · " + _w["reason"])
                     dim_warns.append(_w)
                 usage_stat.record(WORK, _gate_keys[0], [o["key"] for o in _ic["actual"]["objects"]], "query")
@@ -5275,6 +5378,7 @@ def chat_stream():
         resp = {"steps": steps, "results": results, "narrative": text, "note": plan.get("note", ""),
                 "summary": summary, "metric_cards": _record_metric_usage(_metric_cards(question, ir_gate), _gate_keys[0]),
                 "anchor": anchor}   # 随 done 落一份:命中缓存与历史回放时锚定视图不丢
+        resp["evidence_card"] = _qa_lookup_card(question, results, ir_gate, _dq, resp["metric_cards"], text)
         if degraded: resp["degraded"] = True
         if results and not bypass_cache and not degraded:
             _qa_cache_store(cache_key, resp)
