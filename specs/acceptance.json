@@ -819,6 +819,21 @@
         "tests/unit/test_shipped_graphs.py::test_every_shipped_graph_has_evidence_behind_its_verified_relations",
         "tests/unit/test_shipped_graphs.py::test_the_demo_readme_lists_only_graphs_that_exist"
       ]
+    },
+    {
+      "id": "REL-ROLE-01",
+      "criterion": "同一对对象之间的多种业务关系各自保留:模型提议的两种角色都经数据取证后留在图谱里;继续构建合并不丢第二种角色;评审按 rel:<源>-><目标>#<角色> 定位,不写角色且有歧义时拒绝;人审保留与分流按角色区分",
+      "tests": [
+        "tests/unit/test_relation_roles.py::test_identity_includes_the_role_and_defaults_to_empty",
+        "tests/unit/test_relation_roles.py::test_merge_keeps_both_roles_between_the_same_pair",
+        "tests/unit/test_relation_roles.py::test_merge_without_roles_behaves_as_before",
+        "tests/unit/test_relation_roles.py::test_a_reference_without_a_role_is_refused_when_it_is_ambiguous",
+        "tests/unit/test_relation_roles.py::test_review_rows_carry_the_role_and_ops_address_one_role",
+        "tests/unit/test_relation_roles.py::test_reviewed_relations_are_tracked_per_role",
+        "tests/unit/test_relation_roles.py::test_keep_reviewed_restores_only_the_reviewed_role",
+        "tests/unit/test_relation_roles.py::test_triage_keep_set_is_per_role",
+        "tests/unit/test_relation_roles.py::test_a_build_keeps_two_roles_proposed_between_the_same_tables"
+      ]
     }
   ]
 }

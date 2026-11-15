@@ -4,7 +4,8 @@ const RV = {data: null, filter: {pending: true, status: '', q: ''}, shown: 50, p
 const RV_STATUS = {verified: '已验证', asserted: '人工断言', candidate: '待取证', inferred: '推理得出', gap: '待补', rejected: '已否决'};
 const RV_PAGE = 50;
 
-function rvKey(r) { return r.s + '->' + r.t; }
+// 关系在评审里的键:源->目标,同一对对象有多种关系时带 #角色(DR-114),与后端的 rel: 引用写法一致
+function rvKey(r) { return r.s + '->' + r.t + (r.role ? '#' + r.role : ''); }
 function rvPct(v) { return typeof v === 'number' && isFinite(v) ? (Math.round(v * 10) / 10) + '%' : '-'; }
 function rvYes(v) { return v === true ? '是' : v === false ? '否' : '-'; }
 
@@ -12,7 +13,7 @@ function rvVisible() {
   const f = RV.filter, q = f.q.trim().toLowerCase();
   return ((RV.data && RV.data.rows) || []).filter(r =>
     (!f.pending || r.pending) && (!f.status || r.status === f.status) &&
-    (!q || [r.s, r.t, r.sn, r.tn, r.verb, r.child_table, r.parent_table].some(x => String(x || '').toLowerCase().includes(q))));
+    (!q || [r.s, r.t, r.sn, r.tn, r.verb, r.role, r.child_table, r.parent_table].some(x => String(x || '').toLowerCase().includes(q))));
 }
 
 /* 一条关系的评审依据。纯函数:所有来自数据或模型的文本都经 esc。 */
@@ -66,7 +67,7 @@ function rvRowHTML(r) {
   return `<tr class="${r.pending ? 'rv-pending' : ''}">
     <td><input type="checkbox" aria-label="选择这条关系" ${RV.picked.has(key) ? 'checked' : ''} onchange="rvPick(${jsAttr(key)},this.checked)"></td>
     <td>${esc(r.sn)} → ${esc(r.tn)}<div class="muted rv-ids">${esc(r.s)} → ${esc(r.t)}</div></td>
-    <td>${esc(r.verb)}</td><td><span class="tag ${tag}">${esc(RV_STATUS[r.status] || r.status || '-')}</span></td>
+    <td>${esc(r.verb)}${r.role ? ` <span class="muted">· ${esc(r.role)}</span>` : ''}</td><td><span class="tag ${tag}">${esc(RV_STATUS[r.status] || r.status || '-')}</span></td>
     <td>${r.overlap != null ? esc(r.overlap) + '%' : '<span class="muted">-</span>'}</td>
     <td>${r.semantic === 'pass' ? '<span class="tag ok">通过</span>' : r.semantic === 'fail' ? '<span class="tag warn">存疑</span>' : '<span class="muted">-</span>'}</td>
     <td>${human}</td>
@@ -123,9 +124,9 @@ function rvPick(key, on) { if (on) RV.picked.add(key); else RV.picked.delete(key
 function rvPickAll(on) { RV.picked.clear(); if (on) rvVisible().slice(0, RV.shown).forEach(r => RV.picked.add(rvKey(r))); rvDraw(); }
 
 async function rvSamples(key) {
-  const [s, t] = key.split('->'), graph = RV.data.graph;
+  const [pair, role] = key.split('#'), [s, t] = pair.split('->'), graph = RV.data.graph;
   RV.samples[key] = 'loading'; rvDraw();
-  const d = await J(`/api/ont/relation/${encodeURIComponent(graph)}?s=${encodeURIComponent(s)}&t=${encodeURIComponent(t)}&samples=1`).catch(e => ({error: '' + e}));
+  const d = await J(`/api/ont/relation/${encodeURIComponent(graph)}?s=${encodeURIComponent(s)}&t=${encodeURIComponent(t)}${role ? '&role=' + encodeURIComponent(role) : ''}&samples=1`).catch(e => ({error: '' + e}));
   if (!RV.data || RV.data.graph !== graph) return;          // 取样期间换了图谱:丢弃晚到的结果
   RV.samples[key] = d.error ? {error: d.error} : (d.samples || {error: '没有取到样例'});
   rvDraw();

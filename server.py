@@ -571,6 +571,7 @@ def ir_to_graph(key, ir):
             if r.get("status") == "rejected": continue          # 人审否决的关系不再渲染(评审页可见、可恢复)
             verb = r.get("verb", "关联")
             edges.append({"s": r["source_concept"], "t": r["target_concept"], "verb": verb, "status": r.get("status", ""),
+                          **({"role": r["role"]} if r.get("role") else {}),
                           "overlap": r.get("overlap"), "human_review": r.get("human_review", ""),
                           **_iof_edge_ann(r, verb, categories.get(r["source_concept"]),
                                          categories.get(r["target_concept"]), bfo_enabled)})
@@ -2826,6 +2827,7 @@ def ont_review():
         s, t = str(l.get(ks)), str(l.get(kt))
         st, sem, hr = l.get("status", ""), l.get("semantic", ""), l.get("human_review", "")
         rows.append({"s": s, "t": t, "sn": disp.get(s, s), "tn": disp.get(t, t),
+                     "role": ir_shape.rel_role(l), "ref": ir_shape.rel_ref(l),      # DR-114 同一对对象的多种关系各占一行
                      # DR-107 评审依据:取证的键、取值统计、孤儿与抽样情况、裁决说明、分流给出的「还缺什么」
                      "evidence": _review_evidence(l), "note": str(l.get("note") or "")[:400],
                      "why_review": str((l.get("review") or {}).get("reason") or "")[:300],
@@ -3014,14 +3016,22 @@ def _okey(ir, s):
     return str(o.get("id") or o.get("name")) if o else str(s)
 
 def _find_rel_any(ir, rid):
-    m = re.match(r"^(.+?)->(.+)$", (rid or "").replace("rel:", "", 1))
-    if not m: return None
+    """按 rel:<源>-><目标>[#<角色>] 找关系。没写角色而这对对象之间有多条关系时抛 ValueError,
+    不替调用方挑一条(DR-114):评审结论落到哪种业务关系上必须是明确的。"""
+    ref = ir_shape.parse_rel_ref(rid)
+    if not ref: return None
     rels, ks, kt = _rels(ir)
     # 端点先规范化:关系里存的是主键,而对话里给的常是中文名
-    src, dst = _okey(ir, m.group(1)), _okey(ir, m.group(2))
-    for l in rels:
-        if str(l.get(ks)) == src and str(l.get(kt)) == dst: return l
-    return None
+    src, dst, role = _okey(ir, ref[0]), _okey(ir, ref[1]), ref[2]
+    found = [l for l in rels if str(l.get(ks)) == src and str(l.get(kt)) == dst]
+    if role is not None:
+        return next((l for l in found if ir_shape.rel_role(l) == role), None)
+    if len(found) > 1:
+        plain = [l for l in found if not ir_shape.rel_role(l)]
+        if len(plain) == 1: return plain[0]
+        raise ValueError(f"{src} 与 {dst} 之间有多条关系,请指明角色:"
+                         + "、".join(ir_shape.rel_ref(l) for l in found))
+    return found[0] if found else None
 
 def _find_obj_any(ir, oid):
     """按主键定位对象;主键不中时再按中文名、表名、业务别名找。
@@ -3125,7 +3135,7 @@ def apply_any(ir, op):
             rels.append(nl)
             return
         l = _find_rel_any(ir, t)
-        if not l: raise ValueError(f"关系不存在: {t}(格式 rel:<source>-><target>)")
+        if not l: raise ValueError(f"关系不存在: {t}(格式 rel:<source>-><target>,同一对对象有多条关系时追加 #<角色>)")
         if kind == "confirm_relation":     # 人审通过:candidate/gap/rejected → asserted;verified 只记通过、不动状态
             l.setdefault("review_prior_status", l.get("status"))   # 原判在此刻定格:改写 status 后就再也反推不出来
             if l.get("status") != "verified": l["status"] = "asserted"
@@ -3193,11 +3203,11 @@ def load_ir_edited(key):
 
 
 def _reviewed_relations(key):
-    """人工在该图谱上做过决定的关系:{(源对象, 目标对象): approved|rejected}(读编辑记录回放后的视图)。"""
+    """人工在该图谱上做过决定的关系:{(源对象, 目标对象, 角色): approved|rejected}(读编辑记录回放后的视图)。"""
     ir = load_ir_edited(key) if key else None
     if not ir: return {}
-    rels, ks, kt = _rels(ir)
-    return {(l.get(ks), l.get(kt)): l["human_review"] for l in rels if isinstance(l, dict) and l.get("human_review")}
+    rels, _ks, _kt = _rels(ir)
+    return {ir_shape.rel_id(l): l["human_review"] for l in rels if isinstance(l, dict) and l.get("human_review")}
 
 
 _REL_RANK = {"asserted": 3, "verified": 2, "inferred": 1, "candidate": 0}
@@ -3212,19 +3222,20 @@ def _keep_reviewed(ir, snapshot):
     - 同一组键上状态升级(本轮拿到更强的数据证据)→ 保留本轮结果。
     返回 {"restored": 放回条数, "reverted": 恢复条数}。"""
     rels, ks, kt = _rels(ir)
-    cur = {(l.get(ks), l.get(kt)): l for l in rels if isinstance(l, dict)}
+    cur = {ir_shape.rel_id(l): l for l in rels if isinstance(l, dict)}
     stat = {"restored": 0, "reverted": 0}
     def keys(l):
         ev = l.get("evidence") or {}
         return ev.get("child_key"), ev.get("parent_key")
-    for pair, snap in snapshot.items():
-        l = cur.get(pair)
+    for rid, snap in snapshot.items():
+        if len(rid) == 2: rid = (*rid, ir_shape.rel_role(snap))          # 旧调用方按一对对象给键
+        l = cur.get(rid)
         if l is None:
             rels.append(json.loads(json.dumps(snap))); stat["restored"] += 1
             for side in ("rejected_relations", "deferred_relations"):
                 if isinstance(ir.get(side), list):
                     ir[side] = [x for x in ir[side]
-                                if not (isinstance(x, dict) and (x.get(ks), x.get(kt)) == pair)]
+                                if not (isinstance(x, dict) and ir_shape.rel_id(x) == rid)]
         elif keys(l) != keys(snap) or _REL_RANK.get(l.get("status"), 0) < _REL_RANK.get(snap.get("status"), 0):
             l.clear(); l.update(json.loads(json.dumps(snap))); stat["reverted"] += 1
     return stat
@@ -3586,12 +3597,14 @@ def ont_object(key, oid):
 def ont_relation(key):
     """关系详情(证据卡)—— src/tgt 由 query 传;对齐 render.js 连线详情面板"""
     src, tgt = request.args.get("s", ""), request.args.get("t", "")
+    role = request.args.get("role")                                   # DR-114 同一对对象有多种关系时指明角色
+    _match = lambda x: role is None or ir_shape.rel_role(x) == role   # noqa: E731
     ir = load_ir_edited(key) or {}
     links = ir.get("links") or []
-    l = next((x for x in links if x.get("source") == src and x.get("target") == tgt), None)
+    l = next((x for x in links if x.get("source") == src and x.get("target") == tgt and _match(x)), None)
     if not l:
         rels = ir.get("relations") or []
-        l = next((x for x in rels if x.get("source_concept") == src and x.get("target_concept") == tgt), None)
+        l = next((x for x in rels if x.get("source_concept") == src and x.get("target_concept") == tgt and _match(x)), None)
         if l: l = {"source": src, "target": tgt, "verb": l.get("verb"), "status": l.get("status"),
                    "evidence_status": l.get("evidence_status"), "semantic_status": l.get("semantic_status"),
                    "founded_relation": l.get("founded_relation"), "temporal": l.get("temporal"),
@@ -7240,7 +7253,7 @@ def _llm_extract_ontology(q, ev, skills, cqs=None, log=None, base_ir=None,
 
 只输出一个 JSON(无其它文字):
     {{"objects":[{{"name":"英文标识(能对齐表名就用表名)","cn":"有业务意义的中文名","kind":"object|event|action|asset|role|ice(信息记录:目录/单据/地址/台账等,非物理实体)","table":"绑定的真实表名或 null;动作通常为 null","action_id":"仅当证据中明确出现系统已有动作标识时填写,否则 null","evidence":"抽取依据(来自哪张表/哪份文档及段落)","definition":"属加种差定义;给不出严格定义就留空","example":"可选；只能逐字摘录输入证据中的真实实例，没有则留空","example_source":"example 的证据位置；没有 example 则留空","counterExample":"类别层面的易混淆概念及辨析，待专家复核"}}],
-  "relations":[{{"source":"对象name","target":"对象name","verb":"具体关系动词(归属/产生/包含/服务/触发…)","rationale":"依据"{_standard_field},"child_key":"可选:源表候选外键(复合键用逗号)","parent_key":"可选:目标表候选键(复合键用逗号)"}}]}}
+  "relations":[{{"source":"对象name","target":"对象name","verb":"具体关系动词(归属/产生/包含/服务/触发…)","rationale":"依据"{_standard_field},"child_key":"可选:源表候选外键(复合键用逗号)","parent_key":"可选:目标表候选键(复合键用逗号)","role":"可选:同一对对象之间有不止一种关系时填角色名(如 首道工序/末道工序、流转/返工),每种角色单列一条并各给自己的键"}}]}}
     要求:①对象尽量绑定真实表;②由文档/流程明确描述的业务事件用 kind=event；明确描述的操作、审批、下发、创建任务等用 kind=action，并用关系连接其作用对象；不得仅凭表名批量编造动作;库存记录/地址/目录/单据等信息性条目用 kind=ice,勿与物理实体混淆;③关系两端必须是上面列出的对象 name;④不虚构库表和文档中都没有的实体、动作或关系;⑤child_key/parent_key 只是待验证提示,只能填写上面 schema 真实存在的列,不得声称 verified;{_standard_rule}⑥**cn 必须是有业务意义的中文名**(如 客户 / 销售订单 / 退货事件 / 生产工单),优先复用表注释、上传文档/知识包里的中文术语,严禁用拼音或直接照搬英文表名/键名做 cn;⑦**{_definition_rule}**definition 用「属加种差」句式;**非循环**——定义体不得复用被定义术语名本身及其中文名,须用上位类(属)+区别特征(种差)描述;counterExample 只写类别层面的易混淆概念和辨析,不得虚构企业名、编号、日期、数量或金额;无法给出严格定义时 definition 留空;⑧example 只有在输入证据中存在可逐字定位的实例时才填写,并填写 example_source；没有实例证据时必须留空，不得生成“看起来合理”的示例。"""
     _log(f"证据装配 · 库表 {len(ev.get('tab_cols') or {})} 张（结构文本 {len(ev['schema'][:12000])} 字）"
          f" · 文档/代码 {ev.get('n_docs', 0)} 份（{len(docs_block[:DOC_BUDGET + 4000])} 字）"
@@ -8118,8 +8131,10 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
             s, t = (r.get("source") or "").strip(), (r.get("target") or "").strip()
             # 自引用(员工.上级 → 员工、设备.上级设备 → 设备)也要取证:只要子键与父键不是同一列(DR-073)
             _self_ok = s == t and str(r.get("child_key") or "").strip().lower() not in ("", str(r.get("parent_key") or "").strip().lower())
-            if not s or not t or (s == t and not _self_ok) or s not in valid or t not in valid or (s, t) in seen: continue
-            seen.add((s, t))
+            # DR-114 模型可给关系标角色(首道工序/末道工序、流转/返工):同一对对象的不同角色各自取证,不再只留第一条
+            _role = re.sub(r"[#<>\"'&\s]", "", str(r.get("role") or ""))[:24]
+            if not s or not t or (s == t and not _self_ok) or s not in valid or t not in valid or (s, t, _role) in seen: continue
+            seen.add((s, t, _role))
             status, overlap, note = "candidate", None, "LLM 提议·待取证"
             ev_keys = None                                # 最佳尝试也留结构化证据,不只给 verified 留痕
             ts, tt = name2tab.get(s), name2tab.get(t)
@@ -8270,7 +8285,7 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                     if status == "verified": break
                 # DR-080 角色键:同一子表的其他列也指向这个父表(eye/hair/skin_colour_id → colour.id)。
                 # 每对表只保留一条关系,其余键名有据、且通过同样数据判据的键记在 role_keys
-                if status == "verified" and ev_keys and "," not in str(ev_keys.get("child_key") or ","):
+                if status == "verified" and ev_keys and "," not in str(ev_keys.get("child_key") or ",") and not _role:
                     _roles = []
                     for _c in cs:
                         if _c.lower() == str(ev_keys["child_key"]).lower() or not dao_core._KEY_SUF_RE.search(dao_core._snake(_c)):
@@ -8370,6 +8385,7 @@ def _adjudicate_ir(db, name, extracted, ev, base_ir=None):
                                     "parent_key_hint": parent_hint,
                                     **({"origin": r["origin"]} if r.get("origin") else {})}}
             if ev_keys: rel_new["evidence"] = ev_keys      # DR-033 结构化 JOIN 键:自建本体要能驱动问数
+            if _role: rel_new["role"] = _role
             relations.append(rel_new)
         import declared_fk
         if con:
@@ -8483,7 +8499,7 @@ def _merge_ir(base, new):
     objs = out.setdefault("objects", [])
     rels = out.setdefault("relations", [])
     by_obj = {o.get("name"): o for o in objs if o.get("name")}
-    by_rel = {(r.get("source_concept"), r.get("target_concept")): r for r in rels}
+    by_rel = {ir_shape.rel_id(r): r for r in rels}                   # DR-114 身份含角色:同一对对象的另一种关系是新增
     stat = {"objects_added": 0, "objects_enriched": 0, "objects_rebound": 0,
             "relations_added": 0, "relations_upgraded": 0, "relations_kept": 0}
     # DR-069 同名对象两轮绑了不同的表:保留与对象名吻合的那张;按另一张表取的关系证据不能沿用
@@ -8525,9 +8541,10 @@ def _merge_ir(base, new):
         if set(pair) & stale_new:
             r = json.loads(json.dumps(r))
             _demote(r, "本轮按另一张表取证,与已有对象的绑定不一致,须重新取证")
-        cur = by_rel.get(pair)
+        rid = ir_shape.rel_id(r)
+        cur = by_rel.get(rid)
         if cur is None:
-            rels.append(r); by_rel[pair] = r; stat["relations_added"] += 1
+            rels.append(r); by_rel[rid] = r; stat["relations_added"] += 1
             continue
         if rank.get(r.get("status"), 0) > rank.get(cur.get("status"), 0):
             cur.update(r); stat["relations_upgraded"] += 1     # 新一轮拿到更强证据才覆盖
@@ -8995,9 +9012,9 @@ def build_inquire():
             ir, _mg = _merge_ir(base_ir, ir)
             # DR-097 人工做过决定的关系:留一份并入后的副本,后续步骤不得把它们移出图谱或改写
             _reviewed = _reviewed_relations(base_graph)
-            _review_snap = {(r.get("source_concept"), r.get("target_concept")): json.loads(json.dumps(r))
+            _review_snap = {ir_shape.rel_id(r): json.loads(json.dumps(r))
                             for r in ir.get("relations") or []
-                            if isinstance(r, dict) and (r.get("source_concept"), r.get("target_concept")) in _reviewed}
+                            if isinstance(r, dict) and ir_shape.rel_id(r) in _reviewed}
             _mg["cn_disambiguated"] = _disambiguate_cn(ir)
             # 本轮选择作用于合并后的整张图，避免底本残留上一次标准的专用字段。
             build_references.apply_profile(ir, references)

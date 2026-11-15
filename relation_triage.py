@@ -18,6 +18,7 @@ from __future__ import annotations
 import re
 
 import dao_core
+import ir_shape
 import key_links
 
 WEAK = dao_core.WEAK_FLOOR
@@ -168,7 +169,7 @@ def triage(ir, keep=None):
     stat = {"rejected": 0, "deferred": 0, "review": 0}
     for r in rels:
         if not isinstance(r, dict) or r.get("status") in ("verified", "asserted") \
-                or (r.get("source_concept"), r.get("target_concept")) in keep:
+                or ir_shape.rel_id(r) in keep or ir_shape.rel_id(r)[:2] in keep:
             kept.append(r)
             continue
         kind, why, score = classify(r, objs_by_name, o2t, catalogs)

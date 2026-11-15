@@ -27,6 +27,40 @@ def rels(ir, create=False):
     return ir.get("relations", []), "source_concept", "target_concept"
 
 
+# ── 关系的身份(DR-114) ────────────────────────────────────────────────
+# 同一对对象之间可以有多种业务关系(工单→工序:首道工序、末道工序;工序→工序:流转、返工)。
+# 关系的身份是(源对象, 目标对象, 角色);不带角色的关系角色为空串,与此前按一对对象识别的行为一致。
+
+def rel_role(r):
+    return str(r.get("role") or "").strip()
+
+
+def rel_id(r):
+    """关系的身份三元组,两种 IR 形状通用。"""
+    if "source" in r or "target" in r:
+        return r.get("source"), r.get("target"), rel_role(r)
+    return r.get("source_concept"), r.get("target_concept"), rel_role(r)
+
+
+def rel_ref(r):
+    """评审与编辑里指代一条关系的写法:rel:<源>-><目标>,有角色时追加 #<角色>。"""
+    s, t, role = rel_id(r)
+    return f"rel:{s}->{t}" + (f"#{role}" if role else "")
+
+
+def parse_rel_ref(ref):
+    """rel:<源>-><目标>[#<角色>] → (源, 目标, 角色或 None);写法不对返回 None。
+    角色为 None 表示调用方没有指明角色,由查找方决定是否有歧义。"""
+    text = str(ref or "")
+    if text.startswith("rel:"):
+        text = text[4:]
+    body, sep, role = text.partition("#")
+    src, arrow, dst = body.partition("->")
+    if not arrow or not src or not dst:
+        return None
+    return src, dst, (role.strip() if sep else None)
+
+
 # 中文表名后缀:业务人员说「销售订单」,本体里叫「销售订单事实表」。锚定/召回时都要
 # 按剥离后的名字匹配,否则最常见的中文命名方式一条都召不回。此前 server 的指代延续与
 # 根因诊断各抄一份,现收敛到此处(cq_check 的验收判定刻意保持严格,不用这组变体)。
