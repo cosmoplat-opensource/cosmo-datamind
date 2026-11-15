@@ -28,7 +28,7 @@ function basis(b){
   if(b.kind === 'sql') return b.text ? `<li>${k}${e(b.title || '')}${b.result_id ? ` <span class="evc-ev" title="表格、文字说明与本卡引用的是同一个结果">结果 ${e(b.result_id)}</span>` : ''}<details><summary>SQL</summary><pre>${e(b.text)}</pre></details></li>` : '';
   if(b.kind === 'rule') return `<li>${k}<b>${e(b.cn || b.id)}</b> <code>${e(b.id || '')}</code>:${e(b.text)}${b.count != null ? ` · 命中 ${e(b.count)}` : ''}${b.trace ? `<div class="evc-ev">例:${trace(b.trace)}</div>` : ''}</li>`;
   if(b.kind === 'constraint') return `<li>${k}<b>${e(b.cn)}</b>:${e(b.text)}${params(b.params)}${b.evidence ? `<div class="evc-ev">依据 ${e(b.evidence)}</div>` : ''}</li>`;
-  if(b.kind === 'action') return `<li>${k}<b>${e(b.cn)}</b>${b.record_id ? ` · 记录 <code>${e(b.record_id)}</code>` : ''}${params(b.params)}
+  if(b.kind === 'action') return `<li>${k}<b>${e(b.cn)}</b>${b.record_id ? ` · 记录 <code>${e(b.record_id)}</code>` : ''}${b.mode === 'simulate' ? ' <span class="evc-ev">只读试算 · 未写回业务系统</span>' : (b.real_writeback === true ? ' <span class="evc-ev">已写回业务系统</span>' : '')}${params(b.params)}
     ${(b.notes || []).length ? `<div class="evc-ev">${e(b.notes.join(';'))}</div>` : ''}
     ${(b.path || []).length ? `<ol>${b.path.map(p => `<li>${e(p.check)}:<b>${e(p.result)}</b>${p.constraint ? ` <span class="evc-ev">(${e(p.constraint)})</span>` : ''}${(p.detail || []).length ? `<div class="evc-ev">${e(p.detail.slice(0,4).join(';'))}</div>` : ''}</li>`).join('')}</ol>` : ''}
     ${b.validation ? `<div class="evc-ev">${e(b.validation)}</div>` : ''}</li>`;

@@ -47,6 +47,18 @@ const cases = {
     assert.match(html, /尚未接入:工序任务\.实际完工 · 需要 <b>MES 报工<\/b>/);
     assert.match(html, /重叠 100%/); assert.match(html, /状态 candidate/);
   },
+  a_simulation_says_it_is_read_only_and_a_relation_shows_its_role() {
+    const {win} = load();
+    const sim = win.renderEvidenceCard({type: 'whatif', conclusion: 'c', basis: [
+      {kind: 'action', cn: '插单试算', record_id: 'r1', mode: 'simulate', real_writeback: false, params: {customer: 'C002'}}]}, 'dq');
+    assert.match(sim, /只读试算 · 未写回业务系统/); assert.match(sim, /customer=C002/);
+    const real = win.renderEvidenceCard({type: 'whatif', conclusion: 'c', basis: [
+      {kind: 'action', cn: '计划下发', record_id: 'r2', mode: 'executor', real_writeback: true}]}, 'dq');
+    assert.match(real, /已写回业务系统/); assert.ok(!real.includes('只读试算'));
+    const trace = win.renderEvidenceCard({type: 'trace', conclusion: 'c', basis: [
+      {kind: 'relation', text: 'ops.op_id → orders.last_op_id(末道工序)', role: '末道工序', status: 'asserted'}]}, 'dq');
+    assert.match(trace, /末道工序/); assert.match(trace, /asserted/);
+  },
   text_from_data_and_models_is_escaped() {
     const {win} = load();
     const evil = '<img src=x onerror=alert(1)>';

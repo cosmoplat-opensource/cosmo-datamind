@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 @pytest.mark.parametrize("case", [
     "empty_or_untyped_cards_render_nothing", "a_judgement_card_shows_conclusion_values_rule_and_sql",
     "constraints_show_parameters_and_evidence_and_missing_data_says_what_is_needed",
+    "a_simulation_says_it_is_read_only_and_a_relation_shows_its_role",
     "text_from_data_and_models_is_escaped", "next_step_questions_go_to_the_registered_host_and_links_change_the_page",
 ])
 def test_evidence_card_behavior(case):

@@ -57,7 +57,7 @@ async def run(args):
                     await page.screenshot(path=str(args.output / "upload-error-preserved.png"), full_page=True)
             response = await context.request.post(args.url + "/api/query", data={"src": "uploads", "sql": f'SELECT * FROM "{table}" ORDER BY id'})
             data = await response.json()
-            check("old rows survive rejected refresh", data.get("rows") == [{"id": "1", "amount": "10"}, {"id": "2", "amount": "20"}])
+            check("old rows survive rejected refresh", data.get("rows") == [{"id": 1, "amount": 10}, {"id": 2, "amount": 20}])
             async with page.expect_response(lambda r: r.url.endswith("/api/build/asset/delete") and r.request.method == "POST") as pending:
                 await page.locator("#bc_assets .bc-chip").filter(has_text=name).locator(".x").click()
             response = await pending.value

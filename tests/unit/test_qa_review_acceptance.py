@@ -121,6 +121,7 @@ def test_what_if_asks_until_customer_and_date_are_unique_then_simulates_once(pla
     kv = dict(card["kv"])                                                                 # 依据卡上的参数、数据日期与实际发出的一致
     assert (kv["客户"], kv["交期"], kv["承诺结论"]) == ("C002", "2026-11-28", "可承诺") and kv["数据日期"].startswith("2026-11-10")
     assert card["basis"][0]["record_id"] == record[0]["id"] and card["basis"][0]["real_writeback"] is False
+    assert card["basis"][0]["mode"] == "simulate"                                         # 依据卡据此标明「只读试算 · 未写回业务系统」
     assert [r["工序"] for r in d["results"][0]["data"]["rows"]] == ["绕线", "出厂试验"]      # 表格就是执行器回执里的计划
     check = d["answer_record"]["narrative_check"]
     assert check["unverified"] == [] and {"token": "2.5", "source": "依据卡中的值"} in check["matched"]

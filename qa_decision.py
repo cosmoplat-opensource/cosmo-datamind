@@ -1071,7 +1071,7 @@ def run_whatif(route, question, ir, connect, invoke, today, operator, actions):
     text = (res.get("summary") or f"动作「{act['cn']}」已执行") + (f"\n\n参数:{';'.join(notes)}" if notes else "")
     card = _card("whatif", res.get("summary") or act["cn"],
                  [{**base, "path": detail.get("decision_path") or [], "validation": res.get("validation"),
-                   "real_writeback": body.get("real_writeback")}],
+                   "real_writeback": body.get("real_writeback"), "mode": body.get("execution_mode")}],
                  kv=kv, next_=nxt, links=[{"label": "动作记录", "href": "#actioncenter"}])
     return {"results": [_result(act["cn"], "", table)] if table else [], "narrative": text, "evidence_card": card}
 

@@ -342,7 +342,7 @@ a{color:var(--acc)}
   <h3 style="margin:0 0 4px" id="acm_title">发起动作</h3>
   <div class="muted" id="acm_sub" style="font-size:12px;margin-bottom:12px"></div>
   <div id="acm_fields"></div>
-  <div style="margin-bottom:14px">操作人(姓名或工号，必填)<br><input id="acm_op" style="width:100%;margin-top:4px"></div>
+  <div style="margin-bottom:14px"><span id="acm_oplabel">操作人</span>(姓名或工号，必填)<br><input id="acm_op" style="width:100%;margin-top:4px"></div>
   <div style="display:flex;gap:8px;justify-content:flex-end"><button class="ghost" onclick="acmClose()">取消</button><button id="acm_ok" onclick="acmSubmit()">提交动作</button></div>
  </div></div>
  <div id="sk_modal" class="dq-modal" style="display:none"><div class="dq-modal-box" style="max-width:640px;padding:18px 20px">
@@ -1095,7 +1095,7 @@ function acLogCsv(){const items=AC_LOG;if(!items.length){toast('暂无记录',fa
  a.download='动作审计_'+new Date().toISOString().slice(0,10)+'.csv';a.click();URL.revokeObjectURL(a.href);}
 async function acOpen(tid,prefill){if($('#acm_ok'))$('#acm_ok').textContent='提交动作';
  await acTypes();const t=AC_TYPES.find(x=>x.id===tid);if(!t){toast('动作类型不存在',false);return;}
- ACM={t,mode:'invoke'};
+ ACM={t,mode:'invoke'};$('#acm_oplabel').textContent='操作人';
  $('#acm_title').textContent='发起动作:'+t.cn;
  $('#acm_sub').textContent=t.desc+(t.risk==='high'?' —— 高风险：提交后进入审批队列':' —— 低风险：提交后直接形成动作记录，不写回业务系统');
  $('#acm_fields').innerHTML=t.params.map(p=>{
@@ -1320,9 +1320,9 @@ function acResolve(id){const x=AC_LOG.find(r=>r.id===id);if(!x)return;ACM={mode:
  $('#acm_fields').innerHTML=`<div class="muted" style="font-size:12px;margin-bottom:10px">记录 ${esc(x.id)} · ${esc(x.ts||'')} · 参数:${esc(Object.entries(x.params||{}).map(([k,v])=>k+'='+v).join(';')||'无')}</div>
   <div style="margin-bottom:10px">核对结果(必填)<br><select id="acm_p_outcome" style="width:100%;margin-top:4px"><option value="">请选择</option><option value="executed">已执行(业务系统里已生效)</option><option value="failed">未执行(业务系统里没有生效)</option></select></div>
   <div style="margin-bottom:10px">核对依据(必填)<br><textarea id="acm_p_comment" rows="3" style="width:100%;margin-top:4px;resize:vertical" placeholder="在哪个系统、看到了什么"></textarea></div>`;
- if($('#acm_ok'))$('#acm_ok').textContent='记下处置结论';
+ if($('#acm_ok'))$('#acm_ok').textContent='记下处置结论';$('#acm_oplabel').textContent='处置人';
  $('#acm_op').value=localStorage.getItem('rv_reviewer')||'';$('#ac_modal').style.display='flex';}
-function acApprove(id,decision){ACM={mode:'approve',id,decision};
+function acApprove(id,decision){ACM={mode:'approve',id,decision};$('#acm_oplabel').textContent='审批人';
  $('#acm_ok').textContent=decision==='approve'?'提交审批(批准)':'提交审批(驳回)';
  $('#acm_title').textContent=decision==='approve'?'批准登记该动作':'驳回该动作';
  $('#acm_sub').textContent=decision==='approve'?'批准后形成动作记录；当前不会写回业务系统':'驳回必须填写意见';

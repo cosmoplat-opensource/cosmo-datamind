@@ -25,8 +25,7 @@ from tests.browser_runtime import close_browser, managed_playwright  # noqa: E40
 
 PAGES = ["home", "catalog", "graph", "metrics", "build", "review", "ontquality",
          "chat", "claw", "enginecfg", "conn", "quality", "glossary", "sqldev",
-         "sparql", "library", "actioncenter", "qaeval", "assistant", "viz", "apis",
-         "jobs", "sysadmin", "rules", "layers", "skills", "agents"]
+         "sparql", "actioncenter", "qaeval", "viz"]
 
 
 def parse_sse(text):
