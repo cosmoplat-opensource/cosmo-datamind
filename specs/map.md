@@ -162,7 +162,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - `SPEC.md` — 对**平台** web/ 的逆向规格(平台契约,非 DataMind;前缀不同勿混用)。
 
 ## 现状校准
-- 计数(2026-10-12):**139 路由**(server.py 113 + bp_engine 5 + bp_actions 7 + bp_metrics 3 + bp_semantic 2 + bp_decision 9)/ **548 集成断言** /
+- 计数(2026-10-12):**140 路由**(server.py 113 + bp_engine 5 + bp_actions 8 + bp_metrics 3 + bp_semantic 2 + bp_decision 9)/ **548 集成断言** /
   **1279 项 pytest 测试**（多数据库功能复核）/ DR-001…DR-082、DR-093…DR-095 · IR-001…IR-013。
   DR-093 增加数据目录、问题驱动概念/主题、声明角色外键独立核验与业务语义人审；DR-095 增加多库上下文，场景回归为 51 项。
   DR-076 起 `examples/demo_metrics.db` 由 `scripts/build_demo_108_db.py` 按业务过程仿真生成(108 表 / 308,230 行)。

@@ -1068,7 +1068,7 @@ async function acLogLoad(){const d=await J('/api/action/log').catch(()=>({items:
  else pd.style.display='none';
  acLogRender();}
 function acLogRender(){const items=AC_LOG;
- const SB={pending:['warn','待审批'],executed:['ok','已形成记录'],denied:['evt','已驳回'],failed:['warn','执行失败']};
+ const SB={pending:['warn','待审批'],executing:['evt','执行中'],executed:['ok','已形成记录'],denied:['evt','已驳回'],failed:['warn','执行失败'],unknown:['warn','结果未知']};
  const st=($('#acf_status')&&$('#acf_status').value)||'';
  const kw=(($('#acf_kw')&&$('#acf_kw').value)||'').trim();
  const rows=items.filter(x=>(!st||x.status===st)&&(!kw||JSON.stringify([x.action_cn,x.operator,x.approver,x.params]).includes(kw)));
@@ -1076,12 +1076,12 @@ function acLogRender(){const items=AC_LOG;
    <h3 style="margin:0">动作记录(决策记录 · 全审计)<span class="muted" style="font-weight:400;font-size:12px"> ${rows.length}/${items.length} 条</span></h3>
    <div class="row" style="gap:6px"><select id="acf_status" onchange="acLogRender()" style="width:110px">
      <option value="" ${st===''?'selected':''}>全部状态</option><option value="pending" ${st==='pending'?'selected':''}>待审批</option>
-     <option value="executed" ${st==='executed'?'selected':''}>已形成记录</option><option value="denied" ${st==='denied'?'selected':''}>已驳回</option><option value="failed" ${st==='failed'?'selected':''}>执行失败</option></select>
+     <option value="executed" ${st==='executed'?'selected':''}>已形成记录</option><option value="denied" ${st==='denied'?'selected':''}>已驳回</option><option value="failed" ${st==='failed'?'selected':''}>执行失败</option><option value="executing" ${st==='executing'?'selected':''}>执行中</option><option value="unknown" ${st==='unknown'?'selected':''}>结果未知</option></select>
     <input id="acf_kw" placeholder="搜动作/操作人/参数…" value="${esc(kw)}" style="width:180px" oninput="acLogRender()">
     <button class="ghost" onclick="acLogCsv()">导出 CSV</button></div></div>`
   +(rows.length?'<table><tr><th>时间</th><th>动作</th><th>状态</th><th>操作人</th><th>审批人/意见</th><th>效果</th></tr>'
    +rows.slice(0,60).map(x=>`<tr><td class="muted" style="font-size:11px;white-space:nowrap">${esc(x.ts)}</td><td>${esc(x.action_cn)}</td>
-    <td><span class="tag ${SB[x.status][0]}">${SB[x.status][1]}</span></td><td>${esc(x.operator)}</td>
+    <td><span class="tag ${(SB[x.status]||['warn'])[0]}">${(SB[x.status]||['',x.status])[1]}</span></td><td>${esc(x.operator)}</td>
     <td class="muted" style="font-size:11px">${esc(x.approver||'-')}${x.approve_comment?' · '+esc(x.approve_comment):''}</td>
     <td class="muted" style="font-size:11px">${esc((x.effects||[]).join(' / '))||'-'}</td></tr>`).join('')+'</table>'
    :'<div class="muted">'+(items.length?'无匹配记录(调整筛选)':'暂无记录 —— 在动作类型卡上「发起」，或从诊断结果一键派工')+'</div>');
