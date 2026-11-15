@@ -1399,7 +1399,9 @@ def _qa_attach_record(resp, question, keys):
             extra += [v for _k, v in card.get("kv") or []]
         try:                                     # DR-130 查数结果的三种状态与实际取数日期
             import qa_query_status
-            qst = qa_query_status.annotate(results, resp.get("steps"), lambda: ro_connect(_qa_db()), load_ir_edited(keys[0]) if keys else None)
+            qst = qa_query_status.annotate(results, resp.get("steps"), lambda: ro_connect(_qa_db()),
+                                           load_ir_edited(keys[0]) if keys else None,
+                                           explain_empty=not card or card.get("type") in (None, "", "lookup"))
             rec["query_status"] = {"status": qst["status"], "failed": qst["failed"]}
             if card is not None:
                 card.setdefault("flags", []).extend(qst["flags"])
@@ -1692,14 +1694,31 @@ def _source_graph_keys(path):
     keys = list(IR_SOURCES)
     keys += ['forged_' + os.path.basename(p)[:-5] for p in sorted(glob.glob(os.path.join(PLATFORM, 'data', 'forged', '*.json')))]
     keys += [os.path.basename(p)[:-5] for p in sorted(glob.glob(os.path.join(WORK, 'built_*.json')), key=os.path.getmtime, reverse=True)]
-    return [key for key in dict.fromkeys(keys) if database_scope.same_path(
-        _source_graph_path(load_ir_edited(key) or {}), path)]
+    out = []
+    for key in dict.fromkeys(keys):
+        ir = load_ir_edited(key)
+        if not ir or not database_scope.same_path(_source_graph_path(ir), path):
+            continue                             # 读不到内容的不算
+        if key in IR_SOURCES and _graph_source_db(ir) is None and not _describes(ir, path):
+            continue                             # 内置示例本体没有登记数据源,换了主库后它描述的是另一个库(DR-131)
+        out.append(key)
+    return out
+
+
+def _describes(ir, path):
+    """本体绑定的表至少有一张在这个库里;没有绑定任何表的概念本体不作判断。"""
+    try:
+        profile = _qa_graph_profile(ir, _qa_table_inventory(path))
+        return bool(profile["available_tables"]) or not profile["bound_tables"]
+    except Exception:                            # noqa: BLE001 —— 库读不了时不下结论
+        return True
 
 
 def _active_graph_key(path=None):
     path = path or _active_db()
-    if database_scope.same_path(path, DB): return 'demo'
     keys = _source_graph_keys(path)
+    if database_scope.same_path(path, DB):
+        return 'demo' if 'demo' in keys or not keys else keys[0]
     return keys[0] if keys else ''
 
 
@@ -2271,6 +2290,8 @@ def _validate_sql_ontology(sql, ir, strict=False):
     # 有效行等条件校验仍看原文(要认出 del_flag = 'N')(DR-080)
     s_tab = re.sub(r"'(?:[^']|'')*'", "''", s)
     ctes = {m.group(1).lower() for m in re.finditer(r"(?:\bwith|,)\s*(%s)\s+as\s*\(" % _SQL_IDENT, s_tab, re.I)}
+    ctes |= _derived_table_aliases(s_tab)        # FROM / JOIN (SELECT ...) x:x 和 CTE 一样是查询结果,不是本体里的表
+    blocks = _query_blocks(s_tab)                # 每个字符属于哪个查询块:重复计数按块各自判断(DR-131)
     known = {(o.get("table") or "").lower() for o in ir.get("objects", []) if o.get("table")}
     if not strict:
         try: known |= {t["name"].lower() for t in table_list()}
@@ -2279,12 +2300,14 @@ def _validate_sql_ontology(sql, ir, strict=False):
     try: up = {x.split("(")[0][3:].lower() for x in _uploads_schema().split("; ") if x.startswith("up.")}
     except Exception: pass
     alias, used = {}, []
+    block_tables: dict = {}                      # 查询块 → [(别名, 表)]
     for m in re.finditer(r"\b(?:from|join)\s+(up\.)?(%s)(?:\s+(?:as\s+)?(%s))?" % (_SQL_IDENT, _SQL_IDENT), s_tab, re.I):
         pre, t, al = m.group(1), m.group(2).lower(), (m.group(3) or "").lower()
         if al in _SQL_KW: al = ""
         full = ("up." + t) if pre else t
         used.append(full)
         alias[al or t] = full
+        block_tables.setdefault(blocks[m.start()], []).append((al or t, full))
         # 逗号连接(FROM a x, b y):后面的表同样登记,否则它们既不过表白名单,也不参与键校验(DR-098)
         pos = m.end(2) if not al else m.end()
         while True:
@@ -2295,6 +2318,7 @@ def _validate_sql_ontology(sql, ir, strict=False):
             if cal in _SQL_KW: cal = ""
             cfull = ("up." + ct) if cm.group(1) else ct
             used.append(cfull); alias[cal or ct] = cfull
+            block_tables.setdefault(blocks[m.start()], []).append((cal or ct, cfull))
             pos = cm.end(2) if not cal else cm.end()
     for full in used:
         base = full[3:] if full.startswith("up.") else full
@@ -2342,9 +2366,9 @@ def _validate_sql_ontology(sql, ir, strict=False):
                 for c1, p1 in comps:
                     relkeys.add((st, c1, tt, p1)); relkeys.add((tt, p1, st, c1))
                     companions[(st, c1, tt, p1)] = companions[(tt, p1, st, c1)] = (st, tt, comps)
-    joined_parents = {}                          # 本条 SQL 里作为 1:N 父侧出现的表 → 其别名集合
-    child_edges: dict = {}                       # 父表别名 → {子表别名: (子表, 父表)}
-    many_to_many: list = []                      # (别名a, 表a, 别名b, 表b, 键, 共同的父表)
+    joined_parents: dict = {}                    # 查询块 → {作为 1:N 父侧出现的表: 父侧的别名集合}
+    child_edges: dict = {}                       # 查询块 → {父表别名: {子表别名: (子表, 父表)}}
+    many_to_many: dict = {}                      # 查询块 → [(别名a, 表a, 别名b, 表b, 键, 共同的父表)]
     # 连接条件不只写在 ON 后面:带括号的 ON、ON 里 AND 之后的第二个等式、逗号连接或 CROSS JOIN 配 WHERE,
     # 此前都不经过键校验(DR-098)。这里看语句里所有「别名.列 = 别名.列」;不紧跟 ON 的等式只在两侧
     # 都是已登记的别名且不是同一个别名时才当作连接条件,同一张表内的列比较不算。
@@ -2356,19 +2380,21 @@ def _validate_sql_ontology(sql, ir, strict=False):
         ta, tb = alias.get(a, a), alias.get(b, b)
         if ta in ctes or tb in ctes or ta.startswith("up.") or tb.startswith("up."): continue
         # 父侧识别先于同名键放行:同名等值 JOIN 免验键,但扇出与键名无关
-        parent = parents.get((ta, ca, tb, cb)) or parents.get((tb, cb, ta, ca))
+        _blk = blocks[m.start()]
+        _a_is_child = parents.get((ta, ca, tb, cb))
+        parent = _a_is_child or parents.get((tb, cb, ta, ca))
         if parent:
-            for al, full in alias.items():
-                if full == parent: joined_parents.setdefault(parent, set()).add(al)
-            # DR-130 按别名记下「子 → 父」:同一个父表别名下挂了两张子表时,两张子表的行会互相放大
-            _pa, _ca_al = (a, b) if ta == parent else (b, a)
-            child_edges.setdefault(_pa, {})[_ca_al] = (tb if ta == parent else ta, parent)
+            # 哪一侧是父,看等式两边哪一列是父键;自关联(员工→上级)两侧是同一张表,不能按表名判断
+            _pa, _ca_al = (b, a) if _a_is_child else (a, b)
+            joined_parents.setdefault(_blk, {}).setdefault(parent, set()).add(_pa)
+            # DR-130 按别名记下「子 → 父」:同一个父表别名下挂了两个子表别名时,子表的行会互相放大
+            child_edges.setdefault(_blk, {}).setdefault(_pa, {})[_ca_al] = (alias.get(_ca_al, _ca_al), parent)
         elif ta != tb:
             # 两边的键都是指向同一张父表的子键(都按工单号):两张子表直接关联是多对多
             _common = sorted({p for (t1, c1, p, _pk) in parents if (t1, c1) == (ta, ca)}
                              & {p for (t1, c1, p, _pk) in parents if (t1, c1) == (tb, cb)})
             if _common:
-                many_to_many.append((a, ta, b, tb, ca, _common[0]))
+                many_to_many.setdefault(_blk, []).append((a, ta, b, tb, ca, _common[0]))
         _sc = scopes.get((ta, ca, tb, cb))
         if _sc:
             # 键按租户 / 字典分组复用:只按编号关联会把不同租户(工厂、企业)的同号记录串在一起
@@ -2407,21 +2433,20 @@ def _validate_sql_ontology(sql, ir, strict=False):
     #    COUNT(DISTINCT …) 与 MIN/MAX 不受扇出影响,不拦;未限定表名的列无法归属,不猜。
     #    DR-130 补三种情况:聚合里是表达式(SUM(c.x * 1.0));列没写表名但只有一张表有这一列;
     #    同一张父表下同时关联两张子表(或两张子表按共同的键直接关联),子表的行互相放大。
-    multiplied = {}                              # 别名 → (这张表, 让它重复的另一张表, 共同的父表, 是否多对多)
-    for _pa, kids in child_edges.items():
-        if len({t for t, _p in kids.values()}) > 1:
-            for al, (t, p) in kids.items():
-                other = next(t2 for a2, (t2, _p2) in sorted(kids.items()) if t2 != t)
-                multiplied[al] = (t, other, p, False)
-    for a, ta, b, tb, _key, p in many_to_many:
-        multiplied.setdefault(a, (ta, tb, p, True)); multiplied.setdefault(b, (tb, ta, p, True))
-    owners = _sole_column_owners([t for t in dict.fromkeys(used) if t not in ctes and not t.startswith("up.")]) \
-        if (joined_parents or multiplied) else {}
-    alias_of = {}
-    for al, full in alias.items():
-        alias_of.setdefault(full, al)
-    for fn, args in _aggregate_calls(s_tab):
-        if re.match(r"distinct\b", args, re.I):
+    #    DR-131 按查询块判断:子查询、CTE 各看各的连接;EXISTS / IN 子查询里的等式不产生重复行。
+    #    聚合的内容同时用到两张表的列时(子表数量 × 父表单价、按父表状态做条件求和),行粒度仍是子表,不拦。
+    owners_of: dict = {}                         # 查询块 → {只属于其中一张表的列: 那张表}
+    for fn, args, pos in _aggregate_calls(s_tab):
+        blk = blocks[pos]
+        jp, kids_of = joined_parents.get(blk) or {}, child_edges.get(blk) or {}
+        multiplied = {}                          # 别名 → (这张表, 让它重复的另一张表, 共同的父表, 是否多对多)
+        for _pa, kids in kids_of.items():
+            if len(kids) > 1:
+                for al, (t, p) in kids.items():
+                    multiplied[al] = (t, next(t2 for a2, (t2, _p2) in sorted(kids.items()) if a2 != al), p, False)
+        for a, ta, b, tb, _key, p in many_to_many.get(blk) or []:
+            multiplied.setdefault(a, (ta, tb, p, True)); multiplied.setdefault(b, (tb, ta, p, True))
+        if not (jp or multiplied) or re.match(r"distinct\b", args, re.I):
             continue
         if args == "*":
             if fn == "count" and multiplied:
@@ -2429,30 +2454,70 @@ def _validate_sql_ontology(sql, ir, strict=False):
                 return False, (f"扇出风险:COUNT(*) 数的是 {t} 与 {other} 两张表的行两两组合的个数,"
                                f"不是任何一张表的行数(已拦截);要数哪张表就写 COUNT(DISTINCT 那张表的主键)")
             continue
+        here = [(al, full) for al, full in block_tables.get(blk) or [] if full not in ctes and not full.startswith("up.")]
+        if blk not in owners_of:
+            owners_of[blk] = _sole_column_owners(list(dict.fromkeys(full for _al, full in here)))
+        owners = owners_of[blk]
+        first_alias = {}
+        for al, full in here:
+            first_alias.setdefault(full, al)
         quals = [(q.lower(), c.lower()) for q, c in re.findall(r"(?<![\w.])(%s)\.(%s)\b" % (_SQL_IDENT, _SQL_IDENT), args)]
         bare = re.sub(r"(?<![\w.])%s\.%s\b" % (_SQL_IDENT, _SQL_IDENT), " ", args)
         for tok in re.findall(r"(?<![\w.'])(%s)\b(?!\s*\()" % _SQL_IDENT, bare):
             if tok.lower() in owners:
-                quals.append((alias_of.get(owners[tok.lower()], owners[tok.lower()]), tok.lower()))
+                quals.append((first_alias[owners[tok.lower()]], tok.lower()))
+        if len({q for q, _c in quals}) != 1:
+            continue
+        qual, col = quals[0]
         shown = args if len(args) <= 60 else args[:57] + "..."
-        for qual, col in quals:
-            for parent, aliases in joined_parents.items():
-                if qual in aliases or qual == parent:
-                    return False, (f"扇出风险:{fn.upper()}({shown}) 聚合的是 1:N JOIN 父侧表 {parent} 的列 {col},"
-                                   f"结果会按子表行数放大(已拦截);请先在子表按 {parent} 的键聚合再 JOIN,"
-                                   f"或改用 COUNT(DISTINCT {qual}.{col})")
-            hit = multiplied.get(qual) or next((v for al, v in multiplied.items() if alias.get(al) == qual), None)
-            if hit:
-                t, other, p, m2m = hit
-                how = (f"{t} 与 {other} 按共同的键直接关联是多对多" if m2m
-                       else f"{t} 与 {other} 都是 {p} 的子表,同时关联后 {t} 的每一行会按 {other} 的行数重复")
-                return False, (f"扇出风险:{fn.upper()}({shown}) 聚合的是 {t} 的列 {col},而{how}(已拦截);"
-                               f"请把 {t} 和 {other} 分别按 {p} 的键聚合后再关联,或只关联其中一张")
+        for parent, aliases in jp.items():
+            if qual in aliases:
+                return False, (f"扇出风险:{fn.upper()}({shown}) 聚合的是 1:N JOIN 父侧表 {parent} 的列 {col},"
+                               f"结果会按子表行数放大(已拦截);请先在子表按 {parent} 的键聚合再 JOIN,"
+                               f"或改用 COUNT(DISTINCT {qual}.{col})")
+        hit = multiplied.get(qual)
+        if hit:
+            t, other, p, m2m = hit
+            how = (f"{t} 与 {other} 按共同的键直接关联是多对多" if m2m
+                   else f"{t} 与 {other} 都关联到 {p} 的同一行,{t} 的每一行会按 {other} 的行数重复")
+            return False, (f"扇出风险:{fn.upper()}({shown}) 聚合的是 {t} 的列 {col},而{how}(已拦截);"
+                           f"请把两边分别按 {p} 的键聚合后再关联,或只关联其中一张")
     return True, ""
 
 
+def _query_blocks(sql):
+    """每个字符所在的查询块编号(最外层是 0)。括号里以 SELECT / WITH 开头的是一个新的查询块,其余括号沿用外层。"""
+    out, stack, n = [], [0], 0
+    for i, ch in enumerate(sql):
+        if ch == "(":
+            if re.match(r"\s*(?:select|with)\b", sql[i + 1:i + 40], re.I):
+                n += 1
+                stack.append(n)
+            else:
+                stack.append(stack[-1])
+        elif ch == ")" and len(stack) > 1:
+            out.append(stack.pop())
+            continue
+        out.append(stack[-1])
+    return out
+
+
+def _derived_table_aliases(sql):
+    """FROM / JOIN 后面括号里的子查询的别名。"""
+    out = set()
+    for m in re.finditer(r"\b(?:from|join)\s*\(", sql, re.I):
+        depth, i = 1, m.end()
+        while i < len(sql) and depth:
+            depth += {"(": 1, ")": -1}.get(sql[i], 0)
+            i += 1
+        am = re.match(r"\s*(?:as\s+)?(%s)" % _SQL_IDENT, sql[i:], re.I)
+        if not depth and am and am.group(1).lower() not in _SQL_KW:
+            out.add(am.group(1).lower())
+    return out
+
+
 def _aggregate_calls(sql):
-    """语句里的 SUM / AVG / COUNT 调用 → [(函数名, 括号里的内容)],括号按配对取。"""
+    """语句里的 SUM / AVG / COUNT 调用 → [(函数名, 括号里的内容, 在语句里的位置)],括号按配对取。"""
     out = []
     for m in re.finditer(r"\b(sum|avg|count)\s*\(", sql, re.I):
         depth, i = 1, m.end()
@@ -2460,7 +2525,7 @@ def _aggregate_calls(sql):
             depth += {"(": 1, ")": -1}.get(sql[i], 0)
             i += 1
         if not depth:
-            out.append((m.group(1).lower(), sql[m.end():i - 1].strip()))
+            out.append((m.group(1).lower(), sql[m.end():i - 1].strip(), m.start()))
     return out
 
 

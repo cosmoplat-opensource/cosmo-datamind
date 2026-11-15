@@ -129,3 +129,45 @@ def test_the_only_time_column_of_a_table_is_used_when_nothing_else_says_which(ma
     r = _res("作业", "SELECT job_no FROM jobs", [{"job_no": "J1"}])
     qs.annotate([r], [], _connect(two))
     assert "data_as_of" not in r                                # 有两个时间列又没指明用哪个:不猜
+
+
+# ── DR-131:修好的查询不算失败;名字里带 time 的数值列不是时间列;聚合出空值按空结果处理 ─────────────
+
+def test_a_query_that_was_repaired_or_shown_anyway_is_not_reported_as_failed(db):
+    steps = [{"step": "exec_sql", "ok": False, "info": "各月订单: no such column: mth"},
+             {"step": "self_check", "ok": True, "info": "按结果核对后改写 → 2行"},
+             {"step": "ontology_gate", "ok": False, "info": "本体约束拦截:JOIN 键不在已验证关系上"},
+             {"step": "exact_fallback", "ok": False, "info": "精确作答:采用未通过校验的查询 · JOIN 键不在已验证关系上"},
+             {"step": "exec_sql", "ok": False, "info": "退货明细: no such table: rma"},
+             {"step": "self_check", "ok": False, "info": "改写后执行出错:no such table: rma"}]
+    out = qs.annotate([_res("各月订单", "SELECT * FROM orders", [{"order_no": "S1"}])], steps, _connect(db))
+    assert out["status"]["failed"] == 1 and [f["title"] for f in out["failed"]] == ["退货明细"]
+
+
+def test_a_numeric_column_with_time_in_its_name_is_not_a_date(make_sqlite):
+    path = make_sqlite({"stops": ("line TEXT, downtime_minutes INTEGER, update_count INTEGER, event_date TEXT",
+                                  [("L1", 123456, 20261101, "2026-11-02")])})
+    r = _res("停机", "SELECT SUM(downtime_minutes) FROM stops WHERE event_date >= '2026-11-01'", [{"m": 123456}])
+    out = qs.annotate([r], [], _connect(path))
+    assert out["kv"] == [("实际取数截至", "stops.event_date 最新 2026-11-02")]
+    r = _res("停机", "SELECT SUM(downtime_minutes) FROM stops", [{"m": 123456}])        # 没用到时间列:取唯一的时间列
+    assert qs.annotate([r], [], _connect(path))["kv"] == [("实际取数截至", "stops.event_date 最新 2026-11-02")]
+
+
+def test_the_next_time_column_is_tried_when_the_first_one_holds_no_dates(make_sqlite):
+    path = make_sqlite({"jobs": ("job TEXT, start_time INTEGER, end_date TEXT", [("J1", 1762000000, "2026-11-05")])})
+    r = _res("作业", "SELECT job FROM jobs WHERE start_time > 0 AND end_date > '2026-01-01'", [{"job": "J1"}])
+    assert qs.annotate([r], [], _connect(path))["kv"] == [("实际取数截至", "jobs.end_date 最新 2026-11-05")]
+
+
+def test_an_aggregate_that_comes_back_null_is_treated_as_an_empty_result(db):
+    r = _res("2030 年金额", "SELECT SUM(amount) AS s FROM orders WHERE order_date > '2030'", [{"s": None}])
+    out = qs.annotate([r], [], _connect(db))
+    assert r["status"] == "empty" and "data_as_of" not in r and out["status"] == {"data": 0, "empty": 1, "failed": 0}
+    assert "没有取到值" in out["flags"][0] and "orders 共 2 行" in out["flags"][0]
+
+
+def test_rule_based_answers_explain_their_own_empty_results(db):
+    r = _res("超期工单", "SELECT * FROM orders WHERE amount > 9999", [])
+    out = qs.annotate([r], [], _connect(db), explain_empty=False)
+    assert r["status"] == "empty" and out["flags"] == []

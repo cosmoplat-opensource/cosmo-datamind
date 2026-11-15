@@ -181,3 +181,9 @@ def test_how_a_metric_may_be_rolled_up_follows_from_its_aggregation(agg, kind, w
 def test_a_metric_without_a_declared_aggregation_has_no_rollup_rule():
     m = M.normalize({"name": "旧指标", "table": "t", "value_col": "v"})
     assert M.algebra(m) == {"kind": "", "text": ""}
+
+
+def test_roll_up_text_tolerates_contracts_that_were_not_normalised():
+    assert M.algebra({"measure": {"agg": "SUM"}})["kind"] == "additive"
+    assert M.algebra({"measure": {"agg": ["sum"]}}) == {"kind": "", "text": ""}
+    assert M.algebra({"measure": "sum"}) == {"kind": "", "text": ""}

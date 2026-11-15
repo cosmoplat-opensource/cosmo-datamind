@@ -102,3 +102,75 @@ def test_an_unqualified_column_is_attributed_when_only_one_table_has_it(make_sql
     assert not ok and "扇出风险" in why and "credit_limit" in why
     assert _v("SELECT SUM(amount) FROM fact_sales_order o JOIN dim_customer c ON o.cust_id = c.cust_id")[0]
     assert _v("SELECT COUNT(cust_id) FROM fact_sales_order o JOIN dim_customer c ON o.cust_id = c.cust_id")[0]   # 两张表都有:不猜
+
+
+# ── 不该拦的写法(DR-131):父表的列只是条件或逐行乘数;子查询各算各的;半连接不产生重复行 ─────────
+
+def test_parent_column_used_only_as_a_condition_or_multiplier_is_not_blocked():
+    base = " FROM fact_sales_order o JOIN dim_customer c ON o.cust_id = c.cust_id"
+    assert _v("SELECT SUM(CASE WHEN c.region = '华东' THEN o.amount ELSE 0 END)" + base)[0]
+    assert _v("SELECT SUM(o.qty * c.discount_rate)" + base)[0]
+    ok, why = _v("SELECT SUM(CASE WHEN c.region = '华东' THEN c.credit_limit END)" + base)   # 只有父表的列,仍然拦
+    assert not ok and "扇出风险" in why
+
+
+def test_each_query_block_is_checked_against_its_own_joins():
+    ok, why = _v("WITH tot AS (SELECT SUM(c.credit_limit) AS s FROM dim_customer c) "
+                 "SELECT o.cust_id, SUM(o.amount) / (SELECT s FROM tot) FROM fact_sales_order o "
+                 "JOIN dim_customer c ON o.cust_id = c.cust_id GROUP BY 1")
+    assert ok, why
+    ok, why = _v("SELECT (SELECT SUM(c2.credit_limit) FROM dim_customer c2), SUM(o.amount) FROM fact_sales_order o "
+                 "JOIN dim_customer c ON o.cust_id = c.cust_id")
+    assert ok, why
+    ok, why = _v("WITH x AS (SELECT SUM(c.credit_limit) AS s FROM fact_sales_order o JOIN dim_customer c "
+                 "ON o.cust_id = c.cust_id) SELECT s FROM x")                    # 子查询内部的重复计数照样拦
+    assert not ok and "扇出风险" in why
+
+
+def test_an_unqualified_column_inside_a_subquery_is_not_charged_to_the_outer_join(make_sqlite, monkeypatch):
+    db = make_sqlite({"fact_sales_order": ("cust_id TEXT, amount REAL", [("C1", 10.0)]),
+                      "dim_customer": ("cust_id TEXT PRIMARY KEY, credit_limit REAL", [("C1", 500.0)])})
+    monkeypatch.setattr(server, "_qa_db", lambda: db)
+    ok, why = _v("WITH tot AS (SELECT SUM(credit_limit) AS s FROM dim_customer) SELECT SUM(o.amount) / (SELECT s FROM tot) "
+                 "FROM fact_sales_order o JOIN dim_customer c ON o.cust_id = c.cust_id")
+    assert ok, why
+
+
+def test_semi_joins_do_not_count_as_a_second_child_table():
+    ok, why = _p("SELECT SUM(t.hours) FROM orders o JOIN tasks t ON t.order_no = o.order_no "
+                 "WHERE EXISTS (SELECT 1 FROM occupancy q WHERE q.order_no = o.order_no)")
+    assert ok, why
+    ok, why = _p("SELECT SUM(t.hours) FROM tasks t WHERE EXISTS (SELECT 1 FROM occupancy q WHERE q.order_no = t.order_no)")
+    assert ok, why
+    ok, why = _p("SELECT COUNT(DISTINCT t.task_id) FROM orders o JOIN tasks t ON t.order_no = o.order_no "
+                 "JOIN occupancy q ON q.order_no = o.order_no WHERE o.order_no IN "
+                 "(SELECT order_no FROM tasks GROUP BY order_no HAVING COUNT(*) > 1)")
+    assert ok, why
+
+
+def test_the_same_child_table_joined_twice_also_multiplies():
+    ok, why = _p("SELECT SUM(t1.hours) FROM orders o JOIN tasks t1 ON t1.order_no = o.order_no "
+                 "JOIN tasks t2 ON t2.order_no = o.order_no")
+    assert not ok and "扇出风险" in why
+
+
+SELF = {
+    "objects": [{"id": "emp", "table": "employee"}, {"id": "sheet", "table": "timesheet"}],
+    "links": [{"source": "emp", "target": "emp", "status": "verified", "evidence": {"child_key": "manager_id", "parent_key": "id"}},
+              {"source": "sheet", "target": "emp", "status": "verified", "evidence": {"child_key": "emp_id", "parent_key": "id"}}],
+}
+
+
+def test_a_self_reference_takes_the_parent_side_from_the_key_not_from_the_join_order():
+    sql = ("SELECT m.name, SUM(t.hours), SUM(e.salary) FROM employee e JOIN employee m ON e.manager_id = m.id "
+           "JOIN timesheet t ON t.emp_id = e.id GROUP BY m.name")
+    ok, why = server._validate_sql_ontology(sql.replace(", SUM(e.salary)", ""), SELF, strict=True)
+    assert ok, why                                   # 每个员工只有一位上级,工时不会重复
+    ok, why = server._validate_sql_ontology(sql.replace("SUM(t.hours), SUM(e.salary)", "SUM(m.budget)"), SELF, strict=True)
+    assert not ok and "扇出风险" in why               # 上级一行对应多名下属
+
+
+def test_the_rewrite_suggested_by_the_block_message_is_itself_accepted():
+    ok, why = _v("SELECT c.region, SUM(x.amount) FROM dim_customer c JOIN (SELECT cust_no, SUM(amount) AS amount "
+                 "FROM fact_sales_order GROUP BY cust_no) x ON c.cust_id = x.cust_no GROUP BY 1")
+    assert ok, why

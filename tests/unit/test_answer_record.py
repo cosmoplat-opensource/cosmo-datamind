@@ -169,6 +169,7 @@ def test_a_number_from_another_column_of_the_same_row_is_reported(text):
     "A厂覆盖天数为 39.7 天。",
     "B厂 12.5 天。",                                             # 没点列名:不检查列
     "两个工厂的覆盖天数合计 52.2 天。",                          # 汇总值
+    "A厂库存 9.0、39.7 天覆盖天数。",                           # 列名写在数字后面(DR-131)
 ])
 def test_numbers_under_the_right_column_still_pass(text):
     assert ar.check_narrative(text, [PLANT])["unverified"] == [], ar.check_narrative(text, [PLANT])

@@ -694,3 +694,27 @@ def test_a_trace_that_leaves_the_selection_reads_nothing(world):
 def test_without_a_selection_everything_is_evaluated_as_before(world):
     ans, _seen = _scoped(world, "现在有哪些异常?", {"orders", "tasks", "operations", "demo_clock"})
     assert {r["规则"] for r in ans["results"][0]["data"]["rows"]} == {"工序任务拖期", "加急订单"}
+
+
+# ── DR-131:范围校验补上状态表与间接取值表;不存在的表不说成「不在范围内」 ─────────────────────────
+
+def test_a_trace_also_checks_the_status_table_before_reading(world):
+    world["ir"]["main_chain"]["status"] = {"table": "demo_clock", "key": "today", "show": {"today": "日期"}}
+    ans, _seen = _scoped(world, "订单 P1001 现在到哪道工序了?", {"orders", "tasks", "operations"})
+    assert ans["results"] == [] and "demo_clock" in ans["narrative"] and "不在" in ans["narrative"]
+
+
+def test_a_what_if_also_checks_the_table_a_parameter_is_looked_up_through(trial_world):
+    trial_world["ir"]["param_grounding"]["customer"]["via"] = {"table": "operations", "key": "op_code", "column": "op_name"}
+    calls = []
+    route = qd.classify("如果客户A新增一张订单,12月5日能否按期交付?", trial_world["ir"], RULES, [TRIAL], trial_world["connect"])
+    ans = qd.answer("如果客户A新增一张订单,12月5日能否按期交付?", trial_world["ir"], RULES, [TRIAL], route, trial_world["connect"], set(),
+                    invoke=lambda *a: calls.append(a) or (200, {}), operator="计划员",
+                    scope=lambda t: (t == "orders", "不在范围内"))
+    assert calls == [] and "operations" in ans["narrative"] and "不在" in ans["narrative"]
+
+
+def test_a_table_that_does_not_exist_is_not_reported_as_outside_the_selection(world):
+    scope = lambda t: (False, "不在范围内")          # noqa: E731
+    assert qd._outside(["ghost", "tasks", None], scope, world["connect"]) == ["tasks"]
+    assert qd._outside(["ghost", "tasks"], scope) == ["ghost", "tasks"]        # 没给连接时不判断存在与否

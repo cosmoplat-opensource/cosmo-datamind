@@ -643,7 +643,7 @@ def lookup_card(question, results, ir, used, metric_cards, anchored, caveats_use
     for m in metric_cards or []:
         basis.append({"kind": "metric", "name": m.get("name"), "text": m.get("caliber") or m.get("desc"), "status": m.get("status")})
         if m.get("status") not in ("certified", "verified", "confirmed"):
-            flags.append(f"指标「{m.get('name')}」口径未核验(状态 {m.get('status') or '未标注'}),数值仅供参考")
+            flags.append(f"指标「{m.get('name')}」的计算规则尚未核验,数值仅供参考")
     lit = ((ir or {}).get("lighting") or {}).get("objects") or {}
     for t in sorted(in_sql):
         e = lit.get(t) or {}
@@ -675,11 +675,12 @@ def run_unlit(route, question):
     return {"results": [], "narrative": text, "evidence_card": card}
 
 
-def _outside(tables, scope):
-    """不在所选范围内的表(去重,保持顺序)。scope(table) -> (ok, why);没给 scope 表示不限定。"""
+def _outside(tables, scope, connect=None):
+    """不在所选范围内的表(去重,保持顺序)。scope(table) -> (ok, why);没给 scope 表示不限定。
+    给了 connect 时,库里没有的表不算:那是「表不存在」,交给后面的步骤按原来的方式处理。"""
     out: list[str] = []
     for t in tables if scope else ():
-        if t and t not in out and not scope(t)[0]:
+        if t and t not in out and not scope(t)[0] and (connect is None or _has_table(connect, t)):
             out.append(t)
     return out
 
@@ -798,7 +799,8 @@ def run_trace(route, ir, rules, connect, today, validate=None, scope=None):
         return None
     hops = [h for h in mc.get("hops") or [] if isinstance(h, dict)]
     out = _outside([root["table"]] + [x for h in hops for x in (h.get("parent"), h.get("table"))]
-                   + [lk.get("table") for h in hops for lk in h.get("lookups") or [] if isinstance(lk, dict)], scope)
+                   + [lk.get("table") for h in hops for lk in h.get("lookups") or [] if isinstance(lk, dict)]
+                   + [(mc.get("status") or {}).get("table")], scope, connect)
     if out:                                          # 整条主线都要在所选范围内,先查再读
         return _scope_refusal("trace", f"追踪{root.get('label') or '对象'} {rid} ", out)
     head = _rows(connect, f'SELECT * FROM "{root["table"]}" WHERE "{root["key"]}" = ?', (rid,), 1)
@@ -1035,8 +1037,9 @@ def ground_param(name, spec, question, connect, today, cn=""):
 def run_whatif(route, question, ir, connect, invoke, today, operator, actions, scope=None):
     act = route["action"]
     pg = (ir or {}).get("param_grounding") or {}
-    out = _outside([(pg.get(p["name"]) or {}).get("table") for p in act.get("params") or []
-                    if isinstance(pg.get(p["name"]), dict)], scope)
+    specs = [pg[p["name"]] for p in act.get("params") or [] if isinstance(pg.get(p["name"]), dict)]
+    out = _outside([s.get("table") for s in specs]
+                   + [s["via"].get("table") for s in specs if isinstance(s.get("via"), dict)], scope, connect)
     if out:                                          # 参数要到这些表里取值:范围之外不读,也不调用动作
         return _scope_refusal("whatif", f"「{act.get('cn')}」的参数取值", out)
     params, notes, missing, shown = {}, [], [], []
@@ -1121,12 +1124,12 @@ def answer(question, ir, rules, actions, route, connect, anchored, validate=None
     if t == "unlit":
         return run_unlit(route, question)
     if t == "judge":
-        out = _outside([route["rule"].get("on")], scope)
+        out = _outside([route["rule"].get("on")], scope, connect)
         if out:
             return _scope_refusal("judge", f"规则「{route['rule'].get('cn')}」", out)
         return run_judge(route, connect, actions, ir, validate)
     if t == "monitor":
-        skipped = [r for r in rules if _outside([r.get("on")], scope)]
+        skipped = [r for r in rules if _outside([r.get("on")], scope, connect)]
         return run_monitor([r for r in rules if r not in skipped], connect, actions, ir, skipped)
     if t == "explain":
         return run_explain(question, ir, rules, anchored, tuple(route.get("pinned") or ()))

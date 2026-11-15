@@ -227,3 +227,22 @@ def test_ontology_conversation_history_does_not_cross_databases(scoped_databases
     assert client.post('/api/ont/chats/delete',headers=h,json={'id':'a'}).status_code==409
     monkeypatch.setattr(server,'_chats_w',lambda d:None)
     assert client.post('/api/ont/chats/new',headers=h,json={}).get_json()['graph']=='built_scope_b'
+
+
+def test_builtin_ontologies_that_do_not_describe_the_main_database_are_not_its_default(make_sqlite, monkeypatch):
+    """换了主库以后(DR-131):内置示例本体描述的是另一个库,不算当前库的本体,也不作默认问数本体。"""
+    db = make_sqlite({'orders': ('id INTEGER, amount REAL', [(1, 2.0)])}, fname='main.db')
+    mine = {'scenario': {'name': '我的本体'}, 'objects': [{'id': 'orders', 'name': 'orders', 'table': 'orders'}], 'links': []}
+    sample = {'scenario': {'name': '示例'}, 'objects': [{'id': 'x', 'name': 'x', 'table': 'fact_other'}], 'links': []}
+    irs = {'demo': sample, 'app': None, 'built_mine': mine}
+    monkeypatch.setattr(server, 'DB', db)
+    monkeypatch.setattr(server, '_load_conns', lambda: [])
+    monkeypatch.setattr(server, 'load_ir_edited', lambda key: irs.get(key))
+    monkeypatch.setattr(server, 'IR_SOURCES', {'demo': {'paths': [], 'name': '示例'}, 'app': {'paths': [], 'name': '应用'},
+                                             'built_mine': {'paths': [], 'name': '我的本体'}})
+    context = server.app.test_client().get('/api/data/context').get_json()
+    assert context['graphs'] == ['built_mine'] and context['default_graph'] == 'built_mine'
+    irs['demo'] = {'scenario': {'name': '示例'}, 'objects': [{'id': 'orders', 'name': 'orders', 'table': 'orders'}], 'links': []}
+    assert server.app.test_client().get('/api/data/context').get_json()['default_graph'] == 'demo'   # 内置本体对得上时照旧
+    irs.pop('built_mine'); irs['demo'] = sample
+    assert server._active_graph_key(db) == 'demo'                                                   # 没有别的可选时保持原来的回退

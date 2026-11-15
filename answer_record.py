@@ -255,6 +255,10 @@ def _other_column(n, pool, derived, names):
     hit_cols = [m.group(1) for c in pool if _find(n, [c])[0] for m in [re.search(r"「([^」]+)」$", c[2])] if m]
     if not hit_cols or near in hit_cols:
         return None
+    after = [(m.start(), col) for name, col in names.items() for m in re.finditer(re.escape(name), n["clause"])
+             if m.start() >= n.get("pos", 0)]
+    if after and min(after)[1] in hit_cols:          # 列名写在数字后面(「5300 元销售额」):数字后最近点到的就是它所在的列
+        return None
     if _find(n, [d for d in derived if d[2].startswith(f"「{near}」")])[0]:      # 是所点那一列的合计、差值等
         return None
     return near, hit_cols[0]

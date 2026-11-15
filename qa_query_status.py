@@ -14,8 +14,10 @@ import sqlite3
 import time
 
 _IDENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
-_TIME_NAME = re.compile(r"(date|time|_at$|_dt$|_ts$|(^|_)(month|period|ym|yyyymm)($|_)|日期|时间|月份|年月|期间|账期)", re.I)
-_DATE_VALUE = re.compile(r"^\d{4}[-/]?\d{2}")
+# 时间列按名字里的整词认:order_date、created_time、stat_month 是;downtime_minutes、update_count 不是
+_TIME_NAME = re.compile(r"((^|_)(date|time|datetime|timestamp|day|dt|ts|month|period|ym|yyyymm)($|_)|_at$|日期|时间|月份|年月|期间|账期)", re.I)
+# 取值要像日期:2026-11-08、2026/11、202611、20261108;纯数字的计数、时间戳不算
+_DATE_VALUE = re.compile(r"^(?:(?:19|20)\d{2}[-/](?:0?[1-9]|1[0-2])(?:[-/]\d{1,2})?(?:[ T].*)?|(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:[0-3]\d)?)$")
 _BUDGET_S = 3.0
 
 
@@ -94,31 +96,49 @@ def as_of(sql, tables, connect, ir=None):
         used = [c for c in cols if _TIME_NAME.search(c) and re.search(r"(?<![A-Za-z0-9_])" + re.escape(c) + r"(?![A-Za-z0-9_])", sql)]
         declared = _declared_time(ir, t)
         timelike = [c for c in cols if _TIME_NAME.search(c)]
-        col = used[0] if used else (declared if declared in cols else (timelike[0] if len(timelike) == 1 else None))
-        if not col:
-            continue
-        latest = _scalar(connect, f'SELECT MAX("{col}") FROM "{t}"')
-        if latest is not None and _DATE_VALUE.match(str(latest)):
-            out.append({"table": t, "column": col, "latest": str(latest)[:10]})
+        candidates = used or ([declared] if declared in cols else (timelike if len(timelike) == 1 else []))
+        for col in candidates[:3]:               # 名字像时间列但存的不是日期(时间戳、时长)时,换下一列
+            latest = _scalar(connect, f'SELECT MAX("{col}") FROM "{t}"')
+            if latest is not None and _DATE_VALUE.match(str(latest).strip()):
+                out.append({"table": t, "column": col, "latest": str(latest).strip()[:10]})
+                break
     return out[:3]
 
 
 def _failed(steps):
-    out = []
+    """没有产出结果的查询。执行出错后经核对改写成功的、被拦下后仍按精确作答展示的,结果都在答案里,不算。"""
+    out: list[dict] = []
+    last = None                                  # 上一步若是执行出错,记下它在 out 里的位置
     for s in steps or []:
-        if not isinstance(s, dict) or s.get("ok") is not False:
+        if not isinstance(s, dict):
             continue
-        info = str(s.get("info") or "")
-        if s.get("step") == "exec_sql":
+        step, ok, info = s.get("step"), s.get("ok"), str(s.get("info") or "")
+        if step == "self_check" and ok is True and info.startswith("按结果核对后改写") and last is not None:
+            out.pop(last)
+        elif step == "exact_fallback" and info.startswith("精确作答:采用"):
+            first = next((i for i, f in enumerate(out) if f["kind"] == "blocked"), None)
+            if first is not None:
+                out.pop(first)
+        last = None
+        if ok is not False:
+            continue
+        if step == "exec_sql":
             title, _sep, err = info.partition(": ")
             out.append({"title": title if _sep else "", "kind": "error", "error": (err if _sep else info)[:160]})
-        elif s.get("step") == "ontology_gate" and not info.endswith("(按原因修正一次)"):
+            last = len(out) - 1
+        elif step == "ontology_gate" and not info.endswith("(按原因修正一次)"):
             out.append({"title": "", "kind": "blocked", "error": info[:160]})
     return out
 
 
-def annotate(results, steps, connect, ir=None):
+def _no_value(rows):
+    """没有行,或只有一行且各列都是空值(SUM / AVG 在没有命中的行时返回的就是这样一行)。"""
+    return not rows or (len(rows) == 1 and isinstance(rows[0], dict) and all(v is None for v in rows[0].values()))
+
+
+def annotate(results, steps, connect, ir=None, explain_empty=True):
     """给每个结果标上状态(及空结果的核对、实际取数日期),汇总失败的查询。
+    explain_empty=False 时不对空结果加说明:按规则判定、汇总异常的答案里,0 条命中本身就是结论。
     返回 {"status": {data, empty, failed}, "failed": [...], "flags": [...], "kv": [(名称, 值)]}。"""
     flags, kv = [], []
     n_data = n_empty = 0
@@ -126,14 +146,15 @@ def annotate(results, steps, connect, ir=None):
         if not isinstance(r, dict):
             continue
         rows = ((r.get("data") or {}).get("rows")) or []
-        r["status"] = "data" if rows else "empty"
-        n_data += bool(rows)
-        n_empty += not rows
+        empty = _no_value(rows)
+        r["status"] = "empty" if empty else "data"
+        n_data += not empty
+        n_empty += empty
         sql = str(r.get("sql") or "")
-        if not sql:
+        if not sql or (empty and not explain_empty):
             continue
         tables = tables_read(sql, connect)
-        if rows:
+        if not empty:
             when = as_of(sql, tables, connect, ir)
             if when:
                 r["data_as_of"] = when
@@ -149,7 +170,8 @@ def annotate(results, steps, connect, ir=None):
         r["coverage"] = cov
         parts = "、".join(f"{c['table']} 共 {c['rows']} 行" if c["rows"] else f"{c['table']} 表里没有数据" for c in cov)
         why = "是筛选条件没有命中,请核对时间范围和取值" if all(c["rows"] for c in cov) else "数据可能尚未接入"
-        flags.append(f"「{r.get('title') or '查询'}」返回 0 行:所查的 {parts},{why};不能据此认为业务上不存在")
+        what = "返回 0 行" if not rows else "没有取到值(汇总结果为空)"
+        flags.append(f"「{r.get('title') or '查询'}」{what}:所查的 {parts},{why};不能据此认为业务上不存在")
     failed = _failed(steps)
     if failed:
         detail = ";".join((f["title"] + ":" if f["title"] else "") + f["error"] for f in failed[:3])

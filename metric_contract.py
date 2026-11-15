@@ -370,7 +370,9 @@ _ALGEBRA = {
 def algebra(contract):
     """这个指标换粒度时能怎么汇总(DR-130),由聚合方式推出,不需要另填字段。
     additive 可加;rollup 可上卷不可加;reconstructible 拆成合计与计数后重算;opaque 只能回到明细重算。"""
-    kind, text = _ALGEBRA.get(((contract or {}).get("measure") or {}).get("agg") or "", ("", ""))
+    measure = (contract or {}).get("measure")
+    agg = measure.get("agg") if isinstance(measure, dict) else None
+    kind, text = _ALGEBRA.get(agg.lower() if isinstance(agg, str) else "", ("", ""))
     return {"kind": kind, "text": ("汇总:" + text) if text else ""}
 
 
