@@ -190,7 +190,7 @@ gunicorn -c gunicorn.conf.py wsgi:application
 | 深度问数 | ✅ 降级为模板,出真实数据 | ✅ LLM 生成 SQL 计划 |
 | 本体构建 | ✅ 纯数据驱动(`quick_build`) | ✅ LLM 基于数据库和可解析文档提议 + 确定性验证 |
 | 对话式本体编辑(apply/undo) | ❌ 需要引擎 | ✅ |
-| 内置构建技能库 | ✅ 本仓通用技能 `ontology-semi-auto`、`ontology-build-method`、`ontology-cross-check`;领域技能 `energy-carbon-ontology`、`electronics-manufacturing-ontology` | ✅ 本仓 + 上游技能 |
+| 内置构建技能库 | ✅ 本仓通用技能 `ontology-semi-auto`、`ontology-build-method`、`ontology-cross-check`、`decision-driven-ontology`(从决策倒推,面向排产与交期等工序主线场景);领域技能 `energy-carbon-ontology`、`electronics-manufacturing-ontology` | ✅ 本仓 + 上游技能 |
 
 上游本体引擎是**可选组件,不随本仓发布**——本仓开源范围仅 COSMO DataMind 本体。
 若你拥有兼容的引擎目录(提供 `engine/agent_runtime.py` 多运行时抽象与 `web/skills_seed/` 构建技能),

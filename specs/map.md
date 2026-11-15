@@ -34,6 +34,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 ## 索引
 
 ### 决定 / Decisions
+- [DR-118 · 从决策倒推的构建方法作为内置技能](decisions/DR-118-decision-driven-build-skill.md)
 - [DR-117 · 工艺路线层与决策层进入主线](decisions/DR-117-process-route-and-decision-layer.md)
 - [DR-116 · 按方向核验的工艺类验收问题](decisions/DR-116-directed-acceptance-questions.md)
 - [DR-115 · 正式问数只取用有资格的图谱](decisions/DR-115-release-state-for-formal-qa.md)
