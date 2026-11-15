@@ -9412,7 +9412,7 @@ def build_inquire():
                 yield push("key_links", True,
                            f"键名补提 · 关系候选 {len(_kl)} 条(连接已有对象 "
                            f"{sum(1 for p in _kl if p['source'] in _bnames or p['target'] in _bnames)} 条 · "
-                           f"多态引用 {sum(1 for p in _kl if p['rationale'].startswith('多态'))} 条)· 交数据裁决")
+                           f"多态引用 {sum(1 for p in _kl if p['rationale'].startswith('多态'))} 条)· 交数据验证")
             except Exception as exc:                     # 补提失败不影响模型提议的裁决
                 yield push("key_links", False, f"键名补提失败:{type(exc).__name__}")
             # ③ 关系数据验证:LLM 提议的关系用真实数据裁决
@@ -9445,7 +9445,7 @@ def build_inquire():
             _sc = {"pass": 0, "fail": 0, "skipped": 0}
             for _r in ir.get("relations", []): _sc[_r.get("semantic", "skipped")] = _sc.get(_r.get("semantic", "skipped"), 0) + 1
             if _sc["pass"] + _sc["fail"]:
-                yield push("semantic_review", True, f"语义评审:{_sc['pass']} 通过 · {_sc['fail']} 存疑(建议人审)")
+                yield push("semantic_review", True, f"语义评审:{_sc['pass']} 通过 · {_sc['fail']} 存疑(建议人工复核)")
             else:
                 yield push("semantic_review", True, "语义评审:引擎不可用,已跳过(不臆造)")
         else:
