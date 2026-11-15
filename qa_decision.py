@@ -447,7 +447,7 @@ ASSIST_PROMPT = """判断下面的问题属于哪一类。只能从给出的选�
 
 def assist_options(question, ir, rules, actions, connect):
     """这张图谱上除查数之外还能怎么答:每条规则可判定,每条约束可解释,问句里有主线上的编号可追踪,
-    有规则可汇总异常,绑定且参数有接地声明的动作可推演。返回 [(编号, 说明, 路由)]。没有决策层内容时为空。"""
+    有规则可汇总异常。返回 [(编号, 说明, 路由)]。没有决策层内容时为空。"""
     opts = []
     for r in (rules or [])[:12]:
         if isinstance(r, dict) and r.get("id"):
@@ -461,9 +461,7 @@ def assist_options(question, ir, rules, actions, connect):
     ids = _root_ids(question, ir, connect)
     if ids:
         opts.append(("trace", f"追踪 {ids[0]} 的执行进度", {"type": "trace", "root_id": ids[0]}))
-    if not _LOOKUP_CUE.search(question or ""):
-        for a in bound_actions(actions, ir)[:6]:
-            opts.append((f"whatif:{a['id']}", f"用动作「{a.get('cn')}」做试算", {"type": "whatif", "action": a}))
+    # 试算不在选项里(DR-125):推演会调用执行器,只由明确的假设性问法触发,不交给模型判断
     return opts
 
 
@@ -955,11 +953,22 @@ def run_whatif(route, question, ir, connect, invoke, today, operator, actions):
     body = body or {}
     res = body.get("result") or {}
     base = {"kind": "action", "cn": act["cn"], "params": params, "notes": notes, "record_id": body.get("id")}
+    center = [{"kind": "action", "label": f"到动作中心发起「{act['cn']}」", "action_id": act["id"], "href": "#actioncenter"}]
+    if body.get("code") in ("simulate_not_allowed", "no_executor"):
+        # 问数只能调用标了「只做试算」的执行器(DR-125):不满足时什么都没有调用,也没有留下动作记录
+        text = (f"动作「{act['cn']}」没有配置执行器,无法试算。" if body["code"] == "no_executor"
+                else f"动作「{act['cn']}」的执行器没有标记为只做试算,问数不调用它。参数已从问句取得,可到动作中心发起。")
+        return {"results": [], "narrative": text, "evidence_card": _card("whatif", text, [base], kv=list(params.items()), next_=center)}
+    if body.get("status") == "unknown":
+        text = (f"已向动作「{act['cn']}」的执行器发出试算请求(记录 {body.get('id')}),但没有拿到完整的回执,结果未知。"
+                "请到动作中心查看这条记录,不要据此下结论。")
+        return {"results": [], "narrative": text, "evidence_card": _card("whatif", text, [base], kv=list(params.items()),
+                                                                           links=[{"label": "动作记录", "href": "#actioncenter"}])}
     if code >= 400 or body.get("status") == "failed" or res.get("ok") is False:
         why = body.get("error") or res.get("summary") or res.get("error") or "执行失败"
         text = f"动作「{act['cn']}」执行失败:{why}"
         return {"results": [], "narrative": text, "evidence_card": _card("whatif", text, [base])}
-    if body.get("execution_mode") != "executor":
+    if body.get("execution_mode") not in ("executor", "simulate"):
         text = f"动作「{act['cn']}」已登记(编号 {body.get('id')}),但没有配置执行器,未做推演。"
         return {"results": [], "narrative": text, "evidence_card": _card("whatif", text, [base])}
     detail: dict = res["trial"] if isinstance(res.get("trial"), dict) else res
@@ -996,6 +1005,11 @@ def answer(question, ir, rules, actions, route, connect, anchored, validate=None
         return run_explain(question, ir, rules, anchored, tuple(route.get("pinned") or ()))
     if t == "trace":
         return run_trace(route, ir, rules, connect, today, validate)
-    if t == "whatif" and invoke is not None:
+    if t == "whatif":
+        if invoke is None:                    # 调用方没有试算的权限(如经接口代理进来的智能体):说明原因,不调用任何东西
+            act = route["action"]
+            text = f"「{act.get('cn')}」这类试算需要使用者在 DataMind 界面里发起,当前调用方不能触发。"
+            return {"results": [], "narrative": text, "evidence_card": _card("whatif", text, [
+                {"kind": "action", "cn": act.get("cn"), "text": act.get("desc"), "params": {}}])}
         return run_whatif(route, question, ir, connect, invoke, today, operator, actions)
     return None

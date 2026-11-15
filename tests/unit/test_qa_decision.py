@@ -340,13 +340,50 @@ def test_server_passes_the_real_invoke_and_the_operator(wired, monkeypatch):
     import srv_actions
     monkeypatch.setattr(srv_actions, "load_action_types", lambda: [TRIAL])
     seen = []
-    monkeypatch.setattr(bp_actions, "invoke", lambda aid, params, op: seen.append((aid, op)) or (200, {
-        "id": "r", "status": "executed", "execution_mode": "executor", "result": {"ok": True, "summary": "可按期"}}))
+    monkeypatch.setattr(bp_actions, "invoke", lambda aid, params, op, simulate=False: seen.append((aid, op, simulate)) or (200, {
+        "id": "r", "status": "executed", "execution_mode": "simulate", "result": {"ok": True, "summary": "可按期"}}))
     q = "如果客户A新增一张订单,12月5日能否按期交付?"
     with server.app.test_request_context("/api/chat", method="POST", json={"q": q, "operator": "张工"}):
         prep = _prep(wired, q)
         ans = server._qa_decision_answer(q, wired["ir"], prep, None, server._qa_operator({"operator": "张工"}))
-    assert prep["route"]["type"] == "whatif" and seen == [("act_trial", "张工")] and ans["evidence_card"]["type"] == "whatif"
+    assert prep["route"]["type"] == "whatif" and ans["evidence_card"]["type"] == "whatif"
+    assert seen == [("act_trial", "张工", True)]                                 # 问数只以只读试算的方式发起
+
+
+def test_a_caller_that_came_through_the_agent_adapter_cannot_trigger_a_what_if(wired, monkeypatch):
+    wired["ir"]["param_grounding"] = {"customer": {"table": "orders", "key": "customer", "match": ["customer"]}, "due_date": {"type": "date"}}
+    import bp_actions
+    import srv_actions
+    monkeypatch.setattr(srv_actions, "load_action_types", lambda: [TRIAL])
+    called = []
+    monkeypatch.setattr(bp_actions, "invoke", lambda *a, **k: called.append(a) or (200, {}))
+    q = "如果客户A新增一张订单,12月5日能否按期交付?"
+    with server.app.test_request_context("/api/chat", method="POST", json={"q": q}, headers={"X-DataMind-Actor": "ath:agent-7:analyst"}):
+        prep = _prep(wired, q)
+        ans = server._qa_decision_answer(q, wired["ir"], prep)
+    assert called == [] and "当前调用方不能触发" in ans["narrative"] and ans["results"] == []
+
+
+def test_an_executor_not_marked_simulate_only_is_not_called_from_a_question(trial_world):
+    refuse = lambda *a: (403, {"error": "x", "code": "simulate_not_allowed"})      # noqa: E731
+    _route_, ans = _whatif(trial_world, "如果客户A新增一张订单,12月5日能否按期交付?", refuse)
+    assert "没有标记为只做试算" in ans["narrative"] and ans["evidence_card"]["next"][0]["href"] == "#actioncenter"
+    none = lambda *a: (409, {"error": "x", "code": "no_executor"})                 # noqa: E731
+    assert "没有配置执行器" in _whatif(trial_world, "如果客户A新增一张订单,12月5日能否按期交付?", none)[1]["narrative"]
+
+
+def test_an_unknown_outcome_is_reported_as_unknown_not_as_a_result(trial_world):
+    lost = lambda *a: (200, {"id": "rec9", "status": "unknown", "execution_mode": "simulate", "result": {"error": "TimeoutError"}})   # noqa: E731
+    _route_, ans = _whatif(trial_world, "如果客户A新增一张订单,12月5日能否按期交付?", lost)
+    assert "结果未知" in ans["narrative"] and "rec9" in ans["narrative"] and ans["results"] == []
+
+
+def test_the_model_is_never_offered_a_what_if_option(trial_world):
+    opts = [k for k, _t, _r in qd.assist_options("展示客户清单", trial_world["ir"], RULES, [TRIAL], trial_world["connect"])]
+    assert opts and not any(k.startswith("whatif") for k in opts)
+    route = qd.classify_assisted("展示客户清单", trial_world["ir"], RULES, [TRIAL], trial_world["connect"],
+                                 lambda p: '{"choice": "whatif:act_trial"}')
+    assert route == {"type": "lookup"}
 
 
 # ── 工艺路线即追踪主线(DR-121) ─────────────────────────────────────

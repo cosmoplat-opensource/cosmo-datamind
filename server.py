@@ -1350,9 +1350,14 @@ def _qa_decision_answer(question, ir, prep, validate=None, operator="问数助�
     import qa_decision
     if prep["route"]["type"] == "lookup":
         return None
+    # DR-125 问数推演只做只读试算:只调用部署配置里标了 simulate_only 的执行器;
+    # 带调用方声明(经上游适配层进来、只有问数权限)的请求不能触发推演
+    proxied = has_request_context() and bool(request.headers.get("X-DataMind-Actor"))
+    simulate = None if proxied else \
+        (lambda aid, params, who: bp_actions.invoke(aid, params, who, simulate=True))
     try:
         return qa_decision.answer(question, ir, prep["rules"], prep["actions"], prep["route"], prep["connect"],
-                                  prep["anchored"], validate=validate, invoke=bp_actions.invoke, operator=operator)
+                                  prep["anchored"], validate=validate, invoke=simulate, operator=operator)
     except Exception as exc:            # noqa: BLE001
         prep["error"] = f"{type(exc).__name__}: {exc}"[:160]
         return None
