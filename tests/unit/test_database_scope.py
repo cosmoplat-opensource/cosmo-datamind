@@ -238,6 +238,7 @@ def test_builtin_ontologies_that_do_not_describe_the_main_database_are_not_its_d
     monkeypatch.setattr(server, 'DB', db)
     monkeypatch.setattr(server, '_load_conns', lambda: [])
     monkeypatch.setattr(server, 'load_ir_edited', lambda key: irs.get(key))
+    monkeypatch.setattr(server, '_DEMO_FITS', {})
     monkeypatch.setattr(server, 'IR_SOURCES', {'demo': {'paths': [], 'name': '示例'}, 'app': {'paths': [], 'name': '应用'},
                                              'built_mine': {'paths': [], 'name': '我的本体'}})
     context = server.app.test_client().get('/api/data/context').get_json()
@@ -245,4 +246,26 @@ def test_builtin_ontologies_that_do_not_describe_the_main_database_are_not_its_d
     irs['demo'] = {'scenario': {'name': '示例'}, 'objects': [{'id': 'orders', 'name': 'orders', 'table': 'orders'}], 'links': []}
     assert server.app.test_client().get('/api/data/context').get_json()['default_graph'] == 'demo'   # 内置本体对得上时照旧
     irs.pop('built_mine'); irs['demo'] = sample
-    assert server._active_graph_key(db) == 'demo'                                                   # 没有别的可选时保持原来的回退
+    context = server.app.test_client().get('/api/data/context').get_json()                          # 没有适用的本体:如实报告(DR-133)
+    assert context['graphs'] == [] and context['default_graph'] == '' and context['has_ontology'] is False
+    monkeypatch.setattr(server, 'DB', str(db) + '.missing')                                         # 没有配置数据库时仍可浏览内置示例本体
+    assert server._active_graph_key(server.DB) == 'demo'
+
+
+def test_asking_on_a_main_database_without_an_ontology_says_so_instead_of_using_the_sample(make_sqlite, monkeypatch):
+    db = make_sqlite({'orders': ('id INTEGER, amount REAL', [(1, 2.0)])}, fname='main2.db')
+    sample = {'scenario': {'name': '示例'}, 'objects': [{'id': 'x', 'name': 'x', 'table': 'fact_other'}], 'links': []}
+    monkeypatch.setattr(server, 'DB', db)
+    monkeypatch.setattr(server, '_load_conns', lambda: [])
+    monkeypatch.setattr(server, 'load_ir_edited', lambda key: sample if key == 'demo' else None)
+    monkeypatch.setattr(server, 'IR_SOURCES', {'demo': {'paths': [], 'name': '示例'}})
+    monkeypatch.setattr(server, '_DEMO_FITS', {})
+    client = server.app.test_client()
+    r = client.post('/api/chat', headers={'X-DataMind-Source': 'demo'}, json={'q': '订单金额合计'})
+    body = r.get_json()
+    assert r.status_code == 422 and body['code'] == 'ontology_not_queryable', body
+    assert '请先基于当前数据源构建本体' in body['error'] and body['ontology']['keys'] == []
+    for headers in ({'X-DataMind-Source': 'demo'}, {}):                       # 带不带数据源标头,都提示先构建
+        for url in ('/api/metrics', '/api/ont/review', '/api/ont/edits'):
+            r = client.get(url, headers=headers)
+            assert r.status_code == 422 and r.get_json()['code'] == 'ontology_unavailable', (url, r.get_json())

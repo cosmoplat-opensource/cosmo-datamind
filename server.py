@@ -1706,7 +1706,10 @@ def _source_graph_keys(path):
 
 
 def _describes(ir, path):
-    """本体绑定的表至少有一张在这个库里;没有绑定任何表的概念本体不作判断。"""
+    """本体绑定的表至少有一张在这个库里;没有绑定任何表的概念本体不作判断。
+    没有配置数据库(文件不存在)时也不作判断:这种部署只用来浏览内置示例本体。"""
+    if not path or not os.path.exists(path):
+        return True
     try:
         profile = _qa_graph_profile(ir, _qa_table_inventory(path))
         return bool(profile["available_tables"]) or not profile["bound_tables"]
@@ -1723,8 +1726,8 @@ def _active_graph_key(path=None):
             _DEMO_FITS.update(sig=sig, ok=bool(ir) and _describes(ir, path))
         if _DEMO_FITS['ok']:
             return 'demo'
-        keys = _source_graph_keys(path)
-        return keys[0] if keys else 'demo'
+        keys = _source_graph_keys(path)                # 没有适用的本体时返回空:由调用方提示「尚未构建本体」(DR-133)
+        return keys[0] if keys else ''
     keys = _source_graph_keys(path)
     return keys[0] if keys else ''
 
@@ -1737,10 +1740,26 @@ def _active_ir(path=None):
     return (load_ir_edited(key) or {}) if key else {}
 
 
+# 没有指定图谱时取当前数据库默认本体的端点。当前库没有本体时统一回 422,不落到「非法图谱键」(DR-133)。
+_DEFAULT_GRAPH_ENDPOINTS = {'ont_apply', 'ont_undo', 'ont_edits', 'ont_save', 'ont_forge', 'ont_metadata', 'ont_rebuild',
+                            'ont_chats_new', 'ont_chat', 'ont_chat_stream', 'ont_review', 'ont_release_get', 'sparql',
+                            'metrics', 'metric_quick', 'metric_lineage'}
+
+
+def _requested_graph_keys():
+    body = request.get_json(silent=True) if request.is_json else {}
+    body = body if isinstance(body, dict) else {}
+    keys = [request.args.get('graph'), body.get('graph')]
+    if isinstance(body.get('graphs'), list): keys.extend(body['graphs'])
+    return keys
+
+
 @app.before_request
 def _database_scope_guard():
     if not request.path.startswith('/api/'): return None
     sid = request.headers.get('X-DataMind-Source')
+    if not sid and request.endpoint in _DEFAULT_GRAPH_ENDPOINTS and not any(_requested_graph_keys()) and not _active_graph_key():
+        return jsonify({'error': '当前数据库尚未构建本体，请先构建', 'code': 'ontology_unavailable'}), 422
     if not sid and request.endpoint in {'overview', 'tables', 'table_detail', 'table_info', 'data_context', 'data_quality', 'db_check', 'glossary', 'sysinfo'}:
         sid = request.args.get('src')
     if not sid: return None
@@ -1751,10 +1770,8 @@ def _database_scope_guard():
     observability.count('data_scope.request', source=sid)
     body = request.get_json(silent=True) if request.is_json else {}
     body = body if isinstance(body, dict) else {}
-    keys = [request.args.get('graph'), body.get('graph')]
-    if isinstance(body.get('graphs'), list): keys.extend(body['graphs'])
-    if request.endpoint in {'ont_apply', 'ont_undo', 'ont_edits', 'ont_save', 'ont_forge',
-                            'ont_metadata', 'ont_rebuild', 'ont_chats_new', 'ont_chat', 'ont_chat_stream'} and not any(keys):
+    keys = _requested_graph_keys()
+    if request.endpoint in _DEFAULT_GRAPH_ENDPOINTS and not any(keys):
         default_key = _active_graph_key()
         if not default_key:
             return jsonify({'error': '当前数据库尚未构建本体，请先构建', 'code': 'ontology_unavailable'}), 422
