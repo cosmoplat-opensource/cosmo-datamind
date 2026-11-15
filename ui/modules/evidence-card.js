@@ -16,7 +16,7 @@ function style(){
 .evc .evc-k{display:inline-block;min-width:30px;font-size:11px;color:#4A5FF3;background:#EEF2FF;border-radius:3px;padding:0 5px;margin-right:6px;text-align:center}
 .evc code,.evc pre{font-size:11.5px;background:#F2F4F8;border-radius:3px}.evc pre{padding:6px 8px;white-space:pre-wrap;margin:4px 0}
 .evc .evc-ev{color:#646a73}.evc ol{margin:4px 0 0 18px;padding:0}.evc .evc-f{color:#B26A00;margin-top:6px}
-.evc .evc-n{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}.evc .evc-n a{border:1px solid #D6DCFF;background:#fff;color:#4A5FF3;border-radius:12px;padding:1px 10px;cursor:pointer;text-decoration:none}
+.evc .evc-n{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}.evc .evc-n a,.evc .evc-n button{border:1px solid #D6DCFF;background:#fff;color:#4A5FF3;border-radius:12px;padding:1px 10px;cursor:pointer;text-decoration:none;font:inherit;line-height:inherit}.evc .evc-n a:focus-visible,.evc .evc-n button:focus-visible{outline:2px solid #4A5FF3;outline-offset:1px}
 .evc details summary{cursor:pointer;color:#646a73}
 .evc .evc-p{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}.evc .evc-p code{white-space:nowrap;padding:0 5px}`;
   const el = document.createElement('style'); el.textContent = css; document.head.appendChild(el);
@@ -44,8 +44,11 @@ window.EVC_GO = function(el){
   if(href) location.hash = href.replace(/^#/, '');
 };
 function chip(it, host, suffix){
-  const attr = it.kind === 'question' && it.q ? `data-q="${e(it.q)}"` : `data-href="${e(it.href || '')}"`;
-  return `<a onclick="EVC_GO(this)" data-host="${e(host || '')}" ${attr} title="${e(it.q || it.href || '')}">${e(it.label)}${suffix || ''}</a>`;
+  // 候选与追问是原生按钮(键盘可聚焦,Enter / 空格可选);页面跳转是带 href 的链接
+  if(it.kind === 'question' && it.q)
+    return `<button type="button" onclick="EVC_GO(this)" data-host="${e(host || '')}" data-q="${e(it.q)}" title="${e(it.q)}">${e(it.label)}${suffix || ''}</button>`;
+  const href = '#' + String(it.href || '').replace(/^#/, '');
+  return `<a href="${e(href)}" data-host="${e(host || '')}" data-href="${e(it.href || '')}" title="${e(it.href || '')}">${e(it.label)}${suffix || ''}</a>`;
 }
 window.renderEvidenceCard = function(card, host){
   if(!card || !card.type) return '';

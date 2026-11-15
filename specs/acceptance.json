@@ -1057,6 +1057,54 @@
         "tests/unit/test_qa_review_acceptance.py::test_an_executor_that_is_not_simulate_only_is_never_called_from_a_question",
         "tests/unit/test_qa_review_acceptance.py::test_a_wrong_number_in_the_summary_is_reported_as_a_value_mismatch"
       ]
+    },
+    {
+      "id": "RELEASE-03",
+      "criterion": "发布时按编辑后的内容重新验收:构建时通过、人工编辑后出现阻断问题的图谱不能发布并列出问题;普通编辑不影响发布;被人否决的关系不算证据冲突",
+      "tests": [
+        "tests/unit/test_release_gate.py::test_publishing_rechecks_the_content_as_edited",
+        "tests/unit/test_release_gate.py::test_an_ordinary_edit_does_not_block_publishing",
+        "tests/unit/test_health_check.py::test_a_relation_rejected_by_a_person_is_a_ruling_not_a_conflict",
+        "tests/unit/test_health_check.py::test_status_conflict_verified_vs_rejected"
+      ]
+    },
+    {
+      "id": "ACTION-EXEC-03",
+      "criterion": "执行器返回 5xx 且没有明确 ok=false 的回执时记为结果未知、是否写回未知;带明确回执的 5xx 和 4xx 记为失败",
+      "tests": [
+        "tests/unit/test_action_executors.py::test_a_server_error_without_a_receipt_is_an_unknown_outcome",
+        "tests/unit/test_action_executors.py::test_a_server_error_that_carries_a_receipt_is_a_failure",
+        "tests/unit/test_action_executors.py::test_a_rejected_request_is_still_a_failure"
+      ]
+    },
+    {
+      "id": "QA-SCOPE-01",
+      "criterion": "所选数据表的范围对判定、异常汇总、追踪、试算取参同样有效,且在读数之前校验:范围之外的表不被读取,答案说明缺哪张表;判定先校验再求值;不限定范围时行为不变",
+      "tests": [
+        "tests/unit/test_qa_decision.py::test_a_judgement_on_a_table_outside_the_selection_reads_nothing",
+        "tests/unit/test_qa_decision.py::test_a_judgement_is_validated_before_it_is_evaluated",
+        "tests/unit/test_qa_decision.py::test_monitor_only_evaluates_rules_inside_the_selection",
+        "tests/unit/test_qa_decision.py::test_a_trace_that_leaves_the_selection_reads_nothing",
+        "tests/unit/test_qa_decision.py::test_without_a_selection_everything_is_evaluated_as_before",
+        "tests/unit/test_qa_review_acceptance.py::test_a_summary_does_not_report_rules_on_tables_outside_the_selection",
+        "tests/unit/test_qa_review_acceptance.py::test_a_trace_and_a_simulation_stay_inside_the_selection"
+      ]
+    },
+    {
+      "id": "ANSWER-RECORD-03",
+      "criterion": "数值匹配检查列名:句子里点了列名时,数字要出自那一列;同一行另一列的数值被报告为属于另一列;列名对得上的、没点列名的、汇总值照常通过",
+      "tests": [
+        "tests/unit/test_answer_record.py::test_a_number_from_another_column_of_the_same_row_is_reported",
+        "tests/unit/test_answer_record.py::test_numbers_under_the_right_column_still_pass",
+        "tests/unit/test_answer_record.py::test_the_column_check_names_both_columns"
+      ]
+    },
+    {
+      "id": "EVIDENCE-CARD-02",
+      "criterion": "依据卡上的候选与追问是原生按钮,页面跳转是带 href 的链接,键盘可聚焦可激活",
+      "tests": [
+        "tests/unit/test_evidence_card_ui.py::test_evidence_card_behavior"
+      ]
     }
   ]
 }

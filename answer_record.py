@@ -97,7 +97,7 @@ def _numbers(text, ignore=""):
         out.append({"token": tok, "value": val, "decimals": _decimals(tok), "percent": tok.endswith("%"), "unit": unit,
                     "negative": tok.startswith("-"),
                     "down": bool(_DOWN.search(cleaned[max(start, m.start() - 10):m.start()] + cleaned[m.end():min(end, m.end() + 5)])),
-                    "clause": str(text or "")[start:end]})
+                    "clause": str(text or "")[start:end], "pos": m.start() - start})
     return out
 
 
@@ -209,19 +209,73 @@ def _named(clause, labels):
                                   if re.search(r"[A-Za-z0-9]", w) else w in clause)]
 
 
+def _col_names(results):
+    """各数值列在文字里可能的叫法 → {叫法: 列名}。列名本身、去掉单位后缀的列名;
+    三个字以上的中文列名另认前两个字(「覆盖天数」写成「覆盖」),前提是这两个字只对应一列。"""
+    cols: list[str] = []
+    for r in results or []:
+        for row in ((r.get("data") or {}).get("rows") or [])[:200]:
+            for k, v in row.items() if isinstance(row, dict) else ():
+                if isinstance(v, (int, float)) and not isinstance(v, bool) and str(k) not in cols and k != "_row":
+                    cols.append(str(k))
+    names: dict[str, str] = {}
+    short: dict[str, list[str]] = {}
+    for c in cols:
+        bare = re.sub(r"[_((]?(万|亿)元?[))]?$", "", c).strip("_ ")
+        for n in {c, bare}:
+            if len(n) >= 2:
+                names[n] = c
+        if len(bare) >= 3 and re.fullmatch(r"[\u4e00-\u9fff]+", bare):
+            short.setdefault(bare[:2], []).append(c)
+    for n, cs in short.items():
+        if len(cs) == 1 and n not in names:
+            names[n] = cs[0]
+    return names
+
+
+def _near_col(n, names):
+    """这个数字前面最近点到的列(前面没有就取后面最近的);句子里没点任何列名返回 None。"""
+    clause, pos = n["clause"], n.get("pos", 0)
+    spans = []
+    for name, col in names.items():
+        spans += [(m.start(), m.end(), col) for m in re.finditer(re.escape(name), clause)]
+    if not spans:
+        return None
+    before = [s for s in spans if s[1] <= pos]
+    if before:
+        return max(before, key=lambda s: (s[1], s[1] - s[0]))[2]
+    return min(spans, key=lambda s: (s[0], s[0] - s[1]))[2]
+
+
+def _other_column(n, pool, derived, names):
+    """数字对上了单元格,但句子里点的是另一列 → (句子里点的列, 数值实际所在的列);没有问题返回 None。"""
+    near = _near_col(n, names)
+    if not near:
+        return None
+    hit_cols = [m.group(1) for c in pool if _find(n, [c])[0] for m in [re.search(r"「([^」]+)」$", c[2])] if m]
+    if not hit_cols or near in hit_cols:
+        return None
+    if _find(n, [d for d in derived if d[2].startswith(f"「{near}」")])[0]:      # 是所点那一列的合计、差值等
+        return None
+    return near, hit_cols[0]
+
+
 def check_narrative(narrative, results, question="", extra=()):
     """文字说明里的数字逐个找对应的数值。返回
     {"checked": 检查了几个, "unverified": [没通过的原文片段], "issues": [{"token", "kind", "detail"}], "matched": [{"token", "source"}]}。
-    kind:no_source 结果里没有这个数值;sign 与结果符号相反;other_row 这个数值在结果里属于另一行。"""
+    kind:no_source 结果里没有这个数值;sign 与结果符号相反;other_row 这个数值在结果里属于另一行;
+    other_column 这个数值在结果里属于另一列(句子里点了列名时才检查)。"""
     nums = _numbers(narrative, ignore=question)
     if not nums:
         return {"checked": 0, "unverified": []}
     cells, derived = _known(results, extra)
     labels = _labels(results)
+    names = _col_names(results)
     issues, matched = [], []
     for n in nums:
         named = _named(n["clause"], labels) if labels else []
         src, why = None, ""
+        pool = cells
         if named:
             rows: dict[int, list[dict]] = {}
             for w in named:
@@ -230,6 +284,7 @@ def check_narrative(narrative, results, question="", extra=()):
                         rows[ri].append(row)
             own = [{"title": (results[ri].get("title") or f"结果{ri + 1}"), "data": {"rows": rs}} for ri, rs in rows.items()]
             own_cells, own_derived = _known(own)
+            pool = own_cells
             src, why = _find(n, own_cells + [d for d in own_derived if "行数" not in d[2]])
             if not src and why != "sign":
                 # 整张表的汇总值、依据卡里的值;最大 / 最小值本身是别的行的值,句子里说了「最高、最低」才算
@@ -243,7 +298,11 @@ def check_narrative(narrative, results, question="", extra=()):
                     continue
         else:
             src, why = _find(n, cells + derived)
-        if src:
+        wrong = _other_column(n, pool, derived, names) if src else None
+        if wrong:                                      # 数值对得上,但是另一列的(DR-129):覆盖天数写成了库存的数
+            issues.append({"token": n["token"], "kind": "other_column",
+                           "detail": f"{n['token']} 在结果里是「{wrong[1]}」列的值,文字里说的是「{wrong[0]}」"})
+        elif src:
             matched.append({"token": n["token"], "source": src})
         elif why == "sign":
             issues.append({"token": n["token"], "kind": "sign", "detail": f"{n['token']} 在结果里是负值,文字里没有写出"})

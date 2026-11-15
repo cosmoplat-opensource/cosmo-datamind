@@ -60,7 +60,6 @@ def plant(make_sqlite, tmp_path, monkeypatch):
     monkeypatch.setattr(server, "_qa_db", lambda: db)
     monkeypatch.setattr(server, "_load_rules", lambda key: [])
     monkeypatch.setattr(server, "_qa_anchor_ir", lambda keys=None: (IR, ["built_e2e"], "", {}))
-    monkeypatch.setattr(server, "_qa_scope_error", lambda *a, **k: None)
     monkeypatch.setattr(server, "build_context", lambda *a, **k: "")
     monkeypatch.setattr(server, "_qa_route_assist_enabled", lambda: False)
     monkeypatch.setattr(server, "_metric_cards", lambda *a, **k: [])
@@ -80,8 +79,8 @@ def plant(make_sqlite, tmp_path, monkeypatch):
     executor()
     client = server.app.test_client()
 
-    def ask(q, headers=None):
-        return client.post("/api/chat", json={"q": q, "nocache": True, "operator": "计划员"}, headers=headers or {}).get_json()
+    def ask(q, headers=None, **extra):
+        return client.post("/api/chat", json={"q": q, "nocache": True, "operator": "计划员", **extra}, headers=headers or {}).get_json()
     return {"ask": ask, "calls": calls, "log": lambda: json.loads(log.read_text(encoding="utf-8")), "executor": executor,
             "db": db}
 
@@ -155,3 +154,25 @@ def test_a_wrong_number_in_the_summary_is_reported_as_a_value_mismatch(plant, mo
     issues = out["answer_record"]["narrative_check"]["issues"]
     assert [(i["token"], i["kind"]) for i in issues] == [("350.5", "sign")]
     assert out["evidence_card"]["flags"][0].startswith("数值匹配")
+
+
+# ── 所选数据表的范围对判定、汇总、追踪、试算同样有效(DR-129) ─────────
+
+SH = {"id": "r_sh", "cn": "上海客户", "on": "客户", "when": [{"field": "city", "op": "==", "value": "上海"}],
+      "then": {"decision": "需查证", "severity": "medium"}}
+
+
+def test_a_summary_does_not_report_rules_on_tables_outside_the_selection(plant, monkeypatch):
+    monkeypatch.setattr(server, "_load_rules", lambda key: [SH])
+    d = plant["ask"]("现在有哪些异常?")
+    assert d["evidence_card"]["type"] == "monitor" and d["results"][0]["data"]["rows"][0]["命中"] == 1     # 不限定范围时照常判定
+    d = plant["ask"]("现在有哪些异常?", tables=["orders"])
+    assert d["evidence_card"]["type"] == "monitor" and d["results"][0]["data"]["rows"] == []
+    assert "customers" in d["narrative"] and "不在" in d["narrative"]
+
+
+def test_a_trace_and_a_simulation_stay_inside_the_selection(plant):
+    d = plant["ask"]("订单 P1001 现在到哪了?", tables=["orders"])
+    assert d["evidence_card"]["type"] == "trace" and d["results"] == [] and "ops" in d["narrative"]
+    d = plant["ask"]("如果北方重工新增一张订单,12月5日能否按期交付?", tables=["orders"])
+    assert "customers" in d["narrative"] and "不在" in d["narrative"] and plant["calls"] == [] and plant["log"]() == []

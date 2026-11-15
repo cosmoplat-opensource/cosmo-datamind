@@ -257,3 +257,29 @@ def test_the_action_centre_offers_to_resolve_an_unknown_outcome():
     ui = (Path(__file__).resolve().parents[2] / "ui/index.html").read_text(encoding="utf-8")
     assert "x.status==='unknown'" in ui and "acResolve(" in ui and "'/api/action/resolve'" in ui
     assert "核对依据(必填)" in ui and "系统不会重新发起" in ui
+
+
+# ── 没有结构化回执的 5xx 是结果未知(DR-129) ────────────────────────
+
+def _http_error(code, body):
+    return urllib.error.HTTPError("u", code, "err", {}, io.BytesIO(body))
+
+
+@pytest.mark.parametrize("body", [b"{}", b"", b"<html>Bad Gateway</html>", b'{"summary": "internal error"}'])
+def test_a_server_error_without_a_receipt_is_an_unknown_outcome(actions, body):
+    actions["configure"](error=_http_error(500, body))
+    d = _invoke(actions).get_json()
+    assert d["status"] == "unknown" and d["result"]["error"] == "HTTP 500" and "核对业务系统" in d["result"]["summary"]
+    assert actions["log"]()[0]["real_writeback"] is None                 # 执行器可能已经提交,不能记成未写回
+
+
+def test_a_server_error_that_carries_a_receipt_is_a_failure(actions):
+    actions["configure"](error=_http_error(503, json.dumps({"ok": False, "real_writeback": False, "summary": "排程服务维护中"}).encode()))
+    d = _invoke(actions).get_json()
+    assert d["status"] == "failed" and d["result"] == {"error": "HTTP 503", "summary": "排程服务维护中"}
+    assert actions["log"]()[0]["real_writeback"] is False
+
+
+def test_a_rejected_request_is_still_a_failure(actions):
+    actions["configure"](error=_http_error(400, b"{}"))                  # 4xx:请求被拒收,没有执行
+    assert _invoke(actions).get_json()["status"] == "failed"

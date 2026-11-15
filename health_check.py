@@ -81,7 +81,9 @@ def check(ir):
         deg[t] += 1
         pair_dir[(s, t)] += 1
         pair_dir_items.setdefault((s, t), []).append(r)
-        pair_undir.setdefault(frozenset((s, t)), []).append((s, t, st, r.get("verb")))
+        # 被人否决的关系是裁定结果,不是与 verified 相矛盾的证据(DR-129)
+        pair_undir.setdefault(frozenset((s, t)), []).append(
+            (s, t, "human_rejected" if r.get("human_review") == "rejected" else st, r.get("verb")))
 
     for (s, t), c in pair_dir.items():
         if c > 1 and s != t:

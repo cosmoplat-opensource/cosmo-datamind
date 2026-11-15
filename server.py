@@ -1344,7 +1344,7 @@ def _qa_operator(body):
     return who or "问数助手"
 
 
-def _qa_decision_answer(question, ir, prep, validate=None, operator="问数助手"):
+def _qa_decision_answer(question, ir, prep, validate=None, operator="问数助手", scope=None):
     """非查数类型的答案;返回 None 表示交回 NL2SQL(含求解出错,原因记入 prep["error"])。"""
     import bp_actions
     import qa_decision
@@ -1357,7 +1357,7 @@ def _qa_decision_answer(question, ir, prep, validate=None, operator="问数助�
         (lambda aid, params, who: bp_actions.invoke(aid, params, who, simulate=True))
     try:
         return qa_decision.answer(question, ir, prep["rules"], prep["actions"], prep["route"], prep["connect"],
-                                  prep["anchored"], validate=validate, invoke=simulate, operator=operator)
+                                  prep["anchored"], validate=validate, invoke=simulate, operator=operator, scope=scope)
     except Exception as exc:            # noqa: BLE001
         prep["error"] = f"{type(exc).__name__}: {exc}"[:160]
         return None
@@ -5081,7 +5081,8 @@ def _chat_impl():
         return jsonify({"routed_skip": True})       # 多路候选:非查数类型只由默认一路求解(推演会调用动作,不能重复发起)
     _strict = bool(graph_keys and gate_keys != ["demo"] and not fallback)
     _ans = _qa_decision_answer(question, ir_gate, _dq,
-                               lambda _s: _qa_validate_sql(_s, ir_gate, strict=_strict, focus_tables=focus_tables), _qa_operator(body))
+                               lambda _s: _qa_validate_sql(_s, ir_gate, strict=_strict, focus_tables=focus_tables), _qa_operator(body),
+                               scope=lambda _t: _qa_scope_check(f'SELECT 1 FROM "{_t}"', ir_gate, strict=_strict, focus_tables=focus_tables))
     if _dq.get("error") and not any(x["step"] == "decision_error" for x in steps):
         steps.append({"step": "decision_error", "ok": False, "info": "决策层出错,改按查数处理 · " + _dq["error"]})
     if _ans is not None:                            # 非查数类型:确定性求解的结果不进缓存(规则与数据随时会变)
@@ -5291,7 +5292,8 @@ def chat_stream():
             yield push(*_st)
         _strict = bool(graph_keys and _gate_keys != ["demo"] and not _gate_fallback)
         _ans = _qa_decision_answer(question, ir_gate, _dq,
-                                   lambda _s: _qa_validate_sql(_s, ir_gate, strict=_strict, focus_tables=focus_tables), _qa_operator(body))
+                                   lambda _s: _qa_validate_sql(_s, ir_gate, strict=_strict, focus_tables=focus_tables), _qa_operator(body),
+                                   scope=lambda _t: _qa_scope_check(f'SELECT 1 FROM "{_t}"', ir_gate, strict=_strict, focus_tables=focus_tables))
         if _dq.get("error") and not any(x["step"] == "decision_error" for x in steps):
             yield push("decision_error", False, "决策层出错,改按查数处理 · " + _dq["error"])
         if _ans is not None:
@@ -6985,7 +6987,8 @@ def ont_release_get():
 
 @app.post("/api/ont/release")
 def ont_release_set():
-    """发布或撤回一张图谱。发布是人的决定:要署名,且以当前内容(含人工编辑)重新做一次验收检查,不通过不能发布。"""
+    """发布或撤回一张图谱。发布是人的决定:要署名。构建时的验收结论不通过不能发布;
+    构建之后有人工编辑时,对编辑后的内容重新做一次验收检查(DR-129),有阻断问题同样不能发布。"""
     body = request.json or {}
     key, action = str(body.get("graph") or ""), str(body.get("action") or "")
     reviewer = str(body.get("reviewer") or "").strip()[:40]
@@ -6999,6 +7002,15 @@ def ont_release_set():
         if quality == "fail":
             return jsonify({"error": "验收检查不通过,不能发布;请先处理阻断问题并重新构建",
                             "code": "quality_failed", "release": _release_state(key, ir)}), 409
+        edited = load_ir_edited(key) or ir
+        if ontology_release.revision_of(edited) != ontology_release.revision_of(ir):
+            # 发布的是编辑后的内容,构建时的结论管不到它:只看阻断问题(待评审事项与验收问题覆盖不因编辑而重算)
+            recheck = build_quality.evaluate(edited)
+            if recheck["result"] == "fail":
+                return jsonify({"error": "人工编辑之后的内容验收检查不通过,不能发布;请先处理阻断问题",
+                                "code": "quality_failed", "release": _release_state(key, ir),
+                                "blocking_issues": [{"type": i.get("type"), "desc": i.get("desc"), "fix": i.get("fix")}
+                                                    for i in recheck["blocking_issues"][:10]]}), 409
         rev = _graph_revision(key)
         rec = {"state": "published", "by": reviewer, "at": time.strftime("%Y-%m-%d %H:%M:%S"),
                "revision": rev, "quality": quality}
@@ -7006,7 +7018,7 @@ def ont_release_set():
         snap = _confined(os.path.join(WORK, "releases"), f"{key}@{rev}.json")
         os.makedirs(os.path.dirname(snap), exist_ok=True)
         if not os.path.exists(snap):
-            _atomic_json(snap, load_ir_edited(key) or ir)
+            _atomic_json(snap, edited)
     else:
         rec = {"state": "withdrawn", "by": reviewer, "at": time.strftime("%Y-%m-%d %H:%M:%S"),
                "revision": _graph_revision(key)}

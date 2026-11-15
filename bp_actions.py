@@ -112,15 +112,23 @@ def _run_executor(item, mode="execute"):
             item["result"] = {**result, "error": "回执缺少明确的 ok 字段"}
             if "real_writeback" not in result:
                 item["real_writeback"] = None        # 结果未知时不能写成「未写回」
-    except urllib.error.HTTPError as exc:      # 执行器明确答复了错误:保留它自己给出的说明
+    except urllib.error.HTTPError as exc:      # 执行器答复了错误状态:保留它自己给出的说明
         try:
             body = json.loads(exc.read() or b"{}")
         except Exception:  # noqa: BLE001
             body = {}
         body = body if isinstance(body, dict) else {}
-        item["status"] = "failed"
-        item["real_writeback"] = bool(body.get("real_writeback"))
         item["result"] = {"error": f"HTTP {exc.code}", "summary": str(body.get("summary") or exc.reason or "")[:300]}
+        if exc.code >= 500 and body.get("ok") is not False:
+            # DR-129 5xx 说的是这次通信出了错(执行器中途崩溃、前面的代理超时),不说明业务操作没有提交;
+            # 回执里没有明确的 ok=false 时,结果未知,等人核对
+            item["status"] = "unknown"
+            item["real_writeback"] = None
+            item["result"]["summary"] = ((item["result"]["summary"] + ";") if body.get("summary") else "") + \
+                "执行器返回了服务端错误且没有给出明确的回执,无法确定是否已执行;请核对业务系统后处置"
+        else:                                   # 4xx(请求被拒收),或回执明确说了没有成功
+            item["status"] = "failed"
+            item["real_writeback"] = bool(body.get("real_writeback"))
     except Exception as exc:  # noqa: BLE001 —— 失败留在记录里,接口照常应答
         reason = getattr(exc, "reason", exc)
         refused = isinstance(reason, ConnectionRefusedError) or isinstance(exc, ConnectionRefusedError)

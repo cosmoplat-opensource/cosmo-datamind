@@ -144,3 +144,36 @@ def test_a_narrative_number_that_is_not_in_the_result_is_flagged_on_the_card(mon
 def test_a_narrative_that_quotes_the_result_is_clean(monkeypatch):
     d = _chat(monkeypatch, lambda results: f"最近一个月收入 {list(results[0]['data']['rows'][-1].values())[-1]} 万元。")
     assert d["answer_record"]["narrative_check"]["unverified"] == []
+
+
+# ── 列名(DR-129) ───────────────────────────────────────────────────
+
+PLANT = {"title": "工厂实绩", "sql": "SELECT 1", "data": {"columns": ["工厂", "覆盖天数", "库存"], "rows": [
+    {"工厂": "A厂", "覆盖天数": 39.7, "库存": 9.0}, {"工厂": "B厂", "覆盖天数": 12.5, "库存": 30.2}]}}
+
+
+@pytest.mark.parametrize("text", [
+    "A厂覆盖 9.0 天。",                                          # 9.0 是同一行「库存」列的值
+    "A厂库存 39.7。",
+    "A厂库存 39.7,覆盖 9.0 天。",                               # 两个数对调
+])
+def test_a_number_from_another_column_of_the_same_row_is_reported(text):
+    check = ar.check_narrative(text, [PLANT])
+    assert check["issues"] and all(i["kind"] == "other_column" for i in check["issues"]), check
+    assert "列" in ar.flag_text(check)
+
+
+@pytest.mark.parametrize("text", [
+    "A厂覆盖 39.7 天,库存 9.0。",
+    "A厂库存 9.0,可覆盖 39.7 天。",
+    "A厂覆盖天数为 39.7 天。",
+    "B厂 12.5 天。",                                             # 没点列名:不检查列
+    "两个工厂的覆盖天数合计 52.2 天。",                          # 汇总值
+])
+def test_numbers_under_the_right_column_still_pass(text):
+    assert ar.check_narrative(text, [PLANT])["unverified"] == [], ar.check_narrative(text, [PLANT])
+
+
+def test_the_column_check_names_both_columns():
+    issue = ar.check_narrative("A厂覆盖 9.0 天。", [PLANT])["issues"][0]
+    assert "库存" in issue["detail"] and "覆盖天数" in issue["detail"]

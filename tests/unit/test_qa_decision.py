@@ -2,6 +2,7 @@
 """问数使用决策层(DR-119):约束与规则按锚定对象带入、未接入属性拦截、业务词解析、问题分型、
 判定 / 解释 / 追踪 / 异常汇总的确定性求解,以及依据卡。全部在合成库上运行,不调模型。"""
 import datetime as dt
+import re
 import sqlite3
 
 import pytest
@@ -637,3 +638,59 @@ def test_a_root_without_a_declared_key_takes_the_table_primary_key_not_the_forei
             "relations": [{"source_concept": "工单", "target_concept": "工序", "status": "verified", "evidence": {"child_key": "b", "parent_key": "op_id"}}],
             "routes": [{"id": "r", "steps": ["工单", "工序"]}]}
     assert qd.classify("工单 x 现在到哪了?", bare, [], [], connect)["type"] != "trace"      # 表也没有主键:不追踪
+
+
+# ── 读数之前先校验范围(DR-129) ─────────────────────────────────────
+
+def _spy(world):
+    """记录实际发给数据库的语句。"""
+    seen = []
+
+    def connect():
+        con = world["connect"]()
+        con.set_trace_callback(seen.append)
+        return con
+    return connect, seen
+
+
+def _reads(seen, table):
+    return [s for s in seen if re.search(r'FROM\s+"?' + table + r'\b', s, re.I)]
+
+
+def _scoped(world, q, allowed, validate=None):
+    connect, seen = _spy(world)
+    route = _route(world, q)
+    seen.clear()
+    scope = lambda t: (t in allowed, f"表 {t} 不在显式选择的数据表范围内")      # noqa: E731
+    ans = qd.answer(q, world["ir"], RULES, ACTIONS, route, connect, set(), validate=validate, scope=scope)
+    return ans, seen
+
+
+def test_a_judgement_on_a_table_outside_the_selection_reads_nothing(world):
+    ans, seen = _scoped(world, "哪些工序任务拖期了?", {"orders"})
+    assert ans["results"] == [] and "tasks" in ans["narrative"] and "不在" in ans["narrative"]
+    assert ans["evidence_card"]["type"] == "judge" and _reads(seen, "tasks") == []
+
+
+def test_a_judgement_is_validated_before_it_is_evaluated(world):
+    ans, seen = _scoped(world, "哪些工序任务拖期了?", {"orders", "tasks"}, validate=lambda sql: (False, "缺少有效行条件"))
+    assert ans is None and _reads(seen, "tasks") == []
+
+
+def test_monitor_only_evaluates_rules_inside_the_selection(world):
+    ans, seen = _scoped(world, "现在有哪些异常?", {"orders"})
+    rows = {r["规则"]: r["命中"] for r in ans["results"][0]["data"]["rows"]}
+    assert rows == {"加急订单": 1} and _reads(seen, "tasks") == []
+    assert "工序任务拖期" in ans["narrative"] and "不在" in ans["narrative"]             # 没判定的规则要说出来
+    assert any("tasks" in f for f in ans["evidence_card"]["flags"])
+
+
+def test_a_trace_that_leaves_the_selection_reads_nothing(world):
+    ans, seen = _scoped(world, "订单 P1001 现在到哪道工序了?", {"orders"})
+    assert ans["results"] == [] and "tasks" in ans["narrative"] and "不在" in ans["narrative"]
+    assert _reads(seen, "tasks") == [] and _reads(seen, "orders") == [] and _reads(seen, "operations") == []
+
+
+def test_without_a_selection_everything_is_evaluated_as_before(world):
+    ans, _seen = _scoped(world, "现在有哪些异常?", {"orders", "tasks", "operations", "demo_clock"})
+    assert {r["规则"] for r in ans["results"][0]["data"]["rows"]} == {"工序任务拖期", "加急订单"}

@@ -82,6 +82,16 @@ const cases = {
     win.EVC_GO({dataset: {q: 'x', host: 'other'}});       // 未登记的宿主不串用
     assert.equal(asked.length, 1);
   },
+  candidates_are_native_buttons_and_page_links_are_real_links() {
+    const {win} = load();
+    const html = win.renderEvidenceCard({type: 'clarify', conclusion: 'c',
+      next: [{kind: 'question', label: '客户:C002 · 上海', q: '…(客户取 C002)'}, {kind: 'action', label: '任务重排', href: '#actioncenter'}],
+      links: [{label: '规则本', href: '#graph'}]}, 'dq');
+    // 候选要能用键盘选:原生按钮自带聚焦与 Enter / 空格;跳转是带 href 的链接
+    assert.match(html, /<button type="button"[^>]*data-q="…\(客户取 C002\)"[^>]*>客户:C002 · 上海<\/button>/);
+    assert.match(html, /<a href="#actioncenter"[^>]*>任务重排<\/a>/); assert.match(html, /<a href="#graph"[^>]*>规则本 ↗<\/a>/);
+    assert.ok(!/<a (?![^>]*href=)/.test(html));                  // 没有不带 href 的 <a>
+  },
 };
 
 const name = process.argv[2];

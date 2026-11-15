@@ -34,6 +34,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 ## 索引
 
 ### 决定 / Decisions
+- [DR-129 · 发布重新验收、读数前校验范围、无回执的服务端错误、列名匹配、候选可用键盘选](decisions/DR-129-recheck-on-publish-scope-receipts-columns.md)
 - [DR-128 · 数值匹配:检查符号、显式单位和所属行](decisions/DR-128-value-match-sign-unit-row.md)
 - [DR-127 · 推演的参数必须唯一确定](decisions/DR-127-what-if-parameters-must-be-unique.md)
 - [DR-126 · 追踪按路线指定的角色取关系](decisions/DR-126-trace-follows-route-roles.md)

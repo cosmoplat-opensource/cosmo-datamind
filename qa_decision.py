@@ -675,16 +675,33 @@ def run_unlit(route, question):
     return {"results": [], "narrative": text, "evidence_card": card}
 
 
+def _outside(tables, scope):
+    """不在所选范围内的表(去重,保持顺序)。scope(table) -> (ok, why);没给 scope 表示不限定。"""
+    out: list[str] = []
+    for t in tables if scope else ():
+        if t and t not in out and not scope(t)[0]:
+            out.append(t)
+    return out
+
+
+def _scope_refusal(type_, what, tables):
+    """要读的表在所选范围之外(DR-129):说明缺哪张表,不读数据。"""
+    text = (f"{what}要读 {'、'.join(tables)} 表,不在所选的数据表范围内,没有读取数据。"
+            f"把{'这些' if len(tables) > 1 else '这张'}表加入所选范围后可以再问。")
+    return {"results": [], "narrative": text, "evidence_card": _card(type_, text)}
+
+
 def run_judge(route, connect, actions, ir, validate):
     r = route["rule"]
+    sql = rule_sql(r)
+    if sql and validate:                             # 先校验再求值(DR-129):校验不通过的语句不执行
+        ok, why = validate(sql)
+        if not ok:                                   # 本体约束校验(有效行、租户等)不通过:交回查数,由 NL2SQL 按原因修正
+            return None
     ev = evaluate_rule(r, connect)
     if ev is None:                                   # 规则作用的表不在数据源中:交回查数
         return None
     shown = ev["sql"] or f"逐行求值 {r.get('on')}(规则含无法编译为 SQL 的条件)"
-    if ev["sql"] and validate:
-        ok, why = validate(ev["sql"])
-        if not ok:                                   # 本体约束校验(有效行、租户等)不通过:交回查数,由 NL2SQL 按原因修正
-            return None
     sev = (r.get("then") or {}).get("severity")
     scope = f"{ev['total']} 行中" + (f"(逐行求值只检查了前 {ROWWISE_CAP} 行)" if ev["truncated"] else "")
     text = (f"按规则「{r.get('cn')}」({r.get('id')})在 {r.get('on')} 上判定:{scope} {ev['count']} 行命中,"
@@ -702,15 +719,22 @@ def run_judge(route, connect, actions, ir, validate):
     return {"results": [_result(f"{r.get('cn')}:命中 {ev['count']} 行", shown, ev["rows"])], "narrative": text, "evidence_card": card}
 
 
-def run_monitor(rules, connect, actions, ir):
+def run_monitor(rules, connect, actions, ir, skipped=()):
+    """skipped:作用的表不在所选范围内、没有判定的规则。"""
     snap = monitor_snapshot(rules, connect)
     rows = [{"规则": v["cn"], "对象": v["on"], "命中": v["count"], "严重度": v["severity"], "结论": v["decision"]}
             for v in sorted(snap.values(), key=lambda v: ({"high": 0, "medium": 1, "low": 2}.get(v["severity"], 3), -v["count"]))]
     hot = [r for r in rows if r["命中"]]
     text = ("按规则本逐条判定,当前有 " + ";".join(f"{r['规则']} {r['命中']} 项" for r in hot) + "。") if hot else "按规则本逐条判定,当前没有命中。"
     fired = [r for r in rules if snap.get(r.get("id"), {}).get("count")]
+    flags = []
+    if skipped:
+        note = (f"另有 {len(skipped)} 条规则作用的表不在所选的数据表范围内,没有判定:"
+                + "、".join(f"{r.get('cn')}({r.get('on')})" for r in skipped[:8]) + ("等" if len(skipped) > 8 else "") + "。")
+        text += note
+        flags.append(note)
     card = _card("monitor", text, [_rule_basis(r, snap[r["id"]]["count"]) for r in fired],
-                 next_=_next_for_rules(fired, actions), links=[{"label": "规则本", "href": "#graph"}])
+                 next_=_next_for_rules(fired, actions), flags=flags, links=[{"label": "规则本", "href": "#graph"}])
     return {"results": [_result("规则判定汇总", "", rows)], "narrative": text, "evidence_card": card}
 
 
@@ -766,12 +790,17 @@ def _verified(ir, child, parent, role=""):
     return None
 
 
-def run_trace(route, ir, rules, connect, today, validate=None):
+def run_trace(route, ir, rules, connect, today, validate=None, scope=None):
     mc = _main_chain(ir, connect)
     root = mc.get("root") or {}
     rid = route["root_id"]
     if not (_ident(root.get("table")) and _ident(root.get("key"))):
         return None
+    hops = [h for h in mc.get("hops") or [] if isinstance(h, dict)]
+    out = _outside([root["table"]] + [x for h in hops for x in (h.get("parent"), h.get("table"))]
+                   + [lk.get("table") for h in hops for lk in h.get("lookups") or [] if isinstance(lk, dict)], scope)
+    if out:                                          # 整条主线都要在所选范围内,先查再读
+        return _scope_refusal("trace", f"追踪{root.get('label') or '对象'} {rid} ", out)
     head = _rows(connect, f'SELECT * FROM "{root["table"]}" WHERE "{root["key"]}" = ?', (rid,), 1)
     label = root.get("label") or "对象"
     if not head:
@@ -1003,9 +1032,13 @@ def ground_param(name, spec, question, connect, today, cn=""):
     return None, "", cands(list(by_key)[:5])
 
 
-def run_whatif(route, question, ir, connect, invoke, today, operator, actions):
+def run_whatif(route, question, ir, connect, invoke, today, operator, actions, scope=None):
     act = route["action"]
     pg = (ir or {}).get("param_grounding") or {}
+    out = _outside([(pg.get(p["name"]) or {}).get("table") for p in act.get("params") or []
+                    if isinstance(pg.get(p["name"]), dict)], scope)
+    if out:                                          # 参数要到这些表里取值:范围之外不读,也不调用动作
+        return _scope_refusal("whatif", f"「{act.get('cn')}」的参数取值", out)
     params, notes, missing, shown = {}, [], [], []
     for p in act.get("params") or []:
         spec = pg.get(p["name"])
@@ -1077,8 +1110,9 @@ def run_whatif(route, question, ir, connect, invoke, today, operator, actions):
 
 
 # ------------------------------------------------------------------ 入口
-def answer(question, ir, rules, actions, route, connect, anchored, validate=None, invoke=None, operator="问数助手"):
-    """非查数类型的完整答案;返回 None 表示交回 NL2SQL。validate(sql) -> (ok, why) 为本体约束校验(可选)。"""
+def answer(question, ir, rules, actions, route, connect, anchored, validate=None, invoke=None, operator="问数助手", scope=None):
+    """非查数类型的完整答案;返回 None 表示交回 NL2SQL。validate(sql) -> (ok, why) 为本体约束校验(可选)。
+    scope(table) -> (ok, why) 为使用者所选的数据范围(可选):判定、汇总、追踪、试算取参都在读数之前先查(DR-129)。"""
     t = route["type"]
     rules = rules_on_tables(rules, ir)
     if route.get("rule"):
@@ -1087,18 +1121,22 @@ def answer(question, ir, rules, actions, route, connect, anchored, validate=None
     if t == "unlit":
         return run_unlit(route, question)
     if t == "judge":
+        out = _outside([route["rule"].get("on")], scope)
+        if out:
+            return _scope_refusal("judge", f"规则「{route['rule'].get('cn')}」", out)
         return run_judge(route, connect, actions, ir, validate)
     if t == "monitor":
-        return run_monitor(rules, connect, actions, ir)
+        skipped = [r for r in rules if _outside([r.get("on")], scope)]
+        return run_monitor([r for r in rules if r not in skipped], connect, actions, ir, skipped)
     if t == "explain":
         return run_explain(question, ir, rules, anchored, tuple(route.get("pinned") or ()))
     if t == "trace":
-        return run_trace(route, ir, rules, connect, today, validate)
+        return run_trace(route, ir, rules, connect, today, validate, scope)
     if t == "whatif":
         if invoke is None:                    # 调用方没有试算的权限(如经接口代理进来的智能体):说明原因,不调用任何东西
             act = route["action"]
             text = f"「{act.get('cn')}」这类试算需要使用者在 DataMind 界面里发起,当前调用方不能触发。"
             return {"results": [], "narrative": text, "evidence_card": _card("whatif", text, [
                 {"kind": "action", "cn": act.get("cn"), "text": act.get("desc"), "params": {}}])}
-        return run_whatif(route, question, ir, connect, invoke, today, operator, actions)
+        return run_whatif(route, question, ir, connect, invoke, today, operator, actions, scope)
     return None

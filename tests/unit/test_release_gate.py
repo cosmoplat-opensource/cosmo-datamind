@@ -171,3 +171,27 @@ def test_built_list_shows_the_release_state(work):
     _graph(work, "built_failed5", "fail")
     rows = {x["key"]: x for x in server.app.test_client().get("/api/build/built").get_json()}
     assert rows["built_failed5"]["release"]["state"] == "blocked"
+
+
+# ── 发布时按编辑后的内容重新验收(DR-129) ───────────────────────────
+
+def test_publishing_rechecks_the_content_as_edited(work, monkeypatch):
+    key = _graph(work, "built_ok7", "pass")
+    built = json.loads((work / f"{key}.json").read_text(encoding="utf-8"))
+    edited = {**built, "relations": [{"source_concept": "销售订单", "target_concept": "已不存在的对象", "status": "candidate"}]}
+    monkeypatch.setattr(server, "load_ir_edited", lambda k: json.loads(json.dumps(edited)))
+    r = _release(key, "publish")
+    d = r.get_json()
+    assert r.status_code == 409 and d["code"] == "quality_failed"          # 构建时通过,编辑后不通过:不能发布
+    assert any("已不存在的对象" in i["desc"] for i in d["blocking_issues"])
+    assert server.app.test_client().get("/api/ont/release?graph=" + key).get_json()["state"] != "published"
+    assert not (work / "releases").exists()
+
+
+def test_an_ordinary_edit_does_not_block_publishing(work):
+    key = _graph(work, "built_ok8", "pass")
+    c = server.app.test_client()
+    assert c.post("/api/ont/apply", json={"graph": key, "reviewer": "审核人",
+                                          "op": {"op": "set_alias", "target": "obj:客户", "params": {"aliases": ["买方"]}}}).status_code == 200
+    r = _release(key, "publish")
+    assert r.status_code == 200 and r.get_json()["release"]["state"] == "published"
