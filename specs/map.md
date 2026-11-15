@@ -34,6 +34,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 ## 索引
 
 ### 决定 / Decisions
+- [DR-116 · 按方向核验的工艺类验收问题](decisions/DR-116-directed-acceptance-questions.md)
 - [DR-115 · 正式问数只取用有资格的图谱](decisions/DR-115-release-state-for-formal-qa.md)
 - [DR-114 · 关系的身份带上角色](decisions/DR-114-relation-identity-includes-role.md)
 - [DR-113 · 随仓分发的构建产物都要过得了质量闸](decisions/DR-113-shipped-graphs-meet-the-evidence-rule.md)

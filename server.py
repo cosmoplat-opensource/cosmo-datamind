@@ -3904,6 +3904,11 @@ def ont_chain():
     if not ir: return jsonify({"error": "图谱不存在"}), 404
     try:
         import cq_check
+        if body.get("directed"):                      # DR-116 按方向核验:不借道、看方向与角色
+            roles = body.get("roles") if isinstance(body.get("roles"), list) else None
+            rep = cq_check.check_route([str(x) for x in chain], ir, roles)
+            rep["graph"] = key
+            return jsonify(rep)
         rep = cq_check.check_chain(chain, ir)
         rep["graph"] = key
         rep["gaps"] = cq_check.chain_gaps(rep)
@@ -8680,7 +8685,15 @@ def _normalize_build_cqs(value, limit=30):
             qv = str(item.get("q") or item.get("question") or "").strip()
             if qv:
                 expect = [str(x)[:120] for x in (item.get("expect") or []) if isinstance(x, (str, int, float))][:20]
-                out.append({"q": qv[:500], "expect": expect})
+                cq = {"q": qv[:500], "expect": expect}
+                # DR-116 带路线的问题按方向核验:route 是按业务顺序排列的对象名,roles 逐段指定角色
+                route = item.get("route")
+                if isinstance(route, list) and 2 <= len(route) <= 20 and all(isinstance(x, str) and x.strip() for x in route):
+                    cq["route"] = [x.strip()[:120] for x in route]
+                    roles = item.get("roles")
+                    if isinstance(roles, list):
+                        cq["roles"] = [str(x or "").strip()[:24] for x in roles][:len(route) - 1]
+                out.append(cq)
         if len(out) >= limit: break
     return out
 
