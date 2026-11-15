@@ -437,6 +437,59 @@ def classify(question, ir, rules, actions, connect):
     return {"type": "lookup"}
 
 
+# ------------------------------------------------------------------ 模型辅助分型(DR-123)
+ASSIST_PROMPT = """判断下面的问题属于哪一类。只能从给出的选项里选一个;拿不准,或者问的是排名、汇总、统计、对比,一律选 lookup。
+问题:{question}
+选项:
+{options}
+只输出 JSON:{{"choice": "选项编号"}}"""
+
+
+def assist_options(question, ir, rules, actions, connect):
+    """这张图谱上除查数之外还能怎么答:每条规则可判定,每条约束可解释,问句里有主线上的编号可追踪,
+    有规则可汇总异常,绑定且参数有接地声明的动作可推演。返回 [(编号, 说明, 路由)]。没有决策层内容时为空。"""
+    opts = []
+    for r in (rules or [])[:12]:
+        if isinstance(r, dict) and r.get("id"):
+            opts.append((f"judge:{r['id']}", f"按规则「{r.get('cn') or r['id']}」列出命中的记录", {"type": "judge", "rule": r}))
+    for c in ((ir or {}).get("constraints") or [])[:12]:
+        if isinstance(c, dict) and c.get("id"):
+            opts.append((f"explain:{c['id']}", f"解释约束「{c.get('cn') or c['id']}」的内容与依据",
+                         {"type": "explain", "pinned": [c["id"]]}))
+    if rules:
+        opts.append(("monitor", "汇总当前各条规则命中了多少(有哪些异常)", {"type": "monitor"}))
+    ids = _root_ids(question, ir, connect)
+    if ids:
+        opts.append(("trace", f"追踪 {ids[0]} 的执行进度", {"type": "trace", "root_id": ids[0]}))
+    if not _LOOKUP_CUE.search(question or ""):
+        for a in bound_actions(actions, ir)[:6]:
+            opts.append((f"whatif:{a['id']}", f"用动作「{a.get('cn')}」做试算", {"type": "whatif", "action": a}))
+    return opts
+
+
+def classify_assisted(question, ir, rules, actions, connect, ask):
+    """固定词表没认出来时,请模型在这张图谱实际声明的选项里选一个(DR-123)。
+
+    模型只做选择:选项由 assist_options 确定性地列出,选中之后仍由确定性求解作答;
+    模型没有回答、回答不在选项里、或选了 lookup,都按查数处理。ask(prompt) 返回模型的文字或 None。
+    一句问几件事的问题不走这条路(与固定词表的做法一致)。
+    """
+    if not _single_ask(question or "") or lighting_gate(question or "", ir):
+        return {"type": "lookup"}
+    opts = assist_options(question, ir, rules, actions, connect)
+    if not opts:
+        return {"type": "lookup"}
+    listing = "\n".join(f"- {k}: {text}" for k, text, _ in opts) + "\n- lookup: 其他(查数据、排名、汇总、统计)"
+    reply = ask(ASSIST_PROMPT.format(question=str(question or "")[:300], options=listing))
+    m = re.search(r'"choice"\s*:\s*"([^"]{1,80})"', str(reply or ""))
+    choice = m.group(1).strip() if m else ""
+    route = next((dict(r) for k, _t, r in opts if k == choice), None)
+    if route is None:
+        return {"type": "lookup"}
+    route["assisted"] = True
+    return route
+
+
 # ------------------------------------------------------------------ 规则求值
 def rules_on_tables(rules, ir):
     """规则按对象登记(on 为对象名或表名);求值在对象的表上进行,这里统一换成表名。"""
@@ -650,8 +703,9 @@ def run_monitor(rules, connect, actions, ir):
     return {"results": [_result("规则判定汇总", "", rows)], "narrative": text, "evidence_card": card}
 
 
-def run_explain(question, ir, rules, anchored):
-    """须命中约束或规则才作答;问数据变化原因("为什么下降了")时,只有概念或别名直接指向约束才作答。"""
+def run_explain(question, ir, rules, anchored, pinned=()):
+    """须命中约束或规则才作答;问数据变化原因("为什么下降了")时,只有概念或别名直接指向约束才作答。
+    pinned 是已经确定要解释的约束 id(模型辅助分型选中的),直接算命中。"""
     qb = _bigrams(question) - _GENERIC
     hits = [(n, c) for c in (ir or {}).get("concepts") or [] if isinstance(c, dict)        # 解释不消耗片段:问句提到的概念都算
             for n in [next((x for x in [str(c.get("name") or "").split(":")[-1]] + [str(a) for a in c.get("aliases") or []]
@@ -665,8 +719,9 @@ def run_explain(question, ir, rules, anchored):
         s = len(_bigrams(f"{c.get('cn')} {c.get('rule')} {' '.join(map(str, (c.get('params') or {}).keys()))}") & qb)
         direct = (bool(c.get("applies_to")) and any(f and re.search("'" + re.escape(str(c["applies_to"])) + "(['-])", f) for f in al)) \
             or c.get("id") in linked
-        if direct:
+        if direct or c.get("id") in pinned:
             s += 3
+            direct = True
         if s >= 2 and (direct or not _CAUSAL.search(question or "")):
             scored.append((s, c))
     top = max((x[0] for x in scored), default=0)
@@ -938,7 +993,7 @@ def answer(question, ir, rules, actions, route, connect, anchored, validate=None
     if t == "monitor":
         return run_monitor(rules, connect, actions, ir)
     if t == "explain":
-        return run_explain(question, ir, rules, anchored)
+        return run_explain(question, ir, rules, anchored, tuple(route.get("pinned") or ()))
     if t == "trace":
         return run_trace(route, ir, rules, connect, today, validate)
     if t == "whatif" and invoke is not None:

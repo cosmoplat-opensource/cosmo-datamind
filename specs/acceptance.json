@@ -912,6 +912,69 @@
         "tests/unit/test_evidence_card_ui.py::test_evidence_card_behavior",
         "tests/unit/test_evidence_card_ui.py::test_the_module_is_loaded_and_rendered_under_answers"
       ]
+    },
+    {
+      "id": "ACTION-EXEC-01",
+      "criterion": "动作类型配置了本机执行器时,低风险在发起时调用、高风险在批准后调用;没有配置时只记录;执行器地址只来自部署配置且只能是本机;执行失败留在记录里并在动作中心显示",
+      "tests": [
+        "tests/unit/test_action_executors.py::test_without_an_executor_an_action_is_only_recorded",
+        "tests/unit/test_action_executors.py::test_a_low_risk_action_calls_its_executor_and_keeps_the_result",
+        "tests/unit/test_action_executors.py::test_an_executor_failure_is_recorded_not_raised",
+        "tests/unit/test_action_executors.py::test_a_high_risk_action_runs_only_after_approval",
+        "tests/unit/test_action_executors.py::test_only_loopback_executors_from_deployment_config_are_used",
+        "tests/unit/test_action_executors.py::test_a_caller_cannot_name_an_executor",
+        "tests/unit/test_action_executors.py::test_the_action_center_shows_every_status"
+      ]
+    },
+    {
+      "id": "QA-WHATIF-01",
+      "criterion": "假设性问题从问句取参数并调用一次低风险动作;缺必填参数时请使用者补充;高风险动作不从问数发起;没有执行器或执行失败时如实说明;问已发生的事或图谱没有参数取值声明时不做推演",
+      "tests": [
+        "tests/unit/test_qa_decision.py::test_a_what_if_question_grounds_parameters_and_runs_the_low_risk_action_once",
+        "tests/unit/test_qa_decision.py::test_missing_parameters_are_asked_for_instead_of_guessed",
+        "tests/unit/test_qa_decision.py::test_a_high_risk_action_is_never_started_from_a_question",
+        "tests/unit/test_qa_decision.py::test_an_action_without_an_executor_says_it_was_only_recorded",
+        "tests/unit/test_qa_decision.py::test_an_executor_failure_is_reported_with_its_reason",
+        "tests/unit/test_qa_decision.py::test_questions_about_what_already_happened_are_not_what_if",
+        "tests/unit/test_qa_decision.py::test_graphs_without_parameter_grounding_never_route_to_what_if",
+        "tests/unit/test_qa_decision.py::test_server_passes_the_real_invoke_and_the_operator"
+      ]
+    },
+    {
+      "id": "ROUTE-TRACE-01",
+      "criterion": "图谱只声明工艺路线也能追踪;显式声明的主线优先;推导只沿已验证或人工确认的关系,走不通处停下;停用的路线不参与",
+      "tests": [
+        "tests/unit/test_qa_decision.py::test_a_declared_route_is_enough_to_trace",
+        "tests/unit/test_qa_decision.py::test_an_explicit_main_chain_wins_over_the_route",
+        "tests/unit/test_qa_decision.py::test_derivation_stops_where_the_relations_stop_and_ignores_retired_routes"
+      ]
+    },
+    {
+      "id": "ANSWER-RECORD-01",
+      "criterion": "同样的查询在同样的数据上结果编号相同;答案带结果记录且依据卡引用同一个编号;文字说明里来自结果的数字(含合计、增长率、单位换算)通过核对,找不到出处的数字列出并在依据卡上提示;问句里的数字、日期、编号不检查",
+      "tests": [
+        "tests/unit/test_answer_record.py::test_the_same_query_on_the_same_data_gets_the_same_id",
+        "tests/unit/test_answer_record.py::test_the_record_lists_graphs_release_state_and_results",
+        "tests/unit/test_answer_record.py::test_numbers_that_come_from_the_result_pass",
+        "tests/unit/test_answer_record.py::test_numbers_without_a_source_are_listed",
+        "tests/unit/test_answer_record.py::test_numbers_from_the_question_and_from_declared_values_are_not_flagged",
+        "tests/unit/test_answer_record.py::test_identifiers_dates_and_versions_are_not_treated_as_numbers",
+        "tests/unit/test_answer_record.py::test_answers_carry_a_record_and_the_card_refers_to_the_same_result",
+        "tests/unit/test_answer_record.py::test_a_narrative_number_that_is_not_in_the_result_is_flagged_on_the_card"
+      ]
+    },
+    {
+      "id": "QA-ASSIST-01",
+      "criterion": "固定词表认不出的问法可由模型在图谱声明的选项里选定类型,选中后仍由确定性求解作答;模型的回答不在选项里时按查数处理;图谱没有决策层内容、一句问几件事、问到未接入的数据时不调用模型;可关闭",
+      "tests": [
+        "tests/unit/test_qa_decision.py::test_a_rephrased_question_the_vocabulary_misses_can_still_be_judged",
+        "tests/unit/test_qa_decision.py::test_the_model_can_only_pick_what_the_graph_declares",
+        "tests/unit/test_qa_decision.py::test_an_explanation_picked_by_the_model_cites_that_constraint",
+        "tests/unit/test_qa_decision.py::test_tracing_is_offered_only_when_the_question_names_an_existing_record",
+        "tests/unit/test_qa_decision.py::test_plain_graphs_multi_part_questions_and_missing_data_never_ask_the_model",
+        "tests/unit/test_qa_decision.py::test_server_asks_the_model_only_after_the_vocabulary_gives_up",
+        "tests/unit/test_qa_decision.py::test_without_an_engine_the_assist_call_returns_nothing_quickly"
+      ]
     }
   ]
 }

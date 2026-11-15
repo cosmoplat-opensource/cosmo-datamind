@@ -1292,11 +1292,49 @@ def _qa_decision_prep(question, ir, keys, anchor):
         prep["terms_text"], prep["terms"] = qa_decision.resolve_terms(question, ir, prep["connect"])
         prep["actions"] = [a for a in load_action_types() if a.get("enabled") is not False]
         prep["route"] = qa_decision.classify(question, ir, prep["rules"], prep["actions"], prep["connect"])
+        if prep["route"]["type"] == "lookup" and _qa_route_assist_enabled():
+            # DR-123 固定词表没认出来:请模型在图谱实际声明的选项里选一个;选中后仍由确定性求解作答
+            prep["route"] = qa_decision.classify_assisted(question, ir, prep["rules"], prep["actions"], prep["connect"],
+                                                          lambda p: _qa_route_ask(p, keys))
     except Exception as exc:            # noqa: BLE001 —— 决策层出错不影响查数
         prep["route"] = {"type": "lookup"}
         prep["error"] = f"{type(exc).__name__}: {exc}"[:160]
     observability.count("qa.route", type=prep["route"]["type"])        # 只记类型,不记问句
     return prep
+
+
+_QA_ROUTE_CACHE: dict[str, Any] = {}
+
+
+def _qa_route_assist_enabled():
+    """模型辅助分型的开关:DATAMIND_QA_ROUTE_LLM=0 关闭;缺省开启。多路候选的非默认路不做(避免重复调用)。"""
+    if os.environ.get("DATAMIND_QA_ROUTE_LLM", "").strip().lower() in ("0", "false", "off", "no"):
+        return False
+    return not _PLAN_VARIANT.get()
+
+
+def _qa_route_ask(prompt, keys):
+    """分型用的一次短调用:最多等 20 秒;引擎不可用、超时或回复像报错时返回 None(按查数处理)。同一提示的回答有缓存。"""
+    ck = hashlib.sha1((prompt + "|" + ",".join(keys or [])).encode("utf-8")).hexdigest()
+    if ck in _QA_ROUTE_CACHE:
+        return _QA_ROUTE_CACHE[ck]
+
+    def call():
+        from agent_runtime import available, get_runtime
+        for drv in _drv_order():
+            if drv not in available():
+                continue
+            ok, reply = get_runtime(drv).run_turn(f"qr_{uuid.uuid4().hex[:6]}", prompt, timeout=18)
+            if ok and reply and not _looks_like_error(reply):
+                return reply
+        return None
+    reply = _bounded(call, 20)
+    observability.count("qa.route_assist", answered=bool(reply))
+    if reply:
+        if len(_QA_ROUTE_CACHE) >= 500:
+            _QA_ROUTE_CACHE.clear()
+        _QA_ROUTE_CACHE[ck] = reply
+    return reply
 
 
 def _qa_operator(body):
@@ -1381,7 +1419,7 @@ def _qa_decision_steps(prep):
         out.append(("resolve_terms", True, "业务词解析 · " + "、".join([x["word"] for x in t["time"]] + [x["word"] for x in t["aliases"]])))
     r = prep["route"]
     if r["type"] != "lookup" or prep["n"]:
-        out.append(("route", True, "问题类型 · " + _QA_ROUTE_CN.get(r["type"], r["type"])
+        out.append(("route", True, "问题类型 · " + _QA_ROUTE_CN.get(r["type"], r["type"]) + ("(模型辅助判断)" if r.get("assisted") else "")
                     + (f" · 规则 {r['rule'].get('cn')}" if r.get("rule") else "") + (f" · 动作 {r['action'].get('cn')}" if r.get("action") else "")
                     + (f" · {r['root_id']}" if r.get("root_id") else "")))
     if prep.get("error"):

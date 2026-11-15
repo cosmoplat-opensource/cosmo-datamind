@@ -34,6 +34,10 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 ## 索引
 
 ### 决定 / Decisions
+- [DR-123 · 固定词表认不出时由模型辅助分型](decisions/DR-123-model-assisted-question-typing.md)
+- [DR-122 · 答案的结果记录与同源数字核对](decisions/DR-122-answer-record-and-number-check.md)
+- [DR-121 · 工艺路线可以直接用于追踪](decisions/DR-121-route-as-trace-main-line.md)
+- [DR-120 · 可执行动作与问数推演](decisions/DR-120-executable-actions-and-what-if.md)
 - [DR-119 · 问数使用决策层](decisions/DR-119-qa-uses-the-decision-layer.md)
 - [DR-118 · 从决策倒推的构建方法作为内置技能](decisions/DR-118-decision-driven-build-skill.md)
 - [DR-117 · 工艺路线层与决策层进入主线](decisions/DR-117-process-route-and-decision-layer.md)

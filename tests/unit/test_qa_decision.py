@@ -386,3 +386,72 @@ def test_derivation_stops_where_the_relations_stop_and_ignores_retired_routes(wo
     ir["routes"][0]["status"] = "deprecated"
     assert od.main_chain(ir) == {}
     assert od.main_chain({"objects": [], "routes": [{"id": "x", "steps": ["a", "b"]}]}) == {}
+
+
+# ── 模型辅助分型(DR-123) ───────────────────────────────────────────
+
+def _assist(w, q, reply, actions=ACTIONS):
+    asked = []
+
+    def ask(prompt):
+        asked.append(prompt)
+        return reply
+    return qd.classify_assisted(q, w["ir"], RULES, list(actions), w["connect"], ask), asked
+
+
+def test_a_rephrased_question_the_vocabulary_misses_can_still_be_judged(world):
+    q = "拖期的工序任务都有谁"
+    assert _route(world, q)["type"] == "lookup"                                  # 固定词表认不出
+    route, asked = _assist(world, q, '{"choice": "judge:r_late"}')
+    assert route["type"] == "judge" and route["rule"]["id"] == "r_late" and route["assisted"] is True
+    assert "judge:r_late" in asked[0] and "explain:c_dry_wait" in asked[0] and "lookup" in asked[0]
+    ans = qd.answer(q, world["ir"], RULES, ACTIONS, route, world["connect"], set())
+    assert dict(ans["evidence_card"]["kv"])["命中"] == 1                         # 选中之后仍是确定性求解
+
+
+def test_the_model_can_only_pick_what_the_graph_declares(world):
+    for reply in ('{"choice": "judge:r_not_there"}', '{"choice": "delete_everything"}', "我觉得是判定", "", None,
+                  '{"choice": "lookup"}', '{"choice": "trace"}'):                # 问句里没有编号,trace 不在选项里
+        route, _ = _assist(world, "拖期的工序任务都有谁", reply)
+        assert route == {"type": "lookup"}, reply
+
+
+def test_an_explanation_picked_by_the_model_cites_that_constraint(world):
+    q = "干燥凭啥要等那么久"
+    route, _ = _assist(world, q, '{"choice": "explain:c_dry_wait"}')
+    assert route["type"] == "explain" and route["pinned"] == ["c_dry_wait"]
+    ans = qd.answer(q, world["ir"], RULES, ACTIONS, route, world["connect"], set())
+    assert ans["evidence_card"]["basis"][0]["id"] == "c_dry_wait"
+
+
+def test_tracing_is_offered_only_when_the_question_names_an_existing_record(world):
+    route, asked = _assist(world, "P1001 做完没有", '{"choice": "trace"}')
+    assert route == {"type": "trace", "root_id": "P1001", "assisted": True} and "追踪 P1001" in asked[0]
+
+
+def test_plain_graphs_multi_part_questions_and_missing_data_never_ask_the_model(world):
+    plain = {"objects": world["ir"]["objects"], "relations": world["ir"]["relations"]}
+    calls = []
+    ask = lambda p: calls.append(p) or '{"choice": "monitor"}'      # noqa: E731
+    assert qd.classify_assisted("拖期的工序任务都有谁", plain, [], [], world["connect"], ask) == {"type": "lookup"}
+    assert qd.classify_assisted("拖期的任务都有谁,客户分别是谁", world["ir"], RULES, ACTIONS, world["connect"], ask) == {"type": "lookup"}
+    assert qd.classify_assisted("各工序的实际完工情况", world["ir"], RULES, ACTIONS, world["connect"], ask) == {"type": "lookup"}
+    assert calls == []
+
+
+def test_server_asks_the_model_only_after_the_vocabulary_gives_up(wired, monkeypatch):
+    asked = []
+    monkeypatch.setattr(server, "_qa_route_ask", lambda prompt, keys: asked.append(prompt) or '{"choice": "judge:r_late"}')
+    assert _prep(wired, "哪些工序任务拖期了?")["route"].get("assisted") is None and asked == []   # 词表认得出的不问模型
+    prep = _prep(wired, "拖期的工序任务都有谁")
+    assert prep["route"]["type"] == "judge" and prep["route"]["assisted"] is True and len(asked) == 1
+    assert any("模型辅助判断" in s[2] for s in server._qa_decision_steps(prep))
+    monkeypatch.setenv("DATAMIND_QA_ROUTE_LLM", "0")
+    assert _prep(wired, "拖期的工序任务都有谁")["route"] == {"type": "lookup"} and len(asked) == 1
+
+
+def test_without_an_engine_the_assist_call_returns_nothing_quickly(monkeypatch):
+    import agent_runtime
+    monkeypatch.setattr(agent_runtime, "available", lambda: [])
+    server._QA_ROUTE_CACHE.clear()
+    assert server._qa_route_ask("任意提示", ["demo"]) is None and server._QA_ROUTE_CACHE == {}
