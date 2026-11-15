@@ -9842,6 +9842,12 @@ _configure_metrics(load_graph=lambda k: (None if _bad_gkey(k) else (load_ir_edit
                    open_writable=lambda k: _open_writable(k), db_for_source=lambda s: _db_for_source(s),
                    write_json=_atomic_json, write_lock=_WRITE_LOCK, default_graph=_active_graph_key)
 app.register_blueprint(_bp_metrics)
+# ── 工艺路线层与决策层 blueprint(DR-117):约束 / 工艺路线 / 点亮矩阵 / 审计 ──
+from bp_decision import bp_decision as _bp_decision, configure_decision as _configure_decision  # noqa: E402
+_configure_decision(load_graph=lambda k: (None if _bad_gkey(k) else (load_ir_edited(k) or load_ir(k) or {})),
+                    open_writable=lambda k: _open_writable(k), write_json=_atomic_json, write_lock=_WRITE_LOCK,
+                    load_rules=lambda k: _load_rules(k))
+app.register_blueprint(_bp_decision)
 from bp_semantic import bp_semantic as _bp_semantic, configure_semantic as _configure_semantic  # noqa: E402
 _configure_semantic(load_graph=lambda k: (None if _bad_gkey(k) else (load_ir_edited(k) or load_ir(k))), default_graph=_active_graph_key)
 app.register_blueprint(_bp_semantic)

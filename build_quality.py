@@ -12,6 +12,7 @@ import cq_check
 import build_references
 import ontology_domain
 import metric_contract
+import ontology_decision
 import dao_core
 import definition_eval
 import health_check
@@ -268,6 +269,9 @@ def evaluate(ir, cqs=None, definition_threshold=0.6):
                 "fix": "补非循环的属加种差定义与反例"}
         review_queue.append(item); gaps.append(item)
 
+    # DR-117 图谱上声明的工艺路线每次都按方向核验;决策层里还等人处理的事项并入待评审清单
+    cqs = list(cqs or []) + ontology_decision.route_cqs(ir)
+    review_queue.extend(ontology_decision.review_items(ir))
     if cqs:
         cq = cq_check.check_all(cqs, ir)
         cq["provided"] = True

@@ -9,8 +9,8 @@
 │  前端 (ui/index.html + ui/modules/styles, 原生 JS/CSS)        │
 │   18 页 × hash 路由 · G6 图谱 · ECharts · 统一助手 $/esc/J    │
 ├─────────────────────────────────────────────────────────────┤
-│  HTTP 层 (Flask, 单端口 8092) · 共 130 路由                    │
-│   server.py 113 + bp_engine 5 + bp_actions 7 + bp_metrics 3 + bp_semantic 2 │
+│  HTTP 层 (Flask, 单端口 8092) · 共 139 路由                    │
+│   server.py 113 + bp_engine 5 + bp_actions 7 + bp_metrics 3 + bp_semantic 2 + bp_decision 9 │
 │   生产入口:wsgi.py → Gunicorn(gthread);可另配 Nginx 反向代理 │
 │   app 级 before_request CSRF 守卫(对 blueprint 同样生效)      │
 │   共享层: srv_context(路径/只读连接/原子写/写锁)              │
@@ -86,6 +86,9 @@
 | `metric_contract.py` | **指标契约**:确定性编译 SQL、目录核对、只读执行、与参照比对;`verified` 只来自「可执行∧与参照一致」,`certified` 只能人授 | DR-054 |
 | `metric_mining.py` | 指标反解:历史 SQL / 指标定义表 / 沉淀 SQL / 参考基准 → 带来源的候选与参照;含 JOIN 不猜计算规则 | DR-054 |
 | `metric_pipeline.py` | 反解→归一→核验→并入 IR 的编排;`readjudicate` 复用已存参照重跑 | DR-054 |
+| `ontology_decision.py` | 工艺路线层与决策层:工艺路线、约束(硬/软、单位、目的、例外、依据)、点亮矩阵、审计;路线由验收检查按方向核验 | DR-117 |
+| `ontology_release.py` | 发布状态判定:已发布 / 草案 / 不可用于正式问数 | DR-115 |
+| `bp_decision.py` | 工艺路线层与决策层 blueprint(9 路由:约束、路线、点亮矩阵、审计) | DR-117 |
 | `bp_metrics.py` | 指标契约 blueprint(4 路由:契约/维度/人工确认计算规则/重跑核验);不提供直接置 verified 的途径 | DR-054 |
 | `concept_profile.py` | 概念画像:对象的名称/定义/属性/强关系邻居/指标确定性聚合 + 可回放关键词检索(名称按 `ir_shape` 的中文表名后缀变体匹配) | DR-055 |
 | `osi_export.py` | Apache Ossie(原 OSI)语义模型与本体 YAML 出口:形状按 `ontology/standards/ossie/` 快照的官方 schema,状态与证据走 `custom_extensions`;自带确定性发射器,`validate()` 用官方 schema 校验 | DR-055 |

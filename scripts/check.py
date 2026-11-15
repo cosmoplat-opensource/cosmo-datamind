@@ -19,7 +19,7 @@ import time
 from urllib.request import urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
-ROUTE_LAYER = "server.py,bp_actions.py,bp_engine.py,bp_metrics.py,bp_semantic.py,srv_actions.py,srv_engine.py"
+ROUTE_LAYER = "server.py,bp_actions.py,bp_engine.py,bp_metrics.py,bp_semantic.py,bp_decision.py,srv_actions.py,srv_engine.py"
 
 
 def isolated_env(directory):

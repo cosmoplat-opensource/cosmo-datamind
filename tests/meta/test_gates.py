@@ -6,7 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-ROUTE_LAYER = {"server", "bp_actions", "bp_engine", "bp_metrics", "bp_semantic", "srv_actions", "srv_engine"}
+ROUTE_LAYER = {"server", "bp_actions", "bp_engine", "bp_metrics", "bp_semantic", "bp_decision", "srv_actions", "srv_engine"}
 
 
 def test_coverage_counts_the_route_layer_and_has_layered_floors():
