@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """工艺路线层与决策层(DR-117):约束、路线、点亮矩阵挂在已建模的对象上,路线由关系按方向核验。"""
 import json
+from pathlib import Path
 
 import pytest
 
@@ -144,3 +145,21 @@ def test_builtin_graphs_and_bad_keys_are_handled(graph):
     _key, c = graph
     assert c.get("/api/ont/constraints/a..b").status_code == 400
     assert c.get("/api/ont/routes/built_missing").status_code == 404
+
+
+def test_the_check_returned_on_save_counts_human_confirmed_relations(graph):
+    """保存路线时返回的核验结果要和之后查看时一致:人工确认过的关系算强关系。部署测试中发现保存时用的是未含人工修改的图谱。"""
+    key, c = graph
+    base = json.loads(json.dumps(IR, ensure_ascii=False))
+    for r in base["relations"]:
+        r["status"] = "candidate"
+    (Path(server.WORK) / f"{key}.json").write_text(json.dumps(base, ensure_ascii=False), encoding="utf-8")
+    route = {"route": {"id": "two", "cn": "两步", "steps": ["工单", "绕线"]}}
+    assert c.post(f"/api/ont/routes/{key}", json=route).get_json()["check"]["verdict"] == "weak"
+    rel = next(r for r in base["relations"] if {r["source_concept"], r["target_concept"]} == {"工单", "绕线"})
+    ok = c.post("/api/ont/apply", json={"graph": key, "reviewer": "验收员",
+                                        "op": {"op": "confirm_relation", "target": f"rel:{rel['source_concept']}->{rel['target_concept']}"}})
+    assert ok.status_code == 200, ok.get_json()
+    saved = c.post(f"/api/ont/routes/{key}", json=route).get_json()["check"]["verdict"]
+    listed = c.get(f"/api/ont/routes/{key}").get_json()["routes"][0]["check"]["verdict"]
+    assert saved == listed == "intact"

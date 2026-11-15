@@ -37,8 +37,8 @@ def _read(key):
     return ir, None
 
 
-def _write(key, mutate):
-    """加锁读-改-写;mutate(ir) 返回响应体或抛 ValueError(→ 400)。"""
+def _write(key, mutate, after=None):
+    """加锁读-改-写;mutate(ir) 返回响应体或抛 ValueError(→ 400)。after(body) 在写入后、返回前补充响应体。"""
     with _deps["write_lock"]:
         ir, wp, err = _deps["open_writable"](key)
         if err:
@@ -49,6 +49,8 @@ def _write(key, mutate):
         except ValueError as exc:
             return jsonify({"error": str(exc)}), 400
         _deps["write_json"](wp, ir)
+    if after:
+        after(body)
     return jsonify(body)
 
 
@@ -121,7 +123,13 @@ def routes_save(key):
     def mutate(ir):
         n = od.normalize_route(r, ir)
         return {"ok": True, "route": n, "total": _upsert(ir, "routes", n, 100, "工艺路线"), "check": _route_check(ir, n)}
-    return _write(key, mutate)
+
+    def recheck(body):
+        # 写入用的是不含人工修改的图谱;核验结果按含人工修改的图谱重算,与之后查看时一致
+        edited = _deps["load_graph"](key)
+        if edited:
+            body["check"] = _route_check(edited, body["route"])
+    return _write(key, mutate, recheck)
 
 
 @bp_decision.post("/api/ont/routes/<key>/delete")

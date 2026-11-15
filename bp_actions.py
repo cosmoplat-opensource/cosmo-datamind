@@ -110,6 +110,8 @@ def _run_executor(item, mode="execute"):
         else:                                   # 回执里没有明确的 ok:不能当作已执行
             item["status"] = "unknown"
             item["result"] = {**result, "error": "回执缺少明确的 ok 字段"}
+            if "real_writeback" not in result:
+                item["real_writeback"] = None        # 结果未知时不能写成「未写回」
     except urllib.error.HTTPError as exc:      # 执行器明确答复了错误:保留它自己给出的说明
         try:
             body = json.loads(exc.read() or b"{}")
@@ -124,6 +126,8 @@ def _run_executor(item, mode="execute"):
         refused = isinstance(reason, ConnectionRefusedError) or isinstance(exc, ConnectionRefusedError)
         # 连接被拒说明请求没有送达,可以确定没执行;超时、连接中断、回执解析失败时执行器可能已经执行,结果未知
         item["status"] = "failed" if refused else "unknown"
+        if not refused:
+            item["real_writeback"] = None            # 可能已经执行:是否写回同样未知
         item["result"] = {"error": f"{type(exc).__name__}: {str(exc)[:300]}",
                           **({} if refused else {"summary": "没有拿到完整的回执,无法确定是否已执行;请核对业务系统后处置"})}
     item["executor_seconds"] = round(time.time() - started, 1)
@@ -149,6 +153,7 @@ def _reconcile(log):
     for item in log:
         if item.get("status") == "executing" and time.time() - float(item.get("exec_started") or 0) > STALE_AFTER:
             item["status"] = "unknown"
+            item["real_writeback"] = None
             item["result"] = {"error": "调用发出后没有回执(进程可能中断过)",
                               "summary": "无法确定是否已执行;请核对业务系统后处置"}
             changed = True
@@ -469,5 +474,7 @@ def action_resolve():
             return jsonify({"error": "只有结果未知的记录需要处置"}), 400
         item.update(status=outcome, resolved_by=operator, resolve_comment=comment,
                     resolve_ts=time.strftime("%Y-%m-%d %H:%M"))
+        if item.get("real_writeback") is None:       # 人核对后的结论:已执行的正式调用即已写回,未执行即未写回
+            item["real_writeback"] = (True if item.get("execution_mode") == "executor" else None) if outcome == "executed" else False
         _atomic_json(ACTION_LOG_F, log)
     return jsonify({"ok": True, "status": item["status"]})

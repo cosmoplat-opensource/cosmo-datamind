@@ -167,6 +167,7 @@ def test_a_lost_or_broken_response_is_recorded_as_unknown(actions, error):
     actions["configure"](error=error)
     d = _invoke(actions).get_json()
     assert d["status"] == "unknown" and "核对业务系统" in d["result"]["summary"]
+    assert actions["log"]()[0]["real_writeback"] is None                 # 结果未知时,是否写回同样未知,不能记成未写回
 
 
 def test_a_call_that_never_got_a_receipt_shows_up_as_unknown_after_a_restart(actions, monkeypatch):
@@ -206,6 +207,7 @@ def test_an_unknown_record_is_settled_by_a_named_person_with_a_reason(actions):
     assert r.get_json() == {"ok": True, "status": "failed"}
     rec = actions["log"]()[0]
     assert rec["resolved_by"] == "计划员" and rec["resolve_comment"] == "排程系统里没有这次试算"
+    assert rec["real_writeback"] is False                               # 核对后确认未执行:未写回
     assert c.post("/api/action/resolve", json={"id": d["id"], "outcome": "failed", "operator": "x", "comment": "y"}).status_code == 400
 
 
