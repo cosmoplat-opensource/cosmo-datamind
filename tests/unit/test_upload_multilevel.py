@@ -43,3 +43,28 @@ def test_a_plain_csv_is_unchanged(tmp_path, monkeypatch):
     info = server.app.test_client().post("/api/build/upload", data={"files": (io.BytesIO("a,b\n1,2\n".encode()), "p.csv")},
                                          content_type="multipart/form-data").get_json()["tables"][0]
     assert "header_rows" not in info and "long_table" not in info
+
+
+def _up(tmp_path, monkeypatch):
+    monkeypatch.setattr(server, "UPLOAD_DB", str(tmp_path / "uploads.db"))
+    monkeypatch.setattr(server, "WORK", str(tmp_path))
+    c = server.app.test_client()
+    return c, lambda text, name: c.post("/api/build/upload", data={"files": (io.BytesIO(text.encode()), name)},
+                                        content_type="multipart/form-data")
+
+
+def test_a_key_column_named_like_the_long_table_columns_does_not_break_the_upload(tmp_path, monkeypatch):
+    _c, up = _up(tmp_path, monkeypatch)
+    r = up("项目,2025年,,2026年,\n,收入,成本,收入,成本\n华东,10,6,12,7\n华北,8,5,9,5.5\n", "items.csv")
+    info = r.get_json()["tables"][0]
+    assert r.status_code == 200 and info["long_table"]
+    cols = [c[1] for c in sqlite3.connect(tmp_path / "uploads.db").execute(f'PRAGMA table_info("{info["long_table"]}")')]
+    assert len(set(cols)) == len(cols) and cols[0] == "项目"
+
+
+def test_reuploading_with_a_single_header_removes_the_old_long_table(tmp_path, monkeypatch):
+    _c, up = _up(tmp_path, monkeypatch)
+    info = up(CSV, "regional.csv").get_json()["tables"][0]
+    up("地区,收入\n华东,10\n华北,8\n", "regional.csv")
+    names = {r[0] for r in sqlite3.connect(tmp_path / "uploads.db").execute("SELECT name FROM sqlite_master")}
+    assert info["table"] in names and info["long_table"] not in names

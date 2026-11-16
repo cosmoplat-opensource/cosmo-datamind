@@ -336,7 +336,7 @@ chk("图谱边带 founded_relation", bool(gj["edges"]) and "founded_relation" in
 r=g("/api/ont/completeness/demo"); cj=r.json()
 chk("元数据覆盖结构", r.status_code==200 and "score" in cj and "byBFO" in cj.get("objects",{}))
 r=g("/api/graph/demo/export.ttl"); chk("OWL 导出带 iof-av + BFO 归类", r.status_code==200 and "iof-av:" in r.text and "subClassOf" in r.text)
-# 写端点图谱必填:缺 graph 须显式 400,不静默默认到 示例 主图误改生产(_open_writable 统一守卫)
+# 写端点图谱必填:缺 graph 须显式 400,不静默默认到示例主图误改生产(_open_writable 统一守卫)
 r=po("/api/ont/enrich",json={},headers=H); chk("enrich 缺graph→400(不默认 demo)", r.status_code==400)
 r=po("/api/ont/reground",json={},headers=H); chk("reground 缺graph→400(不默认 demo)", r.status_code==400)
 r=po("/api/ont/maturity",json={"object":"x","maturity":"Released"},headers=H); chk("maturity 缺graph→400(不默认 demo)", r.status_code==400)
@@ -386,7 +386,7 @@ _os.remove(_db)
 
 # ═══════════ P. 人审关系与元素编辑(DR-013)═══════════
 print("=== P. 人审(DR-013)===")
-r=g("/api/ont/review?graph=demo"); chk("review 示例 200+counts", r.status_code==200 and "pending" in r.json()["counts"])
+r=g("/api/ont/review?graph=demo"); chk("review 示例图谱 200+counts", r.status_code==200 and "pending" in r.json()["counts"])
 r=g("/api/ont/review?graph=../etc"); chk("review 键穿越→400", r.status_code==400)
 # 找一个构建产物图谱做全套往返
 _gs=[x["id"] for x in g("/api/graphs").json() if x["id"].startswith("built_")]

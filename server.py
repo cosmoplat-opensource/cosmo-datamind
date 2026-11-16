@@ -313,7 +313,7 @@ def _unhandled(error):
         return jsonify({"error": "服务内部错误,已记录;请稍后重试或联系管理员"}), 500
     return "Internal Server Error", 500
 
-# ── IR 加载(本体图谱源:示例 数据本体 / 应用本体 / 构建产物)──
+# ── IR 加载(本体图谱源:示例数据本体 / 应用本体 / 构建产物)──
 IR_SOURCES = {
     # workdir 为持久权威副本(优先);/tmp 仅作后备(重启即失效,且可能是旧版)
     "demo": {"name": "示例企业数据本体(数据驱动)", "paths": [os.path.join(WORK, "demo_ir.json"), "/tmp/demo_ir.json"]},
@@ -580,7 +580,7 @@ def ir_to_graph(key, ir):
                           **_iof_edge_ann(r, verb, categories.get(r["source_concept"]),
                                          categories.get(r["target_concept"]), bfo_enabled)})
     else:
-        # 示例 数据 IR(DR-001)
+        # 示例数据 IR(DR-001)
         for o in ir.get("objects", []):
             nodes.append({"id": o["id"], "name": o.get("cn") or o.get("name"), "kind": o.get("kind", "object"),
                           "candidate": bool(o.get("candidate", False)),
@@ -1693,7 +1693,27 @@ def _source_graph_path(ir):
     return database_scope.graph_path(ir, DB, UPLOAD_DB, _load_conns())
 
 
+_SOURCE_KEYS_CACHE: dict = {}
+
+
 def _source_graph_keys(path):
+    """适用于 path 这个库的本体键。结论按相关文件的指纹缓存:没有适用的内置示例本体时,
+    默认图谱的判断在每个请求上都会走到这里,不能每次都读一遍所有构建产物。"""
+    files = [path, _BUILD_CONN_F, *(q for v in IR_SOURCES.values() for q in v.get("paths", []))]
+    files += sorted(glob.glob(os.path.join(PLATFORM, 'data', 'forged', '*.json')))
+    files += sorted(glob.glob(os.path.join(WORK, 'built_*.json'))) + sorted(glob.glob(os.path.join(WORK, 'edits_*.json')))
+    sig = _stat_sig(*files)
+    hit = _SOURCE_KEYS_CACHE.get(path)
+    if hit and hit[0] == sig:
+        return list(hit[1])
+    out = _source_graph_keys_uncached(path)
+    if len(_SOURCE_KEYS_CACHE) > 32:
+        _SOURCE_KEYS_CACHE.clear()
+    _SOURCE_KEYS_CACHE[path] = (sig, out)
+    return list(out)
+
+
+def _source_graph_keys_uncached(path):
     keys = list(IR_SOURCES)
     keys += ['forged_' + os.path.basename(p)[:-5] for p in sorted(glob.glob(os.path.join(PLATFORM, 'data', 'forged', '*.json')))]
     keys += [os.path.basename(p)[:-5] for p in sorted(glob.glob(os.path.join(WORK, 'built_*.json')), key=os.path.getmtime, reverse=True)]
@@ -2461,7 +2481,8 @@ def _validate_sql_ontology(sql, ir, strict=False):
             _pa, _ca_al = (b, a) if _a_is_child else (a, b)
             joined_parents.setdefault(_blk, {}).setdefault(parent, set()).add(_pa)
             # DR-130 按别名记下「子 → 父」:同一个父表别名下挂了两个子表别名时,子表的行会互相放大
-            child_edges.setdefault(_blk, {}).setdefault(_pa, {})[_ca_al] = (alias.get(_ca_al, _ca_al), parent)
+            # 子表取本条等式解析出的表:同一个别名在别的查询块里可能指向另一张表
+            child_edges.setdefault(_blk, {}).setdefault(_pa, {})[_ca_al] = (ta if _a_is_child else tb, parent)
         elif ta != tb and _joined:
             # 两边的键都是指向同一张父表的子键(都按工单号):两张子表直接关联是多对多
             _common = sorted({p for (t1, c1, p, _pk) in parents if (t1, c1) == (ta, ca)}
@@ -4505,6 +4526,9 @@ def ont_modules(key):
     except Exception as e:
         return jsonify({"error": f"模块划分失败: {e}"}), 500
 
+_STATUS_RANK = {"verified": 3, "asserted": 2, "candidate": 1}
+
+
 def _relation_status_index(ir):
     """(子表, 子键, 父表, 父键) → 关系状态,两个方向都登记;复合键逐列登记。"""
     o2t = {}
@@ -4522,9 +4546,10 @@ def _relation_status_index(ir):
             continue
         for c, pk in zip(cks, pks):
             if c and pk:
-                for key in ((st, c, tt, pk), (tt, pk, st, c)):
-                    if out.get(key) not in ("verified", "asserted"):     # 同一对键有多条关系时,取最强的状态
-                        out[key] = rel.get("status") or "candidate"
+                status = rel.get("status") or "candidate"
+                for key in ((st, c, tt, pk), (tt, pk, st, c)):       # 同一对键有多条关系时,取最强的状态
+                    if _STATUS_RANK.get(status, 0) > _STATUS_RANK.get(out.get(key), -1):
+                        out[key] = status
     return out
 
 
@@ -4541,6 +4566,9 @@ def ont_check():
     if any(_bad_gkey(str(k or "")) for k in raw if k):
         return jsonify({"error": "非法图谱键", "field": "graphs"}), 400
     focus_tables, graph_keys = _qa_scope(body)
+    if not graph_keys:                           # 不带来源头和 graphs 时(如 MCP 工具)按当前数据库的默认本体检查
+        key = _active_graph_key()
+        graph_keys = [key] if key else []
     if not graph_keys:
         return jsonify({"error": "当前数据库尚未构建本体，请先构建", "code": "ontology_unavailable"}), 422
     report = {"tables": [], "joins": [], "parsed": False}
@@ -4759,11 +4787,11 @@ def _ir_write_path(key):
 def _open_writable(key, need_objects=False):
     """IR 写端点(enrich/reground/maturity)统一前奏:图谱必填校验 + 可回写路径守卫 + 载图 + 存在性校验。
     成功返回 (ir, write_path, None);失败返回 (None, None, (响应, 状态码))——缺图谱参数/只读源/穿越 400,缺图/缺对象 404。"""
-    if not key:   # 写端点必须显式指定图谱,不静默默认到 示例 主图(防漏传/拼错时误改生产本体)
+    if not key:   # 写端点必须显式指定图谱,不静默默认到示例主图(防漏传/拼错时误改生产本体)
         return None, None, (jsonify({"error": "需要指定图谱(graph)"}), 400)
     wp = _ir_write_path(key)
     if not wp:
-        return None, None, (jsonify({"error": "该图谱为只读平台源,不支持回写(请选 示例/应用/构建/锻造图谱)"}), 400)
+        return None, None, (jsonify({"error": "该图谱为只读平台源,不支持回写(请选示例/应用/构建/锻造图谱)"}), 400)
     ir = load_ir(key)
     if not ir:
         return None, None, (jsonify({"error": "图谱不存在"}), 404)
@@ -6280,9 +6308,18 @@ def chat_feedback():
         fb = _load_fb(); fb.insert(0, item); _atomic_json(QA_FB, fb[:500])
     return jsonify({"ok": True, "id": item["id"]})
 
+def _feedback_listing(x):
+    """列表只给答案摘要的标题和行数;样例行和 SQL 留在服务端,供回放比对。"""
+    out = {k: v for k, v in x.items() if k != "snapshot"}
+    out["snapshot"] = [{"title": s.get("title"), "row_count": s.get("row_count")} for s in x.get("snapshot") or []
+                       if isinstance(s, dict)]
+    out["replays"] = [{k: v for k, v in r.items() if k != "results"} for r in x.get("replays") or [] if isinstance(r, dict)]
+    return out
+
+
 @app.get("/api/chat/feedback")
 def chat_feedback_list():
-    fb = [x for x in _load_fb() if not _active_source() or _source_record_matches(x)]
+    fb = [_feedback_listing(x) for x in _load_fb() if not _active_source() or _source_record_matches(x)]
     return jsonify({"items": fb, "open": sum(1 for x in fb if x["verdict"] == "needs_work" and not x.get("resolved")),
                     "useful": sum(1 for x in fb if x["verdict"] == "useful")})
 
@@ -6350,8 +6387,9 @@ def chat_feedback_replay():
     with _WRITE_LOCK:
         fb = _load_fb()
         cur = next((x for x in fb if x["id"] == fid), None)
-        if cur is not None:
-            cur["replays"] = [rec, *(cur.get("replays") or [])][:5]
+        if cur is not None:                      # 存档只留结论,不留答案样例(样例只在本次响应里返回),控制文件大小
+            kept = {k: v for k, v in rec.items() if k != "results"}
+            cur["replays"] = [kept, *(cur.get("replays") or [])][:5]
             _atomic_json(QA_FB, fb)
     observability.count("qa.feedback_replay", outcome=rec["outcome"])
     return jsonify(rec)
@@ -6378,30 +6416,38 @@ def _feedback_regression():
     return out
 
 
-FB_JOB = {"running": False, "result": None, "started": ""}
+FB_JOBS: dict = {}                               # 按数据源分开的批量回放任务
+_FB_JOB_LOCK = threading.Lock()
+
+
+def _fb_job():
+    sid = (_active_source() or {}).get("id") or ""
+    return FB_JOBS.setdefault(sid, {"running": False, "result": None, "started": ""})
 
 
 @app.post("/api/chat/feedback/regression")
 def chat_feedback_regression():
-    """后台回放全部「有用」反馈;GET 同一地址查看进度与结果。"""
-    if FB_JOB["running"]: return jsonify({"error": "回放已在运行"}), 409
-    FB_JOB.update(running=True, result=None, started=time.strftime("%Y-%m-%d %H:%M:%S"))
+    """后台回放当前数据源的全部「有用」反馈;GET 同一地址查看进度与结果。"""
+    with _FB_JOB_LOCK:                           # 先查后改放在锁里:并发的两次提交只启动一个任务
+        job = _fb_job()
+        if job["running"]: return jsonify({"error": "回放已在运行"}), 409
+        job.update(running=True, result=None, started=time.strftime("%Y-%m-%d %H:%M:%S"))
     ctx = contextvars.copy_context()
 
     def run():
         try:
-            FB_JOB["result"] = _feedback_regression()
+            job["result"] = _feedback_regression()
         except Exception as e:                   # noqa: BLE001
-            FB_JOB["result"] = {"error": f"{type(e).__name__}: {str(e)[:120]}"}
+            job["result"] = {"error": f"{type(e).__name__}: {str(e)[:120]}"}
         finally:
-            FB_JOB["running"] = False
+            job["running"] = False
     threading.Thread(target=lambda: ctx.run(run), daemon=True).start()
     return jsonify({"ok": True}), 202
 
 
 @app.get("/api/chat/feedback/regression")
 def chat_feedback_regression_status():
-    return jsonify(FB_JOB)
+    return jsonify(_fb_job())
 
 @app.post("/api/chat/save_skill")
 def chat_save_skill():
@@ -6545,7 +6591,7 @@ def sysinfo():
 @app.get("/api/agents")
 def agents():
     """智能体列表:深度问数内置体 + 已保存技能 + skills_seed(对齐平台『智能体列表』)"""
-    out = [{"name": "demo-deep-qa", "desc": "基于 示例 本体图谱的深度问数编排智能体", "type": "内置", "author": "系统", "ts": ""}]
+    out = [{"name": "demo-deep-qa", "desc": "基于示例本体图谱的深度问数编排智能体", "type": "内置", "author": "系统", "ts": ""}]
     try:
         qs = json.load(open(_QA_SKILLS_F)) if os.path.exists(_QA_SKILLS_F) else []
         for s in qs:
@@ -6670,13 +6716,16 @@ def build_upload():
                         data = [[(v.strip() or None) if ty != "TEXT" else v for v, ty in zip(row, types)] for row in rows[1:]]
                         con.executemany(f'INSERT INTO "{t}" VALUES ({",".join("?"*len(hdr))})', data)
                         long_t = None
-                        if _hp["long"] and not any(_upload_table_name(os.path.basename(o)[8:]).casefold() == (t + "_long").casefold()
-                                                   for o in glob.glob(os.path.join(WORK, "uploads_*")) if os.path.abspath(o) != path):
+                        _long_free = not any(_upload_table_name(os.path.basename(o)[8:]).casefold() == (t + "_long").casefold()
+                                             for o in glob.glob(os.path.join(WORK, "uploads_*")) if os.path.abspath(o) != path)
+                        lhdr = [re.sub(r"[^A-Za-z0-9_一-鿿]", "_", h) or f"c{i}"
+                                for i, h in enumerate((_hp["long"] or {}).get("columns") or [])]
+                        if _long_free:                   # 重新上传后不再是多级表头时,旧的长表一并删除
+                            con.execute(f'DROP TABLE IF EXISTS "{t}_long"')
+                        if _hp["long"] and _long_free and len({h.casefold() for h in lhdr}) == len(lhdr):
                             long_t = t + "_long"
-                            lhdr = [re.sub(r"[^A-Za-z0-9_一-鿿]", "_", h) or f"c{i}" for i, h in enumerate(_hp["long"]["columns"])]
                             lrows = _hp["long"]["rows"]
                             ltypes = _column_types(lrows, len(lhdr)) if lrows else ["TEXT"] * len(lhdr)
-                            con.execute(f'DROP TABLE IF EXISTS "{long_t}"')
                             con.execute(f'CREATE TABLE "{long_t}" ({", ".join(chr(34)+h+chr(34)+" "+ty for h, ty in zip(lhdr, ltypes))})')
                             con.executemany(f'INSERT INTO "{long_t}" VALUES ({",".join("?"*len(lhdr))})',
                                             [[(v.strip() or None) if ty != "TEXT" else v for v, ty in zip(r, ltypes)] for r in lrows])
@@ -7394,7 +7443,7 @@ def build_skill_upload():
 def build_defaults():
     """本体构建页各表单的可用默认参数(前端预填,可改):均指向本机真实可用资源"""
     return jsonify({
-        "sqlite_path": os.path.abspath(_active_db()),                       # 真实 示例 库绝对路径(填入即可校验通过)
+        "sqlite_path": os.path.abspath(_active_db()),                       # 示例库绝对路径(填入即可校验通过)
         "conn_name": "示例制造数据库",
         "build_name": "示例企业本体",
         "build_query": "从当前数据库识别对象、事件与关系，构建附有数据证据且可人工复核的本体",
@@ -9323,10 +9372,20 @@ def _attach_arithmetic(db, ir):
         con.close()
     ir["arithmetic"] = found
     verified = 0
+    import workload_concepts as _wcm
+    index = _wcm._concept_index([c for c in ir.get("concepts") or [] if isinstance(c, dict)])
     for d in ir.get("derived") or []:
         if not isinstance(d, dict):
             continue
-        w = arithmetic_witness.supports(d.get("formula"), found)
+        # 输入概念各自绑定到唯一的表.列时,公式按绑定换成列名,且只认那张表上的见证;跨表的公式不用行内见证核验
+        uses = [u for u in d.get("uses") or [] if isinstance(u, str)]
+        bound = [index[u.casefold()][0] for u in uses if len(index.get(u.casefold(), [])) == 1]
+        tables, names = None, {}
+        if uses and len(bound) == len(uses):
+            tables = sorted({str(c.get("table") or "") for c in bound})
+            names = {u: c.get("column") for u, c in zip(uses, bound) if c.get("column")}
+        w = arithmetic_witness.supports(d.get("formula"), found, tables=tables, names=names) \
+            if tables is None or len(tables) == 1 else None
         ev = d.setdefault("evidence", {})
         if w and w["matched"] == w["rows"]:
             ev["formula_verified"] = True
@@ -9962,14 +10021,27 @@ def build_inquire():
             yield push("data_catalog", False, f'目录整理未完成:{type(exc).__name__}；不影响关系产物')
         _grounded = None
         try:                                     # DR-136 按数据命名与术语接地(名称不透明、没有字典的库)
-            _grounded = _data_grounding(db, ir, workload)
+            # 起名要调模型,放到有界线程里并发心跳;在副本上改,超时放弃时后台线程不会再改动正在构建的 ir
+            import copy as _copy
+            _irc = _copy.deepcopy(ir)
+            for _item in _bounded_stream(lambda _log: _data_grounding(db, _irc, workload), 270):
+                if _item[0] == 'tick':
+                    yield sse({'type': 'tick', 'elapsed': round(_t.time() - t0, 1)})
+                elif _item[0] == 'done':
+                    if _item[2] is not None:
+                        raise _item[2]
+                    if _item[3]:
+                        raise TimeoutError("data_grounding")
+                    _grounded = _item[1]
+            ir.clear()
+            ir.update(_irc)
             _gn = _grounded["naming"]
             yield push("data_grounding", True,
-                       f"数据接地 · 口径说明里的用语 → 列 {len(_grounded['groundings'])} 条(数据核验)· 取值反查 {len(_grounded['values'])} 条 · "
+                       f"按数据核对用语与命名 · 口径说明里的用语 → 列 {len(_grounded['groundings'])} 条(数据核验)· 取值反查 {len(_grounded['values'])} 条 · "
                        f"候选名:表 {_gn['tables_named']}/{_gn['tables_considered']}、列 {_gn['columns_named']} · "
                        f"理由在数据里找不到而未采用 {len(_gn['rejected'])} 条")
         except Exception as exc:                 # noqa: BLE001
-            yield push("data_grounding", False, f"数据接地未完成:{type(exc).__name__};不影响关系产物")
+            yield push("data_grounding", False, f"按数据核对用语与命名未完成:{type(exc).__name__};不影响关系产物")
         _gbrief = _grounded["brief"] if _grounded and _grounded["naming"]["tables_considered"] else None
         if workload or any(ir.get(k) for k in ('concepts', 'themes', 'derived', 'caveats')):
             yield sse({'type': 'status', 'text': '核验业务概念与主题的取数依据；业务含义仍需确认…'})
@@ -9998,9 +10070,9 @@ def build_inquire():
             ir.update(_wcm.merge_layers(ir, {"concepts": _grounded["concepts"]}))
         try:                                     # DR-135 算术见证:与派生公式核对;失败不影响关系产物
             _na, _nv = _attach_arithmetic(db, ir)
-            yield push("arithmetic_witness", True, f"算术见证 · {_na} 条列间关系逐行成立 · 派生公式核验通过 {_nv} 条")
+            yield push("arithmetic_witness", True, f"列间算术关系 · {_na} 条逐行成立(如金额 = 数量 × 单价)· 派生公式核验通过 {_nv} 条")
         except Exception as exc:                 # noqa: BLE001
-            yield push("arithmetic_witness", False, f"算术见证未完成:{type(exc).__name__};不影响关系产物")
+            yield push("arithmetic_witness", False, f"列间算术关系核对未完成:{type(exc).__name__};不影响关系产物")
         _wm = {**workload_meta, 'questions_processed': (ir.get('semantic_report') or {}).get('questions_processed', 0)}
         ir['build_manifest']['workload'] = _wm
         ir['build_history'][-1]['workload'] = _wm

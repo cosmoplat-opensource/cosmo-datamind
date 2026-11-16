@@ -97,6 +97,10 @@ class _Parser:
     def is_id(self, i, hi):
         return i < hi and self.t[i][0] == "id"
 
+    def join_word(self, i, hi=None):
+        """连接关键字;后面紧跟括号的 left( / right( 是字符串函数,不算。"""
+        return self.kw(i, hi) in _JOIN_WORDS and self.op(i + 1, hi) != "("
+
     def top_level(self, lo, hi):
         """[lo, hi) 里不在括号内的词元位置。"""
         i = lo
@@ -237,7 +241,7 @@ class _Parser:
                 if natural and not first:
                     core["usings"].append({"alias": item["alias"], "cols": None, "earlier": before})
             if self.kw(i, hi) == "on":
-                end = next((j for j in self.top_level(i + 1, hi) if self.kw(j) in _JOIN_WORDS or self.op(j) == ","), hi)
+                end = next((j for j in self.top_level(i + 1, hi) if self.join_word(j) or self.op(j) == ","), hi)
                 self.expression(i + 1, end, core, ctes, on=True)
                 i = end
             elif self.kw(i, hi) == "using":
@@ -254,9 +258,9 @@ class _Parser:
             if self.op(i) == ",":
                 i += 1
                 continue
-            if self.kw(i) not in _JOIN_WORDS:
+            if not self.join_word(i):
                 raise ParseError(f"FROM 子句里无法解析:{self.t[i][1]}")
-            while self.kw(i, hi) in _JOIN_WORDS:
+            while self.join_word(i, hi):
                 natural = natural or self.kw(i) == "natural"
                 i += 1
 

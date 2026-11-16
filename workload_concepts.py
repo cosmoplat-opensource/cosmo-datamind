@@ -193,7 +193,7 @@ REPAIR_PROMPT = """上一轮提议的下列业务概念没有通过数据核验(
 
 
 def _repair_concepts(con, failed, repair, ask, extract, tables, entity_of, result, seen, deadline):
-    """DR-138 未通过核验的概念带着原因和真实结构重提,至多 REPAIR_ROUNDS 轮(移植自对比实验分支)。"""
+    """DR-138 未通过核验的概念带着原因和真实结构重提,至多 REPAIR_ROUNDS 轮(做法来自对比实验)。"""
     for rnd in range(1, REPAIR_ROUNDS + 1):
         if not failed or (deadline is not None and time.monotonic() >= deadline):
             return
@@ -207,7 +207,7 @@ def _repair_concepts(con, failed, repair, ask, extract, tables, entity_of, resul
         except Exception:
             return
         todo = [c for c in (d.get("concepts") if isinstance(d, dict) and isinstance(d.get("concepts"), list) else [])
-                if isinstance(c, dict)][:40]
+                if isinstance(c, dict)][:len(failed)]       # 重提只替换未通过的那几条,不借机多提
         result["repair"]["rounds"] += 1
         result["repair"]["resubmitted"] += len(todo)
         failed = []

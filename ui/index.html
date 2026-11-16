@@ -327,7 +327,7 @@ a{color:var(--acc)}
   <div class="card" id="eg_tasks" style="margin-top:12px"><div class="muted">加载中…</div></div>
   <div class="card" id="eg_keys" style="margin-top:12px"><div class="muted">加载中…</div></div></div>
 
- <div class="page" id="p_qaeval"><h2>问数评测 <span class="muted">参考问题集 × 三组对照(A 基线:直接生成 SQL / B 图谱增强 / C 本体全量)· 各组用同一套比对规则 · 可重复运行 · 组间差给出按题配对的 95% 区间 · 统计候选上限</span></h2>
+ <div class="page" id="p_qaeval"><h2>问数评测 <span class="muted">参考问题集 × 三组对照(A 基线:直接生成 SQL / B 图谱增强 / C 本体全量)· 各组用同一套比对规则 · 可重复运行 · 组间差给出按题配对的 95% 区间 · 统计所需的表和列是否给到了模型</span></h2>
   <div class="card"><div class="row" style="align-items:center;gap:10px">
     <button id="qe_run" onclick="qeRun()">开始评测</button>
     <span class="muted" style="font-size:12px">模型覆盖(可空=跟随引擎)</span><input id="qe_model" placeholder="如 deepseek-chat" style="width:220px">
@@ -930,7 +930,7 @@ async function rvFbLoad(){const d=await J('/api/chat/feedback').catch(()=>null);
  const OC={same:['ok','一致'],changed:['warn','已变化'],no_answer:['warn','没有答案'],no_baseline:['','无可比对'],unstable:['','结果不稳定']};
  el.innerHTML=`<h3 style="margin:0 0 8px;display:flex;align-items:center;gap:8px">问数反馈待处理列表<span class="muted" style="font-weight:400;font-size:12px">待处理 ${open.length} · 有用 ${d.useful}</span>
    <span style="flex:1"></span><button class="ghost" onclick="rvFbRegression(this)" title="按当前本体逐条重新提问,比对答案的数据与反馈时是否一致">回放「有用」的反馈</button></h3>
-   <div class="muted" style="font-size:12px;margin-bottom:6px">回放:按当前本体重新提问,比对答案的数据与反馈时是否一致(比的是数据,不是 SQL 写法)。「待改进」的答案有变化,说明修改起了作用;「有用」的答案有变化,可能退化。</div><div id="rv_fb_reg"></div>`
+   <div class="muted" style="font-size:12px;margin-bottom:6px">回放:按当前本体重新提问,比对答案的数据与反馈时是否一致(比的是数据,不是 SQL 写法)。「待改进」的答案有变化,可能是修改起了作用;「有用」的答案有变化,可能退化。多次回放结论不一致时记为结果不稳定。</div><div id="rv_fb_reg"></div>`
   +(open.length?'<table><tr><th>时间</th><th>问题</th><th>反馈意见</th><th>来源</th><th>最近一次回放</th><th>操作</th></tr>'+open.map(x=>{const rp=(x.replays||[])[0];const oc=rp?OC[rp.outcome]||['',rp.outcome]:null;
    return `<tr style="background:#FFFBEB"><td class="muted" style="font-size:12px;white-space:nowrap">${esc(x.ts)}</td><td>${esc(x.question)}</td>
     <td>${esc(x.comment)||'<span class=muted>-</span>'}</td><td class="muted">${x.mode==='diagnose'?'根因诊断':'深度问数'}</td>
@@ -942,7 +942,8 @@ async function rvFbReplay(id,btn){toast('正在按当前本体重新提问两次
  if(d.error){toast('回放失败:'+d.error,false);return;}toast(d.explain||'回放完成',d.outcome==='changed');rvFbLoad();}
 async function rvFbRegression(btn){const st=await J('/api/chat/feedback/regression',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
  if(st.error){toast(st.error,false);return;}const box=$('#rv_fb_reg');if(box)box.innerHTML='<div class="muted" style="font-size:12px">回放中…</div>';
- const poll=async()=>{const j=await J('/api/chat/feedback/regression');if(j.running){setTimeout(poll,3000);return;}const r=j.result||{};const b=$('#rv_fb_reg');if(!b)return;
+ const poll=async()=>{const j=await J('/api/chat/feedback/regression');if(j.running){setTimeout(poll,3000);return;}const b=$('#rv_fb_reg');if(!b)return;
+  if(j.error||!j.result){b.innerHTML=`<div style="color:#b91c1c;font-size:12px">读取回放结果失败:${esc(j.error||'没有结果')}</div>`;return;}const r=j.result;
   if(r.error){b.innerHTML=`<div style="color:#b91c1c;font-size:12px">回放失败:${esc(r.error)}</div>`;return;}
   b.innerHTML=`<div class="step" style="font-size:13px;margin-bottom:8px">回放 ${r.replayed} 条 · 一致 ${r.same} · 已变化 ${(r.changed||[]).length} · 没有答案 ${r.no_answer} · 结果不稳定 ${r.unstable||0} · 没有保存答案而跳过 ${r.skipped}`
    +((r.changed||[]).length?'<div style="margin-top:4px">已变化(可能退化,请复核):'+r.changed.map(c=>esc(c.question)).join('、')+'</div>':'')+'</div>';};
@@ -1337,11 +1338,11 @@ function qeRender(d){
  const pct=v=>v==null?'—':(v*100).toFixed(1)+'%';const pp=v=>(v>=0?'+':'')+(v*100).toFixed(1);
  $('#qe_kpis').innerHTML=['A','B','C'].map(k=>{const a=A[k]||{},s=S[k]||{};const acc=s.accuracy!=null?pct(s.accuracy):`${a.correct||0}/${n}`;
   return `<div class="kpi"><div class="n" style="color:${k==='C'?'#16a34a':k==='B'?'#4A5FF3':'#6B7690'}">${acc}</div>
-  <div class="l">${k} 组 · ${esc((a.name||'').split('(')[0])}<br><span style="font-size:12px">候选上限 ${pct(s.ceiling)} · 上限内正确 ${pct(s.accuracy_given_ceiling)}<br>结果集严格一致 ${pct(s.strict)} · 列容忍 ${pct(s.columns)}${k==='C'?` · 本体约束拦截 ${a.gate_block||0}`:''}</span></div></div>`;}).join('');
+  <div class="l">${k} 组 · ${esc((a.name||'').split('(')[0])}<br><span style="font-size:12px">上下文含所需表列 ${pct(s.ceiling)} · 其中答对 ${pct(s.accuracy_given_ceiling)}<br>结果集严格一致 ${pct(s.strict)} · 列容忍 ${pct(s.columns)}${k==='C'?` · 本体约束拦截 ${a.gate_block||0}`:''}</span></div></div>`;}).join('');
  const pairs=Object.entries(P).map(([k,v])=>`<span style="margin-right:14px">${esc(k.replace('-',' 对 '))}:${pp(v.diff)} 个百分点 [${pp(v.lo)}, ${pp(v.hi)}](${v.n} 题)</span>`).join('');
  $('#qe_body').innerHTML=`<div class="muted" style="font-size:12px;margin-bottom:6px">题集:${esc(d.dataset_type==='source_count_smoke'?'当前库简单计数检查':'业务参考题集')} · 模型:${esc(d.model||'')} · 重复 ${esc(d.repeats||1)} 次 · ${esc(d.ts||'')}</div>`
   +(pairs?`<div style="font-size:13px;margin-bottom:6px"><b>组间差</b>(按题配对,95% 区间;区间跨过 0 表示差异不显著):${pairs}</div>`:'')
-  +`<div class="muted" style="font-size:12px;margin-bottom:8px">正确=题集声明的判定(数值按容差,字符串按等值或包含);结果集口径按参考 SQL 的结果比对;候选上限=参考答案所需的表和列都出现在给模型的上下文里;出处=SQL 引用了参考答案所需的表。题目只有 ${n} 道时区间很宽,不宜据此下结论。</div>`
+  +`<div class="muted" style="font-size:12px;margin-bottom:8px">正确=题集声明的判定(数值按容差,字符串按等值或包含);结果集口径按参考 SQL 的结果比对;上下文含所需表列=参考答案所需的表和列都出现在给模型的上下文里(即候选上限),「其中答对」用来区分缺了信息和选错了;出处=SQL 引用了参考答案所需的表。题目只有 ${n} 道时区间很宽,不宜据此下结论。</div>`
   +'<table><tr><th>题目</th><th>参考答案</th><th>A 基线</th><th>B 图谱</th><th>C 本体全量</th></tr>'
   +(d.items||[]).map(it=>'<tr><td style="max-width:260px">'+esc(it.q)+'</td><td><code>'+esc(String(it.gold))+'</code></td>'
    +['A','B','C'].map(k=>{const r=(it.arms||{})[k]||{};const runs=r.runs||[r];const ok=runs.filter(x=>x.correct).length;
@@ -1492,10 +1493,10 @@ async function dqUpload(input){const fs=[...(input.files||[])];if(!fs.length)ret
  toast&&toast('上传中…');
  const d=await J('/api/build/upload',{method:'POST',body:fd});
  if(d.error){toast&&toast('上传失败:'+d.error);return;}
-  (d.tables||[]).forEach(t=>{if(t.table&&!t.error)DQ_ATTS.push({name:t.table,rows:t.rows});if(t.long_table)DQ_ATTS.push({name:t.long_table,rows:'按期间展开的长表,'});});
+  (d.tables||[]).forEach(t=>{if(t.table&&!t.error)DQ_ATTS.push({name:t.table,rows:t.rows});if(t.long_table)DQ_ATTS.push({name:t.long_table,rows:'按期间展开的长表'});});
   (d.saved||[]).filter(n=>!/\.(csv|tsv)$/i.test(n)).forEach(n=>DQ_ATTS.push({name:n,rows:'附件'}));
   dqRenderAtts();toast&&toast('已上传，表格文件已导入为 up. 开头的数据表',true);}
-function dqRenderAtts(){$('#dq_atts').innerHTML=DQ_ATTS.map((a,i)=>`<span class="dq-att"><b>${esc(a.name)}</b> <span class="muted">${esc(''+a.rows)}行</span> <span class="x" onclick="DQ_ATTS.splice(${i},1);dqRenderAtts()">✕</span></span>`).join('');}
+function dqRenderAtts(){$('#dq_atts').innerHTML=DQ_ATTS.map((a,i)=>`<span class="dq-att"><b>${esc(a.name)}</b> <span class="muted">${typeof a.rows==='number'?a.rows+' 行':esc(''+a.rows)}</span> <span class="x" onclick="DQ_ATTS.splice(${i},1);dqRenderAtts()">✕</span></span>`).join('');}
 // ── 界面版本自检：标签页开着不刷新时，改动不会生效，现象是「说改了却没变」──
 let UI_VER=null;
 function uiVerBanner(){
@@ -1563,7 +1564,7 @@ function dqDsTblFilter(){const q=($('#ds_tsearch').value||'').toLowerCase();$('#
 function dqDsConfirm(){dqDsCommit();}
 async function dqOpenSkill(){$('#dq_skmodal').style.display='flex';const body=$('#dq_sk_body');body.innerHTML='<div class="muted">加载中…</div>';
  let sinked=[];try{sinked=await J('/api/chat/skills');}catch(e){}
- const cards=[{id:'demo-deep-qa',name:'demo-deep-qa',builtin:true,desc:'基于 示例 应用本体图谱的深度问数编排。就毛利/收入/产量/成本/费用/目标达成等业务指标提问时启用。'}]
+ const cards=[{id:'demo-deep-qa',name:'demo-deep-qa',builtin:true,desc:'基于示例应用本体图谱的深度问数编排。就毛利/收入/产量/成本/费用/目标达成等业务指标提问时启用。'}]
   .concat((sinked||[]).map(s=>({id:s.id,name:(s.question||s.id).slice(0,24),desc:'保存自问数 · '+(s.analyses?s.analyses.length:0)+' 条SQL',used:s.analyses?s.analyses.length:0})));
  body.innerHTML=cards.map(c=>`<div class="sk-card ${DQ_SKILL===c.id?'sel':''}" onclick="dqSkillPick(${esc(JSON.stringify(c.id))})"><div style="flex:1"><div class="nm">${esc(c.name)}${c.builtin?'<span class="badge">内置</span>':'<span class="badge">保存</span>'}</div><div class="ds">${esc(c.desc)}</div></div></div>`).join('')
   +`<div class="muted" style="text-align:center;margin-top:8px">单选：不选则自动匹配最优技能</div>`;}
@@ -1659,7 +1660,7 @@ function dqRenderCard(card,q,d,origin='live'){const uid=DQ_UID++;const okN=d.ste
 async function dqSaveSkill(a,q){const card=a.closest('.dq-card');const d=card&&card._d;if(!d||!(d.results||[]).length){toast&&toast('没有可保存的结果');return;}
  a.textContent='保存中…';try{const r=await J('/api/chat/save_skill',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q,results:d.results})});
   a.textContent=r.ok?`✓ 已保存(${r.count} 条SQL)`:'保存失败';}catch(e){a.textContent='保存失败';}}
-// ── 反馈落库(P24 证据回流)：有用直接上报；待改进附意见 → 本体迭代候选队列(评审页处理)──
+// ── 反馈落库：有用直接上报；待改进附意见 → 评审页的问数反馈待处理列表──
 // DR-137 反馈时带上所用的本体和答案的数据,之后可按当前本体回放比对
 function dqFbAnswer(el){const d=(el.closest('.dq-card')||{})._d||{};
  const graphs=(d.answer_record||{}).graphs||(d.anchor||{}).graphs||[];
@@ -1670,12 +1671,12 @@ async function dqFb(el,q,verdict,mode){const on=!el.classList.contains('on');
  if(!on)return;
  if(verdict==='needs_work'){const card=el.closest('.dq-card');let box=card.querySelector('.dq-fbbox');
   if(!box){box=document.createElement('div');box.className='dq-fbbox';box.style.cssText='margin-top:8px;display:flex;gap:6px;align-items:center';
-   box.innerHTML='<input placeholder="哪里待改进?(将进入本体迭代候选队列，由评审处理)" style="flex:1"><button class="ghost">提交反馈</button>';
+   box.innerHTML='<input placeholder="哪里待改进?(将进入评审页的问数反馈待处理列表)" style="flex:1"><button class="ghost">提交反馈</button>';
    card.appendChild(box);
    box.querySelector('button').onclick=async()=>{const c=box.querySelector('input').value.trim();
     const r=await J('/api/chat/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q,verdict:'needs_work',comment:c,mode:mode||'chat',...dqFbAnswer(el)})}).catch(e=>({error:''+e}));
     if(r.error){toast(r.error,false);return;}
-    box.innerHTML='<span class="muted" style="font-size:12px">已提交 · 进入本体迭代候选队列(评审页可见)✓</span>';toast('反馈已进入本体迭代候选队列',true);};}
+    box.innerHTML='<span class="muted" style="font-size:12px">已提交 · 已进入评审页的问数反馈待处理列表 ✓</span>';toast('反馈已进入问数反馈待处理列表',true);};}
   return;}
  const r=await J('/api/chat/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q,verdict:'useful',mode:mode||'chat',...dqFbAnswer(el)})}).catch(e=>({error:''+e}));
  if(r.error){toast(r.error,false);return;}toast('已记录：有帮助',true);}

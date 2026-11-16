@@ -43,3 +43,20 @@ def test_bad_requests_are_rejected():
     assert c.post("/api/ont/check", headers=H, json={"graphs": ["demo"]}).status_code == 400
     assert c.post("/api/ont/check", headers=H, json={"sql": "SELECT 1", "graphs": ["../x"]}).status_code == 400
     assert c.post("/api/ont/check", headers=H, json={"sql": "x" * 20001, "graphs": ["demo"]}).status_code == 400
+
+
+def test_without_graphs_or_a_source_header_the_default_ontology_is_used():
+    # MCP 工具 check_sql 不带来源头、也可以不带 graphs:应按当前数据库的默认本体检查,而不是返回 422
+    r = server.app.test_client().post("/api/ont/check", json={"sql": "SELECT COUNT(*) FROM dim_employee"})
+    assert r.status_code == 200 and r.get_json()["ok"] is True and r.get_json()["graphs"] == ["demo"]
+
+
+def test_the_strongest_status_wins_when_several_relations_share_a_key_pair():
+    def ir(*statuses):
+        return {"objects": [{"id": "a", "table": "ta"}, {"id": "b", "table": "tb"}],
+                "relations": [{"source_concept": "a", "target_concept": "b", "status": s,
+                               "evidence": {"child_key": "k", "parent_key": "k"}} for s in statuses]}
+    key = ("ta", "k", "tb", "k")
+    assert server._relation_status_index(ir("candidate", "rejected"))[key] == "candidate"
+    assert server._relation_status_index(ir("asserted", "verified"))[key] == "verified"
+    assert server._relation_status_index(ir("rejected", "asserted"))[key] == "asserted"

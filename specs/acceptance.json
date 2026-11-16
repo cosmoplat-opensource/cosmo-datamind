@@ -1409,6 +1409,58 @@
         "tests/unit/test_feedback_replay.py::test_the_number_of_runs_is_bounded",
         "tests/unit/test_feedback_replay.py::test_compare_runs_combines_outcomes"
       ]
+    },
+    {
+      "id": "QA-GATE-PARSE-02",
+      "criterion": "ON 条件里的 left( / right( 字符串函数不当作连接关键字;别名在不同查询块里复用时,重复计数的原因写对子表名",
+      "tests": [
+        "tests/unit/test_sql_structure.py::test_left_and_right_string_functions_in_on_are_not_join_words",
+        "tests/unit/test_fanout_gate.py::test_the_reason_names_the_child_tables_of_the_block_even_when_aliases_are_reused"
+      ]
+    },
+    {
+      "id": "ONT-CHECK-02",
+      "criterion": "不带来源头和 graphs 的检查请求按当前数据库的默认本体检查;同一对连接键有多条关系时取最强的状态",
+      "tests": [
+        "tests/unit/test_ont_check_api.py::test_without_graphs_or_a_source_header_the_default_ontology_is_used",
+        "tests/unit/test_ont_check_api.py::test_the_strongest_status_wins_when_several_relations_share_a_key_pair"
+      ]
+    },
+    {
+      "id": "ARITH-WITNESS-02",
+      "criterion": "取值小于允许误差的列不产生算术关系;派生公式只由同一张表上的见证核验,概念名按绑定换成列名",
+      "tests": [
+        "tests/unit/test_arithmetic_witness.py::test_columns_smaller_than_the_tolerance_do_not_produce_relations",
+        "tests/unit/test_arithmetic_witness.py::test_a_witness_only_supports_formulas_on_its_own_table",
+        "tests/unit/test_arithmetic_witness.py::test_formulas_written_with_concept_names_are_checked_through_their_bindings"
+      ]
+    },
+    {
+      "id": "UPLOAD-HEADER-02",
+      "criterion": "键列与长表列同名时上传不失败;重新上传为单行表头时删除旧长表;下层表头更长时不丢列;没有数值时不按多级表头处理",
+      "tests": [
+        "tests/unit/test_upload_multilevel.py::test_a_key_column_named_like_the_long_table_columns_does_not_break_the_upload",
+        "tests/unit/test_upload_multilevel.py::test_reuploading_with_a_single_header_removes_the_old_long_table",
+        "tests/unit/test_header_parse.py::test_a_lower_header_row_longer_than_the_first_keeps_its_last_column",
+        "tests/unit/test_header_parse.py::test_a_text_only_row_with_an_empty_first_cell_is_data_when_no_numbers_follow"
+      ]
+    },
+    {
+      "id": "DATA-GROUNDING-03",
+      "criterion": "概念重提每轮不超过未通过的条数,未保留条数不为负;数据库的适用本体按文件指纹缓存",
+      "tests": [
+        "tests/unit/test_data_grounding.py::test_a_repair_round_cannot_add_more_concepts_than_failed",
+        "tests/unit/test_database_scope.py::test_the_graphs_of_a_database_are_cached_until_an_ontology_file_changes"
+      ]
+    },
+    {
+      "id": "FEEDBACK-REPLAY-03",
+      "criterion": "存档的回放记录和反馈列表不带样例行;批量回放任务按数据源分开且不会并发启动两个;界面的附件行数、轮询失败与反馈去向显示正确",
+      "tests": [
+        "tests/unit/test_feedback_replay.py::test_stored_replays_and_the_list_carry_no_row_samples",
+        "tests/unit/test_feedback_replay.py::test_regression_jobs_are_kept_per_data_source",
+        "tests/meta/test_ui_safety.py::test_attachment_chips_replay_polling_and_feedback_wording"
+      ]
     }
   ]
 }

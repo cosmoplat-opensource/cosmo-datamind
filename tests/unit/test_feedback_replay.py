@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 """反馈的回放验证(DR-137):反馈时保存答案的结果,之后按当前本体重新问一次,比对答案的数据有没有变。
 
-- 「待改进」的反馈:回放后答案变了,才说明修改起了作用;没变则问题多半还在。是否改对仍需人确认。
+- 「待改进」的反馈:回放后答案变了,可能是修改起了作用;没变则问题多半还在。是否改对仍需人确认。
 - 「有用」的反馈:作为回归题。本体修改后批量回放,答案的数据变了的,提示可能退化。
 比对的是返回的数据(行的集合、允许多带列),不是 SQL 文本:模型每次写法不同,数据相同就算一致。"""
+import json
+
 import pytest
 
 import feedback_replay as F
@@ -149,3 +151,26 @@ def test_compare_runs_combines_outcomes():
     assert F.combine(["same", "same"]) == "same" and F.combine(["changed", "changed"]) == "changed"
     assert F.combine(["same", "changed"]) == "unstable" and F.combine(["no_answer", "same"]) == "unstable"
     assert F.combine(["no_baseline"]) == "no_baseline"
+
+
+def test_stored_replays_and_the_list_carry_no_row_samples(fb):
+    fid = _post("/api/chat/feedback", {"question": "q", "verdict": "needs_work", "graphs": ["demo"], "results": [R1]}).get_json()["id"]
+    assert "results" in _post("/api/chat/feedback/replay", {"id": fid}).get_json()      # 本次回放的响应里仍有答案摘要
+    stored = next(x for x in json.load(open(server.QA_FB, encoding="utf-8")) if x["id"] == fid)
+    assert "results" not in stored["replays"][0]
+    item = next(x for x in server.app.test_client().get("/api/chat/feedback").get_json()["items"] if x["id"] == fid)
+    assert item["snapshot"] and all("rows" not in s and "sql" not in s for s in item["snapshot"])
+
+
+def test_regression_jobs_are_kept_per_data_source(fb, monkeypatch):
+    import threading
+    gate = threading.Event()
+    monkeypatch.setattr(server, "_feedback_regression", lambda: gate.wait(5) and {"replayed": 0})
+    c = server.app.test_client()
+    assert c.post("/api/chat/feedback/regression", json={}).status_code == 202
+    assert c.post("/api/chat/feedback/regression", json={}).status_code == 409
+    with monkeypatch.context() as m:                 # 换到另一个数据源:看不到、也不受前一个数据源的任务影响
+        m.setattr(server, "_active_source", lambda: {"id": "other", "path": "/nonexistent/other.db"})
+        other = c.get("/api/chat/feedback/regression").get_json()
+    assert other["running"] is False and other["result"] is None
+    gate.set()

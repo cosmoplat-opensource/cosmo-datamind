@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """算术见证(DR-135):同一行里,一列等于另外两列的和、差、积或商。
 
-年报绑定的实验里,「总计 = 分项之和」这类算术关系是可靠的证据。业务库里同样常见:
+在年报表格的实验中,「总计 = 分项之和」这类算术关系是可靠的证据。业务库里同样常见:
 毛利 = 金额 − 成本,金额 = 数量 × 单价。这些关系在数据上逐行成立时,可以:
 - 核验构建时模型提出的派生公式(此前派生公式一律标为「尚未执行核验」);
 - 在问数时告诉模型哪些列之间有确定的算术关系,不必自己重算或猜测。
@@ -25,8 +25,11 @@ _OPS = {"+": lambda a, b: a + b, "-": lambda a, b: a - b, "*": lambda a, b: a * 
         "/": lambda a, b: a / b if b else None}
 
 
+_ABS_TOL = 0.011       # 按分位取整的金额允许的绝对误差
+
+
 def _close(x, y):
-    return y is not None and abs(x - y) <= max(1e-6 * max(abs(x), abs(y)), 0.011)
+    return y is not None and abs(x - y) <= max(1e-6 * max(abs(x), abs(y)), _ABS_TOL)
 
 
 def _numeric_columns(con, table):
@@ -42,9 +45,10 @@ def _numeric_columns(con, table):
     return numeric[:MAX_COLUMNS], rows
 
 
-def _informative(rows, ti, ai, bi, op):
-    """能区分这个关系与其他关系的行数:结果和两个输入都不为 0,且两个输入不相等。"""
-    return sum(1 for r in rows if r[ti] and r[ai] and r[bi] and r[ai] != r[bi])
+def _informative(rows, ti, ai, bi):
+    """能区分这个关系与其他关系的行数:两个输入都不为 0、彼此不相等,且结果明显大于允许误差
+    (结果小于误差的十倍时,几乎任何组合都落在误差以内)。"""
+    return sum(1 for r in rows if abs(r[ti]) >= 10 * _ABS_TOL and r[ai] and r[bi] and r[ai] != r[bi])
 
 
 def discover(con, table):
@@ -80,7 +84,7 @@ def discover(con, table):
                         break
             if bad > limit:
                 continue
-            if _informative(usable, ti, ai, bi, op) < max(MIN_ROWS, 0.2 * len(usable)):
+            if _informative(usable, ti, ai, bi) < max(MIN_ROWS, 0.2 * len(usable)):
                 continue                                     # 多数行是 0 = 0 × x、0 = a − a 这类对什么关系都成立的行
             seen.add(members)
             found.append({"table": table, "column": target, "formula": f"{a} {op} {b}", "op": op, "inputs": [a, b],
@@ -88,23 +92,37 @@ def discover(con, table):
     return found
 
 
-_COL = r"(?:[A-Za-z_]\w*\.)?([A-Za-z_]\w*)"
+_NAME = r"[A-Za-z_一-鿿][\w一-鿿]*"
+_COL = r"(?:(" + _NAME + r")\.)?(" + _NAME + r")"
 _BINARY = re.compile(r"\s*" + _COL + r"\s*([-+*/])\s*" + _COL + r"\s*")
-_MATH = re.compile(r"[A-Za-z0-9_.\s()+\-*/]*[+\-*/][A-Za-z0-9_.\s()+\-*/]*")
+_MATH = re.compile(r"[\w一-鿿.\s()+\-*/]*[+\-*/][\w一-鿿.\s()+\-*/]*")
 
 
-def supports(formula, witnesses):
-    """派生公式里的算式恰好是「列 运算 列」,且与某条见证一致时返回那条见证;否则返回 None。
-    算式里还有别的项(如「(金额 − 成本)/ 金额」)时不算:见证只说明两列之间的关系。"""
-    for seg in _MATH.findall(str(formula or "")):
+def supports(formula, witnesses, tables=None, names=None):
+    """派生公式里的算式恰好是「列 运算 列」,且与同一张表上的某条见证一致时返回那条见证;否则返回 None。
+    算式里还有别的项(如「(金额 − 成本)/ 金额」)时不算:见证只说明两列之间的关系。
+    tables:公式所在的表(由输入概念的绑定得出);给出时只认这些表上的见证。
+    names:{概念名: 列名},公式用概念名书写时据此换成列名。算式里写了「表.列」时,表名也须一致。"""
+    names = {str(k).casefold(): str(v).lower() for k, v in (names or {}).items()}
+    keep = {str(t).lower() for t in tables} if tables is not None else None
+    text = str(formula or "")
+    segs = _MATH.findall(text)
+    if not re.search(r"[-+*/]", re.sub(r"\([^()]*\)", " ", text)):    # 「销售金额减去成本(amount - cost)」:括号里是注释性的算式
+        segs += re.findall(r"\(([^()]*)\)", text)
+    for seg in segs:
         body = seg.strip()
         while body.startswith("(") and body.endswith(")"):
             body = body[1:-1].strip()
         m = _BINARY.fullmatch(body)
         if not m:
             continue
-        a, op, b = m.group(1).lower(), m.group(2), m.group(3).lower()
+        ta, op, tb = (m.group(1) or "").lower(), m.group(3), (m.group(4) or "").lower()
+        a = names.get(m.group(2).casefold(), m.group(2).lower())
+        b = names.get(m.group(5).casefold(), m.group(5).lower())
         for w in witnesses or []:
+            wt = w["table"].lower()
+            if (keep is not None and wt not in keep) or any(q and q != wt for q in (ta, tb)):
+                continue
             x, y = (s.lower() for s in w["inputs"])
             if w["op"] == op and ((a, b) == (x, y) or (op in "+*" and (a, b) == (y, x))):
                 return w

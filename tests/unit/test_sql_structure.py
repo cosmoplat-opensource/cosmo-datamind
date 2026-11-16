@@ -81,3 +81,8 @@ def test_other_select_shapes_parse():
                 "(SELECT a FROM t) UNION (SELECT a FROM u) ORDER BY 1",
                 "SELECT * FROM t, json_each(t.payload) j", "SELECT 月份, SUM(金额) FROM 销售 GROUP BY 月份"):
         S.analyze(sql)
+
+
+def test_left_and_right_string_functions_in_on_are_not_join_words():
+    r = S.analyze("SELECT a.x FROM t1 a JOIN t2 b ON left(a.code, 3) = b.code AND right(a.k, 2) = b.k")
+    assert sorted(set(r["tables"])) == ["t1", "t2"]

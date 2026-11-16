@@ -239,13 +239,16 @@ def test_builtin_ontologies_that_do_not_describe_the_main_database_are_not_its_d
     monkeypatch.setattr(server, '_load_conns', lambda: [])
     monkeypatch.setattr(server, 'load_ir_edited', lambda key: irs.get(key))
     monkeypatch.setattr(server, '_DEMO_FITS', {})
+    monkeypatch.setattr(server, '_SOURCE_KEYS_CACHE', {})
     monkeypatch.setattr(server, 'IR_SOURCES', {'demo': {'paths': [], 'name': '示例'}, 'app': {'paths': [], 'name': '应用'},
                                              'built_mine': {'paths': [], 'name': '我的本体'}})
     context = server.app.test_client().get('/api/data/context').get_json()
     assert context['graphs'] == ['built_mine'] and context['default_graph'] == 'built_mine'
     irs['demo'] = {'scenario': {'name': '示例'}, 'objects': [{'id': 'orders', 'name': 'orders', 'table': 'orders'}], 'links': []}
+    server._SOURCE_KEYS_CACHE.clear()            # 这里在内存里换本体,文件指纹不变;实际部署中本体变化都落在文件上
     assert server.app.test_client().get('/api/data/context').get_json()['default_graph'] == 'demo'   # 内置本体对得上时照旧
     irs.pop('built_mine'); irs['demo'] = sample
+    server._SOURCE_KEYS_CACHE.clear()
     context = server.app.test_client().get('/api/data/context').get_json()                          # 没有适用的本体:如实报告(DR-133)
     assert context['graphs'] == [] and context['default_graph'] == '' and context['has_ontology'] is False
     monkeypatch.setattr(server, 'DB', str(db) + '.missing')                                         # 没有配置数据库时仍可浏览内置示例本体
@@ -269,3 +272,17 @@ def test_asking_on_a_main_database_without_an_ontology_says_so_instead_of_using_
         for url in ('/api/metrics', '/api/ont/review', '/api/ont/edits'):
             r = client.get(url, headers=headers)
             assert r.status_code == 422 and r.get_json()['code'] == 'ontology_unavailable', (url, r.get_json())
+
+
+def test_the_graphs_of_a_database_are_cached_until_an_ontology_file_changes(make_sqlite, monkeypatch, tmp_path):
+    """没有适用的内置示例本体时,默认图谱的判断在每个请求上都会走到;构建产物不变时不重复读取。"""
+    db = make_sqlite({'orders': ('id INTEGER', [(1,)])}, fname='main3.db')
+    monkeypatch.setattr(server, 'WORK', str(tmp_path))
+    monkeypatch.setattr(server, '_SOURCE_KEYS_CACHE', {})
+    calls = []
+    monkeypatch.setattr(server, '_source_graph_keys_uncached', lambda path: calls.append(path) or ['built_a'])
+    assert server._source_graph_keys(db) == ['built_a'] and server._source_graph_keys(db) == ['built_a']
+    assert len(calls) == 1
+    (tmp_path / 'built_b.json').write_text('{}', encoding='utf-8')
+    server._source_graph_keys(db)
+    assert len(calls) == 2

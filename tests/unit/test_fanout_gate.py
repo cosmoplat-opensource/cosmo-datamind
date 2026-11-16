@@ -237,3 +237,10 @@ def test_a_statement_the_parser_cannot_read_falls_back_to_the_previous_checks(mo
     assert not ok and "JOIN 键" in why
     ok, why = _v("SELECT SUM(c.credit_limit) FROM fact_sales_order o JOIN dim_customer c ON o.cust_id = c.cust_id")
     assert not ok and "扇出风险" in why
+
+
+def test_the_reason_names_the_child_tables_of_the_block_even_when_aliases_are_reused():
+    # 别名 t 在前一个查询块里指向 occupancy,在出问题的查询块里指向 tasks:原因里的表名要按出问题的那一块
+    ok, why = _p("WITH x AS (SELECT t.order_no FROM orders t) SELECT SUM(t.hours) FROM orders o "
+                 "JOIN tasks t ON t.order_no = o.order_no JOIN occupancy q ON q.order_no = o.order_no")
+    assert not ok and "扇出风险" in why and "tasks" in why and "orders 的每一行" not in why

@@ -177,3 +177,22 @@ def test_repair_stops_after_two_rounds_and_is_off_without_the_profile(make_sqlit
     calls.clear()
     workload_concepts.build(con, {"objects": [{"table": "tb001"}]}, {}, ["q"], lambda p: calls.append(p) or bad, json.loads)
     assert len(calls) == 1
+
+
+def test_a_repair_round_cannot_add_more_concepts_than_failed(make_sqlite):
+    import json
+    import workload_concepts
+    con = sqlite3.connect(make_sqlite({"tb001": ("cl0001 TEXT, cl0003 INTEGER, cl0004 INTEGER",
+                                                 [("a", 1, 2), ("b", 0, 3), ("c", 1, 4)])}))
+    first = json.dumps({"concepts": [{"name": "x", "table": "tb001", "column": "nope", "filter": ""}]})
+    many = json.dumps({"concepts": [{"name": "x", "table": "tb001", "column": "cl0003", "filter": ""},
+                                    {"name": "y", "table": "tb001", "column": "cl0004", "filter": ""},
+                                    {"name": "z", "table": "tb001", "column": "cl0001", "filter": ""}]})
+    calls = []
+
+    def ask(p):
+        calls.append(p)
+        return first if len(calls) == 1 else many
+    out = workload_concepts.build(con, {"objects": [{"table": "tb001"}]}, {}, ["q"], ask, json.loads, brief="B",
+                                  repair={"tables_brief": lambda t: "b", "groundings": []})
+    assert out["repair"]["recovered"] == 1 and out["dropped"] >= 0 and out["accepted"] <= out["proposed"]

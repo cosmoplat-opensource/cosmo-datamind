@@ -7,9 +7,9 @@ Excel 里用合并单元格做的两三行表头,导出成 CSV 后上层只在�
     ,收入,成本,收入,成本
     华东,10,6,12,7
 
-年报绑定的实验说明,这类表的难点在列归属:一个数值属于哪一年、哪个项目,写在上层表头里。这里做三件事:
+在年报表格的实验中,这类表的主要难点是列归属:一个数值属于哪一年、哪个项目,写在上层表头里。这里做三件事:
 - 识别表头有几行:开头连续几行里没有数值(四位年份不算数值);第一行要有空格或重复值(合并单元格的痕迹),
-  第二行起的表头在左侧的键列位置为空。最多 3 行。
+  第二行起的表头在左侧的键列位置为空,且表头下面的数据行里要有数值。最多 3 行。
 - 展开:上层表头在本行内向右补齐空格,各层用「_」连成一个列名(2025年_收入)。
 - 上层是期间(年、季度、月)时另给一份长表:键列 + 期间 + 项目 + 值,便于按期间查数和作图。
 """
@@ -37,9 +37,9 @@ def _header_rows(rows):
     merged = any(not c for c in first[1:]) or len({c for c in first if c}) < len([c for c in first if c])
     if not merged:
         return 1
-    width = len(first)
+    width = max(len(r) for r in rows[:3])
     h = 1
-    for row in rows[1:4]:
+    for row in rows[1:3]:                # 最多 3 行表头
         cells = [c.strip() for c in row] + [""] * (width - len(row))
         if any(_is_num(c) for c in cells):
             break
@@ -48,7 +48,9 @@ def _header_rows(rows):
         h += 1
     if h == 1 or h >= len(rows):
         return 1
-    return min(h, 3)
+    if not any(_is_num(c) for r in rows[h:h + 50] for c in r):
+        return 1                         # 多级表头来自数值报表;下面没有数值时,那几行更可能是数据
+    return h
 
 
 def _fill(row, width):
@@ -67,7 +69,7 @@ def parse(rows):
     if not rows:
         return {"header_rows": 0, "columns": [], "parts": [], "data": [], "long": None}
     h = _header_rows(rows)
-    width = len(rows[0])
+    width = max(len(r) for r in rows[:h])
     if h == 1:
         cols = [c.strip() for c in rows[0]]
         return {"header_rows": 1, "columns": cols, "parts": [[c] for c in cols], "data": rows[1:], "long": None}
@@ -100,5 +102,8 @@ def parse(rows):
             for i in value_cols:
                 if r[i].strip():
                     out.append([r[k] for k in keys] + ["_".join(parts[i][:-1]), name_of(i), r[i]])
-        long = {"columns": [columns[k] for k in keys] + ["期间", "项目", "值"], "rows": out}
+        key_names = [columns[k] for k in keys]
+        taken = {n.casefold() for n in key_names}          # 键列本身叫「项目」「期间」时,长表新增的列加后缀避免重名
+        extra = [n if n.casefold() not in taken else n + "_表头" for n in ("期间", "项目", "值")]
+        long = {"columns": key_names + extra, "rows": out}
     return {"header_rows": h, "columns": columns, "parts": parts, "data": data, "long": long}

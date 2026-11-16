@@ -105,3 +105,33 @@ def test_a_formula_with_more_terms_is_not_supported_by_a_two_column_witness():
                   "rows": 60, "matched": 60}]
     assert W.supports("(amount - cost) / amount", witnesses) is None
     assert W.supports("amount - cost - discount", witnesses) is None
+
+
+def test_columns_smaller_than_the_tolerance_do_not_produce_relations(make_sqlite):
+    import random
+    rng = random.Random(7)
+    rows = [(i, rng.uniform(0.001, 0.009), rng.uniform(0.001, 0.009), rng.uniform(0.001, 0.009)) for i in range(60)]
+    con = sqlite3.connect(make_sqlite({"rates": ("id INTEGER, r1 REAL, r2 REAL, r3 REAL", rows)}))
+    assert W.discover(con, "rates") == []
+
+
+def test_a_witness_only_supports_formulas_on_its_own_table():
+    witnesses = [{"table": "orders", "column": "profit", "formula": "amount - cost", "op": "-", "inputs": ["amount", "cost"],
+                  "rows": 60, "matched": 60}]
+    assert W.supports("returns.amount - returns.cost", witnesses) is None
+    assert W.supports("amount - cost", witnesses, tables=["returns"]) is None
+    assert W.supports("amount - cost", witnesses, tables=["orders"])["column"] == "profit"
+
+
+def test_formulas_written_with_concept_names_are_checked_through_their_bindings(make_sqlite):
+    import server
+    db = _db(make_sqlite)
+    concepts = [{"name": "金额", "table": "orders", "column": "amount"}, {"name": "成本", "table": "orders", "column": "cost"},
+                {"name": "退货金额", "table": "returns", "column": "amount"}, {"name": "退货成本", "table": "returns", "column": "cost"}]
+    ir = {"objects": [{"id": "orders", "table": "orders"}], "concepts": concepts,
+          "derived": [{"name": "毛利", "formula": "金额 - 成本", "uses": ["金额", "成本"], "evidence": {}},
+                      {"name": "退货毛利", "formula": "退货金额 - 退货成本", "uses": ["退货金额", "退货成本"], "evidence": {}}]}
+    _n, verified = server._attach_arithmetic(db, ir)
+    assert verified == 1
+    assert ir["derived"][0]["evidence"]["arithmetic_witness"]["column"] == "profit"
+    assert ir["derived"][1]["evidence"]["formula_verified"] is False

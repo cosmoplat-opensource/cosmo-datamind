@@ -56,3 +56,13 @@ def test_three_header_rows():
 def test_a_data_table_whose_second_row_is_text_is_not_mistaken_for_a_header():
     rows = [["客户", "地区", "等级"], ["甲公司", "华东", "A"], ["乙公司", "华北", "B"]]
     assert H.parse(rows)["header_rows"] == 1
+
+
+def test_a_lower_header_row_longer_than_the_first_keeps_its_last_column():
+    r = H.parse([["地区", "2025年", ""], ["", "收入", "成本", "利润"], ["华东", "10", "6", "4"]])
+    assert r["header_rows"] == 2 and r["columns"][-1] == "2025年_利润"
+
+
+def test_a_text_only_row_with_an_empty_first_cell_is_data_when_no_numbers_follow():
+    r = H.parse([["name", "", "city"], ["", "foo", "bar"], ["x", "y", "z"]])
+    assert r["header_rows"] == 1 and len(r["data"]) == 2

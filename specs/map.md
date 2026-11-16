@@ -34,6 +34,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 ## 索引
 
 ### 决定 / Decisions
+- [DR-139 · DR-133 至 DR-138 的复查修正](decisions/DR-139-review-of-dr133-138.md)
 - [DR-138 · 概念重提与多次回放](decisions/DR-138-concept-repair-and-repeated-replay.md)
 - [DR-137 · 反馈的回放验证](decisions/DR-137-feedback-replay.md)
 - [DR-136 · 名称不透明库的数据接地(移植自对比实验)](decisions/DR-136-data-grounding-for-opaque-schemas.md)
@@ -176,7 +177,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - `test_all.py` — 系统级回归，源码定义 548 个检查点。
 
 ## 现状校准
-- 计数(2026-11-16):144 路由 / 548 集成检查点 / 1887 项 pytest 测试 / 场景回归 51 项;决策记录到 DR-138。
+- 计数(2026-11-17):144 路由 / 548 集成检查点 / 1903 项 pytest 测试 / 场景回归 51 项;决策记录到 DR-139。
   隔离环境下 `scripts/check.py --suite all` 的结果:集成 536 通过、6 项条件跳过(无上游引擎),界面走查 47 通过,界面实操 48 通过、3 项跳过(未配置外部模型端点)。
 - 计数(2026-10-12):**140 路由**(server.py 113 + bp_engine 5 + bp_actions 8 + bp_metrics 3 + bp_semantic 2 + bp_decision 9)/ **548 集成断言** /
   **1279 项 pytest 测试**（多数据库功能复核）/ DR-001…DR-082、DR-093…DR-095 · IR-001…IR-013。
@@ -246,7 +247,7 @@ Consult @specs/map.md to find relevant context.
   实测顺带修复:问数缓存键漏本体指纹,导致改本体后仍复用旧答案。
   套件 373 断言 · UI 走查 57 项。
 - **DR-029 通用运行时与回归隔离**:`openai_runtime.py`(任意 OpenAI 兼容端点可接,
-  经 GLM coding plan 实测问数与构建全链路)+ 回归沙箱 `built_regress`
+  经 GLM coding plan 实测问数与构建的完整流程)+ 回归沙箱 `built_regress`
   (真凶是 rebuild 清空草案层,非 undo)。套件 378 断言 · UI 57 项。
 - **DR-030 本体结构检查**:`health_check.py` + `GET /api/ont/health/<key>`。第四遍对照
   报告改按**五大价值**核对,发现阶段六「异常关系检测」空白。七类图结构异常分两级

@@ -99,3 +99,12 @@ def test_file_upload_inputs_and_controls_have_names_and_edges_have_a_legend():
     legend = INDEX[INDEX.index("$('#g_legend').innerHTML"):][:900]
     assert "EST[" in legend and "<svg" in legend
     assert INDEX.count('<span class="dot ${dot}" aria-hidden="true"></span>') == 2
+
+
+def test_attachment_chips_replay_polling_and_feedback_wording():
+    """附件的行数只在是数字时加「行」;批量回放的轮询失败时显示错误而不是 undefined;反馈去向用评审页上的名称。"""
+    chips = INDEX[INDEX.index("function dqRenderAtts"):][:400]
+    assert "typeof a.rows==='number'" in chips and "按期间展开的长表,'" not in INDEX
+    poll = INDEX[INDEX.index("async function rvFbRegression"):][:900]
+    assert "j.error||!j.result" in poll
+    assert "本体迭代候选队列" not in INDEX and "问数反馈待处理列表" in INDEX
