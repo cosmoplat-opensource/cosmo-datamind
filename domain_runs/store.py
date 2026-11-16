@@ -1,4 +1,4 @@
-"""Transactionally persist run state, events and artifacts — DR-064 / DR-065 / DR-070."""
+"""Transactionally persist run state, events and artifacts — DR-064 / DR-065 / DR-070 / DR-073."""
 from datetime import datetime, timezone
 import json
 import uuid
@@ -311,9 +311,9 @@ class RunStore:
     def read_artifact(self, run_id, artifact_id):
         with self.storage.transaction() as conn:
             _run(conn, run_id)
-            record = _required(conn, "SELECT * FROM run_artifacts WHERE run_id=? AND artifact_id=?",
-                               (run_id, artifact_id))
-            return self.storage.read_bytes(record["path"], record["sha256"])
+            record = dict(_required(conn, "SELECT * FROM run_artifacts WHERE run_id=? AND artifact_id=?",
+                                    (run_id, artifact_id)))
+        return self.storage.read_bytes(record["path"], record["sha256"])
 
     def manifest(self, run_id):
         with self.storage.transaction() as conn:
@@ -321,13 +321,14 @@ class RunStore:
             _expect(run, "completed", "failed")
             records = [dict(row) for row in conn.execute("SELECT * FROM run_artifacts WHERE run_id=? ORDER BY rowid",
                                                          (run_id,))]
-            manifests = [item for item in records if item["kind"] == "manifest"]
-            if len(manifests) != 1:
-                raise ValueError("运行缺少唯一的产物清单。")
-            record = manifests[0]
-            value = json.loads(self.storage.read_bytes(record["path"], record["sha256"]))
-            if value != _manifest(run, records):
-                raise ValueError("清单与登记的运行或工件不一致。")
-            for item in records:
-                self.storage.read_bytes(item["path"], item["sha256"])
-            return value
+        # DR-073: retain one consistent metadata read without pinning SQLite during I/O.
+        manifests = [item for item in records if item["kind"] == "manifest"]
+        if len(manifests) != 1:
+            raise ValueError("运行缺少唯一的产物清单。")
+        record = manifests[0]
+        value = json.loads(self.storage.read_bytes(record["path"], record["sha256"]))
+        if value != _manifest(run, records):
+            raise ValueError("清单与登记的运行或工件不一致。")
+        for item in records:
+            self.storage.read_bytes(item["path"], item["sha256"])
+        return value

@@ -1,4 +1,4 @@
-"""Robot build HTTP composition and downloads — DR-060 / DR-063 / DR-064 / DR-070."""
+"""Robot build HTTP composition and downloads — DR-060 / DR-063 / DR-064 / DR-070 / DR-073."""
 import atexit
 import io
 import math
@@ -408,6 +408,10 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True):
             result['design'] = design_read(lambda: design_assets().detail(ontology_id, version_id))
         if result['asset']['domain']=='robotics':
             result['application_compatibility'] = application_summary(ontology_id, version_id)
+            # DR-073: contract readers above verify v1/v2; project current bytes, never the parent snapshot.
+            from ontology_assets.detail_view import project
+            result['detail_view'] = design_read(lambda: project(row, assets.read_payload(ontology_id, version_id),
+                role_map=result.get('application_design', {}).get('role_map')))
         if rid:
             runs = runtime.runs()
             build = run_row(runs, rid)

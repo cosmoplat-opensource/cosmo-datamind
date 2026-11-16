@@ -1,10 +1,10 @@
-"""Read-only application history over existing sessions and immutable runs — DR-069."""
+"""Read-only application history over existing sessions and immutable runs — DR-069 / DR-073."""
 import json
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
 from ontology_assets import AssetStore
-from .store import RunStore, _decode
+from .store import RunStore, _decode, _run
 from .robotics_task_service import TaskError, _tree
 
 
@@ -90,13 +90,13 @@ class TaskHistory:
             raise TaskError('not_found', '未找到这份生成记录。')
         assets, runs = AssetStore(self.root, read_only=True), RunStore(self.root, read_only=True)
         try:
-            with assets.storage.transaction() as conn:
+            with assets.storage.read_snapshot() as conn:
                 row = conn.execute('SELECT record FROM robotics_task_sessions WHERE session_id=?', (session_id,)).fetchone()
                 if row is None:
                     raise KeyError(session_id)
                 state = json.loads(row[0])
                 _legacy_titles(conn, {session_id: state})
-                run = runs.get_run(run_id)
+                run = _run(conn, run_id)
                 if (run['operation'] != 'generate_bt' or run['ontology_id'] != state['ontology_id']
                         or run['session_ref'] != {'namespace': 'robotics_task', 'id': session_id}
                         or run['status'] != 'completed' or (run['result'] or {}).get('status') != 'generated'):

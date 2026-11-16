@@ -450,15 +450,13 @@ def test_graph_starts_task_with_selected_ontology_version(live):
     site.enable_task_model()
     page.goto(site.url + '/#robotics-view?asset=' + ref['ontology_id'] + '&version=' + ref['version_id'] + '&view=relations')
     page.get_by_role('link', name='基于此本体生成行为树', exact=True).click()
-    # DR-071: user-approved migration; diagnosis precedes task admission.
-    report = page.get_by_test_id('application-check')
-    expect(report).to_contain_text('可准备任务')
-    assert report.get_attribute('data-check-id')
-    assert calls == []
-    page.get_by_role('link', name='继续描述任务', exact=True).click()
+    # DR-073: retain preflight, enter directly, and expose the bound check in the task page.
     panel = page.get_by_test_id('robotics-task')
     expect(panel).to_have_attribute('data-ontology-id', ref['ontology_id'])
     expect(panel).to_have_attribute('data-version-id', ref['version_id'])
+    expect(panel).to_contain_text('可准备任务')
+    expect(panel).to_have_attribute('data-check-id', re.compile('^check_'))
+    expect(page.get_by_role('link', name='继续描述任务', exact=True)).to_have_count(0)
     assert calls == []
     expect(page.get_by_test_id('robotics-task-history')).to_contain_text('未开始')
     done(site)

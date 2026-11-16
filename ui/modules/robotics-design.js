@@ -33,12 +33,17 @@ async function beginRepair(reply,requestId,fetch=g.fetch.bind(g)){
  }
  return reply.href;
 }
-function presentation(result,esc){
+// DR-070: lead with the review task; preserve technical evidence behind disclosures.
+function presentation(result,esc,{classes=[]}={}){
  if(!result)return '';
- const groups=[['classes','类别'],['object_properties','对象关系'],['data_properties','数据属性']];
- return groups.filter(([key])=>result[key]?.length).map(([key,title])=>`<h4>${title}（${result[key].length}）</h4><div class="rd-table"><table><thead><tr><th>名称</th><th>定义</th><th>关联范围</th></tr></thead><tbody>${result[key].map(row=>`<tr><td><b>${esc(row.label||row.id)}</b><small>${esc(row.id)}</small></td><td>${esc(row.definition||'')}</td><td>${esc((row.parent_ids||row.domain_ids||row.class_ids||[]).join('、'))}</td></tr>`).join('')}</tbody></table></div>`).join('')+
- (result.competency_questions?.length?'<h4>本体需要回答的问题</h4><ul>'+result.competency_questions.map(q=>`<li>${esc(q.question)}</li>`).join('')+'</ul>':'')+
- (result.clarifications?.length?'<h4>待明确项</h4><ul>'+result.clarifications.map(q=>`<li>${esc(typeof q==='string'?q:q.question||q.message||q.reason||JSON.stringify(q))}</li>`).join('')+'</ul>':'');
+ const groups=[['classes','描述哪些对象','类别'],['object_properties','对象之间的联系','关系'],['data_properties','需要记录的信息','属性']];
+ const labels=new Map([...classes,...(result.classes||[])].map(row=>[row.id,row.label||row.id]));
+ const names=ids=>(ids||[]).map(id=>labels.get(id)||id).join('、')||'未声明';
+ const populated=groups.filter(([key])=>result[key]?.length);
+ const overview=populated.length?'<section class="rd-design-summary"><h4>本轮设计摘要</h4><div class="rd-design-counts">'+populated.map(([key,title,kind])=>`<div><strong>${result[key].length}</strong><span>${title}（${kind}）</span><small>${esc(result[key].slice(0,5).map(row=>row.label||row.id).join('、'))}${result[key].length>5?' 等':''}</small></div>`).join('')+'</div><p class="rd-review-help">先核对这些内容是否符合你的场景；完整定义可在下方展开查看。</p></section>':'';
+ const questions=result.competency_questions?.length?'<details class="rd-design-details"><summary>希望本体回答的问题（'+result.competency_questions.length+'）</summary><ul>'+result.competency_questions.map(q=>`<li>${esc(q.question)}</li>`).join('')+'</ul></details>':'';
+ const tables=populated.map(([key,title,kind])=>`<details class="rd-design-details"><summary>查看${kind}设计详情（${result[key].length}）</summary><div class="rd-table"><table><thead><tr><th>名称与定义</th><th>${key==='classes'?'所属上级类别':key==='object_properties'?'连接哪些对象':'记录在什么对象上'}</th></tr></thead><tbody>${result[key].map(row=>`<tr><td><b>${esc(row.label||row.id)}</b><p>${esc(row.definition||'定义未记录')}</p><details><summary>技术标识</summary><code>${esc(row.id)}</code>${row.datatype?`<p>数据类型：${esc(row.datatype)}</p>`:''}</details></td><td>${esc(key==='classes'?names(row.parent_ids):key==='object_properties'?names(row.domain_ids)+' → '+names(row.range_ids):names(row.class_ids?.length?row.class_ids:row.domain_ids))}</td></tr>`).join('')}</tbody></table></div></details>`).join('');
+ return overview+questions+tables;
 }
 function repairContext(response,sid,adaptation=false){
  const report=adaptation?response:response.report;
@@ -65,7 +70,7 @@ function repairSuggestion(context,stage){
  const classes=parts(['classes','other']);
  return '根据此前应用检查，本轮仅修订类别'+(classes?'：请核对并补充'+classes:'，请核对现有类别')+'，保留其它类别及层次。关系与属性在类别确认后处理。'+basis;
 }
-function mount(host,sid,options={}){const esc=g.RoboticsAssets.escape;let c,history=[],context=null,contextError='',dead=false,editorPhase=null;
+function mount(host,sid,options={}){const esc=g.RoboticsAssets.escape;let c,context=null,contextError='',dead=false,editorPhase=null;
  const contextual=!!(options.checkId||options.adaptationId),abort=new AbortController();
  const input=document.createElement('textarea');input.setAttribute('aria-label','建模要求');input.maxLength=20000;
  const editor=document.createElement('details'),body=document.createElement('div'),hint=document.createElement('div'),heading=document.createElement('div'),progress=document.createElement('div'),actions=document.createElement('div');
@@ -95,24 +100,21 @@ function mount(host,sid,options={}){const esc=g.RoboticsAssets.escape;let c,hist
  }
  const primary=awaiting&&!selected?(row.stage==='classes'?['confirmClasses','确认类别']:row.stage==='properties'?['confirmSchema','确认骨架并构建实例']:null):null;
  actions.hidden=!primary;
- actions.innerHTML=primary?`<span>本轮设计已完成</span><button class="rd-primary-confirm" data-op="${primary[0]}" ${s.busy?'disabled':''}>${primary[1]}</button>`:'';
+ actions.innerHTML=primary?`<span>设计已生成，请核对后确认</span><button class="rd-primary-confirm" data-op="${primary[0]}" ${s.busy?'disabled':''}>${primary[1]}</button>`:'';
  hint.innerHTML=contextError?`<p role="alert" data-testid="schema-repair-context-error">${esc(contextError)}</p>`:'';
- const classNotes=!selected&&row.stage==='properties'?(row.class_confirmation?.clarifications||[]):[];
- const displayResult=classNotes.length&&result?{...result,clarifications:(result.clarifications||[]).filter(note=>!classNotes.includes(note))}:result;
  heading.innerHTML=`<h3>模型辅助构建 · ${esc(row.model?.model||'')}</h3><p>${esc(({classes:'类别设计',properties:'关系与属性设计',abox:'实例构建'})[row.stage]||row.stage)} · 修订 ${row.revision} · ${esc(({queued:'排队中',running:'运行中',needs_description:'等待建模要求',awaiting_input:'等待输入',awaiting_confirmation:'等待确认',completed:'已完成',failed:'失败',interrupted:'已中断'})[row.status]||row.status)} · 执行未验证</p>${(s.error||row.error)?`<p role="alert">${esc(s.error?.message||row.error?.message||'设计失败')}</p>`:''}`;
- body.innerHTML=`<label>设计修订<select aria-label="设计修订"><option value="">当前设计</option>${history.map(r=>`<option value="${r.revision}" ${selected?.revision===r.revision?'selected':''}>修订 ${r.revision}</option>`).join('')}</select></label>
- ${needsProperties&&!selected?`${context?'':'<section role="status" class="rd-next-step"><h4>类别已确认，下一步设计关系与属性</h4><p>确认类别只固定类别范围。请在下方补充关系与属性设计要求，或直接点击“开始关系与属性设计”，按已确认类别和 XML 继续。</p></section>'}<details><summary>查看已确认的类别</summary>${presentation({classes:row.class_confirmation?.classes||result?.classes||[]},esc)}</details>`:result?`<p>${esc(result.reply||'')}</p>${presentation(displayResult,esc)}`:''}
- ${classNotes.length&&!needsProperties?`<details><summary>类别阶段的历史待明确项（类别已确认）</summary>${presentation({clarifications:classNotes},esc)}</details>`:''}
+ const reviewOptions={classes:row.class_confirmation?.classes||[]};
+ const guidance=({classes:'第 1 步：确定要描述哪些对象。核对名称和范围，缺少或不合适的内容可用日常语言提出修改。',properties:'第 2 步：确定对象之间的联系，以及需要记录的信息。核对是否符合你的业务，再确认并从文件构建实例。',abox:'第 3 步：从上传文件整理具体对象和信息。构建完成后可打开本体查看结果。'})[selected?.state?.stage||row.stage]||'';
+ body.innerHTML=`<p class="rd-stage-guide">${esc(guidance)}</p>
+ ${needsProperties&&!selected?`${context?'':'<section role="status" class="rd-next-step"><h4>类别已确认，下一步设计关系与属性</h4><p>确认类别只固定类别范围。请在下方补充关系与属性设计要求，或直接点击“开始关系与属性设计”，按已确认类别和 XML 继续。</p></section>'}<details><summary>查看已确认的类别</summary>${presentation({classes:row.class_confirmation?.classes||result?.classes||[]},esc)}</details>`:result?`${result.reply?`<details class="rd-design-details"><summary>查看模型设计说明</summary><p>${esc(result.reply)}</p></details>`:''}${presentation(result,esc,reviewOptions)}`:''}
  ${selected?`<section data-testid="robotics-design-diff"><h4>与当前设计的差异</h4><details open><summary>历史设计</summary>${presentation(selected.state.result,esc)}</details><details open><summary>当前设计</summary>${presentation(row.result,esc)}</details></section>`:''}
  <div>${!waiting&&row.revision?'<button data-op="editClasses">返回类别修改</button>':''}${failed?'<button data-op="retry">重试设计</button>':''}</div>
  ${ref?`<p>设计候选已保存 · 执行未验证</p><a href="${esc(g.RoboticsAssets.versionLink(ref.ontology_id,ref.version_id))}">查看本体候选</a>`:''}`;
- body.querySelector('select').onchange=e=>{if(e.target.value)c.openRevision(Number(e.target.value));else{c.openSession(sid);}};
  host.querySelectorAll('[data-op]').forEach(b=>{b.disabled=s.busy;b.onclick=()=>c[b.dataset.op]();});
  const phase=[row.stage,row.status,row.revision].join(':');
  if(phase!==editorPhase){editor.open=!awaiting||!!s.messageText.trim();editorPhase=phase;}
  summary.hidden=!awaiting;summary.textContent='继续提修改意见';
  editor.hidden=waiting||row.stage==='abox';startProperties.hidden=contextual||!needsProperties||!!s.messageText.trim();startProperties.disabled=s.busy;send.hidden=!contextual&&needsProperties&&!s.messageText.trim();send.disabled=s.busy||row.stage==='abox'||(contextual&&!s.messageText.trim());input.placeholder=awaiting?'可继续输入修改意见':suggesting?repairSuggestion(context,row.stage)+'（Tab 填入）':contextual&&!context&&!contextError?'正在读取修订建议…':needsProperties?'可选：填写希望补充的关系、参数或关注点；留空可按已有要求继续。':'填写本轮建模要求或修改意见'; if(input.value!==s.messageText)input.value=s.messageText;
- read(g.fetch.bind(g),prefix+sid+'/revisions').then(r=>{history=r.items;const select=body.querySelector('select');if(select&&!selected)select.innerHTML='<option value="">当前设计</option>'+history.map(r=>`<option value="${r.revision}">修订 ${r.revision}</option>`).join('');}).catch(()=>{});
  }
  c=createController({onChange:render});c.openSession(sid);
  if(contextual){const url=options.checkId?'/api/application-checks/'+encodeURIComponent(options.checkId):'/api/robotics/application-adaptations/'+encodeURIComponent(options.adaptationId);
