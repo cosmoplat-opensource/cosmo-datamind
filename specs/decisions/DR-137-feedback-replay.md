@@ -1,5 +1,7 @@
 # DR-137 · 反馈的回放验证
 
+> 2026-11-16：多次回放与「结果不稳定」的判定见 [DR-138](DR-138-concept-repair-and-repeated-replay.md)。
+
 状态：已实现。日期：2026-11-16。
 关联：FEEDBACK-REPLAY-01；DR-122。
 

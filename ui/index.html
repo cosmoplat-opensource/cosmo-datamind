@@ -927,7 +927,7 @@ async function rvFbLoad(){const d=await J('/api/chat/feedback').catch(()=>null);
  if(!d||!d.items||!d.items.length){el.style.display='none';return;}
  const open=d.items.filter(x=>x.verdict==='needs_work'&&!x.resolved);
  el.style.display='block';
- const OC={same:['ok','一致'],changed:['warn','已变化'],no_answer:['warn','没有答案'],no_baseline:['','无可比对']};
+ const OC={same:['ok','一致'],changed:['warn','已变化'],no_answer:['warn','没有答案'],no_baseline:['','无可比对'],unstable:['','结果不稳定']};
  el.innerHTML=`<h3 style="margin:0 0 8px;display:flex;align-items:center;gap:8px">问数反馈待处理列表<span class="muted" style="font-weight:400;font-size:12px">待处理 ${open.length} · 有用 ${d.useful}</span>
    <span style="flex:1"></span><button class="ghost" onclick="rvFbRegression(this)" title="按当前本体逐条重新提问,比对答案的数据与反馈时是否一致">回放「有用」的反馈</button></h3>
    <div class="muted" style="font-size:12px;margin-bottom:6px">回放:按当前本体重新提问,比对答案的数据与反馈时是否一致(比的是数据,不是 SQL 写法)。「待改进」的答案有变化,说明修改起了作用;「有用」的答案有变化,可能退化。</div><div id="rv_fb_reg"></div>`
@@ -937,14 +937,14 @@ async function rvFbLoad(){const d=await J('/api/chat/feedback').catch(()=>null);
     <td>${rp?`<span class="tag ${oc[0]}">${esc(oc[1])}</span> <span class="muted" style="font-size:12px" title="${esc(rp.explain||'')}">${esc(rp.ts)}</span>`:(x.snapshot&&x.snapshot.length?'<span class="muted">未回放</span>':'<span class="muted">没有保存答案</span>')}</td>
     <td style="white-space:nowrap"><button class="ghost" onclick="rvFbReplay(${jsAttr(x.id)},this)">回放</button> <button class="ghost" onclick="rvFbResolve(${jsAttr(x.id)})">标记已处理</button></td></tr>`;}).join('')+'</table>'
    :'<div class="muted">暂无待处理反馈。问数或诊断结果卡上点「待改进」后会出现在这里。</div>');}
-async function rvFbReplay(id,btn){toast('正在按当前本体重新提问…',true);
- const d=await J('/api/chat/feedback/replay',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+async function rvFbReplay(id,btn){toast('正在按当前本体重新提问两次…',true);
+ const d=await J('/api/chat/feedback/replay',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,runs:2})});
  if(d.error){toast('回放失败:'+d.error,false);return;}toast(d.explain||'回放完成',d.outcome==='changed');rvFbLoad();}
 async function rvFbRegression(btn){const st=await J('/api/chat/feedback/regression',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
  if(st.error){toast(st.error,false);return;}const box=$('#rv_fb_reg');if(box)box.innerHTML='<div class="muted" style="font-size:12px">回放中…</div>';
  const poll=async()=>{const j=await J('/api/chat/feedback/regression');if(j.running){setTimeout(poll,3000);return;}const r=j.result||{};const b=$('#rv_fb_reg');if(!b)return;
   if(r.error){b.innerHTML=`<div style="color:#b91c1c;font-size:12px">回放失败:${esc(r.error)}</div>`;return;}
-  b.innerHTML=`<div class="step" style="font-size:13px;margin-bottom:8px">回放 ${r.replayed} 条 · 一致 ${r.same} · 已变化 ${(r.changed||[]).length} · 没有答案 ${r.no_answer} · 没有保存答案而跳过 ${r.skipped}`
+  b.innerHTML=`<div class="step" style="font-size:13px;margin-bottom:8px">回放 ${r.replayed} 条 · 一致 ${r.same} · 已变化 ${(r.changed||[]).length} · 没有答案 ${r.no_answer} · 结果不稳定 ${r.unstable||0} · 没有保存答案而跳过 ${r.skipped}`
    +((r.changed||[]).length?'<div style="margin-top:4px">已变化(可能退化,请复核):'+r.changed.map(c=>esc(c.question)).join('、')+'</div>':'')+'</div>';};
  setTimeout(poll,1500);}
 async function rvFbResolve(id){const d=await J('/api/chat/feedback/resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}).catch(e=>({error:''+e}));

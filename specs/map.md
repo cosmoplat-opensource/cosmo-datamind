@@ -34,6 +34,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 ## 索引
 
 ### 决定 / Decisions
+- [DR-138 · 概念重提与多次回放](decisions/DR-138-concept-repair-and-repeated-replay.md)
 - [DR-137 · 反馈的回放验证](decisions/DR-137-feedback-replay.md)
 - [DR-136 · 名称不透明库的数据接地(移植自对比实验)](decisions/DR-136-data-grounding-for-opaque-schemas.md)
 - [DR-135 · 算术见证与多级表头](decisions/DR-135-arithmetic-witness-and-multilevel-headers.md)
@@ -175,7 +176,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - `test_all.py` — 系统级回归，源码定义 548 个检查点。
 
 ## 现状校准
-- 计数(2026-11-16):144 路由 / 548 集成检查点 / 1881 项 pytest 测试 / 场景回归 51 项;决策记录到 DR-137。
+- 计数(2026-11-16):144 路由 / 548 集成检查点 / 1887 项 pytest 测试 / 场景回归 51 项;决策记录到 DR-138。
   隔离环境下 `scripts/check.py --suite all` 的结果:集成 536 通过、6 项条件跳过(无上游引擎),界面走查 47 通过,界面实操 48 通过、3 项跳过(未配置外部模型端点)。
 - 计数(2026-10-12):**140 路由**(server.py 113 + bp_engine 5 + bp_actions 8 + bp_metrics 3 + bp_semantic 2 + bp_decision 9)/ **548 集成断言** /
   **1279 项 pytest 测试**（多数据库功能复核）/ DR-001…DR-082、DR-093…DR-095 · IR-001…IR-013。

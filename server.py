@@ -6316,12 +6316,18 @@ def _feedback_ask(question, graphs):
     return r.get_json(silent=True) or {"error": f"HTTP {r.status_code}"}
 
 
-def _feedback_replay_item(it):
-    resp = _feedback_ask(it.get("question") or "", it.get("graphs") or [])
-    after = feedback_replay.snapshot(resp.get("results") or [])
-    cmp = feedback_replay.compare(it.get("snapshot") or [], after)
+def _feedback_replay_item(it, runs=1):
+    """回放 runs 次;各次结论不一致时记为 unstable(DR-138)。记录最后一次的答案。"""
+    outcomes, cmp, resp, after = [], {}, {}, []
+    for _ in range(max(1, runs)):
+        resp = _feedback_ask(it.get("question") or "", it.get("graphs") or [])
+        after = feedback_replay.snapshot(resp.get("results") or [])
+        cmp = feedback_replay.compare(it.get("snapshot") or [], after)
+        outcomes.append(cmp["outcome"])
+    outcome = feedback_replay.combine(outcomes)
     failed = [s.get("info") for s in resp.get("steps") or [] if isinstance(s, dict) and s.get("ok") is False][:5]
-    rec = {"ts": time.strftime("%Y-%m-%d %H:%M"), **cmp, "explain": feedback_replay.explain(it.get("verdict"), cmp["outcome"]),
+    rec = {"ts": time.strftime("%Y-%m-%d %H:%M"), **cmp, "outcome": outcome, "runs": len(outcomes), "outcomes": outcomes,
+           "explain": feedback_replay.explain(it.get("verdict"), outcome),
            "answer_id": (resp.get("answer_record") or {}).get("answer_id"), "results": after,
            "failed_steps": [str(x)[:200] for x in failed], "error": str(resp.get("error") or "")[:200]}
     return rec
@@ -6331,12 +6337,16 @@ def _feedback_replay_item(it):
 def chat_feedback_replay():
     """回放一条反馈(DR-137):按当前本体重新问,比对答案的数据与反馈时是否一致,结果记入该反馈。"""
     body = request.get_json(silent=True)
-    fid = (body if isinstance(body, dict) else {}).get("id", "")
+    body = body if isinstance(body, dict) else {}
+    fid = body.get("id", "")
+    runs = body.get("runs", 1)
+    if not isinstance(runs, int) or isinstance(runs, bool) or not 1 <= runs <= 3:
+        return jsonify({"error": "runs 须为 1 到 3 的整数", "field": "runs"}), 400
     it = next((x for x in _load_fb() if x["id"] == fid), None)
     if not it: return jsonify({"error": "反馈不存在"}), 404
     if _active_source() and not _source_record_matches(it):
         return jsonify({"error": "反馈属于另一数据库，请切换来源后处理"}), 409
-    rec = _feedback_replay_item(it)
+    rec = _feedback_replay_item(it, runs)
     with _WRITE_LOCK:
         fb = _load_fb()
         cur = next((x for x in fb if x["id"] == fid), None)
@@ -6350,16 +6360,20 @@ def chat_feedback_replay():
 def _feedback_regression():
     """把当前数据库下保存了答案的「有用」反馈逐条回放(DR-137),本体修改后用来检查有没有退化。"""
     items = [x for x in _load_fb() if x.get("verdict") == "useful" and (not _active_source() or _source_record_matches(x))]
-    out = {"replayed": 0, "same": 0, "no_answer": 0, "skipped": 0, "changed": []}
+    out = {"replayed": 0, "same": 0, "no_answer": 0, "unstable": 0, "skipped": 0, "changed": []}
     for it in items[:100]:
         if not it.get("snapshot"):
             out["skipped"] += 1
             continue
         rec = _feedback_replay_item(it)
+        if rec["outcome"] == "changed":           # 变了的再问一次:两次都变才列出,一次变一次不变记为不稳定
+            again = _feedback_replay_item(it)
+            if again["outcome"] != "changed":
+                rec = {**rec, "outcome": "unstable"}
         out["replayed"] += 1
         if rec["outcome"] == "changed":
             out["changed"].append({"id": it["id"], "question": it["question"], "matched": rec["matched"], "of": rec["of"]})
-        elif rec["outcome"] in ("same", "no_answer"):
+        elif rec["outcome"] in ("same", "no_answer", "unstable"):
             out[rec["outcome"]] += 1
     return out
 
@@ -9361,11 +9375,15 @@ def _data_grounding(db, ir, workload, ask=None, deadline=None):
     naming = data_grounding.name_objects(ir, prof, eg["groundings"], vg, ask, llm_json.extract)
     ir["term_groundings"] = {"evidence": eg["groundings"], "value": vg, "rejected": eg["rejected"][:200],
                              "naming_rejected": naming["rejected"][:200]}
-    return {"brief": data_grounding.profile_brief(prof, data_grounding.labels_of(ir)), "naming": naming,
-            "groundings": eg["groundings"], "values": vg, "concepts": data_grounding.as_concepts(eg["groundings"])}
+    labels = data_grounding.labels_of(ir)
+    return {"brief": data_grounding.profile_brief(prof, labels), "naming": naming,
+            "groundings": eg["groundings"], "values": vg, "concepts": data_grounding.as_concepts(eg["groundings"]),
+            # DR-138 概念未通过核验时重提所用:相关表的画像与已核验的用语
+            "repair": {"tables_brief": lambda tables: data_grounding.profile_brief(prof, labels, tables or None),
+                       "groundings": eg["groundings"]}}
 
 
-def _workload_concepts(db, ir, workload, brief=None):
+def _workload_concepts(db, ir, workload, brief=None, repair=None):
     import copy
     import data_catalog
     import workload_concepts
@@ -9377,7 +9395,7 @@ def _workload_concepts(db, ir, workload, brief=None):
         previous_stale = workload_concepts.refresh(con, ir, deadline=deadline)
         out = workload_concepts.build(con, ir, data_catalog.doc_dictionary(con), workload,
                                       lambda prompt: _concept_ask(prompt, deadline), llm_json.extract,
-                                      deadline=deadline, brief=brief)
+                                      deadline=deadline, brief=brief, repair=repair)
         out["previous_stale"] = previous_stale
         out['layers'] = workload_concepts.merge_layers(ir, out)
         return out
@@ -9956,7 +9974,8 @@ def build_inquire():
         if workload or any(ir.get(k) for k in ('concepts', 'themes', 'derived', 'caveats')):
             yield sse({'type': 'status', 'text': '核验业务概念与主题的取数依据；业务含义仍需确认…'})
             _wc = None
-            for _item in _bounded_stream(lambda _log: _workload_concepts(db, ir, workload, _gbrief), 250):
+            _grepair = _grounded["repair"] if _gbrief else None
+            for _item in _bounded_stream(lambda _log: _workload_concepts(db, ir, workload, _gbrief, _grepair), 250):
                 if _item[0] == 'tick':
                     yield sse({'type': 'tick', 'elapsed': round(_t.time() - t0, 1)})
                 elif _item[0] == 'done':
@@ -9969,7 +9988,8 @@ def build_inquire():
                            and _wc['questions_processed'] == len(workload),
                            f"业务问题 {_wc['questions_processed']}/{len(workload)} 条 · 提议 {_wc['proposed']} 条 · "
                            f"取数依据成立 {_wc['accepted']} 条 · 未保留 {_wc['dropped']} 条 · "
-                           f"旧绑定失效 {_wc['previous_stale']} 条；定义和公式待确认")
+                           + (f"重提后成立 {_wc['repair']['recovered']} 条 · " if (_wc.get('repair') or {}).get('rounds') else "")
+                           + f"旧绑定失效 {_wc['previous_stale']} 条；定义和公式待确认")
             else:
                 ir['semantic_report'] = {**workload_meta, 'questions_processed': 0, 'incomplete': True}
                 yield push("workload_concepts", False, '概念核验超时或失败；保留已有内容，不声明完成')

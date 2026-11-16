@@ -175,10 +175,61 @@ def schema_brief(con, ir, docs):
     return '\n'.join(lines)
 
 
-def build(con, ir, docs, questions, ask, extract, deadline=None, brief=None):
+REPAIRABLE = ("table_missing", "name_or_column_missing", "no_matching_rows", "query_failed")
+REPAIR_ROUNDS = 2
+REPAIR_PROMPT = """上一轮提议的下列业务概念没有通过数据核验(原因见每条)。请对照下面的真实表结构与取值画像,
+以及已经由数据核验成立的「用语 → 列」,重新提议这些概念:表名、列名、取值必须取自下面的内容;
+确实找不到对应数据的概念就不要再提。只输出 JSON:{{"concepts":[同上一轮的概念格式]}}
+
+未通过的概念:
+{failed}
+
+相关表的真实结构与取值画像:
+{tables}
+
+已核验的用语 → 列:
+{groundings}
+"""
+
+
+def _repair_concepts(con, failed, repair, ask, extract, tables, entity_of, result, seen, deadline):
+    """DR-138 未通过核验的概念带着原因和真实结构重提,至多 REPAIR_ROUNDS 轮(移植自对比实验分支)。"""
+    for rnd in range(1, REPAIR_ROUNDS + 1):
+        if not failed or (deadline is not None and time.monotonic() >= deadline):
+            return
+        rel = list(dict.fromkeys(str(c.get("table") or "") for c, _w in failed if c.get("table")))[:8]
+        fl = "\n".join(f"- {c.get('name')}: 提议 {c.get('table')}.{c.get('column') or ''}"
+                       + (f" WHERE {c['filter']}" if c.get("filter") else "") + f" → {why}" for c, why in failed[:40])
+        gl = "\n".join(f"- '{g['term']}' -> {g['table']}.{g['column']}" + (f" WHERE {g['filter']}" if g.get("filter") else "")
+                       for g in repair.get("groundings") or [] if not rel or g["table"] in rel)[:8000]
+        try:
+            d = extract(ask(REPAIR_PROMPT.format(failed=fl, tables=repair["tables_brief"](rel), groundings=gl or "(无)")) or "")
+        except Exception:
+            return
+        todo = [c for c in (d.get("concepts") if isinstance(d, dict) and isinstance(d.get("concepts"), list) else [])
+                if isinstance(c, dict)][:40]
+        result["repair"]["rounds"] += 1
+        result["repair"]["resubmitted"] += len(todo)
+        failed = []
+        for c in todo:
+            mark = len(result["rejected"])
+            v = verify_concept(con, c, tables, entity_of.get(str(c.get('table') or '').casefold()),
+                               rejected=result["rejected"], deadline=deadline)
+            sig = ('concepts', v.get('table'), v.get('column'), v.get('filter'), None, (), v.get('name'), None) if v else None
+            if v and sig not in seen:
+                seen.add(sig)
+                v["repaired_round"] = rnd
+                result["concepts"].append(v)
+                result["repair"]["recovered"] += 1
+            elif not v and len(result["rejected"]) > mark and result["rejected"][-1]["reason"] in REPAIRABLE:
+                failed.append((c, result["rejected"][-1]["reason"]))
+
+
+def build(con, ir, docs, questions, ask, extract, deadline=None, brief=None, repair=None):
     qs, meta = normalize_questions(questions)
     result = {**meta, "concepts": [], "themes": [], "derived": [], "caveats": [], "rejected": [],
-              "proposed": 0, "accepted": 0, "dropped": 0, "batches_failed": 0, "questions_processed": 0}
+              "proposed": 0, "accepted": 0, "dropped": 0, "batches_failed": 0, "questions_processed": 0,
+              "repair": {"rounds": 0, "resubmitted": 0, "recovered": 0}}
     bound = {str(o.get('table') or '').casefold() for o in ir.get('objects') or []}
     tables = {t.casefold(): t for t in schema(con) if t.casefold() in bound}
     entity_of = {o['table'].casefold(): (o.get('catalog') or {}).get('entity_col')
@@ -198,6 +249,7 @@ def build(con, ir, docs, questions, ask, extract, deadline=None, brief=None):
             result['batches_failed'] += 1
             continue
         result['questions_processed'] += len(batch)
+        failed: list = []
         for kind, verifier in [('concepts', verify_concept), ('themes', verify_theme), ('caveats', verify_caveat)]:
             items = d.get(kind) if isinstance(d.get(kind), list) else []
             for c in items[:100]:
@@ -209,7 +261,11 @@ def build(con, ir, docs, questions, ask, extract, deadline=None, brief=None):
                     continue
                 args = ((tables, entity_of.get(str(c.get('table') or '').casefold())) if kind == 'concepts'
                         else (tables, entity_of) if kind == 'themes' else (tables,))
+                mark = len(result['rejected'])
                 v = verifier(con, c, *args, rejected=result['rejected'], deadline=deadline)
+                if (kind == 'concepts' and not v and len(result['rejected']) > mark
+                        and result['rejected'][-1]['reason'] in REPAIRABLE):
+                    failed.append((c, result['rejected'][-1]['reason']))
                 # Preserve SQL literal case; code='A' and code='a' may differ.
                 sig = (kind, v.get('table'), v.get('column'), v.get('filter'), v.get('name_col'),
                        tuple(x['code'] for x in v.get('codes', [])), v.get('name'), v.get('statement')) if v else None
@@ -218,6 +274,8 @@ def build(con, ir, docs, questions, ask, extract, deadline=None, brief=None):
                     result[kind].append(v)
                 elif v:
                     _reject(result['rejected'], c, 'duplicate')
+        if repair and failed:                    # 只在提供了画像(名称不透明的库)时重提
+            _repair_concepts(con, failed, repair, ask, extract, tables, entity_of, result, seen, deadline)
         pending += [c for c in d.get('derived', [])[:100] if isinstance(c, dict)] if isinstance(d.get('derived'), list) else []
     inputs = _concept_index(result['concepts'])
     for c in pending:

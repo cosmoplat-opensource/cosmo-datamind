@@ -16,7 +16,7 @@ import json
 
 import qa_eval_stats
 
-__all__ = ["snapshot", "compare", "explain", "SAMPLE_ROWS", "MAX_RESULTS"]
+__all__ = ["snapshot", "compare", "combine", "explain", "SAMPLE_ROWS", "MAX_RESULTS"]
 
 SAMPLE_ROWS = 50
 MAX_RESULTS = 8
@@ -66,6 +66,14 @@ def compare(before, after):
     return {"outcome": "same" if matched == len(before) else "changed", "matched": matched, "of": len(before)}
 
 
+def combine(outcomes):
+    """多次回放的结论(DR-138):各次一致时沿用;不一致时为 unstable,说明答案受模型每次写法不同的影响。"""
+    kinds = set(outcomes or [])
+    if not kinds:
+        return "no_answer"
+    return outcomes[0] if len(kinds) == 1 else "unstable"
+
+
 _TEXT = {
     ("needs_work", "same"): "回放后答案的数据与反馈时一致,没有变化:反馈指出的问题可能仍然存在",
     ("needs_work", "changed"): "回放后答案的数据与反馈时不同:修改起了作用,请确认现在的答案是否正确",
@@ -75,6 +83,8 @@ _TEXT = {
 
 
 def explain(verdict, outcome):
+    if outcome == "unstable":
+        return "多次回放的结果彼此不一致:答案受模型随机性影响,不能据此判断本体修改是否起了作用"
     if outcome == "no_answer":
         return "回放没有得到答案(查询失败或被拦下),请查看执行记录"
     if outcome == "no_baseline":

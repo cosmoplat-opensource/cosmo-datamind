@@ -135,3 +135,45 @@ def test_the_concept_step_receives_the_profile_instead_of_the_bare_column_list(m
     workload_concepts.build(sqlite3.connect(db), {"objects": [{"table": "tb001"}]}, {}, ["有多少所磁石学校?"],
                             lambda p: seen.append(p) or "{}", lambda s: {}, brief="PROFILE-BRIEF-MARKER")
     assert seen and "PROFILE-BRIEF-MARKER" in seen[0]
+
+
+# ── DR-138:未通过数据核验的概念,带原因和真实结构重提(至多 2 轮) ─────────────────────────────────
+
+def _concept_db(make_sqlite):
+    return sqlite3.connect(make_sqlite({"tb001": ("cl0001 TEXT, cl0003 INTEGER", [("a", 1), ("b", 0), ("c", 1)])}))
+
+
+def test_a_concept_that_fails_verification_is_proposed_again_with_the_reason(make_sqlite):
+    import json
+    import workload_concepts
+    con = _concept_db(make_sqlite)
+    replies = [json.dumps({"concepts": [{"name": "磁石学校", "table": "tb001", "column": "magnet", "filter": ""}]}),
+               json.dumps({"concepts": [{"name": "磁石学校", "table": "tb001", "column": "cl0003", "filter": "cl0003 = 1"}]})]
+    prompts = []
+
+    def ask(p):
+        prompts.append(p)
+        return replies[min(len(prompts), len(replies)) - 1]
+    repair = {"tables_brief": lambda tables: "- tb001 (3 rows): cl0003[integer; 2 distinct; e.g. 1, 0]",
+              "groundings": [{"term": "磁石学校", "table": "tb001", "column": "cl0003", "filter": "cl0003 = 1"}]}
+    out = workload_concepts.build(con, {"objects": [{"table": "tb001"}]}, {}, ["有多少所磁石学校?"], ask, json.loads,
+                                  brief="BRIEF", repair=repair)
+    assert len(prompts) == 2 and "name_or_column_missing" in prompts[1] and "cl0003[integer" in prompts[1]
+    (c,) = out["concepts"]
+    assert c["column"] == "cl0003" and c["repaired_round"] == 1
+    assert out["repair"] == {"rounds": 1, "resubmitted": 1, "recovered": 1}
+
+
+def test_repair_stops_after_two_rounds_and_is_off_without_the_profile(make_sqlite):
+    import json
+    import workload_concepts
+    con = _concept_db(make_sqlite)
+    bad = json.dumps({"concepts": [{"name": "x", "table": "tb001", "column": "nope", "filter": ""}]})
+    calls = []
+    repair = {"tables_brief": lambda tables: "brief", "groundings": []}
+    out = workload_concepts.build(con, {"objects": [{"table": "tb001"}]}, {}, ["q"], lambda p: calls.append(p) or bad,
+                                  json.loads, brief="BRIEF", repair=repair)
+    assert len(calls) == 3 and out["repair"]["rounds"] == 2 and out["concepts"] == []
+    calls.clear()
+    workload_concepts.build(con, {"objects": [{"table": "tb001"}]}, {}, ["q"], lambda p: calls.append(p) or bad, json.loads)
+    assert len(calls) == 1

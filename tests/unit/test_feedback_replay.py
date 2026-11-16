@@ -109,3 +109,43 @@ def test_bad_inputs_are_rejected(fb):
     assert _post("/api/chat/feedback", {"question": "q", "verdict": "useful", "results": "x"}).status_code == 400
     big = [{"title": "t", "sql": "s", "data": {"columns": ["a"], "rows": [{"a": 1}]}}] * 9
     assert _post("/api/chat/feedback", {"question": "q", "verdict": "useful", "results": big}).status_code == 400
+
+
+# ── DR-138:多次回放,分开「本体修改带来的变化」与「模型每次写法不同带来的变化」 ─────────────────────────
+
+def test_runs_that_disagree_are_reported_as_unstable(fb):
+    fid = _post("/api/chat/feedback", {"question": "q", "verdict": "useful", "graphs": ["demo"], "results": [R1]}).get_json()["id"]
+    seq = [[R1], [{**R1, "data": {"columns": ["m", "r"], "rows": [{"m": "x", "r": 1}]}}]]
+    server_fake = server._feedback_ask
+
+    def alternating(question, graphs):
+        out = server_fake(question, graphs)
+        out["results"] = seq[(fb["n"] - 1) % 2]
+        return out
+    import pytest as _p
+    mp = _p.MonkeyPatch()
+    mp.setattr(server, "_feedback_ask", alternating)
+    try:
+        r = _post("/api/chat/feedback/replay", {"id": fid, "runs": 2}).get_json()
+    finally:
+        mp.undo()
+    assert r["outcome"] == "unstable" and r["runs"] == 2 and "随机" in r["explain"]
+
+
+def test_a_changed_answer_is_checked_once_more_in_the_regression_set(fb):
+    _post("/api/chat/feedback", {"question": "a", "verdict": "useful", "graphs": ["demo"], "results": [R1]})
+    fb["results"] = [{**R1, "data": {"columns": ["m", "r"], "rows": [{"m": "x", "r": 1}]}}]
+    out = server._feedback_regression()
+    assert fb["n"] == 2 and len(out["changed"]) == 1               # 第一次变了,再问一次确认,仍然变了才列出
+    assert "unstable" in out
+
+
+def test_the_number_of_runs_is_bounded(fb):
+    fid = _post("/api/chat/feedback", {"question": "q", "verdict": "useful", "results": [R1]}).get_json()["id"]
+    assert _post("/api/chat/feedback/replay", {"id": fid, "runs": 9}).status_code == 400
+
+
+def test_compare_runs_combines_outcomes():
+    assert F.combine(["same", "same"]) == "same" and F.combine(["changed", "changed"]) == "changed"
+    assert F.combine(["same", "changed"]) == "unstable" and F.combine(["no_answer", "same"]) == "unstable"
+    assert F.combine(["no_baseline"]) == "no_baseline"
