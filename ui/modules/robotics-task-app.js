@@ -1,4 +1,4 @@
-/* Independent ontology application and immutable generation history — DR-069. */
+/* Independent ontology application and immutable generation history — DR-069 / DR-073. */
 (function(global){
   'use strict';
   const esc=value=>global.RoboticsAssets.escape(value);
@@ -71,6 +71,10 @@
           const blob=await response.blob();if(active!==view)return;const url=URL.createObjectURL(blob),a=global.document.createElement('a');a.href=url;a.download='behavior-tree.xml';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
         }catch(e){if(active===view&&e.name!=='AbortError'){notice.hidden=false;notice.className='rt-error';notice.textContent=e.message;}}};
       }catch(e){error(e);}})();return;
+    }
+    if(params.get('history')){
+      host.innerHTML=`<section class="card ra-section"><h2>任务与生成记录</h2><p>从左侧选择已有任务或生成结果，查看时不会创建新任务。</p><a href="${esc(global.RoboticsAssets.versionLink(params.get('asset'),params.get('version')))}">返回对应本体详情</a></section>`;
+      return;
     }
     if(params.get('session')||params.get('asset')||params.get('version')||params.get('adaptation')||params.get('check'))return;
     host.innerHTML='<p class="rta-empty" role="status">正在加载可用本体…</p>';

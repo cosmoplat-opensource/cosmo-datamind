@@ -1,8 +1,8 @@
-# IR-027 · 深度问数应用契约兼容
+# IR-028 · 深度问数应用契约兼容
 
 - **状态 / Status**：proposed（规约草案，未进入实现）。
 - **日期 / Date**：2026-11-12。
-- **关联 / Refs**：[DR-073](../decisions/DR-073-deepqa-application-compatibility.md)。
+- **关联 / Refs**：[DR-074](../decisions/DR-074-deepqa-application-compatibility.md)。
 
 ## 目标 Goal
 

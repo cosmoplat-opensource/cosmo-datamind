@@ -390,16 +390,17 @@ def prepare_revisions(root):
 
 
 @pytest.mark.parametrize('live', [{'prepare': prepare_revisions}], indirect=True)
-def test_history_diff_shows_changed_definition_without_changing_current_revision(live):
+def test_current_design_has_no_revision_selector_and_preserves_history(live):
     site, page, calls = live; state = site.prepared; sid = state['session_id']
     before = db_rows(site.root)
     old = DesignService(site.root, read_only=True).get_revision(sid, 1)['state']['result']['classes'][0]['definition']
     page.goto(site.url + '/#build?recipe=robotics&session=' + sid)
     wait_design(page, sid, 'classes', 'awaiting_confirmation')
-    page.get_by_label('设计修订', exact=True).select_option('1')
-    diff = page.get_by_test_id('robotics-design-diff')
-    expect(diff).to_contain_text(old)
-    expect(diff).to_contain_text('测试修订：补充技能能力说明。')
+    expect(page.get_by_label('设计修订', exact=True)).to_have_count(0)
+    expect(page.get_by_test_id('robotics-design-diff')).to_have_count(0)
+    expect(page.get_by_test_id('robotics-design')).to_contain_text('测试修订：补充技能能力说明。')
+    expect(page.get_by_role('button', name='确认类别', exact=True)).to_be_enabled()
+    assert DesignService(site.root, read_only=True).get_revision(sid, 1)['state']['result']['classes'][0]['definition'] == old
     assert db_rows(site.root) == before and session(site, sid)['revision'] == 2 and calls == []
     assert site.design_posts() == []
     done(site)
@@ -455,13 +456,14 @@ def application_repair(page, action_id):
     return pending.value.json()
 
 
-def assess_candidate(page, site, ref):
+def assess_candidate(page, site, ref, *, diagnosis=True):
     page.goto(site.url + '/#library?asset=' + ref['ontology_id'] + '&version=' + ref['version_id'])
     with page.expect_response(lambda r: r.request.method == 'POST' and
                              r.url == site.url + '/api/application-checks') as pending:
         page.get_by_role('link', name=re.compile('^(基于此本体)?生成行为树')).click()
     assert pending.value.status == 201, pending.value.text()
-    expect(page.get_by_test_id('application-check')).to_be_visible()
+    if diagnosis:
+        expect(page.get_by_test_id('application-check')).to_be_visible()
     return pending.value.json()['report']
 
 
@@ -512,13 +514,16 @@ def test_application_adaptation_browser_worker_downloads_and_returns_to_existing
         else: assert target.read_bytes() == expected
         site.evidence['downloads'].append({'name': target.name, 'bytes': target.stat().st_size})
     assert DesignAssets(site.root).export_json(**ref) == old_json and calls == []
-    report = assess_candidate(page, site, new)
+    # DR-073: user-approved direct entry supersedes the old successful-check hop.
+    report = assess_candidate(page, site, new, diagnosis=False)
     assert report['preparation_status'] == 'available' and report['execution_status'] == 'not_evaluated'
-    page.get_by_role('link', name='继续描述任务', exact=True).click()
     task = page.get_by_test_id('robotics-task')
     expect(task).to_have_attribute('data-version-id', new['version_id'])
     expect(task).to_have_attribute('data-status', 'idle')
     expect(task.get_by_label('任务描述', exact=True)).to_be_visible()
+    expect(task).to_contain_text('可准备任务')
+    expect(task).to_have_attribute('data-check-id', report['check_id'])
+    expect(page.get_by_role('link', name='继续描述任务', exact=True)).to_have_count(0)
     assert calls == []
     done(site)
 

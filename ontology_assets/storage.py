@@ -1,4 +1,4 @@
-"""SQLite transactions and exclusive immutable byte files — DR-059 / DR-064."""
+"""SQLite transactions and exclusive immutable byte files — DR-059 / DR-064 / DR-073."""
 from contextlib import contextmanager
 from contextvars import ContextVar
 import hashlib
@@ -174,6 +174,20 @@ class Storage:
             if token is not None:
                 _TRANSACTION_FILES.reset(token)
             conn.close()
+
+    @contextmanager
+    def read_snapshot(self):
+        """Detach consistent metadata before expensive immutable-file verification — DR-073."""
+        snapshot = sqlite3.connect(':memory:')
+        snapshot.row_factory = sqlite3.Row
+        try:
+            with self.transaction() as source:
+                source.backup(snapshot)
+            # Only the in-memory database remains open while the caller verifies files.
+            snapshot.execute('PRAGMA query_only=ON')
+            yield snapshot
+        finally:
+            snapshot.close()
 
     def write_bytes(self, relative, content):
         """Publish a complete file without replacement; DB visibility comes afterwards."""

@@ -1,8 +1,8 @@
-# DR-074 · 本体删除恢复与历史保留
+# DR-075 · 本体删除恢复与历史保留
 
 - **状态 / Status**：proposed（待方案评审）。
 - **日期 / Date**：2026-11-12。
-- **关联 / Refs**：[IR-028](../iterations/IR-028-ontology-asset-lifecycle.md)、[总方案](../../docs/datamind-application-contract-design.md)。
+- **关联 / Refs**：[IR-029](../iterations/IR-029-ontology-asset-lifecycle.md)、[总方案](../../docs/datamind-application-contract-design.md)。
 
 ## 上下文 / Context
 
@@ -26,6 +26,6 @@
 
 ## 后果 / Consequences
 
-可与 IR-026 并行；IR-025 提供执行前生命周期检查接点，IR-027 配合旧 graph key。
+可与 IR-026 并行；IR-025 提供执行前生命周期检查接点，IR-028 配合旧 graph key。
 需要版本化检查和修复记录，增加维护成本；换取构建自由、应用诊断和执行一致性。
 不改变 IR-024 已交付范围，按新迭代实现并回归。

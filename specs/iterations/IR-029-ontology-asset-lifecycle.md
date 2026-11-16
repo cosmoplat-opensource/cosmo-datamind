@@ -1,13 +1,13 @@
-# IR-028 · 本体删除恢复与历史保留
+# IR-029 · 本体删除恢复与历史保留
 
 - **状态 / Status**：proposed（规约草案，未进入实现）。
 - **日期 / Date**：2026-11-12。
-- **关联 / Refs**：[DR-074](../decisions/DR-074-ontology-asset-lifecycle.md)。
+- **关联 / Refs**：[DR-075](../decisions/DR-075-ontology-asset-lifecycle.md)。
 
 ## 目标 Goal
 
 旧数据构建有 /api/build/delete，直接删除 built_*.json；机器人注册资产无对应统一删除入口。现有删除对象／关系与整份资产删除不同。
-可与 IR-026 并行；IR-025 提供执行前生命周期检查接点，IR-027 配合旧 graph key。
+可与 IR-026 并行；IR-025 提供执行前生命周期检查接点，IR-028 配合旧 graph key。
 
 ## 交付 Deliverables
 

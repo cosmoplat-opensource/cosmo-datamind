@@ -1,8 +1,8 @@
-# DR-073 · 深度问数应用契约兼容
+# DR-074 · 深度问数应用契约兼容
 
 - **状态 / Status**：proposed（待方案评审）。
 - **日期 / Date**：2026-11-12。
-- **关联 / Refs**：[IR-027](../iterations/IR-027-deepqa-application-compatibility.md)、[总方案](../../docs/datamind-application-contract-design.md)。
+- **关联 / Refs**：[IR-028](../iterations/IR-028-deepqa-application-compatibility.md)、[总方案](../../docs/datamind-application-contract-design.md)。
 
 ## 上下文 / Context
 

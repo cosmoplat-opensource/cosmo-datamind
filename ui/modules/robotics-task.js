@@ -1,4 +1,4 @@
-/* Persistent task controller and minimal task-page composition — DR-063 / DR-064 / DR-066. */
+/* Persistent task controller and minimal task-page composition — DR-063 / DR-064 / DR-066 / DR-073. */
 (function(global){
   'use strict';
   const copy = value => JSON.parse(JSON.stringify(value));
@@ -25,13 +25,13 @@
     function savedAnswers(){for(const gap of state.session?.gaps||[])
       if(gap.saved_answer && !state.answers[gap.id])state.answers[gap.id]=copy(gap.saved_answer);}
     function identity(payload){const key=JSON.stringify(payload);if(lastRequest?.key!==key)lastRequest={key,id:requestId()};return lastRequest.id;}
-    async function load(ref,sid){
+    async function load(ref,sid,admission){
       const token=++generation;state={session:null,answers:{},noteDrafts:{},notice:null,error:null,busy:true};notify();
       try{
         const result=sid?await json(fetcher,prefix+'/'+encodeURIComponent(sid)):
-          await json(fetcher,prefix,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...ref,request_id:requestId()})});
+          await json(fetcher,prefix,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...ref,request_id:admission || requestId()})});
         if(dead || token!==generation)return;
-        if(sid && result.session_id!==sid || !sid && (result.ontology_id!==ref.ontology_id || result.version_id!==ref.version_id))throw new Error('返回的任务身份不匹配。');
+        if((sid && result.session_id!==sid) || (ref && (result.ontology_id!==ref.ontology_id || result.version_id!==ref.version_id || result.mode!==ref.mode)))throw new Error('返回的任务身份不匹配。');
         state.session=result;savedAnswers();
       }catch(e){if(dead || token!==generation)return;state.error={message:e.message,code:e.code};}
       if(dead || token!==generation)return;state.busy=false;notify();return state.session;
@@ -82,7 +82,7 @@
       }catch(e){if(dead || token!==generation)return;state.error={message:e.message,code:e.code,operation};}
       if(dead || token!==generation)return;state.busy=false;notify();return state.session;
     }
-    return {snapshot,open:ref=>load(ref),restore:sid=>load(null,sid),
+    return {snapshot,open:(ref,admission)=>load(ref,null,admission),restore:(sid,ref)=>load(ref,sid),
       setAnswer(id,answer){if(answer==null)delete state.answers[id];else state.answers[id]=copy(answer);},
       send:text=>submit('messages',{text}),
       save:()=>submit('completion',{answers:Object.entries(state.answers).map(([gap_id,answer])=>({gap_id,...answer}))}),
@@ -98,45 +98,98 @@
   let active=null;
   function link(oid,vid,mode='real'){return '#robotics-task?asset='+encodeURIComponent(oid)+'&version='+encodeURIComponent(vid)+'&mode='+encodeURIComponent(mode);}
   function renderTree(node){return `<li data-node-tag="${esc(node.tag)}"><details><summary>${esc(node.attributes?.ID || node.attributes?.name || node.tag)}</summary><small>${esc(Object.entries(node.attributes||{}).filter(([k])=>!['ID','name'].includes(k)).map(([k,v])=>k+'='+v).join(' · '))}</small></details>${node.children?.length?'<ul>'+node.children.map(renderTree).join('')+'</ul>':''}</li>`;}
+  // DR-073: drafts belong to a fixed session/revision, never another ontology version.
+  function draftKey(sid){return 'robotics-task-draft:'+sid;}
+  function readDraft(sid){try{return JSON.parse(global.sessionStorage.getItem(draftKey(sid))||'null');}catch(_){return null;}}
+  function saveDraft(view){
+    const state=view?.controller?.snapshot?.(),s=state?.session;if(!s)return;
+    try{global.sessionStorage.setItem(draftKey(s.session_id),JSON.stringify({version:s.version_id,revision:s.revision,
+      text:view.text,answers:state.answers,notes:state.noteDrafts,creates:view.creates,configEdit:view.configEdit}));}catch(_){}
+  }
+  global.addEventListener?.('beforeunload',()=>saveDraft(active));
+  function replaceRoute(params){global.history.replaceState(null,'','#robotics-task?'+params.toString());}
+  function checkMarkup(response,{inline=false}={}){
+    const r=response.report,current=response.freshness==='current',seen=new Set();
+    const actions=r.issues.flatMap(i=>(i.repair_actions||[]).filter(a=>a.availability==='available').map(a=>{
+      if(seen.has(a.action_id))return '';seen.add(a.action_id);
+      return `<button type="button" class="ra-button" data-action-id="${esc(a.action_id)}" data-issue-id="${esc(i.issue_id)}" ${!current?'disabled':''}>${esc(a.label)}</button>`;
+    })).join('');
+    return `<section class="${inline?'rt-preparation':'card ra-section'}" data-testid="application-check" data-check-id="${esc(r.check_id)}"><h${inline?'4':'2'}>行为树应用检查</h${inline?'4':'2'}><p role="status">${!current?'检查已过期':r.preparation_status==='available'?'可准备任务':'未满足应用要求'}</p>${r.issues.map(i=>global.RoboticsApplication.renderIssue(i)).join('')}${actions}${!inline?'<button type="button" class="ghost" data-recheck>重新检查</button>':''}<p>执行未验证</p>${seen.has('robotics.revise_tbox') || seen.has('robotics.adapt_execution')?'<p class="muted">修订本体骨架：补齐类别或关系定义。核对角色对应：检查已有术语能否对应应用角色；缺少定义时仍需修订骨架。</p>':''}</section>`;
+  }
+  function bindRepairs(host,view,response){
+    const r=response.report;
+    host.querySelectorAll('[data-action-id]').forEach(button=>button.onclick=async()=>{
+      if(button.disabled)return;button.disabled=true;
+      try{
+        const issue=r.issues.find(i=>i.issue_id===button.dataset.issueId),action=issue.repair_actions.find(a=>a.action_id===button.dataset.actionId);
+        const requestId=button.dataset.requestId||(button.dataset.requestId=global.crypto.randomUUID());
+        const reply=await json(global.fetch.bind(global),'/api/application-checks/'+encodeURIComponent(r.check_id)+'/repairs',
+          {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({issue_id:issue.issue_id,action_id:action.action_id,input:{},expected_revision:action.target.expected_revision,request_id:requestId})});
+        if(active!==view)return;
+        if(reply.kind==='navigate'&&reply.href.startsWith('#')){const href=await global.RoboticsDesign.beginRepair(reply,requestId);if(active===view)global.location.hash=href;}
+      }catch(e){if(active===view){button.disabled=false;const notice=global.document.createElement('p');notice.setAttribute('role','alert');notice.textContent=e.message;host.append(notice);}}
+    });
+  }
   function page(name){
-    if(active){active.controller?.dispose();clearTimeout(active.timer);active=null;}
+    if(active){saveDraft(active);active.controller?.dispose();clearTimeout(active.timer);active=null;}
     if(name!=='robotics-task')return;
     const host=global.document.getElementById('rt_task');if(!host)return;
     const params=new URLSearchParams(global.location.hash.split('?')[1]||'');
     if(params.get('adaptation')){active={controller:global.RoboticsApplication.mount(host,params)};return;}
-    if(params.get('run')||!['session','asset','version'].some(key=>params.has(key)))return;
+    if(params.get('history')||params.get('run')||!['session','asset','version'].some(key=>params.has(key)))return;
     if(!params.get('session') && params.get('asset') && (params.get('assess') || params.get('check')) && !params.get('prepare')){
       const view={};active=view;
-      (async()=>{try{
-        let response;
-        if(params.get('check')) response=await json(global.fetch.bind(global),'/api/application-checks/'+encodeURIComponent(params.get('check')));
-        else response=await json(global.fetch.bind(global),'/api/application-checks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({entrypoint:'robotics.generate_behavior_tree',asset_refs:[{ontology_id:params.get('asset'),version_id:params.get('version')}],context:{mode:params.get('mode')||'real',...(params.get('task')?{task_ref:{session_id:params.get('task')}}:{})},request_id:global.crypto.randomUUID()})});
-        if(active!==view)return;
-        const r=response.report;
-        global.history.replaceState(null,'',link(params.get('asset'),params.get('version'),params.get('mode')||'real')+'&check='+encodeURIComponent(r.check_id));
-        host.innerHTML=`<section class="card ra-section" data-testid="application-check" data-check-id="${esc(r.check_id)}"><h2>行为树应用检查</h2><p>${r.preparation_status==='available'?'可准备任务':'未满足应用要求'}</p>${r.issues.map(i=>global.RoboticsApplication.renderIssue(i)).join('')}${(()=>{const seen=new Set();return r.issues.flatMap(i=>i.repair_actions.filter(a=>a.availability==='available').map(a=>{if(seen.has(a.action_id))return '';seen.add(a.action_id);return `<button type="button" class="ra-button" data-action-id="${esc(a.action_id)}" data-issue-id="${esc(i.issue_id)}" ${response.freshness!=='current'?'disabled':''}>${esc(a.label)}</button>`;})).join('');})()}${r.preparation_status==='available'?`<a class="ra-button" href="${esc(link(params.get('asset'),params.get('version'),params.get('mode')||'real')+'&prepare=1')}">继续描述任务</a>`:''}<p>执行未验证</p></section>`;
-        host.querySelectorAll('[data-action-id]').forEach(button=>button.onclick=async()=>{
-          if(button.disabled)return;button.disabled=true;
-          try{
-            const issue=r.issues.find(i=>i.issue_id===button.dataset.issueId),action=issue.repair_actions.find(a=>a.action_id===button.dataset.actionId);
-            const requestId=button.dataset.requestId||(button.dataset.requestId=global.crypto.randomUUID());
-            const reply=await json(global.fetch.bind(global),'/api/application-checks/'+encodeURIComponent(r.check_id)+'/repairs',
-              {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({issue_id:issue.issue_id,action_id:action.action_id,input:{},expected_revision:action.target.expected_revision,request_id:requestId})});
-            if(active!==view)return;
-            if(reply.kind==='navigate'&&reply.href.startsWith('#')){const href=await global.RoboticsDesign.beginRepair(reply,requestId);if(active===view)global.location.hash=href;}
-          }catch(e){if(active===view){button.disabled=false;const notice=global.document.createElement('p');notice.setAttribute('role','alert');notice.textContent=e.message;host.append(notice);}}
-        });
-      }catch(e){if(active===view)host.innerHTML=`<p role="alert">${esc(e.message)}</p>`;}})();return;
+      // Persist admission before sending: refresh and lost responses replay the same operation.
+      if(!params.get('entry'))params.set('entry',global.crypto.randomUUID());
+      replaceRoute(params);
+      const evaluate=async()=>{
+        host.innerHTML='<p role="status">正在检查行为树应用要求…</p>';
+        try{
+          let response;
+          if(params.get('check'))response=await json(global.fetch.bind(global),'/api/application-checks/'+encodeURIComponent(params.get('check')));
+          else response=await json(global.fetch.bind(global),'/api/application-checks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({entrypoint:'robotics.generate_behavior_tree',asset_refs:[{ontology_id:params.get('asset'),version_id:params.get('version')}],context:{mode:params.get('mode')||'real',...(params.get('task')?{task_ref:{session_id:params.get('task')}}:{})},request_id:params.get('entry')})});
+          if(active!==view)return;
+          const r=response.report;
+          if(r.entrypoint!=='robotics.generate_behavior_tree' || r.context.mode!==(params.get('mode')||'real') || (params.get('task') && r.task_ref && r.task_ref.session_id!==params.get('task')) || r.asset_refs.length!==1 || r.asset_refs[0].ontology_id!==params.get('asset') || r.asset_refs[0].version_id!==params.get('version'))throw Error('检查报告与指定的本体版本不匹配。');
+          params.set('check',r.check_id);params.delete('assess');replaceRoute(params);
+          if(response.freshness==='current' && r.preparation_status==='available' && !params.get('readonly')){
+            if(params.get('task') || r.task_ref?.session_id)params.set('session',params.get('task') || r.task_ref.session_id);
+            mountTask(host,params,response);return;
+          }
+          host.innerHTML=checkMarkup(response);bindRepairs(host,view,response);
+          host.querySelector('[data-recheck]').onclick=()=>{
+            params.delete('check');params.delete('readonly');params.set('assess','1');params.set('entry',global.crypto.randomUUID());replaceRoute(params);evaluate();
+          };
+        }catch(e){if(active===view){host.innerHTML=`<p role="alert">${esc(e.message)}</p><button type="button" class="ra-button" data-retry>重试检查</button>`;host.querySelector('[data-retry]').onclick=evaluate;}}
+      };
+      evaluate();return;
     }
-    const view={controller:null,text:'',creates:{},configEdit:null,capabilities:null,timer:null,initial:true};active=view;
+    mountTask(host,params);
+  }
+  function mountTask(host,params,checked=null){
+    const view={controller:null,text:'',creates:{},configEdit:null,capabilities:null,timer:null,initial:true,checked};active=view;
+    host.innerHTML='<p role="status">正在准备任务…</p>';
     function render(state){
       if(active!==view)return;
       const s=state.session, answer=id=>state.answers[id]||{};
       host.setAttribute('data-testid','robotics-task');
-      if(!s){host.innerHTML=state.error?`<p role="alert">${esc(state.error.message)}</p>`:'<p>正在准备任务…</p>';return;}
+      if(!s){host.innerHTML=state.error?`<p role="alert">${esc(state.error.message)}</p><button type="button" data-retry-task>重试准备任务</button>`:'<p role="status">正在准备任务…</p>';host.querySelector('[data-retry-task]')?.addEventListener('click',loadTask);return;}
+      if(view.initial){
+        view.initial=false;const draft=readDraft(s.session_id);
+        if(draft?.version===s.version_id && draft.revision===s.revision){
+          view.text=draft.text||'';view.creates=draft.creates||{};view.configEdit=draft.configEdit;
+          for(const [id,answer] of Object.entries(draft.answers||{}))view.controller.setAnswer(id,answer);
+          for(const [kind,text] of Object.entries(draft.notes||{}))view.controller.setNote(kind,text);
+          Object.assign(state,view.controller.snapshot());
+        }
+      }
+      const checked=view.checked,checkRef=checked?.report?.asset_refs?.[0];
+      const matching=checkRef?.ontology_id===s.ontology_id && checkRef?.version_id===s.version_id && checked.report.context.mode===s.mode;
+      const displayCheck=matching?{...checked,freshness:checked.report.task_ref && (checked.report.task_ref.session_id!==s.session_id || checked.report.task_ref.revision!==s.revision)?'stale':checked.freshness}:null;
+      if(matching)host.setAttribute('data-check-id',checked.report.check_id);else host.removeAttribute('data-check-id');
       for(const [attr,value] of Object.entries({'session-id':s?.session_id,'version-id':s?.version_id,'ontology-id':s?.ontology_id,mode:s?.mode,status:s?.status}))host.setAttribute('data-'+attr,value||'');
       // Replace, not hash navigation: keep this controller and any in-progress input alive.
-      const route=link(s.ontology_id,s.version_id,s.mode)+'&session='+encodeURIComponent(s.session_id);
+      const route=link(s.ontology_id,s.version_id,s.mode)+'&session='+encodeURIComponent(s.session_id)+(matching?'&check='+encodeURIComponent(checked.report.check_id):'');
       global.history.replaceState(null,'',route);
       global.RoboticsTaskApp?.changed(s);
       const model=view.capabilities?.model || s.model_status || {}, enabled=view.capabilities?.enabled!==false;
@@ -151,6 +204,7 @@
       const alert=error?`<p class="rt-error" role="alert" tabindex="-1">${saveError?'保存未成功：':''}${esc(error.message)}</p>${error.code==='application_not_ready'?`<a class="ra-button" href="${esc(link(s.ontology_id,s.version_id,s.mode)+'&assess=1&task='+encodeURIComponent(s.session_id))}">检查当前任务的应用要求</a>`:''}`:'';
       const stillCurrent=()=>{const current=view.controller.snapshot().session;return active===view && current?.session_id===s.session_id && current?.revision===s.revision;};
       host.innerHTML=`<header class="rt-heading"><div><span class="rt-eyebrow">机器人任务 · ${s.mode==='demo'?'独立演示':'行为树生成'}</span><h3>${esc(s.asset_name||'行为树生成')}</h3><p data-testid="task-current-version">当前：<strong>${Number.isInteger(s.version_number)?'版本 '+s.version_number:'编号加载中'}</strong></p></div><button type="button" class="ghost" data-new>新任务</button></header>
+        ${matching?checkMarkup(displayCheck,{inline:true}):''}
         ${s.status==='idle'?'<div class="rt-welcome"><div class="rt-welcome-mark" aria-hidden="true">◇</div><h1>从一句任务，到行为树</h1><p>描述要操作的零件和目标位置，已有知识直接复用。<br>有需要补充的地方，我们会在下方提示。</p><div class="rt-flow"><span>描述任务</span><i>→</i><span>补齐信息</span><i>→</i><span>查看结果</span></div></div>':''}
         <div class="dq-inputbar rt-composer"><label for="rt_text">任务描述</label><textarea id="rt_text" placeholder="例如：把零部件A放到工位B的载具B01、放置位B01">${esc(view.text)}</textarea>
           <div class="rt-compose-tools"><p data-testid="task-model-status" class="rt-model">${!enabled?'机器人功能未启用':model.configured?'任务解析模型：'+esc(model.model):'模型未配置，请到引擎设置完成配置。'} <a href="#enginecfg">模型设置</a></p><button type="button" class="dq-send" data-send ${busy||!enabled||!model.configured?'disabled':''}>生成行为树</button></div>
@@ -181,7 +235,8 @@
         ${offline&&s.configurations?.length&&!editing?`<details class="rt-notes dq-card" ${notesError?'open':''}><summary>适配记录（可选）</summary><p class="muted">可记录当前配置的调试事项。无需有效期，不影响离线生成，也不代表已完成适配验证。</p><div class="rt-config-grid">${[['grasp_compatibility','抓取备注','hasPerceptionProfile'],['placement_compatibility','放置备注','hasPlacementProfile']].filter(([, ,field])=>s.configurations.some(c=>c.field===field)).map(([kind,label])=>`<div><label for="rt_note_${kind}">${label}</label><textarea id="rt_note_${kind}" data-note-kind="${kind}" placeholder="选填，例如后续需要核查的事项" ${busy?'disabled':''}>${esc(noteValue(kind))}</textarea></div>`).join('')}</div>${notesError?alert:''}<button type="button" class="ghost" data-save-notes ${busy||!Object.values(state.noteDrafts).some(t=>t.trim())?'disabled':''}>保存记录</button></details>`:''}
         ${s.messages.length?`<details class="rt-history"><summary>任务对话记录</summary><div class="rt-conversation">${s.messages.map(m=>`<div class="${m.role==='user'?'rt-message-user':'rt-message-system'}"><span>${m.role==='user'?'你':'机器人助手'}</span><p>${esc(m.content)}</p></div>`).join('')}</div></details>`:''}
         <div class="rb-actions rt-secondary"><a href="#library">返回本体库</a><a href="/api/ontology-assets/${encodeURIComponent(s.ontology_id)}/versions/${encodeURIComponent(s.version_id)}/payload">下载当前 OWL</a>${s.mode==='real'?'<button type="button" class="ghost" data-demo>打开独立演示</button>':''}</div>`;
-      host.querySelector('#rt_text').oninput=e=>{view.text=e.target.value;};
+      bindRepairs(host,view,view.checked || {report:{issues:[]}});
+      host.querySelector('#rt_text').oninput=e=>{view.text=e.target.value;saveDraft(view);};
       host.querySelector('[data-send]').onclick=()=>view.controller.send(view.text);
       host.querySelector('[data-new]').onclick=()=>{view.text='';view.creates={};view.controller.open({ontology_id:s.ontology_id,version_id:s.version_id,mode:s.mode});};
       host.querySelector('[data-save]')?.addEventListener('click',()=>view.controller.save());
@@ -220,10 +275,25 @@
     }
     function showError(message){const el=global.document.createElement('p');el.setAttribute('role','alert');el.textContent=message;host.prepend(el);}
     view.controller=createController({onChange:render});
-    (async()=>{try{view.capabilities=await json(global.fetch.bind(global),'/api/robotics/task-capabilities');if(active!==view)return;
-      if(params.get('session'))await view.controller.restore(params.get('session'));
-      else await view.controller.open({ontology_id:params.get('asset'),version_id:params.get('version'),mode:params.get('mode')||'real'});
-    }catch(e){showError(e.message);}})();
+    async function loadTask(){
+      if(active!==view)return;
+      if(params.get('session'))await view.controller.restore(params.get('session'),params.get('asset') && params.get('version')?{ontology_id:params.get('asset'),version_id:params.get('version'),mode:params.get('mode')||'real'}:null);
+      else await view.controller.open({ontology_id:params.get('asset'),version_id:params.get('version'),mode:params.get('mode')||'real'},params.get('entry'));
+    }
+    async function prepareTask(){
+      host.innerHTML='<p role="status">正在准备任务…</p>';
+      try{
+        view.capabilities=await json(global.fetch.bind(global),'/api/robotics/task-capabilities');if(active!==view)return;
+        if(!view.checked && params.get('check')){
+          view.checked=await json(global.fetch.bind(global),'/api/application-checks/'+encodeURIComponent(params.get('check')));if(active!==view)return;
+        }
+        await loadTask();
+      }catch(e){if(active===view){
+        host.innerHTML=`<p role="alert">${esc(e.message)}</p><button type="button" data-retry-task>重试准备任务</button>`;
+        host.querySelector('[data-retry-task]').onclick=prepareTask;
+      }}
+    }
+    prepareTask();
   }
   function importButton(host){
     if(host.querySelector('[data-rt-import]'))return;

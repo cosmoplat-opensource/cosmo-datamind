@@ -1,5 +1,5 @@
 {
-  "iteration": "IR-014 / IR-015 / IR-016 / IR-017（delivered） / IR-018（delivered） / IR-019（T07 GREEN，T08 暂缓） / IR-020（T05 GREEN，待 T06 人审交付） / IR-024（delivered） / IR-025（delivered，2026-11-12 用户确认）；IR-026（T05 集成 GREEN，全量回归通过，待 T06）",
+  "iteration": "IR-014 / IR-015 / IR-016 / IR-017（delivered） / IR-018（delivered） / IR-019（T07 GREEN，T08 暂缓） / IR-020（T05 GREEN，待 T06 人审交付） / IR-024（delivered） / IR-025（delivered，2026-11-12 用户确认）；IR-026（T05 集成 GREEN，全量回归通过，待 T06） / IR-027（delivered，2026-11-16 用户确认）",
   "requirements": [
     {
       "id": "ALG-01",
@@ -1555,7 +1555,7 @@
         "tests/unit/test_robotics_design_http.py::test_confirm_classes_replay_and_return_to_edit_are_local",
         "tests/unit/test_robotics_design_http.py::test_confirmation_conflicts_preserve_effective_revision",
         "tests/frontend/robotics-design-browser.py::test_model_ui_stage_confirmations_final_downloads_and_history",
-        "tests/frontend/robotics-design-browser.py::test_history_diff_shows_changed_definition_without_changing_current_revision"
+        "tests/frontend/robotics-design-browser.py::test_current_design_has_no_revision_selector_and_preserves_history"
       ],
       "test_status": "created-green",
       "approved_on": "2026-11-10",
@@ -1793,7 +1793,7 @@
         "tests/unit/test_robotics_design_ui.py::test_design_browser_suite_is_wired_into_full_regression",
         "tests/frontend/robotics-design-browser.py::test_model_ui_stage_confirmations_final_downloads_and_history",
         "tests/frontend/robotics-design-browser.py::test_empty_description_waits_without_model_until_explicit_message",
-        "tests/frontend/robotics-design-browser.py::test_history_diff_shows_changed_definition_without_changing_current_revision",
+        "tests/frontend/robotics-design-browser.py::test_current_design_has_no_revision_selector_and_preserves_history",
         "tests/frontend/robotics-design-browser.py::test_offline_page_explains_description_not_used_and_has_no_mode_switch",
         "tests/frontend/robotics-design-browser.py::test_waiting_session_reload_and_owned_server_restart_are_readonly"
       ],
@@ -2196,13 +2196,116 @@
       "validation_report": "docs/audits/IR-026-t06-results.json",
       "human_acceptance": "2026-11-13 用户收到 T06 交付评审与全量结果后要求提交代码，确认本轮交付。",
       "coverage_note": "T06: 11 real user-ontology copy flow checks and actual Gunicorn/Chromium copy acceptance passed. All 13 full regression stages passed: unit 2333 passed/5 optional upstream engine skips; coverage 86.1%; robotics browsers 18+16+12+29 passed. Existing behavior tests/fixtures unchanged. User requested code commit after T06 review on 2026-11-13; delivery accepted."
+    },
+    {
+      "id": "ODE-01",
+      "iteration": "IR-027",
+      "decision": "DR-073",
+      "status": "delivered",
+      "criterion": "桌面与窄屏无横向溢出；360 实例分页／搜索流畅，初始页面不倾倒全部原始 JSON。",
+      "test_status": "created-green",
+      "tests": [
+        "tests/unit/test_ontology_detail_ui.py::test_initial_overview_does_not_mount_all_instances_or_serialize_raw_reports",
+        "tests/unit/test_ontology_detail_ui.py::test_instances_default_to_25_rows_with_bounded_dom",
+        "tests/unit/test_ontology_detail_ui.py::test_instance_pagination_last_page_and_previous_do_not_duplicate_rows",
+        "tests/unit/test_ontology_detail_ui.py::test_search_matches_instance_name_or_full_id_without_case_sensitivity",
+        "tests/unit/test_ontology_detail_ui.py::test_search_and_type_filter_intersect_and_reset_to_first_page",
+        "tests/unit/test_ontology_detail_ui.py::test_detail_tabs_and_long_identifiers_do_not_expand_page_width",
+        "tests/frontend/ontology-detail-browser.py::test_real_fixed_detail_tabs_are_readonly_and_fit_the_full_application_shell"
+      ],
+      "validation_report": "docs/audits/IR-027-t06-results.json",
+      "coverage_note": "T05 full regression: 14 stages passed, 2387 unit passed/5 optional skips, coverage 86.2%. T06: 20 real-copy checks passed; original 395 asset files unchanged. Subsequent user-requested presentation changes passed scoped display/meta/browser checks recorded in the delivery review; historical source/test hashes describe the pre-review snapshot, not the final presentation changes. User explicitly accepted delivery on 2026-11-16. No field execution claim.",
+      "red_validation_report": "docs/audits/IR-027-t02-results.json",
+      "human_acceptance": "2026-11-16 用户明确确认“这个IR确认没问题了”，接受 IR-027 及本轮人审展示调整。"
+    },
+    {
+      "id": "ODE-02",
+      "iteration": "IR-027",
+      "decision": "DR-073",
+      "status": "delivered",
+      "criterion": "类别数与实例数分开，空业务分组不误报空本体，四种检查状态不混淆。",
+      "test_status": "created-green",
+      "tests": [
+        "tests/unit/test_ontology_detail_ui.py::test_summary_keeps_classes_properties_individuals_and_assertions_distinct",
+        "tests/unit/test_ontology_detail_ui.py::test_empty_business_group_does_not_claim_the_ontology_is_empty",
+        "tests/unit/test_ontology_detail_ui.py::test_declared_classes_without_individuals_remain_a_valid_empty_instance_view",
+        "tests/unit/test_ontology_detail_ui.py::test_schema_tables_show_definitions_without_turning_classes_into_instances",
+        "tests/unit/test_ontology_detail_ui.py::test_application_state_does_not_promote_unchecked_or_stale_reports",
+        "tests/unit/test_ontology_detail_ui.py::test_design_application_task_and_execution_are_independent_states",
+        "tests/unit/test_ontology_detail_ui.py::test_application_version_displays_current_facts_instead_of_parent_snapshot",
+        "tests/unit/test_ontology_detail_http.py::test_design_projection_uses_verified_schema_and_fixed_instance_identities_without_writes",
+        "tests/unit/test_ontology_detail_http.py::test_application_projection_reads_completed_current_facts_instead_of_parent_design",
+        "tests/unit/test_ontology_detail_http.py::test_projection_deduplicates_multiple_types_and_does_not_guess_groups_by_local_name",
+        "tests/unit/test_ontology_detail_http.py::test_stale_report_preserves_historical_conclusion_on_read"
+      ],
+      "validation_report": "docs/audits/IR-027-t06-results.json",
+      "coverage_note": "T05 full regression: 14 stages passed, 2387 unit passed/5 optional skips, coverage 86.2%. T06: 20 real-copy checks passed; original 395 asset files unchanged. Subsequent user-requested presentation changes passed scoped display/meta/browser checks recorded in the delivery review; historical source/test hashes describe the pre-review snapshot, not the final presentation changes. User explicitly accepted delivery on 2026-11-16. No field execution claim.",
+      "red_validation_report": "docs/audits/IR-027-t02-results.json",
+      "human_acceptance": "2026-11-16 用户明确确认“这个IR确认没问题了”，接受 IR-027 及本轮人审展示调整。"
+    },
+    {
+      "id": "ODE-03",
+      "iteration": "IR-027",
+      "decision": "DR-073",
+      "status": "delivered",
+      "criterion": "浏览不触发检查，行为树按钮在未检查或有缺项时仍可发起检查／诊断补全；新鲜检查通过后直接进入任务对话并在页内显示检查状态，缺项／过期／失败留在诊断页；修复深链带版本，过期结果不授权实际生成。",
+      "test_status": "created-green",
+      "tests": [
+        "tests/frontend/ontology-detail-browser.py::test_successful_fresh_check_enters_task_dialog_without_a_success_hop",
+        "tests/frontend/ontology-detail-browser.py::test_duplicate_entry_clicks_and_refresh_keep_one_check_and_one_task",
+        "tests/frontend/ontology-detail-browser.py::test_reload_after_task_admission_before_response_does_not_create_another_task",
+        "tests/frontend/ontology-detail-browser.py::test_existing_task_recheck_returns_to_same_session_with_unsent_input",
+        "tests/frontend/ontology-detail-browser.py::test_missing_schema_stays_in_diagnosis_and_revision_targets_original_design",
+        "tests/frontend/ontology-detail-browser.py::test_mapping_repair_prepares_correspondence_for_same_version_without_revising_schema",
+        "tests/frontend/ontology-detail-browser.py::test_stale_preparation_report_remains_diagnostic_with_recheck_and_no_auto_entry",
+        "tests/frontend/ontology-detail-browser.py::test_lost_check_response_retries_same_admission_and_enters_only_one_task",
+        "tests/frontend/ontology-detail-browser.py::test_late_check_response_cannot_navigate_away_from_another_fixed_version",
+        "tests/frontend/ontology-detail-browser.py::test_detail_omits_check_link_and_saved_report_remains_readonly",
+        "tests/unit/test_ontology_detail_http.py::test_stale_repair_deep_link_cannot_change_design_or_accept_adaptation",
+        "tests/unit/test_ontology_detail_http.py::test_client_report_fields_cannot_authorize_task_creation",
+        "tests/unit/test_ontology_detail_http.py::test_missing_schema_has_two_bound_repair_routes_without_creating_versions",
+        "tests/frontend/robotics-task-browser.py::test_graph_starts_task_with_selected_ontology_version",
+        "tests/frontend/robotics-design-browser.py::test_application_adaptation_browser_worker_downloads_and_returns_to_existing_task_ui"
+      ],
+      "validation_report": "docs/audits/IR-027-t06-results.json",
+      "coverage_note": "T05 full regression: 14 stages passed, 2387 unit passed/5 optional skips, coverage 86.2%. T06: 20 real-copy checks passed; original 395 asset files unchanged. Subsequent user-requested presentation changes passed scoped display/meta/browser checks recorded in the delivery review; historical source/test hashes describe the pre-review snapshot, not the final presentation changes. User explicitly accepted delivery on 2026-11-16. No field execution claim.",
+      "human_acceptance": "2026-11-16 用户明确确认“这个IR确认没问题了”，接受 IR-027 及本轮人审展示调整。"
+    },
+    {
+      "id": "ODE-04",
+      "iteration": "IR-027",
+      "decision": "DR-073",
+      "status": "delivered",
+      "criterion": "新旧详情和数据本体入口无回归，完整 JSON／OWL 下载仍绑定固定版本。",
+      "test_status": "created-green",
+      "tests": [
+        "tests/unit/test_ontology_detail_http.py::test_owl_download_remains_bound_to_the_requested_version",
+        "tests/unit/test_ontology_detail_http.py::test_complete_json_download_remains_bound_to_the_requested_version",
+        "tests/unit/test_ontology_detail_http.py::test_data_detail_keeps_original_ir_kind_without_robotics_projection",
+        "tests/unit/test_ontology_detail_http.py::test_invalid_or_mismatched_artifacts_are_rejected_without_latest_or_legacy_fallback",
+        "tests/unit/test_ontology_detail_http.py::test_existing_generation_and_xml_remain_readable_after_later_task_revision",
+        "tests/unit/test_ontology_detail_http.py::test_history_availability_does_not_relax_application_snapshot_or_candidate_integrity",
+        "tests/unit/test_ontology_detail_http.py::test_slow_historical_snapshot_read_does_not_block_unrelated_database_commit",
+        "tests/unit/test_ontology_detail_http.py::test_new_browser_suite_is_registered_with_full_regression",
+        "tests/frontend/ontology-detail-browser.py::test_real_fixed_detail_tabs_are_readonly_and_fit_the_full_application_shell",
+        "tests/frontend/ontology-detail-browser.py::test_detail_omits_history_link_and_existing_history_remains_readonly",
+        "tests/frontend/ontology-detail-browser.py::test_browser_downloads_original_fixed_json_and_owl_instead_of_latest",
+        "tests/frontend/ontology-detail-browser.py::test_legacy_data_graph_entry_still_opens_without_robotics_check_or_task",
+        "tests/frontend/ontology-detail-browser.py::test_missing_fixed_version_is_an_error_without_default_or_latest_fallback",
+        "tests/frontend/ontology-detail-browser.py::test_failed_next_version_read_clears_previous_content_without_fallback",
+        "tests/frontend/ontology-detail-browser.py::test_pending_fixed_detail_exposes_loading_state_before_real_response",
+        "tests/frontend/ontology-detail-browser.py::test_detail_tabs_work_with_keyboard_and_keep_visible_panel_identity"
+      ],
+      "validation_report": "docs/audits/IR-027-t06-results.json",
+      "coverage_note": "T05 full regression: 14 stages passed, 2387 unit passed/5 optional skips, coverage 86.2%. T06: 20 real-copy checks passed; original 395 asset files unchanged. Subsequent user-requested presentation changes passed scoped display/meta/browser checks recorded in the delivery review; historical source/test hashes describe the pre-review snapshot, not the final presentation changes. User explicitly accepted delivery on 2026-11-16. No field execution claim.",
+      "human_acceptance": "2026-11-16 用户明确确认“这个IR确认没问题了”，接受 IR-027 及本轮人审展示调整。"
     }
   ],
   "planned_requirements": [
     {
       "id": "DQC-01",
-      "iteration": "IR-027",
-      "decision": "DR-073",
+      "iteration": "IR-028",
+      "decision": "DR-074",
       "status": "proposed",
       "criterion": "数据本体构建入库不增加契约步骤；现有问数入口自动绑定契约，单表计数、指标、多图及无模型回退保持原边界。",
       "test_status": "planned-not-created",
@@ -2210,8 +2313,8 @@
     },
     {
       "id": "DQC-02",
-      "iteration": "IR-027",
-      "decision": "DR-073",
+      "iteration": "IR-028",
+      "decision": "DR-074",
       "status": "proposed",
       "criterion": "未绑定表／连接不可用提供修复建议；部分可用仍可问可用子集。",
       "test_status": "planned-not-created",
@@ -2219,8 +2322,8 @@
     },
     {
       "id": "DQC-03",
-      "iteration": "IR-027",
-      "decision": "DR-073",
+      "iteration": "IR-028",
+      "decision": "DR-074",
       "status": "proposed",
       "criterion": "同步与 SSE 使用相同阻塞结论；旧指标不被新增的全局认证门槛阻断。",
       "test_status": "planned-not-created",
@@ -2228,8 +2331,8 @@
     },
     {
       "id": "DQC-04",
-      "iteration": "IR-027",
-      "decision": "DR-073",
+      "iteration": "IR-028",
+      "decision": "DR-074",
       "status": "proposed",
       "criterion": "删除或编辑本体后缓存不能返回旧授权结果，跨领域资产不能进入 SQL 执行。",
       "test_status": "planned-not-created",
@@ -2237,8 +2340,8 @@
     },
     {
       "id": "OAL-01",
-      "iteration": "IR-028",
-      "decision": "DR-074",
+      "iteration": "IR-029",
+      "decision": "DR-075",
       "status": "proposed",
       "criterion": "数据与机器人资产均可逻辑删除和恢复，默认目录不显示已删除资产。",
       "test_status": "planned-not-created",
@@ -2246,8 +2349,8 @@
     },
     {
       "id": "OAL-02",
-      "iteration": "IR-028",
-      "decision": "DR-074",
+      "iteration": "IR-029",
+      "decision": "DR-075",
       "status": "proposed",
       "criterion": "历史运行／下载仍可核对，来源未误删；恢复保留原版本和摘要。",
       "test_status": "planned-not-created",
@@ -2255,8 +2358,8 @@
     },
     {
       "id": "OAL-03",
-      "iteration": "IR-028",
-      "decision": "DR-074",
+      "iteration": "IR-029",
+      "decision": "DR-075",
       "status": "proposed",
       "criterion": "并发受理、重复删除、旧 key、缓存和直接 API 不能绕过删除状态。",
       "test_status": "planned-not-created",
@@ -2264,46 +2367,10 @@
     },
     {
       "id": "OAL-04",
-      "iteration": "IR-028",
-      "decision": "DR-074",
+      "iteration": "IR-029",
+      "decision": "DR-075",
       "status": "proposed",
       "criterion": "内置 demo 不可删除；用户确认前只预览影响，不执行删除。",
-      "test_status": "planned-not-created",
-      "tests": []
-    },
-    {
-      "id": "ODE-01",
-      "iteration": "IR-029",
-      "decision": "DR-075",
-      "status": "proposed",
-      "criterion": "桌面与窄屏无横向溢出；360 实例分页／搜索流畅，初始页面不倾倒全部原始 JSON。",
-      "test_status": "planned-not-created",
-      "tests": []
-    },
-    {
-      "id": "ODE-02",
-      "iteration": "IR-029",
-      "decision": "DR-075",
-      "status": "proposed",
-      "criterion": "类别数与实例数分开，空业务分组不误报空本体，四种检查状态不混淆。",
-      "test_status": "planned-not-created",
-      "tests": []
-    },
-    {
-      "id": "ODE-03",
-      "iteration": "IR-029",
-      "decision": "DR-075",
-      "status": "proposed",
-      "criterion": "浏览不触发检查，行为树按钮在未检查或有缺项时仍可进入诊断补全；修复深链带版本，过期结果不授权实际生成。",
-      "test_status": "planned-not-created",
-      "tests": []
-    },
-    {
-      "id": "ODE-04",
-      "iteration": "IR-029",
-      "decision": "DR-075",
-      "status": "proposed",
-      "criterion": "新旧详情和数据本体入口无回归，完整 JSON／OWL 下载仍绑定固定版本。",
       "test_status": "planned-not-created",
       "tests": []
     },
