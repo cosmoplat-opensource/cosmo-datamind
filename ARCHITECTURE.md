@@ -9,8 +9,8 @@
 │  前端 (ui/index.html + ui/modules + ui/styles, 原生 JS/CSS)                                 │
 │   18 页 × hash 路由 · G6 图谱 · ECharts · 统一助手 $/esc/J                                  │
 ├─────────────────────────────────────────────────────────────────────────────────────────────┤
-│  HTTP 层 (Flask, 单端口 8092) · 共 140 路由                                                 │
-│   server.py 113 + bp_engine 5 + bp_actions 8 + bp_metrics 3 + bp_semantic 2 + bp_decision 9 │
+│  HTTP 层 (Flask, 单端口 8092) · 共 144 路由                                                 │
+│   server.py 117 + bp_engine 5 + bp_actions 8 + bp_metrics 3 + bp_semantic 2 + bp_decision 9 │
 │   生产入口:wsgi.py → Gunicorn(gthread);可另配 Nginx 反向代理                                │
 │   app 级 before_request CSRF 校验(对 blueprint 同样生效)                                    │
 │   共享层: srv_context(路径/只读连接/原子写/写锁)                                            │
@@ -91,6 +91,11 @@
 | `answer_record.py` | 答案的结果记录:结果编号、图谱与发布状态;数值匹配:文字说明里的数字到查询结果里找对应的数值,看符号、单位、所属行和列名,对不上的提示以表格为准 | DR-122、DR-128、DR-129 |
 | `qa_query_status.py` | 查数结果的状态:取到数据、空、失败三种分开;空结果核对所读表的行数;每个结果给出实际取数截至的日期 | DR-130 |
 | `sql_structure.py` | SELECT 语句的结构解析:按作用域取出表、别名、连接条件(含 USING / NATURAL JOIN)和聚合调用,供本体约束校验使用;只解析不求值,解析不了时由调用方退回正则做法 | DR-133 |
+| `qa_eval_stats.py` | 问数评测的统一比对规则(结果集严格一致与列容忍两种口径)、按题配对的 95% 区间、候选上限统计 | DR-134 |
+| `arithmetic_witness.py` | 算术见证:同一行里一列等于另外两列的和、差、积、商,逐行成立时记为证据;核验派生公式,问数时提示模型 | DR-135 |
+| `header_parse.py` | 上传 CSV 的多级表头:识别 2~3 行表头并展开为一行列名;上层是期间时另给长表 | DR-135 |
+| `data_grounding.py` | 名称不透明库的数据接地:取值画像、口径说明里的用语 → 列(数据核验)、按取值反查、按画像起候选名(理由须在数据里找到) | DR-136 |
+| `feedback_replay.py` | 反馈的回放验证:反馈时保存答案的数据摘要,回放后比对数据是否一致 | DR-137 |
 | `ontology_release.py` | 发布状态判定:已发布 / 草案 / 不可用于正式问数 | DR-115 |
 | `bp_decision.py` | 工艺路线层与决策层 blueprint(9 路由:约束、路线、点亮矩阵、审计) | DR-117 |
 | `bp_metrics.py` | 指标契约 blueprint(3 路由:契约/维度/人工确认计算规则/重跑核验);不提供直接置 verified 的途径 | DR-054 |

@@ -57,7 +57,7 @@ def _tokens(sql):
         elif kind == "id":
             out.append(("id", raw, False))
         else:
-            out.append((kind, raw, False))
+            out.append((kind or "op", raw, False))
     while out and out[-1][:2] == ("op", ";"):
         out.pop()
     if any(t[:2] == ("op", ";") for t in out):
@@ -309,7 +309,7 @@ def analyze(sql):
     p.query(0, len(p.t), set(), None)
     if not p.cores:
         raise ParseError("没有 SELECT")
-    out = {"tables": [], "cores": [], "pairs": [], "usings": [], "aggs": []}
+    out: dict = {"tables": [], "cores": [], "pairs": [], "usings": [], "aggs": []}
     for core in p.cores:
         real = [(it["alias"], it["table"]) for it in core["items"] if it["kind"] == "table"]
         out["tables"] += [t for _a, t in real]

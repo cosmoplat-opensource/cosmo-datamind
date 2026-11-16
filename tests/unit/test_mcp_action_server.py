@@ -109,7 +109,7 @@ class TestGovernanceBoundary:
         names = {t["name"] for t in mcp.TOOLS}
         assert not (names & {"approve_action", "deny_action", "approve", "deny"})
         assert names == {"list_actions", "invoke_action", "get_action_status",
-                         "search_concept", "describe_metric", "query_metric"}
+                         "search_concept", "describe_metric", "query_metric", "check_sql"}
         # DR-055:新增的三个语义工具全部只读;写路径仍然只有 invoke_action
         writers = {t["name"] for t in mcp.TOOLS if not t["annotations"].get("readOnlyHint")}
         assert writers == {"invoke_action"}
@@ -274,3 +274,28 @@ class TestSemanticReadTools:
             {"hits": [{"key": "order"}], "rendered": ["对象 销售订单(fact_sales_order)"]}, None))
         text, err = mcp.call_tool("search_concept", {"q": "订单"})
         assert not err and text.startswith("对象 销售订单")
+
+
+# ── DR-134:check_sql 是只读工具,把 /api/ont/check 的结论和依据交给外部智能体 ──
+
+def test_check_sql_it_is_read_only_and_reports_the_verdict(monkeypatch):
+    tool = next(t for t in mcp.TOOLS if t["name"] == "check_sql")
+    assert tool["annotations"]["readOnlyHint"] is True and tool["inputSchema"]["required"] == ["sql"]
+    seen = []
+    monkeypatch.setattr(mcp, "_http", lambda method, path, payload=None: seen.append((method, path, payload)) or (
+        {"ok": False, "reason": "JOIN 键 a.x=b.y 不在本体已验证关系上", "tables": ["a", "b"],
+         "joins": [{"left": "a.x", "right": "b.y", "relation": None}]}, None))
+    text, err = mcp.call_tool("check_sql", {"sql": "SELECT 1 FROM a JOIN b ON a.x = b.y", "graph": "g1"})
+    assert not err and "不通过" in text and "JOIN 键" in text and "a.x = b.y(未经验证)" in text
+    assert seen == [("POST", "/api/ont/check", {"sql": "SELECT 1 FROM a JOIN b ON a.x = b.y", "graphs": ["g1"]})]
+
+def test_check_sql_a_passing_query_lists_the_relations_it_relies_on(monkeypatch):
+    monkeypatch.setattr(mcp, "_http", lambda *a, **k: (
+        {"ok": True, "reason": "", "tables": ["a", "b"], "joins": [{"left": "a.x", "right": "b.x", "relation": "verified"}]}, None))
+    text, err = mcp.call_tool("check_sql", {"sql": "SELECT 1"})
+    assert not err and text.startswith("通过") and "a.x = b.x(verified)" in text
+
+def test_check_sql_upstream_errors_are_tool_errors(monkeypatch):
+    monkeypatch.setattr(mcp, "_http", lambda *a, **k: (None, "DataMind 服务不可达"))
+    text, err = mcp.call_tool("check_sql", {"sql": "SELECT 1"})
+    assert err and "不可达" in text

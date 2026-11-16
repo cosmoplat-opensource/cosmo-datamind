@@ -31,6 +31,8 @@ import observability    # DR-066:构建与问数的结构化追踪与指标(ODD)
 import code_contracts   # DR-065:代码契约(代码包 / docx 读取,连接与码表契约)
 import concept_hints    # DR-064:概念层线索(表族 / 类别拆分 / 版本重复)
 import key_links        # DR-069:按键名补提关系候选(跨轮、关联表、多态引用)
+import feedback_replay  # DR-137:反馈的回放验证
+import qa_eval_stats  # DR-134:问数评测的统一比对规则、配对区间与候选上限
 import sql_structure  # DR-133:SELECT 语句的结构解析,供本体约束校验按作用域取表、别名与连接条件
 import relation_triage  # DR-073:候选分流(自动驳回 / 暂缓 / 待审排序)
 import intent_check     # DR-026/073:双盲意图核对、答非所问时重写与澄清
@@ -2174,6 +2176,8 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
     jh = _join_hints(ir, [o.get("table") for o in picked], pairs=_pairs)
     if trace is not None: trace["relations"] = _pairs
     if jh: lines.append("表间关系(本体已验证,JOIN 优先用这些键):\n" + "\n".join(jh))
+    _ar = _arithmetic_lines(ir, [o.get("table") for o in picked])
+    if _ar: lines.append(_ar)
     # DR-080 列出其余表名:召回不全时模型会编造表名;给出全部表名后,可先探查再用
     _shown = {(o.get("table") or "").lower() for o in picked}
     _rest = [f'{o["table"]}({o.get("cn") or ""})' if o.get("cn") else o["table"]
@@ -4501,6 +4505,79 @@ def ont_modules(key):
     except Exception as e:
         return jsonify({"error": f"模块划分失败: {e}"}), 500
 
+def _relation_status_index(ir):
+    """(子表, 子键, 父表, 父键) → 关系状态,两个方向都登记;复合键逐列登记。"""
+    o2t = {}
+    for i, o in enumerate(ir.get("objects", [])):
+        for k in (o.get("id"), o.get("name"), _obj_key(o, i)):
+            if k: o2t[str(k)] = (o.get("table") or "").lower()
+    rels, ks, kt = ir_shape.rels(json.loads(json.dumps(ir, default=str)), create=True)
+    out = {}
+    for rel in rels:
+        ev = rel.get("evidence") or {}
+        st, tt = o2t.get(str(rel.get(ks))), o2t.get(str(rel.get(kt)))
+        cks = str(ev.get("child_key") or "").lower().split(",")
+        pks = str(ev.get("parent_key") or "").lower().split(",")
+        if not (st and tt) or len(cks) != len(pks):
+            continue
+        for c, pk in zip(cks, pks):
+            if c and pk:
+                for key in ((st, c, tt, pk), (tt, pk, st, c)):
+                    if out.get(key) not in ("verified", "asserted"):     # 同一对键有多条关系时,取最强的状态
+                        out[key] = rel.get("status") or "candidate"
+    return out
+
+
+@app.post("/api/ont/check")
+def ont_check():
+    """对外的 SQL 本体检查(DR-134):与问数执行前的校验相同(只读、范围、表白名单、连接键、重复计数、表与列存在),
+    只检查不执行。返回结论、原因,以及语句读到的表和每个连接条件对应的关系状态。"""
+    body = request.get_json(silent=True)
+    body = body if isinstance(body, dict) else {}
+    sql = str(body.get("sql") or "").strip()
+    if not sql or len(sql) > 20000:
+        return jsonify({"error": "sql 不能为空,且不超过 20000 个字符", "field": "sql"}), 400
+    raw = body.get("graphs") if isinstance(body.get("graphs"), list) else []
+    if any(_bad_gkey(str(k or "")) for k in raw if k):
+        return jsonify({"error": "非法图谱键", "field": "graphs"}), 400
+    focus_tables, graph_keys = _qa_scope(body)
+    if not graph_keys:
+        return jsonify({"error": "当前数据库尚未构建本体，请先构建", "code": "ontology_unavailable"}), 422
+    report = {"tables": [], "joins": [], "parsed": False}
+    try:
+        parsed = sql_structure.analyze(sql)
+        report["parsed"] = True
+        report["tables"] = sorted(set(parsed["tables"]))
+    except sql_structure.ParseError:
+        parsed = None
+    if not sql_is_readonly(sql):
+        return jsonify({"ok": False, "reason": "只读检查不通过:只接受单条 SELECT / WITH 查询", "graphs": graph_keys, **report})
+    token = _with_qa_source(graph_keys)
+    try:
+        ir_gate, gate_keys, fallback, profile = _qa_anchor_ir(graph_keys)
+        scope_error = _qa_scope_error(graph_keys, gate_keys, fallback, profile)
+        if scope_error:
+            return jsonify({"error": scope_error, "code": "ontology_not_queryable"}), 422
+        strict = bool(graph_keys and gate_keys != ["demo"] and not fallback)
+        ok, reason = _qa_validate_sql(sql, ir_gate, strict=strict, focus_tables=focus_tables)
+        if parsed:
+            index = _relation_status_index(ir_gate)
+            seen = set()
+            for pr in parsed["pairs"]:
+                if not (pr["on"] or pr["joined"]) or (pr["a"] == pr["b"] and pr["ca"] == pr["cb"]):
+                    continue
+                key = (pr["ta"], pr["ca"], pr["tb"], pr["cb"])
+                if key in seen:
+                    continue
+                seen.add(key)
+                report["joins"].append({"left": f"{pr['ta']}.{pr['ca']}", "right": f"{pr['tb']}.{pr['cb']}",
+                                        "relation": index.get(key)})
+        observability.count("ont.check", ok=str(bool(ok)).lower())
+        return jsonify({"ok": bool(ok), "reason": reason or "", "graphs": gate_keys, "strict": strict, **report})
+    finally:
+        _reset_qa_source(token)
+
+
 @app.post("/api/ont/cq")
 def ont_cq():
     """验收问题核验(DR-024):在已建成的本体上判定「这些业务问题答不答得了」。
@@ -6012,57 +6089,135 @@ def _eval_judge(item, val):
     def near(g): return abs(v - g) <= max(tol * abs(g), 1e-9) + (0.5 if tol == 0 else 0)
     return near(gold) or (item.get("unit") == "万元" and near(gold * 10000))
 
-def _run_eval_thread(model=None, limit=None):
+def _run_eval_thread(model=None, limit=None, repeats=1):
     """评测线程入口。任何异常都要把任务标回未运行(DR-098):此前一次异常就让 running 一直为 True,
     之后每次启动都返回 409,只能重启服务。"""
     try:
-        _run_eval(model, limit)
+        _run_eval(model, limit, repeats)
     except Exception as e:                                      # noqa: BLE001
         EVAL_JOB.update(running=False, progress="评测中断:%s: %s" % (type(e).__name__, str(e)[:120]))
 
 
-def _run_eval(model=None, limit=None):
+def _eval_reference(item, cache):
+    """参考答案的结果集与所需的列(DR-134):执行题目自带的参考 SQL;没有或执行失败时返回 None。"""
+    if item["id"] in cache:
+        return cache[item["id"]]
+    ref = None
+    sql = item.get("gold_sql")
+    if sql and sql_is_readonly(sql):
+        try:
+            data = q(sql, attach_uploads=True)
+            tables = item.get("gold_tables") or []
+            cols = {}
+            con = ro_connect(_active_db())
+            try:
+                for t in tables:
+                    if re.fullmatch(_SQL_IDENT, t):
+                        cols[t] = [r[1] for r in con.execute(f'PRAGMA table_info("{t}")')]
+            finally:
+                con.close()
+            ref = {"columns": data["columns"], "rows": data["rows"],
+                   "needs": qa_eval_stats.reference_columns(sql, cols)}
+        except Exception:                                       # noqa: BLE001 —— 参考 SQL 跑不了时只用数值判定
+            ref = None
+    cache[item["id"]] = ref
+    return ref
+
+
+def _run_eval(model=None, limit=None, repeats=1):
+    """三组同题对照(DR-134 起):各组用同一套比对规则;可重复多次;报告候选上限与按题配对的组间差。
+    correct 沿用题集声明的判定(数值容差 / 字符串);另按参考 SQL 的结果集给出严格一致与列容忍两种口径。"""
     items = _eval_items()[: (limit or 99)]
+    repeats = max(1, min(int(repeats or 1), 5))
     ir = _active_ir()
     arms = [("A", "基线 Text2SQL(仅英文表列)", lambda it: _ctx_naive(), False),
             ("B", "图谱增强(中文语义+关系)", lambda it: _ctx_graph(it["q"]), False),
             ("C", "本体全量(语义+关系+指标+术语+本体约束校验)", lambda it: build_context(it["q"]), True)]
-    EVAL_JOB.update(running=True, done=0, total=len(items) * len(arms),
+    EVAL_JOB.update(running=True, done=0, total=len(items) * len(arms) * repeats,
                     started=time.strftime("%Y-%m-%d %H:%M:%S"), progress="启动", **_source_record_fields())
     out = {"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "model": model or (_task_model("plan") or "(引擎缺省)"),
-           "items": [], "dataset_type": "business_reference" if database_scope.same_path(_active_db(), DB) else "source_count_smoke", **_source_record_fields(), "arms": {k: {"name": nm, "exec": 0, "correct": 0, "cite": 0, "gate_block": 0} for k, nm, _, _ in arms}}
+           "repeats": repeats, "items": [],
+           "rules": {"correct": "题集声明的判定:数值按容差,字符串按等值或包含",
+                     "strict": "按参考 SQL 的结果:行作为集合相等,列序有意义",
+                     "columns": "列容忍:可多带列、列序可不同,参考的每一列都能对上",
+                     "ceiling": "参考答案所需的表和列都出现在给模型的上下文里"},
+           "dataset_type": "business_reference" if database_scope.same_path(_active_db(), DB) else "source_count_smoke",
+           **_source_record_fields(),
+           "arms": {k: {"name": nm, "exec": 0, "correct": 0, "cite": 0, "gate_block": 0} for k, nm, _f, _g in arms}}
+    refs: dict = {}
     for it in items:
+        ref = _eval_reference(it, refs)
+        if ref and ref["rows"]:                  # 参考值以参考 SQL 当场的结果为准:演示库重建后题集里的数值曾长期过时
+            v = _eval_value({"rows": ref["rows"]})
+            if v is not None:
+                it = {**{k: x for k, x in it.items() if k not in ("gold", "gold_str")}, **({"gold_str": v} if isinstance(v, str) else {"gold": v})}
         row = {"id": it["id"], "q": it["q"], "gold": it.get("gold", it.get("gold_str")), "arms": {}}
         for key, _nm, ctx_fn, gated in arms:
-            EVAL_JOB["progress"] = f'{it["id"]} · {key} 组'
-            sql, err = _eval_sql_gen(it["q"], ctx_fn(it), model=model)
-            rec = {"sql": sql or "", "err": err, "exec": False, "value": None, "correct": False, "cite": False, "gate_block": False}
-            if sql and sql_is_readonly(sql):
-                if gated:
-                    okv, why = _validate_sql_ontology(sql, ir)
-                    if not okv:
-                        rec["gate_block"] = True; rec["err"] = "本体约束拦截:" + why
-                        out["arms"][key]["gate_block"] += 1
-                if not rec["gate_block"]:
-                    try:
-                        data = q(sql, attach_uploads=True)
-                        rec["exec"] = True; rec["value"] = _eval_value(data)
-                        rec["correct"] = _eval_judge(it, rec["value"])
-                    except Exception as e:
-                        rec["err"] = str(e)[:120]
-                sql_l = (sql or "").lower()
-                rec["cite"] = all(t.lower() in sql_l for t in it.get("gold_tables") or [])
-            a = out["arms"][key]
-            a["exec"] += 1 if rec["exec"] else 0
-            a["correct"] += 1 if rec["correct"] else 0
-            a["cite"] += 1 if rec["cite"] else 0
-            row["arms"][key] = rec
-            EVAL_JOB["done"] += 1
+            ctx = ctx_fn(it)
+            needs = (ref or {}).get("needs") or []
+            arm = {"ceiling": qa_eval_stats.in_context(ctx if isinstance(ctx, str) else str(ctx),
+                                                      it.get("gold_tables") or [], needs), "runs": []}
+            for rep in range(repeats):
+                EVAL_JOB["progress"] = f'{it["id"]} · {key} 组' + (f" · 第 {rep + 1}/{repeats} 次" if repeats > 1 else "")
+                sql, err = _eval_sql_gen(it["q"], ctx, model=model)
+                rec = {"sql": sql or "", "err": err, "exec": False, "value": None, "correct": False, "cite": False,
+                       "gate_block": False, "strict": None, "columns": None}
+                if sql and sql_is_readonly(sql):
+                    if gated:
+                        okv, why = _validate_sql_ontology(sql, ir)
+                        if not okv:
+                            rec["gate_block"] = True; rec["err"] = "本体约束拦截:" + why
+                    if not rec["gate_block"]:
+                        try:
+                            data = q(sql, attach_uploads=True)
+                            rec["exec"] = True; rec["value"] = _eval_value(data)
+                            rec["correct"] = _eval_judge(it, rec["value"])
+                            if ref:
+                                rec.update(qa_eval_stats.compare((ref["columns"], ref["rows"]), (data["columns"], data["rows"])))
+                        except Exception as e:
+                            rec["err"] = str(e)[:120]
+                    sql_l = (sql or "").lower()
+                    rec["cite"] = all(t.lower() in sql_l for t in it.get("gold_tables") or [])
+                if ref and rec["strict"] is None:
+                    rec["strict"] = rec["columns"] = False
+                arm["runs"].append(rec)
+                EVAL_JOB["done"] += 1
+            first = arm["runs"][0]
+            row["arms"][key] = {**first, **arm}            # 首次运行的字段保留在原位置,界面与旧结果照旧可读
         out["items"].append(row)
+        _eval_summarize(out, [k for k, *_r in arms])
         _atomic_json(_eval_result_file(), out)          # 每题落盘:中断也保留已跑部分
     out["n"] = len(items)
+    _eval_summarize(out, [k for k, *_r in arms])
     _atomic_json(_eval_result_file(), out)
     EVAL_JOB.update(running=False, progress="完成")
+
+
+def _eval_summarize(out, keys):
+    """按题先对重复取平均,再汇总各组;组间差按题配对给出区间。旧的计数字段按平均正确率取整,便于沿用。"""
+    rows = out["items"]
+    summary: dict = {"arms": {}, "pairs": {}}
+    per_q: dict = {}
+    for k in keys:
+        s = qa_eval_stats.arm_summary(rows, k)
+        runs = [r for row in rows for r in ((row["arms"].get(k) or {}).get("runs") or [])]
+        for field in ("strict", "columns"):
+            judged = [r for r in runs if r.get(field) is not None]
+            s[field] = (sum(1 for r in judged if r[field]) / len(judged)) if judged else None
+        summary["arms"][k] = s
+        per_q[k] = qa_eval_stats.question_means({row["id"]: [r.get("correct") for r in (row["arms"].get(k) or {}).get("runs") or []]
+                                                 for row in rows})
+        a = out["arms"][k]
+        mean = lambda f, k=k: sum(sum(1 for r in (row["arms"].get(k) or {}).get("runs") or [] if r.get(f))      # noqa: E731
+                                  / max(1, len((row["arms"].get(k) or {}).get("runs") or [])) for row in rows)
+        a.update(exec=round(mean("exec")), correct=round(mean("correct")), cite=round(mean("cite")),
+                 gate_block=round(mean("gate_block")))
+    ids = [row["id"] for row in rows]
+    for x, y in (("C", "A"), ("C", "B"), ("B", "A")):
+        if x in per_q and y in per_q:
+            summary["pairs"][f"{x}-{y}"] = qa_eval_stats.paired_ci([per_q[x][i] for i in ids], [per_q[y][i] for i in ids])
+    out["summary"] = summary
+
 
 @app.get("/api/eval/set")
 def eval_set():
@@ -6073,12 +6228,18 @@ def eval_run():
     """启动一轮三组评测(后台线程,每题落盘);可传 model 覆盖本轮出 SQL 的模型、limit 限题数。"""
     if EVAL_JOB["running"]: return jsonify({"error": "评测已在运行", "job": EVAL_JOB}), 409
     if not _eval_items(): return jsonify({"error": "题集缺失(benchmark/qa_set.json)"}), 500
-    body = request.json or {}
-    model = (body.get("model") or "").strip()[:80] or None
+    body = request.get_json(silent=True)
+    body = body if isinstance(body, dict) else {}
+    model = (str(body.get("model") or "")).strip()[:80] or None
     limit = body.get("limit")
+    if limit is not None and (not isinstance(limit, int) or isinstance(limit, bool) or limit < 1):
+        return jsonify({"error": "limit 须为正整数", "field": "limit"}), 400
+    repeats = body.get("repeats", 1)
+    if not isinstance(repeats, int) or isinstance(repeats, bool) or not 1 <= repeats <= 5:
+        return jsonify({"error": "repeats 须为 1 到 5 的整数", "field": "repeats"}), 400
     ctx = contextvars.copy_context()
-    threading.Thread(target=lambda: ctx.run(_run_eval_thread, model=model, limit=limit), daemon=True).start()
-    return jsonify({"ok": True, "total": len(_eval_items()[: (limit or 99)]) * 3}), 202
+    threading.Thread(target=lambda: ctx.run(_run_eval_thread, model=model, limit=limit, repeats=repeats), daemon=True).start()
+    return jsonify({"ok": True, "total": len(_eval_items()[: (limit or 99)]) * 3 * repeats, "repeats": repeats}), 202
 
 @app.get("/api/eval/status")
 def eval_status():
@@ -6099,14 +6260,22 @@ def _load_fb():
 
 @app.post("/api/chat/feedback")
 def chat_feedback():
-    """问数/诊断结果反馈落库:needs_work 进入本体迭代候选队列(评审页处理)——P24 证据回流环"""
-    body = request.json or {}
+    """问数/诊断结果反馈落库:needs_work 进入待处理列表(评审页处理)。
+    DR-137 同时保存当时所用的本体和答案的数据摘要,供之后回放比对。"""
+    body = request.get_json(silent=True)
+    body = body if isinstance(body, dict) else {}
     verdict = body.get("verdict")
     if verdict not in ("useful", "needs_work"): return jsonify({"error": "verdict 须为 useful/needs_work"}), 400
+    results = body.get("results")
+    if results is not None and (not isinstance(results, list) or len(results) > feedback_replay.MAX_RESULTS):
+        return jsonify({"error": f"results 须为不超过 {feedback_replay.MAX_RESULTS} 个结果的列表", "field": "results"}), 400
+    graphs = [str(g) for g in body.get("graphs") or [] if isinstance(g, str) and not _bad_gkey(g)][:30] \
+        if isinstance(body.get("graphs"), list) else []
     item = {"id": uuid.uuid4().hex[:8], "ts": time.strftime("%Y-%m-%d %H:%M"),
             "question": str(body.get("question") or "")[:300], "verdict": verdict,
             "comment": str(body.get("comment") or "")[:500], "mode": str(body.get("mode") or "chat")[:16],
-            "resolved": False, **_source_record_fields()}
+            "resolved": False, "graphs": graphs, "snapshot": feedback_replay.snapshot(results or []),
+            **_source_record_fields()}
     with _WRITE_LOCK:
         fb = _load_fb(); fb.insert(0, item); _atomic_json(QA_FB, fb[:500])
     return jsonify({"ok": True, "id": item["id"]})
@@ -6127,8 +6296,98 @@ def chat_feedback_resolve():
         if _active_source() and not _source_record_matches(it):
             return jsonify({"error": "反馈属于另一数据库，请切换来源后处理"}), 409
         it["resolved"] = True; it["resolved_ts"] = time.strftime("%Y-%m-%d %H:%M")
+        last = (it.get("replays") or [None])[0]
+        # DR-137 记下处理依据:最近一次回放答案已变化,还是没有回放、由人直接标记
+        it["resolution"] = ("replay_" + last["outcome"]) if last else "manual"
         _atomic_json(QA_FB, fb)
-    return jsonify({"ok": True})
+    return jsonify({"ok": True, "resolution": it["resolution"]})
+
+
+def _feedback_ask(question, graphs):
+    """按当前本体重新问一次(DR-137),走与界面相同的问数接口,不读缓存。"""
+    headers = {}
+    src = _active_source()
+    if src and src.get("id"):
+        headers["X-DataMind-Source"] = src["id"]
+    body = {"q": question, "cache_policy": "bypass"}
+    if graphs:
+        body["graphs"] = graphs
+    r = app.test_client().post("/api/chat", json=body, headers=headers)
+    return r.get_json(silent=True) or {"error": f"HTTP {r.status_code}"}
+
+
+def _feedback_replay_item(it):
+    resp = _feedback_ask(it.get("question") or "", it.get("graphs") or [])
+    after = feedback_replay.snapshot(resp.get("results") or [])
+    cmp = feedback_replay.compare(it.get("snapshot") or [], after)
+    failed = [s.get("info") for s in resp.get("steps") or [] if isinstance(s, dict) and s.get("ok") is False][:5]
+    rec = {"ts": time.strftime("%Y-%m-%d %H:%M"), **cmp, "explain": feedback_replay.explain(it.get("verdict"), cmp["outcome"]),
+           "answer_id": (resp.get("answer_record") or {}).get("answer_id"), "results": after,
+           "failed_steps": [str(x)[:200] for x in failed], "error": str(resp.get("error") or "")[:200]}
+    return rec
+
+
+@app.post("/api/chat/feedback/replay")
+def chat_feedback_replay():
+    """回放一条反馈(DR-137):按当前本体重新问,比对答案的数据与反馈时是否一致,结果记入该反馈。"""
+    body = request.get_json(silent=True)
+    fid = (body if isinstance(body, dict) else {}).get("id", "")
+    it = next((x for x in _load_fb() if x["id"] == fid), None)
+    if not it: return jsonify({"error": "反馈不存在"}), 404
+    if _active_source() and not _source_record_matches(it):
+        return jsonify({"error": "反馈属于另一数据库，请切换来源后处理"}), 409
+    rec = _feedback_replay_item(it)
+    with _WRITE_LOCK:
+        fb = _load_fb()
+        cur = next((x for x in fb if x["id"] == fid), None)
+        if cur is not None:
+            cur["replays"] = [rec, *(cur.get("replays") or [])][:5]
+            _atomic_json(QA_FB, fb)
+    observability.count("qa.feedback_replay", outcome=rec["outcome"])
+    return jsonify(rec)
+
+
+def _feedback_regression():
+    """把当前数据库下保存了答案的「有用」反馈逐条回放(DR-137),本体修改后用来检查有没有退化。"""
+    items = [x for x in _load_fb() if x.get("verdict") == "useful" and (not _active_source() or _source_record_matches(x))]
+    out = {"replayed": 0, "same": 0, "no_answer": 0, "skipped": 0, "changed": []}
+    for it in items[:100]:
+        if not it.get("snapshot"):
+            out["skipped"] += 1
+            continue
+        rec = _feedback_replay_item(it)
+        out["replayed"] += 1
+        if rec["outcome"] == "changed":
+            out["changed"].append({"id": it["id"], "question": it["question"], "matched": rec["matched"], "of": rec["of"]})
+        elif rec["outcome"] in ("same", "no_answer"):
+            out[rec["outcome"]] += 1
+    return out
+
+
+FB_JOB = {"running": False, "result": None, "started": ""}
+
+
+@app.post("/api/chat/feedback/regression")
+def chat_feedback_regression():
+    """后台回放全部「有用」反馈;GET 同一地址查看进度与结果。"""
+    if FB_JOB["running"]: return jsonify({"error": "回放已在运行"}), 409
+    FB_JOB.update(running=True, result=None, started=time.strftime("%Y-%m-%d %H:%M:%S"))
+    ctx = contextvars.copy_context()
+
+    def run():
+        try:
+            FB_JOB["result"] = _feedback_regression()
+        except Exception as e:                   # noqa: BLE001
+            FB_JOB["result"] = {"error": f"{type(e).__name__}: {str(e)[:120]}"}
+        finally:
+            FB_JOB["running"] = False
+    threading.Thread(target=lambda: ctx.run(run), daemon=True).start()
+    return jsonify({"ok": True}), 202
+
+
+@app.get("/api/chat/feedback/regression")
+def chat_feedback_regression_status():
+    return jsonify(FB_JOB)
 
 @app.post("/api/chat/save_skill")
 def chat_save_skill():
@@ -6365,6 +6624,11 @@ def build_upload():
                         if len(rows) < 2 or not rows[0]:
                             raise ValueError("CSV/TSV 需要表头和至少一行数据")
                         t = _upload_table_name(fn)
+                        # DR-135 多级表头:合并单元格导出的两三行表头展开成一行列名;上层是期间时另存一张长表
+                        import header_parse
+                        _hp = header_parse.parse(rows)
+                        if _hp["header_rows"] > 1:
+                            rows = [_hp["columns"]] + _hp["data"]
                         hdr = [re.sub(r"[^A-Za-z0-9_一-鿿]", "_", h) or f"c{i}" for i, h in enumerate(rows[0])]
                         if len({h.casefold() for h in hdr}) != len(hdr):
                             raise ValueError("CSV 列名重复或清洗后冲突，请修改表头")
@@ -6391,11 +6655,25 @@ def build_upload():
                         # 数值列里的空串存成 NULL(否则一格空值就让整列按文本比较);文本列原样保留
                         data = [[(v.strip() or None) if ty != "TEXT" else v for v, ty in zip(row, types)] for row in rows[1:]]
                         con.executemany(f'INSERT INTO "{t}" VALUES ({",".join("?"*len(hdr))})', data)
+                        long_t = None
+                        if _hp["long"] and not any(_upload_table_name(os.path.basename(o)[8:]).casefold() == (t + "_long").casefold()
+                                                   for o in glob.glob(os.path.join(WORK, "uploads_*")) if os.path.abspath(o) != path):
+                            long_t = t + "_long"
+                            lhdr = [re.sub(r"[^A-Za-z0-9_一-鿿]", "_", h) or f"c{i}" for i, h in enumerate(_hp["long"]["columns"])]
+                            lrows = _hp["long"]["rows"]
+                            ltypes = _column_types(lrows, len(lhdr)) if lrows else ["TEXT"] * len(lhdr)
+                            con.execute(f'DROP TABLE IF EXISTS "{long_t}"')
+                            con.execute(f'CREATE TABLE "{long_t}" ({", ".join(chr(34)+h+chr(34)+" "+ty for h, ty in zip(lhdr, ltypes))})')
+                            con.executemany(f'INSERT INTO "{long_t}" VALUES ({",".join("?"*len(lhdr))})',
+                                            [[(v.strip() or None) if ty != "TEXT" else v for v, ty in zip(r, ltypes)] for r in lrows])
                         _atomic_bytes(path, raw)
                         wrote_file = True
                         con.commit()
                         saved.append(fn)
                         info = {"table": t, "rows": len(rows) - 1}
+                        if _hp["header_rows"] > 1:
+                            info["header_rows"] = _hp["header_rows"]
+                            if long_t: info["long_table"] = long_t
                         if encoding != "utf-8": info["encoding"] = encoding
                         if delimiter not in (",", "\t") or (delimiter == "\t" and not fn.lower().endswith(".tsv")):
                             info["delimiter"] = delimiter
@@ -6442,6 +6720,10 @@ def build_asset_delete():
                 con = sqlite3.connect(UPLOAD_DB)
                 try:
                     con.execute(f'DROP TABLE IF EXISTS "{t}"')
+                    in_use_now = {_upload_table_name(os.path.basename(p)[8:]).casefold()
+                                  for p in glob.glob(os.path.join(WORK, "uploads_*")) if p.lower().endswith((".csv", ".tsv"))}
+                    if (t + "_long").casefold() not in in_use_now:      # 多级表头另存的长表(DR-135)
+                        con.execute(f'DROP TABLE IF EXISTS "{t}_long"')
                     old = _upload_table_name_legacy(fn)
                     in_use = {_upload_table_name(os.path.basename(p)[8:]).casefold()
                               for p in glob.glob(os.path.join(WORK, "uploads_*"))
@@ -9008,6 +9290,46 @@ def _attach_data_catalog(db, ir):
         con.close()
 
 
+def _attach_arithmetic(db, ir):
+    """算术见证(DR-135):本体各表里逐行成立的「一列 = 两列的和、差、积、商」,记入 ir["arithmetic"];
+    构建时提出的派生公式与某条见证一致时,标为已核验并附上见证。→ (见证条数, 核验通过的派生公式数)"""
+    import arithmetic_witness
+    tables = list(dict.fromkeys(o["table"] for o in ir.get("objects") or []
+                                if isinstance(o, dict) and o.get("table") and o.get("kind") != "action"))
+    con = ro_connect(db)
+    deadline = time.monotonic() + 30
+    con.set_progress_handler(lambda: int(time.monotonic() > deadline), 1000)
+    found = []
+    try:
+        for t in tables[:300]:
+            if time.monotonic() > deadline:
+                break
+            found += arithmetic_witness.discover(con, t)
+    finally:
+        con.close()
+    ir["arithmetic"] = found
+    verified = 0
+    for d in ir.get("derived") or []:
+        if not isinstance(d, dict):
+            continue
+        w = arithmetic_witness.supports(d.get("formula"), found)
+        ev = d.setdefault("evidence", {})
+        if w and w["matched"] == w["rows"]:
+            ev["formula_verified"] = True
+            ev["arithmetic_witness"] = {k: w[k] for k in ("table", "column", "formula", "rows", "matched")}
+            verified += 1
+        else:
+            ev.setdefault("formula_verified", False)
+    return len(found), verified
+
+
+def _arithmetic_lines(ir, tables):
+    """问数上下文:所给表里经数据核验的算术关系。"""
+    import arithmetic_witness
+    lines = arithmetic_witness.brief(ir.get("arithmetic") or [], tables)
+    return ("列之间的算术关系(逐行数据核验,可直接使用对应的列):\n" + "\n".join(lines[:12])) if lines else ""
+
+
 def _concept_ask(prompt, deadline):
     from agent_runtime import get_runtime, available
     for drv in _drv_order():
@@ -9020,7 +9342,30 @@ def _concept_ask(prompt, deadline):
     return ""
 
 
-def _workload_concepts(db, ir, workload):
+def _data_grounding(db, ir, workload, ask=None, deadline=None):
+    """DR-136 按数据命名与术语接地:取值画像 → 业务问题口径说明里的「用语 → 列」(数据核验)→ 按取值反查 →
+    为代码名或空泛名的表与列起候选名(理由须能在数据里找到)。改动写入 ir;返回供概念步骤使用的画像摘要与概念记录。"""
+    import data_grounding
+    deadline = deadline or (time.monotonic() + 240)
+    con = ro_connect(db)
+    try:
+        con.execute("BEGIN")
+        tables = [o["table"] for o in ir.get("objects") or [] if o.get("table") and o.get("kind") != "action"]
+        prof = data_grounding.profile_db(con, [t for t in dict.fromkeys(tables)
+                                                if con.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (t,)).fetchone()])
+        eg = data_grounding.evidence_groundings(con, workload or [], prof)
+        vg = data_grounding.value_groundings(con, workload or [], data_grounding.value_index(con, prof)) if workload else []
+    finally:
+        con.close()
+    ask = ask or (lambda prompt: _concept_ask(prompt, deadline))
+    naming = data_grounding.name_objects(ir, prof, eg["groundings"], vg, ask, llm_json.extract)
+    ir["term_groundings"] = {"evidence": eg["groundings"], "value": vg, "rejected": eg["rejected"][:200],
+                             "naming_rejected": naming["rejected"][:200]}
+    return {"brief": data_grounding.profile_brief(prof, data_grounding.labels_of(ir)), "naming": naming,
+            "groundings": eg["groundings"], "values": vg, "concepts": data_grounding.as_concepts(eg["groundings"])}
+
+
+def _workload_concepts(db, ir, workload, brief=None):
     import copy
     import data_catalog
     import workload_concepts
@@ -9032,7 +9377,7 @@ def _workload_concepts(db, ir, workload):
         previous_stale = workload_concepts.refresh(con, ir, deadline=deadline)
         out = workload_concepts.build(con, ir, data_catalog.doc_dictionary(con), workload,
                                       lambda prompt: _concept_ask(prompt, deadline), llm_json.extract,
-                                      deadline=deadline)
+                                      deadline=deadline, brief=brief)
         out["previous_stale"] = previous_stale
         out['layers'] = workload_concepts.merge_layers(ir, out)
         return out
@@ -9597,10 +9942,21 @@ def build_inquire():
             yield push("data_catalog", True, f'字段文档 {_nd} 张表 · 名称—取值目录 {_nc} 张表；多单位保留歧义')
         except Exception as exc:
             yield push("data_catalog", False, f'目录整理未完成:{type(exc).__name__}；不影响关系产物')
+        _grounded = None
+        try:                                     # DR-136 按数据命名与术语接地(名称不透明、没有字典的库)
+            _grounded = _data_grounding(db, ir, workload)
+            _gn = _grounded["naming"]
+            yield push("data_grounding", True,
+                       f"数据接地 · 口径说明里的用语 → 列 {len(_grounded['groundings'])} 条(数据核验)· 取值反查 {len(_grounded['values'])} 条 · "
+                       f"候选名:表 {_gn['tables_named']}/{_gn['tables_considered']}、列 {_gn['columns_named']} · "
+                       f"理由在数据里找不到而未采用 {len(_gn['rejected'])} 条")
+        except Exception as exc:                 # noqa: BLE001
+            yield push("data_grounding", False, f"数据接地未完成:{type(exc).__name__};不影响关系产物")
+        _gbrief = _grounded["brief"] if _grounded and _grounded["naming"]["tables_considered"] else None
         if workload or any(ir.get(k) for k in ('concepts', 'themes', 'derived', 'caveats')):
             yield sse({'type': 'status', 'text': '核验业务概念与主题的取数依据；业务含义仍需确认…'})
             _wc = None
-            for _item in _bounded_stream(lambda _log: _workload_concepts(db, ir, workload), 250):
+            for _item in _bounded_stream(lambda _log: _workload_concepts(db, ir, workload, _gbrief), 250):
                 if _item[0] == 'tick':
                     yield sse({'type': 'tick', 'elapsed': round(_t.time() - t0, 1)})
                 elif _item[0] == 'done':
@@ -9617,6 +9973,14 @@ def build_inquire():
             else:
                 ir['semantic_report'] = {**workload_meta, 'questions_processed': 0, 'incomplete': True}
                 yield push("workload_concepts", False, '概念核验超时或失败；保留已有内容，不声明完成')
+        if _grounded and _grounded["concepts"]:  # DR-136 数据核验成立的「用语 → 列」并入概念层(与模型提议去重)
+            import workload_concepts as _wcm
+            ir.update(_wcm.merge_layers(ir, {"concepts": _grounded["concepts"]}))
+        try:                                     # DR-135 算术见证:与派生公式核对;失败不影响关系产物
+            _na, _nv = _attach_arithmetic(db, ir)
+            yield push("arithmetic_witness", True, f"算术见证 · {_na} 条列间关系逐行成立 · 派生公式核验通过 {_nv} 条")
+        except Exception as exc:                 # noqa: BLE001
+            yield push("arithmetic_witness", False, f"算术见证未完成:{type(exc).__name__};不影响关系产物")
         _wm = {**workload_meta, 'questions_processed': (ir.get('semantic_report') or {}).get('questions_processed', 0)}
         ir['build_manifest']['workload'] = _wm
         ir['build_history'][-1]['workload'] = _wm

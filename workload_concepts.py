@@ -175,7 +175,7 @@ def schema_brief(con, ir, docs):
     return '\n'.join(lines)
 
 
-def build(con, ir, docs, questions, ask, extract, deadline=None):
+def build(con, ir, docs, questions, ask, extract, deadline=None, brief=None):
     qs, meta = normalize_questions(questions)
     result = {**meta, "concepts": [], "themes": [], "derived": [], "caveats": [], "rejected": [],
               "proposed": 0, "accepted": 0, "dropped": 0, "batches_failed": 0, "questions_processed": 0}
@@ -183,13 +183,15 @@ def build(con, ir, docs, questions, ask, extract, deadline=None):
     tables = {t.casefold(): t for t in schema(con) if t.casefold() in bound}
     entity_of = {o['table'].casefold(): (o.get('catalog') or {}).get('entity_col')
                  for o in ir.get('objects') or [] if o.get('table')}
-    brief, seen, pending = schema_brief(con, ir, docs), set(), []
+    # DR-136 有取值画像时用画像摘要(类型、去重数、常见取值),代替只有列名的清单
+    limit = 90000 if brief else 24000
+    brief, seen, pending = brief or schema_brief(con, ir, docs), set(), []
     for i in range(0, len(qs), BATCH):
         if deadline is not None and time.monotonic() >= deadline:
             break
         batch = qs[i:i + BATCH]
         try:
-            d = extract(ask(PROMPT.format(schema=brief[:24000], questions='\n'.join(batch))) or '')
+            d = extract(ask(PROMPT.format(schema=brief[:limit], questions='\n'.join(batch))) or '')
             if not isinstance(d, dict):
                 raise ValueError("model_response_not_object")
         except Exception:
@@ -302,7 +304,9 @@ def context(question, ir, k=8):
             elif key == 'themes':
                 desc = f"{c.get('table')}.{c.get('name_col')}: " + ', '.join(x['code'] for x in c.get('codes', []))
             else:
-                desc = str(c.get('formula') or '') + ';公式尚未执行核验'
+                w = (c.get('evidence') or {}).get('arithmetic_witness') if (c.get('evidence') or {}).get('formula_verified') else None
+                desc = str(c.get('formula') or '') + (f";数据核验:等于 {w['table']}.{w['column']}({w['matched']}/{w['rows']} 行)"
+                                                      if w else ';公式尚未执行核验')
             state = '业务含义人工确认' if c.get('status') in ('asserted', 'certified') else '业务含义待确认'
             lines.append(f"- {c.get('name')}({state}): {c.get('definition') or ''} → {desc}")
             count += 1

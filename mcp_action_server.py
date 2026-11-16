@@ -126,6 +126,17 @@ TOOLS = [
                         "required": ["name"], "additionalProperties": False},
         "annotations": {"readOnlyHint": True, "openWorldHint": False},
     },
+    {
+        "name": "check_sql",
+        "title": "执行前检查 SQL",
+        "description": "执行前按本体检查一条 SQL:只读、表在本体范围内、连接键落在已验证或人工确认的关系上、关联后的聚合不重复计数、表与列存在。只检查不执行;返回结论、原因和每个连接条件对应的关系状态。不通过时按原因改写后再提交。",
+        "inputSchema": {"type": "object",
+                        "properties": {"sql": {"type": "string", "description": "单条 SELECT / WITH 查询"},
+                                       "graph": {"type": "string", "description": "图谱键,缺省为当前数据库的默认本体"},
+                                       "tables": {"type": "array", "items": {"type": "string"}, "description": "可选:进一步限定可读的表"}},
+                        "required": ["sql"], "additionalProperties": False},
+        "annotations": {"readOnlyHint": True, "openWorldHint": False},
+    },
 ]
 
 
@@ -224,6 +235,17 @@ def call_tool(name, args):
         rows = d2.get("data", {}).get("rows") or []
         head = [f"指标「{d2.get('metric')}」 单位:{d2.get('unit') or '-'} 计算规则:{d2.get('agg_note')} SQL:{d2.get('sql')}"]
         return "\n".join(head + [json.dumps(r, ensure_ascii=False) for r in rows[:60]]), False
+    if name == "check_sql":
+        payload = {"sql": str(args.get("sql") or "")}
+        if args.get("graph"): payload["graphs"] = [str(args["graph"])]
+        if isinstance(args.get("tables"), list): payload["tables"] = [str(t) for t in args["tables"]]
+        d, err = _http("POST", "/api/ont/check", payload)
+        if err: return f"检查失败:{err}", True
+        joins = "; ".join(f"{j['left']} = {j['right']}({j.get('relation') or '未经验证'})" for j in d.get("joins") or [])
+        lines = ["通过" if d.get("ok") else "不通过:" + (d.get("reason") or "原因未知")]
+        if d.get("tables"): lines.append("读到的表:" + "、".join(d["tables"]))
+        if joins: lines.append("连接条件:" + joins)
+        return "\n".join(lines), False
     return f"未知工具:{name}", True
 
 

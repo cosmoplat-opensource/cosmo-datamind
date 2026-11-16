@@ -1296,6 +1296,101 @@
       "tests": [
         "tests/meta/test_ui_safety.py::test_file_upload_inputs_and_controls_have_names_and_edges_have_a_legend"
       ]
+    },
+    {
+      "id": "ONT-CHECK-01",
+      "criterion": "对外的 SQL 本体检查接口与 MCP 只读工具:与问数执行前相同的校验,只检查不执行;返回结论、原因、读到的表和每个连接条件对应的关系状态",
+      "tests": [
+        "tests/unit/test_ont_check_api.py::test_a_join_on_a_verified_relation_passes_and_names_the_relation",
+        "tests/unit/test_ont_check_api.py::test_an_unverified_join_and_a_fan_out_are_rejected_with_the_reason",
+        "tests/unit/test_ont_check_api.py::test_missing_tables_columns_and_writes_are_reported_without_running_anything",
+        "tests/unit/test_ont_check_api.py::test_the_selected_tables_narrow_the_scope",
+        "tests/unit/test_ont_check_api.py::test_bad_requests_are_rejected",
+        "tests/unit/test_mcp_action_server.py::test_check_sql_it_is_read_only_and_reports_the_verdict",
+        "tests/unit/test_mcp_action_server.py::test_check_sql_a_passing_query_lists_the_relations_it_relies_on",
+        "tests/unit/test_mcp_action_server.py::test_check_sql_upstream_errors_are_tool_errors"
+      ]
+    },
+    {
+      "id": "QA-EVAL-02",
+      "criterion": "问数评测:各组同一套比对规则,另给结果集严格一致与列容忍两种口径;可重复 1–5 次,组间差按题配对给 95% 区间(固定种子);统计候选上限与上限内的正确率",
+      "tests": [
+        "tests/unit/test_qa_eval_stats.py::test_result_sets_compare_as_sets_with_numeric_rounding",
+        "tests/unit/test_qa_eval_stats.py::test_the_column_tolerant_reading_allows_extra_and_reordered_columns",
+        "tests/unit/test_qa_eval_stats.py::test_paired_interval_is_over_questions_and_reproducible",
+        "tests/unit/test_qa_eval_stats.py::test_repeats_are_averaged_per_question_before_pairing",
+        "tests/unit/test_qa_eval_stats.py::test_the_ceiling_checks_the_tables_and_columns_the_reference_needs",
+        "tests/unit/test_qa_eval_stats.py::test_reference_columns_are_read_from_the_reference_sql",
+        "tests/unit/test_qa_eval_stats.py::test_summary_reports_rates_ceiling_and_selection_given_ceiling",
+        "tests/unit/test_qa_eval_stats.py::test_an_evaluation_run_repeats_compares_by_one_rule_and_reports_intervals_and_ceiling",
+        "tests/unit/test_qa_eval_stats.py::test_the_run_endpoint_accepts_a_bounded_number_of_repeats"
+      ]
+    },
+    {
+      "id": "ARITH-WITNESS-01",
+      "criterion": "算术见证:逐行成立的「一列 = 两列的和差积商」记为证据,多数行为 0 的不算,同一等式只记一次;与见证一致的派生公式标为已核验;问数上下文列出所选表的算术关系",
+      "tests": [
+        "tests/unit/test_arithmetic_witness.py::test_row_level_identities_are_found_with_their_coverage",
+        "tests/unit/test_arithmetic_witness.py::test_trivial_and_coincidental_relations_are_not_reported",
+        "tests/unit/test_arithmetic_witness.py::test_a_relation_that_fails_on_some_rows_is_not_a_witness",
+        "tests/unit/test_arithmetic_witness.py::test_too_few_rows_give_no_witness",
+        "tests/unit/test_arithmetic_witness.py::test_a_proposed_formula_is_checked_against_the_witnesses",
+        "tests/unit/test_arithmetic_witness.py::test_brief_lines_for_the_question_context",
+        "tests/unit/test_arithmetic_witness.py::test_columns_that_are_mostly_zero_do_not_make_a_witness",
+        "tests/unit/test_arithmetic_witness.py::test_the_build_records_witnesses_and_verifies_matching_derived_formulas",
+        "tests/unit/test_arithmetic_witness.py::test_the_question_context_states_verified_formulas_and_the_check_status",
+        "tests/unit/test_arithmetic_witness.py::test_the_question_context_lists_arithmetic_relations_of_the_shown_tables",
+        "tests/unit/test_arithmetic_witness.py::test_a_formula_with_more_terms_is_not_supported_by_a_two_column_witness"
+      ]
+    },
+    {
+      "id": "UPLOAD-HEADER-01",
+      "criterion": "上传 CSV 的多级表头:识别 2~3 行表头并展开为一行列名;上层是期间时另存长表;删除资料时一并删除;单行表头不受影响",
+      "tests": [
+        "tests/unit/test_header_parse.py::test_header_rows_are_detected_and_combined",
+        "tests/unit/test_header_parse.py::test_a_single_header_row_is_left_alone",
+        "tests/unit/test_header_parse.py::test_year_like_numbers_in_the_upper_row_still_count_as_header",
+        "tests/unit/test_header_parse.py::test_period_columns_are_also_given_in_long_form",
+        "tests/unit/test_header_parse.py::test_no_long_form_when_the_upper_level_is_not_a_period",
+        "tests/unit/test_header_parse.py::test_three_header_rows",
+        "tests/unit/test_header_parse.py::test_a_data_table_whose_second_row_is_text_is_not_mistaken_for_a_header",
+        "tests/unit/test_upload_multilevel.py::test_upload_creates_the_wide_and_the_long_table",
+        "tests/unit/test_upload_multilevel.py::test_deleting_the_upload_also_removes_the_long_table",
+        "tests/unit/test_upload_multilevel.py::test_a_plain_csv_is_unchanged"
+      ]
+    },
+    {
+      "id": "DATA-GROUNDING-01",
+      "criterion": "名称不透明库的数据接地:取值画像、口径说明(含中文写法)里的用语 → 列经数据核验后保留、按取值反查、按画像起候选名且理由须在数据里找到;核验成立的用语以候选概念并入概念层;不需要时不调用模型",
+      "tests": [
+        "tests/unit/test_data_grounding.py::test_profile_has_types_distinct_and_common_values",
+        "tests/unit/test_data_grounding.py::test_evidence_clause_becomes_verified_grounding_with_filter",
+        "tests/unit/test_data_grounding.py::test_evidence_filter_hitting_no_rows_is_rejected",
+        "tests/unit/test_data_grounding.py::test_shared_key_code_grounds_in_every_table_that_has_it",
+        "tests/unit/test_data_grounding.py::test_value_lookup_finds_the_column_holding_a_question_literal",
+        "tests/unit/test_data_grounding.py::test_names_need_a_basis_found_in_the_data",
+        "tests/unit/test_data_grounding.py::test_generic_name_detection_does_not_touch_real_names",
+        "tests/unit/test_data_grounding.py::test_table_codes_and_bare_numbers_are_not_a_basis",
+        "tests/unit/test_data_grounding.py::test_chinese_evidence_clauses_are_grounded_too",
+        "tests/unit/test_data_grounding.py::test_grounded_terms_become_candidate_concepts_in_the_product_shape",
+        "tests/unit/test_data_grounding.py::test_the_build_step_profiles_grounds_and_names_opaque_tables",
+        "tests/unit/test_data_grounding.py::test_without_opaque_names_or_questions_the_step_does_not_call_the_model",
+        "tests/unit/test_data_grounding.py::test_the_concept_step_receives_the_profile_instead_of_the_bare_column_list"
+      ]
+    },
+    {
+      "id": "FEEDBACK-REPLAY-01",
+      "criterion": "反馈时保存答案的数据摘要;回放后按数据(不按 SQL 文本)比对一致与否,含义随反馈类型说明;「有用」反馈可批量回放检查退化;标记已处理时记下依据",
+      "tests": [
+        "tests/unit/test_feedback_replay.py::test_a_snapshot_keeps_a_digest_and_a_bounded_sample",
+        "tests/unit/test_feedback_replay.py::test_the_same_data_written_differently_counts_as_the_same_answer",
+        "tests/unit/test_feedback_replay.py::test_changed_and_missing_answers",
+        "tests/unit/test_feedback_replay.py::test_what_an_outcome_means_depends_on_the_kind_of_feedback",
+        "tests/unit/test_feedback_replay.py::test_feedback_keeps_the_answer_and_a_replay_compares_against_it",
+        "tests/unit/test_feedback_replay.py::test_resolving_records_whether_a_replay_backed_it",
+        "tests/unit/test_feedback_replay.py::test_useful_feedback_is_replayed_as_a_regression_set",
+        "tests/unit/test_feedback_replay.py::test_bad_inputs_are_rejected"
+      ]
     }
   ]
 }

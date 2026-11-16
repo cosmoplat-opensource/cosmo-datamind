@@ -494,7 +494,7 @@ def _rpc(i,m,p=None,timeout=15):
 _ri=_rpc(1,"initialize",{"protocolVersion":"2024-11-05"})
 chk("MCP initialize", _ri["result"]["serverInfo"]["name"]=="datamind-actions")
 _rt=_rpc(2,"tools/list")
-chk("MCP 工具面=6(唯一写 invoke_action;DR-055 三个语义工具只读)", [t["name"] for t in _rt["result"]["tools"]]==["list_actions","invoke_action","get_action_status","search_concept","describe_metric","query_metric"] and [t["name"] for t in _rt["result"]["tools"] if not t.get("annotations",{}).get("readOnlyHint")]==["invoke_action"])
+chk("MCP 工具面=7(唯一写 invoke_action;DR-055 三个语义工具与 DR-134 的 check_sql 只读)", [t["name"] for t in _rt["result"]["tools"]]==["list_actions","invoke_action","get_action_status","search_concept","describe_metric","query_metric","check_sql"] and [t["name"] for t in _rt["result"]["tools"] if not t.get("annotations",{}).get("readOnlyHint")]==["invoke_action"])
 _rc=_rpc(3,"tools/call",{"name":"list_actions","arguments":{}})
 chk("MCP list_actions", "动作类型" in _rc["result"]["content"][0]["text"])
 _rc=_rpc(4,"tools/call",{"name":"invoke_action","arguments":{"action_id":"report_repair","operator":"agent-回归","params":{"equipment":"E","symptom":"","urgency":"低"}}})

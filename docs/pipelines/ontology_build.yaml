@@ -157,11 +157,23 @@ nodes:
     desc: 只读字段文档和名称—取值目录，保存全量统计/目录截断/各单位及实体覆盖；不声明业务认证
     sse_steps: [data_catalog]
 
+  - id: data_grounding
+    type: optional_llm_proposal
+    code: "server.py:_data_grounding / data_grounding.py:profile_db / evidence_groundings / value_groundings / name_objects"
+    desc: 取值画像；业务问题口径说明里的「用语 → 列」经数据核验后保留；按取值反查所在列；代码名或空泛名的表与列由模型起候选名，理由须在该表数据里找到；名称不透明时概念步骤改用画像摘要
+    sse_steps: [data_grounding]
+
   - id: workload_concepts
     type: optional_llm_proposal
     code: "server.py:_workload_concepts / workload_concepts.py:build / refresh"
     desc: 可选业务问题分批处理最多1000条；同文CQ排除，SQL只读核验，候选定义/公式进入人审；超时保留失败状态
     sse_steps: [workload_concepts]
+
+  - id: arithmetic_witness
+    type: deterministic_check
+    code: "server.py:_attach_arithmetic / arithmetic_witness.py:discover / supports"
+    desc: 各表里逐行成立的「一列 = 两列的和、差、积、商」记为算术见证；与派生公式一致的标为已核验；多数行为 0 的关系不计
+    sse_steps: [arithmetic_witness]
 
   - id: metric_adjudication
     type: deterministic_check
