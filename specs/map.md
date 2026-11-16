@@ -34,6 +34,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 ## 索引
 
 ### 决定 / Decisions
+- [DR-133 · 校验改用语法解析、没有本体时如实提示、教程重跑](decisions/DR-133-sql-parser-no-ontology-tutorial.md)
 - [DR-132 · 同名别名不能绕过校验、界面可访问性、用语统一](decisions/DR-132-shadowed-aliases-accessibility-terms.md)
 - [DR-131 · 重复计数检查按查询块判断、界面的失败态与转义、文档与当前界面对齐](decisions/DR-131-fanout-per-block-ui-failures-docs.md)
 - [DR-130 · 两张子表互相放大、指标的汇总方式、查数结果三态、实际取数日期](decisions/DR-130-join-multiplication-query-states-data-date.md)
@@ -170,7 +171,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - `test_all.py` — 系统级回归，源码定义 548 个检查点。
 
 ## 现状校准
-- 计数(2026-11-15):140 路由 / 548 集成检查点 / 1799 项 pytest 测试 / 场景回归 51 项;决策记录到 DR-132。
+- 计数(2026-11-15):140 路由 / 548 集成检查点 / 1817 项 pytest 测试 / 场景回归 51 项;决策记录到 DR-133。
   隔离环境下 `scripts/check.py --suite all` 的结果:集成 536 通过、6 项条件跳过(无上游引擎),界面走查 47 通过,界面实操 48 通过、3 项跳过(未配置外部模型端点)。
 - 计数(2026-10-12):**140 路由**(server.py 113 + bp_engine 5 + bp_actions 8 + bp_metrics 3 + bp_semantic 2 + bp_decision 9)/ **548 集成断言** /
   **1279 项 pytest 测试**（多数据库功能复核）/ DR-001…DR-082、DR-093…DR-095 · IR-001…IR-013。

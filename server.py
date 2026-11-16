@@ -31,6 +31,7 @@ import observability    # DR-066:构建与问数的结构化追踪与指标(ODD)
 import code_contracts   # DR-065:代码契约(代码包 / docx 读取,连接与码表契约)
 import concept_hints    # DR-064:概念层线索(表族 / 类别拆分 / 版本重复)
 import key_links        # DR-069:按键名补提关系候选(跨轮、关联表、多态引用)
+import sql_structure  # DR-133:SELECT 语句的结构解析,供本体约束校验按作用域取表、别名与连接条件
 import relation_triage  # DR-073:候选分流(自动驳回 / 暂缓 / 待审排序)
 import intent_check     # DR-026/073:双盲意图核对、答非所问时重写与澄清
 import build_cleaning   # DR-063:构建后自动复核、问数时套用清洗规则
@@ -2319,6 +2320,12 @@ def _validate_sql_ontology(sql, ir, strict=False):
     ctes = {m.group(1).lower() for m in re.finditer(r"(?:\bwith|,)\s*(%s)\s+as\s*\(" % _SQL_IDENT, s_tab, re.I)}
     ctes |= _derived_table_aliases(s_tab)        # FROM / JOIN (SELECT ...) x:x 和 CTE 一样是查询结果,不是本体里的表
     blocks = _query_blocks(s_tab)                # 每个字符属于哪个查询块:重复计数按块各自判断(DR-131)
+    # DR-133 先按语法解析:表、别名、连接条件和聚合都按作用域取。解析不了的写法退回下面基于正则的近似做法。
+    parsed = None
+    try:
+        parsed = sql_structure.analyze(sql or "")
+    except sql_structure.ParseError:
+        observability.count("qa.sql_parse_fallback")
     known = {(o.get("table") or "").lower() for o in ir.get("objects", []) if o.get("table")}
     if not strict:
         try: known |= {t["name"].lower() for t in table_list()}
@@ -2338,8 +2345,14 @@ def _validate_sql_ontology(sql, ir, strict=False):
         # 同一个别名在别的查询块里又指向 CTE 时,不覆盖它指向真实表的那次绑定(否则键校验按 CTE 跳过)
         if not (al in alias and alias[al] not in ctes and full in ctes):
             alias[al] = full
+    if parsed:
+        ctes = set()                             # CTE 与子查询别名已由解析器按作用域排除,used 里只有真实的表
+        for core in parsed["cores"]:
+            for al, full in core["tables"]:
+                used.append(full); alias.setdefault(al, full)
+                block_tables.setdefault(core["id"], []).append((al, full))
     # FROM 后面可以直接跟括号:FROM (a JOIN b ON ...);括号里是子查询时由 _derived_table_aliases 处理
-    for m in re.finditer(r"\b(?:from|join)(?:\s+|\s*(?=\())(?:\(\s*)*(up\.)?(%s)(?:\s+(?:as\s+)?(%s))?" % (_SQL_IDENT, _SQL_IDENT), s_tab, re.I):
+    for m in () if parsed else re.finditer(r"\b(?:from|join)(?:\s+|\s*(?=\())(?:\(\s*)*(up\.)?(%s)(?:\s+(?:as\s+)?(%s))?" % (_SQL_IDENT, _SQL_IDENT), s_tab, re.I):
         pre, t, al = m.group(1), m.group(2).lower(), (m.group(3) or "").lower()
         if t in ("select", "with", "values"): continue
         if al in _SQL_KW: al = ""
@@ -2411,17 +2424,30 @@ def _validate_sql_ontology(sql, ir, strict=False):
     # 连接条件不只写在 ON 后面:带括号的 ON、ON 里 AND 之后的第二个等式、逗号连接或 CROSS JOIN 配 WHERE,
     # 此前都不经过键校验(DR-098)。这里看语句里所有「别名.列 = 别名.列」;不紧跟 ON 的等式只在两侧
     # 都是已登记的别名且不是同一个别名时才当作连接条件,同一张表内的列比较不算。
-    for m in re.finditer(r"(?<![\w.])(%s)\.(%s)\s*=\s*(%s)\.(%s)\b" % ((_SQL_IDENT,) * 4), s_tab, re.I):
+    pairs = []                                   # (别名a, 列a, 别名b, 列b, 表a, 表b, 查询块, 两个别名是否都在本块的 FROM 里)
+    if parsed:
+        for pr in parsed["pairs"]:
+            if (not pr["on"] and pr["a"] == pr["b"]) or pr["ta"].startswith("up.") or pr["tb"].startswith("up."):
+                continue
+            pairs.append((pr["a"], pr["ca"], pr["b"], pr["cb"], pr["ta"], pr["tb"], pr["core"], pr["joined"]))
+        for u in parsed["usings"]:               # JOIN … USING (列) / NATURAL JOIN:按本体里登记的同名键还原连接条件
+            for eal, etab in u["earlier"]:
+                cols = u["cols"] if u["cols"] is not None else sorted(
+                    {c1 for (t1, c1, t2, c2) in relkeys if t1 == u["table"] and t2 == etab and c1 == c2})
+                pairs += [(u["alias"], c, eal, c, u["table"], etab, u["core"], True)
+                          for c in cols if (u["table"], c, etab, c) in relkeys]
+    for m in () if parsed else re.finditer(r"(?<![\w.])(%s)\.(%s)\s*=\s*(%s)\.(%s)\b" % ((_SQL_IDENT,) * 4), s_tab, re.I):
         a, ca, b, cb = (m.group(i).lower() for i in (1, 2, 3, 4))
         if not _ON_BEFORE.search(s_tab[max(0, m.start() - 16):m.start()]) and (
                 a == b or a not in alias or b not in alias):
             continue
         ta, tb = alias.get(a, a), alias.get(b, b)
         if ta in ctes or tb in ctes or ta.startswith("up.") or tb.startswith("up."): continue
+        _here = {al for al, _full in block_tables.get(blocks[m.start()]) or []}
+        # 关联子查询里引用外层别名的等式是筛选条件,不产生重复行
+        pairs.append((a, ca, b, cb, ta, tb, blocks[m.start()], a in _here and b in _here))
+    for a, ca, b, cb, ta, tb, _blk, _joined in pairs:
         # 父侧识别先于同名键放行:同名等值 JOIN 免验键,但扇出与键名无关
-        _blk = blocks[m.start()]
-        _here = {al for al, _full in block_tables.get(_blk) or []}
-        _joined = a in _here and b in _here          # 关联子查询里引用外层别名的等式是筛选条件,不产生重复行
         _a_is_child = parents.get((ta, ca, tb, cb))
         parent = _a_is_child or parents.get((tb, cb, ta, ca))
         if parent and not _joined:
@@ -2479,8 +2505,9 @@ def _validate_sql_ontology(sql, ir, strict=False):
     #    DR-131 按查询块判断:子查询、CTE 各看各的连接;EXISTS / IN 子查询里的等式不产生重复行。
     #    聚合的内容同时用到两张表的列时(子表数量 × 父表单价、按父表状态做条件求和),行粒度仍是子表,不拦。
     owners_of: dict = {}                         # 查询块 → {只属于其中一张表的列: 那张表}
-    for fn, args, pos in _aggregate_calls(s_tab):
-        blk = blocks[pos]
+    calls = ([(fn, re.sub(r"'(?:[^']|'')*'", "''", args), core) for fn, args, core in parsed["aggs"]] if parsed
+             else [(fn, args, blocks[pos]) for fn, args, pos in _aggregate_calls(s_tab)])
+    for fn, args, blk in calls:
         jp, kids_of = joined_parents.get(blk) or {}, child_edges.get(blk) or {}
         multiplied = {}                          # 别名 → (这张表, 让它重复的另一张表, 共同的父表, 是否多对多)
         for _pa, kids in kids_of.items():

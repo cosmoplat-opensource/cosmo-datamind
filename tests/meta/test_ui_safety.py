@@ -88,3 +88,14 @@ def test_no_text_is_smaller_than_12_pixels():
     assert not {k: v for k, v in small.items() if v}
     svg = {name: sorted(set(re.findall(r'font-size="(?:[0-9]|1[01])(?:\.\d+)?"', src))) for name, src in UI_FILES.items()}
     assert not {k: v for k, v in svg.items() if v}
+
+
+def test_file_upload_inputs_and_controls_have_names_and_edges_have_a_legend():
+    """DR-133:附件上传用键盘能打开;没有 label 的输入框补上可读名称;关系状态的线型有图例。"""
+    assert 'id="dq_file"' in INDEX and 'id="dq_file" multiple accept=".csv,.tsv,.txt,.xlsx,.xls" style="display:none"' not in INDEX
+    assert 'class="vh"' in INDEX and ".vh{" in INDEX and "label:focus-within" in INDEX
+    scan = INDEX[INDEX.index("function a11yScan"):][:1400]
+    assert "input,select,textarea" in scan and "placeholder" in scan and "aria-label" in scan
+    legend = INDEX[INDEX.index("$('#g_legend').innerHTML"):][:900]
+    assert "EST[" in legend and "<svg" in legend
+    assert INDEX.count('<span class="dot ${dot}" aria-hidden="true"></span>') == 2

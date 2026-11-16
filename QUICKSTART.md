@@ -81,7 +81,7 @@ curl -s http://127.0.0.1:8092/api/ont/runtimes
 
 ## 4. 为自己的数据建本体
 
-内置示例本体描述的是内置示例库,不适用于别的库,所以要先为当前的库建一个:
+内置示例本体描述的是内置示例库,不适用于别的库。当前的库还没有本体时,问数页会提示先构建。先为它建一个:
 
 ```bash
 python3 quick_build.py demo.db workdir/built_myfirst.json 我的第一张本体
@@ -184,7 +184,7 @@ python3 quick_build.py demo.db workdir/built_myfirst.json 我的第一张本体
 | `current_ready` 为 false | 没有配 `DATAMIND_LLM_BASE` 或 `DATAMIND_LLM_KEY` | 看响应里的 `hint`;端点写到 `/v4` 或 `/v1` 为止 |
 | 配了 Key,答案却来自内置模板 | 没有设 `CLAW_DRIVER=openai` | 补上后重启 |
 | `llm_plan` 只返回几十个字符 | 推理型模型超时,回复被截断 | 调大 `DATAMIND_LLM_TIMEOUT` |
-| SQL 报 `no such column` | 还没有为当前的库建本体,问数用的是内置示例本体 | 完成第 4 步,再从本体图谱页进入问数 |
+| 提示「当前数据库尚无可查询的本体」 | 还没有为当前的库建本体 | 完成第 4 步,再从本体图谱页进入问数 |
 | 没配模型,问数没有图表 | 内置模板只针对内置示例库 | 配置模型,或改用内置示例库 |
 | 大量关系是候选状态 | 证据不足以标为已验证 | 到「本体评审」页逐条审核,通过后成为人工断言(`asserted`) |
 

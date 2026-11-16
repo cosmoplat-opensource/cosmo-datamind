@@ -214,3 +214,26 @@ def test_union_branches_and_correlated_subqueries_are_separate_blocks():
     ok, why = _v("SELECT 1 FROM dim_customer c UNION ALL SELECT SUM(c.credit_limit) FROM fact_sales_order o "
                  "JOIN dim_customer c ON o.cust_id = c.cust_id")
     assert not ok and "扇出风险" in why
+
+
+# ── DR-133:按语法解析后,USING / NATURAL JOIN 也能看出父侧;解析不了的写法退回原来的做法 ─────────────
+
+def test_using_and_natural_joins_are_seen_as_joins():
+    ok, why = _v("SELECT SUM(c.credit_limit) FROM fact_sales_order o JOIN dim_customer c USING (cust_id)")
+    assert not ok and "扇出风险" in why
+    ok, why = _v("SELECT SUM(c.credit_limit) FROM fact_sales_order o NATURAL JOIN dim_customer c")
+    assert not ok and "扇出风险" in why
+    assert _v("SELECT SUM(o.amount) FROM fact_sales_order o JOIN dim_customer c USING (cust_id)")[0]
+    ok, why = _p("SELECT SUM(t.hours) FROM orders o JOIN tasks t USING (order_no) JOIN occupancy q USING (order_no)")
+    assert not ok and "扇出风险" in why
+
+
+def test_a_statement_the_parser_cannot_read_falls_back_to_the_previous_checks(monkeypatch):
+    import sql_structure
+    def boom(_sql):
+        raise sql_structure.ParseError("不支持")
+    monkeypatch.setattr(sql_structure, "analyze", boom)
+    ok, why = _v("SELECT o.id FROM fact_sales_order o JOIN dim_customer c ON o.amount = c.credit_limit")
+    assert not ok and "JOIN 键" in why
+    ok, why = _v("SELECT SUM(c.credit_limit) FROM fact_sales_order o JOIN dim_customer c ON o.cust_id = c.cust_id")
+    assert not ok and "扇出风险" in why

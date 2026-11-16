@@ -1263,6 +1263,39 @@
         "tests/unit/test_chart_series_ui.py::test_chart_series",
         "tests/unit/test_chart_series_ui.py::test_a_failed_graph_listing_does_not_replace_the_cached_list"
       ]
+    },
+    {
+      "id": "QA-GATE-PARSE-01",
+      "criterion": "SELECT 语句按语法解析:CTE 与子查询别名按作用域排除,别名在子查询里重用不改变外层的绑定,关联子查询的引用解析到外层,UNION 各支分块,USING / NATURAL JOIN 作为连接条件,字符串与注释不干扰;解析不了的语句拒绝解析并由校验退回原做法",
+      "tests": [
+        "tests/unit/test_sql_structure.py::test_tables_and_aliases_of_a_plain_join",
+        "tests/unit/test_sql_structure.py::test_cte_and_derived_names_are_not_tables_and_are_scoped",
+        "tests/unit/test_sql_structure.py::test_an_alias_reused_in_a_subquery_does_not_change_the_outer_binding",
+        "tests/unit/test_sql_structure.py::test_correlated_references_resolve_to_the_outer_block_and_are_not_joins",
+        "tests/unit/test_sql_structure.py::test_union_branches_are_separate_blocks",
+        "tests/unit/test_sql_structure.py::test_using_and_natural_joins_are_reported",
+        "tests/unit/test_sql_structure.py::test_aggregate_arguments_keep_expressions_and_drop_subqueries",
+        "tests/unit/test_sql_structure.py::test_strings_comments_and_quoted_names_do_not_confuse_the_parser",
+        "tests/unit/test_sql_structure.py::test_what_cannot_be_parsed_is_rejected_not_guessed",
+        "tests/unit/test_sql_structure.py::test_other_select_shapes_parse",
+        "tests/unit/test_fanout_gate.py::test_using_and_natural_joins_are_seen_as_joins",
+        "tests/unit/test_fanout_gate.py::test_a_statement_the_parser_cannot_read_falls_back_to_the_previous_checks"
+      ]
+    },
+    {
+      "id": "DATA-CONTEXT-02",
+      "criterion": "主库上没有适用的本体时默认本体为空:问数提示先构建本体,指标、评审、编辑等接口返回 422 和明确提示;没有配置数据库时仍可浏览内置示例本体",
+      "tests": [
+        "tests/unit/test_database_scope.py::test_builtin_ontologies_that_do_not_describe_the_main_database_are_not_its_default",
+        "tests/unit/test_database_scope.py::test_asking_on_a_main_database_without_an_ontology_says_so_instead_of_using_the_sample"
+      ]
+    },
+    {
+      "id": "UI-A11Y-02",
+      "criterion": "附件上传可用键盘打开;没有 label 的输入框有可读名称;图谱图例包含关系状态并带文字;装饰性的色点不进入可访问性树",
+      "tests": [
+        "tests/meta/test_ui_safety.py::test_file_upload_inputs_and_controls_have_names_and_edges_have_a_legend"
+      ]
     }
   ]
 }

@@ -1,5 +1,7 @@
 # DR-132 · 同名别名不能绕过校验，界面可访问性，用语统一
 
+> 2026-11-16：「没有做的」里的语法解析、文件上传与输入框名称、没有本体时的提示已由 [DR-133](DR-133-sql-parser-no-ontology-tutorial.md) 处理。
+
 状态：已实现。日期：2026-11-15。
 关联：QA-GATE-ALIAS-01、QA-FANOUT-04、QA-STATUS-03、ANSWER-RECORD-05、UI-A11Y-01、UI-CHART-02；DR-098、DR-129、DR-130、DR-131。
 

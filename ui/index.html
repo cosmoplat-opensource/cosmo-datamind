@@ -74,6 +74,7 @@ pre{background:#f6f8fe;border:1px solid #eef2ff;border-radius:8px;padding:10px;f
 .cn-row{display:flex;align-items:center;gap:8px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:7px;cursor:pointer;transition:.15s;background:#fff}
 .cn-row:hover{border-color:var(--acc);background:#FafBff} .cn-row.on{border-color:var(--acc);background:#EEF2FF;box-shadow:inset 2px 0 0 var(--acc)}
 .cn-row .dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;background:#c9ced9}.cn-row .dot.ok{background:#22c55e}.cn-row .dot.off{background:#e0a63a}
+.vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}label:focus-within{outline:2px solid var(--acc);outline-offset:2px}
 .cn-row .nm{font-weight:600;font-size:13px}.cn-row .mt{font-size:12px;color:var(--muted)}
 .cn-row .x{margin-left:auto;color:#c0c6d0;font-size:13px}.cn-row .x:hover{color:#b91c1c}
 @media(max-width:820px){.vz-grid{grid-template-columns:1fr}}
@@ -430,7 +431,7 @@ a{color:var(--acc)}
       <div class="dq-tools">
        <span class="dq-sel" id="dq_skill_chip" onclick="dqOpenSkill()"><span id="dq_skill_lbl">技能 demo-deep-qa</span></span>
        <span class="dq-sel" id="dq_src_chip" onclick="dqOpenDs()"><span id="dq_src_lbl">数据源: 全部</span></span>
-       <label class="dq-icon" title="上传 Excel/CSV/TXT">附件<input type="file" id="dq_file" multiple accept=".csv,.tsv,.txt,.xlsx,.xls" style="display:none" onchange="dqUpload(this)"></label>
+       <label class="dq-icon" title="上传 Excel/CSV/TXT">附件<input type="file" id="dq_file" class="vh" multiple accept=".csv,.tsv,.txt,.xlsx,.xls" aria-label="上传 Excel、CSV 或 TXT 附件" onchange="dqUpload(this)"></label>
        <span style="flex:1"></span>
        <button class="dq-send" id="chat_btn" onclick="ask()">发送</button>
       </div>
@@ -881,7 +882,10 @@ async function drawGraph(k){const g=await J('/api/graph/'+k);
  J('/api/ont/completeness/'+k).then(cp=>{if(cp&&cp.score!=null&&GRAPH_CUR.key===k){const c=cp.score>=70?'#16a34a':cp.score>=40?'#d97706':'#b91c1c';
   $('#g_info').innerHTML=`${g.nodes.length} 节点 · ${g.edges.length} 关系 · <span title="元数据覆盖：定义${cp.objects.withDefinition}/${cp.objects.total}、反例${cp.objects.withCounterExample}、标准关系映射${cp.relations.grounded}/${cp.relations.total}；不代表本体完备性" style="color:${c};font-weight:600">元数据覆盖 ${cp.score}%</span>`;}}).catch(()=>{});
  const kset=[...new Set(g.nodes.map(n=>n.kind))].filter(x=>x);
- $('#g_legend').innerHTML=kset.map(x=>`<span class="tag" style="background:${KCOL(x)}22;color:${KCOL(x)}">${KNM(x)}</span>`).join('');
+ // 图例:对象类型(色块)+ 图中出现的关系状态(线型与颜色,附文字,不只靠颜色区分)
+ const sset=[...new Set(g.edges.map(e=>e.status))].filter(x=>EST[x]);
+ $('#g_legend').innerHTML=kset.map(x=>`<span class="tag" style="background:${KCOL(x)}22;color:${KCOL(x)}">${KNM(x)}</span>`).join('')
+  +sset.map(x=>`<span class="muted" style="font-size:12px;margin-left:8px;white-space:nowrap"><svg width="26" height="8" aria-hidden="true" style="vertical-align:middle"><line x1="1" y1="4" x2="25" y2="4" stroke="${EST[x].c}" stroke-width="2"${EST[x].d?` stroke-dasharray="${EST[x].d.join(' ')}"`:''}/></svg> ${EST[x].n}</span>`).join('');
  if(gChart){try{gChart.destroy();}catch(_){}gChart=null;}
  const hl=(GRAPH_HL&&GRAPH_HL.key===k)?GRAPH_HL:null;
  const hb=$('#g_hlbar');
@@ -1916,7 +1920,7 @@ async function bcSources(){const d=await J('/api/build/sources').catch(()=>({sou
    :s.kind==='api'?esc(`API 数据源 · ${s.ready?'已取数':'未取数'}`)
    :(window.bcSampleable&&bcSampleable(s))?`外部库 · 已登记 · <a href="#" onclick="event.stopPropagation();event.preventDefault();bcSampleDlg(${jsAttr(s.id)})">只读抽样</a>后可构建`
    :esc('外部库 · 已登记 · 只读抽样目前支持 MySQL/Doris');
-  return `<div class="bc-srow${on}" onclick="bcSelectSrc(${jsAttr(s.id)})"><span class="dot ${dot}"></span>
+  return `<div class="bc-srow${on}" onclick="bcSelectSrc(${jsAttr(s.id)})"><span class="dot ${dot}" aria-hidden="true"></span>
    <div style="flex:1;min-width:0"><div class="nm">${esc(s.name)}</div><div class="mt">${meta}</div></div>${del}</div>`;}).join('');
  // 辅助资料；未解析格式只登记来源。
  const as=d.assets||[];$('#bc_asset_n').textContent='('+as.length+')';
@@ -2138,7 +2142,7 @@ async function cnLoad(){const d=await J('/api/build/sources').catch(()=>({source
   const fetchBtn=s.kind==='api'?`<button class="ghost" style="font-size:12px;padding:2px 8px" onclick="event.stopPropagation();cnApiFetch(${jsAttr(s.id)},this)">取数</button>`:'';
   const clickable=(s.ready&&s.kind==='sqlite')||(!s.builtin&&s.kind!=='sqlite'&&s.kind!=='api');   // C7 外部库可点击→实连浏览
   return `<div class="cn-row ${CN_SRC===s.id?'on':''}" ${clickable?`onclick="cnBrowse(${jsAttr(s.id)},${jsAttr(s.name)})"`:'style="cursor:default"'}>
-   <span class="dot ${dot}"></span><div style="flex:1;min-width:0"><div class="nm">${esc(s.name)}</div><div class="mt">${esc(meta)}</div></div>${fetchBtn}${del}</div>`;}).join('');a11yScan();}
+   <span class="dot ${dot}" aria-hidden="true"></span><div style="flex:1;min-width:0"><div class="nm">${esc(s.name)}</div><div class="mt">${esc(meta)}</div></div>${fetchBtn}${del}</div>`;}).join('');a11yScan();}
 async function cnBrowse(id,name){CN_SRC=id;cnLoad();$('#cn_preview').style.display='none';
  $('#cn_browse').innerHTML=`<h3>${esc(name)} · 数据表 <span class="muted" id="cnb_n">加载中…</span></h3><div id="cnb_list" class="scroll" style="max-height:calc(100vh - 320px)"></div>`;
  const d=await J('/api/conn/tables?src='+encodeURIComponent(id)).catch(e=>({error:''+e,tables:[]}));
@@ -2337,7 +2341,13 @@ function routeHash(){const h=location.hash.slice(1);
 addEventListener('hashchange',routeHash);
 // 可访问性：让 onclick 的 div/span 可 Tab 聚焦 + Enter/Space 触发(键盘可操作)
 const A11Y_SEL=`.nav,.dq-mode,.eg,.pill:not(#rt_pill),.dq-sel,.dq-modal .mt,.dq-modal-hd .x,span[title="关闭"],.dq-att .x,.vz-card .x,.cn-row .x,tr[onclick],#cat_tags .tag,.nav-group .gh,.dq-collapse,.dq-hist .it,.ds-card,.sk-card,.dq-react span,.dq-tab .c,.bc-eg[onclick],.bc-srow[onclick],.bc-hist-pop .it,.bc-hist-pop .del,.bc-srow .x,.bc-srow .nm[onclick],.bc-chip .x,.cn-row`;
-function a11yScan(){document.querySelectorAll(A11Y_SEL).forEach(el=>{if(!el.hasAttribute('tabindex')){el.tabIndex=0;if(!el.hasAttribute('role'))el.setAttribute('role','button');}if(el.getAttribute('title')&&!el.hasAttribute('aria-label'))el.setAttribute('aria-label',el.getAttribute('title'));});}
+function a11yScan(){
+ // 没有 label 的输入框:用占位文字、提示文字或同一行前面的文字作为可读名称
+ document.querySelectorAll('input,select,textarea').forEach(el=>{if(el.type==='hidden'||el.hasAttribute('aria-label')||el.hasAttribute('aria-labelledby')||(el.labels&&el.labels.length))return;
+  const td=el.closest('td'),prev=td&&td.previousElementSibling;
+  const name=(el.getAttribute('placeholder')||el.getAttribute('title')||(prev&&prev.textContent)||(el.previousElementSibling&&el.previousElementSibling.textContent)||'').trim().slice(0,40);
+  if(name)el.setAttribute('aria-label',name);});
+ document.querySelectorAll(A11Y_SEL).forEach(el=>{if(!el.hasAttribute('tabindex')){el.tabIndex=0;if(!el.hasAttribute('role'))el.setAttribute('role','button');}if(el.getAttribute('title')&&!el.hasAttribute('aria-label'))el.setAttribute('aria-label',el.getAttribute('title'));});}
 a11yScan();
 addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches(A11Y_SEL)){e.preventDefault();e.target.click();}});
 // 其余动态渲染的内容(表格行、附件、弹窗页签):合并成 300 毫秒一次补扫,对话流高频更新时也只扫一遍
