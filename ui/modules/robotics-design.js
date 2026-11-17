@@ -20,6 +20,7 @@ function createController(o={}){
  sendMessage(){if(!s.messageText.trim()||active(s.session))return;return act('messages',{text:s.messageText,expected_stage:s.session.stage});},
  confirmClasses(){return act('confirm-classes',{snapshot_sha256:s.session?.snapshot_sha256});},editClasses(){return act('edit-classes');},editProperties(){return act('edit-properties');},
  confirmSchema(){return act('confirm-schema',{snapshot_sha256:s.session?.snapshot_sha256});},retry(){if(!['failed','interrupted'].includes(s.session?.status))return;return act('retry',{failed_run_id:s.session.run_id});},
+ showCurrent(){s.selectedRevision=null;notify();},
  async openRevision(revision){const token=epoch;try{const row=await read(fetch,prefix+encodeURIComponent(id)+'/revisions/'+revision);if(!dead&&token===epoch){s.selectedRevision=row;notify();}}catch(e){if(!dead&&token===epoch){s.error={message:e.message};notify();}}},
  dispose(){dead=true;epoch++;clear();}};
 }
@@ -72,11 +73,14 @@ function repairSuggestion(context,stage){
 }
 function mount(host,sid,options={}){const esc=g.RoboticsAssets.escape;let c,context=null,contextError='',dead=false,editorPhase=null;
  const contextual=!!(options.checkId||options.adaptationId),abort=new AbortController();
+ let studio=null,latest=null,studioHistory=null;
+ const graphHost=document.createElement('section'),historyBox=document.createElement('label'),historySelect=document.createElement('select');
+ historyBox.textContent='设计修订';historySelect.setAttribute('aria-label','设计修订');historyBox.append(historySelect);
  const input=document.createElement('textarea');input.setAttribute('aria-label','建模要求');input.maxLength=20000;
  const editor=document.createElement('details'),body=document.createElement('div'),hint=document.createElement('div'),heading=document.createElement('div'),progress=document.createElement('div'),actions=document.createElement('div');
  editor.className='rd-editor';progress.className='rd-progress';progress.hidden=true;progress.dataset.testid='design-progress';progress.setAttribute('role','status');progress.setAttribute('aria-live','polite');progress.setAttribute('aria-atomic','true');
  actions.className='rd-confirm-bar';actions.dataset.testid='design-confirmation';actions.hidden=true;
- host.replaceChildren(heading,progress,actions,hint,editor,body);editor.append(input);const summary=document.createElement('summary'),label=document.createElement('label');label.textContent='建模要求';label.htmlFor='rd_message';input.id='rd_message';editor.prepend(summary,label);const send=document.createElement('button');send.textContent=contextual?'确认并发送建模要求':'发送建模要求';editor.append(send);
+ host.replaceChildren(heading,progress,actions,hint,historyBox,graphHost,editor,body);editor.append(input);const summary=document.createElement('summary'),label=document.createElement('label');label.textContent='建模要求';label.htmlFor='rd_message';input.id='rd_message';editor.prepend(summary,label);const send=document.createElement('button');send.textContent=contextual?'确认并发送建模要求':'发送建模要求';editor.append(send);
  const startProperties=document.createElement('button');startProperties.textContent='开始关系与属性设计';editor.append(startProperties);
  input.oninput=()=>c.setMessage(input.value);send.onclick=()=>c.sendMessage();
  function complete(){if(!context)return;c.setMessage(repairSuggestion(context,c.snapshot().session?.stage));input.focus();input.setSelectionRange(input.value.length,input.value.length);}
@@ -86,8 +90,9 @@ function mount(host,sid,options={}){const esc=g.RoboticsAssets.escape;let c,cont
   if(text.length<suggestion.length&&suggestion.startsWith(text)&&input.selectionStart===text.length&&input.selectionEnd===text.length){e.preventDefault();complete();}
  };
  startProperties.onclick=()=>{if(!c.snapshot().messageText.trim())c.setMessage('请基于已确认的类别、建模要求和上传的 XML，设计对象关系与数据属性；只采用来源支持的信息，不明确的内容列为待明确项。');return c.sendMessage();};
- function render(s){const row=s.session;if(!row){heading.textContent=s.error?.message||'正在读取设计…';body.replaceChildren();progress.hidden=true;actions.hidden=true;editor.hidden=true;return;}
+ function render(s){latest=s;const row=s.session;if(!row){heading.textContent=s.error?.message||'正在读取设计…';body.replaceChildren();progress.hidden=true;actions.hidden=true;editor.hidden=true;return;}
  host.dataset.testid='robotics-design';host.dataset.sessionId=sid;host.dataset.stage=row.stage;host.dataset.revision=row.revision;host.dataset.status=row.status;
+ syncStudio(s);
  const needsProperties=row.stage==='properties'&&row.status==='awaiting_input';
  const selected=s.selectedRevision,result=selected?.state?.result||row.result,ref=row.output_asset_ref,waiting=active(row),failed=['failed','interrupted'].includes(row.status);
  const awaiting=row.status==='awaiting_confirmation',suggesting=context&&!awaiting&&row.stage!=='abox';
@@ -108,17 +113,44 @@ function mount(host,sid,options={}){const esc=g.RoboticsAssets.escape;let c,cont
  body.innerHTML=`<p class="rd-stage-guide">${esc(guidance)}</p>
  ${needsProperties&&!selected?`${context?'':'<section role="status" class="rd-next-step"><h4>类别已确认，下一步设计关系与属性</h4><p>确认类别只固定类别范围。请在下方补充关系与属性设计要求，或直接点击“开始关系与属性设计”，按已确认类别和 XML 继续。</p></section>'}<details><summary>查看已确认的类别</summary>${presentation({classes:row.class_confirmation?.classes||result?.classes||[]},esc)}</details>`:result?`${result.reply?`<details class="rd-design-details"><summary>查看模型设计说明</summary><p>${esc(result.reply)}</p></details>`:''}${presentation(result,esc,reviewOptions)}`:''}
  ${selected?`<section data-testid="robotics-design-diff"><h4>与当前设计的差异</h4><details open><summary>历史设计</summary>${presentation(selected.state.result,esc)}</details><details open><summary>当前设计</summary>${presentation(row.result,esc)}</details></section>`:''}
- <div>${!waiting&&row.revision?'<button data-op="editClasses">返回类别修改</button>':''}${failed?'<button data-op="retry">重试设计</button>':''}</div>
+ <div>${!selected&&!waiting&&row.revision?'<button data-op="editClasses">返回类别修改</button>':''}${failed?'<button data-op="retry">重试设计</button>':''}</div>
  ${ref?`<p>设计候选已保存 · 执行未验证</p><a href="${esc(g.RoboticsAssets.versionLink(ref.ontology_id,ref.version_id))}">查看本体候选</a>`:''}`;
- host.querySelectorAll('[data-op]').forEach(b=>{b.disabled=s.busy;b.onclick=()=>c[b.dataset.op]();});
+ [...actions.querySelectorAll('[data-op]'),...body.querySelectorAll('[data-op]')].forEach(b=>{b.disabled=s.busy;b.onclick=()=>c[b.dataset.op]();});
  const phase=[row.stage,row.status,row.revision].join(':');
  if(phase!==editorPhase){editor.open=!awaiting||!!s.messageText.trim();editorPhase=phase;}
  summary.hidden=!awaiting;summary.textContent='继续提修改意见';
- editor.hidden=waiting||row.stage==='abox';startProperties.hidden=contextual||!needsProperties||!!s.messageText.trim();startProperties.disabled=s.busy;send.hidden=!contextual&&needsProperties&&!s.messageText.trim();send.disabled=s.busy||row.stage==='abox'||(contextual&&!s.messageText.trim());input.placeholder=awaiting?'可继续输入修改意见':suggesting?repairSuggestion(context,row.stage)+'（Tab 填入）':contextual&&!context&&!contextError?'正在读取修订建议…':needsProperties?'可选：填写希望补充的关系、参数或关注点；留空可按已有要求继续。':'填写本轮建模要求或修改意见'; if(input.value!==s.messageText)input.value=s.messageText;
+ editor.hidden=!!selected||waiting||row.stage==='abox';startProperties.hidden=contextual||!needsProperties||!!s.messageText.trim();startProperties.disabled=s.busy;send.hidden=!contextual&&needsProperties&&!s.messageText.trim();send.disabled=s.busy||row.stage==='abox'||(contextual&&!s.messageText.trim());input.placeholder=awaiting?'可继续输入修改意见':suggesting?repairSuggestion(context,row.stage)+'（Tab 填入）':contextual&&!context&&!contextError?'正在读取修订建议…':needsProperties?'可选：填写希望补充的关系、参数或关注点；留空可按已有要求继续。':'填写本轮建模要求或修改意见'; if(input.value!==s.messageText)input.value=s.messageText;
  }
+ function syncStudio(s){
+  const row=s.session;if(!row)return;
+  const choice=s.selectedRevision?String(s.selectedRevision.revision):'current';
+  if(historySelect.dataset.revision!==String(row.revision)){
+    historySelect.replaceChildren(new Option('当前设计','current'));
+    for(let i=1;i<=row.revision;i++)historySelect.add(new Option('历史修订 '+i,String(i)));
+    historySelect.dataset.revision=String(row.revision);
+  }
+  historySelect.value=choice;
+  if(!studio)return;
+  const selected=s.selectedRevision;
+  if(selected?.studio){studioHistory='history:'+selected.revision;studio.present(selected.studio,{scope:studioHistory});return;}
+  studioHistory='current';
+  if(row.status!=='completed'&&row.studio)studio.present(row.studio,{scope:'current:'+sid});
+  const ref=row.output_asset_ref;
+  if(row.status==='completed'&&ref){
+    const key=JSON.stringify(ref);
+    if(graphHost.dataset.result===key){if(graphHost.studioResult)studio.present(graphHost.studioResult,{scope:'output:'+key});return;}
+    graphHost.dataset.result=key;
+    read(g.fetch.bind(g),'/api/ontology-assets/'+encodeURIComponent(ref.ontology_id)+'/versions/'+encodeURIComponent(ref.version_id)+'/views/studio',{signal:abort.signal}).then(doc=>{
+      if(dead||studioHistory!=='current'||JSON.stringify(latest?.session?.output_asset_ref)!==key)return;
+      graphHost.studioResult=doc;studio.present(doc,{scope:'output:'+key});
+    }).catch(error=>{if(!dead&&error.name!=='AbortError')studio.error(error.message);});
+  }else {delete graphHost.dataset.result;delete graphHost.studioResult;}
+ }
+ historySelect.onchange=()=>historySelect.value==='current'?c.showCurrent():c.openRevision(Number(historySelect.value));
+ import('/assets/modules/studio/panel.js').then(module=>{if(dead)return;studio=module.mountPanel(graphHost);graphHost.querySelector('.studio-title').append(historyBox);if(latest)syncStudio(latest);}).catch(error=>{if(!dead)graphHost.textContent='图谱组件加载失败：'+error.message;});
  c=createController({onChange:render});c.openSession(sid);
  if(contextual){const url=options.checkId?'/api/application-checks/'+encodeURIComponent(options.checkId):'/api/robotics/application-adaptations/'+encodeURIComponent(options.adaptationId);
   read(g.fetch.bind(g),url,{signal:abort.signal}).then(response=>{if(dead)return;context=repairContext(response,sid,!options.checkId);render(c.snapshot());}).catch(e=>{if(dead||e.name==='AbortError')return;contextError=e.message;render(c.snapshot());});}
- return {...c,dispose(){dead=true;abort.abort();c.dispose();}};
+ return {...c,dispose(){dead=true;abort.abort();studio?.destroy();delete graphHost.studioResult;c.dispose();}};
 }
 g.RoboticsDesign={createController,mount,repairContext,repairSuggestion,beginRepair};})(window);

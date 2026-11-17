@@ -386,7 +386,7 @@ def test_fixed_robotics_relationship_view(live):
     page.goto(site.url + '/#library')
     card = page.locator(f'[data-ontology-id="{ref["ontology_id"]}"]')
     card.get_by_role('link', name='打开图谱', exact=True).click()
-    expect(page.locator('#rv_canvas canvas')).to_be_visible()
+    expect(page.locator('#rv_canvas canvas, #rv_canvas svg')).to_be_visible()
     expect(page.locator('#rv_host')).to_contain_text('当前：版本 1')
     page.get_by_label('展示范围', exact=True).select_option('skills')
     expect(page.locator('#rv_node option')).not_to_have_count(1)
@@ -395,7 +395,7 @@ def test_fixed_robotics_relationship_view(live):
     page.get_by_role('button', name='适应画布', exact=True).click()
     before_url = page.url
     page.reload()
-    expect(page.locator('#rv_canvas canvas')).to_be_visible()
+    expect(page.locator('#rv_canvas canvas, #rv_canvas svg')).to_be_visible()
     assert page.url == before_url and len(site.posts()) == posts
     page.set_viewport_size({'width': 390, 'height': 844})
     assert page.locator('#rv_host').evaluate('el=>el.scrollWidth<=el.clientWidth+1')
@@ -416,7 +416,7 @@ def test_view_zoom_remains_effective_after_node_selection(live, view):
         constructor(options){super(options); window.__viewGraph=this;}
     };}''')
     page.goto(site.url + '/#robotics-view?asset=' + ref['ontology_id'] + '&version=' + ref['version_id'] + '&view=' + view)
-    expect(page.locator('#rv_canvas canvas')).to_be_visible()
+    expect(page.locator('#rv_canvas canvas, #rv_canvas svg')).to_be_visible()
     page.wait_for_timeout(200)
 
     def zoom():
@@ -427,25 +427,25 @@ def test_view_zoom_remains_effective_after_node_selection(live, view):
             page.get_by_label('节点详情', exact=True).select_option(index=2)
             expect(page.locator('#rv_properties h3')).to_be_visible()
         before = zoom()
-        pixels = page.locator('#rv_canvas canvas').evaluate('el=>el.toDataURL()')
+        pixels = page.locator('#rv_canvas canvas, #rv_canvas svg').evaluate('el=>el.toDataURL()')
         auto_paint = page.evaluate("window.__viewGraph.get('autoPaint')")
         page.get_by_role('button', name='放大', exact=True).click()
         page.wait_for_timeout(150)
         enlarged = zoom()
-        assert page.locator('#rv_canvas canvas').evaluate('el=>el.toDataURL()') != pixels, (view, selected, auto_paint, before, enlarged)
+        assert page.locator('#rv_canvas canvas, #rv_canvas svg').evaluate('el=>el.toDataURL()') != pixels, (view, selected, auto_paint, before, enlarged)
         assert enlarged > before * 1.1, (view, selected, before, enlarged)
-        pixels = page.locator('#rv_canvas canvas').evaluate('el=>el.toDataURL()')
+        pixels = page.locator('#rv_canvas canvas, #rv_canvas svg').evaluate('el=>el.toDataURL()')
         page.get_by_role('button', name='缩小', exact=True).click()
         page.wait_for_timeout(150)
         assert zoom() < enlarged * .95
-        assert page.locator('#rv_canvas canvas').evaluate('el=>el.toDataURL()') != pixels
+        assert page.locator('#rv_canvas canvas, #rv_canvas svg').evaluate('el=>el.toDataURL()') != pixels
         page.locator('#rv_canvas').hover()
         before = zoom()
-        pixels = page.locator('#rv_canvas canvas').evaluate('el=>el.toDataURL()')
+        pixels = page.locator('#rv_canvas canvas, #rv_canvas svg').evaluate('el=>el.toDataURL()')
         page.mouse.wheel(0, -180)
         page.wait_for_timeout(200)
         assert zoom() > before, (view, selected, 'wheel')
-        assert page.locator('#rv_canvas canvas').evaluate('el=>el.toDataURL()') != pixels
+        assert page.locator('#rv_canvas canvas, #rv_canvas svg').evaluate('el=>el.toDataURL()') != pixels
         page.get_by_role('button', name='适应画布', exact=True).click()
         page.wait_for_timeout(150)
         assert 0 < zoom() <= 1
@@ -460,7 +460,7 @@ def test_catalog_hides_source_tree_and_old_tree_link_cannot_display_it(live):
     card = page.locator(f'[data-ontology-id="{ref["ontology_id"]}"]')
     expect(card.get_by_role('link')).to_have_count(1)
     card.get_by_role('link', name='打开图谱', exact=True).click()
-    expect(page.locator('#rv_canvas canvas')).to_be_visible()
+    expect(page.locator('#rv_canvas canvas, #rv_canvas svg')).to_be_visible()
     expect(page.locator('#rv_host a[href*="view=behavior-tree"]')).to_have_count(0)
     page.get_by_role('link', name='← 返回本体详情', exact=True).click()
     expect(page.get_by_role('link', name='生成行为树', exact=True)).to_be_visible()
@@ -474,7 +474,7 @@ def test_catalog_hides_source_tree_and_old_tree_link_cannot_display_it(live):
         expect(page.locator('#rv_canvas')).to_have_count(0)
         assert not any('/views/behavior-tree' in url for url in requests)
     page.get_by_role('link', name='打开本体图谱', exact=True).click()
-    expect(page.locator('#rv_canvas canvas')).to_be_visible()
+    expect(page.locator('#rv_canvas canvas, #rv_canvas svg')).to_be_visible()
     assert site.posts() == []
     done(site)
 
@@ -506,7 +506,7 @@ def test_legacy_configuration_names_match_task_page_without_changing_owl(live):
         constructor(options){super(options); window.__labelGraph=this;}
     };}''')
     page.goto(site.url + '/#robotics-view?asset=' + ref['ontology_id'] + '&version=' + ref['version_id'] + '&view=relations')
-    expect(page.locator('#rv_canvas canvas')).to_be_visible()
+    expect(page.locator('#rv_canvas canvas, #rv_canvas svg')).to_be_visible()
     for target, owner, _, old, display in names:
         page.get_by_label('查找节点', exact=True).fill(display)
         page.get_by_role('button', name='查找', exact=True).click()

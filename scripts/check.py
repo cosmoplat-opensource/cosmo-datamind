@@ -158,6 +158,9 @@ def main():
                                   "--output", str(reports / "robotics-task-browser")], env, reports, results)
                         run_check("robotics-design-browser", [py, "tests/frontend/robotics-design-browser.py",
                                   "--output", str(reports / "robotics-design-browser")], env, reports, results)
+                        # DR-159: both staged and fixed Studio graphs, geometry and scale.
+                        run_check("studio-robotics-browser", [py, "tests/frontend/studio-robotics-browser.py",
+                                  "--output", str(reports / "studio-robotics-browser")], env, reports, results)
                         # DR-155: real fixed-version detail, preparation and history navigation.
                         run_check("ontology-detail-browser", [py, "tests/frontend/ontology-detail-browser.py",
                                   "--output", str(reports / "ontology-detail-browser")], env, reports, results)

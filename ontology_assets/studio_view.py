@@ -88,7 +88,7 @@ def _project(source, context, name):
 
     def base(term, kind):
         return {'id': _id(term), 'iri': _id(term), 'type': kind, 'labels': labels(term),
-                'definition': str(next(iter(graph.objects(term, RDFS.comment)), ''))}
+                'definition': str(next(iter(sorted(graph.objects(term, RDFS.comment), key=str)), ''))}
 
     def add_node(term, kind='class'):
         if term is None or isinstance(term, Literal):

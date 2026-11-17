@@ -187,8 +187,8 @@ def test_model_ui_stage_confirmations_final_downloads_and_history(live):
         site.evidence['downloads'].append({'name': target.name, 'bytes': len(expected)})
     page.goto(site.url + '/#build?recipe=robotics&session=' + sid)
     wait_design(page, sid, 'abox', 'completed')
-    # DR-152: user removed this selector; historical bytes remain readable.
-    expect(page.get_by_label('设计修订', exact=True)).to_have_count(0)
+    # DR-159: graph history is explicitly read-only; historical bytes remain unchanged.
+    expect(page.get_by_label('设计修订', exact=True)).to_be_visible()
     assert DesignService(site.root, read_only=True).export_revision(sid, schema['revision'], format='json') == old_json
     assert session(site, sid)['revision'] == final['revision'] and len(calls) == 2
     click_operation(page, '返回类别修改', '/edit-classes')
@@ -299,7 +299,7 @@ def test_design_candidate_library_graph_and_application_filter(live):
     card = page.locator('[data-ontology-id="' + ref['ontology_id'] + '"]')
     expect(card).to_contain_text('设计测试')
     page.goto(site.url + '/#robotics-view?asset=' + ref['ontology_id'] + '&version=' + ref['version_id'] + '&view=relations')
-    expect(page.locator('#rv_canvas canvas')).to_be_visible()
+    expect(page.locator('#rv_canvas canvas, #rv_canvas svg')).to_be_visible()
     # DR-153: unassessed/incomplete candidates retain the application diagnosis entry.
     expect(page.get_by_role('link', name='基于此本体生成行为树', exact=True)).to_be_visible()
     expect(page.locator('#rv_host')).to_contain_text('尚未检查')
@@ -398,12 +398,18 @@ def test_current_design_has_no_revision_selector_and_preserves_history(live):
     old = DesignService(site.root, read_only=True).get_revision(sid, 1)['state']['result']['classes'][0]['definition']
     page.goto(site.url + '/#build?recipe=robotics&session=' + sid)
     wait_design(page, sid, 'classes', 'awaiting_confirmation')
-    expect(page.get_by_label('设计修订', exact=True)).to_have_count(0)
+    expect(page.get_by_label('设计修订', exact=True)).to_be_visible()
     expect(page.get_by_test_id('robotics-design-diff')).to_have_count(0)
     expect(page.get_by_test_id('robotics-design')).to_contain_text('测试修订：补充技能能力说明。')
     expect(page.get_by_role('button', name='确认类别', exact=True)).to_be_enabled()
     assert DesignService(site.root, read_only=True).get_revision(sid, 1)['state']['result']['classes'][0]['definition'] == old
     assert db_rows(site.root) == before and session(site, sid)['revision'] == 2 and calls == []
+    page.get_by_label('设计修订', exact=True).select_option('1')
+    expect(page.get_by_test_id('robotics-design-diff')).to_be_visible()
+    expect(page.get_by_role('button', name='确认类别', exact=True)).to_have_count(0)
+    assert db_rows(site.root) == before and site.design_posts() == []
+    page.get_by_label('设计修订', exact=True).select_option('current')
+    expect(page.get_by_role('button', name='确认类别', exact=True)).to_be_enabled()
     assert site.design_posts() == []
     done(site)
 

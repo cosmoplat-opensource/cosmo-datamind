@@ -1,6 +1,6 @@
 # IR-031 · Studio 共享图谱与机器人连续可视化
 
-- **状态 / Status**：in-progress（T03 核心 GREEN；用户授权免中间 review，继续 T04～T06）。
+- **状态 / Status**：in-progress（T05 页面 GREEN，进入 T06 完整回归）。
 - **日期 / Date**：2026-11-17。
 - **关联 / Refs**：[DR-159](../decisions/DR-159-studio-ontology-visualization.md)、[IR-024](IR-024-robotics-dual-build.md)、[IR-027](IR-027-ontology-detail-experience.md)、[IR-032](IR-032-studio-data-visualization.md)。
 - **工作分支 / Branch**：`feat/studio-ui-integration`。
@@ -123,3 +123,10 @@ STV-R01／02／04／05／06 的实际测试已进入正式映射并标为 red，
 
 3 项真实浏览器测试因未挂载 Studio 面板失败，1 项固定版本 HTTP 通过；用户授权连续推进，直接进入 T05。
 见 [T04 记录](../../docs/audits/IR-031-t04-red-review.md)。
+
+
+## T05 页面 GREEN
+
+六项新浏览器检查、65 项相关基线、19 项旧构建浏览器和三项固定版本 HTTP 通过；历史选择器的两项旧断言按 DR-159 更新并补强只读验证，定向通过。
+大类别通过 50 条分页可访问到最后实例；新增浏览器纳入标准完整检查链。
+详见 [T05 记录](../../docs/audits/IR-031-t05-green-review.md) 与 [使用说明](../../docs/studio-robotics-guide.md)。
