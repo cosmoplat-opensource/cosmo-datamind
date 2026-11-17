@@ -93,6 +93,8 @@ class AssetStore:
         metadata = {} if metadata is None else dict(metadata)
         parent_document = None
         asset = _required(conn, "SELECT * FROM assets WHERE ontology_id=?", (ontology_id,))
+        from .lifecycle import require_active
+        require_active(conn, ontology_id)
         validate_payload(asset["domain"], payload_kind, content)
         if parent_version_id is not None:
             parent = _version(_required(conn, "SELECT * FROM versions WHERE ontology_id=? AND version_id=?",
@@ -215,6 +217,8 @@ class AssetStore:
 
     def load_robotics_application(self, ontology_id, version_id, *, mode="real"):
         """DR-066: candidate application still uses the complete consumer validation."""
+        from .lifecycle import require_active
+        with self.storage.transaction() as conn: require_active(conn, ontology_id)
         return self._robotics_context(self.get_version(ontology_id, version_id), mode)
 
     def _register_legacy(self, entries):

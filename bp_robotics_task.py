@@ -34,7 +34,7 @@ def init_app(app, runtime):
     def task_error(exc):
         status = {'not_found': 404, 'session_conflict': 409, 'request_conflict': 409, 'task_busy': 409,
             'stale_result': 409, 'no_candidate': 409, 'artifact_integrity': 409, 'save_failed': 503,
-            'invalid_answer': 422, 'invalid_ontology': 422}.get(exc.code, 400)
+            'invalid_answer': 422, 'invalid_ontology': 422,'ontology_deleted':409,'stale_lifecycle':409}.get(exc.code, 400)
         return jsonify(error={'code': exc.code, 'message': str(exc)}), status
 
     @bp.errorhandler(BuildRequestError)

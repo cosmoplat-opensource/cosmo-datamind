@@ -130,7 +130,7 @@ def _query_fields(allowed):
         raise _invalid()
 
 
-def init_app(app, *, workdir, legacy_catalog, start_executor=True):
+def init_app(app, *, workdir, legacy_catalog, start_executor=True, data_host=None):
     """No server import: the host injects legacy enumeration and owns runtime shutdown."""
     if 'robotics' in app.extensions:
         return app.extensions['robotics']
@@ -355,17 +355,25 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True):
 
     @bp.get('/api/ontology-assets')
     def catalog():
-        _query_fields({'domain'})
+        _query_fields({'domain','state'})
+        state=request.args.get('state','active')
+        if state not in ('active','deleted','all'):raise _invalid()
+        from asset_lifecycle import root_for
+        catalog_root=root_for(data_host) if data_host is not None else root
         domain = request.args.get('domain')
         if domain not in (None, 'data', 'robotics'):
             raise _invalid()
         items, bound = [], set()
-        if (root / 'domain.sqlite3').exists():
-            assets = runtime.assets()
+        if (catalog_root / 'domain.sqlite3').exists():
+            assets = AssetStore(catalog_root,read_only=True)
+            from ontology_assets.lifecycle import LifecycleService
+            lifecycle=LifecycleService(catalog_root,read_only=True)
             with assets.storage.transaction() as conn:
                 bindings = {r['ontology_id']: r['legacy_key'] for r in conn.execute('SELECT * FROM legacy_assets')}
             bound = set(bindings.values())
             for asset in assets.list_assets():
+                life=lifecycle.get(asset['ontology_id'])
+                if state!='all' and state!=life['state']:continue
                 if domain is not None and asset['domain'] != domain:
                     continue
                 versions = assets.list_versions(asset['ontology_id'])
@@ -374,7 +382,7 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True):
                 # DR-070: the catalog offers the current version; historic eligibility is checked on explicit access.
                 if latest and asset['domain']=='robotics':
                     latest['application_compatibility'] = application_summary(asset['ontology_id'], latest['version_id'])
-                item = {**asset, 'entry_kind': 'asset', 'version_id': latest['version_id'] if latest else None,
+                item = {**asset, 'lifecycle':life, 'entry_kind': 'asset', 'version_id': latest['version_id'] if latest else None,
                         'version_number': latest['version_number'] if latest else None,
                         'publication_state': latest['publication_state'] if latest else None,
                         'versions': versions}
@@ -383,7 +391,7 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True):
                 if asset['domain']=='robotics' and latest:
                     item['application_compatibility'] = latest['application_compatibility']
                 items.append(item)
-        for old in legacy_catalog():
+        for old in (legacy_catalog() if state!='deleted' else []):
             if old['key'] not in bound:
                 items.append({'entry_kind': 'legacy_reference', 'domain': 'data', 'legacy_key': old['key'],
                               'name': old['name'], 'publication_state': 'unregistered'})
@@ -391,14 +399,20 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True):
 
     @bp.get('/api/ontology-assets/<ontology_id>/versions/<version_id>')
     def version(ontology_id, version_id):
-        if not (root / 'domain.sqlite3').exists():
+        from asset_lifecycle import root_for
+        version_root=root_for(data_host) if data_host is not None else root
+        if not (version_root / 'domain.sqlite3').exists():
             raise KeyError(version_id)
-        assets = runtime.assets()
+        assets = AssetStore(version_root,read_only=True)
+        from ontology_assets.lifecycle import LifecycleService
         row = assets.get_version(ontology_id, version_id)
         rid = row['metadata'].get('build_run_id')
-        result = {**row, 'version_number': assets.version_number(ontology_id, version_id),
+        result = {**row, 'lifecycle':LifecycleService(version_root,read_only=True).get(ontology_id),
+                  'version_number': assets.version_number(ontology_id, version_id),
                   'asset': assets.get_asset(ontology_id), 'build_run_id': rid,
                   'sources': [assets.get_source(sid) for sid in row['source_asset_ids']]}
+        if result['asset']['domain']=='data':
+            result['artifacts']=[{'name':'ontology.json','kind':'data_ontology','download_url':url_for('asset_lifecycle.data_payload',oid=ontology_id,vid=version_id)}]
         is_design = row['metadata'].get('design_contract') is not None
         from ontology_assets.robotics_application import ApplicationAssets, is_application
         application = is_application(row)
@@ -428,8 +442,10 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True):
     from bp_robotics_task import init_app as init_tasks
     init_tasks(app, runtime)
     app.register_blueprint(bp)
+    from asset_lifecycle import init_app as init_lifecycle, root_for
+    init_lifecycle(app,root_provider=(lambda:root_for(data_host)) if data_host is not None else (lambda:root),host=data_host)
     from bp_application_contracts import init_app as init_applications
-    init_applications(app, root=root, enabled=enabled)
+    init_applications(app, root=root, enabled=enabled, data_host=data_host)
     from bp_robotics_application import init_app as init_adaptations
     init_adaptations(app,runtime)
     app.extensions['robotics'] = runtime

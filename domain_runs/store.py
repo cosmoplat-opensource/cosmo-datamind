@@ -59,6 +59,9 @@ class RunStore:
 
     def _snapshot(self, conn, ontology_id, version_id):
         asset = _required(conn, "SELECT * FROM assets WHERE ontology_id=?", (ontology_id,))
+        if getattr(conn,'write_intent',False):
+            from ontology_assets.lifecycle import require_active
+            require_active(conn,ontology_id)
         version = _version(_required(conn, "SELECT * FROM versions WHERE ontology_id=? AND version_id=?",
                                     (ontology_id, version_id)))
         self.storage.read_bytes(version["path"], version["payload_sha256"])
@@ -107,6 +110,8 @@ class RunStore:
         return {**record, "payload": json.loads(record["payload"])}
 
     def _insert(self, conn, inputs, snapshot, retry_of=None):
+        from ontology_assets.lifecycle_guard import run_guard
+        run_guard(conn,inputs)
         timestamp = _now()
         record = {"build_input": None, "design_input": None, "output_asset_ref": None, **inputs, "ontology_snapshot": snapshot, "run_id": "run_" + uuid.uuid4().hex,
                   "status": "queued", "result": None, "retry_of": retry_of,
@@ -162,6 +167,8 @@ class RunStore:
             return [_decode(row) for row in conn.execute("SELECT * FROM runs" + clause + " ORDER BY rowid", params)]
 
     def _state(self, conn, run_id, status):
+        from ontology_assets.lifecycle_guard import run_guard
+        run_guard(conn,_run(conn,run_id))
         conn.execute("UPDATE runs SET status=?, updated_at=? WHERE run_id=?", (status, _now(), run_id))
         self._event(conn, run_id, "state", {"status": status})
 
@@ -254,6 +261,8 @@ class RunStore:
 
     def _complete(self, conn, run, outcome, artifacts):
         """One shared durable commit path; caller owns the existing transaction."""
+        from ontology_assets.lifecycle_guard import run_guard
+        run_guard(conn,run)
         run_id = run["run_id"]
         run.update(status="failed" if outcome["status"] == "error" else "completed",
                    result=outcome, updated_at=_now())

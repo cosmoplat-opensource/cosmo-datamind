@@ -254,7 +254,9 @@ Consult @specs/map.md to find relevant context.
 - [DR-071 应用契约注册与分层检查](decisions/DR-071-application-contract-registry.md) ／ [IR-025](iterations/IR-025-application-contract-registry.md)：delivered（2026-11-12 用户确认）。
 - [DR-072 机器人应用检查与可追溯补全](decisions/DR-072-robotics-application-adaptation.md) ／ [IR-026](iterations/IR-026-robotics-application-adaptation.md)：T01 [规约](contracts/robotics-application-adaptation-v1.md) 已冻结，T05 [集成 GREEN](../docs/audits/IR-026-t05-green-review.md) 的 57 项已审测试及全量 13 段通过，70 项核心仍绿；T06 [真实副本验收](../docs/audits/IR-026-t06-delivery-review.md) 及全量 13 段已通过（2333 passed／5 可选跳过，覆盖率 86.1%），自动匹配与人工例外已纳入，2026-11-13 用户要求提交代码，确认 delivered。
 - [DR-073 本体详情与应用修复体验](decisions/DR-073-ontology-detail-experience.md) ／ [IR-027](iterations/IR-027-ontology-detail-experience.md)：delivered，[T03 GREEN](../docs/audits/IR-027-t03-green-review.md) 及全量回归已通过；[T04 集成 RED](../docs/audits/IR-027-t04-red-review.md) 已于 2026-11-16 获继续指令，[T05 GREEN](../docs/audits/IR-027-t05-green-review.md) 已实现直达任务对话、只读历史与修复入口及历史读取锁冲突修复，14 段全量回归通过；[T06 真实副本技术验证](../docs/audits/IR-027-t06-delivery-review.md) 20 项通过，已于 2026-11-16 获用户确认交付。
-- [DR-074 深度问数应用契约兼容](decisions/DR-074-deepqa-application-compatibility.md) ／ [IR-028](iterations/IR-028-deepqa-application-compatibility.md)：proposed。
-- [DR-075 本体删除恢复与历史保留](decisions/DR-075-ontology-asset-lifecycle.md) ／ [IR-029](iterations/IR-029-ontology-asset-lifecycle.md)：proposed。
+- [DR-074 深度问数应用契约兼容](decisions/DR-074-deepqa-application-compatibility.md) ／ [IR-028](iterations/IR-028-deepqa-application-compatibility.md)：delivered；2026-11-16 用户确认后完成 T06，原句计数与实际 SQL 说明修复、8 道真实模型基线、48 组协议／模式复放和完整浏览器验收通过；最终全量 14 段完整退出 0。详见 [T06 验收](../docs/audits/IR-028-t06-acceptance.md)。
+- [DR-075 本体删除恢复与历史保留](decisions/DR-075-ontology-asset-lifecycle.md) ／ [IR-029](iterations/IR-029-ontology-asset-lifecycle.md)：delivered（2026-11-17 用户明确确认整个 IR 最终验收）；删除／恢复及精简 UI 完成，工作副本和浏览器验证通过，最终刷新全量 14 段退出 0。详见 [T06 验收](../docs/audits/IR-029-t06-acceptance.md)。
 
 IR-025 当前结果：[T06 交付评审](../docs/audits/IR-025-t06-delivery-review.md)，公共服务／HTTP／最小 UI 与生成守卫已验证并获用户确认交付。
+
+IR-029 于 2026-11-17 按用户反馈精简删除／恢复弹窗及回收站卡片；87 项相关检查和隔离浏览器验证通过，原全量报告为精简前代码，现已刷新全量并完成交付。见 [UI 精简记录](../docs/audits/IR-029-ui-copy-review.md)。

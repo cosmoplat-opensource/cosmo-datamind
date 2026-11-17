@@ -1,6 +1,6 @@
 # DR-074 · 深度问数应用契约兼容
 
-- **状态 / Status**：proposed（待方案评审）。
+- **状态 / Status**：accepted（2026-11-16 用户授权按既有方向完成 T01～T03，T02 后直接实现）。
 - **日期 / Date**：2026-11-12。
 - **关联 / Refs**：[IR-028](../iterations/IR-028-deepqa-application-compatibility.md)、[总方案](../../docs/datamind-application-contract-design.md)。
 
@@ -10,7 +10,7 @@
 
 ## 决定 / Decision
 
-以下为建议方案，用户方向已明确，具体接口和取舍仍待评审。
+用户已授权推进前三个 Task；实现接口与分阶段范围见 [兼容规约 v1](../contracts/deepqa-application-compatibility-v1.md)。
 
 1. 数据本体构建成功直接入库，不增加应用选择或契约检查步骤。用户从现有入口发起问数请求时，由后端自动绑定 data.deep_qa 契约并适配现有 JSON IR；不把数据本体强制转换成机器人 OWL，也不套用 Skill／ParameterBinding。
 

@@ -270,6 +270,7 @@
         notice?.focus({preventScroll:true});
         notice?.scrollIntoView({block:'center'});
       }
+      if(s.write_frozen){const warning=global.document.createElement('p');warning.setAttribute('role','status');warning.textContent=s.lifecycle?.state==='deleted'?'本体已移到回收站。当前任务保留为历史，恢复后请重新检查本体再继续。':'本体已恢复，请重新检查并明确新建任务。';host.prepend(warning);host.querySelectorAll('button,input,textarea,select').forEach(el=>{el.disabled=true;});}
       clearTimeout(view.timer);
       if(s.status==='running'&&!state.busy)view.timer=setTimeout(()=>{if(active===view)view.controller.restore(s.session_id);},1000);
     }

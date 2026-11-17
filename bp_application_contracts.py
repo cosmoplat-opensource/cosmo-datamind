@@ -1,4 +1,4 @@
-"""Explicit application diagnostics HTTP boundary — DR-071."""
+"""Explicit application diagnostics HTTP boundary — DR-071 / DR-074."""
 from flask import Blueprint, jsonify, request
 from werkzeug.exceptions import BadRequest, RequestEntityTooLarge
 from application_contracts.models import ContractError, require
@@ -6,12 +6,18 @@ from application_contracts.service import CheckService, validate
 from application_contracts.adapters import registry as defaults, Resolver
 
 
-def init_app(app, *, root, registry=None, resolver=None, enabled=True):
-    registry = defaults(root) if registry is None else registry
-    resolver = Resolver(root) if resolver is None else resolver
+def init_app(app, *, root, registry=None, resolver=None, enabled=True, data_host=None):
+    if data_host is not None:
+        from application_contracts.deepqa import DataQAAdapter
+        from application_contracts.deepqa_host import DataCheckResolver
+        registry = defaults(root, data_qa=DataQAAdapter(data_host)) if registry is None else registry
+        resolver = DataCheckResolver(root, data_host) if resolver is None else resolver
+    else:
+        registry = defaults(root) if registry is None else registry
+        resolver = Resolver(root) if resolver is None else resolver
     bp = Blueprint('application_contracts', __name__)
-    def service(write=False):
-        if write and not enabled: raise ContractError('application_unavailable', '应用检查未启用。')
+    def service(write=False, data=False):
+        if write and not enabled and not data: raise ContractError('application_unavailable', '应用检查未启用。')
         return CheckService(root, registry=registry, resolver=resolver, read_only=not write)
     def body(fields):
         data = request.get_json()
@@ -34,9 +40,10 @@ def init_app(app, *, root, registry=None, resolver=None, enabled=True):
         data = body(('entrypoint', 'asset_refs', 'context', 'request_id'))
         validate(**data)
         spec = registry.resolve(data['entrypoint'])
-        if not enabled or spec['availability'] != 'available':
+        data_check = data_host is not None and spec['application_id'] == 'data.deep_qa'
+        if (not enabled and not data_check) or spec['availability'] != 'available':
             raise ContractError('application_unavailable', '应用暂不可用。')
-        result = service(True).evaluate(**data)
+        result = service(True, data=data_check).evaluate(**data)
         return jsonify(result), 200 if result['replayed'] else 201
     @bp.get('/api/application-checks/<check_id>')
     def read(check_id): return jsonify(service().read(check_id))

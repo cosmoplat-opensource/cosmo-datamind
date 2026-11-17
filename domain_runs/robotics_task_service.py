@@ -20,6 +20,7 @@ from ontology_assets import AssetStore
 from ontology_assets.governance import GovernanceService
 from ontology_assets.payloads import json_text
 from ontology_assets.storage import digest
+from ontology_assets.lifecycle import LifecycleError
 from srv_context import _RDF_LOCK
 
 from . import RunStore
@@ -77,6 +78,8 @@ class TaskService:
                 yield conn
         except TaskError:
             raise
+        except LifecycleError as exc:
+            raise TaskError(exc.code,str(exc)) from None
         except KeyError as exc:
             raise TaskError('not_found', '指定的本体、版本或任务不存在。') from exc
         except OSError as exc:
@@ -90,12 +93,16 @@ class TaskService:
         if row is None:
             raise TaskError('not_found', '指定任务不存在。')
         state = json.loads(row[0])
+        from ontology_assets.lifecycle_guard import session_get
+        session_get(conn,state)
         state.setdefault('generation_policy', self.generation_policy)
         state.setdefault('adaptation_notes', [])
         state['version_number'] = self.assets._version_number(conn, state['ontology_id'], state['version_id'])
         return state
 
     def _put(self, conn, state):
+        from ontology_assets.lifecycle_guard import session_put
+        session_put(conn,'robotics_task_sessions','session_id',state)
         # DR-069: timestamps live in the existing session JSON, with no schema upgrade.
         now = _now()
         state.setdefault('created_at', now)
@@ -112,9 +119,12 @@ class TaskService:
             if 'configurations' not in state:
                 state['configurations'] = (inspect_gaps(self._graph(state, conn, inspect_structure=False),
                     state['task'], mode=state['mode'])['configurations'] if state.get('task') else [])
-            return state
+            from ontology_assets.lifecycle_guard import project
+            return project(conn,state)
 
     def _request(self, conn, scope, request_id, operation, args):
+        from ontology_assets.lifecycle_guard import guard_record
+        guard_record(conn,args)
         _text(request_id, 'request_id', 128)
         fingerprint = digest(json_text({'operation': operation, **args}).encode())
         row = conn.execute('SELECT * FROM robotics_task_requests WHERE scope=? AND request_id=?',
@@ -124,7 +134,7 @@ class TaskService:
                 raise TaskError('request_conflict', '此请求编号已用于不同输入。')
             if row['response'] is None:
                 raise TaskError('task_busy', '此请求正在处理，请稍后回看任务。')
-            return json.loads(row['response'])
+            result=json.loads(row['response']);guard_record(conn,result);return result
         conn.execute('INSERT INTO robotics_task_requests VALUES (?,?,?,NULL)', (scope, request_id, fingerprint))
         return None
 

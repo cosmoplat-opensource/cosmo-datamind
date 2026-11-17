@@ -2,7 +2,7 @@
 
 适用版本：IR-025 公共检查及 IR-026 机器人适配已实现；IR-026 T06 技术验收通过，2026-11-13 用户要求提交代码，已确认交付。
 IR-027 T05 已接通任务准备、修复和只读历史入口，全量回归已通过；T06 的 20 项真实副本技术验证已通过，已于 2026-11-16 获用户确认交付。
-本说明描述公共应用检查、机器人角色适配及任务补全；深度问数接入继续由 IR-028 完成。
+本说明描述公共应用检查、机器人角色适配及任务补全；深度问数接入已由 IR-028 完成。
 
 ## 页面使用
 
@@ -64,8 +64,7 @@ freshness 详细值可从 API 读取；旧报告保持历史结论，页面可�
 四层结构为 schema、execution、task、environment。
 公共核心支持检查依赖、精确 issue、修复 action 和完整版本依据。
 机器人领域检查器校验 TBox 角色语义、执行结构、任务缺口和当前策略要求的适配依据，并复用原消费者及最终生成守卫。
-同版本多应用能力已有合成核心测试，data.deep_qa 尚未接入公共检查服务，注册可见但 availability=unavailable。
-现有深度问数请求链路没有在本轮迁移。
+IR-028 T05 已在实际宿主启用 data.deep_qa，现有同步／SSE 问数自动绑定该契约并在缓存读取前预检。只读核心仍可显式注入 registry；未提供宿主的通用独立初始化保留 unavailable 占位。
 
 ## HTTP 调用
 
@@ -77,7 +76,7 @@ freshness 详细值可从 API 读取；旧报告保持历史结论，页面可�
 `GET /api/applications`
 
 返回 `items` 数组，公开 application_id、contract_version、entrypoints、availability。
-默认登记 robotics.pick_place（robotics.generate_behavior_tree）和尚未接通的 data.deep_qa（data.ask）。
+实际宿主登记 robotics.pick_place（robotics.generate_behavior_tree）和 data.deep_qa（data.ask）。数据检查不依赖机器人功能开关。
 该请求不检查本体、不创建域库、不序列化 Python 检查器或修复器。
 
 ### 显式检查
@@ -214,3 +213,29 @@ strict 先补全业务知识，再提供当前范围的适配依据；offline �
 - IR-027：完整本体详情、历史状态呈现与修复导航体验；[T03 GREEN](audits/IR-027-t03-green-review.md) 及回归已通过，[T04 集成 RED](audits/IR-027-t04-red-review.md) 已获继续指令，[T05 GREEN](audits/IR-027-t05-green-review.md) 及全量回归已通过；[T06 真实副本验证](audits/IR-027-t06-delivery-review.md) 20 项通过，已于 2026-11-16 获用户确认交付。
 - IR-028：现有深度问数接入、数据连接与编辑／缓存新鲜性。
 - IR-029：删除恢复、生命周期修订与执行受理保护。
+
+### IR-028 问数接入（T05）
+
+兼容与接口见 [深度问数兼容规约 v1](../specs/contracts/deepqa-application-compatibility-v1.md)。
+`application_contracts.deepqa.DataQAAdapter` 绑定现有宿主的有效 IR、查询连接画像、只读／单语句／本体 SQL 校验、指标卡与离线规划函数。
+适配器读取人工编辑后的旧图谱或已登记的固定数据版本，保留多图顺序、可查询子集、上传表及原指标状态；不发起模型调用、业务 SQL 执行或隐式入库。
+数据表未绑定／不可用时返回对象或表定位及修复建议；部分表不可用时仍可询问可用子集，具体 SQL 继续走现有守卫。
+T05 已接入现有 HTTP 问数和缓存；T06 仍需完成真实数据／浏览器验收及人审交付。
+
+同步响应及 SSE done/error 增量返回 `application_check`，含准备状态、缺项建议、依据摘要和影子比较；旧字段及事件顺序兼容，历史对话保留该摘要。
+缺项错误可展开查看问题，并进入现有数据连接或本体评审；不新增应用选择步骤。
+可用子集仍可查询；缓存命中前核对有效内容、编辑、连接 schema、契约版本和旧 key 生命周期，并复核缓存 SQL。逐条实际 SQL 再复核，期间变化返回 `stale_result`，需重新发起查询。
+`DATAMIND_DEEPQA_CONTRACT_MODE=enforce` 为默认；shadow 记录新旧准备结论对照，off 保留旧准备边界。所有模式都保留 SQL 守卫及已删除／跨领域 key 拒绝。
+现有 build/delete 和 forged/delete 在删文件前写 `qa_deleted_graphs.json`；记录损坏时拒绝删除／问数，不回退示例。此记录不提供 IR-029 的资产删除恢复功能。
+固定数据版本可通过已有 `/api/application-checks` 显式保存及读取准备检查；现有 `/api/chat` 仍使用 graphs/tables，不能借 asset_refs 或伪造的检查结果跳过实际检查。
+
+IR-028 T05 最终验证：156 项定向通过，原始全量命令 14 段完整退出 0，2518 单元通过／5 原有可选跳过，覆盖率 86.3%；真实用户数据和完整流程验收留待 T06。详见 [T05 评审](audits/IR-028-t05-green-review.md)。
+
+### IR-028 T06 验收与交付（2026-11-16）
+
+用户确认本轮功能并要求继续后，已补齐实际问数、完整浏览器验收和最终全量回归，IR-028 收尾为 delivered。
+物理表名可以与中文相邻，例如 `fact_ap这个表有多少条记录?`；当前示例数据返回 80 条，无模型时亦可通过限定范围内的计数兜底回答，带业务筛选条件仍不会被无条件总数替代。
+SQL 引号不会使实际用表数归零或触发错误的意图不一致提示；多图、部分可用、缺项修复、旧会话删除拒绝及历史范围恢复已在实际页面验证。
+8 道既有题与参考答案相符，48 组模式／协议复放、21 次真实 HTTP 请求和 199 项定向检查通过；最终原始全量 14 段通过，2553 单元通过／5 原有可选跳过，覆盖率 86.3%。
+真实模型验证只覆盖 SQL 规划，叙述使用现有规则摘要；UI 仍绕过缓存，真实缓存命中另由 HTTP 验证。
+未重启用户服务、未提交 Git；修复需运行服务加载新代码后生效。详见 [T06 验收与截图](audits/IR-028-t06-acceptance.md)。

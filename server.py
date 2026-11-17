@@ -22,7 +22,21 @@ import ir_shape
 import skill_registry
 import ontology_grounding
 import content_quality
+from qa_application import (QAContractError, QARequestGate, qa_contract_failure,
+                            qa_contract_cache_key, qa_record_delete)
 import llm_json      # DR-058:LLM 回复 JSON 抽取与提议形状校验的单一事实源
+
+class _QAHost:
+    """Live host globals also work for importlib loaders without sys.modules registration — DR-074."""
+    def __getattr__(self, name):
+        try:
+            return globals()[name]
+        except KeyError:
+            raise AttributeError(name) from None
+
+
+_QA_HOST = _QAHost()
+
 
 # ── 运维日志(结构化、可分级、可重定向)──────────────────────────────
 # 诊断信息一律走 logging 而非 print:print 混在 stdout 里既无级别也无时间戳,
@@ -453,7 +467,7 @@ def _open_api_url(url, timeout=12):
     req = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": "DataMind/1.0"})
     return opener.open(req, timeout=timeout)
 
-def load_ir(key):
+def _load_ir_original(key):
     if _bad_gkey(key): return None
     if key.startswith("built_"):
         raw = _load_json(_confined(WORK, key + ".json"))
@@ -463,6 +477,11 @@ def load_ir(key):
     if key.startswith("forged_"):
         return _load_json(_confined(os.path.join(PLATFORM, "data", "forged"), key[7:] + ".json"))
     return _load_json(IR_SOURCES.get(key, {}).get("paths", []))
+
+def load_ir(key):
+    import asset_lifecycle
+    fixed=asset_lifecycle.effective(_QA_HOST,key)
+    return fixed if fixed is not None else _load_ir_original(key)
 
 # ── BFO 2020 / IOF Core 对齐(官方 IRI + 定义域/值域检查)──
 _KIND_BFO = ontology_grounding.KIND_DEFAULTS
@@ -917,7 +936,9 @@ def _table_cols(table):
     # 表名来自本体产物,按标识符白名单校验后才拼进 PRAGMA —— 与全站标识符消毒口径一致
     if not t or not re.fullmatch(_SQL_IDENT, t): return []
     cache_key = raw
-    if cache_key in _COLS_CACHE: return _COLS_CACHE[cache_key]
+    # DR-074: another request may clear this cache while refreshing a connection.
+    cached_columns = _COLS_CACHE.get(cache_key)
+    if cached_columns is not None: return cached_columns
     try:
         con = ro_connect(db_path)
         try:
@@ -1121,6 +1142,13 @@ def _trace_objs(trace, objs, reason, hits=None):
                                  "ncol": len(o.get("attrs") or [])})
 
 
+def _qa_literal_tables(question, objects):
+    """DR-074: recognize bound SQL identifiers beside Chinese, without prefix matches."""
+    return {o['table'] for o in objects if o.get('table') and re.search(
+        r'(?<![A-Za-z0-9_])' + re.escape(o['table']) + r'(?![A-Za-z0-9_])',
+        question, re.I)}
+
+
 def build_context(question, focus_tables=None, trace=None, graph_keys=None):
     """从本体挑相关表/列/指标,组紧凑 schema 上下文。
 
@@ -1209,6 +1237,7 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
         if trace is not None:
             trace["focus_miss"] = len(ft)             # 点选的表在本体里一张都没有 → 转打分召回,不静默当作已限定
     tabs, hmap = [], {}
+    literal_tables = _qa_literal_tables(question, ir.get('objects', []))
     # 只有绑表对象能进 schema 上下文;混合本体(部分对象是纯概念)里若不滤,
     # 召回名额会被无表对象挤占,上下文可能一张表都没有
     for _i, o in enumerate([x for x in ir.get("objects", []) if x.get("table")]):
@@ -1218,9 +1247,11 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
                 + " ".join((a.get("cn") or "") + (a.get("col") or "") for a in o.get("attrs", [])))
         hs = hits_of(blob)
         hs += [h for h in obj_cn_hits(o) if h not in hs]     # 中文走反向匹配,见 cn_hits
+        if o.get('table') in literal_tables and o['table'] not in hs:
+            hs.insert(0, o['table'])
         if hs and o.get("table"): hmap[o["table"]] = hs[:6]
         tabs.append((len(hs), o))
-    tabs.sort(key=lambda x: -x[0])
+    tabs.sort(key=lambda x: (x[1].get('table') in literal_tables, x[0]), reverse=True)
     _hit = [o for s0, o in tabs[:8] if s0 > 0]
     picked = _hit or [o for _, o in tabs[:5]]
     _trace_objs(trace, picked, "关键词命中" if _hit else "无命中·默认候选", hmap)
@@ -1575,7 +1606,9 @@ def fallback_plan(question, ir=None, focus_tables=None):
     if count_question and not qualified_count:
         matched = [o for o in available if any(
             len(n) >= 2 and n.lower() in question.lower() for n in ir_shape.name_variants(o))]
-        targets = matched or (available if focused else [])
+        literal_tables = _qa_literal_tables(question, available)
+        targets = ([o for o in available if o['table'] in literal_tables]
+                   if literal_tables else matched or (available if focused else []))
         by_table = {o["table"]: o for o in targets}
         if len(by_table) == 1:
             table, obj = next(iter(by_table.items()))
@@ -1591,7 +1624,7 @@ def fallback_plan(question, ir=None, focus_tables=None):
                 if len(name) >= 2 and name.lower() in remaining.lower():
                     remaining = re.sub(re.escape(name), "", remaining, count=1, flags=re.I)
                     break
-            remaining = re.sub(r"^(?:请问|请统计|统计)?\s*(?:这张表|该表|当前表|所选数据表|所选表|选中的表)?", "", remaining)
+            remaining = re.sub(r"^(?:请问|请统计|统计)?\s*(?:这个表|这张表|该表|当前表|所选数据表|所选表|选中的表)?", "", remaining)
             simple_count = re.fullmatch(
                 r"(?:的)?(?:(?:一共|总共|共有|共|有)?(?:多少|几)(?:条|行)?(?:记录|数据)|"
                 r"(?:记录|数据|行)(?:总数|数|数量)(?:是|有)?(?:多少|几)?(?:条|行)?)(?:吗)?|"
@@ -1796,6 +1829,8 @@ def graphs():
     inv_sig = _stat_sig(DB, UPLOAD_DB)
     seen = set()
     def add(k, cat, paths, name=None):
+        import asset_lifecycle
+        if asset_lifecycle.deleted(_QA_HOST,k): return
         row = _graph_row(k, cat, paths, inventory, inv_sig, name=name)
         if row: seen.add(k); out.append(row)
     for k, v in IR_SOURCES.items():
@@ -2132,6 +2167,9 @@ def apply_any(ir, op):
 
 def load_ir_edited(key):
     """IR + 编辑日志回放(草案层,不动构建产物;与 serve_claw 同机制)"""
+    import asset_lifecycle
+    fixed=asset_lifecycle.effective(_QA_HOST,key)
+    if fixed is not None:return fixed
     ir = load_ir(key)
     if not ir: return None
     ir = json.loads(json.dumps(ir))
@@ -2225,6 +2263,8 @@ def ont_forged():
     for dirp in _forged_dirs():
         for p2 in sorted(glob.glob(os.path.join(dirp, "*.json"))):
             fid = os.path.basename(p2)[:-5]
+            import asset_lifecycle
+            if asset_lifecycle.deleted(_QA_HOST,'forged_'+fid):continue
             if fid in seen: continue          # 同 id 以先扫到的(当前写入目录)为准
             seen.add(fid)
             try:
@@ -2259,10 +2299,19 @@ def ont_save():
 @app.post("/api/ont/forged/delete")
 def ont_forged_delete():
     fid = (request.json or {}).get("id", "")
+    import asset_lifecycle
+    with _WRITE_LOCK:
+        logical=asset_lifecycle.legacy_delete(_QA_HOST,'forged_'+str(fid),request.json or {})
+        if logical is not None:return jsonify(logical)
     if not re.match(r"^[\w\-]+$", fid): return jsonify({"error": "bad id"}), 400
     p2 = _forged_path(fid)
     if not os.path.exists(p2): return jsonify({"error": "不存在"}), 404
-    os.remove(p2)
+    try:
+        with _WRITE_LOCK:
+            qa_record_delete(_QA_HOST, 'forged_' + fid)
+            os.remove(p2)
+    except (QAContractError, OSError):
+        return jsonify({"error": "删除记录保存失败，请稍后重试"}), 503
     # 同删 .ttl 伴生文件,避免孤儿。按 json 的实际所在目录取 —— 产物可能在引擎目录,
     # 而写入目录是 workdir,拿写入目录去拼会漏删
     ttl = p2[:-5] + ".ttl"
@@ -3472,9 +3521,9 @@ def _qa_bypass_cache(body):
     return bool(value)
 
 
-def _qa_cache_begin(question, history, focus_tables, graph_keys, bypass=False):
+def _qa_cache_begin(question, history, focus_tables, graph_keys, bypass=False, gate=None):
     """为一次问数固定缓存键，并以线程安全方式读取或清除旧值。"""
-    key = _qa_key(question, history, focus_tables, graph_keys)
+    key = _qa_key(question, history, focus_tables, graph_keys, _gate=gate)
     with _QA_CACHE_LOCK:
         if bypass:
             _QA_CACHE.pop(key, None)
@@ -3498,7 +3547,7 @@ def _qa_scope(body):
     focus_tables = []
     for value in raw_tables:
         table = str(value or "").strip()
-        if table and re.fullmatch(_SQL_IDENT, table) and table not in focus_tables:
+        if table and re.fullmatch(r"(?:up\.)?" + _SQL_IDENT, table, re.I) and table not in focus_tables:
             focus_tables.append(table)
     graph_keys = []
     for value in raw_graphs:
@@ -3538,17 +3587,20 @@ def _qa_anchor_explanation(anchor, results=None):
         }
 
     used_tables, join_count, sql_count = [], 0, 0
-    ident = r'[A-Za-z_][A-Za-z0-9_."`\[\]]*'
+    part = r'(?:[A-Za-z_][A-Za-z0-9_]*|"[^"]+"|`[^`]+`|\[[^\]]+\])'
+    ident = part + r'(?:\s*\.\s*' + part + r')?'
+    def table_name(value):
+        return re.sub(r'["`\[\]\s]', '', value).lower()
     for result in results or []:
         sql = str((result or {}).get("sql") or "")
         if not sql:
             continue
         sql_count += 1
         join_count += len(re.findall(r"\bjoin\b", sql, re.I))
-        ctes = {m.group(1).lower() for m in
+        ctes = {table_name(m.group(1)) for m in
                 re.finditer(r"(?:\bwith\b|,)\s*(%s)\s+as\s*\(" % ident, sql, re.I)}
         for match in re.finditer(r"\b(?:from|join)\s+(%s)" % ident, sql, re.I):
-            table = match.group(1).strip().strip('"`[]').lower()
+            table = table_name(match.group(1))
             if table.startswith("up."):
                 table = table.split(".")[-1]
             if table and table not in ctes and table not in used_tables:
@@ -3571,23 +3623,14 @@ def _qa_anchor_explanation(anchor, results=None):
     }
 
 
-def _qa_key(question, history, focus=None, graphs=None):
-    import hashlib
-    up_sig = ""                                          # 上传库指纹:上传数据变更后作废旧缓存,避免同名表复用陈旧结果
-    try:
-        if os.path.exists(UPLOAD_DB): up_sig = str(int(os.path.getmtime(UPLOAD_DB)))
-    except Exception: pass
-    # 本体编辑指纹:本体是问数的语义锚点(召回/口径/双盲全靠它),改了本体却复用旧答案,
-    # 用户会持续拿到旧语义下的结果——别名新增后仍答不上就是这么来的(实测发现)
-    ont_sig = ""
-    for _gk in (sorted(graphs) if graphs else ["demo"]):     # 锚定本体各自的编辑指纹都要进键
-        try:
-            _ep = _edits_path(_gk)
-            if os.path.exists(_ep): ont_sig += _gk + ":" + str(int(os.path.getmtime(_ep)))
-        except Exception: pass
-    sig = json.dumps([question, [h.get("q", "") for h in (history or [])[-2:]], sorted(focus or []),
-                      sorted(graphs or []), up_sig, ont_sig], ensure_ascii=False)
-    return hashlib.md5(sig.encode("utf-8")).hexdigest()
+def _qa_key(question, history, focus=None, graphs=None, _gate=None):
+    """DR-074: content/order/contract/catalog/lifecycle identity, before cache lookup."""
+    return qa_contract_cache_key(_QA_HOST, question, history, focus, graphs, _gate)
+
+
+def _qa_request_gate(body, question, focus, graphs):
+    return QARequestGate(_QA_HOST, graphs, focus, question, body=body)
+
 
 @app.post("/api/chat")
 def chat():
@@ -3597,15 +3640,17 @@ def chat():
     focus_tables, graph_keys = _qa_scope(body)
     if not question: return jsonify({"error": "empty"}), 400
     bypass_cache = _qa_bypass_cache(body)
-    cache_key, hit = _qa_cache_begin(
-        question, history, focus_tables, graph_keys, bypass=bypass_cache)
-    if hit:
-        return jsonify({**hit, "cached": True})
-    ir_gate, gate_keys, fallback, qa_profile = _qa_anchor_ir(graph_keys)
-    scope_error = _qa_scope_error(graph_keys, gate_keys, fallback, qa_profile)
-    if scope_error:
-        return jsonify({"error": scope_error, "code": "ontology_not_queryable",
-                        "ontology": {"keys": gate_keys, **qa_profile}}), 422
+    try:
+        gate = _qa_request_gate(body, question, focus_tables, graph_keys)
+        if gate.blocked:
+            return jsonify(gate.failure()), 422
+        cache_key, hit = _qa_cache_begin(
+            question, history, focus_tables, graph_keys, bypass=bypass_cache, gate=gate)
+        if hit and gate.cached(hit):
+            return jsonify({**hit, "application_check": gate.public(), "cached": True})
+    except QAContractError as exc:
+        return jsonify(qa_contract_failure(exc)), 422
+    ir_gate, gate_keys, fallback, qa_profile = (gate.info[k] for k in ('ir','actual_keys','fallback','profile'))
     load_info = "加载本体上下文 · " + "、".join(_graph_name(key) for key in gate_keys)
     if fallback: load_info += " · " + fallback
     steps = [{"step": "load_ontology", "ok": True, "info": load_info}]
@@ -3633,6 +3678,12 @@ def chat():
     results = []
     for a in (plan.get("analyses") or [])[:4]:
         sql = a.get("sql", "")
+        try:
+            contract_ok = gate.validate_sql(sql)
+        except QAContractError as exc:
+            return jsonify(gate.failure(exc)), 409
+        if not contract_ok:
+            steps.append({"step": "ontology_gate", "ok": False, "info": "查询未通过当前本体或只读校验"}); continue
         if not sql_is_readonly(sql):
             steps.append({"step": "exec_sql", "ok": False, "info": "非只读SQL被拒: " + sql[:60]}); continue
         okv, why = _qa_validate_sql(
@@ -3655,9 +3706,12 @@ def chat():
         except Exception:
             pass
         try:
-            data = q(sql, attach_uploads=True)
+            with gate.execution(sql):
+                data = q(sql, attach_uploads=True)
             steps.append({"step": "exec_sql", "ok": True, "info": f'{a.get("title","")} → {len(data["rows"])}行'})
             results.append({"title": a.get("title", "分析"), "sql": sql, "chart": a.get("chart") or {}, "data": data})
+        except QAContractError as exc:
+            return jsonify(gate.failure(exc)), 409
         except Exception as e:
             steps.append({"step": "exec_sql", "ok": False, "info": f'{a.get("title","")}: {str(e)[:100]}'})
     if results:
@@ -3669,7 +3723,7 @@ def chat():
     anchor["used"] = anchor["explanation"]["used_tables"]
     resp = {"steps": steps, "results": results, "narrative": text, "note": plan.get("note", ""),
             "summary": summary, "metric_cards": _record_metric_usage(_metric_cards(question, ir_gate), gate_keys[0]),
-            "anchor": anchor}
+            "anchor": anchor, "application_check": gate.public()}
     if results and not bypass_cache:              # 强制刷新请求既不读缓存，也不回写缓存
         _qa_cache_store(cache_key, resp)
     return jsonify(resp)
@@ -3689,10 +3743,16 @@ def chat_stream():
         if not question:
             yield sse({"type": "error", "error": "empty"}); return
         focus_tables, graph_keys = _qa_scope(body)          # 与同步 /api/chat 共用作用域归一
-        cache_key, hit = _qa_cache_begin(
-            question, history, focus_tables, graph_keys, bypass=bypass_cache)
-        if hit:
-            yield sse({"type": "done", **hit, "cached": True, "elapsed": 0.0, "session": session}); return
+        try:
+            gate = _qa_request_gate(body, question, focus_tables, graph_keys)
+            if gate.blocked:
+                yield sse({"type": "error", **gate.failure()}); return
+            cache_key, hit = _qa_cache_begin(
+                question, history, focus_tables, graph_keys, bypass=bypass_cache, gate=gate)
+            if hit and gate.cached(hit):
+                yield sse({"type": "done", **hit, "application_check": gate.public(), "cached": True, "elapsed": 0.0, "session": session}); return
+        except QAContractError as exc:
+            yield sse({"type": "error", **qa_contract_failure(exc)}); return
         def stp(step, ok, info=""):
             return {"step": step, "ok": ok, "info": info, "ts": _t.strftime("%H:%M:%S")}
         steps = []
@@ -3700,7 +3760,7 @@ def chat_stream():
             s = stp(step, ok, info); steps.append(s); return sse({"type": "step", **s})
         if focus_tables:
             yield push("scope_source", True, f"数据源限定 · {len(focus_tables)} 张表")
-        ir_gate, _gate_keys, _gate_fallback, qa_profile = _qa_anchor_ir(graph_keys)
+        ir_gate, _gate_keys, _gate_fallback, qa_profile = (gate.info[k] for k in ('ir','actual_keys','fallback','profile'))
         # 本体名要据实回显:此处曾写死「示例」,选了自建本体也照喊示例,
         # 与下一步 anchor_ontology 打架,读日志的人会以为锚错了本体
         yield push("load_ontology", True,
@@ -3709,7 +3769,7 @@ def chat_stream():
         if scope_error:
             yield push("scope_ontology", False, qa_profile.get("reason") or "所选本体不可问数")
             yield sse({"type": "error", "code": "ontology_not_queryable", "error": scope_error,
-                       "ontology": {"keys": _gate_keys, **qa_profile}})
+                       "ontology": {"keys": _gate_keys, **qa_profile}, "application_check": gate.public()})
             return
         q_eff, co = _carryover(question, history, ir_gate)      # B5 多轮指代:上文本体对象延续
         if co:
@@ -3780,6 +3840,12 @@ def chat_stream():
             title = a.get("title", "分析")
             sql = a.get("sql", "")
             yield push("gen_sql", True, f"[{idx}/{len(analyses)}] 生成 SQL 规范:{title}")
+            try:
+                contract_ok = gate.validate_sql(sql)
+            except QAContractError as exc:
+                yield sse({"type": "error", **gate.failure(exc)}); return
+            if not contract_ok:
+                yield push("ontology_gate", False, "查询未通过当前本体或只读校验"); continue
             if not sql_is_readonly(sql):
                 yield push("exec_sql", False, f"[{idx}] 非只读SQL被拒: " + sql[:50]); continue
             okv, why = _qa_validate_sql(
@@ -3802,7 +3868,8 @@ def chat_stream():
             except Exception:
                 pass
             try:
-                data = q(sql, attach_uploads=True)
+                with gate.execution(sql):
+                    data = q(sql, attach_uploads=True)
                 nrow = len(data["rows"])
                 yield push("exec_sql", True, f"[{idx}] 执行查询 → {nrow} 行 × {len(data['columns'])} 列")
                 conf = 95 if nrow >= 6 else (70 if nrow >= 2 else 30)
@@ -3812,6 +3879,8 @@ def chat_stream():
                 one = {"title": title, "sql": sql, "chart": a.get("chart") or {}, "data": data}
                 results.append(one)
                 yield sse({"type": "result", "index": idx - 1, "result": one})   # 渐进推送:每完成一图即出
+            except QAContractError as exc:
+                yield sse({"type": "error", **gate.failure(exc)}); return
             except Exception as e:
                 yield push("exec_sql", False, f"[{idx}] {title}: {str(e)[:90]}")
         if results:
@@ -3841,7 +3910,7 @@ def chat_stream():
         anchor["used"] = anchor["explanation"]["used_tables"]
         resp = {"steps": steps, "results": results, "narrative": text, "note": plan.get("note", ""),
                 "summary": summary, "metric_cards": _record_metric_usage(_metric_cards(question, ir_gate), _gate_keys[0]),
-                "anchor": anchor}   # 随 done 落一份:命中缓存与历史回放时锚定视图不丢
+                "anchor": anchor, "application_check": gate.public()}   # 随 done 落一份:命中缓存与历史回放时锚定视图不丢
         if results and not bypass_cache:
             _qa_cache_store(cache_key, resp)
         yield sse({"type": "done", **resp, "cached": False, "elapsed": round(_t.time() - t0, 1), "session": session})
@@ -4957,7 +5026,9 @@ def build_built():
     """已构建本体清单(built_*.json),供本体构建页展示历史产物"""
     out = []
     for p in sorted(glob.glob(os.path.join(WORK, "built_*.json")), key=os.path.getmtime, reverse=True):
-        k = os.path.basename(p)[:-5]; ir = _load_json(p)
+        import asset_lifecycle
+        if asset_lifecycle.deleted(_QA_HOST,os.path.basename(p)[:-5]):continue
+        k = os.path.basename(p)[:-5]; ir = load_ir_edited(k)
         if not isinstance(ir, dict) or not ir.get("objects"): continue
         g = ir_to_graph(k, ir)
         objs = ir.get("objects", []); rels = ir.get("relations", []) or ir.get("links", [])
@@ -5015,10 +5086,16 @@ def build_delete():
     """删除一个已构建本体产物"""
     k = (request.json or {}).get("key", "")
     if not re.match(r"^built_[\w]+$", k): return jsonify({"error": "非法 key"}), 400
+    import asset_lifecycle
+    with _WRITE_LOCK:
+        logical=asset_lifecycle.legacy_delete(_QA_HOST,k,request.json or {})
+        if logical is not None:return jsonify(logical)
     p = _confined(WORK, k + ".json")
     try:
-        if os.path.exists(p): os.remove(p)
-    except Exception as e: return jsonify({"error": str(e)[:80]}), 500
+        with _WRITE_LOCK:
+            qa_record_delete(_QA_HOST, k)
+            if os.path.exists(p): os.remove(p)
+    except (QAContractError, OSError): return jsonify({"error": "删除记录保存失败，请稍后重试"}), 503
     return jsonify({"ok": True})
 
 def _build_intent(q, sname, skills):
@@ -6669,7 +6746,7 @@ def outputs_file():
 from bp_metrics import bp_metrics as _bp_metrics, configure_metrics as _configure_metrics  # noqa: E402
 _configure_metrics(load_graph=lambda k: (None if _bad_gkey(k) else (load_ir_edited(k) or load_ir(k))),
                    open_writable=lambda k: _open_writable(k), db_for_source=lambda s: _db_for_source(s),
-                   write_json=_atomic_json, write_lock=_WRITE_LOCK)
+                   write_json=lambda path,value: _atomic_json(path,value), write_lock=_WRITE_LOCK)
 app.register_blueprint(_bp_metrics)
 from bp_semantic import bp_semantic as _bp_semantic, configure_semantic as _configure_semantic  # noqa: E402
 _configure_semantic(load_graph=lambda k: (None if _bad_gkey(k) else (load_ir_edited(k) or load_ir(k))))
@@ -6685,7 +6762,25 @@ def _robotics_legacy_catalog():
 
 
 from bp_robotics import init_app as _init_robotics  # noqa: E402
-_init_robotics(app, workdir=WORK, legacy_catalog=_robotics_legacy_catalog)
+_init_robotics(app, workdir=WORK, legacy_catalog=_robotics_legacy_catalog, data_host=_QA_HOST)
+
+def init_asset_lifecycle():
+    import asset_lifecycle
+    return asset_lifecycle.initialize(_QA_HOST)
+
+_atomic_json_before_lifecycle = _atomic_json
+def _atomic_json_lifecycle(path,value):
+    import asset_lifecycle
+    return asset_lifecycle.write_graph(_QA_HOST,path,value,_atomic_json_before_lifecycle)
+
+_atomic_json = _atomic_json_lifecycle
+
+# DR-075: migrate only at explicit startup, never from a catalog/check GET.
+_lifecycle_default = '0' if os.environ.get('DATAMIND_ROBOTICS_ENABLED','').lower() in ('0','false','off') else '1'
+if os.environ.get('DATAMIND_LIFECYCLE_ENABLED',_lifecycle_default).lower() not in ('0','false','off'):
+    try:init_asset_lifecycle()
+    except (QAContractError, ValueError, OSError):
+        _LOG.error('本体生命周期迁移未完成，已登记的删除保护继续生效。')
 
 if __name__ == "__main__":
     # 监听地址/端口只有一个事实源(LISTEN_HOST/LISTEN_PORT),启动横幅照它打印,
