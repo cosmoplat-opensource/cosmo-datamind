@@ -141,9 +141,9 @@ function mount(host,sid,options={}){const esc=g.RoboticsAssets.escape;let c,cont
     if(graphHost.dataset.result===key){if(graphHost.studioResult)studio.present(graphHost.studioResult,{scope:'output:'+key});return;}
     graphHost.dataset.result=key;
     read(g.fetch.bind(g),'/api/ontology-assets/'+encodeURIComponent(ref.ontology_id)+'/versions/'+encodeURIComponent(ref.version_id)+'/views/studio',{signal:abort.signal}).then(doc=>{
-      if(dead||studioHistory!=='current'||JSON.stringify(latest?.session?.output_asset_ref)!==key)return;
-      graphHost.studioResult=doc;studio.present(doc,{scope:'output:'+key});
-    }).catch(error=>{if(!dead&&error.name!=='AbortError')studio.error(error.message);});
+      if(dead||JSON.stringify(latest?.session?.output_asset_ref)!==key)return;
+      graphHost.studioResult=doc;if(studioHistory==='current')studio.present(doc,{scope:'output:'+key});
+    }).catch(error=>{if(!dead&&error.name!=='AbortError'){delete graphHost.dataset.result;studio.error(error.message);}});
   }else {delete graphHost.dataset.result;delete graphHost.studioResult;}
  }
  historySelect.onchange=()=>historySelect.value==='current'?c.showCurrent():c.openRevision(Number(historySelect.value));

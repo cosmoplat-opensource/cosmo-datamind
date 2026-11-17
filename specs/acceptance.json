@@ -3932,7 +3932,7 @@
       "id": "STV-R01",
       "decision": "DR-159",
       "iteration": "IR-031",
-      "status": "green",
+      "status": "delivered",
       "criterion": "机器人设计按已保存修订依次显示类别、关系与属性、实例，等待和失败不虚构结果，返回修改阶段清除失效内容。",
       "tests": [
         "tests/unit/test_studio_robotics_projection.py::test_design_stages_project_only_valid_revision_content",
@@ -3942,27 +3942,30 @@
         "tests/unit/test_studio_robotics_projection.py::test_invalid_design_snapshot_is_rejected",
         "tests/frontend/studio-robotics-browser.py::test_classes_properties_instances_update_one_canvas"
       ],
-      "coverage_note": "T03/T05 行为通过；当前代码完整回归待 T06。浏览器使用隔离真实服务和脚本化模型边界。"
+      "coverage_note": "IR-031 T06 完整 17 阶段通过：3803 passed / 5 可选跳过，覆盖率 83.0% / 88.1% / 73.4%；Studio 7 项浏览器通过。按用户免等待 review 授权完成技术交付。",
+      "validation_report": "docs/audits/IR-031-t06-results.json"
     },
     {
       "id": "STV-R02",
       "decision": "DR-159",
       "iteration": "IR-031",
-      "status": "green",
+      "status": "delivered",
       "criterion": "同一来源的增量更新保留有效布局、缩放、选择与展开状态，新增修改删除可辨识，历史与迟到响应不能覆盖当前设计。",
       "tests": [
         "tests/unit/test_studio_graph_ui.py::test_revision_updates_preserve_view_and_reject_stale_context",
         "tests/unit/test_studio_graph_ui.py::test_deleting_node_clears_selection_and_marks_removal",
         "tests/unit/test_studio_graph_ui.py::test_snapshot_is_detached_and_pause_pin_are_preserved",
-        "tests/frontend/studio-robotics-browser.py::test_revision_changes_preserve_view_and_history_is_read_only"
+        "tests/frontend/studio-robotics-browser.py::test_revision_changes_preserve_view_and_history_is_read_only",
+        "tests/frontend/studio-robotics-browser.py::test_late_fixed_result_during_history_switch_is_cached_without_overwriting_history"
       ],
-      "coverage_note": "T03/T05 行为通过；当前代码完整回归待 T06。浏览器使用隔离真实服务和脚本化模型边界。"
+      "coverage_note": "IR-031 T06 完整 17 阶段通过：3803 passed / 5 可选跳过，覆盖率 83.0% / 88.1% / 73.4%；Studio 7 项浏览器通过。按用户免等待 review 授权完成技术交付。",
+      "validation_report": "docs/audits/IR-031-t06-results.json"
     },
     {
       "id": "STV-R04",
       "decision": "DR-159",
       "iteration": "IR-031",
-      "status": "green",
+      "status": "delivered",
       "criterion": "双击类别可展开收起全部可访问的显式归属实例，多类型去重，无实例明确说明，大类别分批显示准确数量且可继续访问。",
       "tests": [
         "tests/unit/test_studio_robotics_projection.py::test_explicit_membership_counts_deduplicate_without_inference",
@@ -3971,13 +3974,14 @@
         "tests/unit/test_studio_robotics_projection.py::test_oversized_projection_refuses_instead_of_silently_truncating",
         "tests/frontend/studio-robotics-browser.py::test_class_expansion_empty_shared_and_paged_instances"
       ],
-      "coverage_note": "T03/T05 行为通过；当前代码完整回归待 T06。浏览器使用隔离真实服务和脚本化模型边界。"
+      "coverage_note": "IR-031 T06 完整 17 阶段通过：3803 passed / 5 可选跳过，覆盖率 83.0% / 88.1% / 73.4%；Studio 7 项浏览器通过。按用户免等待 review 授权完成技术交付。",
+      "validation_report": "docs/audits/IR-031-t06-results.json"
     },
     {
       "id": "STV-R05",
       "decision": "DR-159",
       "iteration": "IR-031",
-      "status": "green",
+      "status": "delivered",
       "criterion": "固定版本新旧机器人本体使用同一浏览体验，保留类别关系、实例事实、属性及并集含义，并按版本摘要验证来源。",
       "tests": [
         "tests/unit/test_studio_robotics_projection.py::test_fixed_legacy_and_design_payloads_preserve_rdf_semantics",
@@ -3990,13 +3994,14 @@
         "tests/unit/test_studio_graph_http.py::test_studio_history_remains_readable_after_delete_without_reactivating_asset",
         "tests/unit/test_studio_graph_http.py::test_studio_rejects_data_domain_and_corrupt_provenance"
       ],
-      "coverage_note": "T03/T05 行为通过；当前代码完整回归待 T06。浏览器使用隔离真实服务和脚本化模型边界。"
+      "coverage_note": "IR-031 T06 完整 17 阶段通过：3803 passed / 5 可选跳过，覆盖率 83.0% / 88.1% / 73.4%；Studio 7 项浏览器通过。按用户免等待 review 授权完成技术交付。",
+      "validation_report": "docs/audits/IR-031-t06-results.json"
     },
     {
       "id": "STV-R06",
       "decision": "DR-159",
       "iteration": "IR-031",
-      "status": "green",
+      "status": "delivered",
       "criterion": "画布只读操作不触发模型或本体写入，多画布并存与销毁不串状态，错误不会显示另一资产作为成功结果。",
       "tests": [
         "tests/unit/test_studio_robotics_projection.py::test_real_saved_design_and_fixed_candidate_projection_are_read_only",
@@ -4005,18 +4010,20 @@
         "tests/frontend/studio-robotics-browser.py::test_navigation_failure_and_read_only_actions_do_not_mutate_assets",
         "tests/frontend/studio-robotics-browser.py::test_representative_scale_performance_and_disposal"
       ],
-      "coverage_note": "T03/T05 行为通过；当前代码完整回归待 T06。浏览器使用隔离真实服务和脚本化模型边界。"
+      "coverage_note": "IR-031 T06 完整 17 阶段通过：3803 passed / 5 可选跳过，覆盖率 83.0% / 88.1% / 73.4%；Studio 7 项浏览器通过。按用户免等待 review 授权完成技术交付。",
+      "validation_report": "docs/audits/IR-031-t06-results.json"
     },
     {
       "id": "STV-R03",
       "decision": "DR-159",
       "iteration": "IR-031",
-      "status": "green",
+      "status": "delivered",
       "criterion": "Studio 风格类别圆圈和关系标签可读，拖拽产生力导向联动，固定释放、搜索、缩放及键盘详情入口可用。",
       "tests": [
         "tests/frontend/studio-robotics-browser.py::test_force_drag_pin_search_zoom_and_keyboard_details"
       ],
-      "coverage_note": "T03/T05 行为通过；当前代码完整回归待 T06。浏览器使用隔离真实服务和脚本化模型边界。"
+      "coverage_note": "IR-031 T06 完整 17 阶段通过：3803 passed / 5 可选跳过，覆盖率 83.0% / 88.1% / 73.4%；Studio 7 项浏览器通过。按用户免等待 review 授权完成技术交付。",
+      "validation_report": "docs/audits/IR-031-t06-results.json"
     }
   ],
   "planned_requirements": [

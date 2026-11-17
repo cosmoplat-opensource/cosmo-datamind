@@ -31,15 +31,15 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - **安全**:只读 SQL、全局 CSRF 校验、图谱键路径穿越校验、命令白名单、SPARQL 禁 SERVICE/FROM 外链,见 [[DR-006-security-model]]。
 - **寻址**:18 个子页经 `#<page>` hash 直接寻址 + 深链,见 [[DR-007-url-hash-routing]]。
 
-## Studio 图谱集成（2026-11-17，规约阶段）
+## Studio 图谱集成（2026-11-17）
 
 用户已选定“机器人连续可视化与共享组件 → 数据本体图谱及构建结果预览”两步范围。
-工作分支为 `feat/studio-ui-integration`，以下规约尚未实施或交付。
+工作分支为 `feat/studio-ui-integration`，IR-031 已交付，IR-032 保持规约阶段。
 
 - [DR-159 · Studio 图谱组件与本体构建可视化](decisions/DR-159-studio-ontology-visualization.md)：accepted（2026-11-17 用户授权启动）；[T01 视图契约](contracts/studio-graph-view-v1.md) 已冻结，明确对 DR-150 的局部替代及现有主线兼容约束。
-- [IR-031 · 共享组件与机器人连续可视化](iterations/IR-031-studio-robotics-visualization.md)：in-progress；T01 契约已冻结并提交，T02 RED 待测试人审（29 预期失败／2 夹具通过，相关回归 44 通过），STV-R01～06。
+- [IR-031 · 共享组件与机器人连续可视化](iterations/IR-031-studio-robotics-visualization.md)：delivered；[T06 验收](../docs/audits/IR-031-t06-acceptance.md)，全量 17 阶段退出 0，3803 单元通过、5 可选跳过，Studio 7 项浏览器通过；STV-R01～06 完成。
 - [IR-032 · 数据本体画布与业务交互](iterations/IR-032-studio-data-visualization.md)：in-progress（规约阶段，依赖 IR-031 交付）；STV-D01～06。
-- 验收计划登记于 `acceptance.json` 的 `planned_requirements`；IR-031 已落地用例在正式映射标记 red，浏览器与 IR-032 仍保留计划，不宣称功能已通过。
+- 验收计划登记于 `acceptance.json` 的 `planned_requirements`；IR-031 已落地用例与浏览器均在正式映射标记 delivered，IR-032 保留计划。
 
 ## 机器人双路径构建（2026-11-10，已确认方案）
 

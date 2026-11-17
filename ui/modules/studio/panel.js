@@ -5,11 +5,11 @@ export function mountPanel(host,{canvasId=null}={}){
   host.className='studio-panel';host.dataset.testid='studio-panel';
   host.innerHTML=`<div class="studio-title"><strong>本体工作台</strong><span class="studio-context"></span></div>
     <div class="studio-toolbar"><form><input aria-label="查找节点" placeholder="搜索类别、关系、实例"><button>查找</button></form>
-    <button type="button" data-op="fit">适应画布</button><button type="button" data-op="pause">暂停布局</button>
+    <button type="button" data-op="readable">可读视图</button><button type="button" data-op="fit">适应画布</button><button type="button" data-op="pause">暂停布局</button>
     <button type="button" data-op="in" aria-label="放大">＋</button><button type="button" data-op="out" aria-label="缩小">−</button>
     <button type="button" data-op="types">显示属性类型</button><label>展示范围<select aria-label="展示范围"><option value="all">全部对象</option><option value="business">业务对象与配置</option><option value="skills">技能与流程</option></select></label></div>
     <p class="studio-notice" role="status"></p><div class="studio-workspace"><div class="studio-plot"><svg aria-label="本体类别与实例图谱"></svg>
-    <div class="studio-legend">蓝色圆圈：类别 · 橙色方框：实例 · 绿色：数据值<br>双击类别展开实例，拖动节点联动布局</div></div>
+    <div class="studio-legend">蓝色圆圈：类别 · 橙色方框：实例 · 绿色：数据值<br>双击类别展开实例，拖动节点联动布局；拖动画布查看其它节点</div></div>
     <aside class="studio-details"><label>节点详情<select aria-label="节点详情"><option value="">选择对象查看详情</option></select></label><div class="studio-entity">点击类别或连线，查看定义、属性和来源。</div></aside></div>
     <p class="studio-counts"></p>`;
   const q=s=>host.querySelector(s),svg=q('svg'),plot=q('.studio-plot'),details=q('.studio-entity'),notice=q('.studio-notice'),nodeSelect=q('select[aria-label="节点详情"]');
@@ -18,7 +18,7 @@ export function mountPanel(host,{canvasId=null}={}){
   function text(parent,tag,value){const e=document.createElement(tag);e.textContent=value;parent.append(e);return e;}
   function button(parent,name,fn){const b=text(parent,'button',name);b.type='button';b.onclick=fn;return b;}
   const controller=new StudioController(svg,{onSelect:(_id,entity)=>show(entity),onNotice:message=>{notice.textContent=message;},onChange:()=>{counts();if(selected)show(controller.state.entity(selected));}});
-  controller.filters={datatypes:false};host.studioController=controller;
+  controller.filters={datatypes:false};controller.graph.options.readableMinimum=.9;host.studioController=controller;
   function counts(){
     if(!current)return;
     const visible=controller.graph.data;
@@ -81,18 +81,19 @@ export function mountPanel(host,{canvasId=null}={}){
   host.querySelectorAll('[data-op]').forEach(b=>{b.onclick=()=>{
     const op=b.dataset.op;
     if(op==='types'){controller.filters.datatypes=!controller.filters.datatypes;controller.draw();counts();b.textContent=controller.filters.datatypes?'隐藏属性类型':'显示属性类型';}
-    else if(op==='fit')controller.graph.fit();
+    else if(op==='fit'){controller.graph.options.readableMinimum=0;controller.graph.fit();}
+    else if(op==='readable'){controller.graph.options.readableMinimum=.9;controller.graph.fit();}
     else if(op==='pause'){controller.pause(!controller.graph.paused);b.textContent=controller.graph.paused?'继续布局':'暂停布局';}
     else controller.graph.zoomBy(op==='in'?1.25:.8);
   };});
   return {controller,present(document,{scope:nextScope=JSON.stringify([document.context.kind,document.context.key])}={}){
     if(dead)return;const fingerprint=JSON.stringify(document);
-    if(nextScope!==scope){scope=nextScope;epoch=controller.beginContext(document.context);selected=null;show(null);last=null;}
+    if(nextScope!==scope){scope=nextScope;epoch=controller.beginContext(document.context);controller.graph.options.readableMinimum=.9;selected=null;show(null);last=null;}
     host.dataset.stage=document.context.stage;host.dataset.kind=document.context.kind;host.dataset.revision=String(document.context.revision);
     if(fingerprint===last)return;
     if(controller.update(document,{epoch})){
       current=document;last=fingerprint;setOptions();counts();notice.textContent=document.nodes.length&&!controller.graph.data.nodes.length?'当前图谱超出同屏范围，请从节点详情选择类别查看局部关联。':document.warnings.join(' ');
-      q('.studio-context').textContent=document.context.status==='historical'?`历史修订 ${document.context.revision} · 只读`:`${document.context.kind==='design'?'设计修订 '+document.context.revision:'固定版本'} · 只读浏览`;
+      q('.studio-context').textContent=document.context.status==='historical'?`历史修订 ${document.context.revision} · 只读`:`${document.context.kind==='design'?'设计修订 '+document.context.revision:'固定版本 · '+({candidate:'候选',draft:'草案',published:'已发布'}[document.context.status]||document.context.status)} · 只读浏览 · 执行未验证`;
     }
   },error(message){notice.textContent=message;},destroy(){dead=true;controller.destroy();delete host.studioController;host.replaceChildren();delete host.dataset.testid;}};
 }

@@ -77,7 +77,7 @@ def test_revision_changes_preserve_view_and_history_is_read_only(live):
     expect(node).to_have_attribute('transform', before)
     before_calls = len(calls)
     panel.get_by_label('设计修订', exact=True).select_option('1')
-    expect(panel).to_contain_text('历史修订 1')
+    expect(panel.locator('.studio-context')).to_contain_text('历史修订 1')
     expect(page.get_by_role('button', name='确认类别', exact=True)).to_have_count(0)
     panel.get_by_label('设计修订', exact=True).select_option('current')
     assert len(calls) == before_calls
@@ -208,6 +208,33 @@ def test_representative_scale_performance_and_disposal(live):
     assert measured['resources']=={'frames':0,'observers':0,'children':0}
     site.evidence['studio_performance']=measured
     assert calls==[]
+
+
+def test_late_fixed_result_during_history_switch_is_cached_without_overwriting_history(live):
+    site,page,calls=live
+    admitted=support.ui_admit(page,site);sid=admitted['session_id']
+    support.wait_design(page,sid,'classes','awaiting_confirmation');panel=studio(page)
+    support.click_operation(page,'确认类别','/confirm-classes')
+    support.wait_design(page,sid,'properties','awaiting_input')
+    page.get_by_role('button',name='开始关系与属性设计',exact=True).click()
+    support.wait_design(page,sid,'properties','awaiting_confirmation')
+    # Delay delivery of a genuine server response; never replace its bytes or status.
+    page.evaluate('''()=>{const original=window.fetch;window.fetch=async(...args)=>{
+      const response=await original(...args);
+      if(String(args[0]).endsWith('/views/studio'))await new Promise(resolve=>{window.releaseStudioResult=resolve;});
+      return response;
+    };}''')
+    support.click_operation(page,'确认骨架并构建实例','/confirm-schema')
+    support.wait_design(page,sid,'abox','completed')
+    page.wait_for_function('typeof window.releaseStudioResult === "function"')
+    panel.get_by_label('设计修订',exact=True).select_option('1')
+    expect(panel.locator('.studio-context')).to_contain_text('历史修订 1')
+    page.evaluate('window.releaseStudioResult()')
+    page.wait_for_function('!!document.querySelector("[data-testid=studio-panel]").studioResult')
+    expect(panel.locator('.studio-context')).to_contain_text('历史修订 1')
+    panel.get_by_label('设计修订',exact=True).select_option('current')
+    expect(panel).to_have_attribute('data-kind','version')
+    assert len(calls)==2
 
 
 if __name__ == '__main__':

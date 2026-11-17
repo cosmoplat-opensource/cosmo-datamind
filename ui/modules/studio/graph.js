@@ -61,7 +61,7 @@ export class GraphView {
     this.grid.style.display = 'none'; svg.append(this.grid);
     this.viewport = element('g'); this.edgesLayer = element('g'); this.nodesLayer = element('g');
     this.viewport.append(this.edgesLayer, this.nodesLayer); svg.append(this.viewport);
-    this.fpsLabel = element('text', { x: 14, y: this.height - 14, 'font-size': 11, fill: '#60718b',
+    this.fpsLabel = element('text', { x: 14, y: this.height - 14, 'font-size': 12, fill: '#60718b',
       'font-family': 'system-ui, sans-serif', 'pointer-events': 'none', 'data-helper': 'fps' }, '0 FPS');
     this.fpsLabel.style.display = 'none'; svg.append(this.fpsLabel);
     svg.setAttribute('role', 'img'); svg.setAttribute('aria-label', 'Ontology graph');
@@ -180,7 +180,7 @@ export class GraphView {
       const badgeY = height / 2 - 14;
       dom.append(element('rect', { x: -badgeWidth / 2, y: badgeY - 7, width: badgeWidth, height: 14, rx: 7,
         fill: selected ? '#f6c66f' : '#c7ddf8', 'pointer-events': 'none' }));
-      dom.append(element('text', { x: 0, y: badgeY + 3.5, 'text-anchor': 'middle', 'font-size': 10,
+      dom.append(element('text', { x: 0, y: badgeY + 3.5, 'text-anchor': 'middle', 'font-size': 12,
         'font-family': 'system-ui, sans-serif', 'font-weight': 650, fill: '#315176',
         class: 'individual-count', 'pointer-events': 'none' }, String(individualCount)));
     }
@@ -219,7 +219,7 @@ export class GraphView {
     if (visible) {
       labelGroup.append(element('rect', { x: -width / 2, y: -height / 2, width,
         height, rx: 4, fill: '#ffffff', 'fill-opacity': '.96', stroke: selected ? color : '#dfe5ef' }));
-      const textElement = element('text', { 'text-anchor': 'middle', 'font-size': 11, 'font-family': 'system-ui, sans-serif', fill: color });
+      const textElement = element('text', { 'text-anchor': 'middle', 'font-size': 12, 'font-family': 'system-ui, sans-serif', fill: color });
       trimmed.forEach((line, index) => textElement.append(element('tspan', { x: 0, y: (index - (trimmed.length - 1) / 2) * 14 + 4 }, line)));
       labelGroup.append(textElement);
     }
@@ -447,7 +447,12 @@ export class GraphView {
     const maxY = Math.max(...list.map(pos => pos.y + pos.height / 2));
     const k = centerOnly ? this.transform.k : Math.min(1.5, Math.max(.025,
       Math.min(Math.max(120, this.width - 120) / Math.max(150, maxX - minX), Math.max(120, this.height - 120) / Math.max(150, maxY - minY))));
-    this.transform = { x: -(minX + maxX) / 2 * k, y: -(minY + maxY) / 2 * k, k };
+    const readable = !centerOnly && this.options.readableMinimum && k < this.options.readableMinimum;
+    const scale = readable ? this.options.readableMinimum : k;
+    const central = readable ? this.data.nodes.reduce((best, node) => (this.degrees.get(node.id) || 0) > (this.degrees.get(best?.id) || 0) ? node : best, this.data.nodes[0]) : null;
+    const anchor = central && this.positions.get(central.id);
+    this.transform = { x: -(anchor ? anchor.x : (minX + maxX) / 2) * scale,
+      y: -(anchor ? anchor.y : (minY + maxY) / 2) * scale, k: scale };
     this.applyTransform();
   }
   fit(ids) { this.autoFit = { ids: ids || this.data.nodes.map(node => node.id), centerOnly: false }; this.applyAutoFit(); }
