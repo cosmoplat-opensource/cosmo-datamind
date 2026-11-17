@@ -44,6 +44,24 @@ def summary(page, label, count):
     expect(page.get_by_label(label, exact=True)).to_have_text(str(count), timeout=1200)
 
 
+@pytest.mark.parametrize('kind', ['legacy', 'design', 'application'])
+def test_detail_primary_actions_are_identical_for_all_robotics_versions(show_detail, kind):
+    data = application_fixture() if kind == 'application' else detail_fixture(count=2)
+    if kind == 'legacy':
+        data.pop('design')
+        data['metadata'] = {'method': 'legacy_xml'}
+        data['artifacts'] = [{'kind': kind, 'download_url': '/old/' + kind} for kind in ('ontology', 'validation', 'manifest')]
+    page, calls, errors = show_detail(data)
+    actions = page.locator('.ra-detail-actions')
+    assert actions.get_by_role('link').all_text_contents() == ['生成行为树 →', '打开图谱', '下载完整 JSON', '下载 OWL']
+    for label in ('下载报告', '下载 manifest', '维护知识'):
+        expect(actions.get_by_role('link', name=label, exact=True)).to_have_count(0)
+    for label, suffix in [('下载完整 JSON', '/exports/json'), ('下载 OWL', '/payload')]:
+        expect(actions.get_by_role('link', name=label, exact=True)).to_have_attribute(
+            'href', '/api/ontology-assets/ont_detail/versions/ver_fixed' + suffix)
+    assert len(calls) == 1 and not errors
+
+
 def instance_rows(panel):
     return panel.get_by_role('table', name='实例列表', exact=True).locator('tbody tr')
 

@@ -1,4 +1,5 @@
 """Isolated actual HTTP/browser evidence helpers, never route fulfilment — DR-145 / DR-146 / DR-147."""
+import base64
 import hashlib
 import json
 import os
@@ -211,10 +212,25 @@ def download_from_ui(page, site, row, kind):
     names = {'ontology': '下载 OWL', 'validation': '下载报告', 'manifest': '下载 manifest'}
     record = next(a for a in RunStore(site.root, read_only=True).artifacts(row['run_id']) if a['kind'] == kind)
     link = page.get_by_role('link', name=names[kind], exact=True)
-    assert link.get_attribute('href') == f"/api/domain-runs/{row['run_id']}/artifacts/{record['artifact_id']}"
+    bundled = not link.count()
+    if bundled:
+        link = page.get_by_role('link', name='下载完整 JSON', exact=True)
+        ref = row['output_asset_ref']
+        assert link.get_attribute('href') == f"/api/ontology-assets/{ref['ontology_id']}/versions/{ref['version_id']}/exports/json"
+    else:
+        href = link.get_attribute('href')
+        ref = row['output_asset_ref']
+        assert href == f"/api/domain-runs/{row['run_id']}/artifacts/{record['artifact_id']}" or (
+            kind == 'ontology' and ref and href == f"/api/ontology-assets/{ref['ontology_id']}/versions/{ref['version_id']}/payload")
     with page.expect_download() as pending:
         link.click()
     path = site.output / pending.value.suggested_filename
     pending.value.save_as(path)
+    if bundled:
+        document = json.loads(path.read_bytes())
+        item = next(item for item in document['build']['artifacts'] if item['artifact_id'] == record['artifact_id'])
+        assert item['sha256'] == record['sha256']
+        path = site.output / record['name']
+        path.write_bytes(base64.b64decode(item['content_base64'], validate=True))
     site.record_download(row, record, path)
     return path
