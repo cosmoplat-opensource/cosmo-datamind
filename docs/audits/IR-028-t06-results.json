@@ -1,0 +1,393 @@
+{
+  "iteration": "IR-028",
+  "decision": "DR-156",
+  "stage": "T06 acceptance",
+  "date": "2026-11-16",
+  "status": "delivered",
+  "delivered": true,
+  "git_commit_created": false,
+  "user_host_restarted": false,
+  "source_sha256": {
+    "server.py": "240e69e53a4b7ebd779177152f22b49a9e26e0ee96115b76e0a1f88771789af5",
+    "bp_robotics.py": "2080123c9af4b37dc7f248000f23f0994564b97cbba6fe003c89cff8aabc88b9",
+    "bp_application_contracts.py": "61ee0a2d0d73b4af593a277ae4d777415925c03d3ab8cd6a43f37ec70208d03c",
+    "application_contracts/deepqa_host.py": "8973998530f03039ade4645ff190f92b3b429b14b691753632f4b4b4bb848aeb",
+    "qa_application.py": "6c9266dda513bd546ba88552ef7d6b31e77ac9a4df07d7537f2acc93a6af2357",
+    "ui/index.html": "a4aab13c8f50bb7180d31084a36c98c1e914bdfb4f15a11076542de644942adb",
+    "ui/modules/qa-contract.js": "6296ca325ea94171cc049c4cf79c037cabd2fdc979387614ceb06b09e92cfd42",
+    "tests/unit/test_qa_literal_table_recall.py": "2de495ab440482fccbec41f4cc3f4919b09fd5941d903f61740049f9ac730909",
+    "intent_check.py": "f99a5ea6a4f7f6602af8e27110658c7ef58edb0eae74fb79aadd83bc8bf9371c"
+  },
+  "additional_reference_sha256": {
+    "benchmark/qa_set.json": "990931ff9801ed30bddf6e8e005360c7dff6894dc7f26c82ddbad1cf888211a0",
+    "workdir/demo_ir.json": "967e55f42ee46ea54662b8f9d09b618dcd6c09a7396f91902ccaa050ee4c8038",
+    "workdir/edits_demo.json": "b87168e368a74eec4e6621c851b5012e06fdd24dd93c395f34dda674aabf9513"
+  },
+  "regression_red": {
+    "original": {
+      "tests": 25,
+      "failures": 14,
+      "errors": 0,
+      "skipped": 0
+    },
+    "quoted_sql": {
+      "tests": 30,
+      "failures": 15,
+      "errors": 0,
+      "skipped": 0
+    },
+    "intent": {
+      "tests": 35,
+      "failures": 5,
+      "errors": 0,
+      "skipped": 0
+    },
+    "note": "35 final cases: original 25 retained, quote and intent cases appended; product fixes only."
+  },
+  "targeted": {
+    "tests": 199,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "http_acceptance": {
+    "passed": true,
+    "requests": 21,
+    "report": ".check-results/ir028-t06/http-acceptance.json"
+  },
+  "actual_model_baseline": {
+    "questions": 8,
+    "correct": 8,
+    "all_reference_gold_valid": true,
+    "report": ".check-results/ir028-t06/model-baseline-graded.json",
+    "scope": "actual configured SQL planner through real /api/chat; rule narrative; current edited demo IR; no reuse/cache",
+    "grading_note": "Original raw first-scalar probe (7/8) preserved in model-baseline.json. Q7 asks a name: original probe incorrectly picked the accompanying numeric quantity. This grade uses the first returned string for gold_str, exact equality against unchanged gold; numeric grading unchanged; no new model calls."
+  },
+  "rollout_protocol_replay": {
+    "cases": 48,
+    "passed": true,
+    "report": ".check-results/ir028-t06/replay-baseline.json",
+    "scope": "captured real model plans, real SQLite, Flask sync/SSE requests, off/shadow/enforce; not additional live model calls or an old deployment"
+  },
+  "browser": {
+    "driver": "cua_repl in-app browser, real served full application",
+    "scenarios": [
+      "graph entry",
+      "original question offline",
+      "original question actual configured SQL model",
+      "partial queryable subset",
+      "unbound entry disabled",
+      "old session unbound report and binding repair target",
+      "old session unavailable table and connection repair",
+      "390px alert no content overflow",
+      "deleted old conversation refused",
+      "history scope restored",
+      "multigraph selection starts a new scoped conversation and returns actual data"
+    ],
+    "actual_model_literal": {
+      "question": "fact_ap这个表有多少条记录?",
+      "results": [
+        {
+          "title": "fact_ap表记录数",
+          "sql": "SELECT 'fact_ap' AS table_name, COUNT(*) AS record_count FROM fact_ap",
+          "chart": {
+            "type": "bar",
+            "x": "table_name",
+            "y": [
+              "record_count"
+            ]
+          },
+          "data": {
+            "columns": [
+              "table_name",
+              "record_count"
+            ],
+            "rows": [
+              {
+                "table_name": "fact_ap",
+                "record_count": 80
+              }
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "step": "load_ontology",
+          "ok": true,
+          "info": "加载本体上下文 · 示例企业数据本体(数据驱动)",
+          "ts": "16:18:26"
+        },
+        {
+          "step": "term_expand",
+          "ok": true,
+          "info": "术语扩展 · 词典命中 1 个同义/中英对照词:record",
+          "ts": "16:18:26"
+        },
+        {
+          "step": "anchor_ontology",
+          "ok": true,
+          "info": "锚定本体 · 示例企业数据本体(数据驱动)(108 对象 / 60 关系)",
+          "ts": "16:18:26"
+        },
+        {
+          "step": "match_schema",
+          "ok": true,
+          "info": "匹配相关表/指标 · 命中 12 张表",
+          "ts": "16:18:26"
+        },
+        {
+          "step": "ontology_relations",
+          "ok": true,
+          "info": "沿本体关系召回 · 提供 8 条候选 JOIN 依据(是否采用以最终 SQL 为准)",
+          "ts": "16:18:26"
+        },
+        {
+          "step": "build_context",
+          "ok": true,
+          "info": "组装库结构上下文 · 3325 字符",
+          "ts": "16:18:26"
+        },
+        {
+          "step": "llm_plan(智能引擎)",
+          "ok": true,
+          "info": "2.4s 219字符"
+        },
+        {
+          "step": "plan_ready",
+          "ok": true,
+          "info": "分析计划就绪 · 拆解为 1 个子分析",
+          "ts": "16:18:28"
+        },
+        {
+          "step": "gen_sql",
+          "ok": true,
+          "info": "[1/1] 生成 SQL 规范:fact_ap表记录数",
+          "ts": "16:18:28"
+        },
+        {
+          "step": "ontology_gate",
+          "ok": true,
+          "info": "[1] 本体校验通过 · 表与 JOIN 键均在本体边界内",
+          "ts": "16:18:28"
+        },
+        {
+          "step": "intent_crosscheck",
+          "ok": true,
+          "info": "[1] 意图一致 · SQL 覆盖了问句锚定到的 1 个业务对象(应付账款)",
+          "ts": "16:18:28"
+        },
+        {
+          "step": "exec_sql",
+          "ok": true,
+          "info": "[1] 执行查询 → 1 行 × 2 列",
+          "ts": "16:18:28"
+        },
+        {
+          "step": "data_check",
+          "ok": true,
+          "info": "[1] 数据质量校验:数据偏少 (confidence=30%)",
+          "ts": "16:18:28"
+        },
+        {
+          "step": "gen_chart",
+          "ok": true,
+          "info": "[1] 生成图表规范:bar 图",
+          "ts": "16:18:28"
+        },
+        {
+          "step": "review",
+          "ok": true,
+          "info": "审视分析结果 · 检查数据完整性与口径 · 1/1 项有效",
+          "ts": "16:18:28"
+        },
+        {
+          "step": "narrative",
+          "ok": true,
+          "info": "生成分析报告 · 63 字",
+          "ts": "16:18:28"
+        }
+      ],
+      "elapsed": 2.6
+    },
+    "actual_model_multigraph": {
+      "graphs": [
+        "built_ir028_partial",
+        "built_ir028_full"
+      ],
+      "results": [
+        {
+          "title": "fact_ap 表记录总数",
+          "sql": "SELECT COUNT(*) AS total_records FROM fact_ap;",
+          "chart": {
+            "type": "bar",
+            "x": "total_records",
+            "y": [
+              "total_records"
+            ]
+          },
+          "data": {
+            "columns": [
+              "total_records"
+            ],
+            "rows": [
+              {
+                "total_records": 80
+              }
+            ]
+          }
+        }
+      ],
+      "elapsed": 3.0
+    },
+    "console_errors": [],
+    "narrow_alert": {
+      "width": 390,
+      "alert_client_width": 305,
+      "alert_content_overflow": 0
+    },
+    "screenshots": [
+      ".check-results/ir028-t06/browser/binding-repair-target.png",
+      ".check-results/ir028-t06/browser/connection-unavailable-390.png",
+      ".check-results/ir028-t06/browser/connection-unavailable.png",
+      ".check-results/ir028-t06/browser/deleted-session.png",
+      ".check-results/ir028-t06/browser/history-scope.png",
+      ".check-results/ir028-t06/browser/multigraph-result.png",
+      ".check-results/ir028-t06/browser/offline-count.png",
+      ".check-results/ir028-t06/browser/partial-available.png",
+      ".check-results/ir028-t06/browser/real-model-count-data.png",
+      ".check-results/ir028-t06/browser/real-model-count.png",
+      ".check-results/ir028-t06/browser/real-model-execution.png",
+      ".check-results/ir028-t06/browser/unbound-entry.png",
+      ".check-results/ir028-t06/browser/unbound-session.png"
+    ]
+  },
+  "boundaries": [
+    "Only the SQL planner used the configured live model; narratives used existing rule summaries, no skills reuse.",
+    "Lifecycle and binding mutations were made only in a disposable workdir. Current demo database was queried read-only.",
+    "UI requests bypass cache; actual cache hits and same-stat edit invalidation were verified separately over HTTP.",
+    "T05 evidence remains historical; this T06 final original full command independently completed on the final source."
+  ],
+  "superseded_attempts": [
+    {
+      "directory": ".check-results/ir028-t06/all-before-intent-quote-fix",
+      "exit_code": -2,
+      "reason": "Stopped for quote-intent fix found by browser acceptance; excluded from final."
+    }
+  ],
+  "probe_corrections": [
+    "HTTP same-stat probe initially replaced unescaped Chinese inside escaped JSON, so did not change bytes. Corrected probe mutates parsed JSON; original script and HTTP traces retained.",
+    "Raw baseline first-scalar grading classified Q7 as numeric despite asking a name. Original model response and 7/8 probe retained; type-aware exact string comparison correctly observes 共混线-1. Gold/tolerances unchanged; no rerun of the model."
+  ],
+  "business_acceptance_checked": true,
+  "human_acceptance": "2026-11-16 用户确认“这部分确认没有问题，继续下一步”，接受 IR-028 已实现范围；T06 补齐实测、验收修复和最终全量后收尾。",
+  "full_command": {
+    "command": ".venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir028-t06/all",
+    "exit_code": 0,
+    "seconds": 3990.1659631729126,
+    "stages": [
+      {
+        "name": "lint",
+        "exit_code": 0,
+        "seconds": 0.032,
+        "log": "lint.log"
+      },
+      {
+        "name": "types",
+        "exit_code": 0,
+        "seconds": 5.675,
+        "log": "types.log"
+      },
+      {
+        "name": "unit",
+        "exit_code": 0,
+        "seconds": 3240.041,
+        "log": "unit.log"
+      },
+      {
+        "name": "coverage",
+        "exit_code": 0,
+        "seconds": 0.816,
+        "log": "coverage.log"
+      },
+      {
+        "name": "integration",
+        "exit_code": 0,
+        "seconds": 8.593,
+        "log": "integration.log"
+      },
+      {
+        "name": "strict10",
+        "exit_code": 0,
+        "seconds": 0.415,
+        "log": "strict10.log"
+      },
+      {
+        "name": "test_ui",
+        "exit_code": 0,
+        "seconds": 123.17,
+        "log": "test_ui.log"
+      },
+      {
+        "name": "test_ui_ops",
+        "exit_code": 0,
+        "seconds": 43.205,
+        "log": "test_ui_ops.log"
+      },
+      {
+        "name": "build-browser",
+        "exit_code": 0,
+        "seconds": 2.319,
+        "log": "build-browser.log"
+      },
+      {
+        "name": "robotics-browser",
+        "exit_code": 0,
+        "seconds": 71.79,
+        "log": "robotics-browser.log"
+      },
+      {
+        "name": "robotics-review-browser",
+        "exit_code": 0,
+        "seconds": 116.215,
+        "log": "robotics-review-browser.log"
+      },
+      {
+        "name": "robotics-task-browser",
+        "exit_code": 0,
+        "seconds": 120.473,
+        "log": "robotics-task-browser.log"
+      },
+      {
+        "name": "robotics-design-browser",
+        "exit_code": 0,
+        "seconds": 141.696,
+        "log": "robotics-design-browser.log"
+      },
+      {
+        "name": "ontology-detail-browser",
+        "exit_code": 0,
+        "seconds": 115.11,
+        "log": "ontology-detail-browser.log"
+      }
+    ],
+    "unit_passed": 2553,
+    "unit_skipped": 5,
+    "coverage": "86.3%"
+  },
+  "frozen_tests": {
+    "t02_sha256_unchanged": true,
+    "t04_t05_final_sha256_unchanged": true,
+    "final_35_regressions_sha256": "2de495ab440482fccbec41f4cc3f4919b09fd5941d903f61740049f9ac730909"
+  },
+  "temporary_hosts_cleaned": true,
+  "final_metadata_checks": {
+    "tests": 21,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "source_hashes_match_full_run": true,
+    "business_criteria_unchanged": true,
+    "git_diff_check_passed": true
+  }
+}

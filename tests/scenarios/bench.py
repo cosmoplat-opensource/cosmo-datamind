@@ -266,7 +266,8 @@ def run_business(tmp):
 
 
 def run_all(tmp):
-    return run_lakehouse(tmp) + run_business(tmp) + run_semantic_catalog(tmp) + run_multi_database(tmp)
+    return (run_lakehouse(tmp) + run_business(tmp) + run_semantic_catalog(tmp)
+            + run_multi_database(tmp) + run_merge_contract(tmp))
 
 
 def run_multi_database(tmp):
@@ -378,4 +379,44 @@ def run_semantic_catalog(tmp):
                             failed_steps.get('workload_concepts', {}).get('ok') is False and
                             report.get('batches_failed', 0) > 0 and report.get('questions_processed') == 0,
                             error or str(failed_steps.get('workload_concepts', {}))))
+    return checks
+
+
+def run_merge_contract(tmp):
+    import asset_lifecycle
+    from ontology_assets.lifecycle import LifecycleService
+    server = _server(); name = '合并后的问数与回收站'
+    work = Path(tmp) / 'work_merge'; work.mkdir(parents=True, exist_ok=True)
+    fx = fixtures.merge_contract(str(Path(tmp) / 'merge.db'))
+    key = 'built_merge'
+    (work / (key + '.json')).write_text(json.dumps(fx['ir']))
+    checks = []
+    with _patched(server, WORK=str(work), DB=fx['db'], IR_SOURCES={},
+                  _BUILD_CONN_F=str(work/'build_connections.json'),
+                  _match_qa_skill=lambda q: None, narrative_llm=lambda *a, **k: 'Scenario',
+                  _repair_sql=lambda *a, **k: fx['invalid_sql']):
+        client = server.app.test_client()
+        asset_lifecycle.initialize(server)
+        body = {'q': fx['question'], 'graphs': [key], 'answer_style': 'exact', 'nocache': True}
+        with _patched(server, agent_sql_plan=lambda *a, **k: {'analyses': [{'sql': fx['invalid_sql']}]}):
+            blocked = client.post('/api/chat', json=body).get_json()
+            checks.append(Check(name, '精确作答仍拒绝越过本体范围', not blocked.get('results') and
+                                blocked.get('application_check', {}).get('execution_status') == 'blocked', str(blocked)))
+            with _patched(server, _repair_sql=lambda *a, **k: fx['sql']):
+                repaired = client.post('/api/chat', json=body).get_json()
+                checks.append(Check(name, '修正通过校验后与独立标准答案一致',
+                                    _rows(repaired) == [{'n': fx['truth']}], str(_rows(repaired))))
+        service = LifecycleService(work/'domain_assets')
+        oid = service.resolve_legacy(key)['ontology_id']
+        with _patched(server, agent_sql_plan=lambda *a, **k: {'analyses': [{'sql': fx['sql']}]}):
+            for operation in ('delete', 'restore'):
+                endpoint = 'deletion-preview' if operation == 'delete' else 'restoration-preview'
+                preview = client.post(f'/api/ontology-assets/{oid}/{endpoint}', json={}).get_json()
+                response = client.post(f'/api/ontology-assets/{oid}/{operation}', json={
+                    'expected_revision': preview['revision'], 'impact_sha256': preview['impact_sha256'],
+                    'confirmed': True, 'request_id': 'scenario-' + operation})
+                answer = client.post('/api/chat', json=body).get_json()
+                ok = answer.get('code') == 'ontology_deleted' if operation == 'delete' else _rows(answer) == [{'n': fx['truth']}]
+                checks.append(Check(name, '删除后阻断查询' if operation == 'delete' else '恢复后从固定版本正常查询',
+                                    response.status_code == 200 and ok, str(answer.get('error') or _rows(answer))))
     return checks

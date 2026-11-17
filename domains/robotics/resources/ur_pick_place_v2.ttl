@@ -1,0 +1,152 @@
+@prefix s: <https://example.org/ur-skill#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+s:InvocationShape a sh:NodeShape ;
+    sh:targetClass s:SkillInvocation ;
+    sh:property [ sh:path s:invokesSkill ; sh:minCount 1 ; sh:maxCount 1 ; sh:class s:Skill ] ;
+    sh:property [ sh:path s:stepIndex ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:integer ; sh:minInclusive 1 ] ;
+    sh:property [ sh:path [ sh:inversePath s:hasStep ] ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
+    sh:property [ sh:path s:sourcePath ; sh:minCount 1 ; sh:maxCount 1 ] .
+
+s:BindingShape a sh:NodeShape ;
+    sh:targetClass s:ParameterBinding ;
+    sh:property [ sh:path s:bindsParameter ; sh:minCount 1 ; sh:maxCount 1 ; sh:class s:SkillParameter ] ;
+    sh:property [ sh:path s:bindingDirection ; sh:minCount 1 ; sh:maxCount 1 ; sh:in ( "input"^^xsd:string "output"^^xsd:string ) ] ;
+    sh:xone (
+        [ sh:property [ sh:path s:bindingDirection ; sh:hasValue "input"^^xsd:string ] ;
+          sh:property [ sh:path s:targetData ; sh:maxCount 0 ] ;
+          sh:xone (
+              [ sh:property [ sh:path s:literalValue ; sh:minCount 1 ; sh:maxCount 1 ] ; sh:property [ sh:path s:sourceData ; sh:maxCount 0 ] ; sh:property [ sh:path s:sourceParameter ; sh:maxCount 0 ] ]
+              [ sh:property [ sh:path s:sourceData ; sh:minCount 1 ; sh:maxCount 1 ; sh:class s:DataReference ] ; sh:property [ sh:path s:literalValue ; sh:maxCount 0 ] ; sh:property [ sh:path s:sourceParameter ; sh:maxCount 0 ] ]
+              [ sh:property [ sh:path s:sourceParameter ; sh:minCount 1 ; sh:maxCount 1 ; sh:class s:SkillParameter ] ; sh:property [ sh:path s:literalValue ; sh:maxCount 0 ] ; sh:property [ sh:path s:sourceData ; sh:maxCount 0 ] ]
+          ) ]
+        [ sh:property [ sh:path s:bindingDirection ; sh:hasValue "output"^^xsd:string ] ;
+          sh:property [ sh:path s:targetData ; sh:minCount 1 ; sh:maxCount 1 ; sh:class s:DataReference ] ;
+          sh:property [ sh:path s:literalValue ; sh:maxCount 0 ] ;
+          sh:property [ sh:path s:sourceData ; sh:maxCount 0 ] ;
+          sh:property [ sh:path s:sourceParameter ; sh:maxCount 0 ] ]
+    ) .
+
+s:ParameterShape a sh:NodeShape ;
+    sh:targetClass s:SkillParameter ;
+    sh:property [ sh:path [ sh:alternativePath ( s:parameterName ( s:mapsToPort s:parameterName ) ) ] ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path [ sh:alternativePath ( s:direction ( s:mapsToPort s:direction ) ) ] ; sh:minCount 1 ; sh:maxCount 1 ; sh:in ( "input"^^xsd:string "output"^^xsd:string ) ] ;
+    sh:property [ sh:path s:semanticType ; sh:minCount 1 ; sh:maxCount 1 ] .
+
+s:MappedParameterShape a sh:NodeShape ;
+    sh:targetSubjectsOf s:mapsToPort ;
+    sh:property [ sh:path s:mapsToPort ; sh:minCount 1 ; sh:maxCount 1 ; sh:class s:PortContract ] ;
+    sh:property [ sh:path s:parameterName ; sh:maxCount 0 ] ;
+    sh:property [ sh:path s:direction ; sh:maxCount 0 ] ;
+    sh:property [ sh:path s:cppType ; sh:maxCount 0 ] ;
+    sh:sparql [ sh:message "原子参数必须映射到其技能实现的端口契约。" ;
+      sh:select """PREFIX s: <https://example.org/ur-skill#>
+        SELECT $this WHERE {
+          ?skill (s:hasInput|s:hasOutput) $this . $this s:mapsToPort ?port .
+          FILTER NOT EXISTS { ?skill s:implementedBy/s:hasPortContract ?port }
+        }""" ] .
+
+s:PortContractShape a sh:NodeShape ;
+    sh:targetClass s:PortContract ;
+    sh:property [ sh:path s:parameterName ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path s:direction ; sh:minCount 1 ; sh:maxCount 1 ; sh:in ( "input"^^xsd:string "output"^^xsd:string ) ] ;
+    sh:property [ sh:path s:cppType ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] .
+
+s:ProcedureShape a sh:NodeShape ;
+    sh:targetClass s:CompositeSkill, s:TaskProcedure ;
+    sh:property [ sh:path s:hasStep ; sh:minCount 1 ; sh:class s:SkillInvocation ] ;
+    sh:sparql [ sh:message "同一流程内步骤序号不能重复。" ;
+        sh:select """PREFIX s: <https://example.org/ur-skill#>
+        SELECT $this WHERE {
+          $this s:hasStep ?a, ?b . ?a s:stepIndex ?i . ?b s:stepIndex ?i .
+          FILTER (?a != ?b)
+        }""" ] .
+
+s:CompositeShape a sh:NodeShape ;
+    sh:targetClass s:CompositeSkill ;
+    sh:sparql [ sh:message "本版复合技能内部只允许原子技能调用。" ;
+        sh:select """PREFIX s: <https://example.org/ur-skill#>
+        SELECT $this WHERE {
+          $this s:hasStep/s:invokesSkill ?skill .
+          FILTER NOT EXISTS { ?skill a s:AtomicSkill }
+        }""" ] .
+
+s:AtomicShape a sh:NodeShape ;
+    sh:targetClass s:AtomicSkill ;
+    sh:not [ sh:class s:CompositeSkill ] ;
+    sh:property [ sh:path s:hasStep ; sh:maxCount 0 ] ;
+    sh:property [ sh:path s:implementedBy ; sh:minCount 1 ; sh:maxCount 1 ; sh:class s:SkillImplementation ] .
+
+s:DataShape a sh:NodeShape ;
+    sh:targetClass s:DataReference ;
+    sh:property [ sh:path s:dataKey ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:property [ sh:path s:scope ; sh:minCount 1 ; sh:maxCount 1 ] .
+
+s:ConditionShape a sh:NodeShape ;
+    sh:targetClass s:SkillCondition ;
+    sh:property [ sh:path s:conditionKind ; sh:minCount 1 ; sh:maxCount 1 ; sh:in ( "precondition"^^xsd:string "expected_effect"^^xsd:string "applicability"^^xsd:string ) ] ;
+    sh:property [ sh:path s:checkMechanism ; sh:minCount 1 ] .
+
+s:TaskShape a sh:NodeShape ;
+    sh:targetClass s:Task ;
+    sh:property [ sh:path s:actsOn ; sh:minCount 1 ; sh:maxCount 1 ; sh:class s:Workpiece ] ;
+    sh:property [ sh:path s:hasDestination ; sh:minCount 1 ; sh:maxCount 1 ; sh:class s:PlacementSlot ] ;
+    sh:property [ sh:path s:usesProcedure ; sh:minCount 1 ; sh:maxCount 1 ; sh:class s:TaskProcedure ] .
+
+s:BindingOwnershipShape a sh:NodeShape ;
+    sh:targetClass s:ParameterBinding ;
+    sh:sparql [ sh:message "绑定参数必须属于被调用技能，且方向一致。" ;
+      sh:select """PREFIX s: <https://example.org/ur-skill#>
+        SELECT $this WHERE {
+          ?call s:hasBinding $this ; s:invokesSkill ?skill .
+          $this s:bindsParameter ?p ; s:bindingDirection ?d .
+          FILTER NOT EXISTS {
+            ?skill (s:hasInput|s:hasOutput) ?p . ?p (s:direction|s:mapsToPort/s:direction) ?d .
+          }
+        }""" ] ;
+    sh:sparql [ sh:message "外部参数来源必须属于当前复合技能的输入。" ;
+      sh:select """PREFIX s: <https://example.org/ur-skill#>
+        SELECT $this WHERE {
+          ?call s:hasBinding $this . ?proc s:hasStep ?call .
+          $this s:sourceParameter ?p .
+          FILTER NOT EXISTS { ?proc s:hasInput ?p }
+        }""" ] ;
+    sh:sparql [ sh:message "数据绑定不能越过黑板作用域。" ;
+      sh:select """PREFIX s: <https://example.org/ur-skill#>
+        SELECT $this WHERE {
+          ?call s:hasBinding $this . ?proc s:hasStep ?call ; s:treeId ?scope .
+          $this (s:sourceData|s:targetData) ?data . ?data s:scope ?other .
+          FILTER (?scope != ?other)
+        }""" ] .
+
+s:ProfileShape a sh:NodeShape ;
+    sh:targetClass s:PerceptionProfile, s:PlacementProfile ;
+    sh:property [ sh:path s:profileValues ; sh:maxCount 0 ; sh:message "旧profileValues必须迁移到结构化配置，不能同时维护两套参数。" ] ;
+    sh:property [ sh:path s:confirmationStatus ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] .
+
+s:PerceptionProfileShape a sh:NodeShape ;
+    sh:targetClass s:PerceptionProfile ;
+    sh:property [ sh:path s:objectName ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:minLength 1 ] ;
+    sh:property [ sh:path s:modelName ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:minLength 1 ] ;
+    sh:property [ sh:path s:threshold ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:minLength 1 ] ;
+    sh:property [ sh:path s:exposureTime ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:minLength 1 ] ;
+    sh:property [ sh:path s:hasCaptureJoints ; sh:minCount 1 ; sh:maxCount 1 ; sh:class s:JointConfiguration ] .
+
+s:PlacementProfileShape a sh:NodeShape ;
+    sh:targetClass s:PlacementProfile ;
+    sh:property [ sh:path s:hasTargetPose ; sh:minCount 1 ; sh:maxCount 1 ; sh:class s:CartesianPose ] .
+
+s:SpatialValueShape a sh:NodeShape ;
+    sh:targetClass s:JointConfiguration, s:CartesianPose ;
+    sh:property [ sh:path s:rawValue ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:minLength 1 ] .
+
+s:EvidenceShape a sh:NodeShape ;
+    sh:targetClass s:ReadinessEvidence ;
+    sh:property [ sh:path s:evidenceKind ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:property [ sh:path s:confirmationStatus ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:property [ sh:path s:sourceHash ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:property [ sh:path s:evidenceReference ; sh:minCount 1 ; sh:maxCount 1 ; sh:minLength 1 ] ;
+    sh:property [ sh:path s:validUntil ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:property [ sh:path s:forImplementation ; sh:minCount 1 ; sh:maxCount 1 ; sh:class s:SkillImplementation ] ;
+    sh:property [ sh:path s:forPartType ; sh:minCount 1 ; sh:maxCount 1 ; sh:class s:PartType ] .

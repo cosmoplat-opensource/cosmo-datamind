@@ -12,6 +12,7 @@ import pytest
     'all_200_tables_can_be_selected', 'stale_source_is_reported_and_bootstrap_is_unscoped',
     'drafts_are_restored_only_for_their_database',
     'scalar_kpi_does_not_invent_a_period', 'large_graph_opens_in_overview_and_preserves_readable_mode',
+    'explicit_graph_link_never_falls_back_to_another_source',
 ])
 def test_database_source_frontend_behavior(case):
     node=shutil.which('node')

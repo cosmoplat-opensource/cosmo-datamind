@@ -1,0 +1,103 @@
+{
+  "iteration": "IR-016",
+  "source_sha256": {
+    "ontology/ontology_pipeline.py": "f918c186ae8b7c5c33434a20e9f965ba45ab8bc4e41de755154907de3630831d",
+    "ontology/skill_runtime.py": "1178bd9a254743d58ac166b7c31729d324f55654c3b032d03dab8c28a9fe6ab1",
+    "ontology/xingweishu.xml": "e676494a3b409bcb3fa7527fe23229d6df399eb7712bf12f714817d7ae5f4e5a",
+    "ontology/xml_models.xml": "c1f3c6b46afb9878e030bcef8910a95af89bdff35682d42e5618da972cc08973",
+    "ontology/ur_skill_shapes.ttl": "8853cb014fd4f931c4ba9e0ef8c2c1027f1cdb2b7f47502f657907a98b8bbb2b",
+    "ontology/ur_skill.owl": "64ef1d99f7ed54b250c899015d0dccca4e6564962831e281116c7d3ced30e991",
+    "ontology/test_ontology.py": "7d78e08ce39a3feff8c10be52499409ce1f5329c40c3e979865aa291a572ba3b",
+    "ontology/test_skill_runtime.py": "d6b62bc8f33f3b6a60dbf7386c7b228920bcfd964c41ddb6f778032cf5459cc2",
+    "ontology/test_ontology_only.py": "ee114ae66edf5cbc3025c0e11f492cc15b300ff069be49333a6dc3d637cb5071",
+    "agent/ontology_backend.py": "0602cff05c5ec083d284301858ae96592a6835c39b111fab16be7c4712f74a7b",
+    "agent/skill_runtime.py": "fee8ec4ed2d7a1438e8b528d35363a8fa4f1ac05b1e75b615ba601fe8eaeafce",
+    "agent/trusted_agent.py": "730f33745700be33f1cb0c379d3b214eb29f12aba405e03f733949b66ca6e23b",
+    "agent/llm_client.py": "6ab5190ac8515b4efe2d82a106e1dde9d864d98292afcfa19a00d71c816a8512",
+    "agent/test_skill_runtime.py": "a6024e056a79c43814358aaf15b01a5deef0e801b974d03f7213383a548c994c",
+    "agent/test_owl_contract.py": "e1e38a5c259601a6eb77d5a4e0e195a0980b459190150bf6a8c2036a1fa15ed6",
+    "agent/input/ur_skill.owl": "7f84a0baeb811df3771eee75b423e7c49229c1479755432120c6e963b279e805",
+    "agent/demo/ur_skill_demo.owl": "a99de3f74705538e566d6eeaca5af028b5e15fd038e996733998522fc4f9933b"
+  },
+  "python": "3.10.12 (main, Aug 31 2026, 10:18:17) [GCC 11.4.0]",
+  "dependencies": {
+    "rdflib": "7.6.0",
+    "pyshacl": "0.31.0"
+  },
+  "cases": [
+    {
+      "name": "ontology/test_ontology.py",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "matched_baseline": true,
+      "stdout": "PASS: ontology counts, source round-trip, fixed configuration, skill identity, SHACL contracts, evidence boundaries\n",
+      "stderr": ""
+    },
+    {
+      "name": "ontology/test_skill_runtime.py",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "matched_baseline": true,
+      "stdout": "PASS: OWL port contracts and bindings, six public inputs, fixed internals, local dataflow, symbolic frames\n",
+      "stderr": ""
+    },
+    {
+      "name": "agent/test_skill_runtime.py",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "matched_baseline": true,
+      "stdout": "PASS: explicit approved template, six public inputs, fixed internals, local dataflow, symbolic frames\n",
+      "stderr": ""
+    },
+    {
+      "name": "agent/test_owl_contract.py",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "matched_baseline": true,
+      "stdout": "PASS: OWL protocol, SHACL whitelist, no DTD/imports, .owl-only input, ignored sidecars, compatibility evidence failures\n",
+      "stderr": ""
+    },
+    {
+      "name": "cross_directory_import_collision",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "matched_baseline": true,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 5, in <module>\n  File \"/usr/lib/python3.10/runpy.py\", line 289, in run_path\n    return _run_module_code(code, init_globals, run_name,\n  File \"/usr/lib/python3.10/runpy.py\", line 96, in _run_module_code\n    _run_code(code, mod_globals, init_globals,\n  File \"/usr/lib/python3.10/runpy.py\", line 86, in _run_code\n    exec(code, run_globals)\n  File \"test_ontology_only.py\", line 113, in <module>\n    main()\n  File \"test_ontology_only.py\", line 74, in main\n    assert result[\"status\"] == \"draft\", result\nAssertionError: {'session_id': '57d268eccba24905907cf700c19eb82c', 'run_id': 'c48d2b2a66944db3a0e50decd82b717f', 'status': 'error', 'message': '本体或生成校验未通过，未生成XML。', 'mode': 'demo', 'demo_only': True, 'task': None, 'grounding': {}, 'issues': [{'code': 'validation_error', 'message': \"module 'skill_runtime' has no attribute 'CONDITION_SPECS'\"}], 'parameters': [], 'flow': [], 'validation': {}, 'artifacts': [{'name': 'report.json', 'label': '任务与验证报告', 'url': '/api/artifacts/c48d2b2a66944db3a0e50decd82b717f/report.json'}], 'candidate_written': False, 'execution_readiness': 'not_verified', 'model': {'name': 'offline-fixture', 'live_call': False}}\n"
+    },
+    {
+      "name": "fresh_build",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "matched_baseline": true,
+      "stdout": "fresh build: local SHACL passed; artifactContract absent\n",
+      "stderr": ""
+    },
+    {
+      "name": "consumer_contract_matrix",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "matched_baseline": true,
+      "stdout": "../fresh.owl REJECT 本体缺少唯一的字符串 artifactContract，请由 ontology 项目重新导出 .owl。\n../ontology/ur_skill.owl REJECT 本体缺少唯一的字符串 artifactContract，请由 ontology 项目重新导出 .owl。\nagent/input/ur_skill.owl ACCEPT\nagent/demo/ur_skill_demo.owl ACCEPT demo\n",
+      "stderr": ""
+    },
+    {
+      "name": "draft_vs_strict_policy",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "matched_baseline": true,
+      "stdout": "authoring compile_candidate explicitly permits unresolved values\n",
+      "stderr": ""
+    },
+    {
+      "name": "strict_incomplete_task",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "matched_baseline": true,
+      "stdout": "needs_information ['grasp_compatibility', 'perception_mapping', 'placement_compatibility', 'placement_mapping', 'unconfirmed_business_entity']\n",
+      "stderr": ""
+    }
+  ],
+  "source_unchanged": true,
+  "matched_baseline": true
+}

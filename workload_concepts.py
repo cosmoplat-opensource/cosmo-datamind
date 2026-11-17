@@ -9,6 +9,7 @@ import json
 import hashlib
 import re
 import sqlite3
+import sys
 import time
 
 from data_catalog import qi, schema
@@ -72,7 +73,10 @@ def _run(con, sql, timeout=15.0, limit=5, deadline=None, allowed_tables=None, re
         return con.execute(sql).fetchmany(limit)
     finally:
         con.set_progress_handler(None, 0)
-        con.set_authorizer(None)
+        # Python 3.10 treats None as a callback and denies subsequent statements.
+        # Restore the unrestricted caller connection after the bounded query;
+        # each _run reinstalls its own read-only and table-scope checks.
+        con.set_authorizer(None if sys.version_info >= (3, 11) else lambda *args: sqlite3.SQLITE_OK)
 
 
 def _reject(rejected, c, reason):

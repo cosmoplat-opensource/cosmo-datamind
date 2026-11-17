@@ -177,3 +177,18 @@ def test_responses_carry_baseline_security_headers():
         h = client.get(path).headers
         assert h["X-Content-Type-Options"] == "nosniff" and h["X-Frame-Options"] == "SAMEORIGIN"
         assert h["Referrer-Policy"] == "same-origin" and "frame-ancestors 'self'" in h["Content-Security-Policy"]
+
+
+@pytest.mark.parametrize('function',['zeroblob','randomblob'])
+def test_python310_blob_fallback_checks_before_allocation_and_keeps_small_values(make_sqlite,monkeypatch,function):
+    db=make_sqlite({'t':('id INTEGER',[(1,)])})
+    connect=server.ro_connect
+    class LegacyConnection:
+        def __init__(self,path):object.__setattr__(self,'conn',connect(path))
+        def __getattr__(self,name):
+            if name=='setlimit':raise AttributeError(name)
+            return getattr(self.conn,name)
+        def __setattr__(self,name,value):setattr(self.conn,name,value)
+    monkeypatch.setattr(server,'ro_connect',LegacyConnection)
+    assert server.q(f'SELECT length({function}(16)) AS n',db=db)['rows']==[{'n':16}]
+    with pytest.raises(sqlite3.Error):server.q(f'SELECT {function}(200000000)',db=db)

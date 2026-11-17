@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 # Web / 接口层:可以依赖一切;其余模块都是领域或基础设施
-APPLICATION = {"server", "wsgi", "srv_actions", "srv_engine", "srv_hardening", "openai_runtime",
+APPLICATION = {"asset_lifecycle", "server", "wsgi", "srv_actions", "srv_engine", "srv_hardening", "openai_runtime",
                "mcp_action_server", "mcp_build_server", "gunicorn.conf", "test_all", "test_ui", "test_ui_ops"}
 WEB = {"flask", "werkzeug", "gunicorn"}
 

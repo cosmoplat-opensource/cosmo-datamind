@@ -86,7 +86,13 @@ def test_test_timeout_is_bounded(monkeypatch):
 
 
 def _clean_llm_env(monkeypatch):
+    # Applying config also replaces the process-wide registered runtime.
+    ar = sys.modules["agent_runtime"]
+    monkeypatch.setattr(ar, "_REGISTRY", dict(ar._REGISTRY))
     for var in srv_engine.LLM_ENV.values():
+        # Track absent keys too: _apply_engine_cfg writes directly to os.environ.
+        # delenv alone records nothing when the key did not exist at test entry.
+        monkeypatch.setenv(var, "")
         monkeypatch.delenv(var, raising=False)
     monkeypatch.setattr(srv_engine, "_ENV_LOCKED_AT_BOOT", set())
 

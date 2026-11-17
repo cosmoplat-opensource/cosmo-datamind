@@ -191,3 +191,15 @@ def business(path):
         "expect": {("计量器具", "器具类型"): ("verified", "soft_delete"), ("计量器具", "企业"): ("verified", None),
                    ("计量关系", "计量器具"): ("candidate", None), ("计量关系", "能源类型"): ("verified", "soft_delete")},
     }
+
+
+def merge_contract(path):
+    """DR-158: scoped data plus an out-of-scope table, with independent truth."""
+    rows = [(1, 10), (2, 20), (3, 30)]
+    _create(path, {'customers': ('id INTEGER PRIMARY KEY, amount REAL', rows),
+                   'outsiders': ('id INTEGER', [(9,)])})
+    return {'db': path, 'question': 'customers有多少条记录', 'truth': len(rows),
+            'sql': 'SELECT COUNT(*) AS n FROM customers',
+            'invalid_sql': 'SELECT COUNT(*) AS n FROM outsiders',
+            'ir': {'objects': [{'id': 'customer', 'name': 'customers', 'table': 'customers'}],
+                   'relations': []}}

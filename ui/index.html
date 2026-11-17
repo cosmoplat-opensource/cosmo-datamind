@@ -193,7 +193,7 @@ a{color:var(--acc)}
 .sk-card.sel{border-color:var(--acc);background:#F7F9FF}
 .sk-card .nm{font-size:14px;font-weight:600;color:var(--txt)} .sk-card .badge{font-size:12px;background:#EEF2FF;color:var(--acc);border-radius:4px;padding:1px 6px;margin-left:6px}
 .sk-card .ds{font-size:12px;color:var(--sub);margin-top:4px}
-</style><link rel="stylesheet" href="/assets/styles/responsive.css?v=2"><link rel="stylesheet" href="/assets/styles/database-scope.css?v=2"><link rel="stylesheet" href="/assets/styles/review.css?v=2"><link rel="stylesheet" href="/assets/styles/qa-anchor.css?v=2"></head><body>
+</style><link rel="stylesheet" href="/assets/styles/responsive.css?v=2"><link rel="stylesheet" href="/assets/styles/database-scope.css?v=2"><link rel="stylesheet" href="/assets/styles/review.css?v=2"><link rel="stylesheet" href="/assets/styles/qa-anchor.css?v=2"><link rel="stylesheet" href="/assets/styles/robotics.css?v=16"></head><body>
 <header class="topbar">
  <div class="wm">◈ COSMO DataMind <small>数据智脑 · 治理 × 本体 × 问数</small></div>
  <div class="tools">
@@ -218,20 +218,24 @@ a{color:var(--acc)}
   <div class="nav" data-p="claw">本体对话</div>
   <div class="nav" data-p="review">本体评审</div>
   <div class="nav" data-p="ontquality">元数据覆盖</div>
+  <div class="nav" data-p="library">本体库</div>
+  <div class="nav" data-p="robotics-view" hidden>机器人本体视图</div>
   <div class="nav" data-p="sparql">SPARQL 查询</div></div>
 <div class="nav-group"><div class="gh" onclick="dqGroup(this)">指标平台 <span class="ar">▾</span></div>
   <div class="nav" data-p="metrics">指标中心</div></div>
 <div class="nav-group"><div class="gh" onclick="dqGroup(this)">数据治理 <span class="ar">▾</span></div>
   <div class="nav" data-p="quality">数据质量</div>
   <div class="nav" data-p="glossary">术语管理</div></div>
-<div class="nav-group"><div class="gh" onclick="dqGroup(this)">智能问数 <span class="ar">▾</span></div>
+<div class="nav-group"><div class="gh" onclick="dqGroup(this)">本体应用 <span class="ar">▾</span></div>
   <div class="nav" data-p="chat">深度问数</div>
+  <div class="nav" data-p="robotics-task">行为树生成</div>
   <div class="nav" data-p="qaeval">问数评测</div></div>
 <div class="nav-group"><div class="gh" onclick="dqGroup(this)">动作执行 <span class="ar">▾</span></div>
   <div class="nav" data-p="actioncenter">动作中心</div></div>
 <div class="nav-group"><div class="gh" onclick="dqGroup(this)">开发 <span class="ar">▾</span></div>
   <div class="nav" data-p="sqldev">SQL 工作台</div></div>
 <div class="nav-group"><div class="gh" onclick="dqGroup(this)">运维管理 <span class="ar">▾</span></div>
+  <div class="nav" data-p="jobs">机器人运行</div>
   <div class="nav" data-p="enginecfg">引擎设置</div></div>
 <div style="flex:1"></div><div class="muted" style="padding-left:8px">智能引擎 · 多智能体编排</div>
 </aside>
@@ -466,6 +470,8 @@ a{color:var(--acc)}
   </div></div>
 
  <div class="page" id="p_build">
+  <div class="rb-toolbar"><label>本体构建配方<select id="rb_recipe" aria-label="本体构建配方" disabled><option value="data">数据 → 数据本体</option></select></label></div>
+  <div id="rb_panel" hidden></div>
   <style>
   .bc-hero{background:linear-gradient(120deg,#4A5FF3 0%,#6E4BF0 55%,#8B5CF6 100%);border-radius:12px;padding:18px 22px;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:16px;box-shadow:0 10px 30px rgba(74,95,243,.28);position:relative;overflow:hidden}
   .bc-hero::after{content:"";position:absolute;right:-40px;top:-40px;width:220px;height:220px;background:radial-gradient(circle,rgba(255,255,255,.18),transparent 70%);pointer-events:none}
@@ -668,6 +674,10 @@ a{color:var(--acc)}
     <button class="ghost" onclick="clawAudit()">刷新审计</button></div>
    <div id="claw_audit" class="muted">点「刷新审计」查看谁改了什么</div></div></div>
 
+ <div class="page" id="p_library"><h2>本体库 <span class="muted">按领域浏览资产、固定版本和来源</span></h2>
+  <div id="ra_host"></div><div id="lib_legacy"><h3>原数据本体管理</h3>
+  <div class="card scroll" id="lib_list"></div></div></div>
+
  <div class="page" id="p_glossary"><h2>术语管理 <span class="muted">英文↔中文业务词典(表名/列名/短语/词元)，深度问数与中文化共用的词典</span></h2>
   <div class="card"><div class="row" style="margin-bottom:10px"><input id="gl_q" placeholder="搜索英文/中文术语…" style="width:280px" oninput="glRender()">
    <select id="gl_type" onchange="glRender()" style="width:120px"><option value="">全部类型</option><option>表名</option><option>列名</option><option>短语</option><option>词元</option></select>
@@ -686,12 +696,28 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
   <div class="kpis" id="quality_kpis" style="grid-template-columns:repeat(4,1fr)"></div>
   <div class="card scroll" id="quality_list" style="max-height:calc(100vh - 300px)"></div></div>
 
+ <div class="page" id="p_jobs"><h2>机器人运行 <span class="muted">本体构建历史与工件</span></h2>
+  <div class="card rb-content" id="ra_jobs" data-testid="robotics-jobs"></div>
+ </div>
+
  <div class="page" id="p_sparql"><h2>SPARQL 查询 <span class="muted">对本体 OWL 图谱做语义查询(经典引擎 rdflib)</span></h2>
   <div class="card"><textarea id="sq_q" style="height:120px;font-family:monospace">SELECT ?cls ?label WHERE { ?cls a <http://www.w3.org/2002/07/owl#Class>. OPTIONAL{?cls <http://www.w3.org/2000/01/rdf-schema#label> ?label} } LIMIT 20</textarea>
    <div class="row" style="margin-top:8px"><button onclick="sparqlRun()">执行</button><span class="muted" id="sq_info"></span></div>
    <div class="scroll" id="sq_out" style="margin-top:10px"></div></div></div>
+<div class="page" id="p_robotics-view"><div id="rv_host"></div></div>
+<div class="page" id="p_robotics-task"><div id="rt_application"></div></div>
 </main>
 </div>
+<script src="/assets/modules/robotics-application.js?v=4"></script>
+<script src="/assets/modules/robotics-task.js?v=12"></script>
+<script src="/assets/modules/robotics-task-app.js?v=3"></script>
+<script src="/assets/modules/robotics-assets.js?v=16"></script><script src="/assets/modules/ontology-lifecycle.js?v=1"></script>
+<script src="/assets/modules/ontology-detail.js?v=5"></script>
+<script src="/assets/modules/robotics-views.js?v=9"></script>
+<script src="/assets/modules/robotics-design.js?v=9"></script>
+<script src="/assets/modules/robotics-build.js?v=3"></script>
+<script src="/assets/modules/robotics-review.js?v=1"></script>
+<script src="/assets/modules/robotics-review-page.js?v=1"></script>
 <script src="/assets/modules/catalog.js?v=3"></script>
 <script src="/assets/modules/database-scope.js?v=2"></script>
 <script src="/assets/modules/build-references.js?v=5"></script>
@@ -705,6 +731,7 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
 <script src="/assets/modules/evidence-card.js?v=3"></script>
 <script src="/assets/modules/graph-render.js?v=2"></script>
 <script src="/assets/modules/chart-series.js?v=3"></script>
+<script src="/assets/modules/qa-contract.js?v=1"></script>
 <script>const $=s=>document.querySelector(s);
 // 刚被点击的按钮:写请求在途时置灰,避免重复提交(各页面的提交函数不必各写一遍)
 let CLICKED=null,CLICKED_AT=0;addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('button');if(b){CLICKED=b;CLICKED_AT=Date.now();}},true);
@@ -733,7 +760,9 @@ function closeDialogs(){document.querySelectorAll('.dq-modal').forEach(m=>{m.sty
  const a=document.querySelector('aside');if(a)a.classList.remove('open');}
 function goPage(p){const nav=document.querySelector('[data-p="'+p+'"]');if(!nav)return false;closeDialogs();
  document.querySelectorAll('.nav').forEach(x=>x.classList.remove('on'));nav.classList.add('on');
+ if(p==='robotics-task')nav.scrollIntoView({block:'nearest'});
  document.querySelectorAll('.page').forEach(pg=>pg.classList.remove('on'));const el=$('#p_'+p);if(el)el.classList.add('on');
+ window.RoboticsBuild?.page(p);window.RoboticsAssets?.page(p);window.RoboticsReview?.page(p);window.RoboticsTaskApp?.page(p);window.RoboticsTask?.page(p);window.RoboticsViews?.page(p);
  const revisit=!!loaded[p];load(p);
  // 易变页每次进入都重取：别处(评审/动作/构建)的变动切回来即见，不吃首屏一次性缓存
  if(revisit){try{
@@ -749,7 +778,7 @@ document.querySelectorAll('.nav').forEach(n=>n.onclick=()=>{const p=n.dataset.p;
 const loaded={};
 async function load(p){if(loaded[p])return;loaded[p]=1;
  if(p==='home')home();if(p==='catalog')catalog();if(p==='graph')graphs();if(p==='chat')chatInit();
- if(p==='metrics')metrics();
+ if(p==='metrics')metrics();if(p==='library')library();
  if(p==='claw'){await clawGraphs();clawSessions();clawEdits();clawAudit();try{$('#claw_who').value=localStorage.getItem('claw_who')||''}catch(_){}}
  if(p==='build')bcInit();if(p==='conn')cnInit();if(p==='viz')vzInit();if(p==='review')reviewInit();if(p==='actioncenter')acCenter();if(p==='enginecfg')egLoad();
  if(p==='qaeval')qeLoad();if(p==='sqldev')sdInit();
@@ -852,14 +881,19 @@ function graphOptions(gs,label){
   if(!items.length)return '';
   return `<optgroup label="${gl}">`+items.map(g=>`<option value="${esc(g.id)}">${esc(label(g))}</option>`).join('')+`</optgroup>`;}).join('');
 }
+let G_DELETED_SELECTION=false; window.addEventListener('ontology-lifecycle-changed',e=>{DQ_GRAPHS=null;loaded.graph=0;if(e.detail.state==='deleted'&&(e.detail.legacy_keys||[]).includes($('#g_sel')?.value)){G_DELETED_SELECTION=true;$('#g_sel').value='';gQaSync(null);if(gChart){gChart.destroy();gChart=null;}GRAPH_CUR={key:'',nodes:[],edges:[]};GRAPH_HL=null;$('#g_canvas').textContent='当前本体已移到回收站，请明确选择本体后继续。';$('#g_info').textContent='';$('#g_legend').textContent='';$('#g_detail').style.display='none';$('#g_hlbar').style.display='none';}if(e.detail.state==='deleted'&&(e.detail.legacy_keys||[]).includes(BC.base))bcIterClear();});
 let G_LIST_SEQ=0;
 async function graphs(pref){const seq=++G_LIST_SEQ;const got=await JL('/api/graphs');const gs=got||[];
  if(seq!==G_LIST_SEQ)return;            // 只认最后一次调用:重访重取与「在本体图谱中查看」先后返回不定
  if(got)DQ_GRAPHS=gs;                   // 请求失败时保留原来的列表,不用空列表顶替
  $('#g_sel').innerHTML=graphOptions(gs,g=>`${g.name}(${g.nodes}节点/${g.edges}关系)`);
- $('#g_sel').onchange=()=>{const k=$('#g_sel').value;gQaSync(k);drawGraph(k);};
- const want=(pref&&gs.some(g=>g.id===pref))?pref:(gs[0]&&gs[0].id);
- if(want){$('#g_sel').value=want;gQaSync(want);drawGraph(want);}}
+ $('#g_sel').onchange=()=>{G_DELETED_SELECTION=false;const k=$('#g_sel').value;gQaSync(k);drawGraph(k);};
+ if(pref&&!gs.some(g=>g.id===pref)){G_DELETED_SELECTION=true;$('#g_sel').value='';gQaSync(null);
+  if(gChart){gChart.destroy();gChart=null;}GRAPH_CUR={key:'',nodes:[],edges:[]};GRAPH_HL=null;
+  $('#g_canvas').textContent='所选本体当前不可用。';$('#g_info').textContent='所选本体不在当前数据库的可用列表中；请切换数据库或重新选择本体。';
+  $('#g_legend').textContent='';$('#g_detail').style.display='none';$('#g_hlbar').style.display='none';return;}
+ if(G_DELETED_SELECTION&&!pref){$('#g_sel').value='';gQaSync(null);return;} const want=(pref&&gs.some(g=>g.id===pref))?pref:(gs[0]&&gs[0].id);
+ if(want){G_DELETED_SELECTION=false;$('#g_sel').value=want;gQaSync(want);drawGraph(want);}}
 // 与平台原版一致的 G6 渲染:dagre 分层 + 圆角矩形四色节点 + 折线边(按 status 分色虚实)
 const GKIND={object:{fill:'#eef2ff',stroke:'#4a5ff3',text:'#4a5ff3'},event:{fill:'#fff5eb',stroke:'#ff7d00',text:'#d46b08'},
  action:{fill:'#fff7e6',stroke:'#d97706',text:'#b45309'},asset:{fill:'#fef0ff',stroke:'#a855f7',text:'#7c3aed'},role:{fill:'#e0f7fa',stroke:'#00bcd4',text:'#00838f'},ice:{fill:'#f5f3ff',stroke:'#7c6ff0',text:'#5b4fc8'}};
@@ -874,7 +908,7 @@ const GEST=EST;   // 兼容既有引用名
 let GRAPH_CUR={key:'demo',nodes:[],edges:[]};
 // 共享 G6 渲染(本体图谱 + 建模工作台复用，统一布局/配色/自适应)
 let GRAPH_HL=null;      // 从深度问数跳来的锚定高亮:{key, set：锚定对象, used:SQL 实际用到的表}
-async function drawGraph(k){const g=await J('/api/graph/'+k);
+async function drawGraph(k){const g=await J('/api/graph/'+k);if(G_DELETED_SELECTION)return;
  if(g.error||!Array.isArray(g.nodes)){$('#g_info').textContent=g.error||'图谱加载失败';return;}
  appGraphInitialLayout(g);
  GRAPH_CUR={key:k,nodes:g.nodes,edges:g.edges};
@@ -888,6 +922,7 @@ async function drawGraph(k){const g=await J('/api/graph/'+k);
  $('#g_legend').innerHTML=kset.map(x=>`<span class="tag" style="background:${KCOL(x)}22;color:${KCOL(x)}">${KNM(x)}</span>`).join('')
   +sset.map(x=>`<span class="muted" style="font-size:12px;margin-left:8px;white-space:nowrap"><svg width="26" height="8" aria-hidden="true" style="vertical-align:middle"><line x1="1" y1="4" x2="25" y2="4" stroke="${EST[x].c}" stroke-width="2"${EST[x].d?` stroke-dasharray="${EST[x].d.join(' ')}"`:''}/></svg> ${EST[x].n}</span>`).join('');
  if(gChart){try{gChart.destroy();}catch(_){}gChart=null;}
+ $('#g_canvas').textContent='';
  const hl=(GRAPH_HL&&GRAPH_HL.key===k)?GRAPH_HL:null;
  const hb=$('#g_hlbar');
  if(hl&&hb){const inG=g.nodes.filter(x=>hl.set.has(x.id)).length;
@@ -1206,7 +1241,7 @@ async function egLoad(){EG=await J('/api/engine/config').catch(e=>({error:''+e})
      <button class="ghost" onclick="egTest(${jsAttr(r)},this)">测试连通</button></div>
     <div class="muted" id="eg_t_${esc(r)}" style="font-size:12px;margin-top:6px"></div></div>`;}).join('')+'</div>';
  // B4 按任务选模:SQL 计划 / 洞察叙述 / 根因诊断 各配独立模型(空=跟随当前引擎)
- const TN={plan:['SQL 计划生成','问数中最耗时的环节，可配轻量模型(如 haiku)降低时延与成本'],narrative:['洞察叙述','结论文字生成，轻量模型足够'],diagnose:['根因诊断','约束生成要求高，建议保持强模型']};
+ const TN={bt_extract:['机器人任务解析','提取零件与目标等任务信息，空值沿用平台 OpenAI 兼容接口的默认模型'],plan:['SQL 计划生成','问数中最耗时的环节,可配轻量模型(如 haiku)降低时延与成本'],narrative:['洞察叙述','结论文字生成,轻量模型足够'],diagnose:['根因诊断','约束生成要求高,建议保持强模型']};
  const allOpts=[...new Set([].concat(...Object.values(EG.model_options||{})))];
  $('#eg_tasks').innerHTML=`<h3 style="margin:0 0 8px">按任务选模 <span class="muted" style="font-weight:400;font-size:12px">每个环节独立指定模型 · 空=跟随当前引擎缺省 · 保存即刻生效</span></h3>`
   +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px">'
@@ -1758,9 +1793,9 @@ async function ask(){if(DQ_MODE==='diag')return diagAsk();
      nd.textContent+=ev.text;scroll();}
     else if(ev.type==='anchor'){const ab=card.querySelector('#_dqanc');if(ab){ab.innerHTML=dqAnchorHTML(ev.anchor);scroll();}dqAncBar(ev.anchor);}
     else if(ev.type==='done'){done=ev;}
-    else if(ev.type==='error'){card.innerHTML=`<span class="dq-t warn">${esc(ev.error)}</span>`;}}}
+    else if(ev.type==='error'){card.innerHTML=dqContractErrorHTML(ev);}}}
   if(done&&card.isConnected){CHAT_HIST.push({q,summary:done.summary||''});dqRenderCard(card,q,done);dqAncBar(done.anchor);
-   const dT={narrative:done.narrative,summary:done.summary,anchor:done.anchor,cached:done.cached,elapsed:done.elapsed,session:done.session,steps:done.steps,results:(done.results||[]).map(r=>({title:r.title,sql:r.sql,chart:r.chart,data:{columns:r.data.columns,rows:(r.data.rows||[]).slice(0,200)}}))};
+   const dT={narrative:done.narrative,summary:done.summary,anchor:done.anchor,application_check:done.application_check,cached:done.cached,elapsed:done.elapsed,session:done.session,steps:done.steps,results:(done.results||[]).map(r=>({title:r.title,sql:r.sql,chart:r.chart,data:{columns:r.data.columns,rows:(r.data.rows||[]).slice(0,200)}}))};
    myConv.turns.push({q,d:dT});if(!myConv.title)myConv.title=q;dqSaveConv(myConv);}
  }catch(e){if(e&&e.name==='AbortError')return;
   if(card.isConnected){
@@ -1924,7 +1959,7 @@ async function bcDelBuilt(key,el){if(BC_BUSY&&BC.base===key){toast('该本体正
  if(BC_DEL_ARM[key]==='pending')return;
  if(!BC_DEL_ARM[key]){BC_DEL_ARM[key]=1;toast('再点一次 ✕ 确认删除该构建产物',false);
   setTimeout(()=>{if(BC_DEL_ARM[key]!=='pending')delete BC_DEL_ARM[key];},4000);return;}
- BC_DEL_ARM[key]='pending';
+ BC_DEL_ARM[key]='pending';if(window.OntologyLifecycle){try{await OntologyLifecycle.legacy(key,()=>{if(BC.base===key)bcIterClear();bcBuilt();});}catch(error){toast(error.message,false);}finally{delete BC_DEL_ARM[key];}return;}
  const d=await J('/api/build/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key})});delete BC_DEL_ARM[key];
  if(!d||d.error){toast(d&&d.error||'删除失败',false);return;}
  if(BC.base===key)bcIterClear();          // 基础本体被删就解除选定，不留一个指向已不存在图谱的目标
@@ -2360,6 +2395,15 @@ async function clawAudit(){const d=await J('/api/ont/audit/'+encodeURIComponent(
    d.recent.map(r=>`<tr><td>${esc(r.op)}</td><td>${esc(r.target||'')}</td><td>${esc(r.by)}</td><td>${esc(r.source)}</td><td class="muted">${esc(r.ts||'')}</td><td class="muted">${esc(r.reason||'')}</td></tr>`).join('')+'</table></div>';}
  h+=`<div class="muted" style="margin-top:6px;font-size:12px">${esc(d.note||'')}</div>`;
  $('#claw_audit').innerHTML=h;}
+async function library(){const d=await J('/api/ont/forged');
+ const rows=(d.ontologies||d.list||[]);
+ $('#lib_list').innerHTML='<table><tr><th>ID</th><th>名称</th><th>对象数</th><th>关系数</th><th>操作</th></tr>'+
+  rows.map(o=>`<tr><td>${esc(o.id)}</td><td>${esc(o.name||'')}</td><td>${o.objects??o.entities??'-'}</td><td>${o.links??'-'}</td>
+   <td><a href="#" onclick="event.preventDefault();bcView('forged_'+${jsAttr(o.id)})">查看↗</a>
+   <a href="#" style="margin-left:8px" onclick="event.preventDefault();dqStartFromOntology('forged_'+${jsAttr(o.id)})">问数</a>
+   <a href="#" style="color:#b91c1c;margin-left:8px" onclick="event.preventDefault();if(confirm('删除 '+${jsAttr(o.id)}+'?'))libDel(${jsAttr(o.id)})">删除</a></td></tr>`).join('')+'</table>';}
+async function libDel(id){if(window.OntologyLifecycle){await OntologyLifecycle.legacy('forged_'+id,()=>library());return;}const d=await J('/api/ont/forged/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+ if(d.error)toast(d.error);library();}
 async function sparqlRun(){$('#sq_info').textContent='查询中…';
  const d=await J('/api/sparql',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:$('#sq_q').value})}).catch(e=>({error:''+e}));
  if(d.error){$('#sq_info').textContent=d.error+(d.hint?' — '+d.hint:'');$('#sq_out').innerHTML='';return}
@@ -2369,10 +2413,15 @@ async function sparqlRun(){$('#sq_info').textContent='查询中…';
 // 初始寻址：带 hash 直达对应子页，否则默认首页
 (async()=>{if(await appSourceInit()){if(location.hash.slice(1))routeHash();else{home();loaded.home=1;}}else{goPage('conn');}})();
 // hash 路由：每个子页可经 #<page> 寻址；另支持 #graph=<key> / #obj=<key>:<id> 深链
-function routeHash(){const h=location.hash.slice(1);
+function routeHash(){if(window.RoboticsReview?.guardHash())return;const h=location.hash.slice(1);
+ if(/^robotics-view\?/.test(h)){goPage('robotics-view');return;}
+ if(/^robotics-task\?/.test(h)){goPage('robotics-task');return;}
+ if(/^build\?/.test(h)){goPage('build');return;}
+ if(/^library\?/.test(h)){goPage('library');return;}
+ if(/^review\?/.test(h)){goPage('review');return;}
  const mg=h.match(/^graph=(.+)$/);if(mg){loaded.graph=1;goPage('graph');graphs(mg[1]);return;}
  const mo=h.match(/^obj=([^:]+):(.+)$/);if(mo){loaded.graph=1;goPage('graph');graphs(mo[1]);return;}   // 仅定位到图谱；对象级高亮随 studio 页一并移除
- const on=document.querySelector('.nav.on');if(h&&on&&on.dataset.p===h&&loaded[h])return;   // 菜单点击已打开该页,hashchange 不再重复进入(首屏 #home 仍要加载)
+ const on=document.querySelector('.nav.on');if(h&&on&&on.dataset.p===h&&loaded[h]&&!['library','build','review','robotics-task','robotics-view'].includes(h))return;   // 菜单点击已打开该页,hashchange 不再重复进入(首屏 #home 仍要加载)
  if(h){if(!goPage(h)){goPage('home');history.replaceState(null,'','#home');}}else goPage('home');}  // 未知 hash 回首页并纠正 URL，避免地址与页面不一致
 addEventListener('hashchange',routeHash);
 // 可访问性：让 onclick 的 div/span 可 Tab 聚焦 + Enter/Space 触发(键盘可操作)

@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 """门槛本身的约束(DR-106):覆盖率统计不得再把路由层排除在外;函数体类型检查的名单不得缩水到空。"""
 import re
-import tomllib
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
