@@ -2,6 +2,7 @@
 
 > 2026-11-16：多次回放与「结果不稳定」的判定见 [DR-138](DR-138-concept-repair-and-repeated-replay.md)。
 > 2026-11-17：[DR-139](DR-139-review-of-dr133-138.md) 修订了回放记录的存储、批量任务按数据源分开与说明文字。
+> 2026-11-17：[DR-140](DR-140-cancel-and-paired-replay.md) 加上本体修改前后的配对回放，用来区分本体修改与模型随机性。
 
 状态：已实现。日期：2026-11-16。
 关联：FEEDBACK-REPLAY-01；DR-122。

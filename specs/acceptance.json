@@ -1461,6 +1461,30 @@
         "tests/unit/test_feedback_replay.py::test_regression_jobs_are_kept_per_data_source",
         "tests/meta/test_ui_safety.py::test_attachment_chips_replay_polling_and_feedback_wording"
       ]
+    },
+    {
+      "id": "DATA-GROUNDING-04",
+      "criterion": "构建放弃等待(超时或客户端断开)后,数据接地与业务概念两步不再发起新的模型调用;取值画像的查询可被中断",
+      "tests": [
+        "tests/unit/test_data_grounding.py::test_naming_stops_starting_batches_once_cancelled",
+        "tests/unit/test_data_grounding.py::test_the_concept_call_is_not_made_after_cancel",
+        "tests/unit/test_data_grounding.py::test_the_cancellable_runner_signals_the_worker_when_it_stops_waiting",
+        "tests/unit/test_data_grounding.py::test_closing_the_stream_early_also_cancels"
+      ]
+    },
+    {
+      "id": "FEEDBACK-REPLAY-04",
+      "criterion": "反馈记下本体版本;配对回放在反馈时的版本与当前版本上交替提问,比较与反馈时答案一致的次数;版本无法复原时说明原因;批量配对给出差值与 95% 区间",
+      "tests": [
+        "tests/unit/test_feedback_replay.py::test_feedback_records_the_ontology_version_and_reads_can_be_pinned_to_it",
+        "tests/unit/test_feedback_replay.py::test_a_paired_replay_asks_before_and_after_the_edit_in_alternation",
+        "tests/unit/test_feedback_replay.py::test_paired_replay_is_refused_with_a_reason_when_before_cannot_be_rebuilt",
+        "tests/unit/test_feedback_replay.py::test_feedback_from_before_versions_were_recorded_cannot_be_paired",
+        "tests/unit/test_feedback_replay.py::test_the_paired_regression_reports_the_difference_with_an_interval",
+        "tests/unit/test_feedback_replay.py::test_what_a_paired_result_means_depends_on_the_kind_of_feedback",
+        "tests/unit/test_feedback_replay.py::test_a_request_made_inside_the_pinned_context_sees_the_old_version",
+        "tests/meta/test_ui_safety.py::test_paired_replay_controls_are_present"
+      ]
     }
   ]
 }

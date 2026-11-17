@@ -1,5 +1,7 @@
 # DR-139 · DR-133 至 DR-138 的复查修正
 
+> 2026-11-17：「没有做的」里数据接地超时后后台仍调用模型一项，已由 [DR-140](DR-140-cancel-and-paired-replay.md) 处理。
+
 状态：已实现。日期：2026-11-17。
 关联：QA-GATE-PARSE-02、ONT-CHECK-02、ARITH-WITNESS-02、UPLOAD-HEADER-02、DATA-GROUNDING-03、FEEDBACK-REPLAY-03；
 DR-133、DR-134、DR-135、DR-136、DR-137、DR-138。

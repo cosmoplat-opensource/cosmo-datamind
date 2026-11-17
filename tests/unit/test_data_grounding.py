@@ -196,3 +196,71 @@ def test_a_repair_round_cannot_add_more_concepts_than_failed(make_sqlite):
     out = workload_concepts.build(con, {"objects": [{"table": "tb001"}]}, {}, ["q"], ask, json.loads, brief="B",
                                   repair={"tables_brief": lambda t: "b", "groundings": []})
     assert out["repair"]["recovered"] == 1 and out["dropped"] >= 0 and out["accepted"] <= out["proposed"]
+
+
+# ── DR-140:构建放弃等待后,后台不再发起新的模型调用 ─────────────────────────────────────────────
+
+def _opaque_db(make_sqlite, n=8):
+    return make_sqlite({f"tb{i:03d}": ("cl0001 TEXT, cl0002 TEXT", [(f"a{j}", f"Alameda{j}") for j in range(5)])
+                        for i in range(n)})
+
+
+def test_naming_stops_starting_batches_once_cancelled(make_sqlite):
+    import threading
+    import server
+    db = _opaque_db(make_sqlite)
+    ir = {"objects": [{"name": f"tb{i:03d}", "cn": f"tb{i:03d}", "table": f"tb{i:03d}", "attrs": []} for i in range(8)],
+          "relations": []}
+    cancel = threading.Event()
+    calls = []
+
+    def ask(p):
+        calls.append(p)
+        cancel.set()                      # 第一批进行中,外层放弃了等待
+        return "{}"
+    server._data_grounding(db, ir, [], ask=ask, cancel=cancel)
+    assert len(calls) == 1                # 8 张表按 6 张一批本应调用 2 次
+
+
+def test_the_concept_call_is_not_made_after_cancel(monkeypatch):
+    import threading
+    import time
+    import server
+    cancel = threading.Event()
+    cancel.set()
+    monkeypatch.setattr(server, "_llm_turn", lambda *a, **k: (_ for _ in ()).throw(AssertionError("不应调用模型")))
+    assert server._concept_ask("p", time.monotonic() + 60, cancel) == ""
+
+
+def test_the_cancellable_runner_signals_the_worker_when_it_stops_waiting():
+    import server
+    seen = {}
+
+    def work(_log, cancel):
+        seen["cancelled"] = cancel.wait(5)
+        return "late"
+    items = list(server._cancellable_stream(work, 0.3, tick=0.1))
+    assert items[-1][0] == "done" and items[-1][3] is True          # 超时
+    import time
+    for _ in range(50):
+        if "cancelled" in seen:
+            break
+        time.sleep(0.05)
+    assert seen.get("cancelled") is True
+
+
+def test_closing_the_stream_early_also_cancels():
+    import time
+    import server
+    seen = {}
+
+    def work(_log, cancel):
+        seen["cancelled"] = cancel.wait(5)
+    gen = server._cancellable_stream(work, 30, tick=0.05)
+    next(gen)                                                        # 客户端断开:生成器被关闭
+    gen.close()
+    for _ in range(50):
+        if "cancelled" in seen:
+            break
+        time.sleep(0.05)
+    assert seen.get("cancelled") is True

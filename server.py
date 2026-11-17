@@ -718,6 +718,16 @@ def _bounded_ex(fn, secs, default=None):
         return default, None, True
     return box["v"], box["err"], False
 
+def _cancellable_stream(fn, secs, tick=2.0):
+    """_bounded_stream 加取消信号:fn(log, cancel)。本生成器结束时(正常完成、超时放弃、客户端断开导致生成器被关闭)
+    都把 cancel 置位,后台线程据此不再发起新的模型调用或查询。"""
+    cancel = threading.Event()
+    try:
+        yield from _bounded_stream(lambda log: fn(log, cancel), secs, tick)
+    finally:
+        cancel.set()
+
+
 def _bounded_stream(fn, secs, tick=2.0):
     """有界执行的流式版本：fn(log) 在守护线程里跑，期间通过 log(text) 回报过程；
     本生成器按到达顺序产出 ("log", text) 与 ("tick", 已用秒数)，结束时产出
@@ -1673,6 +1683,13 @@ import contextvars
 _QA_DB = contextvars.ContextVar("qa_db", default=None)
 # 作答形式:"" 为分析报告(可带拆分与趋势);"exact" 为精确作答,只回答问题本身,便于与标准答案逐行比对
 _ANSWER_STYLE = contextvars.ContextVar("answer_style", default="")
+# DR-140 配对回放:{图谱键: 编辑条数}。设置后,本上下文里读到的这些图谱只回放前 n 条编辑,即反馈时的版本。
+_IR_PIN = contextvars.ContextVar("ir_pin", default=None)
+
+
+def _pinned(key):
+    pin = _IR_PIN.get()
+    return bool(pin) and key in pin
 # 规划策略(多路候选时各取其一,DR-081):"" 默认;probe 先探查;decompose 先写出所需表、列、条件
 _PLAN_VARIANT = contextvars.ContextVar("plan_variant", default="")
 
@@ -1702,6 +1719,8 @@ def _source_graph_keys(path):
     files = [path, _BUILD_CONN_F, *(q for v in IR_SOURCES.values() for q in v.get("paths", []))]
     files += sorted(glob.glob(os.path.join(PLATFORM, 'data', 'forged', '*.json')))
     files += sorted(glob.glob(os.path.join(WORK, 'built_*.json'))) + sorted(glob.glob(os.path.join(WORK, 'edits_*.json')))
+    if _IR_PIN.get():                            # 配对回放读的是旧版本,不读也不写缓存
+        return _source_graph_keys_uncached(path)
     sig = _stat_sig(*files)
     hit = _SOURCE_KEYS_CACHE.get(path)
     if hit and hit[0] == sig:
@@ -1744,6 +1763,13 @@ def _active_graph_key(path=None):
     path = path or _active_db()
     if database_scope.same_path(path, DB):
         sig = (path, _stat_sig(path, *IR_SOURCES.get('demo', {}).get('paths', []), _edits_path('demo')))
+        if _pinned('demo'):
+            sig = None                               # 配对回放读旧版本时不用、也不覆盖缓存
+            _fits = (lambda ir: bool(ir) and _describes(ir, path))(load_ir_edited('demo'))
+            if _fits:
+                return 'demo'
+            keys = _source_graph_keys(path)
+            return keys[0] if keys else ''
         if _DEMO_FITS.get('sig') != sig:             # 标准部署下每个请求都会走到这里:结论按文件指纹缓存,不逐个读图谱
             ir = load_ir_edited('demo')
             _DEMO_FITS.update(sig=sig, ok=bool(ir) and _describes(ir, path))
@@ -3117,7 +3143,7 @@ _GRAPH_ROW_CACHE: dict = {}
 
 def _graph_row(k, cat, src_paths, inventory, inv_sig, name=None):
     base_sig = (_stat_sig(*src_paths), _stat_sig(_edits_path(k)), inv_sig, _stat_sig(_BUILD_CONN_F))
-    hit = _GRAPH_ROW_CACHE.get(k)
+    hit = None if _pinned(k) else _GRAPH_ROW_CACHE.get(k)
     if hit and hit[0][:4] == base_sig:
         path = hit[2] if len(hit) > 2 else None
         source_sig = _stat_sig(path, path + '-wal') if path else ()
@@ -3132,7 +3158,8 @@ def _graph_row(k, cat, src_paths, inventory, inv_sig, name=None):
     row = {'id': k, 'name': name or (ir.get('scenario') or {}).get('name') or k,
            'nodes': len(graph['nodes']), 'edges': len(graph['edges']), 'cat': cat,
            **_qa_graph_summary(ir, inventory)}
-    _GRAPH_ROW_CACHE[k] = (sig, row, source_path)
+    if not _pinned(k):
+        _GRAPH_ROW_CACHE[k] = (sig, row, source_path)
     return row
 
 @app.get("/api/graphs")
@@ -3602,6 +3629,8 @@ def load_ir_edited(key):
     except Exception as e:                                      # noqa: BLE001
         ops = []
         failed.append({"index": -1, "op": "(编辑记录)", "target": "", "error": "编辑记录无法读取:" + type(e).__name__})
+    if _pinned(key):
+        ops = ops[:_IR_PIN.get()[key]]
     for i, op in enumerate(ops):
         try: apply_any(ir, op)
         except Exception as e:                                  # noqa: BLE001
@@ -6286,6 +6315,60 @@ def _load_fb():
     try: return json.load(open(QA_FB))
     except Exception: return []
 
+def _graph_files(key):
+    if key.startswith("built_"):
+        return [_confined(WORK, key + ".json")]
+    if key.startswith("forged_"):
+        return [_confined(os.path.join(PLATFORM, "data", "forged"), key[7:] + ".json")]
+    return list(IR_SOURCES.get(key, {}).get("paths", []))
+
+
+def _ops_digest(ops):
+    return hashlib.sha1(json.dumps(ops, ensure_ascii=False, sort_keys=True, default=str).encode("utf-8")).hexdigest()[:16]
+
+
+def _graph_version(key):
+    """DR-140 图谱的版本:构建产物的内容摘要 + 编辑条数 + 这些编辑的摘要。之后编辑记录只是追加时,可复原这个版本。"""
+    h = hashlib.sha1()
+    for p in _graph_files(key):
+        try:
+            with open(p, "rb") as f:
+                h.update(f.read())
+        except OSError:
+            h.update(b"<missing>")
+    try:
+        ops = (_load_edits(key) or {}).get("ops") or []
+    except Exception:                            # noqa: BLE001
+        ops = []
+    return {"key": key, "base": h.hexdigest()[:16], "ops": len(ops), "ops_digest": _ops_digest(ops)}
+
+
+def _pin_for(versions):
+    """反馈时的版本 → ({图谱键: 编辑条数}, "");复原不了或没有修改时 → (None, 原因)。"""
+    if not versions:
+        return None, "反馈时没有记录本体版本(早于配对回放功能的反馈),只能做普通回放"
+    pin, changed = {}, False
+    for v in versions:
+        key = v.get("key") or ""
+        if _bad_gkey(key):
+            return None, "反馈记录里的图谱键无效"
+        cur = _graph_version(key)
+        if cur["base"] != v.get("base"):
+            return None, f"本体「{_graph_name(key)}」在反馈后重新构建过,修改前的版本已无法复原,只能做普通回放"
+        try:
+            ops = (_load_edits(key) or {}).get("ops") or []
+        except Exception:                        # noqa: BLE001
+            return None, f"本体「{_graph_name(key)}」的编辑记录无法读取"
+        n = int(v.get("ops") or 0)
+        if len(ops) < n or _ops_digest(ops[:n]) != v.get("ops_digest"):
+            return None, f"本体「{_graph_name(key)}」反馈时已有的编辑在之后被撤销或改写过,修改前的版本无法复原,只能做普通回放"
+        changed = changed or len(ops) > n
+        pin[key] = n
+    if not changed:
+        return None, "反馈之后本体没有修改,不需要对比修改前后"
+    return pin, ""
+
+
 @app.post("/api/chat/feedback")
 def chat_feedback():
     """问数/诊断结果反馈落库:needs_work 进入待处理列表(评审页处理)。
@@ -6304,6 +6387,9 @@ def chat_feedback():
             "comment": str(body.get("comment") or "")[:500], "mode": str(body.get("mode") or "chat")[:16],
             "resolved": False, "graphs": graphs, "snapshot": feedback_replay.snapshot(results or []),
             **_source_record_fields()}
+    # DR-140 记下反馈时所用本体的版本,之后可以把修改前后的本体放在一起比较
+    _vkeys = graphs or [k for k in [_active_graph_key()] if k]
+    item["versions"] = [_graph_version(k) for k in _vkeys]
     with _WRITE_LOCK:
         fb = _load_fb(); fb.insert(0, item); _atomic_json(QA_FB, fb[:500])
     return jsonify({"ok": True, "id": item["id"]})
@@ -6340,8 +6426,14 @@ def chat_feedback_resolve():
     return jsonify({"ok": True, "resolution": it["resolution"]})
 
 
-def _feedback_ask(question, graphs):
-    """按当前本体重新问一次(DR-137),走与界面相同的问数接口,不读缓存。"""
+def _feedback_post(body, headers):
+    r = app.test_client().post("/api/chat", json=body, headers=headers)
+    return r.get_json(silent=True) or {"error": f"HTTP {r.status_code}"}
+
+
+def _feedback_ask(question, graphs, pin=None):
+    """按当前本体重新问一次(DR-137),走与界面相同的问数接口,不读也不写答案缓存。
+    pin 给出时(DR-140)按反馈时的本体版本问:同一线程里的问数读到的是只回放前 n 条编辑的本体。"""
     headers = {}
     src = _active_source()
     if src and src.get("id"):
@@ -6349,8 +6441,12 @@ def _feedback_ask(question, graphs):
     body = {"q": question, "cache_policy": "bypass"}
     if graphs:
         body["graphs"] = graphs
-    r = app.test_client().post("/api/chat", json=body, headers=headers)
-    return r.get_json(silent=True) or {"error": f"HTTP {r.status_code}"}
+    token = _IR_PIN.set(pin) if pin else None
+    try:
+        return _feedback_post(body, headers)
+    finally:
+        if token is not None:
+            _IR_PIN.reset(token)
 
 
 def _feedback_replay_item(it, runs=1):
@@ -6370,6 +6466,22 @@ def _feedback_replay_item(it, runs=1):
     return rec
 
 
+def _feedback_paired_item(it, runs=1):
+    """DR-140 修改前后的配对回放:反馈时的版本与当前版本交替各问 runs 次,比两边与反馈时答案一致的次数。"""
+    pin, reason = _pin_for(it.get("versions"))
+    if not pin:
+        return {"paired": False, "reason": reason}
+    keys = [v["key"] for v in it["versions"]]
+    sides: dict = {"before": [], "after": []}
+    for i in range(max(1, runs)):
+        for side in (("before", "after") if i % 2 == 0 else ("after", "before")):   # 交替先后,抵消时间上的漂移
+            resp = _feedback_ask(it.get("question") or "", keys, pin if side == "before" else None)
+            cmp = feedback_replay.compare(it.get("snapshot") or [], feedback_replay.snapshot(resp.get("results") or []))
+            sides[side].append(cmp["outcome"])
+    return {"ts": time.strftime("%Y-%m-%d %H:%M"), "pin": pin,
+            **feedback_replay.paired(it.get("verdict"), sides["before"], sides["after"])}
+
+
 @app.post("/api/chat/feedback/replay")
 def chat_feedback_replay():
     """回放一条反馈(DR-137):按当前本体重新问,比对答案的数据与反馈时是否一致,结果记入该反馈。"""
@@ -6383,6 +6495,17 @@ def chat_feedback_replay():
     if not it: return jsonify({"error": "反馈不存在"}), 404
     if _active_source() and not _source_record_matches(it):
         return jsonify({"error": "反馈属于另一数据库，请切换来源后处理"}), 409
+    if body.get("paired") is True:               # DR-140 修改前后的配对回放
+        rec = _feedback_paired_item(it, runs)
+        if rec["paired"]:
+            with _WRITE_LOCK:
+                fb = _load_fb()
+                cur = next((x for x in fb if x["id"] == fid), None)
+                if cur is not None:
+                    cur["replays"] = [rec, *(cur.get("replays") or [])][:5]
+                    _atomic_json(QA_FB, fb)
+            observability.count("qa.feedback_replay_paired", outcome=rec["outcome"])
+        return jsonify(rec)
     rec = _feedback_replay_item(it, runs)
     with _WRITE_LOCK:
         fb = _load_fb()
@@ -6395,9 +6518,12 @@ def chat_feedback_replay():
     return jsonify(rec)
 
 
-def _feedback_regression():
-    """把当前数据库下保存了答案的「有用」反馈逐条回放(DR-137),本体修改后用来检查有没有退化。"""
+def _feedback_regression(paired=False, runs=1):
+    """把当前数据库下保存了答案的「有用」反馈逐条回放(DR-137),本体修改后用来检查有没有退化。
+    paired=True(DR-140)时每题在修改前、修改后的本体上各问 runs 次,按题配对给出差值与 95% 区间。"""
     items = [x for x in _load_fb() if x.get("verdict") == "useful" and (not _active_source() or _source_record_matches(x))]
+    if paired:
+        return {"paired": _feedback_paired_regression(items[:100], runs)}
     out = {"replayed": 0, "same": 0, "no_answer": 0, "unstable": 0, "skipped": 0, "changed": []}
     for it in items[:100]:
         if not it.get("snapshot"):
@@ -6416,6 +6542,35 @@ def _feedback_regression():
     return out
 
 
+def _feedback_paired_regression(items, runs=1):
+    before, after, worse, skipped = [], [], [], {}
+    for it in items:
+        if not it.get("snapshot"):
+            skipped["没有保存答案"] = skipped.get("没有保存答案", 0) + 1
+            continue
+        rec = _feedback_paired_item(it, runs)
+        if not rec["paired"]:
+            skipped[rec["reason"]] = skipped.get(rec["reason"], 0) + 1
+            continue
+        before.append(rec["before_rate"])
+        after.append(rec["after_rate"])
+        if rec["after_rate"] < rec["before_rate"]:
+            worse.append({"id": it["id"], "question": it["question"], "before": rec["before"]["same"],
+                          "after": rec["after"]["same"], "runs": rec["after"]["runs"]})
+    ci = qa_eval_stats.paired_ci(after, before)
+    if not ci["n"]:
+        verdict = "没有可配对的题目"
+    elif ci["hi"] < 0:
+        verdict = "修改后与「有用」答案一致的比例下降,区间不含 0:本体修改引起了退化"
+    elif ci["lo"] > 0:
+        verdict = "修改后与「有用」答案一致的比例上升,区间不含 0"
+    else:
+        verdict = "修改前后的差别在区间内包含 0,不能认为本体修改改变了这些问题的答案"
+    return {**ci, "before_mean": sum(before) / len(before) if before else None,
+            "after_mean": sum(after) / len(after) if after else None, "runs": runs,
+            "worse": worse, "skipped": skipped, "verdict": verdict}
+
+
 FB_JOBS: dict = {}                               # 按数据源分开的批量回放任务
 _FB_JOB_LOCK = threading.Lock()
 
@@ -6428,6 +6583,11 @@ def _fb_job():
 @app.post("/api/chat/feedback/regression")
 def chat_feedback_regression():
     """后台回放当前数据源的全部「有用」反馈;GET 同一地址查看进度与结果。"""
+    body = request.get_json(silent=True)
+    body = body if isinstance(body, dict) else {}
+    paired, runs = body.get("paired") is True, body.get("runs", 1)
+    if not isinstance(runs, int) or isinstance(runs, bool) or not 1 <= runs <= 3:
+        return jsonify({"error": "runs 须为 1 到 3 的整数", "field": "runs"}), 400
     with _FB_JOB_LOCK:                           # 先查后改放在锁里:并发的两次提交只启动一个任务
         job = _fb_job()
         if job["running"]: return jsonify({"error": "回放已在运行"}), 409
@@ -6436,7 +6596,7 @@ def chat_feedback_regression():
 
     def run():
         try:
-            job["result"] = _feedback_regression()
+            job["result"] = _feedback_regression(paired=True, runs=runs) if paired else _feedback_regression()
         except Exception as e:                   # noqa: BLE001
             job["result"] = {"error": f"{type(e).__name__}: {str(e)[:120]}"}
         finally:
@@ -7503,9 +7663,11 @@ def _graph_revision(key):
     paths = [_confined(WORK, key + ".json")] if key.startswith("built_") else list(IR_SOURCES.get(key, {}).get("paths", []))
     sig = _stat_sig(*paths, _edits_path(key))
     hit = _REV_CACHE.get(key)
-    if hit and hit[0] == sig:
+    if hit and hit[0] == sig and not _pinned(key):
         return hit[1]
     rev = ontology_release.revision_of(load_ir_edited(key) or load_ir(key) or {})
+    if _pinned(key):
+        return rev
     if len(_REV_CACHE) > 200:
         _REV_CACHE.clear()
     _REV_CACHE[key] = (sig, rev)
@@ -9403,9 +9565,13 @@ def _arithmetic_lines(ir, tables):
     return ("列之间的算术关系(逐行数据核验,可直接使用对应的列):\n" + "\n".join(lines[:12])) if lines else ""
 
 
-def _concept_ask(prompt, deadline):
+def _concept_ask(prompt, deadline, cancel=None):
+    """构建里业务概念与命名所用的模型调用。cancel 已置位(外层放弃等待)时不再发起调用;
+    已发出的那一次受单次超时约束(至多 45 秒,且不超过剩余预算),结果不再被采用。"""
     from agent_runtime import get_runtime, available
     for drv in _drv_order():
+        if cancel is not None and cancel.is_set():
+            return ""
         if drv not in available() or time.monotonic() >= deadline:
             continue
         timeout = max(1, min(45, deadline - time.monotonic()))
@@ -9415,12 +9581,16 @@ def _concept_ask(prompt, deadline):
     return ""
 
 
-def _data_grounding(db, ir, workload, ask=None, deadline=None):
+def _data_grounding(db, ir, workload, ask=None, deadline=None, cancel=None):
     """DR-136 按数据命名与术语接地:取值画像 → 业务问题口径说明里的「用语 → 列」(数据核验)→ 按取值反查 →
     为代码名或空泛名的表与列起候选名(理由须能在数据里找到)。改动写入 ir;返回供概念步骤使用的画像摘要与概念记录。"""
     import data_grounding
     deadline = deadline or (time.monotonic() + 240)
+
+    def stop():
+        return (cancel is not None and cancel.is_set()) or time.monotonic() >= deadline
     con = ro_connect(db)
+    con.set_progress_handler(lambda: int(stop()), 1000)     # 取值画像的查询同样受预算和取消约束
     try:
         con.execute("BEGIN")
         tables = [o["table"] for o in ir.get("objects") or [] if o.get("table") and o.get("kind") != "action"]
@@ -9430,8 +9600,8 @@ def _data_grounding(db, ir, workload, ask=None, deadline=None):
         vg = data_grounding.value_groundings(con, workload or [], data_grounding.value_index(con, prof)) if workload else []
     finally:
         con.close()
-    ask = ask or (lambda prompt: _concept_ask(prompt, deadline))
-    naming = data_grounding.name_objects(ir, prof, eg["groundings"], vg, ask, llm_json.extract)
+    ask = ask or (lambda prompt: _concept_ask(prompt, deadline, cancel))
+    naming = data_grounding.name_objects(ir, prof, eg["groundings"], vg, ask, llm_json.extract, should_stop=stop)
     ir["term_groundings"] = {"evidence": eg["groundings"], "value": vg, "rejected": eg["rejected"][:200],
                              "naming_rejected": naming["rejected"][:200]}
     labels = data_grounding.labels_of(ir)
@@ -9442,7 +9612,7 @@ def _data_grounding(db, ir, workload, ask=None, deadline=None):
                        "groundings": eg["groundings"]}}
 
 
-def _workload_concepts(db, ir, workload, brief=None, repair=None):
+def _workload_concepts(db, ir, workload, brief=None, repair=None, cancel=None):
     import copy
     import data_catalog
     import workload_concepts
@@ -9453,7 +9623,7 @@ def _workload_concepts(db, ir, workload, brief=None, repair=None):
         con.execute("BEGIN")
         previous_stale = workload_concepts.refresh(con, ir, deadline=deadline)
         out = workload_concepts.build(con, ir, data_catalog.doc_dictionary(con), workload,
-                                      lambda prompt: _concept_ask(prompt, deadline), llm_json.extract,
+                                      lambda prompt: _concept_ask(prompt, deadline, cancel), llm_json.extract,
                                       deadline=deadline, brief=brief, repair=repair)
         out["previous_stale"] = previous_stale
         out['layers'] = workload_concepts.merge_layers(ir, out)
@@ -10021,10 +10191,11 @@ def build_inquire():
             yield push("data_catalog", False, f'目录整理未完成:{type(exc).__name__}；不影响关系产物')
         _grounded = None
         try:                                     # DR-136 按数据命名与术语接地(名称不透明、没有字典的库)
-            # 起名要调模型,放到有界线程里并发心跳;在副本上改,超时放弃时后台线程不会再改动正在构建的 ir
+            # 起名要调模型,放到有界线程里并发心跳;在副本上改,超时放弃时后台线程不会再改动正在构建的 ir,
+            # 也不再发起新的模型调用(DR-140)
             import copy as _copy
             _irc = _copy.deepcopy(ir)
-            for _item in _bounded_stream(lambda _log: _data_grounding(db, _irc, workload), 270):
+            for _item in _cancellable_stream(lambda _log, _cancel: _data_grounding(db, _irc, workload, cancel=_cancel), 270):
                 if _item[0] == 'tick':
                     yield sse({'type': 'tick', 'elapsed': round(_t.time() - t0, 1)})
                 elif _item[0] == 'done':
@@ -10047,7 +10218,8 @@ def build_inquire():
             yield sse({'type': 'status', 'text': '核验业务概念与主题的取数依据；业务含义仍需确认…'})
             _wc = None
             _grepair = _grounded["repair"] if _gbrief else None
-            for _item in _bounded_stream(lambda _log: _workload_concepts(db, ir, workload, _gbrief, _grepair), 250):
+            for _item in _cancellable_stream(lambda _log, _cancel: _workload_concepts(db, ir, workload, _gbrief, _grepair, _cancel),
+                                             250):
                 if _item[0] == 'tick':
                     yield sse({'type': 'tick', 'elapsed': round(_t.time() - t0, 1)})
                 elif _item[0] == 'done':

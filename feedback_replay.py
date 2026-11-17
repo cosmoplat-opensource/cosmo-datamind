@@ -7,6 +7,8 @@
 - compare   按当前本体重新问一次后,比对新旧答案的数据:旧答案的每个结果,在新答案里能找到行集合相同、
             或在样例上按列容忍口径一致且行数相同的结果,就算一致。比的是数据,不是 SQL 文本。
 - combine   多次回放的结论合并:各次不一致时记为「结果不稳定」。
+- paired    本体修改前后的配对回放(DR-140):修改前的版本与当前版本用同一个模型交替各问几次,
+            比两边「与反馈时的答案一致」的次数。两边都是现在问的,模型的随机性对两边相同,差别才归到本体修改上。
 - explain   结论的含义取决于反馈的类型:「待改进」的答案变了,可能是修改起了作用(是否改对仍需人确认);
             「有用」的答案变了,提示可能退化。
 """
@@ -17,7 +19,7 @@ import json
 
 import qa_eval_stats
 
-__all__ = ["snapshot", "compare", "combine", "explain", "SAMPLE_ROWS", "MAX_RESULTS"]
+__all__ = ["snapshot", "compare", "combine", "explain", "paired", "SAMPLE_ROWS", "MAX_RESULTS"]
 
 SAMPLE_ROWS = 50
 MAX_RESULTS = 8
@@ -91,3 +93,32 @@ def explain(verdict, outcome):
     if outcome == "no_baseline":
         return "反馈时没有保存答案的数据,无法比对;回放结果仅供查看"
     return _TEXT.get((verdict, outcome), outcome)
+
+
+_PAIRED = {
+    ("needs_work", "edit_effect"): "修改后复现反馈时答案的次数减少:差别出在本体修改上;现在的答案是否正确仍需人确认",
+    ("needs_work", "no_effect"): "修改前后复现反馈时答案的次数相同:看不出这次修改对这个问题起了作用",
+    ("needs_work", "reverse"): "修改后反而更常给出反馈时的答案,请检查这次修改",
+    ("useful", "regressed"): "修改后与「有用」答案一致的次数减少:可能是本体修改引起的退化,请复核",
+    ("useful", "no_effect"): "修改前后与「有用」答案一致的次数相同,未见退化",
+    ("useful", "improved"): "修改后与「有用」答案一致的次数增加",
+}
+
+
+def paired(verdict, before, after):
+    """before / after:修改前、修改后各次回放的结论(same / changed / no_answer)。
+    → {"paired": True, "before": {...}, "after": {...}, "outcome", "explain"}"""
+    def side(outs):
+        return {"outcomes": list(outs), "runs": len(outs), "same": sum(1 for o in outs if o == "same")}
+    b, a = side(before), side(after)
+    rb = b["same"] / b["runs"] if b["runs"] else 0.0
+    ra = a["same"] / a["runs"] if a["runs"] else 0.0
+    if verdict == "needs_work":
+        outcome = "edit_effect" if ra < rb else "no_effect" if ra == rb else "reverse"
+    else:
+        outcome = "regressed" if ra < rb else "no_effect" if ra == rb else "improved"
+    text = (f"修改前 {b['runs']} 次中 {b['same']} 次与反馈时的答案一致,修改后 {a['runs']} 次中 {a['same']} 次一致。"
+            + _PAIRED.get((verdict if verdict == "needs_work" else "useful", outcome), ""))
+    if 0 < rb < 1 or 0 < ra < 1:
+        text += "。同一版本的几次回答彼此不一致,有模型随机性的影响,单题结论仅供参考;批量配对回放给出区间"
+    return {"paired": True, "before": b, "after": a, "before_rate": rb, "after_rate": ra, "outcome": outcome, "explain": text}

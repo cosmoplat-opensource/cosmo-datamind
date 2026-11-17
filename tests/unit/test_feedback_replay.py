@@ -174,3 +174,126 @@ def test_regression_jobs_are_kept_per_data_source(fb, monkeypatch):
         other = c.get("/api/chat/feedback/regression").get_json()
     assert other["running"] is False and other["result"] is None
     gate.set()
+
+
+# ── DR-140:本体修改前后的配对回放 ──────────────────────────────────────────────────────────────
+# 「修改前」= 反馈时的本体版本(构建产物不变、编辑记录只在其后追加时可以复原);两边用同一个模型、交替各问几次,
+# 比的是「与反馈时的答案一致」的次数。批量时按题配对,给出修改后减修改前的差值和 95% 区间。
+
+GRAPH = {"scenario": {"name": "测试本体"}, "objects": [{"id": "orders", "name": "orders", "cn": "订单", "table": "orders"}],
+         "relations": []}
+ALIAS_OP = {"op": "set_alias", "target": "orders", "params": {"aliases": "单据"}, "who": "t"}
+
+
+@pytest.fixture
+def paired(tmp_path, monkeypatch):
+    monkeypatch.setattr(server, "QA_FB", str(tmp_path / "fb.json"))
+    monkeypatch.setattr(server, "WORK", str(tmp_path))
+    (tmp_path / "built_t.json").write_text(json.dumps(GRAPH, ensure_ascii=False), encoding="utf-8")
+    state = {"calls": []}
+
+    def fake_post(body, headers):
+        # 模拟「答案取决于本体」:对象带上别名之后,模型给出另一份数据
+        ir = server.load_ir_edited("built_t") or {}
+        has_alias = bool((ir["objects"][0].get("aliases") or []))
+        state["calls"].append("after" if has_alias else "before")
+        rows = [{"m": "2026-04", "r": 14.97}] if not has_alias else [{"m": "2026-04", "r": 34.1}]
+        return {"results": [{"title": "毛利率", "sql": "SELECT 1", "data": {"columns": ["m", "r"], "rows": rows}}], "steps": []}
+    monkeypatch.setattr(server, "_feedback_post", fake_post)
+    return state, tmp_path
+
+
+def _edit(tmp_path, ops):
+    (tmp_path / "edits_built_t.json").write_text(json.dumps({"version": 1, "ops": ops}, ensure_ascii=False), encoding="utf-8")
+
+
+def _feedback(verdict):
+    r1 = {"title": "毛利率", "sql": "SELECT 1", "data": {"columns": ["m", "r"], "rows": [{"m": "2026-04", "r": 14.97}]}}
+    return _post("/api/chat/feedback", {"question": "4 月毛利率", "verdict": verdict, "graphs": ["built_t"], "results": [r1]}).get_json()["id"]
+
+
+def test_feedback_records_the_ontology_version_and_reads_can_be_pinned_to_it(paired):
+    _state, tmp = paired
+    fid = _feedback("needs_work")
+    item = next(x for x in json.load(open(server.QA_FB, encoding="utf-8")) if x["id"] == fid)
+    (v,) = item["versions"]
+    assert v["key"] == "built_t" and v["ops"] == 0 and v["base"]
+    _edit(tmp, [ALIAS_OP])
+    assert server.load_ir_edited("built_t")["objects"][0].get("aliases")
+    token = server._IR_PIN.set({"built_t": 0})
+    try:
+        assert not server.load_ir_edited("built_t")["objects"][0].get("aliases")
+    finally:
+        server._IR_PIN.reset(token)
+
+
+def test_a_paired_replay_asks_before_and_after_the_edit_in_alternation(paired):
+    state, tmp = paired
+    fid = _feedback("needs_work")
+    _edit(tmp, [ALIAS_OP])
+    d = _post("/api/chat/feedback/replay", {"id": fid, "paired": True, "runs": 2}).get_json()
+    assert state["calls"] == ["before", "after", "after", "before"]
+    assert d["paired"] is True and d["before"]["same"] == 2 and d["after"]["same"] == 0
+    assert d["outcome"] == "edit_effect" and "修改前 2 次中 2 次" in d["explain"] and "修改后 2 次中 0 次" in d["explain"]
+
+
+def test_paired_replay_is_refused_with_a_reason_when_before_cannot_be_rebuilt(paired):
+    _state, tmp = paired
+    _edit(tmp, [ALIAS_OP])
+    fid = _feedback("needs_work")                                   # 反馈时已有 1 条编辑
+    d = _post("/api/chat/feedback/replay", {"id": fid, "paired": True}).get_json()
+    assert d["paired"] is False and "没有修改" in d["reason"]
+    _edit(tmp, [])                                                  # 撤销了反馈时已有的编辑:修改前的版本无法复原
+    d = _post("/api/chat/feedback/replay", {"id": fid, "paired": True}).get_json()
+    assert d["paired"] is False and "撤销" in d["reason"]
+    _edit(tmp, [ALIAS_OP, ALIAS_OP])
+    (tmp / "built_t.json").write_text(json.dumps({**GRAPH, "relations": [{"x": 1}]}), encoding="utf-8")
+    d = _post("/api/chat/feedback/replay", {"id": fid, "paired": True}).get_json()
+    assert d["paired"] is False and "重新构建" in d["reason"]
+
+
+def test_feedback_from_before_versions_were_recorded_cannot_be_paired(paired):
+    fid = _feedback("useful")
+    items = json.load(open(server.QA_FB, encoding="utf-8"))
+    for x in items:
+        x.pop("versions", None)                                     # 早于 DR-140 的反馈没有这个字段
+    json.dump(items, open(server.QA_FB, "w", encoding="utf-8"), ensure_ascii=False)
+    d = _post("/api/chat/feedback/replay", {"id": fid, "paired": True}).get_json()
+    assert d["paired"] is False and "版本" in d["reason"]
+
+
+def test_the_paired_regression_reports_the_difference_with_an_interval(paired):
+    state, tmp = paired
+    for _ in range(3):
+        _feedback("useful")
+    _edit(tmp, [ALIAS_OP])
+    out = server._feedback_regression(paired=True)
+    p = out["paired"]
+    assert p["n"] == 3 and p["diff"] == -1.0 and p["hi"] < 0 and len(p["worse"]) == 3
+    assert state["calls"].count("before") == 3 and state["calls"].count("after") == 3
+
+
+def test_what_a_paired_result_means_depends_on_the_kind_of_feedback():
+    assert F.paired("needs_work", ["same", "same"], ["changed", "changed"])["outcome"] == "edit_effect"
+    assert F.paired("needs_work", ["same", "same"], ["same", "same"])["outcome"] == "no_effect"
+    assert F.paired("useful", ["same", "same"], ["changed", "same"])["outcome"] == "regressed"
+    assert F.paired("useful", ["same"], ["same"])["outcome"] == "no_effect"
+    r = F.paired("needs_work", ["same", "changed"], ["changed", "changed"])
+    assert r["outcome"] == "edit_effect" and "随机" in r["explain"]       # 修改前本身就不稳定时提示
+
+
+def test_a_request_made_inside_the_pinned_context_sees_the_old_version(paired):
+    """回放经 Flask 测试客户端在同一线程里执行问数;固定的版本要能传到请求里。"""
+    _state, tmp = paired
+    _edit(tmp, [{"op": "remove_object", "target": "orders", "who": "t"}])
+    c = server.app.test_client()
+
+    def nodes():
+        return len(c.get("/api/graph/built_t").get_json()["nodes"])
+    assert nodes() == 0
+    token = server._IR_PIN.set({"built_t": 0})
+    try:
+        assert nodes() == 1
+    finally:
+        server._IR_PIN.reset(token)
+    assert nodes() == 0                                              # 退出固定后,缓存里也不是旧版本

@@ -335,7 +335,8 @@ def needs_name(o: dict) -> bool:
 
 
 def name_objects(ir: dict, prof: dict, groundings: list, values: list, ask: Callable[[str], str],
-                 extract: Callable[[str], dict | None], batch: int = 6) -> dict:
+                 extract: Callable[[str], dict | None], batch: int = 6,
+                 should_stop: Callable[[], bool] | None = None) -> dict:
     links = []
     for r in ir.get("relations") or []:
         e = r.get("evidence") or {}
@@ -346,6 +347,8 @@ def name_objects(ir: dict, prof: dict, groundings: list, values: list, ask: Call
     named_t = named_c = 0
     rejected = []
     for i in range(0, len(objs), batch):
+        if should_stop and should_stop():        # 调用方已放弃等待(超时或客户端断开):不再发起新的模型调用
+            break
         part = objs[i:i + batch]
         blocks = {o["table"]: _table_block(o["table"], prof, groundings, values, links) for o in part}
         reply = ask(NAME_PROMPT.format(tables="\n\n".join(b for b, _ in blocks.values())))

@@ -303,7 +303,7 @@ def run_semantic_catalog(tmp):
     work.mkdir(parents=True, exist_ok=True)
     fx = fixtures.semantic_catalog(str(Path(tmp) / 'semantic.db'))
     checks, name, prompts = [], '名称取值与业务概念', []
-    def ask(prompt, deadline):
+    def ask(prompt, deadline, cancel=None):
         prompts.append(prompt)
         return json.dumps(fx['semantic'])
     with _patched(server, WORK=str(work), _BUILD_CONN_F=str(work / 'build_connections.json'),

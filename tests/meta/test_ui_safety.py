@@ -108,3 +108,9 @@ def test_attachment_chips_replay_polling_and_feedback_wording():
     poll = INDEX[INDEX.index("async function rvFbRegression"):][:900]
     assert "j.error||!j.result" in poll
     assert "本体迭代候选队列" not in INDEX and "问数反馈待处理列表" in INDEX
+
+
+def test_paired_replay_controls_are_present():
+    """DR-140:单条「修改前后对比」只在记录了版本且保存了答案时出现;批量配对回放显示差值、区间与未配对原因。"""
+    assert "rvFbReplay(${jsAttr(x.id)},this,true)" in INDEX and "x.versions&&x.versions.length" in INDEX
+    assert "rvFbRegression(this,true)" in INDEX and "p.verdict" in INDEX and "未配对" in INDEX
