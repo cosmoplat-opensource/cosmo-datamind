@@ -31,6 +31,16 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - **安全**:只读 SQL、全局 CSRF 校验、图谱键路径穿越校验、命令白名单、SPARQL 禁 SERVICE/FROM 外链,见 [[DR-006-security-model]]。
 - **寻址**:18 个子页经 `#<page>` hash 直接寻址 + 深链,见 [[DR-007-url-hash-routing]]。
 
+## Studio 图谱集成（2026-11-17，规约阶段）
+
+用户已选定“机器人连续可视化与共享组件 → 数据本体图谱及构建结果预览”两步范围。
+工作分支为 `feat/studio-ui-integration`，以下规约尚未实施或交付。
+
+- [DR-159 · Studio 图谱组件与本体构建可视化](decisions/DR-159-studio-ontology-visualization.md)：accepted（2026-11-17 用户授权启动）；[T01 视图契约](contracts/studio-graph-view-v1.md) 已冻结，明确对 DR-150 的局部替代及现有主线兼容约束。
+- [IR-031 · 共享组件与机器人连续可视化](iterations/IR-031-studio-robotics-visualization.md)：in-progress（规约阶段）；STV-R01～06。
+- [IR-032 · 数据本体画布与业务交互](iterations/IR-032-studio-data-visualization.md)：in-progress（规约阶段，依赖 IR-031 交付）；STV-D01～06。
+- 验收计划登记于 `acceptance.json` 的 `planned_requirements`；T02／T04 实际测试落地后迁入正式映射，不宣称现有覆盖。
+
 ## 机器人双路径构建（2026-11-10，已确认方案）
 
 - [DR-152 · 机器人本体统一入口与模型／离线双路径](decisions/DR-152-robotics-dual-build.md)：accepted；必须上传双 XML，有模型走新 TBox/ABox 方案，无模型保留旧 UR 离线构建；模型错误不静默降级，设计候选与应用资格分开。
