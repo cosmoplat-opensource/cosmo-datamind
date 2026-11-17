@@ -80,7 +80,7 @@
       message.hidden = true; message.textContent = '';
       try {
         const url = new URL(link.getAttribute('href'), global.location.origin);
-        if (url.origin !== global.location.origin || !(/^\/api\/domain-runs\/[^/]+\/artifacts\/[^/]+$/.test(url.pathname) || /^\/api\/ontology-assets\/[^/]+\/versions\/[^/]+\/(payload|data-payload|artifacts\/[^/]+)$/.test(url.pathname))) throw new Error('下载地址不可信。');
+        if (url.origin !== global.location.origin || !(/^\/api\/domain-runs\/[^/]+\/artifacts\/[^/]+$/.test(url.pathname) || /^\/api\/ontology-assets\/[^/]+\/versions\/[^/]+\/(payload|data-payload|exports\/json|artifacts\/[^/]+)$/.test(url.pathname))) throw new Error('下载地址不可信。');
         const response = await global.fetch(url.href);
         if (!response.ok) {
           let body; try { body = await response.json(); } catch (_) { body = {}; }

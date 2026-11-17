@@ -348,7 +348,10 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True, data_host=Non
         _query_fields(set())
         if format!='json': raise _invalid()
         from ontology_assets.robotics_application import ApplicationAssets, is_application
-        reader = ApplicationAssets(root) if is_application(runtime.assets().get_version(ontology_id,version_id)) else design_assets()
+        from ontology_assets.robotics_offline import OfflineAssets
+        version = runtime.assets().get_version(ontology_id, version_id)
+        reader = (ApplicationAssets(root) if is_application(version) else design_assets()
+                  if version['metadata'].get('design_contract') is not None else OfflineAssets(root))
         raw = design_read(lambda: reader.export_json(ontology_id, version_id))
         return send_file(io.BytesIO(raw), mimetype='application/json', as_attachment=True,
             download_name='design.json', max_age=0)

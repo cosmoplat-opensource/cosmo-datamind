@@ -13,8 +13,14 @@ def ref_from_run(run):
 
 
 def open_editor(page, site, ref):
-    page.goto(site.url + '/#library?asset=' + ref['ontology_id'] + '&version=' + ref['version_id'])
-    page.get_by_role('link', name='维护知识', exact=True).click()
+    # The simplified detail page no longer advertises the legacy editor;
+    # exercise its retained direct route and backend behavior independently.
+    target = site.url + '/#library?asset=' + ref['ontology_id'] + '&version=' + ref['version_id'] + '&tab=knowledge'
+    if page.url == target:
+        # A second explicit open must refresh source choices added since the last read.
+        page.reload()
+    else:
+        page.goto(target)
     panel = page.get_by_test_id('robotics-review')
     expect(panel).to_be_visible()
     expect(panel).to_have_attribute('data-ontology-id', ref['ontology_id'])
@@ -75,7 +81,9 @@ def bytes_snapshot(root):
 def version_download(page, site, panel, version, kind, record):
     names = {'ontology': '下载 OWL', 'validation': '下载报告', 'manifest': '下载 manifest'}
     link = panel.get_by_role('link', name=names[kind], exact=True)
-    assert f"/versions/{version['version_id']}/artifacts/" in link.get_attribute('href')
+    href = link.get_attribute('href')
+    assert f"/versions/{version['version_id']}/artifacts/" in href or (
+        kind == 'ontology' and href == f"/api/ontology-assets/{version['ontology_id']}/versions/{version['version_id']}/payload")
     with page.expect_download() as pending:
         link.click()
     path = site.output / (kind + ('.owl' if kind == 'ontology' else '.json'))

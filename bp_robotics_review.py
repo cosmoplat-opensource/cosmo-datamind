@@ -313,7 +313,13 @@ def init_app(app, runtime):
             except ValueError as exc:
                 raise BuildRequestError('artifact_integrity','设计文件损坏。',409) from exc
             return send_file(io.BytesIO(raw),mimetype='application/rdf+xml',as_attachment=True,download_name='candidate.owl')
-        return download(ontology_id, version_id)
+        from ontology_assets.robotics_offline import OfflineAssets
+        try:
+            raw = OfflineAssets(runtime.root).payload(ontology_id, version_id)
+        except (ValueError, OSError) as exc:
+            raise BuildRequestError('artifact_integrity', '登记文件缺失、损坏或路径不可信。', 409) from exc
+        return send_file(io.BytesIO(raw), mimetype='application/rdf+xml', as_attachment=True,
+                         download_name=version_id + '-ontology.owl', max_age=0)
 
     @bp.get(prefix + '/versions/<version_id>/artifacts/<artifact_id>')
     def artifact(ontology_id, version_id, artifact_id):

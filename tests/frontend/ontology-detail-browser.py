@@ -18,6 +18,7 @@ from domain_runs.robotics_application_service import ApplicationService
 from ontology_assets import AssetStore
 from ontology_assets.robotics_application import ApplicationAssets
 from ontology_assets.robotics_design import DesignAssets
+from ontology_assets.robotics_offline import OfflineAssets
 from tests.build_pipeline_support import blob_bytes, db_rows
 from tests.ontology_detail_integration_support import (
     check_records, clone_seed, create_check, detail_hash, prepare_seed, stale_check,
@@ -328,13 +329,18 @@ def test_detail_omits_history_link_and_existing_history_remains_readonly(live, k
     done(site)
 
 
-@pytest.mark.parametrize('kind', ['design', 'application'])
+@pytest.mark.parametrize('kind', ['legacy', 'design', 'application'])
 def test_browser_downloads_original_fixed_json_and_owl_instead_of_latest(live, kind):
     site, page, info = live; record = info[kind]
-    reader = DesignAssets(site.root) if kind == 'design' else ApplicationAssets(site.root)
+    reader = OfflineAssets(site.root) if kind == 'legacy' else DesignAssets(site.root) if kind == 'design' else ApplicationAssets(site.root)
     expected = {'下载完整 JSON': reader.export_json(**record), '下载 OWL': AssetStore(site.root).read_payload(**record)}
     before = db_rows(site.root), blob_bytes(site.root)
-    open_detail(site, page, record)
+    panel = open_detail(site, page, record)
+    actions = panel.locator('.ra-detail-actions')
+    assert actions.get_by_role('link').all_text_contents() == ['生成行为树 →', '打开图谱', '下载完整 JSON', '下载 OWL']
+    expect(actions.get_by_role('button', name='移到回收站', exact=True)).to_have_count(1)
+    assert actions.get_by_role('button').count() == 1
+    expect(panel.get_by_role('link', name='维护知识', exact=True)).to_have_count(0)
     for name, raw in expected.items():
         with page.expect_download() as download:
             page.get_by_role('link', name=name, exact=True).click()

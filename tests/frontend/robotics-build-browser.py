@@ -283,7 +283,7 @@ def test_keyboard_xss_and_responsive_controls(live, width):
     version = wait_version_ui(page, row['output_asset_ref'])
     expect(version).to_contain_text(name)
     assert version.locator('img,script,[onerror],[onload]').count() == 0
-    for name in ['下载 OWL', '下载报告', '下载 manifest']:
+    for name in ['下载 OWL', '下载完整 JSON']:
         link = page.get_by_role('link', name=name, exact=True)
         link.scroll_into_view_if_needed()
         geometry = link.bounding_box()
@@ -314,7 +314,8 @@ def test_disabled_robotics_preserves_data_build_and_legacy_deep_links(live):
     done(site)
 
 
-def test_damaged_download_is_an_error_not_a_saved_success_file(live):
+@pytest.mark.parametrize('download_name', ['下载 OWL', '下载完整 JSON'])
+def test_damaged_download_is_an_error_not_a_saved_success_file(live, download_name):
     site, page = live
     row = site.submit()
     artifact = next(a for a in RunStore(site.root, read_only=True).artifacts(row['run_id']) if a['kind'] == 'ontology')
@@ -325,10 +326,12 @@ def test_damaged_download_is_an_error_not_a_saved_success_file(live):
     wait_version_ui(page, ref)
     downloads = []
     page.on('download', lambda download: downloads.append(download))
-    page.get_by_role('link', name='下载 OWL', exact=True).click()
+    original_url = page.url
+    page.get_by_role('link', name=download_name, exact=True).click()
     expect(page.get_by_test_id('robotics-version').get_by_role('alert')).to_contain_text(
         re.compile(r'artifact_integrity|损坏|完整性'), timeout=3000)
     assert not downloads
+    assert page.url == original_url
     assert RunStore(site.root, read_only=True).get_run(row['run_id']) == before
     done(site)
 
