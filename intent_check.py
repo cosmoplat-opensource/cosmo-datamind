@@ -5,8 +5,8 @@
 《本体智能研究报告》电力案例:将复杂分析标准化为「获取对象→提取数据→计算指标」
 三步,并**配套双盲检测机制确保查询意图准确性**。
 
-本系统原有链路是单通道:问句 → LLM 生成 SQL → 口径校验 → 执行。
-口径校验管的是「SQL 合不合规」(表在不在白名单、JOIN 键落不落本体),
+本系统原有链路是单通道:问句 → LLM 生成 SQL → 本体约束校验 → 执行。
+本体约束校验管的是「SQL 合不合规」(表在不在白名单、JOIN 键落不落本体),
 管不了「**SQL 答的是不是用户问的那件事**」——一条完全合规的 SQL
 可以查一张完全不相干的表,校验放行,用户拿到一个像模像样的错答案。
 这正是排障表里的第一类症状:答非所问。
@@ -36,7 +36,7 @@ def _table_name(value):
     return re.sub(r'["`\[\]\s]', '', value).lower()
 
 
-from ir_shape import obj_names as _obj_names           # 取名规则单一事实源(超集)
+from ir_shape import obj_names as _obj_names           # 取名规则集中定义(超集)
 
 
 def declared_intent(question, ir):
@@ -69,7 +69,7 @@ def actual_intent(sql, ir):
 
     只认真实表:剔除 CTE 名与子查询别名——把 CTE 当成表会让「SQL 查了什么」失真。
     """
-    s = sql or ""
+    s = re.sub(r"'(?:[^']|'')*'", "''", sql or "")       # 字符串常量里的词不是表名(DR-080)
     ctes = {_table_name(m.group(1)) for m in
             re.finditer(r"(?:\bwith\b|,)\s*(%s)\s+as\s*\(" % _IDENT, s, re.I)}
     tabs = set()
@@ -90,9 +90,36 @@ def actual_intent(sql, ir):
                                if t not in {o["table"] for o in hit})}
 
 
+def _mask_filter_values(question, sql):
+    """把问句里被 SQL 原样用作筛选值的词(≥2 字)替换掉,再交给通道 A。
+
+    「设备故障导致的停机总时长」里的「设备」属于停机原因的取值「设备故障」,不是在问设备;
+    不去掉的话,按 reason_name='设备故障' 过滤、没有 JOIN 设备表的正确 SQL 会被判成答非所问(DR-077)。
+    只用 SQL 的字符串常量,不用它查了哪些表,通道 A 仍然看不到通道 B 的结论。"""
+    q = question or ""
+    for lit in sorted({m.group(1) for m in re.finditer(r"'([^']{2,40})'", sql or "")}, key=len, reverse=True):
+        if lit in q:
+            q = q.replace(lit, " ")
+    return q
+
+
+def _linked(ka, kb, ir):
+    """问句对象与 SQL 所用对象之间是否有已验证(或人工确认)的直接关系。"""
+    rels = list(ir.get("relations") or []) + list(ir.get("links") or [])
+    for r in rels:
+        if r.get("status") not in ("verified", "asserted"):
+            continue
+        s_, t_ = r.get("source_concept") or r.get("source"), r.get("target_concept") or r.get("target")
+        # 只认「SQL 所用的表持有指向问句对象的外键」这一方向:考勤表 → 活动。
+        # 反方向(问句问器具、SQL 只查了器具的上级企业)仍是答非所问
+        if s_ in kb and t_ in ka:
+            return True
+    return False
+
+
 def cross_check(question, sql, ir):
     """双盲比对。两通道各自独立产出后才比,任一通道不参考对方中间结果。"""
-    a = declared_intent(question, ir)
+    a = declared_intent(_mask_filter_values(question, sql), ir)
     b = actual_intent(sql, ir)
     ka = {o["key"] for o in a["objects"]}
     kb = {o["key"] for o in b["objects"]}
@@ -103,6 +130,12 @@ def cross_check(question, sql, ir):
                 "advice": ""}
     inter = ka & kb
     missed = [o for o in a["objects"] if o["key"] not in kb]
+    if not inter and _linked(ka, kb, ir):
+        # SQL 用的表经已验证关系直接指向问句对象(考勤表的活动外键之于「活动」):通过外键列回答,不算答非所问(DR-080)
+        return {"verdict": "partial", "declared": a, "actual": b, "overlap": 0.0, "missed": missed,
+                "reason": "SQL 未直接查询问句提到的对象,但所用的表经已验证关系与其相连: "
+                          + "、".join(o["cn"] for o in missed),
+                "advice": "答案经外键列间接覆盖问句对象,需标注覆盖方式"}
     if not inter:
         return {"verdict": "mismatch", "declared": a, "actual": b,
                 "overlap": 0.0, "missed": missed,
@@ -136,3 +169,46 @@ def step_of(res):
     if res.get("advice"):
         info += " · " + res["advice"]
     return {"step": "intent_crosscheck", "ok": ok, "info": info[:300]}
+
+
+_SQL_WORDS = {"on", "where", "join", "left", "right", "inner", "outer", "full", "cross", "group", "order",
+              "limit", "union", "having", "as", "using", "natural"}
+
+
+def dimension_check(question, sql, ir):
+    """维度词核对(DR-069):问句里的维度词(「线别」)在 SQL 中取自哪一列,该列在本体中有没有这层含义。
+
+    依据只认本体:列所在对象的中文名、列的中文名(库表注释或代码中的字段说明)。都对不上时,
+    这一列是模型自己挑的——实测把轨道列(track)当成了线别,答案完全错误却没有任何提示。
+    只提示、不阻断:提示写进执行记录与报告,由使用者核对。
+    """
+    q, s = question or "", sql or ""
+    alias, tables = {}, []
+    for m in re.finditer(r"\b(?:from|join)\s+(%s)(?:\s+(?:as\s+)?([A-Za-z_]\w*))?" % _IDENT, s, re.I):
+        t = m.group(1).strip('"`[]').lower()
+        t = t.split(".")[-1] if t.startswith("up.") else t
+        tables.append(t)
+        al = (m.group(2) or "").lower()
+        alias[t] = t
+        if al and al not in _SQL_WORDS:
+            alias[al] = t
+    by_table = {(o.get("table") or "").lower(): o for o in ir.get("objects", []) if o.get("table")}
+    warns, seen = [], set()
+    for m in re.finditer(r"(?:\b([A-Za-z_]\w*)\.)?\b([A-Za-z_]\w*)\s+as\s+[\"'`]?([一-鿿]{2,})", s, re.I):
+        qual, col, term = (m.group(1) or "").lower(), m.group(2), m.group(3)
+        if term not in q or term in seen or col.lower() in _SQL_WORDS:
+            continue
+        table = alias.get(qual) if qual else (tables[0] if len(set(tables)) == 1 else None)
+        obj = by_table.get(table or "")
+        if not obj:
+            continue
+        labels = [obj.get("cn") or ""] + [str(x) for x in obj.get("aliases") or []] + \
+                 [str(a.get("cn") or "") for a in obj.get("attrs") or []
+                                          if str(a.get("col") or "").lower() == col.lower()]
+        if any(len(lb) >= 2 and (term in lb or lb in term) for lb in labels):
+            continue
+        seen.add(term)
+        warns.append({"term": term, "column": col, "table": table,
+                      "reason": f"问句中的「{term}」在本体中没有对应:取自 {table}.{col},该列没有这层含义的说明,"
+                                "是模型自行选用的,结果可能不是所问的维度,请核对"})
+    return warns

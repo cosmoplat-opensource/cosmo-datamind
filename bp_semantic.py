@@ -10,14 +10,15 @@ bp_semantic = Blueprint("semantic", __name__)
 _deps: dict = {}
 
 
-def configure_semantic(load_graph):
+def configure_semantic(load_graph, default_graph=lambda: 'demo'):
     _deps["load_graph"] = load_graph
+    _deps['default_graph'] = default_graph
 
 
 @bp_semantic.get("/api/ont/profile")
 def ont_profile():
     """``q`` 给出则返回命中的画像(按分值);否则返回全部画像(不含检索文本)。"""
-    key = (request.args.get("graph") or "demo").strip()
+    key = (request.args.get("graph") or _deps['default_graph']()).strip()
     ir = _deps["load_graph"](key)
     if ir is None: return jsonify({"error": "非法图谱键"}), 400
     if not ir: return jsonify({"error": "图谱不存在"}), 404
@@ -33,7 +34,7 @@ def ont_profile():
 
 @bp_semantic.get("/api/export/osi")
 def export_osi():
-    key = (request.args.get("graph") or "demo").strip()
+    key = (request.args.get("graph") or _deps['default_graph']()).strip()
     ir = _deps["load_graph"](key)
     if ir is None: return jsonify({"error": "非法图谱键"}), 400
     if not ir: return jsonify({"error": "图谱不存在"}), 404

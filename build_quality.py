@@ -10,7 +10,9 @@ from __future__ import annotations
 
 import cq_check
 import build_references
+import ontology_domain
 import metric_contract
+import ontology_decision
 import dao_core
 import definition_eval
 import health_check
@@ -40,6 +42,13 @@ def audit_verified_evidence(ir):
         declared_fk = (source == "declared_fk" or evidence.get("declared") is True or
                        (isinstance(legacy_sources, list) and "schema-fk" in legacy_sources))
         label = f"{relation.get(source_key) or '?'}→{relation.get(target_key) or '?'}"
+        for role in evidence.get('role_keys') or []:
+            if role.get('source') == 'declared_fk' and (role.get('schema_validated') is not True
+                    or role.get('orphan_count') != 0 or not role.get('referencing_rows')
+                    or not role.get('child_key') or not role.get('parent_key')):
+                issues.append({'type': 'verified_invalid_role_key', 'relation': label, 'index': index,
+                               'desc': '角色外键缺少独立的完整约束检查，或含孤儿/无实际引用',
+                               'fix': '将未通过的角色键移入候选，重新执行完整外键核验'})
         missing_keys = [key for key in ("child_key", "parent_key") if not evidence.get(key)]
         if missing_keys:
             issues.append({"type": "verified_missing_join_key", "relation": label, "index": index,
@@ -64,16 +73,23 @@ def audit_verified_evidence(ir):
                                "fix": "修复外键或引用数据后重新核验；当前关系应为 candidate"})
             continue
 
-        overlap = evidence.get("overlap", relation.get("overlap"))
+        # DR-069 多态引用:按判别列取值的重叠率达标,判别列代替键名证据
+        cond_ov = evidence.get("condition_overlap")
+        cond_ok = (isinstance(evidence.get("condition"), dict) and dao_core.valid_percentage(cond_ov)
+                   and cond_ov >= dao_core.MIN_OVERLAP)
+        overlap = cond_ov if cond_ok else evidence.get("overlap", relation.get("overlap"))
+        # DR-100 孤儿记录不再放宽阈值:重叠率未达固定阈值的关系不能是 verified(此前标了 orphan_tolerant 即按达标处理)
         if not dao_core.valid_percentage(overlap) or overlap < dao_core.MIN_OVERLAP:
             issues.append({"type": "verified_overlap_below_threshold", "relation": label, "index": index,
                            "desc": f"verified 关系重叠率 {overlap!r} 未达到固定阈值 {dao_core.MIN_OVERLAP:g}%",
                            "fix": "降为 candidate,或用可回放数据重新取证"})
-        if evidence.get("parent_unique") is not True:
+        # DR-065:父键在「有效行」上唯一也算;认可的规则见 specs/models/valid_rows_rules.json(经 ontology_domain 读取)
+        valid_rows_ok = ontology_domain.is_valid_rows(evidence)
+        if evidence.get("parent_unique") is not True and not valid_rows_ok:
             issues.append({"type": "verified_parent_not_unique", "relation": label, "index": index,
-                           "desc": "verified 关系未记录父键唯一=true",
+                           "desc": "verified 关系未记录父键唯一=true,也没有有效行上父键唯一的证据",
                            "fix": "重算父键唯一性;不唯一或无法证明时降为 candidate"})
-        if evidence.get("name_ok") is not True:
+        if evidence.get("name_ok") is not True and not cond_ok:
             issues.append({"type": "verified_name_unsupported", "relation": label, "index": index,
                            "desc": "verified 关系未记录键名/父表名语义证据",
                            "fix": "用统一 name_ok 复核;无命名证据时降为 candidate"})
@@ -207,6 +223,18 @@ def evaluate(ir, cqs=None, definition_threshold=0.6):
     metric_counts = metric_contract.counts(ir)
 
     review_queue = []
+    proposals = [c for k in ('concepts', 'themes', 'derived', 'caveats') for c in ir.get(k) or []
+                 if c.get('status') not in ('asserted', 'certified', 'rejected')]
+    if proposals:
+        review_queue.append({'type': 'semantic_proposals', 'count': len(proposals),
+                             'desc': f'{len(proposals)} 项业务概念、主题或计算建议的含义尚待确认',
+                             'fix': '检查取数证据并确认定义、单位和计算规则；查询有数据不等于语义认证'})
+    unavailable = [c for k in ('concepts', 'themes', 'derived', 'caveats') for c in ir.get(k) or []
+                   if c.get('status') != 'rejected' and c.get('binding_status') in ('stale', 'unresolved')]
+    if unavailable:
+        review_queue.append({'type': 'semantic_bindings_unavailable', 'count': len(unavailable),
+                             'desc': f'{len(unavailable)} 项取数对应失效或尚未重新核验，包括此前已人工确认的条目',
+                             'fix': '重新检查当前来源；保留人工语义结论，取数对应恢复前不用于回答'})
     review_queue.extend(reference_quality["review_queue"])
     for signal in health.get("signals", []):
         review_queue.append({"type": "health_" + signal["type"], "desc": signal["desc"], "fix": signal["fix"]})
@@ -225,8 +253,8 @@ def evaluate(ir, cqs=None, definition_threshold=0.6):
                              "fix": "进入人审；争议关系不计入验收问题的强路径，人工确认后再置为 asserted"})
     if metric_counts["candidate"]:
         review_queue.append({"type": "candidate_metrics", "count": metric_counts["candidate"],
-                             "desc": f"{metric_counts['candidate']} 个指标尚未通过执行核验或未绑定口径",
-                             "fix": "补参照 SQL/参考基准后重跑指标核验;口径经业务确认后人工置 certified"})
+                             "desc": f"{metric_counts['candidate']} 个指标尚未通过执行核验或未绑定计算规则",
+                             "fix": "补参照 SQL/参考基准后重跑指标核验;计算规则经业务确认后人工置 certified"})
     query_errors = list((ir.get("scenario") or {}).get("query_errors") or [])
     if query_errors:
         review_queue.append({"type": "adjudication_query_errors", "count": len(query_errors),
@@ -241,6 +269,9 @@ def evaluate(ir, cqs=None, definition_threshold=0.6):
                 "fix": "补非循环的属加种差定义与反例"}
         review_queue.append(item); gaps.append(item)
 
+    # DR-117 图谱上声明的工艺路线每次都按方向核验;决策层里还等人处理的事项并入待评审清单
+    cqs = list(cqs or []) + ontology_decision.route_cqs(ir)
+    review_queue.extend(ontology_decision.review_items(ir))
     if cqs:
         cq = cq_check.check_all(cqs, ir)
         cq["provided"] = True

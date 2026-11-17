@@ -94,7 +94,9 @@ def _identities(host, keys, body):
 def _catalog(host):
     """Read schema, never business rows; schema changes matter even if stat is preserved."""
     schemas = []
-    for filename in (host.DB, host.UPLOAD_DB):
+    database = host._qa_db() if hasattr(host, "_qa_db") else host.DB
+    files = (database, database + "-wal", host.UPLOAD_DB, host.UPLOAD_DB + "-wal")
+    for filename in (database, host.UPLOAD_DB):
         path = Path(filename)
         if not path.exists():
             schemas.append(None)
@@ -108,7 +110,7 @@ def _catalog(host):
                 conn.close()
         except (OSError, sqlite3.Error):
             schemas.append({'unavailable': True})
-    return digest({'schema': schemas, 'files': [list(x) for x in host._stat_sig(host.DB, host.UPLOAD_DB)]})
+    return digest({'schema': schemas, 'files': [list(x) for x in host._stat_sig(*files)]})
 
 
 class HostAdapter(DataQAAdapter):
@@ -159,9 +161,11 @@ class RequestGate:
         with host._WRITE_LOCK:
             state = _identities(host, self.graphs, self.body)
             # Recompute inventory/columns rather than trusting process caches across connection changes.
-            host._INV_CACHE['sig'] = None
+            host._INV_CACHE.clear()
             host._COLS_CACHE.clear()
             ir, actual, fallback, profile = host._qa_anchor_ir(self.graphs)
+            if not actual:
+                raise ContractError('ontology_not_queryable', '请先基于当前数据源构建本体，再进行问数。')
             ir, profile = deepcopy(ir), {**host._qa_graph_profile(ir), **deepcopy(profile)}
             snapshots = []
             for key in actual:
@@ -178,6 +182,7 @@ class RequestGate:
                     'context': {'mode': 'real', 'generation_policy': 'offline'},
                     'environment': {'adapter_revision': 'data-deep-qa-host-1', 'deep_qa': info,
                                     'connections': _catalog(host), 'lifecycle': state,
+                                    'publication': {key: host._release_state(key) for key in actual},
                                     'edits_revision': digest([list(x) for x in host._stat_sig(
                                         *[host._edits_path(key) for key in actual])])}}
             legacy = host._qa_scope_error(self.graphs, actual, fallback, profile)
@@ -234,6 +239,13 @@ class RequestGate:
         return True
 
     @contextmanager
+    def reading(self):
+        """DR-158: probes and deterministic decision reads share the lifecycle fence."""
+        with self.host._WRITE_LOCK:
+            self.fresh()
+            yield
+
+    @contextmanager
     def execution(self, sql):
         # Legacy delete/edit operations use this same lock. Admission and this SQL are indivisible.
         with self.host._WRITE_LOCK:
@@ -245,6 +257,7 @@ class RequestGate:
 def failure(exc):
     """Stable early failure before a gate/report can be constructed."""
     return {'error': str(exc), 'code': exc.code,
+            **({'ontology': {'keys': [], 'queryable': False}} if exc.code == 'ontology_not_queryable' else {}),
             'application_check': {'application_id': 'data.deep_qa', 'contract_version': '1',
                 'preparation_status': 'blocked', 'execution_status': 'blocked',
                 'execution_readiness': 'not_verified', 'issues': [], 'allowed_actions': [],
@@ -273,7 +286,7 @@ class DataCheckResolver:
         require(context.get('task_ref') is None)
         from ontology_assets import AssetStore
         with self.host._WRITE_LOCK:
-            self.host._INV_CACHE['sig'] = None
+            self.host._INV_CACHE.clear()
             adapter = DataQAAdapter(self.host, assets=AssetStore(self.root, read_only=True),allow_deleted=_history)
             data = adapter.resolve(asset_refs=asset_refs)
             data['context']['mode'] = context['mode']

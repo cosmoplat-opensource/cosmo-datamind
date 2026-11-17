@@ -1,11 +1,11 @@
 {
  "version": "2026-07-27-v2",
- "note": "问数评测参考问题集。gold 字段是为兼容既有评测器保留的参考答案字段，值均经主库查询校准；gold_tables 记录判定出处所需的表；tol 为相对容差。v2 变更：Q7/Q8 明确以明细事实为准，因为合成数据的汇总层与事实层合计差异超过 5%，口径不明时不存在唯一答案。",
+ "note": "问数评测参考问题集。gold 字段是为兼容既有评测器保留的参考答案字段，值由各题的 gold_sql 在 examples/demo_metrics.db 上算出(演示库重建后须重算,tests/unit/test_qa_eval_stats.py 会核对);评测判分以 gold_sql 当场的结果为准；gold_tables 记录判定出处所需的表；tol 为相对容差。v2 变更：Q7/Q8 明确以明细事实为准，因为合成数据的汇总层与事实层合计差异超过 5%，统计方式不明时不存在唯一答案。",
  "items": [
   {
    "id": "Q1",
    "q": "全部销售订单的总金额是多少万元?",
-   "gold": 70477.8,
+   "gold": 216604.0,
    "tol": 0.01,
    "unit": "万元",
    "gold_tables": [
@@ -16,7 +16,7 @@
   {
    "id": "Q2",
    "q": "2025年3月一共有多少笔销售订单?",
-   "gold": 270,
+   "gold": 282,
    "tol": 0.0,
    "gold_tables": [
     "fact_sales_order"
@@ -26,7 +26,7 @@
   {
    "id": "Q3",
    "q": "全部生产产出的总产量是多少?",
-   "gold": 41296,
+   "gold": 114351.0,
    "tol": 0.01,
    "gold_tables": [
     "fact_production_output"
@@ -46,7 +46,7 @@
   {
    "id": "Q5",
    "q": "平均每笔销售订单的实际毛利是多少?",
-   "gold": 33967.2,
+   "gold": 88315.3,
    "tol": 0.01,
    "gold_tables": [
     "fact_sales_order"
@@ -56,7 +56,7 @@
   {
    "id": "Q6",
    "q": "一共有多少条退货记录?",
-   "gold": 409,
+   "gold": 83,
    "tol": 0.0,
    "gold_tables": [
     "fact_return"
@@ -66,7 +66,7 @@
   {
    "id": "Q7",
    "q": "按生产产出明细记录累计,产量最高的产线叫什么名字?",
-   "gold_str": "共混线-1",
+   "gold_str": "合金挤出1线",
    "gold_tables": [
     "fact_production_output",
     "fact_production_order",
@@ -77,7 +77,7 @@
   {
    "id": "Q8",
    "q": "以销售订单明细为准,2025年的月均销售收入是多少万元?",
-   "gold": 4346.5,
+   "gold": 12121.4,
    "tol": 0.02,
    "unit": "万元",
    "gold_tables": [

@@ -159,9 +159,14 @@ def test_concurrent_worker_deletes_preserve_all_keys(qa_http):
 
 
 def test_unregistered_importlib_host_and_extracted_issue_module(qa_http):
+    import subprocess
+    import sys
+    # A second server configures shared blueprint dependencies; own its process
+    # so this import-compatibility check cannot change other tests' application.
+    code = '''
     import importlib.util
     import sys
-    spec=importlib.util.spec_from_file_location('_qa_unregistered_host',server.__file__)
+    spec=importlib.util.spec_from_file_location('_qa_unregistered_host',sys.argv[1])
     module=importlib.util.module_from_spec(spec)
     assert module.__name__ not in sys.modules
     spec.loader.exec_module(module)
@@ -170,6 +175,11 @@ def test_unregistered_importlib_host_and_extracted_issue_module(qa_http):
         assert module._QA_HOST._qa_scope({'graphs':['demo']})==([],['demo'])
         assert module.app.test_client().get('/assets/modules/qa-contract.js').status_code==200
     finally:module.app.extensions['robotics'].close()
+    '''
+    import textwrap
+    run = subprocess.run([sys.executable, '-c', textwrap.dedent(code), server.__file__],
+                         capture_output=True, text=True, timeout=30)
+    assert run.returncode == 0, run.stderr
 
 
 @pytest.mark.parametrize('kind',['built','forged'])

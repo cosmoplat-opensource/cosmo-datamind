@@ -3,7 +3,7 @@
 
 该 YAML 不参与运行,是给评审对照代码看的。文档最容易在重构后悄悄失真——
 本测试把每个 `code:` 锚点回打到源码:文件必须存在、符号必须还在。
-改了函数名而忘了改文档,这里当场变红。
+改了函数名而忘了改文档,这里的测试即不通过。
 
 刻意不引入 yaml 解析器:pyyaml 未在 requirements 中声明,
 测试依赖它会让「按 requirements 装完就能全绿」这条承诺失效。
@@ -59,5 +59,5 @@ def test_every_code_anchor_resolves():
 def test_gates_documented():
     """三道执行前关卡必须都在文档里——这是评审最关心的部分,不允许漏写。"""
     text = DOC.read_text(encoding="utf-8")
-    for kw in ("只读", "口径拦截", "双盲意图检测"):
+    for kw in ("只读", "本体约束拦截", "双盲意图检测"):
         assert kw in text, f"关卡「{kw}」未在链路文档中说明"

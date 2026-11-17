@@ -20,7 +20,7 @@ CQ 全过的本体,结构上仍可能是病的——比如一半对象是孤岛(
 检出项(全部确定性图计算,不调 LLM):
   isolated        孤岛对象:不参与任何关系 —— 建了却用不上
   self_loop       自反关系:源=目标 —— 多为抽取误判
-  duplicate       重复边:同一对象对之间多条同向关系 —— 口径二义
+  duplicate       重复边:同一对象对之间多条同向关系 —— 语义二义
   bidirectional   双向对偶:A→B 与 B→A 同时存在 —— 方向未定,推理会绕圈
   hub             超级节点:度数远超均值 —— 常见原因是职责过多的宽表尚未拆分
   dangling        悬空端点:关系引用了不存在的对象 —— IR 自身不一致
@@ -37,7 +37,7 @@ CQ 全过的本体,结构上仍可能是病的——比如一半对象是孤岛(
 from collections import Counter
 
 
-from ir_shape import rels as _rels                     # IR 形状单一事实源
+from ir_shape import rels as _rels                     # IR 形状集中定义
 
 
 def _key(o, i):
@@ -68,7 +68,10 @@ def check(ir):
                                "relation": f"{s}->{t}",
                                "desc": f"关系引用了不存在的对象: {side}",
                                "fix": "对象已被删除但关系残留,须级联清理"})
-        if s == t and not r.get("self_ref"):
+        _ev = r.get("evidence") or {}
+        _hier = str(_ev.get("child_key") or "").strip().lower() not in ("", str(_ev.get("parent_key") or "").strip().lower())
+        if s == t and not r.get("self_ref") and not _hier:
+            # DR-073/074:子键与父键是本表不同的两列(parent_id → category_id)即层级自引用,经数据验证成立,不算误判
             # DR-036:标记为有意层级自引用(self_ref)的关系豁免——那是合法建模,不是抽取误判
             errors.append({"type": "self_loop", "severity": "error",
                            "relation": f"{s}->{t}", "verb": r.get("verb"),
@@ -78,7 +81,9 @@ def check(ir):
         deg[t] += 1
         pair_dir[(s, t)] += 1
         pair_dir_items.setdefault((s, t), []).append(r)
-        pair_undir.setdefault(frozenset((s, t)), []).append((s, t, st, r.get("verb")))
+        # 被人否决的关系是裁定结果,不是与 verified 相矛盾的证据(DR-129)
+        pair_undir.setdefault(frozenset((s, t)), []).append(
+            (s, t, "human_rejected" if r.get("human_review") == "rejected" else st, r.get("verb")))
 
     for (s, t), c in pair_dir.items():
         if c > 1 and s != t:
@@ -98,7 +103,7 @@ def check(ir):
             signals.append({"type": "duplicate", "severity": "warn",
                             "relation": f"{s}->{t}", "count": c,
                             "desc": f"「{cn.get(s, s)}」→「{cn.get(t, t)}」有 {c} 条同向关系",
-                            "fix": "口径二义:合并为一条,或用不同动词明确区分语义"})
+                            "fix": "语义二义:合并为一条,或用不同动词明确区分语义"})
     for pair, items in pair_undir.items():
         dirs = {(a, b) for a, b, _, _ in items}
         if len(dirs) > 1:
@@ -112,8 +117,8 @@ def check(ir):
             a, b = tuple(pair)[0], tuple(pair)[-1]
             errors.append({"type": "status_conflict", "severity": "error",
                            "relation": f"{a}<->{b}",
-                           "desc": "同一对象对间既有 verified 又有 rejected 关系",
-                           "fix": "证据自相矛盾:须人审裁定保留哪条"})
+                           "desc": "同一对对象之间既有已验证的关系,又有已否决的关系",
+                           "fix": "证据相互矛盾,需人工审核确定保留哪一条"})
 
     isolated = [k for k in keys if deg[k] == 0]
     for k in isolated:
@@ -138,7 +143,7 @@ def check(ir):
         "error_count": len(errors), "signal_count": len(signals),
         "healthy": not errors,
         "score": score,
-        "note": "确定性图结构体检,不调 LLM;只诊断不自动修——孤岛可能是刚建未连,"
+        "note": "确定性图结构检查,不调 LLM;只诊断不自动修——孤岛可能是刚建未连,"
                 "超级节点可能本就是业务枢纽,判断权在人。结构一致性分只由阻断问题扣分,"
                 "信号类只列出不扣分，避免业务枢纽使结构分数失真",
     }

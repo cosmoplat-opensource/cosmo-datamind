@@ -4,7 +4,7 @@
      pip install playwright && playwright install chromium
      python3 server.py &   # 先起服务(DATAMIND_URL 可覆盖地址)
      python3 test_ui.py
-   覆盖:26 页逐页渲染(激活可见/内容非空/零 pageerror)+ 子 UI 交互
+   覆盖:18 页逐页渲染(激活可见/内容非空/零 pageerror)+ 子 UI 交互
    (弹窗开合/表单执行/详情点击/筛选过滤/图表渲染/技能复用问数)。"""
 import asyncio, json, sys
 from tests.browser_runtime import close_browser, managed_playwright
@@ -15,9 +15,9 @@ import os
 BASE = os.environ.get("DATAMIND_URL") or "http://%s:%s" % (
     os.environ.get("DATAMIND_HOST") or "localhost", os.environ.get("DATAMIND_PORT") or "8092")
 PAGES = ["home","graph","metrics","catalog","quality","glossary","sqldev","sparql",
-         "chat","review","build","library","actioncenter","qaeval","assistant",
-         "enginecfg","conn","viz","apis","jobs","sysadmin","rules","layers",
-         "ontquality","skills","agents","claw"]
+         "chat","review","build","actioncenter","qaeval",
+         "enginecfg","conn","viz",
+         "ontquality","claw"]
 
 R = {"pass": [], "fail": []}
 ALL_ERRORS = []          # 全程累计的页面错误(只增不清),收尾统一汇总
@@ -72,7 +72,7 @@ async def main():
             前置页面的真实报错得以保留在最终汇总里,不被后续步骤掩盖。"""
             return [e for e in errors[base:] if "favicon" not in e]
 
-        # ── 阶段一:26 页逐页走查 ──────────────────────────────
+        # ── 阶段一:18 页逐页走查 ──────────────────────────────
         print("== 阶段一:全页面渲染 ==")
         for p in PAGES:
             base = mark()
@@ -149,14 +149,14 @@ async def main():
         await pg.wait_for_timeout(2500)
         t = await ev("document.getElementById('p_sparql').innerText", '')
         (ok if ("http" in t or "结果" in t) else bad)("sparql 执行", t[:60])
-        # chat:命中沉淀技能(不出网,秒回)
+        # chat:命中已保存技能(不出网,秒回)
         await go("chat")
         q = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "workdir", "qa_skills.json")))[0]["question"]
         await pg.fill("#p_chat textarea, #p_chat input[type=text]", q)
         await pg.click("#p_chat button:has-text('发送'), #p_chat button:has-text('提问')")
         try:
-            await pg.wait_for_function("document.getElementById('p_chat').innerText.includes('沉淀')||document.getElementById('p_chat').innerText.length>800", timeout=30000)
-            ok("chat 沉淀技能复用作答")
+            await pg.wait_for_function("document.getElementById('p_chat').innerText.includes('保存')||document.getElementById('p_chat').innerText.length>800", timeout=30000)
+            ok("chat 已保存技能复用作答")
         except Exception: bad("chat 作答超时", "")
         # review:三态计数
         await go("review", 2000)
@@ -187,10 +187,6 @@ async def main():
         (ok if geo and geo["tx"]>=120 else bad)("build 技能描述有可读宽度(未被挤成竖排)",
                                                 f"{geo}")
         (ok if geo and geo["h"]<=160 else bad)("build 单张技能卡高度正常", f"{geo}")
-        # library:已构建本体
-        await go("library")
-        t = await ev("document.getElementById('p_library').innerText", '')
-        (ok if ("built_" in t or "本体" in t) else bad)("library 本体库")
         # actioncenter:KPI+类型表+类型编辑弹窗
         await go("actioncenter", 2000)
         t = await ev("document.getElementById('p_actioncenter').innerText", '')
@@ -206,10 +202,6 @@ async def main():
         await go("qaeval", 2000)
         t = await ev("document.getElementById('p_qaeval').innerText", '')
         (ok if ("8/8" in t or "尚未跑过" in t) else bad)("qaeval KPI 或空态引导", t[:60])
-        # assistant:角色卡+待办
-        await go("assistant", 2000)
-        t = await ev("document.getElementById('p_assistant').innerText", '')
-        (ok if ("生产主管" in t or "质量工程师" in t) else bad)("assistant 角色卡")
         # enginecfg:掩码 key
         await go("enginecfg", 2000)
         t = await ev("document.getElementById('p_enginecfg').innerText", '')
@@ -232,21 +224,10 @@ async def main():
             c = await ev("!!document.querySelector('#p_viz canvas')", False)
             (ok if c else bad)("viz 出图(canvas)")
         else: bad("viz 无运行按钮", str(btn))
-        # apis:接口目录
-        await go("apis")
-        rows = await ev("document.querySelectorAll('#p_apis tr').length", 0)
-        (ok if rows>50 else bad)(f"apis 接口目录({rows}行)")
-        # jobs / sysadmin / rules / layers / ontquality / skills / agents
-        await go("jobs"); ok("jobs 渲染") if (await ev("document.getElementById('p_jobs').innerText.length", 0))>10 else bad("jobs","empty")
-        await go("sysadmin", 2000)
-        t = await ev("document.getElementById('p_sysadmin').innerText", '')
-        (ok if ("health" in t.lower() or "ok" in t.lower() or "环境" in t) else bad)("sysadmin 健康")
+        # ontquality
         await go("ontquality", 2500)
         t = await ev("document.getElementById('p_ontquality').innerText", '')
-        (ok if ("100" in t or "完备" in t) else bad)("ontquality 记分卡", t[:50])
-        await go("skills")
-        t = await ev("document.getElementById('p_skills').innerText", '')
-        (ok if "ontology" in t else bad)("skills 技能中心", t[:50])
+        (ok if ("100" in t or "完备" in t) else bad)("ontquality 完备度评分", t[:50])
         # claw:本体对话 + 审计面板(DR-027)
         await go("claw", 2500)
         t = await ev("document.getElementById('p_claw').innerText", '')
@@ -256,15 +237,8 @@ async def main():
         aud = await ev("document.getElementById('claw_audit').innerText", '')
         (ok if "变更" in aud else bad)("claw 审计面板出数", aud[:40])
         (ok if ("需复核" in aud or "来源" in aud) else bad)("claw 审计含来源/风险维度")
-        await go("agents", 2000)
-        n = await ev("document.querySelectorAll('#ag_list tr').length", 0)
-        (ok if n>=2 else bad)(f"agents 列表({n-1}行)")
-        await pg.fill("#ag_q", "不存在的名字xx")
-        await pg.wait_for_timeout(500)
-        n2 = await ev("document.querySelectorAll('#ag_list tr').length", 0)
-        (ok if n2<n else bad)(f"agents 过滤 {n-1}→{n2-1} 行")
 
-        # ══ 全站布局体检:把"元素都在、就是没法看"这类故障变成可判定的几何量 ══
+        # ══ 全站布局检查:把"元素都在、就是没法看"这类故障变成可判定的几何量 ══
         # 起因是技能编排面板 —— 全局 input{width:100%} 把勾选框撑到 224px,同排文本
         # 被挤成 0 宽、逐字竖排;而当时的计数断言 25 个元素全绿。
         SQUEEZE = """(()=>{const bad=[];
@@ -287,7 +261,7 @@ async def main():
           return bad;})()"""
         sq_all = []
         for _pn in ("home","build","chat","graph","review","quality","metrics",
-                    "catalog","skills","enginecfg","actioncenter","library"):
+                    "catalog","enginecfg","actioncenter"):
             await go(_pn, 1500)
             sq_all += await ev(SQUEEZE, [])
         (ok if not sq_all else bad)("全站无文本被挤成竖排", "; ".join(sq_all[:3]))

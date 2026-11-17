@@ -8,12 +8,12 @@
     MIN_DISTINCT=3、命名校验用 name_score、排除「子键自身即主键」。
 两份各自演化,门槛已经不一致(quick_build 少了 MIN_DISTINCT 与 PK-作子键排除,更易假阳)。
 
-本模块把裁决的**决策逻辑**抽为单一事实源:纯函数、**与数据访问方式无关**
+本模块把裁决的**决策逻辑**抽为集中定义:纯函数、**与数据访问方式无关**
 (只吃「已抽取的信号」——子键 distinct 集合、父键 distinct 集合、父键是否唯一、列名),
 因此 quick_build 的 SQL 路径(180k 行大表,SQL DISTINCT)与引擎的内存路径(dict of lists)
 可以喂各自抽取的信号、共用同一套判定。
 
-裁决口径(与 DR-002/DR-011 一致):
+裁决规则(与 DR-002/DR-011 一致):
   取值重叠率 = |子键distinct ∩ 父键distinct| / |子键distinct|
   verified   = 重叠≥θ ∧ 父键唯一 ∧ 列名有据 ∧ 子键 distinct≥下限 ∧ 子键非主键
   candidate  = 重叠≥θ 但列名无据(疑自增键值域巧合,送审)/ 或弱重叠(≥weak_floor)
@@ -23,7 +23,7 @@ LLM 不得自评 verified;verified 只由数据见证产生。
 import re
 import math
 
-# ── 单一事实源常量(两引擎此前各自定义,值已漂移)──
+# ── 集中定义常量(两引擎此前各自定义,值已漂移)──
 MIN_OVERLAP = 60.0        # θ:判 verified 的取值重叠率(%)
 MIN_DISTINCT = 3          # 子键去重值下限(太少不可信);quick_build 历史无此校验
 UNIQUE_PK_RATIO = 0.95    # 父键近似唯一阈值(distinct/非空行数)
@@ -35,7 +35,7 @@ _KEY_SUF_RE = re.compile(r"_?(id|code|key|no|num)$", re.I)
 
 
 def clean(values):
-    """非空值集合 + 非空计数(用于唯一度)。与 relation_discovery._clean 同口径。"""
+    """非空值集合 + 非空计数(用于唯一度)。与 relation_discovery._clean 规则相同。"""
     vals = [str(v).strip() for v in values if v is not None and str(v).strip() != ""]
     return set(vals), len(vals)
 
@@ -48,7 +48,7 @@ def unique_ratio(values):
 def is_pk_like(values, ratio=UNIQUE_PK_RATIO):
     """父键候选/主键判定:非空值**近似**唯一(默认 ≥0.95)。
 
-    注意本函数是**上游引擎口径的参照实现**,当前生产路径并不走它:
+    注意本函数是**上游引擎规则的参照实现**,当前生产路径并不走它:
     `quick_build`/`hallucination_eval` 判候选键用的是**精确唯一**
     (SQL 的 `COUNT(*) == COUNT(DISTINCT col)`,含 NULL 即不唯一),比此处更严。
     保留它是为与 `relation_discovery` 保持可对照的同名同义 API(见 DR-035 平价测试),
@@ -68,16 +68,35 @@ def overlap_pct(child_distinct, parent_distinct):
 
 
 def key_stem(c):
-    """剥尾部 id/code/key/no/num 后缀取词根(quick_build.key_stem 口径)。"""
-    return _KEY_SUF_RE.sub("", (c or "").lower()).strip("_")
+    """剥尾部 id/code/key/no/num 后缀取词根(quick_build.key_stem 规则)。驼峰先拆成下划线(belongEntNo → belong_ent_no)。"""
+    return _KEY_SUF_RE.sub("", _snake(c or "")).strip("_")
+
+
+# 业务库列名常用缩写(DR-069):dev_type_code ↔ device_type、sys_no ↔ system、ent_no ↔ enterprise。
+# 只按完整词元展开,不做模糊匹配
+ABBREVIATIONS = {
+    "dev": "device", "sys": "system", "ent": "enterprise", "org": "organization", "loc": "location",
+    "cfg": "config", "conf": "config", "attr": "attribute", "dept": "department", "emp": "employee",
+    "cust": "customer", "prod": "product", "mat": "material", "wh": "warehouse", "equip": "equipment",
+    "eqp": "equipment", "addr": "address", "msg": "message", "pkg": "package", "cat": "category",
+    "grp": "group", "usr": "user", "acct": "account", "proj": "project", "std": "standard",
+}
+
+
+def expand(name):
+    """按词元展开常用缩写:dev_group → device_group。"""
+    return "_".join(ABBREVIATIONS.get(t, t) for t in (name or "").lower().split("_"))
 
 
 def _core(col):
     """列名核心词:剥尾部 id/code + 剥 2-3 字母表缩写前缀;泛称或过短视为无核心词
-    (relation_discovery._core 口径,用于前缀式列名 we_mo_number↔pm_mo_number 佐证)。"""
+    (relation_discovery._core 规则,用于前缀式列名 we_mo_number↔pm_mo_number 佐证)。"""
     c = re.sub(r"(_?id|_?code)$", "", (col or "").lower()).strip("_")
     c = _ABBR_PREFIX_RE.sub("", c)
     return c if len(c) >= 3 and c not in _GENERIC_KEY else ""
+
+
+_GENERIC_TAILS = {"status", "number", "amount", "remark", "detail", "record", "values", "result", "source", "target"}
 
 
 def key_name_ok(child_key, parent_key):
@@ -86,12 +105,12 @@ def key_name_ok(child_key, parent_key):
     仅凭重叠会造假关系。
 
     **支持复合键**(逗号分隔,如 "c1,c2" ↔ "p1,p2"):逐列判定,列数不等即否,
-    全列通过才相容——收编 server._key_name_ok 的复合分支,单一事实源。"""
+    全列通过才相容——并入 server._key_name_ok 的复合分支,集中定义。"""
     cs, ps = key_columns(child_key), key_columns(parent_key)
     if not cs or not ps or len(cs) != len(ps):
         return False
     for a, b in zip(cs, ps, strict=True):   # 上面已校验等长
-        sa, sb = key_stem(a), key_stem(b)
+        sa, sb = expand(key_stem(a)), expand(key_stem(b))
         # `id`/`code` 这类泛化父键没有词根,不能把任意 `order_id → id` 都视作
         # 「键名相容」——这正是稠密自增值域产生假 verified 的入口。两边都无词根时
         # 仅接受原始列名相同;只有一边无词根时交给 name_ok 借父表名作第二证据。
@@ -102,6 +121,11 @@ def key_name_ok(child_key, parent_key):
         if sa == sb:
             continue
         if min(len(sa), len(sb)) >= 3 and (sa.startswith(sb) or sb.startswith(sa)):
+            continue
+        # 子键 = 修饰词 + 父键全名(mete_dev_type_code → dev_type_code、meta_sys_type_code → sys_type_code):
+        # 较短一方须足够具体(至少两个词,或 ≥6 个字母),避免 type、code 这类泛词误配
+        short, long_ = (sa, sb) if len(sa) <= len(sb) else (sb, sa)
+        if ("_" in short or (len(short) >= 6 and short not in _GENERIC_TAILS)) and long_.endswith("_" + short):
             continue
         return False
     return True
@@ -118,7 +142,7 @@ def key_columns(key):
 
 
 def name_score(child_col, parent_table, parent_col, synonyms=None):
-    """列名一致性打分(relation_discovery 口径,比 key_name_ok 更富:
+    """列名一致性打分(relation_discovery 规则,比 key_name_ok 更富:
     2=子父键同名 / 子列名含父表名;1=去后缀相关 / 前缀缩写核心词一致 / 同义词;0=无关。
     比 key_name_ok 多考虑「父表名」与「异名同义」两个信号。"""
     cc, pt, pc = (child_col or "").lower(), (parent_table or "").lower(), (parent_col or "").lower()
@@ -164,6 +188,18 @@ def _snake(col):
     return s.lower()
 
 
+def singular(word):
+    """英文表名常用复数:users → user、categories → category、addresses → address;其余原样返回。"""
+    w = (word or "").lower()
+    if len(w) > 4 and w.endswith("ies"):
+        return w[:-3] + "y"
+    if len(w) > 4 and w.endswith(("sses", "xes", "ches", "shes")):
+        return w[:-2]
+    if len(w) > 3 and w.endswith("s") and not w.endswith(("ss", "us", "is")):
+        return w[:-1]
+    return w
+
+
 def role_targets(col):
     """列名的语义角色目标(DR-036)。返回目标提示元组(可含 'self');非角色键返回 ()。
     先驼峰归一 + 剥尾部 id/code,再直接命中或按 <role>_ 前缀/_<role> 后缀命中。"""
@@ -187,9 +223,52 @@ def name_ok(child_col, parent_table, parent_key, child_table=None):
         return False
     if len(cs) > 1:
         return all(name_ok(c, parent_table, p, child_table) for c, p in zip(cs, ps, strict=True))
+    # 子键就是子表自己的标识(cycle_count 表的 cycle_count_id)而父键是另一张表名字不同的标识:
+    # 两个主键碰巧值域重合,不是引用(DR-074)。同名主键(一对一扩展表)不在此列。
+    if child_table and _snake(child_col) != _snake(parent_key) and key_stem(parent_key):
+        _ct = [t for t in _snake(child_table).split("__")[-1].split("_") if t]
+        while len(_ct) > 1 and _ct[0] in ("fact", "dim", "dws", "dwd", "ods", "ads", "dm"):
+            _ct = _ct[1:]
+        if expand(key_stem(child_col)) == expand("_".join(_ct)) and _snake(parent_table or "") != _snake(child_table):
+            return False
+    # 序号与标识不是一回事:line_no(单据行号)不指向 line_id(产线)(DR-074)
+    # 编码与自增 id 也是两套取值(account_code → account_id),有代码或注释契约时由契约补证
+    _sfx = lambda c: (re.search(r"_(id|no|code)$", _snake(c)) or [None, None])[1]
+    if _snake(child_col) != _snake(parent_key) and {_sfx(child_col), _sfx(parent_key)} in ({"id", "no"}, {"id", "code"}):
+        return False
     if key_name_ok(child_col, parent_key):
         return True
-    if name_score(child_col, parent_table or "", parent_key) > 0:
+    # 父键是更具体的概念(line_id 之于 cycle_count_line_id):父键 = 修饰词 + 子键,方向反了,不算依据(DR-074)
+    _cs, _ps = expand(key_stem(child_col)), expand(key_stem(parent_key))
+    if _cs and _ps and _ps != _cs and _ps.endswith("_" + _cs):
+        return False
+    # 父键有自己的具体词根(eval_id)而与子键词根(supplier)无关时,不能只凭「子键词根出现在父表名里」认定
+    _unrelated = bool(_cs and _ps and _ps != _cs and not _cs.endswith("_" + _ps) and _ps not in ("id", "code", "no"))
+    if not _unrelated and name_score(child_col, parent_table or "", parent_key) > 0:
+        return True
+    # 泛化父键(id/code)时,子键词根按缩写展开后出现在父表名里:dev_group_id → meta_device_group.id(DR-069)。
+    # name_score 与上游引擎保持规则相同,缩写放在这里补
+    if not key_stem(parent_key):
+        st = expand(key_stem(child_col))
+        if len(st) >= 3 and st in expand(_snake(parent_table or "")):
+            return True
+        # 带角色前缀的键名指向复数表名(DR-079):owner_user_id → users.id、excerpt_post_id → posts.id。
+        # 只认以 id/code/key/no 结尾的子键,且子键词根的最后一个词元与父表名最后一个词元的单数形式相同
+        if _KEY_SUF_RE.search(_snake(child_col)):
+            _last = st.split("_")[-1] if st else ""
+            _pt = [t for t in expand(_snake(parent_table or "")).split("_") if t]
+            if len(_last) >= 3 and _pt and _last == singular(_pt[-1]):
+                return True
+        # 词元前缀缩写:anal_obj_id → analysis_object.id(每个词元是父表名中对应词元的前缀,至少 3 个字母)
+        toks = [t for t in st.split("_") if t]
+        ptoks = [t for t in expand(_snake(parent_table or "")).replace("__", "_").split("_") if t]
+        if len(toks) >= 2 and all(len(t) >= 3 for t in toks):
+            for i in range(len(ptoks) - len(toks) + 1):
+                if all(ptoks[i + j].startswith(toks[j]) for j in range(len(toks))):
+                    return True
+    # 日期维度(DR-074):业务日期列 → 日历表的日期键
+    if re.search(r"(^|_)date$", _snake(child_col)) and re.search(r"(^|_)date$", _snake(parent_key)) \
+            and re.search(r"(^|_)(calendar|date_dim|dim_date)(_|$)", _snake(parent_table or "")):
         return True
     rt = role_targets(child_col)
     if rt:
@@ -270,6 +349,9 @@ def classify(*, overlap, parent_unique, name_ok, child_distinct,
         return {"status": "drop", "reason": "重叠率无效,须重新取证"}
     if overlap >= theta and parent_unique is True:
         if name_ok is True:
+            if child_distinct == 1:
+                # DR-099 只有一个取值的列,重叠率只能是 0% 或 100%,说明不了它在引用父表;交人工判断
+                return {"status": "candidate", "reason": "子键只有一个取值,重叠率不足以说明引用关系,送审"}
             return {"status": "verified", "reason": f"重叠 {overlap:.0f}%·父键唯一·列名有据"}
         return {"status": "candidate", "name_mismatch": True,
                 "reason": f"重叠 {overlap:.0f}% 但列名词根不一致,疑为自增键值域巧合,送审"}

@@ -19,6 +19,9 @@ import time
 from urllib.request import urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
+ROUTE_LAYER = ("server.py,bp_actions.py,bp_engine.py,bp_metrics.py,bp_semantic.py,bp_decision.py,srv_actions.py,srv_engine.py,"
+               "asset_lifecycle.py,bp_robotics.py,bp_robotics_application.py,bp_robotics_review.py,"
+               "bp_robotics_task.py,bp_application_contracts.py")
 
 
 def isolated_env(directory):
@@ -102,6 +105,10 @@ def main():
                 ("types", [py, "-m", "mypy", ".", "--no-error-summary"]),
                 ("unit", [py, "-m", "coverage", "run", "-m", "pytest", "tests/", "-ra"]),
                 ("coverage", [py, "-m", "coverage", "report"]),
+                # 分层下限(DR-106):确定性模块与路由层各自不得低于基线,避免高覆盖的小模块掩盖 server.py
+                ("coverage-core", [py, "-m", "coverage", "report", "--omit=" + ROUTE_LAYER + ",tests/*,ath_adapter/e2e/*",
+                                   "--fail-under=87"]),
+                ("coverage-routes", [py, "-m", "coverage", "report", "--include=" + ROUTE_LAYER, "--fail-under=61"]),
             ):
                 run_check(name, command, env, reports, results)
         if args.suite in ("integration", "ui", "all", "serve"):

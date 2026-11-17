@@ -250,3 +250,24 @@ def test_budget_exhaustion_closes_snapshot_without_publishing_partial_graph(make
         quick_build.build(db, str(out), "budget")
     assert quick_build.con is None
     assert not out.exists()
+
+
+@pytest.mark.parametrize("rows", [
+    [],                        # 子表空表
+    [(10, None), (11, None)],  # 有行但外键列全为 NULL
+])
+def test_declared_fk_without_any_referencing_value_is_not_verified(make_sqlite, tmp_path, rows):
+    """外键检查在没有引用值时必然找不到孤儿行——那是空真,不是数据见证。
+
+    回归背景:把设计文档转成只有结构的骨架库时,空表上声明的外键被判 verified。
+    """
+    db = make_sqlite({
+        "customers": ("customer_id INTEGER PRIMARY KEY", [(1,)]),
+        "orders": ("order_id INTEGER, customer_id INTEGER REFERENCES customers(customer_id)", rows),
+    })
+    ir = quick_build.build(db, str(tmp_path / "ir.json"), "vacuous")
+    relation = _pair(ir)[0]
+    assert relation["status"] == "candidate"
+    assert relation["evidence"]["referencing_rows"] == 0
+    assert relation["evidence"]["decision"] == "declared_fk_no_referencing_rows"
+    assert "无" in relation["note"]

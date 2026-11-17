@@ -535,8 +535,10 @@ try:
             body = ok(get(client, version_endpoint(oid, base, 'knowledge')))
             saved = {'version_id': body['head']['version_id']}
             assert saved['version_id'] != base['version_id'] and len(body['history']) == 1
-        for url in ('/api/jobs', '/api/graphs', '/api/build/defaults'):
+        for url in ('/api/graphs', '/api/build/defaults'):
             assert get(client, url).status_code == 200
+        assert post(client, '/api/build/jobs', {}).status_code == 400
+        assert get(client, '/api/jobs').status_code == 404
         print(json.dumps(saved))
 finally:
     app.extensions['robotics'].close()

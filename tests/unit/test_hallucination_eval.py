@@ -17,7 +17,7 @@ def _clean(cands):
 
 
 def test_uniqueness_semantics_match_quick_build(tmp_path):
-    """评测台的「父键唯一」必须与 quick_build 同口径:含 NULL 的列不是候选键。
+    """评测台的「父键唯一」必须与 quick_build 规则相同:含 NULL 的列不是候选键。
 
     quick_build 用 COUNT(*) vs COUNT(DISTINCT col) —— NULL 计入前者不计入后者,
     故有 NULL 即判不唯一。评测台若先剔 NULL 再比,会把含 NULL 的列误判为唯一,

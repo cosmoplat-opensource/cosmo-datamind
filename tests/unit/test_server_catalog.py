@@ -6,6 +6,7 @@ import server
 
 def test_table_list_includes_case_insensitive_chinese_name(make_sqlite, monkeypatch):
     db = make_sqlite({"fact_sales_order": ("id INTEGER PRIMARY KEY", [(1,), (2,)])})
+    monkeypatch.setattr(server, 'DB', db)
     monkeypatch.setattr(server, "load_ir_edited", lambda _key: {
         "objects": [{"table": "FACT_SALES_ORDER", "cn": "销售订单"}],
     })

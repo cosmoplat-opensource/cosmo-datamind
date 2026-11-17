@@ -29,7 +29,7 @@ def test_invalid_refresh_preserves_original_file_and_table(uploads, invalid):
     assert result["saved"] == []
     assert (directory / "uploads_orders.csv").read_bytes() == original
     with sqlite3.connect(directory / "uploads.db") as con:
-        assert con.execute("SELECT * FROM orders ORDER BY id").fetchall() == [("1", "10"), ("2", "20")]
+        assert con.execute("SELECT * FROM orders ORDER BY id").fetchall() == [(1, 10), (2, 20)]
 
 
 def test_file_write_failure_rolls_back_csv_replacement(uploads, monkeypatch):
@@ -45,7 +45,7 @@ def test_file_write_failure_rolls_back_csv_replacement(uploads, monkeypatch):
     assert result["tables"][0].get("error")
     assert (directory / "uploads_orders.csv").read_bytes() == original
     with sqlite3.connect(directory / "uploads.db") as con:
-        assert con.execute("SELECT * FROM orders").fetchall() == [("1", "10")]
+        assert con.execute("SELECT * FROM orders").fetchall() == [(1, 10)]
 
 
 def test_distinct_filenames_cannot_overwrite_same_normalized_table(uploads):
@@ -55,4 +55,4 @@ def test_distinct_filenames_cannot_overwrite_same_normalized_table(uploads):
     assert result["tables"][0].get("error")
     assert not (directory / "uploads_order_data.csv").exists()
     with sqlite3.connect(directory / "uploads.db") as con:
-        assert con.execute("SELECT * FROM order_data").fetchall() == [("1", "10")]
+        assert con.execute("SELECT * FROM order_data").fetchall() == [(1, 10)]

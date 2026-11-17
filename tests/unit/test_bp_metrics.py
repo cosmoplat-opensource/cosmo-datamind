@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""指标契约路由(DR-054):契约查看、人工确认口径的边界、重跑核验。"""
+"""指标契约路由(DR-054):契约查看、人工确认计算规则的边界、重跑核验。"""
 import json
 
 import server
@@ -89,7 +89,7 @@ def test_status_rejects_verified_and_requires_reviewer_for_certified(monkeypatch
     assert c.post("/api/metric/status", json={"graph": "g", "metric": "销售金额", "status": "verified"}).status_code == 400
     assert c.post("/api/metric/status", json={"graph": "g", "metric": "销售金额", "status": "certified"}).status_code == 400
     r = c.post("/api/metric/status", json={"graph": "g", "metric": "销售金额", "status": "certified",
-                                            "reviewer": "张三", "reason": "财务口径确认"})
+                                            "reviewer": "张三", "reason": "财务计算规则确认"})
     assert r.status_code == 200 and r.get_json()["status"] == "certified"
     saved = writes[-1][1]["metric_layers"]["atomic"][0]
     assert saved["certified_by"] == "张三" and saved["candidate"] is False

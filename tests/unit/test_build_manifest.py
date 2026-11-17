@@ -13,7 +13,7 @@ def test_build_manifest_persists_reproducible_inputs_without_paths():
         skills=["ontology-semi-auto"],
         cqs=["客户维度表支撑哪些指标？"],
         stability=False,
-        method="数据驱动(LLM 离线兜底)",
+        method="数据驱动(LLM 离线降级)",
         references={"industry": {"id": "manufacturing", "mode": "reference"},
                     "ontology_standard": {"id": "isa95", "mode": "constraint"}},
         evidence={

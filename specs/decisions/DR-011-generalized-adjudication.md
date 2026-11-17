@@ -3,7 +3,7 @@
 - **状态 / Status**: accepted
 - **日期 / Date**: 2026-07-19
 - **决策者 / Deciders**: Boss(用户) + Writer(Claude)
-- **关联 / Refs**: [[DR-002-multimodal-llm-anti-hallucination-build]]、[[DR-010-iof-bfo-alignment]];实证来源=论文实验(Burr-micro 54 场景、Burr-Mondial、示例 判别、对抗库);`server.py _adjudicate_ir/_llm_semantic_review`、`quick_build.py`、`test_all.py O 节`。
+- **关联 / Refs**: [[DR-002-multimodal-llm-anti-hallucination-build]]、[[DR-010-iof-bfo-alignment]];实证来源=论文实验(Burr-micro 54 场景、Burr-Mondial、示例库判别、对抗库);`server.py _adjudicate_ir/_llm_semantic_review`、`quick_build.py`、`test_all.py O 节`。
 
 ## 上下文 / Context
 论文阶段的基准实验暴露了裁决器的四个泛化盲区:①无后缀键名(列名=表名,Burr-micro basic 族零候选);②复合外键(Mondial 20/69,单列重叠不可见证);③自然键 schema 的父键不叫 *_id 且父表可含与表同名的非键列(声明 PK 未被查询,同名列优先撞错);④共享域巧合(数据为真、语义为假)只有语义评审能拦(判别实验 9 vs 2,滤除集不相交)。
@@ -17,7 +17,7 @@
 6. quick_build 同步等值候选。
 
 ## 后果 / Consequences
-- (+) 系统级 Burr-Mondial:改造前 R 1.6%(PK 盲区暴露)→ 迭代三轮(PK 感知、前缀、多候选、PK 优先父列)→ **P 71.7/R 67.2/F1 69.4(双向严苛协议)**,追平论文实验挂具(70.4,有向宽松协议);企业侧回归零劣化(quick_build 示例 265/200 不变;test_all 109/109)。
+- (+) 系统级 Burr-Mondial:改造前 R 1.6%(PK 盲区暴露)→ 迭代三轮(PK 感知、前缀、多候选、PK 优先父列)→ **P 71.7/R 67.2/F1 69.4(双向严苛协议)**,追平论文实验挂具(70.4,有向宽松协议);企业侧回归零劣化(quick_build 示例库 265/200 不变;test_all 109/109)。
 - (+) 论文"future work: multi-column joint adjudication"已在系统落地(修订论据材料)。
 - (−) 语义评审增加构建时延(每 60 关系一次 LLM 调用);离线自动降级。
 - **事故与规范**:本轮维护脚本曾以裸 `open("w")` 截断 server.py(条件表达式返 None → write 抛异常但文件已清空;空文件恒过 ast 检查掩盖事故)。经 `~/.claude/file-history` v21 完整恢复并重放。**新规范:一切维护性写文件必须"内存改→ast/断言验证→tempfile+os.replace 原子落盘"**(本 DR 后所有脚本已遵循)。
@@ -31,12 +31,12 @@
 
 ## v2.2(2026-07-19):静态扫描与末梢对齐
 - pyflakes 全扫 server.py/quick_build.py/test_all.py:**零告警**(首次全文件静态检查);
-- quick_build 前缀键候选(Country1→Country)与 v2 裁决器对齐,示例 回归零漂移(265/200 不变);
+- quick_build 前缀键候选(Country1→Country)与 v2 裁决器对齐,示例库回归零漂移(265/200 不变);
 - UI 图边 `semantic=fail` 红色点线叠加——三级控制环(提议/语义评审/数据裁决)在画布上完整可视。
 回归 109/109;UI JS 通过。
 
 ## v2.2 E2E 验收(2026-07-19)
-真实 LLM 三级环系统内首跑(build_inquire,示例 源,212s):SSE 步骤序列 intake→intent→gather_evidence→llm_extract→**semantic_review(16 通过·0 存疑)**→verify(15 verified/1 candidate)→narrate;semantic 字段全量落盘,completeness semanticReviewed=16。测试图谱已清理。三级控制环全链(后端→SSE→落盘→记分卡→UI)验收通过。
+真实 LLM 三级环系统内首跑(build_inquire,示例源,212s):SSE 步骤序列 intake→intent→gather_evidence→llm_extract→**semantic_review(16 通过·0 存疑)**→verify(15 verified/1 candidate)→narrate;semantic 字段全量落盘,completeness semanticReviewed=16。测试图谱已清理。三级控制环各环节(后端→SSE→落盘→记分卡→UI)验收通过。
 
 ## v2.3 部署验收 + 架构统一 refactor(2026-07-19)
 **部署与全功能点检**:干净部署(:8092),51 只读路由+边界全过;浏览器实测 27 页全渲染、586 按钮处理器全解析、零应用 JS 错误(仅 Chrome 扩展噪音);内联 onclick 的 `$` 调用实测不抛。
@@ -47,5 +47,5 @@
 **修复(统一,非破坏)**:①`/api/graphs` 每条目加 `cat` 字段(curated/scenario/built),built_* 改按 mtime 降序(最新在前);②前端新增 `graphOptions(gs,label)` 统一分组渲染 `<optgroup>`,三个选择器(图谱/建模工作台/完备度)共用,消散乱堆叠。浏览器实证 3 组渲染(精选3/场景7/构建12)。回归 **109/109**。非破坏:`cat` 为新增字段,JSON 契约向后兼容。
 
 ### v2.5 写端点边界加固(第8轮·错误路径审计)
-**审计**:对全部写/查端点灌空/超长/深嵌套/坏 op 等边界输入,**无一 500 崩溃**(优雅 400/404/405)。唯一 smell:enrich/reground/maturity 三写端点 `body.get("graph","demo")` **静默默认到 示例 主图**——漏传/拼错 graph 会误改生产本体。
+**审计**:对全部写/查端点灌空/超长/深嵌套/坏 op 等边界输入,**无一 500 崩溃**(优雅 400/404/405)。唯一 smell:enrich/reground/maturity 三写端点 `body.get("graph","demo")` **静默默认到示例主图**——漏传/拼错 graph 会误改生产本体。
 **修复**:把"图谱必填"上收进 `_open_writable`(`if not key → 400 需要指定图谱`),三端点改 `body.get("graph")` 去默认。读端点(sparql)/apply/forge 各有自身路径逻辑,保留其默认不动。UI 两处升级按钮本就显式传 graph,无破坏。回归 +3→**119/119**。

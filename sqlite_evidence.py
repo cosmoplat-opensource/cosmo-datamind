@@ -26,10 +26,18 @@ def _columns(connection, table, columns):
     return tuple(known[c.casefold()] for c in columns)
 
 
+def _canon(ref):
+    """取值规范成文本再比较:同一编号在子表存成文本 '121'、在父表存成整数 121 时,INTERSECT 按存储类型严格比较会得 0%
+    (DR-072 实测:价格标准 → 价格分组真实重叠 98.6%,记成 0%)。整数与整值小数统一成整数文本,其余去首尾空白。"""
+    return (f"CASE WHEN typeof({ref}) = 'integer' THEN CAST({ref} AS TEXT) "
+            f"WHEN typeof({ref}) = 'real' AND {ref} = CAST({ref} AS INTEGER) THEN CAST(CAST({ref} AS INTEGER) AS TEXT) "
+            f"ELSE TRIM(CAST({ref} AS TEXT)) END")
+
+
 def _values_sql(table, columns):
     # Qualifying identifiers also disables SQLite's double-quoted string fallback.
     refs = [f"q.{_qi(c)}" for c in columns]
-    select = ", ".join(refs)
+    select = ", ".join(_canon(r) for r in refs)
     nonempty = " AND ".join(f"{ref} IS NOT NULL AND {ref} != ''" for ref in refs)
     return f"SELECT DISTINCT {select} FROM {_qi(table)} AS q WHERE {nonempty}"
 

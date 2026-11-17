@@ -97,7 +97,7 @@ TOOLS = [
         },
         "annotations": {"readOnlyHint": True, "openWorldHint": False},
     },
-    # ── 只读语义工具(DR-055):检索概念画像、查看指标口径、按 certified 口径取数;不新增任何写路径 ──
+    # ── 只读语义工具(DR-055):检索概念画像、查看指标计算规则、按 certified 指标取数;不新增任何写路径 ──
     {
         "name": "search_concept",
         "title": "检索业务概念",
@@ -110,8 +110,8 @@ TOOLS = [
     },
     {
         "name": "describe_metric",
-        "title": "查看指标口径",
-        "description": "返回指标的契约口径(聚合/过滤/时间列/可用维度/状态/编译 SQL)。状态含义:certified=业务已确认;verified=执行核验与参照一致;candidate=未核验,不得据此作答。",
+        "title": "查看指标计算规则",
+        "description": "返回指标的契约计算规则(聚合/过滤/时间列/可用维度/状态/编译 SQL)。状态含义:certified=业务已确认;verified=执行核验与参照一致;candidate=未核验,不得据此作答。",
         "inputSchema": {"type": "object",
                         "properties": {"name": {"type": "string"}, "graph": {"type": "string"}},
                         "required": ["name"], "additionalProperties": False},
@@ -119,11 +119,22 @@ TOOLS = [
     },
     {
         "name": "query_metric",
-        "title": "按口径取数",
-        "description": "按指标契约确定性编译 SQL 并只读执行(按时间粒度分桶)。只接受 certified 指标;verified/candidate 会被拒绝并说明原因——对外取数只走业务确认过的口径。",
+        "title": "按 certified 指标取数",
+        "description": "按指标契约确定性编译 SQL 并只读执行(按时间粒度分桶)。只接受 certified 指标;verified/candidate 会被拒绝并说明原因——对外取数只用业务确认过的指标。",
         "inputSchema": {"type": "object",
                         "properties": {"name": {"type": "string"}, "graph": {"type": "string"}},
                         "required": ["name"], "additionalProperties": False},
+        "annotations": {"readOnlyHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "check_sql",
+        "title": "执行前检查 SQL",
+        "description": "执行前按本体检查一条 SQL:只读、表在本体范围内、连接键落在已验证或人工确认的关系上、关联后的聚合不重复计数、表与列存在。只检查不执行;返回结论、原因和每个连接条件对应的关系状态。不通过时按原因改写后再提交。",
+        "inputSchema": {"type": "object",
+                        "properties": {"sql": {"type": "string", "description": "单条 SELECT / WITH 查询"},
+                                       "graph": {"type": "string", "description": "图谱键,缺省为当前数据库的默认本体"},
+                                       "tables": {"type": "array", "items": {"type": "string"}, "description": "可选:进一步限定可读的表"}},
+                        "required": ["sql"], "additionalProperties": False},
         "annotations": {"readOnlyHint": True, "openWorldHint": False},
     },
 ]
@@ -211,19 +222,30 @@ def call_tool(name, args):
         st = m.get("status") or "candidate"
         if name == "describe_metric":
             lines = [f"指标「{m.get('name')}」 状态:{st} 分层:{d.get('layer')} 绑定表:{m.get('table') or '-'}"]
-            if d.get("caliber"): lines.append("口径:" + d["caliber"])
+            if d.get("caliber"): lines.append("计算规则:" + d["caliber"])
             if d.get("compiled_sql"): lines.append("SQL:" + d["compiled_sql"])
             ad = d.get("allowed_dimensions") or {}
             if ad: lines.append("可下钻:" + "、".join(ad.get("columns") or []) + " | 关联对象:" + "、".join(o["object"] for o in ad.get("objects") or []))
-            if st != "certified": lines.append("提示:该口径尚未经业务确认(certified),对外作答请注明。")
+            if st != "certified": lines.append("提示:该计算规则尚未经业务确认(certified),对外作答请注明。")
             return "\n".join(lines), False
         if st != "certified":
-            return f"拒绝取数:指标「{m.get('name')}」状态为 {st},只有 certified 口径可对外取数;请先在 DataMind 由业务确认口径。", True
+            return f"拒绝取数:指标「{m.get('name')}」状态为 {st},只有 certified 指标可对外取数;请先在 DataMind 由业务确认计算规则。", True
         d2, err = _http("GET", f"/api/metric/quick?graph={g}&name={n}")
         if err: return err, True
         rows = d2.get("data", {}).get("rows") or []
-        head = [f"指标「{d2.get('metric')}」 单位:{d2.get('unit') or '-'} 口径:{d2.get('agg_note')} SQL:{d2.get('sql')}"]
+        head = [f"指标「{d2.get('metric')}」 单位:{d2.get('unit') or '-'} 计算规则:{d2.get('agg_note')} SQL:{d2.get('sql')}"]
         return "\n".join(head + [json.dumps(r, ensure_ascii=False) for r in rows[:60]]), False
+    if name == "check_sql":
+        payload = {"sql": str(args.get("sql") or "")}
+        if args.get("graph"): payload["graphs"] = [str(args["graph"])]
+        if isinstance(args.get("tables"), list): payload["tables"] = [str(t) for t in args["tables"]]
+        d, err = _http("POST", "/api/ont/check", payload)
+        if err: return f"检查失败:{err}", True
+        joins = "; ".join(f"{j['left']} = {j['right']}({j.get('relation') or '未经验证'})" for j in d.get("joins") or [])
+        lines = ["通过" if d.get("ok") else "不通过:" + (d.get("reason") or "原因未知")]
+        if d.get("tables"): lines.append("读到的表:" + "、".join(d["tables"]))
+        if joins: lines.append("连接条件:" + joins)
+        return "\n".join(lines), False
     return f"未知工具:{name}", True
 
 

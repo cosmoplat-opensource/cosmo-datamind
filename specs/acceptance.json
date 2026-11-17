@@ -1,5 +1,5 @@
 {
-  "iteration": "IR-014 / IR-015 / IR-016 / IR-017（delivered） / IR-018（delivered） / IR-019（T07 GREEN，T08 暂缓） / IR-020（T05 GREEN，待 T06 人审交付） / IR-024（delivered） / IR-025（delivered，2026-11-12 用户确认）；IR-026（T05 集成 GREEN，全量回归通过，待 T06） / IR-027（delivered，2026-11-16 用户确认） / IR-028（delivered，2026-11-16 用户确认，T06 实测及最终全量通过） / IR-029（delivered，2026-11-17 用户确认；最终全量通过）",
+  "iteration": "IR-014 / IR-015",
   "requirements": [
     {
       "id": "ALG-01",
@@ -29,7 +29,7 @@
     },
     {
       "id": "MET-01",
-      "criterion": "新失败撤销旧机器状态，自动合并保留人工决定与原口径证据",
+      "criterion": "新失败撤销旧机器状态，自动合并保留人工决定与原计算规则的证据",
       "tests": [
         "tests/unit/test_metric_integrity.py::test_new_failed_adjudication_revokes_stale_verified_status",
         "tests/unit/test_metric_integrity.py::test_mining_cannot_overwrite_human_decision_or_attach_other_formula_evidence"
@@ -94,7 +94,7 @@
     },
     {
       "id": "UI-01",
-      "criterion": "构建断流可恢复、重复提交受控、底本切换无串线、结果安全呈现",
+      "criterion": "构建断流可恢复、重复提交受控、基础本体切换无串线、结果安全呈现",
       "tests": [
         "tests/unit/test_build_ui.py::test_build_ui_behavior"
       ]
@@ -112,10 +112,12 @@
     },
     {
       "id": "DEP-01",
-      "criterion": "部署配置不执行shell表达式，PID复用不得触发终止无关程序",
+      "criterion": "部署配置不执行shell表达式，PID复用不得触发终止无关程序；错误重启配置不停止现有服务，正常重启保留目标与执行顺序",
       "tests": [
         "tests/unit/test_service_manager.py::test_environment_is_literal_and_error_does_not_disclose_value",
-        "tests/unit/test_service_manager.py::test_stale_pid_never_authorizes_signalling_unrelated_process"
+        "tests/unit/test_service_manager.py::test_stale_pid_never_authorizes_signalling_unrelated_process",
+        "tests/unit/test_service_manager.py::test_invalid_restart_configuration_preserves_running_service",
+        "tests/unit/test_service_manager.py::test_valid_restart_keeps_configured_target_and_stop_start_order"
       ]
     },
     {
@@ -123,6 +125,1367 @@
       "criterion": "综合验收仅复制已提交种子并禁用本机模型配置",
       "tests": [
         "tests/unit/test_check_isolation.py::test_check_environment_uses_only_committed_fixtures_and_disables_llm"
+      ]
+    },
+    {
+      "id": "PRE-01",
+      "criterion": "湖仓里同一业务词根、不同层级/厂区/站点/副本的表归为一个表族;前缀从表名学习,检测类型等子类型不被误剥;分轮计划只放代表表",
+      "tests": [
+        "tests/unit/test_concept_hints.py::test_plan_puts_only_representatives_in_rounds"
+      ]
+    },
+    {
+      "id": "PRE-02",
+      "criterion": "实例表按类别目录拆出多个概念,名称取自目录,目录的已删除行不影响判断",
+      "tests": [
+        "tests/unit/test_concept_hints.py::test_metadata_driven_scenario"
+      ]
+    },
+    {
+      "id": "EVI-01",
+      "criterion": "上传代码中的连接契约在裁决中只替代命名证据,重叠率与父键唯一的判定条件不变;没有契约时键名不同的关系停在候选",
+      "tests": [
+        "tests/unit/test_code_contracts.py::test_contract_lets_a_differently_named_key_pass_the_name_gate"
+      ]
+    },
+    {
+      "id": "EVI-02",
+      "criterion": "读入的代码包与 Word 文档去除 IP 与 URL 主机,不进入提示词与证据",
+      "tests": [
+        "tests/unit/test_code_contracts.py::test_docx_tables_rows_and_field_codes"
+      ]
+    },
+    {
+      "id": "EVI-03",
+      "criterion": "代码注释给出字段中文含义,开发者评注与通用 id 列不作为字段含义;构建后只补空缺",
+      "tests": [
+        "tests/unit/test_code_contracts.py::test_term_contracts_from_sql_comments_and_javadoc",
+        "tests/unit/test_code_contracts.py::test_build_with_uploaded_code_fills_labels_and_records_contracts"
+      ]
+    },
+    {
+      "id": "VR-01",
+      "criterion": "父键不唯一时按有效行四规则复核;成立且键名有据的候选升为 verified",
+      "tests": [
+        "tests/unit/test_code_contracts.py::test_tenant_scoped_keys"
+      ]
+    },
+    {
+      "id": "VR-02",
+      "criterion": "按租户作用域成立的关系,问数 SQL 须同时按租户列关联,否则本体约束校验拦截",
+      "tests": [
+        "tests/unit/test_code_contracts.py::test_tenant_scoped_keys_must_be_joined_with_the_tenant_in_qa"
+      ]
+    },
+    {
+      "id": "VR-03",
+      "criterion": "按软删除成立的关系,问数 SQL 须排除父表已删除行,JOIN 提示写出该条件",
+      "tests": [
+        "tests/unit/test_code_contracts.py::test_soft_deleted_catalogs_must_be_filtered_in_qa"
+      ]
+    },
+    {
+      "id": "QRY-01",
+      "criterion": "用登记的 SQLite 数据源建的本体在该来源库上问数,并在步骤中注明",
+      "tests": [
+        "tests/unit/test_code_contracts.py::test_qa_runs_on_the_ontologys_source_database"
+      ]
+    },
+    {
+      "id": "OBS-01",
+      "criterion": "问数按运行记录追踪,本体约束拦截按原因计入指标,追踪中只留问句指纹不留原文",
+      "tests": [
+        "tests/unit/test_observability.py::test_sensitive_attributes_are_fingerprinted"
+      ]
+    },
+    {
+      "id": "OBS-02",
+      "criterion": "构建全程可追踪(开始、步骤、结束),模型不可用时的降级被计数",
+      "tests": [
+        "tests/unit/test_observability.py::test_obs_endpoints_contract"
+      ]
+    },
+    {
+      "id": "MDD-01",
+      "criterion": "有效行规则只来自一个模型文件(验收与问数共用,复核脚本与之一致);构建推送的步骤与流水线说明完全一致",
+      "tests": [
+        "tests/meta/test_models.py::test_emitted_steps_equal_model_steps",
+        "tests/meta/test_models.py::test_cross_check_script_speaks_the_model_language"
+      ]
+    },
+    {
+      "id": "DDD-01",
+      "criterion": "领域模块不依赖 Web 层;随技能发布的脚本只用标准库",
+      "tests": [
+        "tests/meta/test_architecture.py::test_domain_modules_do_not_depend_on_the_web_layer",
+        "tests/meta/test_architecture.py::test_skill_scripts_are_self_contained"
+      ]
+    },
+    {
+      "id": "BENCH-01",
+      "criterion": "两种数据形态的合成库端到端跑检查、构建、复核、问数,关系状态、有效行规则与问数答案与标准答案一致;此前修过的缺陷恢复后能被检出",
+      "tests": [
+        "tests/scenarios/test_scenarios.py::test_scenario_matches_golden_answers"
+      ]
+    },
+    {
+      "id": "LIVE-01",
+      "criterion": "逻辑删除的「未删除」取值按复核观察结果记录;问数关联提示按实际取值生成条件,本体约束校验认可等价写法,含 NULL 时不丢行;早期证据按 = 0",
+      "tests": [
+        "tests/unit/test_live_rows.py::test_gate_accepts_equivalent_forms_for_char_flag",
+        "tests/unit/test_live_rows.py::test_null_live_requires_keeping_nulls",
+        "tests/unit/test_live_rows.py::test_char_flags"
+      ]
+    },
+    {
+      "id": "AGENT-01",
+      "criterion": "分轮构建能连上前几轮的对象(按键名补提候选,仍由数据裁决);多态引用按判别值裁决并在问数中强制判别条件;同名对象绑定冲突时保留与名称吻合的表;问数维度词无本体依据时给出提示",
+      "tests": [
+        "tests/unit/test_build_agent_gaps.py::test_key_links_cross_round_and_rel_tables",
+        "tests/unit/test_build_agent_gaps.py::test_polymorphic_condition_required_in_qa",
+        "tests/unit/test_build_agent_gaps.py::test_merge_rebinds_object_to_table_matching_its_name",
+        "tests/unit/test_build_agent_gaps.py::test_dimension_without_ontology_basis_is_flagged"
+      ]
+    },
+    {
+      "id": "AGENT-02",
+      "criterion": "类别作用域编码、数据判定的码表、字母数字编码的取值形态都能形成可验证关系并被验收认可;孤儿记录多的标识键引用保持候选并记录孤儿比例(DR-100);对象类型按中文名中心词判定;模型抽取超时先重试,降级产物绑表",
+      "tests": [
+        "tests/unit/test_build_agent_gaps2.py::test_orphan_heavy_identifier_reference_goes_to_review_with_its_orphan_rate",
+        "tests/unit/test_build_agent_gaps2.py::test_category_scoped_code_resolved_by_composite_key",
+        "tests/unit/test_build_agent_gaps2.py::test_codebook_rule_becomes_scoped_relation",
+        "tests/unit/test_build_agent_gaps2.py::test_code_like_values_substitute_for_key_name",
+        "tests/unit/test_build_agent_gaps2.py::test_kind_follows_head_noun_not_definition",
+        "tests/unit/test_build_agent_gaps2.py::test_extraction_retried_once_before_fallback"
+      ]
+    },
+    {
+      "id": "AGENT-03",
+      "criterion": "全量分轮时键名候选按证据排序、跨轮引用不被名额挤掉;名称吻合用去前缀的核心名;同名概念消歧;方向反证的关系不按有效行升级",
+      "tests": [
+        "tests/unit/test_build_agent_gaps2.py::test_key_links_rank_by_evidence_not_round",
+        "tests/unit/test_build_agent_gaps2.py::test_exact_core_beats_longer_shared_prefix",
+        "tests/unit/test_build_agent_gaps2.py::test_duplicate_cn_disambiguated_by_degree",
+        "tests/unit/test_build_agent_gaps2.py::test_valid_rows_not_applied_to_reverse_direction"
+      ]
+    },
+    {
+      "id": "AGENT-04",
+      "criterion": "全库构建:取值比对与存储类型无关;字段与库表注释进入对象;未覆盖的表补建对象;按取值补提角色引用;实例表不当作版本重复的父表;同一子键只保留最贴切的父表",
+      "tests": [
+        "tests/unit/test_build_agent_gaps2.py::test_overlap_ignores_text_vs_integer_storage",
+        "tests/unit/test_build_agent_gaps2.py::test_column_comments_attached_and_plural_tables_matched",
+        "tests/unit/test_build_agent_gaps2.py::test_uncovered_scope_tables_get_objects",
+        "tests/unit/test_build_agent_gaps2.py::test_value_based_role_reference",
+        "tests/unit/test_build_agent_gaps2.py::test_instance_table_with_few_devices_and_dup_rows",
+        "tests/unit/test_build_agent_gaps2.py::test_same_child_key_keeps_best_parent"
+      ]
+    },
+    {
+      "id": "AGENT-05",
+      "criterion": "候选关系分流:数据不支持或共享列、审计列、键名无据的整数键自动驳回,键名直指父表而抽样无匹配、两端无数据的暂缓待全量核对,其余按证据强弱排序并写明缺什么;抽样截断标记;自引用;以父表命名的 id 引用容忍孤儿;问数选表与问句不符时修正一次,仍不符则请用户澄清",
+      "tests": [
+        "tests/unit/test_build_agent_gaps2.py::test_triage_rejects_defers_and_ranks",
+        "tests/unit/test_build_agent_gaps2.py::test_triage_keeps_judge_confirmed_patterns_out_of_reject",
+        "tests/unit/test_build_agent_gaps2.py::test_id_reference_named_after_parent_is_orphan_tolerant",
+        "tests/unit/test_build_agent_gaps2.py::test_sample_limited_relations_marked",
+        "tests/unit/test_build_agent_gaps2.py::test_self_reference_proposed_and_verified"
+      ]
+    },
+    {
+      "id": "AGENT-06",
+      "criterion": "星型模型与注释证据:码值维度与日历维度的引用可提;数仓分层前缀剥除;偶发的工厂键照常提;字段注释点名的表作连接契约、注释中文名打破并列;子表主键对他表主键、同名共享模板列、序号对标识、编码对自增 id、反向修饰不算键名依据;装载时间不判先后;业务词注释不误判为临时表",
+      "tests": [
+        "tests/unit/test_build_agent_gaps2.py::test_star_schema_keys_proposed_and_traps_rejected",
+        "tests/unit/test_build_agent_gaps2.py::test_comment_contracts_name_the_parent_table",
+        "tests/unit/test_build_prep.py::test_scratch_comment_ignores_business_terms",
+        "tests/unit/test_build_agent_gaps2.py::test_identical_columns_never_form_a_self_relation"
+      ]
+    },
+    {
+      "id": "SYNTH-01",
+      "criterion": "200 表合成验证库生成即校验:新事实表由 108 表基础库的业务事件推导(发运=交付与 FIFO 批次、工序与报工在工单窗口内、库存快照与移动勾稽、计量读数连续、凭证借贷平衡且与单据一致、考勤按日历与排班),表头由明细汇总、无占位串与全空列、单位与币种合乎表含义、元数据按含义命名;仿真基础库无孤儿外键,只登记表结构带来的一项已知问题;断言性质的验证案例违反数为 0;校验器能发现植入的不一致",
+      "tests": [
+        "tests/unit/test_contract_200_generator.py::test_build_passes_structure_and_semantic_checks",
+        "tests/unit/test_contract_200_generator.py::test_clean_base_only_layout_quirk_registered",
+        "tests/unit/test_contract_200_generator.py::test_validation_results_are_real",
+        "tests/unit/test_contract_200_generator.py::test_checker_catches_planted_inconsistencies"
+      ]
+    },
+    {
+      "id": "SYNTH-02",
+      "criterion": "108 表演示库由业务过程仿真生成:销售、采购、生产、质量、设备、财务、安全环境各链路逐项勾稽,汇总层由明细重算,检验结论与记录值一致、事件不越出观测期;同种子逐字节可复现(以生成库为布局重跑结果不变);校验器能发现植入的业务矛盾",
+      "tests": [
+        "tests/unit/test_demo108_generator.py::test_build_passes_all_business_checks",
+        "tests/unit/test_demo108_generator.py::test_same_seed_reproduces_the_same_database",
+        "tests/unit/test_demo108_generator.py::test_checker_catches_planted_contradictions"
+      ]
+    },
+    {
+      "id": "DICT-01",
+      "criterion": "库内数据字典作为注释来源进入构建前检查与构建取证;字段注释写明的父表支持或否决关系;问数上下文带上码表与列的实际取值,问句中的筛选值不被当作问句对象",
+      "tests": [
+        "tests/unit/test_in_db_dictionary.py::test_prep_reads_in_db_dictionary",
+        "tests/unit/test_in_db_dictionary.py::test_comment_contract_from_in_db_dictionary",
+        "tests/unit/test_in_db_dictionary.py::test_reference_comment_with_chinese_name_before_table",
+        "tests/unit/test_cross_check_skill.py::test_comment_naming_another_parent_or_own_primary_key_refutes_link",
+        "tests/unit/test_cross_check_skill.py::test_comment_reference_forms_recognised",
+        "tests/unit/test_qa_column_hints.py::test_low_cardinality_columns_carry_actual_values",
+        "tests/unit/test_qa_column_hints.py::test_question_columns_survive_the_column_limit",
+        "tests/unit/test_qa_column_hints.py::test_key_and_high_cardinality_columns_get_no_values",
+        "tests/unit/test_qa_column_hints.py::test_missing_attribute_names_fall_back_to_in_db_dictionary",
+        "tests/unit/test_qa_column_hints.py::test_column_whose_value_is_named_in_question_ranks_first",
+        "tests/unit/test_qa_column_hints.py::test_related_lookup_table_named_in_question_is_recalled",
+        "tests/unit/test_qa_column_hints.py::test_glossary_term_naming_a_table_outranks_generic_word_hits",
+        "tests/unit/test_intent_check.py::test_object_name_inside_a_filter_value_is_not_a_declared_object",
+        "tests/unit/test_qa_column_hints.py::test_values_and_names_come_from_the_graph_source_database",
+        "tests/unit/test_qa_column_hints.py::test_table_holding_a_code_named_in_question_ranks_first",
+        "tests/unit/test_qa_column_hints.py::test_column_list_comes_from_the_graph_source_database"
+      ]
+    },
+    {
+      "id": "DEPLOY-01",
+      "criterion": "部署后新建的本体在图谱、评审、质量页可直接选中(重访重取列表、最后一次调用为准、菜单与 hash 不重复进入);后端所有对象种类在界面有中文名",
+      "tests": [
+        "tests/unit/test_ui_nav.py::test_revisiting_graph_pages_refreshes_the_graph_lists",
+        "tests/unit/test_ui_nav.py::test_graph_list_reload_is_last_call_wins",
+        "tests/unit/test_ui_nav.py::test_hash_route_skips_the_page_the_nav_click_already_opened",
+        "tests/unit/test_ui_nav.py::test_every_backend_object_kind_has_a_chinese_label"
+      ]
+    },
+    {
+      "id": "LEGIBLE-01",
+      "criterion": "问数关系图按原尺寸显示、字号不小于 11 px,连线不穿过无关对象框;问数输入栏标签单行显示;后端对象种类在界面有中文名",
+      "tests": [
+        "tests/unit/test_qa_anchor_ui.py::test_relation_diagram_stays_readable_and_routes_around_boxes",
+        "tests/unit/test_ui_nav.py::test_qa_input_chips_stay_on_one_line",
+        "tests/unit/test_ui_nav.py::test_every_backend_object_kind_has_a_chinese_label"
+      ]
+    },
+    {
+      "id": "BIRD-01",
+      "criterion": "精确作答只回答问题本身(1 个分析、只含所问列、不加报告式 LIMIT/按月拆分);提示词不预设日期格式;驼峰、复数表名与带角色前缀的键名能指向父表,负例照常拒绝",
+      "tests": [
+        "tests/unit/test_exact_answer.py::test_exact_style_prompt_asks_for_one_answer_with_requested_columns_only",
+        "tests/unit/test_exact_answer.py::test_date_format_is_taken_from_column_values_not_assumed",
+        "tests/unit/test_exact_answer.py::test_exact_style_keeps_only_the_first_analysis",
+        "tests/unit/test_exact_answer.py::test_exact_style_prompt_has_no_report_only_instructions",
+        "tests/unit/test_dao_core.py::test_role_prefixed_camel_case_keys_point_to_singular_parent_table",
+        "tests/unit/test_cross_check_skill.py::test_id_collision_accepts_camel_case_and_plural_parent_tables"
+      ]
+    },
+    {
+      "id": "QA-EXPLORE-01",
+      "criterion": "问数可先只读探查再作答、按执行结果核对一次;守护线程带上请求上下文;上下文列出全部表名、日期示例与问句取值出处;字符串常量不当作表名;外键子表不判答非所问;角色键经数据裁决后可用于 JOIN",
+      "tests": [
+        "tests/unit/test_qa_explore.py::test_planner_can_probe_values_before_answering",
+        "tests/unit/test_qa_explore.py::test_probe_rounds_are_bounded_and_final_round_demands_an_answer",
+        "tests/unit/test_qa_explore.py::test_probe_runner_is_read_only_and_reports_errors",
+        "tests/unit/test_qa_explore.py::test_context_lists_every_ontology_table_name",
+        "tests/unit/test_qa_explore.py::test_exact_answer_is_checked_against_its_result_and_revised",
+        "tests/unit/test_qa_explore.py::test_bounded_worker_threads_see_request_context",
+        "tests/unit/test_qa_explore.py::test_words_inside_string_literals_are_not_parsed_as_tables",
+        "tests/unit/test_qa_explore.py::test_date_columns_show_an_example_value",
+        "tests/unit/test_qa_explore.py::test_question_values_are_located_to_columns",
+        "tests/unit/test_qa_explore.py::test_exact_rules_exclude_nulls_when_ranking",
+        "tests/unit/test_intent_check.py::test_table_linked_by_verified_relation_is_not_off_topic",
+        "tests/unit/test_role_keys.py::test_gate_accepts_verified_role_key_join",
+        "tests/unit/test_role_keys.py::test_join_hints_list_role_keys",
+        "tests/unit/test_role_keys.py::test_adjudication_records_other_verified_role_keys"
+      ]
+    },
+    {
+      "id": "QA-VOTE-01",
+      "criterion": "精确作答可按多种规划策略生成候选并按执行结果投票,票数相同时由模型选择;响应注明票数",
+      "tests": [
+        "tests/unit/test_qa_vote.py::test_vote_picks_largest_result_group",
+        "tests/unit/test_qa_vote.py::test_vote_treats_float_noise_and_row_order_as_equal",
+        "tests/unit/test_qa_vote.py::test_vote_tie_is_broken_by_chooser",
+        "tests/unit/test_qa_vote.py::test_exact_chat_with_candidates_returns_majority",
+        "tests/unit/test_qa_vote.py::test_variant_changes_planner_instruction"
+      ]
+    },
+    {
+      "id": "QA-EXACT-02",
+      "criterion": "精确作答问「哪个/是什么」只返回名称一列;明细事实表与汇总层表都能回答时从明细计算;报告式作答不受影响",
+      "tests": [
+        "tests/unit/test_exact_answer.py::test_exact_style_names_only_and_prefers_detail_tables"
+      ]
+    },
+    {
+      "id": "SEM-01",
+      "criterion": "数据目录保留单位歧义、真实字段文档和来源变化；概念别名召回遵守选表边界",
+      "tests": [
+        "tests/unit/test_semantic_catalog.py::test_catalog_records_coverage_and_unit_ambiguity",
+        "tests/unit/test_semantic_catalog.py::test_catalog_distinguishes_complete_scan_from_truncated_directory",
+        "tests/unit/test_semantic_catalog.py::test_catalog_preserves_zero_unit_code_and_missing_unit_separately",
+        "tests/unit/test_semantic_catalog.py::test_request_profiles_follow_database_changes",
+        "tests/unit/test_semantic_build.py::test_concept_alias_recalls_bound_table_and_respects_focus",
+        "tests/unit/test_properties.py::test_catalog_unit_sets_match_actual_data_with_quoted_identifiers",
+        "tests/unit/test_semantic_catalog.py::test_schema_values_dictionary_and_value_owners_follow_source_updates",
+        "tests/unit/test_deep_qa_scope.py::test_answer_cache_tracks_source_updates_and_wal",
+        "tests/unit/test_deep_qa_scope.py::test_answer_cache_tracks_graph_and_subsecond_edits",
+        "tests/unit/test_deep_qa_scope.py::test_answer_cache_distinguishes_summary_and_cleaning_policy"
+      ]
+    },
+    {
+      "id": "SEM-02",
+      "criterion": "最多1000条业务问题分批处理，提议严格只读，SQL依据可回放且不认证业务定义或公式",
+      "tests": [
+        "tests/unit/test_workload_concepts.py::test_all_1000_questions_are_processed_and_invalid_input_is_reported",
+        "tests/unit/test_workload_concepts.py::test_proposal_queries_cannot_modify_even_a_writable_connection",
+        "tests/unit/test_workload_concepts.py::test_proposals_have_replayable_evidence_but_no_semantic_certification",
+        "tests/scenarios/test_scenarios.py::test_semantic_catalog_build_and_answer_match_golden_answers",
+        "tests/unit/test_workload_concepts.py::test_derived_inputs_require_unambiguous_bindings_across_sources",
+        "tests/unit/test_workload_concepts.py::test_caveat_query_respects_selected_table_scope",
+        "tests/unit/test_workload_concepts.py::test_caveats_require_data_and_serializable_evidence"
+      ]
+    },
+    {
+      "id": "SEM-03",
+      "criterion": "继续构建撤销失效机器绑定，保留人工结论；语义评审可审计撤销，不能冒充公式核验",
+      "tests": [
+        "tests/unit/test_workload_concepts.py::test_refresh_revokes_removed_data_and_merge_replaces_revalidated_binding",
+        "tests/unit/test_semantic_build.py::test_semantic_human_review_is_audited_reversible_and_never_formula_verified",
+        "tests/unit/test_semantic_build.py::test_multigraph_anchor_keeps_semantics_without_cross_source_names_colliding",
+        "tests/unit/test_workload_concepts.py::test_theme_refresh_does_not_silently_change_a_reviewed_binding",
+        "tests/unit/test_workload_concepts.py::test_saved_formula_binding_does_not_switch_when_name_collides",
+        "tests/unit/test_workload_concepts.py::test_expired_refresh_marks_unknown_without_claiming_data_disappeared",
+        "tests/unit/test_workload_concepts.py::test_interrupted_theme_recheck_does_not_claim_codes_disappeared",
+        "tests/unit/test_semantic_build.py::test_reviewed_semantic_binding_that_is_stale_still_requires_review",
+        "tests/unit/test_semantic_build.py::test_declared_fk_recheck_preserves_human_rejection_and_assertion"
+      ]
+    },
+    {
+      "id": "SEM-04",
+      "criterion": "模型辅助构建恢复真实声明外键；角色键各自核验，孤儿或无引用不得升级，复核不被键名猜测干扰",
+      "tests": [
+        "tests/unit/test_semantic_build.py::test_llm_build_recovers_declared_role_keys_without_name_guessing",
+        "tests/unit/test_semantic_build.py::test_declared_orphans_and_empty_references_stay_candidates",
+        "tests/unit/test_semantic_build.py::test_declared_role_keys_require_their_own_complete_check",
+        "tests/unit/test_cross_check_skill.py::test_actual_declared_fk_is_not_refuted_by_name_guessing"
+      ]
+    },
+    {
+      "id": "DB-SCOPE-01",
+      "criterion": "已登记 SQLite 数据源在总览、目录、预览、质量、图谱、指标、SQL及同步/流式问数中保持同一来源；无效来源或跨来源本体明确拒绝，不回退示例库",
+      "tests": [
+        "tests/unit/test_database_scope.py::test_catalog_overview_and_preview_use_selected_database",
+        "tests/unit/test_database_scope.py::test_graphs_and_metrics_are_scoped_and_cross_source_graph_is_rejected",
+        "tests/unit/test_database_scope.py::test_unknown_source_never_falls_back_to_demo",
+        "tests/unit/test_database_scope.py::test_concurrent_sources_and_worker_context_do_not_cross",
+        "tests/unit/test_database_scope.py::test_stream_qa_keeps_selected_source_and_default_graph",
+        "tests/unit/test_database_scope.py::test_source_without_ontology_has_data_but_never_uses_demo",
+        "tests/unit/test_database_scope.py::test_metric_and_profile_blueprints_use_selected_default",
+        "tests/unit/test_database_scope.py::test_default_viz_uses_global_source_but_explicit_demo_uses_demo",
+        "tests/unit/test_database_scope.py::test_readonly_and_explicit_viz_source_survive_global_selection",
+        "tests/unit/test_database_scope.py::test_legacy_graph_only_qa_does_not_fall_back_to_another_database"
+      ]
+    },
+    {
+      "id": "DB-SCOPE-02",
+      "criterion": "切换数据库后不复用其他来源的时间窗、指标统计、SQL技能、会话历史、动作记录或评测答案；可视化晚返回结果被丢弃，所有200张表均可选择",
+      "tests": [
+        "tests/unit/test_database_scope.py::test_data_statistics_do_not_reuse_another_databases_cache",
+        "tests/unit/test_database_scope.py::test_saved_sql_skills_are_not_reused_on_another_source",
+        "tests/unit/test_database_scope.py::test_action_records_keep_database_and_do_not_mix_in_other_scope",
+        "tests/unit/test_database_scope.py::test_source_evaluation_references_are_from_current_database",
+        "tests/unit/test_database_scope.py::test_quick_build_request_uses_registered_source_and_preserves_provenance",
+        "tests/unit/test_database_scope_ui.py::test_database_source_frontend_behavior",
+        "tests/scenarios/test_scenarios.py::test_multi_database_switch_keeps_catalog_and_answer_consistent",
+        "tests/unit/test_database_scope.py::test_ontology_conversation_history_does_not_cross_databases"
+      ]
+    },
+    {
+      "id": "ENG-CRED-01",
+      "criterion": "已保存的 API Key 只发往已保存的端点；界面保存的端点与模型随配置更新，启动时注入的环境变量不被覆盖；端点清空后驱动不再登记为可用",
+      "tests": [
+        "tests/unit/test_engine_credentials.py::test_models_does_not_send_saved_key_to_another_endpoint",
+        "tests/unit/test_engine_credentials.py::test_test_endpoint_does_not_send_saved_key_to_another_endpoint",
+        "tests/unit/test_engine_credentials.py::test_saved_key_is_reused_for_the_saved_endpoint",
+        "tests/unit/test_engine_credentials.py::test_reapplying_config_switches_endpoint_and_model_with_the_key",
+        "tests/unit/test_engine_credentials.py::test_endpoint_injected_at_boot_is_not_overridden_by_saved_config",
+        "tests/unit/test_engine_credentials.py::test_clearing_the_endpoint_unregisters_the_driver"
+      ]
+    },
+    {
+      "id": "REVIEW-KEEP-01",
+      "criterion": "继续构建后，人工确认或否决过的关系仍在图谱里，状态与取证键不被分流、码表、复核、去重改写；同一组键上更强的数据证据可以升级",
+      "tests": [
+        "tests/unit/test_review_survives_rebuild.py::test_confirmed_relation_survives_a_round_whose_triage_would_reject_it",
+        "tests/unit/test_review_survives_rebuild.py::test_rejected_relation_is_not_rewritten_as_verified_by_a_later_step",
+        "tests/unit/test_review_survives_rebuild.py::test_triage_leaves_human_decided_relations_in_the_graph",
+        "tests/unit/test_review_survives_rebuild.py::test_keep_reviewed_restores_a_removed_relation_and_reverts_a_rewritten_one",
+        "tests/unit/test_review_survives_rebuild.py::test_keep_reviewed_accepts_stronger_data_evidence_on_the_same_key"
+      ]
+    },
+    {
+      "id": "REVIEW-KEEP-02",
+      "criterion": "编辑记录里没能应用的操作逐条留痕并由评审接口返回；驳回列表不随继续构建累积重复项",
+      "tests": [
+        "tests/unit/test_review_survives_rebuild.py::test_failed_replay_is_reported_instead_of_vanishing",
+        "tests/unit/test_review_survives_rebuild.py::test_clean_replay_reports_nothing",
+        "tests/unit/test_review_survives_rebuild.py::test_triage_does_not_accumulate_the_same_rejected_relation_across_rounds"
+      ]
+    },
+    {
+      "id": "QA-GATE-02",
+      "criterion": "未经数据验证的连接无论写成带括号的 ON、ON 里的第二个等式、逗号连接或 WHERE 条件，还是给表名加引号，都被拦下；注释里的词不造成误拦；同表列比较与字符串里的等式不算连接",
+      "tests": [
+        "tests/unit/test_qa_gate_hardening.py::test_unverified_join_is_blocked_however_it_is_written",
+        "tests/unit/test_qa_gate_hardening.py::test_legitimate_queries_still_pass",
+        "tests/unit/test_qa_gate_hardening.py::test_fabricated_table_in_a_comma_join_or_quoted_is_blocked",
+        "tests/unit/test_qa_gate_hardening.py::test_fanout_is_detected_with_a_parenthesised_on",
+        "tests/unit/test_qa_gate_hardening.py::test_table_names_inside_comments_do_not_block"
+      ]
+    },
+    {
+      "id": "QA-GATE-03",
+      "criterion": "引用不存在的表或列的查询在校验阶段被拦下并说明；探查查询不得读所选本体或数据表范围之外的表",
+      "tests": [
+        "tests/unit/test_qa_gate_hardening.py::test_missing_column_is_reported_by_the_gate_not_at_execution",
+        "tests/unit/test_qa_gate_hardening.py::test_probe_outside_the_selected_tables_is_refused"
+      ]
+    },
+    {
+      "id": "QA-DEGRADE-01",
+      "criterion": "引擎未给出计划而改用内置模板作答时，响应标明降级且不写入缓存；多路候选投票中空结果不压过有数据的结果",
+      "tests": [
+        "tests/unit/test_qa_gate_hardening.py::test_template_answer_after_engine_timeout_is_not_cached",
+        "tests/unit/test_qa_gate_hardening.py::test_empty_results_do_not_outvote_an_answer_with_rows",
+        "tests/unit/test_qa_gate_hardening.py::test_all_empty_results_still_return_a_candidate"
+      ]
+    },
+    {
+      "id": "JOB-01",
+      "criterion": "评测与技能对比的后台线程抛异常后，任务状态回到未运行并记录中断原因",
+      "tests": [
+        "tests/unit/test_qa_gate_hardening.py::test_eval_job_is_released_when_the_run_raises",
+        "tests/unit/test_qa_gate_hardening.py::test_skill_compare_job_is_released_when_the_run_raises"
+      ]
+    },
+    {
+      "id": "EVID-STR-01",
+      "criterion": "子键只有一个取值的关系不判 verified，转为候选并说明原因；两个及以上取值不受影响",
+      "tests": [
+        "tests/unit/test_evidence_strength.py::test_a_child_key_with_a_single_value_is_not_verified",
+        "tests/unit/test_evidence_strength.py::test_two_distinct_values_can_still_be_verified"
+      ]
+    },
+    {
+      "id": "MET-REF-01",
+      "criterion": "指标有独立参照值时先比参照值，不一致即不通过；过滤条件不同的指标 id 不同且都保留，同一过滤条件的 id 稳定",
+      "tests": [
+        "tests/unit/test_evidence_strength.py::test_an_independent_reference_value_that_disagrees_blocks_verification",
+        "tests/unit/test_evidence_strength.py::test_an_independent_reference_value_that_agrees_is_the_recorded_evidence",
+        "tests/unit/test_evidence_strength.py::test_metrics_with_different_filters_get_different_ids_and_both_survive"
+      ]
+    },
+    {
+      "id": "REVIEW-FB-01",
+      "criterion": "人审否决的关系模式能从构建产物和示例本体两种形状的图谱读出，并带否决理由",
+      "tests": [
+        "tests/unit/test_evidence_strength.py::test_rejected_patterns_are_read_from_built_graphs"
+      ]
+    },
+    {
+      "id": "EVID-STR-02",
+      "criterion": "重叠率未达固定阈值的关系不判 verified;父表标识键上的孤儿记录写入证据并进入待审,验收审计不为其放宽阈值",
+      "tests": [
+        "tests/unit/test_build_agent_gaps2.py::test_orphan_heavy_identifier_reference_goes_to_review_with_its_orphan_rate",
+        "tests/unit/test_server_adjudication.py::test_overlap_uses_entire_domain_not_first_8000_values"
+      ]
+    },
+    {
+      "id": "EVID-STR-03",
+      "criterion": "任一端为抽样截断表的关系标为证据不完整;在抽样上成立的转为候选并列入待审的全量数据核对;声明外键不受影响",
+      "tests": [
+        "tests/unit/test_build_agent_gaps2.py::test_sample_limited_relations_marked",
+        "tests/unit/test_build_agent_gaps2.py::test_verified_on_a_truncated_sample_becomes_a_candidate_awaiting_full_data",
+        "tests/unit/test_build_agent_gaps2.py::test_declared_foreign_key_stays_verified_on_a_sample"
+      ]
+    },
+    {
+      "id": "EXPORT-IRI-01",
+      "criterion": "导出 Turtle 时每个对象有自己的 IRI:中文名保留,只差标点的名字不共用 IRI,纯 ASCII 名字与此前一致",
+      "tests": [
+        "tests/unit/test_turtle_iris.py::test_chinese_named_objects_keep_distinct_class_iris",
+        "tests/unit/test_turtle_iris.py::test_names_that_differ_only_in_punctuation_do_not_share_an_iri",
+        "tests/unit/test_turtle_iris.py::test_ascii_names_keep_their_previous_iris"
+      ]
+    },
+    {
+      "id": "BUILD-JOB-01",
+      "criterion": "构建提交后立即返回作业号并在服务端跑完;事件流断开后构建继续;晚到的订阅者能看到完整过程并可从偏移续看;异常或没有 done 的流以 error 结束;静默步骤期间订阅者收到心跳",
+      "tests": [
+        "tests/unit/test_build_jobs.py::test_submitted_job_returns_at_once_and_finishes_on_the_server",
+        "tests/unit/test_build_jobs.py::test_build_continues_after_the_stream_is_dropped",
+        "tests/unit/test_build_jobs.py::test_a_late_subscriber_sees_the_whole_run_and_can_resume_from_an_offset",
+        "tests/unit/test_build_jobs.py::test_invalid_request_is_rejected_without_creating_a_job",
+        "tests/unit/test_build_jobs.py::test_unknown_job_is_not_found",
+        "tests/unit/test_build_jobs.py::test_a_crash_in_the_build_ends_the_job_with_an_error_event",
+        "tests/unit/test_build_jobs.py::test_a_stream_that_ends_without_done_is_an_error_not_success",
+        "tests/unit/test_build_jobs.py::test_followers_get_a_heartbeat_while_a_step_is_silent"
+      ]
+    },
+    {
+      "id": "BUILD-JOB-02",
+      "criterion": "MCP 构建工具向服务端提交和查询作业,自身不保存作业:另一个进程凭作业号可查到结果;提交失败如实返回;没有 done 事件不算完成",
+      "tests": [
+        "tests/unit/test_mcp_build_server.py::test_job_is_submitted_to_the_server_and_reports_done",
+        "tests/unit/test_mcp_build_server.py::test_job_survives_the_process_that_started_it",
+        "tests/unit/test_mcp_build_server.py::test_submit_failure_is_reported_not_swallowed",
+        "tests/unit/test_mcp_build_server.py::test_state_done_without_a_done_event_is_an_error_not_success",
+        "tests/unit/test_mcp_build_server.py::test_wait_build_returns_when_finished",
+        "tests/unit/test_mcp_build_server.py::test_wait_build_gives_up_at_its_deadline_while_still_running"
+      ]
+    },
+    {
+      "id": "ATH-01",
+      "criterion": "ATH 适配层只按令牌里的范围放行已登记的接口:未登记接口、缺范围、路径穿越、无令牌均被拒绝;授权页不能加入未知范围或跳过 PKCE;授权码一次有效,令牌响应不可缓存",
+      "tests": [
+        "tests/unit/test_ath_adapter.py::test_consent_page_drops_unknown_params_and_sets_frame_headers",
+        "tests/unit/test_ath_adapter.py::test_path_traversal_is_rejected",
+        "tests/unit/test_ath_adapter.py::test_unknown_endpoint_and_missing_scope",
+        "tests/unit/test_ath_adapter.py::test_approve_cannot_add_unknown_scopes_or_skip_pkce",
+        "tests/unit/test_ath_adapter.py::test_malformed_basic_auth_is_invalid_client",
+        "tests/unit/test_ath_adapter.py::test_token_response_is_not_cacheable",
+        "tests/unit/test_ath_adapter.py::test_agent_card_points_at_gateway"
+      ]
+    },
+    {
+      "id": "BUILD-JOB-03",
+      "criterion": "作业记录落盘:服务重启后已结束的作业仍可查到全部事件与原请求;重启时正在执行的作业标为已中断并说明原因",
+      "tests": [
+        "tests/unit/test_build_jobs.py::test_a_finished_job_can_still_be_read_after_a_restart",
+        "tests/unit/test_build_jobs.py::test_a_job_that_was_running_at_restart_is_reported_as_interrupted",
+        "tests/unit/test_build_jobs.py::test_cancel_and_lookup_reject_unknown_or_malformed_ids"
+      ]
+    },
+    {
+      "id": "BUILD-JOB-04",
+      "criterion": "构建可取消:取消在步骤之间生效,生成器的清理代码被执行,作业以已取消结束且不产生完成事件;已结束的作业不能取消;MCP 把已取消和已中断报为失败并带原因",
+      "tests": [
+        "tests/unit/test_build_jobs.py::test_cancel_stops_the_build_and_runs_its_cleanup",
+        "tests/unit/test_mcp_build_server.py::test_cancelled_or_interrupted_job_is_reported_as_failed_with_the_reason"
+      ]
+    },
+    {
+      "id": "AUDIT-BUILD-01",
+      "criterion": "请求带发起方与请求号时,二者记入作业、图谱的构建记录,并出现在图谱审计视图的构建一栏",
+      "tests": [
+        "tests/unit/test_build_jobs.py::test_who_started_a_build_is_recorded_on_the_job_and_in_the_graph"
+      ]
+    },
+    {
+      "id": "ATH-02",
+      "criterion": "令牌限定一个数据来源:授权页由用户选择并只接受已列出的来源;转发时带令牌的来源,调用方自带的来源被丢弃;经 MCP 的构建只能建在该来源上",
+      "tests": [
+        "tests/unit/test_ath_adapter.py::test_consent_lets_the_user_pick_a_source_and_binds_it_to_the_token",
+        "tests/unit/test_ath_adapter.py::test_requests_carry_the_tokens_data_source_actor_and_a_request_id",
+        "tests/unit/test_ath_adapter.py::test_a_caller_cannot_override_the_data_source",
+        "tests/unit/test_ath_adapter.py::test_a_build_through_mcp_is_pinned_to_the_tokens_source_and_logged_with_its_job"
+      ]
+    },
+    {
+      "id": "ATH-03",
+      "criterion": "深度问数需要单独的范围 datamind:qa.ask,没有该范围时不向上游发请求;有该范围时带令牌的数据来源转发,等待上限不低于 180 秒",
+      "tests": [
+        "tests/unit/test_ath_adapter.py::test_asking_questions_needs_its_own_scope_and_gets_a_longer_timeout"
+      ]
+    },
+    {
+      "id": "ATH-04",
+      "criterion": "每个放行请求的请求号与调用方同时出现在适配层审计日志和发往 DataMind 的请求头里;经 MCP 发起的构建在审计日志里带作业号;MCP 服务器从环境变量转发来源、调用方和请求号",
+      "tests": [
+        "tests/unit/test_ath_adapter.py::test_requests_carry_the_tokens_data_source_actor_and_a_request_id",
+        "tests/unit/test_ath_adapter.py::test_a_build_through_mcp_is_pinned_to_the_tokens_source_and_logged_with_its_job",
+        "tests/unit/test_ath_adapter.py::test_mcp_server_forwards_source_actor_and_request_id_from_its_environment"
+      ]
+    },
+    {
+      "id": "BUILD-UI-02",
+      "criterion": "构建页在事件流中断后按作业号接续而不报失败;刷新后接着看未结束的构建,已结束的给出结果或原因并清除本地记录;没有待续作业时不改动页面;取消按钮调用服务端取消接口",
+      "tests": [
+        "tests/unit/test_build_ui.py::test_build_ui_behavior"
+      ]
+    },
+    {
+      "id": "GATE-01",
+      "criterion": "覆盖率统计包含路由层,并对全部模块、确定性模块、路由层分别设下限;类型检查对名单内的模块检查函数体",
+      "tests": [
+        "tests/meta/test_gates.py::test_coverage_counts_the_route_layer_and_has_layered_floors",
+        "tests/meta/test_gates.py::test_function_bodies_are_type_checked_for_listed_modules"
+      ]
+    },
+    {
+      "id": "REVIEW-UI-01",
+      "criterion": "评审接口给出每条关系的取证键、取值统计、孤儿比例、裁决说明与分流理由,列出被分流移出的关系;按需返回对得上与对不上的取值样例;批量评审要么全部记录要么都不记,必须署名并记来源",
+      "tests": [
+        "tests/unit/test_review_workbench.py::test_review_rows_explain_the_evidence_behind_each_relation",
+        "tests/unit/test_review_workbench.py::test_relations_set_aside_by_triage_are_listed_with_the_reason",
+        "tests/unit/test_review_workbench.py::test_sample_values_show_what_matches_and_what_does_not",
+        "tests/unit/test_review_workbench.py::test_samples_are_only_computed_when_asked",
+        "tests/unit/test_review_workbench.py::test_samples_work_for_graphs_whose_objects_list_tables_instead_of_one_table",
+        "tests/unit/test_review_workbench.py::test_batch_review_records_every_decision_with_reviewer_and_source",
+        "tests/unit/test_review_workbench.py::test_batch_review_is_all_or_nothing",
+        "tests/unit/test_review_workbench.py::test_batch_review_needs_a_reviewer_and_a_bounded_list"
+      ]
+    },
+    {
+      "id": "REVIEW-UI-02",
+      "criterion": "评审页展示证据并对数据与模型给出的文本转义;默认只看待审但没有待审时显示全部;支持筛选、分页、只对可见的已选关系做批量操作;列出分流移出的关系并可加回;取值样例按需获取且不串到别的图谱",
+      "tests": [
+        "tests/unit/test_review_ui.py::test_review_ui_behavior",
+        "tests/unit/test_review_ui.py::test_review_module_is_loaded_and_submissions_are_attributed"
+      ]
+    },
+    {
+      "id": "UI-PRUNE-01",
+      "criterion": "侧栏(DR-108 时为 22 个页面,DR-109 后为 18 个)不含数仓分层、API 服务目录、系统管理、智能体列表、业务助手;每个页面仍可从侧栏抵达且不重复",
+      "tests": [
+        "tests/unit/test_ui_nav.py::test_every_page_reachable_and_count_stable"
+      ]
+    },
+    {
+      "id": "UI-PRUNE-02",
+      "criterion": "侧栏为 18 个页面;已被取代的 12 条接口不再存在;没有替代入口的能力(本体治理、版本保存与锻造、看板删除)和有脚本、技能或验收测试在用的接口保留;导出形状校验可从覆盖率接口按需取得",
+      "tests": [
+        "tests/unit/test_ui_nav.py::test_every_page_reachable_and_count_stable",
+        "tests/unit/test_prune_keeps_capabilities.py::test_removed_routes_are_gone",
+        "tests/unit/test_prune_keeps_capabilities.py::test_routes_with_real_dependents_are_kept",
+        "tests/unit/test_prune_keeps_capabilities.py::test_shape_validation_is_available_on_demand_from_the_coverage_endpoint"
+      ]
+    },
+    {
+      "id": "ATH-HARDEN-01",
+      "criterion": "授权页列出全部就绪的 SQLite 数据来源;审计日志仅属主可读写;口令连续输错后锁定;上游不可达与畸形请求不返回 500;issuer 不取自任意 Host 头;令牌可撤销、可自省;被限定来源的调用方看不到其他来源",
+      "tests": [
+        "tests/unit/test_ath_hardening.py::test_consent_page_offers_every_ready_sqlite_source",
+        "tests/unit/test_ath_hardening.py::test_audit_log_is_owner_only",
+        "tests/unit/test_ath_hardening.py::test_repeated_wrong_passwords_lock_the_account_for_a_while",
+        "tests/unit/test_ath_hardening.py::test_upstream_unreachable_is_a_502_not_a_crash",
+        "tests/unit/test_ath_hardening.py::test_an_encoded_question_mark_cannot_smuggle_query_parameters",
+        "tests/unit/test_ath_hardening.py::test_malformed_mcp_calls_get_a_json_rpc_error",
+        "tests/unit/test_ath_hardening.py::test_malformed_a2a_messages_get_a_json_rpc_error",
+        "tests/unit/test_ath_hardening.py::test_issuer_is_not_taken_from_an_arbitrary_host_header",
+        "tests/unit/test_ath_hardening.py::test_a_revoked_token_stops_working",
+        "tests/unit/test_ath_hardening.py::test_source_listing_is_limited_to_the_bound_source"
+      ]
+    },
+    {
+      "id": "API-ROBUST-01",
+      "criterion": "查询结果的单个值有大小上限;标识字段类型不对返回 400;接口的未预期异常返回 JSON 且不泄露细节;SPARQL 的 ASK 返回布尔值、CONSTRUCT 返回三元组;无效的构建请求不建作业;响应带基线安全头",
+      "tests": [
+        "tests/unit/test_api_robustness.py::test_a_huge_value_is_refused_by_the_engine",
+        "tests/unit/test_api_robustness.py::test_long_cells_are_truncated_and_flagged",
+        "tests/unit/test_api_robustness.py::test_wrongly_typed_fields_are_a_client_error",
+        "tests/unit/test_api_robustness.py::test_an_unexpected_failure_on_an_api_route_is_reported_as_json",
+        "tests/unit/test_api_robustness.py::test_ask_returns_a_boolean",
+        "tests/unit/test_api_robustness.py::test_construct_returns_triples",
+        "tests/unit/test_api_robustness.py::test_an_invalid_build_request_does_not_create_a_job",
+        "tests/unit/test_api_robustness.py::test_responses_carry_baseline_security_headers"
+      ]
+    },
+    {
+      "id": "UPLOAD-02",
+      "criterion": "GBK 文件可导入;分号分隔的文件按列拆开;中文文件名的表名可读且英文文件名的表名不变;数值列得到数值类型而编码保持文本;只存档未建表的文件有说明;按旧规则建的表在删除资料时一并清掉",
+      "tests": [
+        "tests/unit/test_api_robustness.py::test_gbk_file_is_imported",
+        "tests/unit/test_api_robustness.py::test_semicolon_separated_file_is_split_into_columns",
+        "tests/unit/test_api_robustness.py::test_a_comma_file_with_semicolons_in_values_is_left_alone",
+        "tests/unit/test_api_robustness.py::test_chinese_file_name_keeps_a_readable_table_name",
+        "tests/unit/test_api_robustness.py::test_numeric_columns_get_numeric_types_and_codes_stay_text",
+        "tests/unit/test_api_robustness.py::test_unparsed_files_and_bad_files_say_what_happened",
+        "tests/unit/test_api_robustness.py::test_deleting_an_upload_also_removes_a_table_made_under_the_old_naming_rule"
+      ]
+    },
+    {
+      "id": "UI-FIX-03",
+      "criterion": "切页时关闭弹窗;无可撤销操作时撤销按钮禁用;评审页对象表默认折叠;窄屏菜单收在按钮后;遵从减少动态效果的系统设置",
+      "tests": [
+        "tests/unit/test_ui_exploratory_fixes.py::test_switching_pages_closes_open_dialogs",
+        "tests/unit/test_ui_exploratory_fixes.py::test_review_reports_how_many_edits_can_be_undone",
+        "tests/unit/test_ui_exploratory_fixes.py::test_object_table_is_folded_unless_something_needs_confirming",
+        "tests/unit/test_ui_exploratory_fixes.py::test_narrow_screens_fold_the_menu_behind_a_toggle",
+        "tests/unit/test_ui_exploratory_fixes.py::test_reduced_motion_preference_is_honoured",
+        "tests/unit/test_ui_exploratory_fixes.py::test_upload_feedback_mentions_files_that_were_only_archived"
+      ]
+    },
+    {
+      "id": "DEMO-GRAPHS-01",
+      "criterion": "随仓分发的构建产物里,verified 关系都带完整证据(质量闸不判不通过);演示说明只列出实际存在的图谱",
+      "tests": [
+        "tests/unit/test_shipped_graphs.py::test_every_shipped_graph_has_evidence_behind_its_verified_relations",
+        "tests/unit/test_shipped_graphs.py::test_the_demo_readme_lists_only_graphs_that_exist"
+      ]
+    },
+    {
+      "id": "REL-ROLE-01",
+      "criterion": "同一对对象之间的多种业务关系各自保留:模型提议的两种角色都经数据取证后留在图谱里;继续构建合并不丢第二种角色;评审按 rel:<源>-><目标>#<角色> 定位,不写角色且有歧义时拒绝;人审保留与分流按角色区分",
+      "tests": [
+        "tests/unit/test_relation_roles.py::test_identity_includes_the_role_and_defaults_to_empty",
+        "tests/unit/test_relation_roles.py::test_merge_keeps_both_roles_between_the_same_pair",
+        "tests/unit/test_relation_roles.py::test_merge_without_roles_behaves_as_before",
+        "tests/unit/test_relation_roles.py::test_a_reference_without_a_role_is_refused_when_it_is_ambiguous",
+        "tests/unit/test_relation_roles.py::test_review_rows_carry_the_role_and_ops_address_one_role",
+        "tests/unit/test_relation_roles.py::test_reviewed_relations_are_tracked_per_role",
+        "tests/unit/test_relation_roles.py::test_keep_reviewed_restores_only_the_reviewed_role",
+        "tests/unit/test_relation_roles.py::test_triage_keep_set_is_per_role",
+        "tests/unit/test_relation_roles.py::test_a_build_keeps_two_roles_proposed_between_the_same_tables"
+      ]
+    },
+    {
+      "id": "RELEASE-01",
+      "criterion": "验收不通过的草案不能用于正式问数,同步、流式、诊断同判且不被缓存绕过;待评审草案可用并标明;人可预览而经适配层的调用方不能;发布需署名且验收通过,发布后再构建即回到草案;严格模式下只认已发布版本",
+      "tests": [
+        "tests/unit/test_release_gate.py::test_state_rules",
+        "tests/unit/test_release_gate.py::test_a_draft_that_failed_the_quality_check_is_refused",
+        "tests/unit/test_release_gate.py::test_the_streaming_and_diagnosis_entries_apply_the_same_rule",
+        "tests/unit/test_release_gate.py::test_a_draft_awaiting_review_is_usable_and_labelled",
+        "tests/unit/test_release_gate.py::test_a_failed_draft_can_be_previewed_by_a_person_but_not_through_an_agent",
+        "tests/unit/test_release_gate.py::test_a_cached_answer_does_not_bypass_the_rule",
+        "tests/unit/test_release_gate.py::test_publishing_needs_a_passing_check_and_a_named_person",
+        "tests/unit/test_release_gate.py::test_a_new_build_round_turns_a_published_graph_back_into_a_draft",
+        "tests/unit/test_release_gate.py::test_withdrawing_and_strict_mode",
+        "tests/unit/test_release_gate.py::test_built_list_shows_the_release_state"
+      ]
+    },
+    {
+      "id": "CQ-ROUTE-01",
+      "criterion": "带路线的验收问题按方向核验:顺着工序顺序为可回答,倒过来为不可回答并指出方向不符;候选段为部分可回答,缺直接关系为断开;可逐段指定角色区分流转与返工;结构类问题的无向判定不变",
+      "tests": [
+        "tests/unit/test_directed_cq.py::test_a_route_in_process_order_is_intact",
+        "tests/unit/test_directed_cq.py::test_the_same_route_backwards_is_reported_as_reversed_not_answerable",
+        "tests/unit/test_directed_cq.py::test_a_candidate_step_is_weak_and_a_missing_step_is_broken",
+        "tests/unit/test_directed_cq.py::test_a_step_can_require_a_role",
+        "tests/unit/test_directed_cq.py::test_unknown_or_too_short_routes_are_rejected",
+        "tests/unit/test_directed_cq.py::test_acceptance_questions_with_a_route_are_checked_by_direction",
+        "tests/unit/test_directed_cq.py::test_build_requests_keep_the_route_of_an_acceptance_question",
+        "tests/unit/test_directed_cq.py::test_chain_endpoint_can_check_direction"
+      ]
+    },
+    {
+      "id": "DECISION-01",
+      "criterion": "图谱可声明工艺路线、约束和点亮矩阵,都只引用已建模的对象;约束带硬软、单位、目的、例外,状态由依据决定且 certified 须署名;声明的路线每次验收都按方向核验,倒置或缺段不通过;没有依据的约束和路线进入待评审清单",
+      "tests": [
+        "tests/unit/test_ontology_decision.py::test_a_constraint_is_hard_by_default_and_keeps_its_business_meaning",
+        "tests/unit/test_ontology_decision.py::test_replayable_evidence_makes_a_constraint_evidenced_and_only_a_named_person_certifies",
+        "tests/unit/test_ontology_decision.py::test_malformed_constraints_are_refused",
+        "tests/unit/test_ontology_decision.py::test_a_route_must_use_modelled_objects_in_order",
+        "tests/unit/test_ontology_decision.py::test_declared_routes_become_directed_acceptance_questions",
+        "tests/unit/test_ontology_decision.py::test_quality_check_verifies_declared_routes_by_direction",
+        "tests/unit/test_ontology_decision.py::test_quality_check_lists_decision_items_still_waiting_for_a_person",
+        "tests/unit/test_ontology_decision.py::test_audit_counts_evidence_rules_and_data_sources",
+        "tests/unit/test_ontology_decision.py::test_constraints_can_be_saved_listed_and_deleted",
+        "tests/unit/test_ontology_decision.py::test_saving_a_route_reports_whether_the_relations_support_it",
+        "tests/unit/test_ontology_decision.py::test_lighting_and_audit_endpoints"
+      ]
+    },
+    {
+      "id": "SKILL-DECISION-01",
+      "criterion": "从决策倒推的构建方法作为内置技能可被发现;技能里的字段名和状态名与平台实际接受的一致;不含客户与内部名称",
+      "tests": [
+        "tests/unit/test_decision_driven_skill.py::test_the_skill_is_listed_as_a_builtin_with_a_description",
+        "tests/unit/test_decision_driven_skill.py::test_the_skill_names_only_fields_the_platform_actually_accepts",
+        "tests/unit/test_decision_driven_skill.py::test_the_skill_carries_no_customer_or_internal_names"
+      ]
+    },
+    {
+      "id": "QA-DECISION-01",
+      "criterion": "问数带入锚定对象上的约束与规则;问到未接入的数据时说明缺什么而不用别的字段代替;判定结果与数据库一致并给出 SQL;解释须引用约束或规则及其依据;追踪只沿已验证的关系;没有决策层内容的图谱照常查数;求解失败退回查数;答案附依据卡且内容转义",
+      "tests": [
+        "tests/unit/test_qa_decision.py::test_only_constraints_and_rules_on_anchored_objects_are_carried",
+        "tests/unit/test_qa_decision.py::test_a_question_about_data_that_is_not_connected_is_not_answered_from_other_fields",
+        "tests/unit/test_qa_decision.py::test_time_words_use_the_graphs_clock_and_aliases_resolve_to_filters",
+        "tests/unit/test_qa_decision.py::test_classification",
+        "tests/unit/test_qa_decision.py::test_graphs_without_decision_content_always_fall_back_to_lookup",
+        "tests/unit/test_qa_decision.py::test_judgement_matches_the_database_and_shows_its_sql",
+        "tests/unit/test_qa_decision.py::test_an_explanation_cites_the_constraint_and_its_evidence",
+        "tests/unit/test_qa_decision.py::test_an_explanation_without_a_matching_constraint_or_rule_is_left_to_lookup",
+        "tests/unit/test_qa_decision.py::test_tracing_follows_verified_relations_and_reports_progress_against_the_clock",
+        "tests/unit/test_qa_decision.py::test_tracing_stops_at_a_hop_the_ontology_has_not_verified",
+        "tests/unit/test_qa_decision.py::test_monitor_lists_every_rule_with_its_hit_count",
+        "tests/unit/test_qa_decision.py::test_lookup_card_names_constraints_used_and_flags_weak_spots",
+        "tests/unit/test_qa_decision.py::test_server_falls_back_to_lookup_when_the_solver_fails",
+        "tests/unit/test_qa_decision.py::test_lookup_answers_on_the_builtin_graph_carry_an_evidence_card",
+        "tests/unit/test_evidence_card_ui.py::test_evidence_card_behavior",
+        "tests/unit/test_evidence_card_ui.py::test_the_module_is_loaded_and_rendered_under_answers"
+      ]
+    },
+    {
+      "id": "ACTION-EXEC-01",
+      "criterion": "动作类型配置了本机执行器时,低风险在发起时调用、高风险在批准后调用;没有配置时只记录;执行器地址只来自部署配置且只能是本机;执行失败留在记录里并在动作中心显示",
+      "tests": [
+        "tests/unit/test_action_executors.py::test_without_an_executor_an_action_is_only_recorded",
+        "tests/unit/test_action_executors.py::test_a_low_risk_action_calls_its_executor_and_keeps_the_result",
+        "tests/unit/test_action_executors.py::test_an_executor_failure_is_recorded_not_raised",
+        "tests/unit/test_action_executors.py::test_a_high_risk_action_runs_only_after_approval",
+        "tests/unit/test_action_executors.py::test_only_loopback_executors_from_deployment_config_are_used",
+        "tests/unit/test_action_executors.py::test_a_caller_cannot_name_an_executor",
+        "tests/unit/test_action_executors.py::test_the_action_center_shows_every_status"
+      ]
+    },
+    {
+      "id": "QA-WHATIF-01",
+      "criterion": "假设性问题从问句取参数并调用一次低风险动作;缺必填参数时请使用者补充;高风险动作不从问数发起;没有执行器或执行失败时如实说明;问已发生的事或图谱没有参数取值声明时不做推演",
+      "tests": [
+        "tests/unit/test_qa_decision.py::test_a_what_if_question_grounds_parameters_and_runs_the_low_risk_action_once",
+        "tests/unit/test_qa_decision.py::test_missing_parameters_are_asked_for_instead_of_guessed",
+        "tests/unit/test_qa_decision.py::test_a_high_risk_action_is_never_started_from_a_question",
+        "tests/unit/test_qa_decision.py::test_an_action_without_an_executor_says_it_was_only_recorded",
+        "tests/unit/test_qa_decision.py::test_an_executor_failure_is_reported_with_its_reason",
+        "tests/unit/test_qa_decision.py::test_questions_about_what_already_happened_are_not_what_if",
+        "tests/unit/test_qa_decision.py::test_graphs_without_parameter_grounding_never_route_to_what_if",
+        "tests/unit/test_qa_decision.py::test_server_passes_the_real_invoke_and_the_operator"
+      ]
+    },
+    {
+      "id": "ROUTE-TRACE-01",
+      "criterion": "图谱只声明工艺路线也能追踪;显式声明的主线优先;推导只沿已验证或人工确认的关系,走不通处停下;停用的路线不参与",
+      "tests": [
+        "tests/unit/test_qa_decision.py::test_a_declared_route_is_enough_to_trace",
+        "tests/unit/test_qa_decision.py::test_an_explicit_main_chain_wins_over_the_route",
+        "tests/unit/test_qa_decision.py::test_derivation_stops_where_the_relations_stop_and_ignores_retired_routes"
+      ]
+    },
+    {
+      "id": "ANSWER-RECORD-01",
+      "criterion": "同样的查询在同样的数据上结果编号相同;答案带结果记录且依据卡引用同一个编号;文字说明里来自结果的数字(含合计、增长率、单位换算)通过核对,找不到出处的数字列出并在依据卡上提示;问句里的数字、日期、编号不检查",
+      "tests": [
+        "tests/unit/test_answer_record.py::test_the_same_query_on_the_same_data_gets_the_same_id",
+        "tests/unit/test_answer_record.py::test_the_record_lists_graphs_release_state_and_results",
+        "tests/unit/test_answer_record.py::test_numbers_that_come_from_the_result_pass",
+        "tests/unit/test_answer_record.py::test_numbers_without_a_source_are_listed",
+        "tests/unit/test_answer_record.py::test_numbers_from_the_question_and_from_declared_values_are_not_flagged",
+        "tests/unit/test_answer_record.py::test_identifiers_dates_and_versions_are_not_treated_as_numbers",
+        "tests/unit/test_answer_record.py::test_answers_carry_a_record_and_the_card_refers_to_the_same_result",
+        "tests/unit/test_answer_record.py::test_a_narrative_number_that_is_not_in_the_result_is_flagged_on_the_card"
+      ]
+    },
+    {
+      "id": "QA-ASSIST-01",
+      "criterion": "固定词表认不出的问法可由模型在图谱声明的选项里选定类型,选中后仍由确定性求解作答;模型的回答不在选项里时按查数处理;图谱没有决策层内容、一句问几件事、问到未接入的数据时不调用模型;可关闭",
+      "tests": [
+        "tests/unit/test_qa_decision.py::test_a_rephrased_question_the_vocabulary_misses_can_still_be_judged",
+        "tests/unit/test_qa_decision.py::test_the_model_can_only_pick_what_the_graph_declares",
+        "tests/unit/test_qa_decision.py::test_an_explanation_picked_by_the_model_cites_that_constraint",
+        "tests/unit/test_qa_decision.py::test_tracing_is_offered_only_when_the_question_names_an_existing_record",
+        "tests/unit/test_qa_decision.py::test_plain_graphs_multi_part_questions_and_missing_data_never_ask_the_model",
+        "tests/unit/test_qa_decision.py::test_server_asks_the_model_only_after_the_vocabulary_gives_up",
+        "tests/unit/test_qa_decision.py::test_without_an_engine_the_assist_call_returns_nothing_quickly"
+      ]
+    },
+    {
+      "id": "RELEASE-02",
+      "criterion": "发布绑定内容修订:发布后人工修改或重新构建使修订号变化,状态回到草稿;撤回的图谱在所有模式下不能问数;发布时留一份按修订号命名的不变副本;两次并行的继续构建都保留结果,后写回的一次另存为新图谱并说明来源",
+      "tests": [
+        "tests/unit/test_release_gate.py::test_the_revision_follows_content_not_the_length_of_the_build_history",
+        "tests/unit/test_release_gate.py::test_a_withdrawn_graph_is_blocked_in_every_mode",
+        "tests/unit/test_release_gate.py::test_a_human_edit_after_publishing_also_needs_republishing",
+        "tests/unit/test_release_gate.py::test_publishing_keeps_an_immutable_copy_named_by_revision",
+        "tests/unit/test_build_jobs.py::test_two_continue_builds_on_the_same_base_both_keep_their_results"
+      ]
+    },
+    {
+      "id": "ACTION-EXEC-02",
+      "criterion": "调用执行器之前记录已落盘为执行中;回执明确成功才记已执行,超时、中断或回执不完整记结果未知,不自动重发;结果未知由署名的人写明依据后处置,动作中心有入口;试算只到达标了只做试算的执行器,高风险动作和没有执行器的动作在调用前拒绝;试算回执声明写回时记为失败;调用不跟随跳转、不用环境代理",
+      "tests": [
+        "tests/unit/test_action_executors.py::test_the_record_is_on_disk_as_executing_before_the_executor_is_called",
+        "tests/unit/test_action_executors.py::test_a_receipt_without_a_clear_ok_is_not_treated_as_executed",
+        "tests/unit/test_action_executors.py::test_a_lost_or_broken_response_is_recorded_as_unknown",
+        "tests/unit/test_action_executors.py::test_a_call_that_never_got_a_receipt_shows_up_as_unknown_after_a_restart",
+        "tests/unit/test_action_executors.py::test_an_approved_high_risk_action_is_executing_until_its_receipt_arrives",
+        "tests/unit/test_action_executors.py::test_an_unknown_record_is_settled_by_a_named_person_with_a_reason",
+        "tests/unit/test_action_executors.py::test_simulation_only_reaches_executors_marked_simulate_only",
+        "tests/unit/test_action_executors.py::test_simulation_refuses_high_risk_actions_and_actions_without_executors",
+        "tests/unit/test_action_executors.py::test_a_simulation_that_claims_to_have_written_back_is_not_a_success",
+        "tests/unit/test_action_executors.py::test_executor_calls_do_not_follow_redirects_or_use_environment_proxies",
+        "tests/unit/test_action_executors.py::test_the_action_centre_offers_to_resolve_an_unknown_outcome"
+      ]
+    },
+    {
+      "id": "QA-WHATIF-02",
+      "criterion": "问数发起的推演只以只读试算的方式调用执行器;经适配层进来的请求不能触发推演;模型辅助分型的选项里没有试算;执行器未标只做试算、没有执行器、结果未知时分别如实说明",
+      "tests": [
+        "tests/unit/test_qa_decision.py::test_server_passes_the_real_invoke_and_the_operator",
+        "tests/unit/test_qa_decision.py::test_a_caller_that_came_through_the_agent_adapter_cannot_trigger_a_what_if",
+        "tests/unit/test_qa_decision.py::test_an_executor_not_marked_simulate_only_is_not_called_from_a_question",
+        "tests/unit/test_qa_decision.py::test_an_unknown_outcome_is_reported_as_unknown_not_as_a_result",
+        "tests/unit/test_qa_decision.py::test_the_model_is_never_offered_a_what_if_option"
+      ]
+    },
+    {
+      "id": "ROUTE-TRACE-02",
+      "criterion": "从路线推出的追踪主线每一步只认路线写明的角色,与按方向核验路线用同一条关系;没写角色而有多条可用关系时不任取一条并说明原因;依据卡写出所用角色,路线走不到底时说明停在哪一步",
+      "tests": [
+        "tests/unit/test_qa_decision.py::test_the_trace_follows_the_role_named_in_the_route",
+        "tests/unit/test_qa_decision.py::test_an_unnamed_role_between_two_candidate_relations_is_not_guessed",
+        "tests/unit/test_qa_decision.py::test_a_trace_reports_the_role_it_used_and_where_the_route_stopped"
+      ]
+    },
+    {
+      "id": "QA-WHATIF-03",
+      "criterion": "推演的参数必须唯一确定:同名对象、匹配到多条的规格片段、多个日期都列出候选由使用者选,选择经问句带回;没写年份的日期按数据日期推算并写明,不存在的日期如实报告;回答与依据卡列出实际使用的参数和数据日期",
+      "tests": [
+        "tests/unit/test_qa_decision.py::test_two_customers_with_the_same_name_are_offered_as_a_choice",
+        "tests/unit/test_qa_decision.py::test_a_customer_named_by_its_number_is_unique",
+        "tests/unit/test_qa_decision.py::test_two_dates_in_one_question_are_offered_as_a_choice",
+        "tests/unit/test_qa_decision.py::test_dates_are_resolved_against_the_data_clock_and_say_what_was_assumed",
+        "tests/unit/test_qa_decision.py::test_a_date_that_does_not_exist_is_reported_not_moved",
+        "tests/unit/test_qa_decision.py::test_a_specification_fragment_matching_several_rows_is_not_resolved_to_the_smallest_id"
+      ]
+    },
+    {
+      "id": "ANSWER-RECORD-02",
+      "criterion": "数值匹配检查符号、显式单位和所属行:符号相反、单位换算不符、数值属于另一行的数字被报告;匹配上的数字记下对应结果的行列或汇总方式;提示称为数值匹配",
+      "tests": [
+        "tests/unit/test_answer_record.py::test_a_wrong_sign_or_a_number_from_another_row_is_reported",
+        "tests/unit/test_answer_record.py::test_signed_and_row_attributed_numbers_pass",
+        "tests/unit/test_answer_record.py::test_an_explicit_unit_is_converted_against_the_column_unit",
+        "tests/unit/test_answer_record.py::test_each_matched_number_says_where_it_came_from",
+        "tests/unit/test_answer_record.py::test_text_without_checkable_numbers_is_not_checked"
+      ]
+    },
+    {
+      "id": "QA-REVIEW-E2E-01",
+      "criterion": "贯通验收:图谱有首道、末道工序两条关系,两个同名客户,问句有两个交期;经问数入口,追踪取末道工序;推演在客户和交期都确定之前不调用执行器、不留记录,确定后以只读试算调用一次;动作记录、表格、依据卡上的参数与结果一致;经适配层的请求和未标只做试算的执行器不触发调用;写错符号的数字被报告",
+      "tests": [
+        "tests/unit/test_qa_review_acceptance.py::test_trace_uses_the_role_named_in_the_route_end_to_end",
+        "tests/unit/test_qa_review_acceptance.py::test_what_if_asks_until_customer_and_date_are_unique_then_simulates_once",
+        "tests/unit/test_qa_review_acceptance.py::test_a_request_that_came_through_the_agent_adapter_cannot_simulate",
+        "tests/unit/test_qa_review_acceptance.py::test_an_executor_that_is_not_simulate_only_is_never_called_from_a_question",
+        "tests/unit/test_qa_review_acceptance.py::test_a_wrong_number_in_the_summary_is_reported_as_a_value_mismatch"
+      ]
+    },
+    {
+      "id": "RELEASE-03",
+      "criterion": "发布时按编辑后的内容重新验收:构建时通过、人工编辑后出现阻断问题的图谱不能发布并列出问题;普通编辑不影响发布;被人否决的关系不算证据冲突",
+      "tests": [
+        "tests/unit/test_release_gate.py::test_publishing_rechecks_the_content_as_edited",
+        "tests/unit/test_release_gate.py::test_an_ordinary_edit_does_not_block_publishing",
+        "tests/unit/test_health_check.py::test_a_relation_rejected_by_a_person_is_a_ruling_not_a_conflict",
+        "tests/unit/test_health_check.py::test_status_conflict_verified_vs_rejected"
+      ]
+    },
+    {
+      "id": "ACTION-EXEC-03",
+      "criterion": "执行器返回 5xx 且没有明确 ok=false 的回执时记为结果未知、是否写回未知;带明确回执的 5xx 和 4xx 记为失败",
+      "tests": [
+        "tests/unit/test_action_executors.py::test_a_server_error_without_a_receipt_is_an_unknown_outcome",
+        "tests/unit/test_action_executors.py::test_a_server_error_that_carries_a_receipt_is_a_failure",
+        "tests/unit/test_action_executors.py::test_a_rejected_request_is_still_a_failure"
+      ]
+    },
+    {
+      "id": "QA-SCOPE-01",
+      "criterion": "所选数据表的范围对判定、异常汇总、追踪、试算取参同样有效,且在读数之前校验:范围之外的表不被读取,答案说明缺哪张表;判定先校验再求值;不限定范围时行为不变",
+      "tests": [
+        "tests/unit/test_qa_decision.py::test_a_judgement_on_a_table_outside_the_selection_reads_nothing",
+        "tests/unit/test_qa_decision.py::test_a_judgement_is_validated_before_it_is_evaluated",
+        "tests/unit/test_qa_decision.py::test_monitor_only_evaluates_rules_inside_the_selection",
+        "tests/unit/test_qa_decision.py::test_a_trace_that_leaves_the_selection_reads_nothing",
+        "tests/unit/test_qa_decision.py::test_without_a_selection_everything_is_evaluated_as_before",
+        "tests/unit/test_qa_review_acceptance.py::test_a_summary_does_not_report_rules_on_tables_outside_the_selection",
+        "tests/unit/test_qa_review_acceptance.py::test_a_trace_and_a_simulation_stay_inside_the_selection"
+      ]
+    },
+    {
+      "id": "ANSWER-RECORD-03",
+      "criterion": "数值匹配检查列名:句子里点了列名时,数字要出自那一列;同一行另一列的数值被报告为属于另一列;列名对得上的、没点列名的、汇总值照常通过",
+      "tests": [
+        "tests/unit/test_answer_record.py::test_a_number_from_another_column_of_the_same_row_is_reported",
+        "tests/unit/test_answer_record.py::test_numbers_under_the_right_column_still_pass",
+        "tests/unit/test_answer_record.py::test_the_column_check_names_both_columns"
+      ]
+    },
+    {
+      "id": "EVIDENCE-CARD-02",
+      "criterion": "依据卡上的候选与追问是原生按钮,页面跳转是带 href 的链接,键盘可聚焦可激活",
+      "tests": [
+        "tests/unit/test_evidence_card_ui.py::test_evidence_card_behavior"
+      ]
+    },
+    {
+      "id": "QA-FANOUT-02",
+      "criterion": "同一张父表下同时关联两张子表,或两张子表按共同的键直接关联时,对子表的列求和、求均、计数以及 COUNT(*) 被拦下并说明改法;聚合里的表达式和只属于一张表的不带表名的列同样检查;去重计数、最值、先聚合再关联的写法不拦",
+      "tests": [
+        "tests/unit/test_fanout_gate.py::test_two_child_tables_of_one_parent_multiply_each_other",
+        "tests/unit/test_fanout_gate.py::test_two_child_tables_joined_directly_on_the_shared_key_are_many_to_many",
+        "tests/unit/test_fanout_gate.py::test_row_counts_across_two_child_tables_are_blocked_but_distinct_counts_pass",
+        "tests/unit/test_fanout_gate.py::test_one_child_table_alone_is_still_fine",
+        "tests/unit/test_fanout_gate.py::test_pre_aggregated_children_pass",
+        "tests/unit/test_fanout_gate.py::test_an_expression_over_a_parent_column_is_also_blocked",
+        "tests/unit/test_fanout_gate.py::test_an_unqualified_column_is_attributed_when_only_one_table_has_it",
+        "tests/unit/test_fanout_gate.py::test_unqualified_columns_are_not_guessed"
+      ]
+    },
+    {
+      "id": "METRIC-ALGEBRA-01",
+      "criterion": "指标换粒度时的汇总方式由聚合方式推出并写进计算规则文本:求和与计数可加,最值可上卷不可加,平均值需重算,去重计数回到明细;没有声明聚合的指标不给",
+      "tests": [
+        "tests/unit/test_metric_contract.py::test_how_a_metric_may_be_rolled_up_follows_from_its_aggregation",
+        "tests/unit/test_metric_contract.py::test_a_metric_without_a_declared_aggregation_has_no_rollup_rule"
+      ]
+    },
+    {
+      "id": "QA-STATUS-01",
+      "criterion": "查数结果分取到数据、空、失败三种状态:空结果核对所读表的行数并注明不能据此认为业务上不存在;失败的查询在依据卡和答案记录里列出;有数据的结果给出实际取数截至的日期;核对不了时不编",
+      "tests": [
+        "tests/unit/test_query_status.py::test_the_tables_a_query_reads_are_found_by_the_database_itself",
+        "tests/unit/test_query_status.py::test_an_empty_result_says_whether_the_table_or_the_filter_is_empty",
+        "tests/unit/test_query_status.py::test_a_failed_query_is_reported_and_kept_apart_from_an_empty_one",
+        "tests/unit/test_query_status.py::test_each_result_says_how_recent_the_data_it_read_is",
+        "tests/unit/test_query_status.py::test_a_declared_time_column_is_used_when_the_query_does_not_name_one",
+        "tests/unit/test_query_status.py::test_a_month_column_also_counts_as_a_time_column",
+        "tests/unit/test_query_status.py::test_the_only_time_column_of_a_table_is_used_when_nothing_else_says_which",
+        "tests/unit/test_query_status.py::test_results_without_sql_and_broken_connections_are_left_alone",
+        "tests/unit/test_query_status.py::test_an_answer_shows_failed_and_empty_queries_on_its_card"
+      ]
+    },
+    {
+      "id": "QA-FANOUT-03",
+      "criterion": "重复计数检查按查询块判断:父表的列只作条件或逐行乘数时不拦;子查询、CTE 各看各的关联;EXISTS / IN 半连接不算第二张子表;自关联按键判断父侧;同一张子表关联两次照样拦;提示里建议的子查询写法能通过校验",
+      "tests": [
+        "tests/unit/test_fanout_gate.py::test_parent_column_used_only_as_a_condition_or_multiplier_is_not_blocked",
+        "tests/unit/test_fanout_gate.py::test_each_query_block_is_checked_against_its_own_joins",
+        "tests/unit/test_fanout_gate.py::test_an_unqualified_column_inside_a_subquery_is_not_charged_to_the_outer_join",
+        "tests/unit/test_fanout_gate.py::test_semi_joins_do_not_count_as_a_second_child_table",
+        "tests/unit/test_fanout_gate.py::test_the_same_child_table_joined_twice_also_multiplies",
+        "tests/unit/test_fanout_gate.py::test_a_self_reference_takes_the_parent_side_from_the_key_not_from_the_join_order",
+        "tests/unit/test_fanout_gate.py::test_the_rewrite_suggested_by_the_block_message_is_itself_accepted"
+      ]
+    },
+    {
+      "id": "QA-STATUS-02",
+      "criterion": "改写成功或仍被展示的查询不计为失败;名字里带 time 的数值列不当作时间列,取值不像日期时换下一列;汇总结果为空值按空结果处理;按规则判定的答案不加空结果说明",
+      "tests": [
+        "tests/unit/test_query_status.py::test_a_query_that_was_repaired_or_shown_anyway_is_not_reported_as_failed",
+        "tests/unit/test_query_status.py::test_a_numeric_column_with_time_in_its_name_is_not_a_date",
+        "tests/unit/test_query_status.py::test_the_next_time_column_is_tried_when_the_first_one_holds_no_dates",
+        "tests/unit/test_query_status.py::test_an_aggregate_that_comes_back_null_is_treated_as_an_empty_result",
+        "tests/unit/test_query_status.py::test_rule_based_answers_explain_their_own_empty_results"
+      ]
+    },
+    {
+      "id": "QA-SCOPE-02",
+      "criterion": "追踪校验状态表的范围,推演校验参数间接取值的表;库里不存在的表不报为不在所选范围内",
+      "tests": [
+        "tests/unit/test_qa_decision.py::test_a_trace_also_checks_the_status_table_before_reading",
+        "tests/unit/test_qa_decision.py::test_a_what_if_also_checks_the_table_a_parameter_is_looked_up_through",
+        "tests/unit/test_qa_decision.py::test_a_table_that_does_not_exist_is_not_reported_as_outside_the_selection"
+      ]
+    },
+    {
+      "id": "ANSWER-RECORD-04",
+      "criterion": "数值匹配:区间的两端可以是结果里任何一行的值但仍须有出处;列名写在数字后面时以它为准;指标的汇总方式对未归一的契约不报错",
+      "tests": [
+        "tests/unit/test_answer_record.py::test_the_bounds_of_a_range_may_come_from_any_row",
+        "tests/unit/test_answer_record.py::test_numbers_under_the_right_column_still_pass",
+        "tests/unit/test_metric_contract.py::test_roll_up_text_tolerates_contracts_that_were_not_normalised"
+      ]
+    },
+    {
+      "id": "UI-SAFETY-01",
+      "criterion": "界面源码:内联处理器的参数不用 HTML 转义后的文本;来自服务端的文本转义后才写进页面;请求失败不显示成空的成功结果;样式变量都有定义;页面文字不含开发备注和未实现的功能;动作结果未知不显示成功提示",
+      "tests": [
+        "tests/meta/test_ui_safety.py::test_inline_handlers_do_not_put_html_escaped_text_inside_js_strings",
+        "tests/meta/test_ui_safety.py::test_server_strings_are_escaped_before_reaching_innerhtml",
+        "tests/meta/test_ui_safety.py::test_failed_requests_are_not_rendered_as_empty_success",
+        "tests/meta/test_ui_safety.py::test_unknown_confidence_does_not_break_the_diagnosis_card",
+        "tests/meta/test_ui_safety.py::test_style_variables_and_grids_match_their_use",
+        "tests/meta/test_ui_safety.py::test_no_developer_notes_or_unfinished_features_in_page_copy",
+        "tests/meta/test_ui_safety.py::test_unknown_action_outcome_is_not_shown_as_success"
+      ]
+    },
+    {
+      "id": "UI-CHART-01",
+      "criterion": "结果图表:横轴取值有重复且另有一个文字列的长表按该列拆成多条序列,缺的组合留空;宽表每个数值列一条序列;分组过多时不拆",
+      "tests": [
+        "tests/unit/test_chart_series_ui.py::test_chart_series",
+        "tests/unit/test_chart_series_ui.py::test_the_page_loads_the_module_and_uses_it_for_result_charts"
+      ]
+    },
+    {
+      "id": "DATA-CONTEXT-01",
+      "criterion": "主库换成别的库以后,内置示例本体绑定的表都不在当前库里时不算当前库的本体,也不作默认问数本体;对得上时照旧",
+      "tests": [
+        "tests/unit/test_database_scope.py::test_builtin_ontologies_that_do_not_describe_the_main_database_are_not_its_default"
+      ]
+    },
+    {
+      "id": "QA-GATE-ALIAS-01",
+      "criterion": "与真实的表同名的 CTE 名、子查询别名不豁免表白名单和连接键校验;指向真实表的别名不被指向 CTE 的绑定覆盖;FROM 后紧跟括号的表也登记",
+      "tests": [
+        "tests/unit/test_fanout_gate.py::test_a_subquery_or_cte_named_like_a_real_table_does_not_switch_off_the_key_check"
+      ]
+    },
+    {
+      "id": "QA-FANOUT-04",
+      "criterion": "CASE 的条件不算被聚合的列:按子表条件对父表列求和仍拦下;UNION 各支与关联子查询各自判断",
+      "tests": [
+        "tests/unit/test_fanout_gate.py::test_a_parent_column_summed_under_a_child_side_condition_is_still_blocked",
+        "tests/unit/test_fanout_gate.py::test_union_branches_and_correlated_subqueries_are_separate_blocks"
+      ]
+    },
+    {
+      "id": "QA-STATUS-03",
+      "criterion": "明细查询命中的行某列为空不算空结果;连写与驼峰写法的时间列能认出,计数与时长类的列不算;日期取值支持点分隔、年月汉字和 14 位时间串;判断表是否存在不分大小写",
+      "tests": [
+        "tests/unit/test_query_status.py::test_a_matched_row_with_an_empty_cell_is_not_an_empty_result",
+        "tests/unit/test_query_status.py::test_time_columns_are_recognised_by_name",
+        "tests/unit/test_query_status.py::test_values_that_look_like_dates",
+        "tests/unit/test_qa_decision.py::test_table_existence_is_checked_without_regard_to_case"
+      ]
+    },
+    {
+      "id": "ANSWER-RECORD-05",
+      "criterion": "数值匹配:列名紧跟在数字后面(最多隔一个单位)才以它为准;「从…到…」的变化不按区间处理",
+      "tests": [
+        "tests/unit/test_answer_record.py::test_a_column_name_far_after_the_number_does_not_excuse_it",
+        "tests/unit/test_answer_record.py::test_a_change_from_one_value_to_another_is_not_a_range"
+      ]
+    },
+    {
+      "id": "UI-A11Y-01",
+      "criterion": "弹窗是对话框,Esc 关闭,焦点限制在弹窗内并在关闭后返回;可点击的表格行与图标能用键盘操作;写请求在途时被点击的按钮置灰;界面文字不小于 12 像素",
+      "tests": [
+        "tests/meta/test_ui_safety.py::test_modals_are_dialogs_that_close_on_escape_and_keep_focus_inside",
+        "tests/meta/test_ui_safety.py::test_clickable_rows_and_icons_are_reachable_by_keyboard",
+        "tests/meta/test_ui_safety.py::test_the_clicked_button_is_disabled_while_its_request_is_in_flight",
+        "tests/meta/test_ui_safety.py::test_no_text_is_smaller_than_12_pixels"
+      ]
+    },
+    {
+      "id": "UI-CHART-02",
+      "criterion": "同一组、同一横轴取值有多行的明细按原样画;以文本存放的数字仍然作图;图谱列表请求失败不顶替已有缓存",
+      "tests": [
+        "tests/unit/test_chart_series_ui.py::test_chart_series",
+        "tests/unit/test_chart_series_ui.py::test_a_failed_graph_listing_does_not_replace_the_cached_list"
+      ]
+    },
+    {
+      "id": "QA-GATE-PARSE-01",
+      "criterion": "SELECT 语句按语法解析:CTE 与子查询别名按作用域排除,别名在子查询里重用不改变外层的绑定,关联子查询的引用解析到外层,UNION 各支分块,USING / NATURAL JOIN 作为连接条件,字符串与注释不干扰;解析不了的语句拒绝解析并由校验退回原做法",
+      "tests": [
+        "tests/unit/test_sql_structure.py::test_tables_and_aliases_of_a_plain_join",
+        "tests/unit/test_sql_structure.py::test_cte_and_derived_names_are_not_tables_and_are_scoped",
+        "tests/unit/test_sql_structure.py::test_an_alias_reused_in_a_subquery_does_not_change_the_outer_binding",
+        "tests/unit/test_sql_structure.py::test_correlated_references_resolve_to_the_outer_block_and_are_not_joins",
+        "tests/unit/test_sql_structure.py::test_union_branches_are_separate_blocks",
+        "tests/unit/test_sql_structure.py::test_using_and_natural_joins_are_reported",
+        "tests/unit/test_sql_structure.py::test_aggregate_arguments_keep_expressions_and_drop_subqueries",
+        "tests/unit/test_sql_structure.py::test_strings_comments_and_quoted_names_do_not_confuse_the_parser",
+        "tests/unit/test_sql_structure.py::test_what_cannot_be_parsed_is_rejected_not_guessed",
+        "tests/unit/test_sql_structure.py::test_other_select_shapes_parse",
+        "tests/unit/test_fanout_gate.py::test_using_and_natural_joins_are_seen_as_joins",
+        "tests/unit/test_fanout_gate.py::test_a_statement_the_parser_cannot_read_falls_back_to_the_previous_checks"
+      ]
+    },
+    {
+      "id": "DATA-CONTEXT-02",
+      "criterion": "主库上没有适用的本体时默认本体为空:问数提示先构建本体,指标、评审、编辑等接口返回 422 和明确提示;没有配置数据库时仍可浏览内置示例本体",
+      "tests": [
+        "tests/unit/test_database_scope.py::test_builtin_ontologies_that_do_not_describe_the_main_database_are_not_its_default",
+        "tests/unit/test_database_scope.py::test_asking_on_a_main_database_without_an_ontology_says_so_instead_of_using_the_sample"
+      ]
+    },
+    {
+      "id": "UI-A11Y-02",
+      "criterion": "附件上传可用键盘打开;没有 label 的输入框有可读名称;图谱图例包含关系状态并带文字;装饰性的色点不进入可访问性树",
+      "tests": [
+        "tests/meta/test_ui_safety.py::test_file_upload_inputs_and_controls_have_names_and_edges_have_a_legend"
+      ]
+    },
+    {
+      "id": "ONT-CHECK-01",
+      "criterion": "对外的 SQL 本体检查接口与 MCP 只读工具:与问数执行前相同的校验,只检查不执行;返回结论、原因、读到的表和每个连接条件对应的关系状态",
+      "tests": [
+        "tests/unit/test_ont_check_api.py::test_a_join_on_a_verified_relation_passes_and_names_the_relation",
+        "tests/unit/test_ont_check_api.py::test_an_unverified_join_and_a_fan_out_are_rejected_with_the_reason",
+        "tests/unit/test_ont_check_api.py::test_missing_tables_columns_and_writes_are_reported_without_running_anything",
+        "tests/unit/test_ont_check_api.py::test_the_selected_tables_narrow_the_scope",
+        "tests/unit/test_ont_check_api.py::test_bad_requests_are_rejected",
+        "tests/unit/test_mcp_action_server.py::test_check_sql_it_is_read_only_and_reports_the_verdict",
+        "tests/unit/test_mcp_action_server.py::test_check_sql_a_passing_query_lists_the_relations_it_relies_on",
+        "tests/unit/test_mcp_action_server.py::test_check_sql_upstream_errors_are_tool_errors"
+      ]
+    },
+    {
+      "id": "QA-EVAL-02",
+      "criterion": "问数评测:各组同一套比对规则,另给结果集严格一致与列容忍两种口径;可重复 1–5 次,组间差按题配对给 95% 区间(固定种子);统计候选上限与上限内的正确率",
+      "tests": [
+        "tests/unit/test_qa_eval_stats.py::test_result_sets_compare_as_sets_with_numeric_rounding",
+        "tests/unit/test_qa_eval_stats.py::test_the_column_tolerant_reading_allows_extra_and_reordered_columns",
+        "tests/unit/test_qa_eval_stats.py::test_paired_interval_is_over_questions_and_reproducible",
+        "tests/unit/test_qa_eval_stats.py::test_repeats_are_averaged_per_question_before_pairing",
+        "tests/unit/test_qa_eval_stats.py::test_the_ceiling_checks_the_tables_and_columns_the_reference_needs",
+        "tests/unit/test_qa_eval_stats.py::test_reference_columns_are_read_from_the_reference_sql",
+        "tests/unit/test_qa_eval_stats.py::test_summary_reports_rates_ceiling_and_selection_given_ceiling",
+        "tests/unit/test_qa_eval_stats.py::test_an_evaluation_run_repeats_compares_by_one_rule_and_reports_intervals_and_ceiling",
+        "tests/unit/test_qa_eval_stats.py::test_the_run_endpoint_accepts_a_bounded_number_of_repeats"
+      ]
+    },
+    {
+      "id": "ARITH-WITNESS-01",
+      "criterion": "算术见证:逐行成立的「一列 = 两列的和差积商」记为证据,多数行为 0 的不算,同一等式只记一次;与见证一致的派生公式标为已核验;问数上下文列出所选表的算术关系",
+      "tests": [
+        "tests/unit/test_arithmetic_witness.py::test_row_level_identities_are_found_with_their_coverage",
+        "tests/unit/test_arithmetic_witness.py::test_trivial_and_coincidental_relations_are_not_reported",
+        "tests/unit/test_arithmetic_witness.py::test_a_relation_that_fails_on_some_rows_is_not_a_witness",
+        "tests/unit/test_arithmetic_witness.py::test_too_few_rows_give_no_witness",
+        "tests/unit/test_arithmetic_witness.py::test_a_proposed_formula_is_checked_against_the_witnesses",
+        "tests/unit/test_arithmetic_witness.py::test_brief_lines_for_the_question_context",
+        "tests/unit/test_arithmetic_witness.py::test_columns_that_are_mostly_zero_do_not_make_a_witness",
+        "tests/unit/test_arithmetic_witness.py::test_the_build_records_witnesses_and_verifies_matching_derived_formulas",
+        "tests/unit/test_arithmetic_witness.py::test_the_question_context_states_verified_formulas_and_the_check_status",
+        "tests/unit/test_arithmetic_witness.py::test_the_question_context_lists_arithmetic_relations_of_the_shown_tables",
+        "tests/unit/test_arithmetic_witness.py::test_a_formula_with_more_terms_is_not_supported_by_a_two_column_witness"
+      ]
+    },
+    {
+      "id": "UPLOAD-HEADER-01",
+      "criterion": "上传 CSV 的多级表头:识别 2~3 行表头并展开为一行列名;上层是期间时另存长表;删除资料时一并删除;单行表头不受影响",
+      "tests": [
+        "tests/unit/test_header_parse.py::test_header_rows_are_detected_and_combined",
+        "tests/unit/test_header_parse.py::test_a_single_header_row_is_left_alone",
+        "tests/unit/test_header_parse.py::test_year_like_numbers_in_the_upper_row_still_count_as_header",
+        "tests/unit/test_header_parse.py::test_period_columns_are_also_given_in_long_form",
+        "tests/unit/test_header_parse.py::test_no_long_form_when_the_upper_level_is_not_a_period",
+        "tests/unit/test_header_parse.py::test_three_header_rows",
+        "tests/unit/test_header_parse.py::test_a_data_table_whose_second_row_is_text_is_not_mistaken_for_a_header",
+        "tests/unit/test_upload_multilevel.py::test_upload_creates_the_wide_and_the_long_table",
+        "tests/unit/test_upload_multilevel.py::test_deleting_the_upload_also_removes_the_long_table",
+        "tests/unit/test_upload_multilevel.py::test_a_plain_csv_is_unchanged"
+      ]
+    },
+    {
+      "id": "DATA-GROUNDING-01",
+      "criterion": "名称不透明库的数据接地:取值画像、口径说明(含中文写法)里的用语 → 列经数据核验后保留、按取值反查、按画像起候选名且理由须在数据里找到;核验成立的用语以候选概念并入概念层;不需要时不调用模型",
+      "tests": [
+        "tests/unit/test_data_grounding.py::test_profile_has_types_distinct_and_common_values",
+        "tests/unit/test_data_grounding.py::test_evidence_clause_becomes_verified_grounding_with_filter",
+        "tests/unit/test_data_grounding.py::test_evidence_filter_hitting_no_rows_is_rejected",
+        "tests/unit/test_data_grounding.py::test_shared_key_code_grounds_in_every_table_that_has_it",
+        "tests/unit/test_data_grounding.py::test_value_lookup_finds_the_column_holding_a_question_literal",
+        "tests/unit/test_data_grounding.py::test_names_need_a_basis_found_in_the_data",
+        "tests/unit/test_data_grounding.py::test_generic_name_detection_does_not_touch_real_names",
+        "tests/unit/test_data_grounding.py::test_table_codes_and_bare_numbers_are_not_a_basis",
+        "tests/unit/test_data_grounding.py::test_chinese_evidence_clauses_are_grounded_too",
+        "tests/unit/test_data_grounding.py::test_grounded_terms_become_candidate_concepts_in_the_product_shape",
+        "tests/unit/test_data_grounding.py::test_the_build_step_profiles_grounds_and_names_opaque_tables",
+        "tests/unit/test_data_grounding.py::test_without_opaque_names_or_questions_the_step_does_not_call_the_model",
+        "tests/unit/test_data_grounding.py::test_the_concept_step_receives_the_profile_instead_of_the_bare_column_list"
+      ]
+    },
+    {
+      "id": "FEEDBACK-REPLAY-01",
+      "criterion": "反馈时保存答案的数据摘要;回放后按数据(不按 SQL 文本)比对一致与否,含义随反馈类型说明;「有用」反馈可批量回放检查退化;标记已处理时记下依据",
+      "tests": [
+        "tests/unit/test_feedback_replay.py::test_a_snapshot_keeps_a_digest_and_a_bounded_sample",
+        "tests/unit/test_feedback_replay.py::test_the_same_data_written_differently_counts_as_the_same_answer",
+        "tests/unit/test_feedback_replay.py::test_changed_and_missing_answers",
+        "tests/unit/test_feedback_replay.py::test_what_an_outcome_means_depends_on_the_kind_of_feedback",
+        "tests/unit/test_feedback_replay.py::test_feedback_keeps_the_answer_and_a_replay_compares_against_it",
+        "tests/unit/test_feedback_replay.py::test_resolving_records_whether_a_replay_backed_it",
+        "tests/unit/test_feedback_replay.py::test_useful_feedback_is_replayed_as_a_regression_set",
+        "tests/unit/test_feedback_replay.py::test_bad_inputs_are_rejected"
+      ]
+    },
+    {
+      "id": "DATA-GROUNDING-02",
+      "criterion": "名称不透明时,未通过数据核验的业务概念带原因、相关表画像和已核验用语重提,至多 2 轮;名称正常的库不重提",
+      "tests": [
+        "tests/unit/test_data_grounding.py::test_a_concept_that_fails_verification_is_proposed_again_with_the_reason",
+        "tests/unit/test_data_grounding.py::test_repair_stops_after_two_rounds_and_is_off_without_the_profile"
+      ]
+    },
+    {
+      "id": "FEEDBACK-REPLAY-02",
+      "criterion": "回放可指定 1–3 次,各次结论不一致记为结果不稳定;批量回放时已变化的题再问一次确认",
+      "tests": [
+        "tests/unit/test_feedback_replay.py::test_runs_that_disagree_are_reported_as_unstable",
+        "tests/unit/test_feedback_replay.py::test_a_changed_answer_is_checked_once_more_in_the_regression_set",
+        "tests/unit/test_feedback_replay.py::test_the_number_of_runs_is_bounded",
+        "tests/unit/test_feedback_replay.py::test_compare_runs_combines_outcomes"
+      ]
+    },
+    {
+      "id": "QA-GATE-PARSE-02",
+      "criterion": "ON 条件里的 left( / right( 字符串函数不当作连接关键字;别名在不同查询块里复用时,重复计数的原因写对子表名",
+      "tests": [
+        "tests/unit/test_sql_structure.py::test_left_and_right_string_functions_in_on_are_not_join_words",
+        "tests/unit/test_fanout_gate.py::test_the_reason_names_the_child_tables_of_the_block_even_when_aliases_are_reused"
+      ]
+    },
+    {
+      "id": "ONT-CHECK-02",
+      "criterion": "不带来源头和 graphs 的检查请求按当前数据库的默认本体检查;同一对连接键有多条关系时取最强的状态",
+      "tests": [
+        "tests/unit/test_ont_check_api.py::test_without_graphs_or_a_source_header_the_default_ontology_is_used",
+        "tests/unit/test_ont_check_api.py::test_the_strongest_status_wins_when_several_relations_share_a_key_pair"
+      ]
+    },
+    {
+      "id": "ARITH-WITNESS-02",
+      "criterion": "取值小于允许误差的列不产生算术关系;派生公式只由同一张表上的见证核验,概念名按绑定换成列名",
+      "tests": [
+        "tests/unit/test_arithmetic_witness.py::test_columns_smaller_than_the_tolerance_do_not_produce_relations",
+        "tests/unit/test_arithmetic_witness.py::test_a_witness_only_supports_formulas_on_its_own_table",
+        "tests/unit/test_arithmetic_witness.py::test_formulas_written_with_concept_names_are_checked_through_their_bindings"
+      ]
+    },
+    {
+      "id": "UPLOAD-HEADER-02",
+      "criterion": "键列与长表列同名时上传不失败;重新上传为单行表头时删除旧长表;下层表头更长时不丢列;没有数值时不按多级表头处理",
+      "tests": [
+        "tests/unit/test_upload_multilevel.py::test_a_key_column_named_like_the_long_table_columns_does_not_break_the_upload",
+        "tests/unit/test_upload_multilevel.py::test_reuploading_with_a_single_header_removes_the_old_long_table",
+        "tests/unit/test_header_parse.py::test_a_lower_header_row_longer_than_the_first_keeps_its_last_column",
+        "tests/unit/test_header_parse.py::test_a_text_only_row_with_an_empty_first_cell_is_data_when_no_numbers_follow"
+      ]
+    },
+    {
+      "id": "DATA-GROUNDING-03",
+      "criterion": "重提的条数计入提议,未保留条数不为负;数据库的适用本体按文件指纹缓存",
+      "tests": [
+        "tests/unit/test_data_grounding.py::test_re_proposals_count_as_proposals_so_dropped_is_never_negative",
+        "tests/unit/test_database_scope.py::test_the_graphs_of_a_database_are_cached_until_an_ontology_file_changes"
+      ]
+    },
+    {
+      "id": "FEEDBACK-REPLAY-03",
+      "criterion": "存档的回放记录和反馈列表不带样例行;批量回放任务按数据源分开且不会并发启动两个;界面的附件行数、轮询失败与反馈去向显示正确",
+      "tests": [
+        "tests/unit/test_feedback_replay.py::test_stored_replays_and_the_list_carry_no_row_samples",
+        "tests/unit/test_feedback_replay.py::test_regression_jobs_are_kept_per_data_source",
+        "tests/meta/test_ui_safety.py::test_attachment_chips_replay_polling_and_feedback_wording"
+      ]
+    },
+    {
+      "id": "DATA-GROUNDING-04",
+      "criterion": "构建放弃等待(超时或客户端断开)后,数据接地与业务概念两步不再发起新的模型调用;取值画像的查询可被中断;有取值画像时概念步骤就用画像摘要(附已核验的用语 → 列)并重提,不以「有表需要起名」为前提;重提材料包含与概念名有共同词的已核验用语所在的表",
+      "tests": [
+        "tests/unit/test_data_grounding.py::test_naming_stops_starting_batches_once_cancelled",
+        "tests/unit/test_data_grounding.py::test_the_concept_call_is_not_made_after_cancel",
+        "tests/unit/test_data_grounding.py::test_the_cancellable_runner_signals_the_worker_when_it_stops_waiting",
+        "tests/unit/test_data_grounding.py::test_closing_the_stream_early_also_cancels",
+        "tests/unit/test_data_grounding.py::test_the_concept_step_gets_the_profile_even_when_no_table_needs_a_name",
+        "tests/unit/test_data_grounding.py::test_repair_context_adds_tables_whose_verified_terms_share_words_with_the_failed_concept"
+      ]
+    },
+    {
+      "id": "FEEDBACK-REPLAY-04",
+      "criterion": "反馈记下本体版本;配对回放在反馈时的版本与当前版本上交替提问,比较与反馈时答案一致的次数;版本无法复原时说明原因;批量配对给出差值与 95% 区间",
+      "tests": [
+        "tests/unit/test_feedback_replay.py::test_feedback_records_the_ontology_version_and_reads_can_be_pinned_to_it",
+        "tests/unit/test_feedback_replay.py::test_a_paired_replay_asks_before_and_after_the_edit_in_alternation",
+        "tests/unit/test_feedback_replay.py::test_paired_replay_is_refused_with_a_reason_when_before_cannot_be_rebuilt",
+        "tests/unit/test_feedback_replay.py::test_feedback_from_before_versions_were_recorded_cannot_be_paired",
+        "tests/unit/test_feedback_replay.py::test_the_paired_regression_reports_the_difference_with_an_interval",
+        "tests/unit/test_feedback_replay.py::test_what_a_paired_result_means_depends_on_the_kind_of_feedback",
+        "tests/unit/test_feedback_replay.py::test_a_request_made_inside_the_pinned_context_sees_the_old_version",
+        "tests/meta/test_ui_safety.py::test_paired_replay_controls_are_present"
       ]
     },
     {
@@ -2543,6 +3906,27 @@
       "human_acceptance": "2026-11-17 用户明确确认“整个 IR029 的最终验收”。",
       "subsequent_ui_refinement_report": "docs/audits/IR-029-ui-copy-results.json",
       "final_full_regression_status": "passed-current-code: .check-results/ir029-final-20261117/all"
+    },
+    {
+      "id": "MERGE-01",
+      "criterion": "最新主分支的发布与来源库规则、SQL修正、反馈配对回放与生命周期撤销/重建/删除保护同时生效",
+      "tests": [
+        "tests/unit/test_merge_lifecycle_regressions.py::test_undo_keeps_later_base_maturity",
+        "tests/unit/test_merge_lifecycle_regressions.py::test_rebuild_reverts_edits_and_next_edit_is_not_lost",
+        "tests/unit/test_merge_lifecycle_regressions.py::test_paired_feedback_replay_uses_requested_edit_prefix",
+        "tests/unit/test_merge_qa_regressions.py::test_invalid_first_sql_can_be_repaired_before_contract_execution",
+        "tests/unit/test_merge_qa_regressions.py::test_catalog_fingerprint_tracks_actual_source_wal",
+        "tests/unit/test_merge_qa_regressions.py::test_strict_publication_is_not_bypassed_by_contract_or_cache",
+        "tests/unit/test_merge_qa_regressions.py::test_deleted_graph_remains_structured_after_master_before_request_guards",
+        "tests/unit/test_merge_lifecycle_regressions.py::test_deleted_legacy_asset_is_removed_from_source_defaults",
+        "tests/unit/test_merge_lifecycle_regressions.py::test_edit_after_restore_keeps_frozen_baseline_for_later_undo",
+        "tests/scenarios/test_scenarios.py::test_merged_contract_repair_and_lifecycle_match_golden_answers",
+        "tests/unit/test_merge_qa_regressions.py::test_multigraph_contract_keeps_role_relations_and_semantic_layers",
+        "tests/unit/test_merge_lifecycle_regressions.py::test_master_decision_write_updates_lifecycle_snapshot",
+        "tests/unit/test_api_robustness.py::test_python310_blob_fallback_checks_before_allocation_and_keeps_small_values",
+        "tests/unit/test_merge_qa_regressions.py::test_model_probes_cannot_bypass_semantic_validation",
+        "tests/unit/test_database_scope_ui.py::test_database_source_frontend_behavior"
+      ]
     }
   ],
   "planned_requirements": [

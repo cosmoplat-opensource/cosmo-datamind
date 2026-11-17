@@ -26,7 +26,7 @@ _ERR_REPLY = re.compile(r"API call failed|HTTP (?:4\d\d|5\d\d)|usage limit|rate 
 
 
 def _looks_like_error(reply):
-    """引擎有时把错误文案当正文返回(ok=True 但内容是 429/超限等);识别后视为失败,交由规则兜底。"""
+    """引擎有时把错误文案当正文返回(ok=True 但内容是 429/超限等);识别后视为失败,交由规则降级处理。"""
     r = (reply or "").strip()
     return (not r) or (len(r) < 400 and bool(_ERR_REPLY.search(r)))
 
@@ -46,6 +46,11 @@ def runtime_cached(drv):
 def _drv_order(cands=("openai", "hermes", "claude-code", "openclaw")):
     # LLM 引擎尝试顺序遵循 CLAW_DRIVER:选中的排最前(其余按原序回退),
     # 使 /api/ont/runtime 的引擎切换对所有 LLM 流程真正生效(而非只改显示标签)。
+    pin = os.environ.get("DATAMIND_PIN_DRIVER")
+    if pin in cands:
+        # DR-091 固定引擎:只用指定引擎,失败时同一引擎重试,不改用其他模型。
+        # 评测与对比实验要求全程同一个模型;此前接口偶发失败会退到其他引擎,混入别的模型的答案
+        return (pin,) * max(1, int(os.environ.get("DATAMIND_PIN_RETRIES") or 3))
     pref = os.environ.get("CLAW_DRIVER") or "hermes"
     if pref in cands:
         return (pref,) + tuple(d for d in cands if d != pref)
@@ -116,10 +121,13 @@ def _apply_engine_cfg(cfg):
     _llm = cfg.get("llm") or {}
     for fld, var in LLM_ENV.items():
         v = str(_llm.get(fld) or "").strip()
-        if os.environ.get(var) and fld != "key":   # key 允许配置文件补位(env 未注入时)
+        # 「环境变量优先」只对启动时由部署方注入的变量成立(DR-096)。此前按「变量当前有值」判断,
+        # 而上一次应用配置时写入的值也算「有值」:换服务商后地址与模型不更新,只有 Key 更新,
+        # 新 Key 被发往旧端点。Key 一直允许配置补位,这里保持不变。
+        if var in _ENV_LOCKED_AT_BOOT and fld != "key":
             continue
         if v: os.environ[var] = v
-        elif not os.environ.get(var): os.environ.pop(var, None)
+        elif var not in _ENV_LOCKED_AT_BOOT: os.environ.pop(var, None)
     try:                                            # 端点变了要重新注册,否则改完仍用旧实例
         import agent_runtime as _arx, openai_runtime as _orx
         _orx.register(_arx)

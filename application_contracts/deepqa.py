@@ -63,9 +63,13 @@ class DataQAAdapter:
                               'payload': raw, 'lifecycle_revision': life['revision']})
         if len(documents) == 1:
             return snapshots, documents[0]
-        # Match the legacy multi-graph consumer: first object id/edge endpoint pair wins.
+        # Preserve master semantic layers and distinct roles in fixed-version unions.
+        import ir_shape
+        import workload_concepts
+        layers = {}
         objects, links, seen_objects, seen_links = [], [], set(), set()
         for doc in documents:
+            layers = workload_concepts.merge_layers(layers, doc)
             rels, sk, tk = self.host._rels(doc)
             for index, obj in enumerate(doc['objects']):
                 key = self.host._obj_key(obj, index)
@@ -73,9 +77,10 @@ class DataQAAdapter:
                     seen_objects.add(key); objects.append({**obj, 'id': key})
             for rel in rels:
                 pair = (rel.get(sk), rel.get(tk))
-                if all(pair) and pair not in seen_links:
-                    seen_links.add(pair); links.append({**rel, 'source': pair[0], 'target': pair[1]})
-        return snapshots, {'objects': objects, 'links': links}
+                identity = ir_shape.rel_id(rel)
+                if all(pair) and identity not in seen_links:
+                    seen_links.add(identity); links.append({**rel, 'source': pair[0], 'target': pair[1]})
+        return snapshots, {'objects': objects, 'links': links, **layers}
 
     def resolve(self, *, graph_keys=None, asset_refs=None, question=None, plan=None, focus_tables=None):
         """Freeze actual edited content, ordered input vector and current local query catalog."""

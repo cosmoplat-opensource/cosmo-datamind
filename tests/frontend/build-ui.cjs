@@ -48,6 +48,7 @@ function fixture() {
   const ctx = vm.createContext(context);
   const streamPath = path.join(root, 'ui/modules/build-stream.js');
   if (fs.existsSync(streamPath)) vm.runInContext(fs.readFileSync(streamPath, 'utf8'), ctx);
+  vm.runInContext(ui.slice(ui.indexOf('function rvSemanticHTML('),ui.indexOf('function rvWho()')),ctx);
   vm.runInContext(ui.slice(ui.indexOf("const BC={"), ui.indexOf('// ══════ 数据连接 ══════')), ctx);
   state.renderResult = ctx.bcRenderResult;
   state.loadBuilt = ctx.bcBuilt;
@@ -66,9 +67,31 @@ function stream(text) {
     if (offset === bytes.length) controller.close(); else controller.enqueue(bytes.slice(offset, ++offset));
   }}), {headers:{'Content-Type':'text/event-stream'}});
 }
+function streamWithJob(text, jobId) {
+  const bytes = new TextEncoder().encode(text); let sent = false;
+  return new Response(new ReadableStream({pull(controller) { if (sent) controller.close(); else { sent = true; controller.enqueue(bytes); } }}),
+    {headers:{'Content-Type':'text/event-stream', 'X-Build-Job':jobId}});
+}
+function json(body, status = 200) { return new Response(JSON.stringify(body), {status, headers:{'Content-Type':'application/json'}}); }
 function deferred() { let resolve; const promise = new Promise(r => { resolve = r; }); return {promise, resolve}; }
 
 const cases = {
+  async semantic_review_escapes_evidence_and_separates_formula_check() {
+    const f=fixture(); const html=f.ctx.rvSemanticHTML([{name:'<script>x</script>',kind:'derived',formula:'x * 2',
+      target:'semantic:derived:abc',status:'asserted',review_by:'Reviewer',evidence:{formula_verified:false}}]);
+    assert.ok(!html.includes('<script>'));
+    assert.match(html,/人工确认/); assert.match(html,/公式未执行核验/); assert.match(html,/Reviewer/);
+    assert.match(html,/confirm_semantic/); assert.match(html,/&lt;script&gt;/);
+  },
+  async workload_stays_separate_from_acceptance() {
+    const f=fixture(); let body;
+    f.$('#bc_workload').value='产量是多少\n\n能耗趋势';
+    f.$('#bc_cq').value='哪些工单关联订单';
+    f.ctx.fetch=async (_url,opts)=>{body=JSON.parse(opts.body); return stream('data: {"type":"done","graph_key":"built_test"}\n\n');};
+    await f.ctx.bcInquire();
+    assert.deepEqual(body.workload,['产量是多少','能耗趋势']);
+    assert.deepEqual(body.cqs,['哪些工单关联订单']);
+  },
   async upload_failure_is_not_success() {
     const f=fixture(); f.ctx.FormData=class {append(){}};
     f.$('#bc_files').files=[{name:'orders.csv'}]; f.ctx.bcSources=()=>{};
@@ -76,6 +99,50 @@ const cases = {
     await f.ctx.bcUpload();
     assert.match(f.state.messages.at(-1),/失败.*CSV 列名重复/);
     assert.ok(!f.state.messages.at(-1).includes('已上传'));
+  },
+  async dropped_stream_is_followed_from_the_server_job() {
+    const f = fixture(), urls = [];
+    f.ctx.fetch = async url => { urls.push(String(url));
+      if (String(url) === '/api/build/inquire') return streamWithJob('data: {"type":"step","step":"intake","ok":true,"info":"接收诉求"}\n\n', 'bj_0123456789');
+      return json({state:'done', next:3, elapsed:5, events:[{type:'step',step:'critic',ok:true,info:'验收'},{type:'done',graph_key:'built_test',name:'订单'}]}); };
+    await f.ctx.bcInquire();
+    assert.equal(f.state.rendered.length, 1, 'the build finished on the server; a dropped stream must not be reported as a failure');
+    assert.match(urls[1], /\/api\/build\/jobs\/bj_0123456789\?after=1&wait=/);
+    assert.ok(!f.$('#bc_log').children[0].innerHTML.includes('bc-failure'));
+    assert.equal(f.state.saved.get('bc_job') || '', '');
+  },
+  async reload_resumes_a_running_build() {
+    const f = fixture(), urls = [];
+    f.state.saved.set('bc_job', JSON.stringify({id:'bj_0123456789', q:'构建订单本体', src:'demo', ts:1}));
+    f.ctx.fetch = async url => { urls.push(String(url));
+      return json(urls.length === 1 ? {state:'running', next:1, elapsed:3, events:[{type:'step',step:'intake',ok:true,info:'接收诉求'}]}
+                                    : {state:'done', next:2, elapsed:9, events:[{type:'done',graph_key:'built_test',name:'订单'}]}); };
+    await f.ctx.bcResume();
+    assert.equal(f.state.rendered.length, 1);
+    assert.match(urls[0], /bj_0123456789\?after=0/); assert.match(urls[1], /after=1/);
+    assert.match(f.$('#bc_log').innerHTML, /构建订单本体/);
+    assert.equal(f.state.saved.get('bc_job') || '', ''); assert.equal(f.run('BC_BUSY'), false);
+  },
+  async reload_reports_an_interrupted_build() {
+    const f = fixture();
+    f.state.saved.set('bc_job', JSON.stringify({id:'bj_0123456789', q:'构建订单本体', src:'demo', ts:1}));
+    f.ctx.fetch = async () => json({state:'interrupted', error:'服务重启,构建中断', next:2, elapsed:4,
+      events:[{type:'step',step:'intake',ok:true}, {type:'error',error:'服务重启,构建中断',interrupted:true}]});
+    await f.ctx.bcResume();
+    assert.equal(f.state.rendered.length, 0);
+    assert.match(f.$('#bc_log').children[0].innerHTML, /服务重启/);
+    assert.equal(f.state.saved.get('bc_job') || '', ''); assert.equal(f.$('#bc_send').disabled, false);
+  },
+  async reload_with_nothing_pending_does_nothing() {
+    const f = fixture(); await f.ctx.bcResume();
+    assert.equal(f.$('#bc_log').children.length, 0); assert.equal(f.run('BC_BUSY'), false);
+  },
+  async cancel_asks_the_server_to_stop() {
+    const f = fixture(); let call; f.run("BC_JOB='bj_0123456789'");
+    f.ctx.fetch = async (url, opts) => { call = {url:String(url), method:opts.method}; return json({cancel_requested:true}, 202); };
+    await f.ctx.bcCancelJob();
+    assert.equal(call.url, '/api/build/jobs/bj_0123456789/cancel'); assert.equal(call.method, 'POST');
+    assert.match(f.state.messages.at(-1), /取消/);
   },
   async truncated_stream() {
     const f = fixture(); f.ctx.fetch = async () => stream('data: {"type":"status","text":"处理中"}\n\n');
@@ -120,17 +187,17 @@ const cases = {
   async iteration_race() {
     const f = fixture(), a = deferred(), b = deferred();
     f.ctx.J = url => url.endsWith('/a') ? a.promise : b.promise;
-    const first = f.ctx.bcIterate('a','旧底本'), second = f.ctx.bcIterate('b','新底本');
+    const first = f.ctx.bcIterate('a','旧基础本体'), second = f.ctx.bcIterate('b','新基础本体');
     b.resolve({references:{id:'b'}, rounds:[]}); await second;
     a.resolve({references:{id:'a'}, rounds:[]}); await first;
     assert.equal(f.run('BC.base'), 'b'); assert.equal(f.state.references.id, 'b');
-    assert.match(f.$('#bc_log').innerHTML, /新底本/); assert.ok(!f.$('#bc_log').innerHTML.includes('旧底本'));
+    assert.match(f.$('#bc_log').innerHTML, /新基础本体/); assert.ok(!f.$('#bc_log').innerHTML.includes('旧基础本体'));
   },
   async clear_iteration_race() {
     const f = fixture(), wait = deferred(); f.ctx.J = () => wait.promise;
-    const pending = f.ctx.bcIterate('a','旧底本'); f.ctx.bcIterClear();
+    const pending = f.ctx.bcIterate('a','旧基础本体'); f.ctx.bcIterClear();
     wait.resolve({references:{id:'a'},rounds:[]}); await pending;
-    assert.equal(f.run('BC.base'), ''); assert.ok(!f.$('#bc_log').innerHTML.includes('旧底本'));
+    assert.equal(f.run('BC.base'), ''); assert.ok(!f.$('#bc_log').innerHTML.includes('旧基础本体'));
   },
   async busy_iteration_guard() {
     const f = fixture(); f.run("BC.base='a'; BC.baseName='订单'; BC_BUSY=true;");
@@ -164,7 +231,7 @@ const cases = {
   async failed_context_blocks_build() {
     const f = fixture(); f.ctx.J = async()=>({error:'历史读取失败'}); let calls = 0;
     f.ctx.fetch = async()=>{calls++;return stream('data: {"type":"done","graph_key":"built_bad"}\n\n');};
-    await f.ctx.bcIterate('missing','缺失的底本'); await f.ctx.bcInquire();
+    await f.ctx.bcIterate('missing','缺失的基础本体'); await f.ctx.bcInquire();
     assert.equal(calls,0, 'failed context must not silently use the previous references');
     f.ctx.bcIterClear(); assert.equal(f.$('#bc_send').disabled,false);
   },

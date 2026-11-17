@@ -12,7 +12,9 @@
       {id: 'none', name: '不选择行业参照', description: '仅依据当前数据与资料构建，不套用行业概念模板。'},
       {id: 'manufacturing', name: '制造业', version: '内置参照 1.0', description: '离散制造常见对象与关系参照。'},
       {id: 'chemical', name: '化工行业', version: '内置参照 1.0', description: '流程化工常见对象与关系参照。'},
-      {id: 'pcba', name: 'PCBA / SMT', version: '内置参照 1.0', description: 'PCBA 与 SMT 生产对象和关系参照。'}
+      {id: 'pcba', name: 'PCBA / SMT', version: '内置参照 1.0', description: 'PCBA 与 SMT 生产对象和关系参照。'},
+      {id: 'energy_management', name: '能源管理', version: '内置参照 1.0', description: '企业能源管理对象和关系参照。'},
+      {id: 'carbon_accounting', name: '碳排放核算', version: '内置参照 1.0', description: '组织层温室气体核算对象和关系参照。'}
     ],
     ontology_standards: [
       {id: 'none', name: '不选择本体标准', description: '保留本地业务概念和关系。'},
@@ -84,7 +86,7 @@
       const retry = document.createElement('button');
       retry.type = 'button';
       retry.className = 'ghost';
-      retry.style.cssText = 'padding:2px 7px;font-size:10.5px';
+      retry.style.cssText = 'padding:2px 7px;font-size:12px';
       retry.textContent = '重新加载目录';
       retry.onclick = () => init(true);
       detail.appendChild(retry);

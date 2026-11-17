@@ -67,3 +67,13 @@ def test_gaps_from_only_promotes_hard_errors(ir_with_isolated):
     gaps = health_check.gaps_from(r)
     # 未连接对象是提示信号，不应进入待补清单，以免掩盖阻断问题。
     assert gaps == []
+
+
+def test_a_relation_rejected_by_a_person_is_a_ruling_not_a_conflict():
+    """同一对对象之间一条 verified、一条被人否决:人已经裁定过了,不算证据自相矛盾(否则正常的人审会让图谱验收不通过)。"""
+    ir = {"objects": [{"id": "a"}, {"id": "b"}],
+          "relations": [
+              {"source_concept": "a", "target_concept": "b", "status": "verified"},
+              {"source_concept": "b", "target_concept": "a", "status": "rejected", "human_review": "rejected"},
+          ]}
+    assert not any(e["type"] == "status_conflict" for e in health_check.check(ir)["errors"])

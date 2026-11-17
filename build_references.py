@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """半自动本体构建的行业参照与本体标准配置。
 
-本模块是构建配置的单一事实源：目录、请求归一、提示词片段、产物注释与确定性
+本模块是构建配置的集中定义：目录、请求归一、提示词片段、产物注释与确定性
 验收都从这里读取同一份定义。它不调用模型、不读外部系统，也不声称 ISA-95/UFO
 候选对齐等同于标准符合性认证。
 """
@@ -43,7 +43,7 @@ INDUSTRIES = {
             {"id": "quality_inspection", "name": "质量检验", "required": True,
              "aliases": ["质量检验", "质检", "检验记录", "quality_inspection", "inspection"]},
             {"id": "production_line", "name": "生产线",
-             "aliases": ["生产线", "产线", "production_line", "line"]},
+             "aliases": ["生产线", "产线", "线别", "线体", "production_line", "line"]},
             {"id": "process_route", "name": "工艺路线",
              "aliases": ["工艺路线", "工艺流程", "routing", "process_route"]},
             {"id": "production_batch", "name": "生产批次",
@@ -89,7 +89,7 @@ INDUSTRIES = {
             {"id": "smt_work_order", "name": "SMT工单", "required": True,
              "aliases": ["smt工单", "贴片工单", "smt_work_order", "smt order"]},
             {"id": "smt_line", "name": "SMT产线", "required": True,
-             "aliases": ["smt产线", "贴片产线", "smt_line"]},
+             "aliases": ["smt产线", "贴片产线", "产线", "线别", "线体", "生产线", "smt_line"]},
             {"id": "pcba_board", "name": "PCBA板", "required": True,
              "aliases": ["pcba板", "电路板", "pcba_board", "pcb board"]},
             {"id": "placement_machine", "name": "贴片机", "required": True,
@@ -106,6 +106,83 @@ INDUSTRIES = {
         "relations": [
             "SMT工单生产PCBA板", "SMT产线执行SMT工单", "贴片机安装电子元件",
             "回流炉处理PCBA板", "AOI检测检验PCBA板", "SMT工单消耗锡膏",
+        ],
+    },
+    "energy_management": {
+        "name": "能源管理",
+        "version": "内置参照 1.0",
+        "description": "企业能源管理常见的用能单元、计量器具、测点、能耗、折标、能源绩效参数、基准、计划、价格、储能与可再生能源发电概念。",
+        # 只借用标准与公开本体的术语做对齐提示,不复制标准正文,也不声称完整符合性。
+        "sources": [
+            "GB/T 23331-2020 / ISO 50001:2018 能源管理体系(能源使用、能源绩效参数、能源基准)",
+            "GB/T 2589-2020 综合能耗计算通则(综合能耗、折标系数)",
+            "GB 17167-2025 用能单位能源计量器具配备和管理通则(计量器具;2026-02-01 实施,代替 2006 版)",
+            "ETSI SAREF4ENER V2.1.1(ETSI TS 103 410-1;功率曲线、灵活性、储能)",
+            "Brick Schema v1.4 / Project Haystack 4(表计、测点)",
+            "Open Energy Ontology v2.13.0(基于 BFO 的能源系统本体)",
+        ],
+        "concepts": [
+            {"id": "energy_use", "name": "用能单元", "required": True, "basis": "ISO 50001 能源使用 / GB/T 23331",
+             "aliases": ["用能单元", "用能对象", "用能系统", "用能设备", "能源使用", "energy_unit", "energy use"]},
+            {"id": "energy_meter", "name": "能源计量器具", "required": True, "basis": "GB 17167-2025 / Brick Meter",
+             "aliases": ["计量器具", "计量表", "表计", "电表", "电能表", "水表", "气表", "流量计", "热量表", "仪表", "meter"]},
+            {"id": "measurement_point", "name": "测点", "required": True, "basis": "Brick Point / Haystack point / SAREF Measurement",
+             "aliases": ["测点", "量测", "点位", "采集点", "measurement", "metric", "point"]},
+            {"id": "energy_consumption", "name": "能源消耗量", "required": True, "basis": "GB/T 2589 综合能耗",
+             "aliases": ["能源消耗", "能耗", "用能量", "用电量", "用量", "综合能耗", "energy_consumption", "consumption"]},
+            {"id": "standard_coal", "name": "折标煤量", "basis": "GB/T 2589 折标系数",
+             "aliases": ["折标煤", "折算标煤", "标煤", "标准煤", "tce", "convstdcoal"]},
+            {"id": "enpi", "name": "能源绩效参数", "basis": "ISO 50001 EnPI",
+             "aliases": ["能源绩效参数", "能效指标", "能耗指标", "单位产品能耗", "单耗", "enpi"]},
+            {"id": "energy_baseline", "name": "能源基准", "basis": "ISO 50001 EnB",
+             "aliases": ["能源基准", "能耗基准", "基准", "baseline", "benchmark", "bench_mark"]},
+            {"id": "energy_target", "name": "能源目标与计划", "basis": "ISO 50001 能源目标/指标与行动计划",
+             "aliases": ["能耗计划", "用能计划", "能源目标", "能源计划", "energy_plan", "target"]},
+            {"id": "energy_tariff", "name": "能源价格", "basis": "SAREF4ENER 激励表 / 分时电价",
+             "aliases": ["能源价格", "电价", "单价", "分时电价", "峰谷", "tariff", "price"]},
+            {"id": "energy_storage", "name": "储能", "basis": "SAREF4ENER Storage",
+             "aliases": ["储能", "储能系统", "电池", "storage", "bess"]},
+            {"id": "renewable_generation", "name": "可再生能源发电", "basis": "OEO 发电 / 光伏",
+             "aliases": ["光伏", "风电", "发电", "新能源", "pv", "photovoltaic"]},
+        ],
+        "relations": [
+            "能源计量器具计量用能单元", "测点属于能源计量器具", "能源消耗量归属用能单元",
+            "能源消耗量按折标系数折算为折标煤量", "能源绩效参数评价用能单元", "能源绩效参数对照能源基准",
+            "能源目标与计划约束用能单元", "能源价格计价能源消耗量",
+        ],
+    },
+    "carbon_accounting": {
+        "name": "碳排放核算",
+        "version": "内置参照 1.0",
+        "description": "组织层温室气体核算常见的核算边界、排放源、排放范围、活动数据、排放因子、温室气体排放量与减排量概念。",
+        "sources": [
+            "GB/T 32150-2025 工业企业温室气体排放核算和报告通则(2026-07-01 实施,代替 2015 版)",
+            "ISO 14064-1 / GHG Protocol(范围一/二/三)",
+            "TEC Toolkit ECFO/PECO 1.0.0(排放因子与排放计算溯源)",
+        ],
+        "concepts": [
+            {"id": "accounting_boundary", "name": "核算边界", "required": True, "basis": "GB/T 32150-2025 核算边界",
+             "aliases": ["核算边界", "组织边界", "运营边界", "核算主体", "boundary"]},
+            {"id": "emission_source", "name": "排放源", "required": True, "basis": "GB/T 32150-2025 / ISO 14064-1",
+             "aliases": ["排放源", "排放设施", "emission_source"]},
+            {"id": "activity_data", "name": "活动数据", "required": True, "basis": "GB/T 32150-2025 / GHG Protocol",
+             "aliases": ["活动数据", "活动水平", "activity_data"]},
+            {"id": "emission_factor", "name": "排放因子", "required": True, "basis": "GB/T 32150-2025 / ECFO",
+             "aliases": ["排放因子", "碳排放因子", "emission_factor", "conversion_factor"]},
+            {"id": "ghg_emission", "name": "温室气体排放量", "required": True, "basis": "GB/T 32150-2025 / ISO 14064-1",
+             "aliases": ["温室气体排放", "碳排放", "碳排", "排放量", "co2e", "co2", "carbon_emission", "ghg"]},
+            {"id": "emission_scope", "name": "排放范围", "basis": "GHG Protocol 范围一/二/三",
+             "aliases": ["排放范围", "范围一", "范围二", "范围三", "scope1", "scope2", "scope3", "range1", "range2"]},
+            {"id": "emission_intensity", "name": "排放强度", "basis": "GB/T 32150-2025 / 单位产品碳排放",
+             "aliases": ["排放强度", "碳强度", "单位产品碳排放", "co2eunit"]},
+            {"id": "emission_reduction", "name": "减排量", "basis": "ISO 14064-2 / 核证减排量",
+             "aliases": ["减排量", "碳减排", "核证减排量", "cer", "carbon_credit"]},
+            {"id": "calculation_provenance", "name": "核算过程记录", "basis": "PECO",
+             "aliases": ["核算记录", "计算过程", "核算报告", "calculation", "provenance"]},
+        ],
+        "relations": [
+            "核算边界包含排放源", "排放源产生温室气体排放量", "活动数据与排放因子得出温室气体排放量",
+            "温室气体排放量归属排放范围", "排放强度以温室气体排放量除以产量得出", "核算过程记录追溯温室气体排放量",
         ],
     },
 }
@@ -330,6 +407,16 @@ def _industry_match(obj, industry_id):
     return concept, hits
 
 
+def _alias_score(obj, hits):
+    """对象名与参照术语的贴切程度:名称等于术语 3、以术语结尾 2、含术语 1;同分取较长术语。"""
+    cn = str(obj.get("cn") or "").lower()
+    best = 0
+    for h in hits:
+        hl = h.lower()
+        best = max(best, 3 if cn == hl else 2 if cn.endswith(hl) else 1)
+    return (best, max((len(h) for h in hits), default=0))
+
+
 def _isa95_match(obj):
     text = _object_text(obj).lower()
     matches = []
@@ -353,10 +440,18 @@ def apply_profile(ir, profile):
     objects = [x for x in (ir.get("objects") or []) if isinstance(x, dict)]
     relations = ir.get("links") if ir.get("links") else (ir.get("relations") or [])
 
+    alias_pick = {}
     for obj in objects:
         for key in ("industry_reference", "standard_alignment", "reused_from",
                     "foundational_kind", "bfo"):
             obj.pop(key, None)
+        # 上一次按参照加的别名先撤掉,按本次匹配重新分配(DR-070)
+        old = set(obj.pop("reference_aliases", None) or [])
+        if old:
+            obj["aliases"] = [a for a in obj.get("aliases") or [] if a not in old]
+            if not obj["aliases"]:
+                obj.pop("aliases")
+            obj.pop("aliases_source", None)
         if industry["selected"]:
             match = _industry_match(obj, industry["id"])
             if match:
@@ -367,6 +462,7 @@ def apply_profile(ir, profile):
                     "concept_name": concept["name"], "status": "candidate",
                     "matched_by": hits[:5],
                 }
+                alias_pick.setdefault(concept["id"], []).append((_alias_score(obj, hits), obj, concept))
         if standard["id"] == "bfo_iof":
             category = ontology_grounding.default_category(obj.get("kind"))
             obj["bfo"] = category
@@ -392,6 +488,21 @@ def apply_profile(ir, profile):
                     "standard": "ufo", "candidate": candidate,
                     "status": "candidate", "version": standard["version"],
                 }
+
+    # DR-070 行业术语进入对象别名:每个参照概念只给最贴切的一个对象(名称等于术语 > 以术语结尾 > 含术语),
+    # 「企业用能系统关联」这类只是提到术语的对象不加,免得问数时抢走召回
+    for picks in alias_pick.values():
+        picks.sort(key=lambda x: x[0], reverse=True)
+        if len(picks) > 1 and picks[0][0] == picks[1][0]:
+            continue                                         # 并列不判
+        _score, obj, concept = picks[0]
+        terms = [concept["name"]] + [a for a in concept["aliases"] if re.search(r"[一-鿿]", a)]
+        have = [str(a) for a in (obj.get("aliases") or [])]
+        new = [t for t in dict.fromkeys(terms) if t not in have and t != obj.get("cn")]
+        if new:
+            obj["aliases"] = have + new
+            obj["reference_aliases"] = new
+            obj["aliases_source"] = "industry_reference"
 
     categories = {(obj.get("id") or obj.get("name")): obj.get("bfo") for obj in objects}
     for relation in relations:
@@ -425,7 +536,7 @@ def evaluate(ir, profile, grounding=None):
     industry_cfg = profile["industry"]
     industry_report = {"selected": industry_cfg["selected"], "id": industry_cfg["id"],
                        "name": industry_cfg["name"], "mode": industry_cfg["mode"],
-                       "matched_concepts": [], "missing_required": [], "coverage": None}
+                       "matched_concepts": [], "missing_required": [], "missing_optional": [], "coverage": None}
     if industry_cfg["selected"]:
         spec = INDUSTRIES[industry_cfg["id"]]
         matched = sorted({(obj.get("industry_reference") or {}).get("concept") for obj in objects
@@ -436,6 +547,9 @@ def evaluate(ir, profile, grounding=None):
         industry_report.update(
             matched_concepts=[name_by_id[x] for x in matched if x in name_by_id],
             missing_required=[name_by_id[x] for x in missing],
+            # 可选概念不参与判定,但要列出:例如能碳参照下数据只覆盖能源侧时,
+            # 排放源、排放因子等碳侧概念全部缺席,列出后使用者能看到覆盖缺口。
+            missing_optional=[name_by_id[x] for x in name_by_id if x not in matched and x not in required],
             coverage=round(len(set(required) & set(matched)) / len(required), 4) if required else 1.0,
         )
         if missing:

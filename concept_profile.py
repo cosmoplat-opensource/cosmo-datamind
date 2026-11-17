@@ -31,7 +31,7 @@ def build(ir):
     objs = (ir or {}).get("objects") or []
     by_key = {_key(o, i): o for i, o in enumerate(objs)}
     rels, sk, tk = _rels(ir or {})
-    neigh = {}
+    neigh: dict = {}
     for r in rels:
         if r.get("status") not in _STRONG:
             continue
@@ -43,7 +43,7 @@ def build(ir):
                                         "direction": "out", "status": r.get("status")})
         neigh.setdefault(t, []).append({"object": s, "cn": by_key[s].get("cn") or s, "verb": verb,
                                         "direction": "in", "status": r.get("status")})
-    metrics_by_table = {}
+    metrics_by_table: dict = {}
     for arr in ((ir or {}).get("metric_layers") or {}).values() if isinstance((ir or {}).get("metric_layers"), dict) else []:
         for m in (arr or []):
             if isinstance(m, dict) and m.get("table"):

@@ -2,7 +2,7 @@
 """dao_core 一致性测试(DR-035)—— 单一裁决核。
 
 覆盖:重叠公式精度、统一裁决三态、compat 模式复现 quick_build、自引用键支持、
-以及与上游 relation_discovery 的 name_score 平价(证明两份实现同口径)。
+以及与上游 relation_discovery 的 name_score 平价(证明两份实现规则相同)。
 """
 import importlib.util
 import pathlib
@@ -53,7 +53,7 @@ class TestClassifyCanonical:
     def test_not_verified_when_parent_not_unique(self):
         # 父键不唯一 → 绝不 verified;100% 重叠仍落到弱 candidate(与 quick_build elif ov>=20 一致)。
         # 注:上游 relation_discovery 会直接跳过非唯一父键——此处是两引擎的又一处漂移,
-        # 统一核显式保留 quick_build 口径(弱候选送审,不静默丢弃)。
+        # 统一核显式保留 quick_build 规则(弱候选送审,不静默丢弃)。
         r = dao_core.classify(overlap=100.0, parent_unique=False, name_ok=True, child_distinct=50)
         assert r["status"] != "verified"
         assert r["status"] == "candidate"
@@ -88,7 +88,7 @@ class TestNaming:
         assert dao_core.key_name_ok("id", "ID") is True
 
     def test_key_name_ok_composite(self):
-        # 复合键(收编 server._key_name_ok):逐列判、列数不等即否、全列过才相容
+        # 复合键(并入 server._key_name_ok):逐列判、列数不等即否、全列过才相容
         assert dao_core.key_name_ok("order_id,line_no", "order_id,line_no") is True
         assert dao_core.key_name_ok("prod_id,ver", "product_id,ver") is True
         assert dao_core.key_name_ok("order_id,qty", "order_id,customer_id") is False
@@ -213,7 +213,7 @@ class TestClassifyEdgeCases:
 
 
 class TestParityWithEngine:
-    """与上游 ../ontology-engine/engine/relation_discovery 的 name_score 平价 —— 证明同口径。"""
+    """与上游 ../ontology-engine/engine/relation_discovery 的 name_score 平价 —— 证明规则相同。"""
 
     @pytest.fixture(scope="class")
     @classmethod
@@ -241,3 +241,14 @@ class TestParityWithEngine:
         cvals, pvals = [1, 2, 3, 4], [1, 2, 3]
         assert round(dao_core.overlap_pct(set(map(str, cvals)), set(map(str, pvals))), 1) == \
                engine.overlap_pct(cvals, pvals)
+
+
+def test_role_prefixed_camel_case_keys_point_to_singular_parent_table():
+    """带角色前缀的驼峰键名(OwnerUserId、ExcerptPostId、LastEditorUserId)指向复数表名的父表 id。
+    BIRD codebase_community 对比实验中这些真外键因「列名词根不一致」被送审(DR-079)。"""
+    import dao_core
+    for child, parent in (("UserId", "users"), ("OwnerUserId", "users"), ("LastEditorUserId", "users"),
+                          ("ExcerptPostId", "posts"), ("PostId", "posts"), ("category_id", "categories")):
+        assert dao_core.name_ok(child, parent, "Id"), (child, parent)
+    for child, parent in (("OwnerUserId", "posts"), ("OrderId", "users"), ("UserId", "posts"), ("ViewCount", "users")):
+        assert not dao_core.name_ok(child, parent, "Id"), (child, parent)

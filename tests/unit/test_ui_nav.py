@@ -34,10 +34,10 @@ def _groups():
     for gm in re.finditer(r'<div class="nav-group">(.*?)</div></div>', aside, re.S):
         blk = gm.group(1)
         name = re.search(r'class="gh"[^>]*>([^<]+)', blk)
-        items = re.findall(r'class="nav"\s+data-p="([a-z_]+)"', blk)
+        items = re.findall(r'class="nav"\s+data-p="([a-z_-]+)"', blk)
         out.append(((name.group(1).strip() if name else "?"), items))
         rest = rest.replace(gm.group(0), "")     # 摘掉分组块,余下才是顶层项
-    top = re.findall(r'class="nav(?: on)?" data-p="([a-z_]+)"', rest)
+    top = re.findall(r'class="nav(?: on)?" data-p="([a-z_-]+)"', rest)
     return out, top
 
 
@@ -115,16 +115,18 @@ class TestCatalogAndResponsiveBehavior:
 
 class TestNavGrouping:
     def test_every_page_reachable_and_count_stable(self):
-        """重排分组不得丢页:27 个页面模块必须仍可从侧栏抵达。"""
+        """重排分组不得丢页:22 个页面入口：保留 master 的 18 项及 DR-158 合并的四个领域入口。"""
         groups, top = _groups()
         allp = top + [p for _, ps in groups for p in ps]
-        assert len(allp) == 27, f"页面数 {len(allp)} ≠ 27"
+        assert len(allp) == 22, f"页面数 {len(allp)} ≠ 22"
+        assert {"library", "jobs", "robotics-task", "robotics-view"} <= set(allp)
+        assert not {"layers", "apis", "sysadmin", "agents", "assistant", "skills", "rules"} & set(allp)
         assert len(set(allp)) == len(allp), "存在重复的 data-p"
 
     def test_ontology_pages_in_one_group(self):
         """本体相关页面必须归在同一组 —— 此前分散在「数据建模」与「本体治理」两处。"""
         groups, _ = _groups()
-        want = {"graph", "build", "claw", "review", "ontquality", "library", "sparql"}
+        want = {"graph", "build", "claw", "review", "ontquality", "sparql"}
         hit = [g for g, ps in groups if want & set(ps)]
         assert len(hit) == 1, f"本体页分散在 {hit} 多个分组"
         g, ps = next((g, ps) for g, ps in groups if want & set(ps))
@@ -144,3 +146,49 @@ class TestNavGrouping:
         groups, _ = _groups()
         g = next(g for g, ps in groups if "glossary" in ps)
         assert "治理" in g, f"术语管理在「{g}」组,应归数据治理"
+
+
+def test_revisiting_graph_pages_refreshes_the_graph_lists():
+    """先看过评审页、图谱页,再去新建本体:切回来时下拉框要包含新本体,「进入人审 ↗」才能选中它。
+    重访时只重画当前图谱、不重取列表,新本体选不到(部署环境端到端验收发现)。"""
+    block = UI[UI.index("if(revisit){try{"):UI.index("}catch(e){}}", UI.index("if(revisit){try{"))]
+    assert "graphs($('#g_sel').value)" in block
+    assert "reviewInit()" in block
+    assert "ontQualityLoad()" in block
+    load = UI[UI.index("async function ontQualityLoad"):UI.index("async function ontQualityRender")]
+    assert "const cur=$('#oq_sel').value" in load        # 重取列表后保留原选中项
+
+
+def test_graph_list_reload_is_last_call_wins():
+    """重访图谱页会重取列表(按原选中项),紧接着「在本体图谱中查看」又按新本体取一次:
+    两次请求先后返回不定,必须以后发起的那次为准,不能让旧选中项覆盖刚点开的新本体。"""
+    fn = UI[UI.index("async function graphs(pref)"):UI.index("// 与平台原版一致的 G6 渲染")]
+    assert "const seq=++G_LIST_SEQ" in fn
+    assert "if(seq!==G_LIST_SEQ)return" in fn
+
+
+def test_hash_route_skips_the_page_the_nav_click_already_opened():
+    """点菜单先 goPage 再改 hash,hashchange 又 goPage 一次:重访逻辑跑两遍,且第二次按旧选中项重取图谱,
+    会盖掉紧接着打开的新本体。当前页已是该页时 hash 路由不再重复进入。"""
+    fn = UI[UI.index("function routeHash(){"):UI.index("addEventListener('hashchange',routeHash);")]
+    assert "document.querySelector('.nav.on')" in fn
+    assert "on.dataset.p===h&&loaded[h]" in fn                 # 首屏带 #home 时该页尚未加载,不能跳过
+
+
+def test_every_backend_object_kind_has_a_chinese_label():
+    """后端会产出的对象种类(含 IAO 中的信息内容实体 ice,information content entity)在界面都要有中文名,
+    否则评审页「类型」列直接显示内部代码(部署环境走查发现「ice」)。"""
+    import content_quality
+    kinds = UI[UI.index("const KIND={"):UI.index("const KCOL=")]
+    for k in content_quality.VALID_KINDS:
+        assert re.search(r"\b" + k + r":\{c:'#[0-9a-fA-F]{6}',n:'[^']+'\}", kinds), k
+
+
+def test_qa_input_chips_stay_on_one_line():
+    """问数输入栏的技能、数据源标签在窄面板里不折成多行(此前被挤成 3~4 行的竖条),
+    工具栏可换行,标签单行、过长省略,完整内容在悬停提示里。"""
+    css = UI[UI.index(".dq-tools{"):UI.index(".dq-icon:hover")]
+    assert "flex-wrap:wrap" in css
+    assert "white-space:nowrap" in css[css.index(".dq-sel{"):]
+    module = (UI_DIR / "modules" / "qa-ontology.js").read_text(encoding="utf-8")
+    assert "本体「" in module and "title" in module[module.index("const el = $('#dq_src_lbl')"):]
