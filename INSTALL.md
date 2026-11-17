@@ -43,6 +43,7 @@ pip install -r requirements.txt
 | 变量 | 作用 | 缺省行为 |
 |---|---|---|
 | `DATAMIND_DB` | 只读 SQLite 数据源路径 | `python3 server.py` 默认指向仓库上一级目录的 `demo_metrics.db`,`./start.sh` 默认指向仓库内的 `examples/demo_metrics.db`;文件不存在时,相关接口标明"数据库不可用" |
+| `DATAMIND_ROBOTICS_ENABLED` | 机器人构建与应用功能开关 | 默认开启；设为 `0` 或 `false` 可关闭，修改后重启服务 |
 
 ### 接入大模型（可选;深度问数和借助模型建本体需要）
 

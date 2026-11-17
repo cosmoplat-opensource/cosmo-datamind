@@ -80,7 +80,7 @@ def _config(app, workdir):
     def setting(key, default):
         return app.config[key] if key in app.config else os.environ.get(key, default)
 
-    raw = setting('DATAMIND_ROBOTICS_ENABLED', False)
+    raw = setting('DATAMIND_ROBOTICS_ENABLED', True)
     if isinstance(raw, bool):
         enabled = raw
     elif str(raw).lower() in ('1', 'true', 'yes', 'on', '0', 'false', 'no', 'off'):

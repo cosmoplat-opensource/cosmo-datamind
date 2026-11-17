@@ -79,7 +79,7 @@ curl -sS -X POST 'http://127.0.0.1:8093/api/domain-runs/<run_id>/retry' \
 
 | 配置 | 默认值 | 约束 |
 |---|---|---|
-| DATAMIND_ROBOTICS_ENABLED | 关闭 | 支持 1/0、true/false、yes/no、on/off；关闭时新写接口返回 503/feature_disabled |
+| DATAMIND_ROBOTICS_ENABLED | 开启 | 支持 1/0、true/false、yes/no、on/off；关闭时新写接口返回 503/feature_disabled |
 | DATAMIND_DOMAIN_STORAGE_ROOT | WORK/domain_assets | 显式路径必须为绝对路径 |
 | DATAMIND_ROBOTICS_FILE_LIMIT_BYTES | 10485760 | 正整数；总请求继续受平台默认 25 MiB 限制 |
 | DATAMIND_ROBOTICS_MAX_PENDING | 4 | 1～64；仅计等待任务，另有一个计算名额 |
