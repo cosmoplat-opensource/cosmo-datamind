@@ -4,7 +4,7 @@
 - **关联**: [[DR-001-local-readonly-execution]]、[[DR-005-frontend-design-system]];平台 DR-001(元模型 IR)
 
 ## 目标 / Goal
-把平台 engine 的产物(示例 数据本体 IR、应用本体 IR、107 指标、术语)产品化为可浏览、可查、可视化的前端基座,
+把平台 engine 的产物(示例数据本体 IR、应用本体 IR、107 指标、术语)产品化为可浏览、可查、可视化的前端基座,
 本地只读执行,断网可用,观感对齐 iiot-platform。
 
 ## 交付 / Deliverables

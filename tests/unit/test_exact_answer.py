@@ -1,0 +1,100 @@
+"""精确作答(answer_style=exact):只回答问题本身,便于与标准答案逐行比对(BIRD 等基准)。
+
+本体上下文、本体约束校验、按原因修正与意图核对照常进行,只改变作答形式:
+只取一个分析;SELECT 只含问题要求的列;不额外加分组列、ROUND 与 LIMIT。"""
+from __future__ import annotations
+
+import server
+
+
+def _capture_prompt(monkeypatch):
+    seen = {}
+
+    class _RT:
+        pass
+
+    def fake_turn(rt, sid, prompt, timeout, task=None):
+        seen["prompt"] = prompt
+        return True, '{"analyses":[{"title":"a","sql":"SELECT 1"}],"note":""}'
+
+    import agent_runtime
+    monkeypatch.setattr(agent_runtime, "available", lambda: ["openai"])
+    monkeypatch.setattr(agent_runtime, "get_runtime", lambda d: _RT())
+    monkeypatch.setattr(server, "_drv_order", lambda: ["openai"])
+    monkeypatch.setattr(server, "_llm_turn", fake_turn)
+    return seen
+
+
+def test_exact_style_prompt_asks_for_one_answer_with_requested_columns_only(monkeypatch):
+    seen = _capture_prompt(monkeypatch)
+    token = server._ANSWER_STYLE.set("exact")
+    try:
+        server.agent_sql_plan("PA66-GF30 的平均成交单价是多少?", "表 t(...)", [])
+    finally:
+        server._ANSWER_STYLE.reset(token)
+    p = seen["prompt"]
+    assert "只输出 1 个分析" in p and "只包含问题要求返回的列" in p
+    assert "最多3个分析" not in p
+
+
+def test_date_format_is_taken_from_column_values_not_assumed(monkeypatch):
+    seen = _capture_prompt(monkeypatch)
+    server.agent_sql_plan("每月销量", "表 t(...)", [])
+    assert "'YYYY-MM-DD'" not in seen["prompt"]            # 不同库的日期格式不同(如 YYYYMM),不预设
+    assert "以列说明中的实际取值为准" in seen["prompt"]
+
+
+def test_exact_style_keeps_only_the_first_analysis(monkeypatch):
+    plans = {"analyses": [{"title": "答", "sql": "SELECT COUNT(*) AS n FROM fact_sales_order"},
+                          {"title": "拆分", "sql": "SELECT substr(order_date,1,7) m, COUNT(*) FROM fact_sales_order GROUP BY 1"}]}
+    monkeypatch.setattr(server, "agent_sql_plan", lambda *a, **k: plans)
+    monkeypatch.setattr(server, "narrative_llm", lambda *a, **k: "ok")
+    c = server.app.test_client()
+    full = c.post("/api/chat", json={"q": "销售订单有多少条", "nocache": 1}).get_json()
+    exact = c.post("/api/chat", json={"q": "销售订单有多少条", "nocache": 1, "answer_style": "exact"}).get_json()
+    assert len(full["results"]) == 2
+    assert len(exact["results"]) == 1 and exact["results"][0]["title"] == "答"
+
+
+def test_exact_style_prompt_has_no_report_only_instructions(monkeypatch):
+    """报告式的「LIMIT 500 以内」「按月 substr」与精确作答冲突,只放在报告式规则里。"""
+    seen = _capture_prompt(monkeypatch)
+    token = server._ANSWER_STYLE.set("exact")
+    try:
+        server.agent_sql_plan("q", "ctx", [])
+    finally:
+        server._ANSWER_STYLE.reset(token)
+    assert "LIMIT 500" not in seen["prompt"] and "substr(日期列,1,7)" not in seen["prompt"]
+    seen2 = _capture_prompt(monkeypatch)
+    server.agent_sql_plan("q", "ctx", [])
+    assert "LIMIT 500 以内" in seen2["prompt"]
+
+
+def test_exact_style_names_only_and_prefers_detail_tables(monkeypatch):
+    """DR-082:问『哪个/是什么』只返回名称一列;明细表与汇总层表都能回答时从明细计算。"""
+    seen = _capture_prompt(monkeypatch)
+    token = server._ANSWER_STYLE.set("exact")
+    try:
+        server.agent_sql_plan("计划产量合计最高的产品名称是什么?", "表 t(...)", [])
+    finally:
+        server._ANSWER_STYLE.reset(token)
+    p = seen["prompt"]
+    assert "只放所问对象的名称一列" in p
+    assert "从明细事实表计算" in p
+    server.agent_sql_plan("计划产量合计最高的产品名称是什么?", "表 t(...)", [])
+    assert "从明细事实表计算" not in seen["prompt"]          # 报告式不受影响
+
+
+def test_exact_style_also_refuses_unverified_queries(monkeypatch):
+    """DR-158: user chose to block unverified execution in every answer style."""
+    plans = {"analyses": [{"title": "答", "sql": "SELECT COUNT(*) AS n FROM fact_sales_order"}]}
+    monkeypatch.setattr(server, "agent_sql_plan", lambda *a, **k: plans)
+    monkeypatch.setattr(server, "narrative_llm", lambda *a, **k: "ok")
+    monkeypatch.setattr(server, "_qa_validate_sql", lambda *a, **k: (False, "JOIN 键不在已验证关系上"))
+    c = server.app.test_client()
+    exact = c.post("/api/chat", json={"q": "销售订单有多少条", "nocache": 1, "answer_style": "exact"}).get_json()
+    assert not exact["results"]
+    assert not any(s["step"] == "exact_fallback" for s in exact["steps"])
+    assert exact["application_check"]["execution_status"] == "blocked"
+    report = c.post("/api/chat", json={"q": "销售订单有多少条", "nocache": 1}).get_json()
+    assert not report["results"] and any(s["step"] == "clarify" for s in report["steps"])

@@ -379,10 +379,12 @@ from server import app
 with app.test_client() as client:
     caps=client.get('/api/robotics/capabilities', base_url='http://127.0.0.1')
     assert caps.status_code == 200 and caps.json['enabled'] is False
-    for endpoint in ('/api/jobs','/api/graphs','/api/build/defaults'):
+    for endpoint in ('/api/graphs','/api/build/defaults'):
         response=client.get(endpoint, base_url='http://127.0.0.1')
         assert response.status_code == 200, endpoint
-    assert isinstance(client.get('/api/jobs', base_url='http://127.0.0.1').json,list)
+    assert isinstance(client.get('/api/graphs', base_url='http://127.0.0.1').json,list)
+    assert client.post('/api/build/jobs', json={}, base_url='http://127.0.0.1').status_code == 400
+    assert client.get('/api/jobs', base_url='http://127.0.0.1').status_code == 404
 print(json.dumps({'passed':True}))
 '''
     result = subprocess.run([sys.executable, '-c', code], cwd=ROOT, env=env,

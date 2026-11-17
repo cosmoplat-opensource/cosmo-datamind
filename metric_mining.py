@@ -4,12 +4,12 @@
 
 没有成熟指标体系时,指标不该由模型凭空提议。三个入口都是已经在用的东西:
   ① 历史 SQL(视图 / ETL / 上传的 .sql 文件):聚合表达式即原子指标,GROUP BY 即维度;
-  ② 看板与指标口径表(Excel 反解出的名称 / 说明 / 计算逻辑 / 维度 / 来源);
-  ③ 已沉淀的问数 SQL 与参考基准 —— 它们是被真实查询验证过的口径,天然是参照。
+  ② 看板与指标定义表(Excel 反解出的名称 / 说明 / 计算逻辑 / 维度 / 来源);
+  ③ 已保存的问数 SQL 与参考基准 —— 它们是被真实查询验证过的计算规则,天然是参照。
 
 本模块只做确定性文本解析(正则,不调模型),产物一律 ``candidate`` 且带 ``provenance``;
 能否升为 ``verified`` 由 ``metric_contract.adjudicate`` 执行核验决定。含 JOIN 的语句
-不产出契约(v1 契约是单实体的),只登记为「待人工拆解」,不猜口径。
+不产出契约(v1 契约是单实体的),只登记为「待人工拆解」,不猜计算规则。
 """
 from __future__ import annotations
 
@@ -117,7 +117,7 @@ def parse_sql(text, source, tab_cols=None):
             if not tcol:
                 tcol = _guess_time_col(table, tab_cols)
             cand = {
-                "id": f"mine.{table}.{col or 'rows'}.{agg}",
+                "id": f"mine.{table}.{col or 'rows'}.{agg}" + _filter_suffix(filters),
                 "name": name, "layer": "atomic", "table": table,
                 "measure": {"col": col, "agg": agg},
                 "filters": filters, "dimensions": dims,
@@ -132,6 +132,18 @@ def parse_sql(text, source, tab_cols=None):
                 cand["references"] = []           # 过滤条件不完整时,原 SQL 不能作为该契约的参照
             cands.append(cand)
     return cands, skipped
+
+
+def _filter_suffix(filters):
+    """过滤条件进入指标 id(DR-099)。此前 id 只含表、列、聚合:同一列上「已支付金额」与「已作废金额」
+    共用一个 id,写入指标层时后一个覆盖前一个。无过滤条件时 id 不变。"""
+    if not filters:
+        return ""
+    import hashlib
+    import json
+    canon = json.dumps(sorted(filters, key=lambda f: json.dumps(f, sort_keys=True, ensure_ascii=False, default=str)),
+                       sort_keys=True, ensure_ascii=False, default=str)
+    return ".f" + hashlib.sha1(canon.encode("utf-8")).hexdigest()[:8]
 
 
 def _guess_time_col(table, tab_cols):
@@ -151,7 +163,7 @@ def _guess_time_col(table, tab_cols):
 
 
 def parse_glossary(rows, source="dashboard"):
-    """看板 / 口径表反解出的行 → 未绑定的指标候选(名称 / 说明 / 计算逻辑 / 维度)。
+    """看板 / 指标定义表反解出的行 → 未绑定的指标候选(名称 / 说明 / 计算逻辑 / 维度)。
 
     这类候选绑定不到表列时不可编译,保留为 candidate 供人工绑定;含运算符的计算逻辑
     记为派生指标并保留 formula 原文,不改写。
@@ -181,7 +193,7 @@ def parse_glossary(rows, source="dashboard"):
 
 
 def from_qa_skills(store, tab_cols=None):
-    """沉淀技能里的已验证 SQL → 候选(参照即该 SQL)。"""
+    """已保存技能里的已验证 SQL → 候选(参照即该 SQL)。"""
     cands, skipped = [], []
     for sk in (store or []):
         if not isinstance(sk, dict):
@@ -198,7 +210,7 @@ def from_qa_skills(store, tab_cols=None):
 
 
 def from_gold_set(items, tab_cols=None):
-    """参考基准的 gold_sql → 候选(带 gold 数值参照;它们是经人工校准的口径)。"""
+    """参考基准的 gold_sql → 候选(带 gold 数值参照;它们是经人工校准的计算规则)。"""
     cands, skipped = [], []
     for it in (items or []):
         if not isinstance(it, dict) or not it.get("gold_sql"):
@@ -220,7 +232,7 @@ def _key(c):
 
 
 def collect(tab_cols=None, sql_texts=None, glossary_rows=None, qa_skills=None, gold_items=None):
-    """汇总三个入口,按(表,列,聚合,过滤)去重;同口径的参照合并到同一候选。
+    """汇总三个入口,按(表,列,聚合,过滤)去重;计算规则相同的参照合并到同一候选。
 
     返回 {"candidates": [契约...], "skipped": [...], "sources": 计数}。
     """
@@ -234,7 +246,8 @@ def collect(tab_cols=None, sql_texts=None, glossary_rows=None, qa_skills=None, g
     sources["qa_skill"] += len(c); cands += c; skipped += s
     c, s = from_gold_set(gold_items, tab_cols)
     sources["gold"] += len(c); cands += c; skipped += s
-    merged, index = [], {}
+    merged: list = []
+    index: dict = {}
     for c in cands:
         if not (c.get("measure") or {}).get("agg"):
             merged.append(c)

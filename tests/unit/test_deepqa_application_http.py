@@ -98,7 +98,9 @@ def test_partial_connection_keeps_available_subset_and_warnings(qa_http,route):
 
 
 @pytest.mark.parametrize('route',ROUTES)
-def test_unchanged_cache_hit_rechecks_scope_without_model_or_query(qa_http,route):
+def test_unchanged_cache_hit_rechecks_scope_without_model_or_query(qa_http,route,monkeypatch):
+    # DR-158/master: offline fallback is degraded and intentionally never cached.
+    monkeypatch.setattr(server, "_match_qa_skill", lambda q: {"analyses":[{"sql":"SELECT COUNT(*) AS 记录数 FROM customers"}]})
     first,_,_=ask(qa_http,route);calls=deepcopy(qa_http[-1])
     second,_,_=ask(qa_http,route)
     assert second['cached'] is True and second['results']==first['results']
@@ -201,7 +203,7 @@ def test_forged_client_readiness_never_bypasses_real_checks(qa_http,route):
 @pytest.mark.parametrize('route',ROUTES)
 def test_binding_change_during_planning_blocks_execution_and_cache(qa_http,route,monkeypatch):
     _,work,_,ir,calls=qa_http
-    def plan(*a):
+    def plan(*a, **kwargs):
         ir['objects'][0]['table']='outsiders';(work/'built_scope.json').write_text(json.dumps(ir))
         return {'analyses':[{'sql':'SELECT COUNT(*) FROM customers'}]}
     monkeypatch.setattr(server,'agent_sql_plan',plan)
@@ -222,6 +224,7 @@ def test_each_sql_rechecks_after_first_query_changes_graph(qa_http,route,monkeyp
 
 @pytest.mark.parametrize('route',ROUTES)
 def test_cached_sql_is_revalidated_before_reusing_results(qa_http,route,monkeypatch):
+    monkeypatch.setattr(server, "_match_qa_skill", lambda q: {"analyses":[{"sql":"SELECT COUNT(*) AS 记录数 FROM customers"}]})
     ask(qa_http,route);entry=next(iter(server._QA_CACHE.values()))
     entry['results'][0]['sql']='SELECT * FROM outsiders'
     before=len(qa_http[-1]['sql'])

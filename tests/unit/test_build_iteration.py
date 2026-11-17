@@ -20,7 +20,7 @@ def _rel(s, t, status, verb="关联", **kw):
 
 
 def _base():
-    return {"scenario": {"name": "底本", "object_count": 2, "relation_count": 1},
+    return {"scenario": {"name": "基础本体", "object_count": 2, "relation_count": 1},
             "objects": [{"name": "订单", "cn": "订单", "table": "fact_order",
                          "definition": "人工写好的定义", "attrs": [{"col": "id"}]},
                         {"name": "客户", "cn": "客户", "table": "dim_customer"}],
@@ -89,7 +89,7 @@ class TestMergeAddsAndEnriches:
         assert out2["scenario"]["iterations"] == 3
 
     def test_base_is_not_mutated(self):
-        """合并是纯函数:底本对象不得被就地改写。"""
+        """合并是纯函数:基础本体对象不得被就地改写。"""
         base = _base()
         snapshot = json.dumps(base, ensure_ascii=False, sort_keys=True)
         server._merge_ir(base, {"objects": [{"name": "新增"}], "relations": []})
@@ -120,7 +120,7 @@ class TestBuildHistory:
         out, _ = server._merge_ir(base, new)
         hist = out["build_history"]
         assert [h["round"] for h in hist] == [1, 2]
-        assert hist[0]["request"] == "第一轮诉求"        # 底本轮次原样保留
+        assert hist[0]["request"] == "第一轮诉求"        # 基础本体轮次原样保留
         assert hist[1]["request"] == "补上工单"
         assert hist[1]["references"]["ontology_standard"]["id"] == "isa95"
         assert out["build_manifest"]["request"] == "补上工单"   # 最近一轮指向本轮

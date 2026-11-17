@@ -329,7 +329,7 @@ async def main():
                     "&&!document.getElementById('chat_btn').disabled", timeout=420000)
                 await pg.wait_for_timeout(400)
                 t3 = await pg.inner_text("#p_chat .dq-card:last-of-type")
-                (ok if "缓存·秒回" not in t3 else bad)(
+                (ok if "缓存结果" not in t3 else bad)(
                     f"点示例「{egq[:12]}」是真跑非缓存", t3.split("\n")[2] if len(t3.split("\n")) > 2 else "")
                 # 手动输入同一问题也必须真跑:秒回的旧答案与历史对话里的记录无法区分
                 n3 = await pg.evaluate("document.querySelectorAll('#p_chat .dq-card').length")
@@ -340,7 +340,7 @@ async def main():
                     "&&!document.getElementById('chat_btn').disabled", timeout=420000)
                 await pg.wait_for_timeout(300)
                 t4 = await pg.inner_text("#p_chat .dq-card:last-of-type")
-                (ok if "缓存·秒回" not in t4 else bad)("重复提问同样真跑,不给缓存答案")
+                (ok if "缓存结果" not in t4 else bad)("重复提问同样真跑,不给缓存答案")
                 (ok if "本体如何约束本次分析" in t3 else bad)("示例问数同样给出本体约束区块")
                 # 「新对话 + 点示例」应当自成一条流程,并落进历史对话
                 conv1 = await pg.evaluate("dqAllConv().length")
@@ -370,18 +370,18 @@ async def main():
             body = await pg.inner_text("#bc_log")
             nm_dis = await pg.eval_on_selector("#bc_name", "e=>e.disabled")
             ph = await pg.eval_on_selector("#bc_q", "e=>e.placeholder")
-            (ok if base else bad)("继续构建设定底本", base or "BC.base 为空")
+            (ok if base else bad)("继续构建设定基础本体", base or "BC.base 为空")
             (ok if "继续构建" in btn else bad)("构建按钮改为「继续构建」", btn)
             (ok if "并入" in dest else bad)("底部标明产出去向", dest)
             # 最关键的一条:对话区本身要换成迭代语境,而不是继续显示「新建本体」的欢迎页
             (ok if "继续构建" in body and clicked in body else
-             bad)("对话区换为底本上下文", body[:60].replace("\n", " "))
+             bad)("对话区换为基础本体上下文", body[:60].replace("\n", " "))
             _merge_copy_ok = "并入" in body and "不被覆盖" in body and "删除既有" in body
             (ok if _merge_copy_ok else bad)(
                 "说明合并语义(并入/不覆盖/不删除既有)",
                 "" if _merge_copy_ok else "缺合并语义说明")
             (ok if nm_dis else bad)("迭代时名称框禁用", f"disabled={nm_dis}")
-            (ok if "本轮" in ph else bad)("诉求框提示改为增量口径", ph[:40])
+            (ok if "本轮" in ph else bad)("诉求框提示改为增量说明", ph[:40])
             await pg.evaluate("bcIterClear()")
             await pg.wait_for_timeout(500)
             after = (await pg.inner_text("#bc_send")).strip()
@@ -390,7 +390,7 @@ async def main():
 
         # ══ 步骤 8:规则页(决策层)—— 只读查看 ══
         print("\n【步骤8】其余关键页可用性")
-        for p, _key in (("rules", "构成规则"), ("review", "评审"), ("actioncenter", "动作"),
+        for p, _key in (("review", "评审"), ("actioncenter", "动作"),
                        ("ontquality", "完备"), ("qaeval", "评测")):
             b0 = len(errs)
             await goto(p, 1800)

@@ -9,8 +9,8 @@ HISTORY = (ROOT / "ui" / "modules" / "qa-history.js").read_text(encoding="utf-8"
 
 
 def test_history_module_loads_before_main_chat_script():
-    assert '/assets/modules/qa-history.js?v=1' in UI
-    assert UI.index('/assets/modules/qa-history.js?v=1') < UI.index("<script>const $=")
+    assert '/assets/modules/qa-history.js?v=2' in UI
+    assert UI.index('/assets/modules/qa-history.js?v=2') < UI.index("<script>const $=")
 
 
 def test_live_conversation_is_not_presented_as_history():

@@ -17,7 +17,7 @@
   ont_relation    ← owl:ObjectProperty(含 founded_relation 接地与时间指标)
   ont_metric      ← skos:Concept 指标(分层:atomic/derived/composite;DR-054 起带契约列与状态,
                     v_consumable_metric 只出 verified/certified 且可编译的指标)
-  ont_evidence    ← 关系的证据明细(裁决口径:子键/父键/重叠率/来源)——OWL 侧以注释承载,
+  ont_evidence    ← 关系的证据明细(裁决规则:子键/父键/重叠率/来源)——OWL 侧以注释承载,
                     关系型侧单列一表,便于按证据强度过滤
 
 **设计约束**(与本仓一贯规范一致):

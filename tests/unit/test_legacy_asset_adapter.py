@@ -112,7 +112,11 @@ def test_actual_server_effective_ir_is_snapshotted_and_legacy_files_unchanged(tm
     monkeypatch.setattr(server, "WORK", str(work))
     monkeypatch.setattr(server, "CHATS_F", str(chats))
     before_files = {p: p.read_bytes() for p in work.iterdir()}
-    before_jobs = deepcopy(server.JOBS)
+    def job_state():
+        return {key: deepcopy({field: value for field, value in job.items() if field not in ('cond', 'thread')})
+                for key, job in server._BUILD_JOBS.items()}
+    before_jobs = job_state()
+    handles = {key: (job.get('cond'), job.get('thread')) for key, job in server._BUILD_JOBS.items()}
     effective = server.load_ir_edited("built_parts")
     assert effective["objects"][0]["aliases"] == ["装配件", "工件"]
     provenance = {"source_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
@@ -122,7 +126,8 @@ def test_actual_server_effective_ir_is_snapshotted_and_legacy_files_unchanged(tm
     row = rows[0]
     assert store.load_data_ir(row["ontology_id"], row["version_id"]) == effective
     assert {p: p.read_bytes() for p in work.iterdir()} == before_files
-    assert server.JOBS == before_jobs
+    assert job_state() == before_jobs
+    assert {key: (job.get('cond'), job.get('thread')) for key, job in server._BUILD_JOBS.items()} == handles
     assert server.load_ir_edited("built_parts") == effective
     with server.app.test_client() as client:
         response = client.get("/api/graph/built_parts")

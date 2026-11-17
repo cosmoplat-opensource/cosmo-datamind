@@ -1,4 +1,4 @@
-# COSMO DataMind · 工程校验与 TDD 底座(IR-007 / DR-045)
+# COSMO DataMind · 工程校验与 TDD 基础设施(IR-007 / DR-045)
 # 单一事实源:lint / 类型 / 测试发现 / 覆盖率 都在此声明,合并即挡。
 [project]
 name = "cosmo-datamind"
@@ -20,26 +20,34 @@ markers = [
 
 [tool.coverage.run]
 branch = true
-# 只统计确定性模块的覆盖率。路由代码(server.py、bp_*.py)由集成套件覆盖,
-# 计入单测覆盖率会失真,故排除;srv_context 是纯原语(含只读 SQL 校验),纳入统计。
+# 全部生产模块都计入覆盖率(DR-106);路由层与确定性模块分别设下限,见下方 report 一节与 scripts/check.py。
 source = [
   "health_check", "cq_check", "drift_check", "rule_engine", "module_split",
   "compat_check", "intent_check", "usage_stat", "quick_build", "openai_runtime",
   "dao_core", "hallucination_eval", "definition_eval", "store", "srv_context", "srv_hardening",
   "ir_relational", "skill_registry", "build_quality", "ontology_grounding", "action_ontology",
-  "ir_shape", "content_quality", "mcp_action_server", "mcp_build_server",
+  "ir_shape", "ontology_release", "qa_decision", "answer_record", "qa_query_status", "sql_structure", "qa_eval_stats", "arithmetic_witness", "header_parse", "data_grounding", "feedback_replay", "content_quality", "mcp_action_server", "mcp_build_server",
   "build_references", "standard_assets",
+  "data_catalog", "workload_concepts", "declared_fk",
   "metric_contract", "metric_mining", "metric_pipeline", "concept_profile", "osi_export",
-  "sqlite_evidence", "llm_json",
+  "key_links", "relation_triage", "database_scope", "translate_cn",
+  "server", "bp_actions", "bp_engine", "bp_metrics", "bp_semantic", "bp_decision", "ontology_decision", "srv_actions", "srv_engine",
+  "ath_adapter", "sqlite_evidence", "llm_json", "doc_chunks", "build_prep", "ext_sample", "build_cleaning", "concept_hints", "code_contracts", "ontology_domain", "observability",
+  "asset_lifecycle", "qa_application", "llm_diagnostics", "bp_robotics", "bp_robotics_application",
+  "bp_robotics_review", "bp_robotics_task", "bp_application_contracts",
   "domains.robotics", "ontology_assets", "domain_runs", "application_contracts",
 ]
-omit = ["tests/*"]
+omit = ["tests/*", "ath_adapter/e2e/*"]
 
 [tool.coverage.report]
 show_missing = true
 skip_covered = false
-# 以当前确定性模块基线设最低值；低于该值时 coverage/CI 直接失败。
-fail_under = 81.0
+# 三道下限(DR-106),scripts/check.py 逐一检查,只升不降:
+#   全部模块(本项)        当前 75.3%
+#   确定性模块(不含路由层) 当前 88.6%,下限 87
+#   路由层(server.py、bp_*、srv_engine、srv_actions) 当前 62.8%,下限 61
+# 此前路由层整个不在统计内,9000 行的 server.py 没有任何覆盖率下限。
+fail_under = 74.0
 precision = 1
 
 [tool.ruff]
@@ -60,7 +68,41 @@ python_version = "3.10"
 ignore_missing_imports = true
 # 这三份文件是顺序执行、共享大量临时变量的端到端探针，不是可导入模块；
 # 由 ruff 与实际运行校验。mypy 聚焦生产模块及 tests/ 中的模块化测试。
-exclude = ["^test_all\\.py$", "^test_ui\\.py$", "^test_ui_ops\\.py$"]
+exclude = ["^test_all\\.py$", "^test_ui\\.py$", "^test_ui_ops\\.py$", "^data/"]  # data/ 为本机分析物料(已被本机忽略),不属于仓库
 # 原型渐进式类型化:先不强制注解,只抓明确的类型错误。
 check_untyped_defs = false
 warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+# 逐模块开启函数体检查(DR-106)。全仓默认不检查无注解函数的函数体,此前 920 个函数里只有 8 个带注解,
+# 类型检查实际只看模块顶层。下列模块在开启后无错误,新增模块应加入此表;server.py 等仍有存量错误,暂不在内。
+module = [
+    "dao_core", "srv_context", "sqlite_evidence", "ir_shape", "ontology_release", "qa_decision", "answer_record", "qa_query_status", "sql_structure", "qa_eval_stats", "arithmetic_witness", "header_parse", "data_grounding", "feedback_replay", "ir_relational", "store", "ontology_domain",
+    "database_scope", "relation_triage", "key_links", "code_contracts", "compat_check", "content_quality",
+    "definition_eval", "hallucination_eval", "intent_check", "observability", "ontology_grounding",
+    "openai_runtime", "skill_registry", "action_ontology", "mcp_action_server", "metric_pipeline",
+    "srv_actions", "srv_engine", "bp_actions", "bp_engine", "bp_metrics", "bp_semantic", "bp_decision", "ontology_decision", "wsgi",
+    "ath_adapter.provider", "cq_check", "data_catalog", "drift_check", "metric_mining", "module_split",
+    "translate_cn", "llm_json", "rule_engine", "concept_profile", "usage_stat",
+]
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+# 演示库生成脚本(仿真与事件推导)大量使用逐行累积的临时列表/字典,按渐进式类型化不强制局部变量注解;
+# 其余类型错误照常检查
+module = [
+    "scripts.demo108_master",
+    "scripts.demo108_sim",
+    "scripts.demo108_rest",
+    "scripts.demo108_dws",
+    "scripts.demo108_meta",
+    "scripts.demo108_checks",
+    "scripts.build_demo_108_db",
+    "scripts.contract_200_events",
+    "scripts.contract_200_values",
+    "scripts.contract_200_semantics",
+    "scripts.contract_200_checks",
+    "scripts.contract_200_metadata",
+    "scripts.build_contract_200_db",
+]
+disable_error_code = ["var-annotated"]

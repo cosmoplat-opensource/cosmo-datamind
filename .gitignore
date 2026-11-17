@@ -4,7 +4,7 @@ __pycache__/
 .venv/
 venv/
 
-# ── 数据底座 ─────────────────────────────────────────────
+# ── 数据文件 ─────────────────────────────────────────────
 # 仓库根的运行期数据库不入库;示例库在 examples/demo_metrics.db(已脱敏,随仓分发)
 /demo_metrics.db
 *.db-journal
@@ -12,7 +12,13 @@ venv/
 
 # ── 凭据与连接配置:务必不入库 ────────────────────────────
 .env
+# .env 的本机备份(.env.bak_日期)同样含凭据
+.env.bak*
 workdir/conn_secrets.json
+# ATH 适配层的状态:OAuth 客户端密钥、用户口令哈希、初始口令、审计日志(0600)
+workdir/ath_state/
+# 构建作业记录(含原始构建请求),运行期产物
+workdir/build_jobs/
 # 凭据静态加密的本机主密钥(0600)。注释必须独占一行 —— .gitignore 不支持行尾注释,
 # 写成 `路径  # 说明` 会让整行变成一个匹配不到文件的 pattern,密钥反而照样入库。
 workdir/.conn_key
@@ -34,6 +40,8 @@ workdir/viz_boards.json
 workdir/uploads.db
 workdir/uploads_*
 workdir/chat_uploads/
+# 外部库只读抽样(真实数据样本,只在本机)
+workdir/samples/
 workdir/custom_skills/
 # 技能删除墓碑(内置技能的删除记录)。属本机偏好,与运行状态同类,不入库。
 workdir/skill_deleted.json
@@ -75,3 +83,13 @@ workdir/uploads_*
 
 # ── 公司交付物文档 ──────────────────────────────────────
 deliverables/
+# 观测事件日志(observability.py 运行时写入,含请求指纹)
+workdir/obs/
+
+# ── 本机分析物料与真实数据样本:一律不入库 ────────────────
+# 此前只写在本机 .git/info/exclude 里,换一份克隆或新开 worktree 就失效,故移到这里。
+/data/
+workdir/*.db
+# 构建产物默认不入库。已入库的那批是开箱演示的种子(见 examples/README-demo.md),不受影响;
+# 确需新增种子时用 git add -f 显式加入。
+workdir/built_*.json

@@ -43,12 +43,14 @@ function dqScopeReportName(scope) {
 function dqUpdateSourceLabel() {
   const ng = DQ_DS.graphs.length, nt = DQ_DS.tables.length;
   let label = '全部';
-  if (ng === 1 && !nt) label = `本体：${dqScopeNames(DQ_DS)[0]}`;
+  if (ng === 1 && !nt) label = `本体「${dqScopeNames(DQ_DS)[0]}」`;
   else if (ng && !nt) label = `本体 ${ng} 个`;
   else if (nt && !ng) label = `数据表 ${nt} 张`;
   else if (ng && nt) label = `本体 ${ng} 个 + 表 ${nt} 张`;
   const el = $('#dq_src_lbl');
   if (el) el.textContent = '数据源：' + label;
+  const chip = $('#dq_src_chip');
+  if (chip) chip.title = '数据源：' + label;           // 标签过长省略时,悬停可看全名
 }
 
 function dqRestoreScope(conv) {
@@ -76,15 +78,17 @@ function dqRestoreScope(conv) {
 
 function dqHeroScoped() {
   const graphs = (DQ_DS && DQ_DS.graphs) || [];
+  if (!graphs.length && window.APP_DATA && APP_DATA.ready && appSourceId() !== 'demo') {
+    return `<div class="dq-hero"><h1>深度问数</h1><p>当前数据库「${esc(APP_DATA.context.source.name)}」尚未构建可查询本体。目录、SQL 工作台和可视化可直接使用；自然语言问数需先完成本体构建。</p><button class="ghost" onclick="goPage('build');location.hash='build'">基于当前数据库构建</button></div>`;
+  }
   const names = dqScopeNames(DQ_DS);
-  const selected = graphs.map(dqGraphMeta).filter(Boolean);
   const title = names.length === 1 ? `基于「${esc(names[0])}」深度问数` : '深度问数';
   const source = names.length ? names.map(esc).join('、') : '示例本体图谱';
   const usable = dqScopeAvailable(DQ_DS);
   const status = names.length
     ? `<div class="step" style="display:inline-block;text-align:left;margin:8px auto 14px"><b>当前本体：</b>${source}`
       + (usable == null ? ' · 绑定表状态将在数据源列表加载后更新。' : ` · <b>${usable}</b> 张绑定表可查询。`)
-      + `新对话将持续使用该本体，不会自动切回示例本体。</div>`
+      + `新对话沿用该本体。</div>`
     : '';
   const examples = names.length ? '' : `<div class="egs">${EG_Q.map(q => `<span class="eg" onclick="dqAskEg(${esc(JSON.stringify(q))})">${esc(q)}</span>`).join('')}</div>`;
   return `<div class="dq-hero"><h1>${title}</h1>`

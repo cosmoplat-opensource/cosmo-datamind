@@ -19,7 +19,7 @@ Moonshot、vLLM 自建……),就无从接入:这与"开箱可用"相悖,也把�
 
 设计要点:
 - **不注册就不出现**。未配置端点时 `available()` 返回空,系统按既有逻辑降级到
-  模板兜底,不会因为"多了一个驱动"而误以为 LLM 可用。
+  降级为模板,不会因为"多了一个驱动"而误以为 LLM 可用。
 - **推理模型的空 content 要当失败**。GLM-5 一类会把预算耗在 reasoning_content 上,
   返回 content="" ——若当成功回传,上游会拿空串去解析 SQL 计划,产生难查的静默失败。
 - **不打印 Key**。异常信息里剔除鉴权头,避免 Key 随日志外泄。
@@ -137,8 +137,10 @@ class OpenAICompatRuntime:
             content=msg.get('content') or ''
             if not isinstance(content,str):raise ValueError('content')
             text=content.strip();reasoning=msg.get('reasoning_content')
-            usage=data.get('usage') if isinstance(data.get('usage'),dict) else {}
-            details=usage.get('completion_tokens_details') if isinstance(usage.get('completion_tokens_details'),dict) else {}
+            usage=data.get('usage')
+            if not isinstance(usage,dict): usage={}
+            details=usage.get('completion_tokens_details')
+            if not isinstance(details,dict): details={}
             diagnostic={'code':'model_success' if text else 'model_empty_content','http_status':status,
                 'finish_reason':choice.get('finish_reason'),'content_chars':len(text),
                 'reasoning_chars':len(reasoning) if isinstance(reasoning,str) else 0,
@@ -219,6 +221,9 @@ def register(agent_runtime):
     try:
         rt = OpenAICompatRuntime()
         if not rt.available():
+            # 端点或 Key 被清空:撤掉此前登记的驱动(DR-096),否则它仍被列为可用,
+            # 并带着旧地址与旧 Key 继续被调用。
+            getattr(agent_runtime, "_REGISTRY", {}).pop("openai", None)
             return False
         agent_runtime.register("openai", lambda: rt)
         return True

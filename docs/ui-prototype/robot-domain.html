@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>DataMind × 天驭 · 界面形态原型 v2</title>
+<style>
+:root{--bg:#F7F8FC;--panel:#fff;--line:#E4E7ED;--txt:#1f2d3d;--sub:#64748b;--acc:#4A5FF3;--acc2:#409EFF;
+      --ok:#16a34a;--warn:#d97706;--evt:#7c3aed;--r:8px;--rs:4px}
+*{box-sizing:border-box}
+body{font-family:"Helvetica Neue",Helvetica,-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+     background:var(--bg);color:var(--txt);margin:0;font-size:14px;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.guide{background:#1f2d3d;color:#cbd5e1;font-size:12.5px;overflow:hidden;transition:max-height .25s ease}
+.guide.open{max-height:300px;overflow:auto}
+.guide .gin{display:flex;align-items:center;gap:12px;padding:8px 16px}
+.guide .gin b{color:#fff}
+.guide .gtog{background:#334155;border:1px solid #475569;color:#e2e8f0;border-radius:4px;padding:3px 10px;font-size:12px;cursor:pointer;font-family:inherit}
+.guide .gtog:hover{background:#475569}
+.guide .gbody{padding:2px 16px 14px;line-height:1.85}
+.guide table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}
+.guide th{text-align:left;color:#94a3b8;font-weight:600;padding:5px 8px;border-bottom:1px solid #334155}
+.guide td{padding:6px 8px;border-bottom:1px solid #273549;vertical-align:top}
+.guide code{background:#334155;color:#a5b4fc;padding:1px 5px;border-radius:3px;font-size:11.5px}
+.guide .k{color:#fff;font-weight:600}
+.topbar{height:48px;flex:0 0 48px;background:#fff;box-shadow:0 0 10px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:space-between;padding:0 18px;z-index:20}
+.topbar .wm{font-size:16px;font-weight:700;display:flex;align-items:baseline;gap:8px}
+.topbar .wm small{font-weight:400;font-size:12px;color:var(--sub)}
+.topbar .tools{display:flex;align-items:center;gap:12px}
+.pill{border:1px solid var(--acc);color:var(--acc);border-radius:4px;font-size:12px;padding:4px 12px;background:#fff}
+.pill.solid{background:var(--acc);color:#fff}
+.shell{flex:1;display:flex;overflow:hidden;position:relative}
+aside{width:212px;flex:0 0 212px;background:#fff;border-right:1px solid var(--line);padding:12px 10px;display:flex;flex-direction:column;gap:2px;overflow:auto}
+.ucard{display:flex;flex-direction:column;align-items:center;padding:10px 8px 12px;margin-bottom:8px;border-bottom:1px solid var(--line)}
+.ucard .av{width:54px;height:54px;border-radius:50%;background:var(--acc2);color:#fff;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700}
+.ucard .nm{font-weight:700;font-size:14px;margin-top:8px}
+.ucard .rl{font-size:11px;color:var(--sub);margin-top:2px}
+.nav{padding:8px 12px;border-radius:4px;cursor:pointer;font-size:13.5px;color:var(--txt)}
+.nav:hover{background:#F2F4FF;color:var(--acc)}
+.nav.on{background:#EEF2FF;color:var(--acc);font-weight:600;box-shadow:inset 3px 0 0 var(--acc)}
+.nav-group{margin-top:9px}
+.nav-group .gh{font-size:12px;color:#64748b;padding:7px 12px 4px;font-weight:600;display:flex;justify-content:space-between;border-top:1px solid #eef1f6}
+.nav-group .nav{margin-left:6px;font-size:13px;padding:7px 12px}
+.dombox{margin-top:auto;border:1px solid var(--line);border-radius:6px;padding:9px 10px;background:#FBFCFE}
+.dombox .dh{font-size:11px;color:var(--sub);font-weight:600;margin-bottom:5px}
+.dchip{display:inline-block;font-size:11px;background:#E8F5EC;color:var(--ok);border-radius:4px;padding:1px 7px;margin:2px 3px 2px 0}
+.dchip.off{background:#F1F5F9;color:var(--sub)}
+main{flex:1;overflow:auto;padding:20px 24px}
+h2{font-size:18px;margin:0 0 4px} h3{font-size:13.5px;color:#475569;margin:0 0 8px}
+.sub{font-size:12.5px;color:var(--sub);margin-bottom:14px;line-height:1.7}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;align-items:start}
+.muted{color:var(--sub);font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;color:var(--sub);font-weight:600;font-size:11.5px;padding:7px 8px;border-bottom:1px solid var(--line)}
+td{padding:7px 8px;border-bottom:1px solid #f1f5f9;vertical-align:top}
+.tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:4px;background:#EEF2FF;color:var(--acc);white-space:nowrap}
+.tag.ok{background:#E8F5EC;color:var(--ok)} .tag.warn{background:#FDF3E3;color:var(--warn)}
+.tag.bad{background:#FDECEC;color:#b91c1c} .tag.mute{background:#F1F5F9;color:var(--sub)}
+.tag.blue{background:#E0F2FE;color:#0369a1}
+.ghost{border:1px solid var(--line);background:#fff;border-radius:4px;padding:4px 11px;font-size:12px;cursor:pointer;color:var(--txt);font-family:inherit}
+.ghost:hover{border-color:var(--acc);color:var(--acc)}
+.ghost.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.ghost.pri:hover{color:#fff;opacity:.9}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:14px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:13px}
+.kpi .n{font-size:23px;font-weight:700;color:var(--acc)} .kpi .l{font-size:11.5px;color:var(--sub);margin-top:2px}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.tabs .tb{padding:8px 15px;font-size:13px;cursor:pointer;color:var(--sub);border-bottom:2px solid transparent}
+.tabs .tb.on{color:var(--acc);border-bottom-color:var(--acc);font-weight:600}
+.tabs .tb .bd{font-size:10px;background:#EEF2FF;color:var(--acc);border-radius:8px;padding:0 6px;margin-left:5px}
+.callout{background:#F7F8FC;border-left:3px solid var(--acc);padding:11px 13px;border-radius:0 6px 6px 0;font-size:12.5px;color:#334155;line-height:1.8}
+.callout.bad{border-left-color:#b91c1c;background:#FEF6F6}
+.callout.ok{border-left-color:var(--ok);background:#F4FBF6}
+.callout b{color:var(--txt)}
+pre{background:#0f172a;color:#cbd5e1;padding:12px;border-radius:6px;font-size:11.5px;overflow:auto;line-height:1.6;margin:0}
+code{background:#EEF2FF;color:var(--acc);padding:1px 5px;border-radius:3px;font-size:11.5px}
+pre code{background:transparent;color:#a5b4fc;padding:0}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--sub);margin-bottom:9px;align-items:center}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px}
+.legend .new{color:var(--ok);font-weight:600}
+.tl{border-left:2px solid var(--line);padding-left:12px;margin-left:5px}
+.tl .it{position:relative;padding-bottom:11px}
+.tl .it:before{content:"";position:absolute;left:-17px;top:4px;width:8px;height:8px;border-radius:50%;background:var(--acc)}
+.tl .it.ok:before{background:var(--ok)} .tl .it.bad:before{background:#b91c1c} .tl .it.warn:before{background:var(--warn)}
+.tl .it .st{font-size:12.5px;font-weight:600} .tl .it .dt{font-size:11.5px;color:var(--sub);margin-top:2px;line-height:1.6}
+.pillrow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.pillrow span{font-size:11px;border:1px solid var(--line);border-radius:4px;padding:2px 8px;color:var(--sub);background:#fff}
+.pillrow span.on{border-color:var(--acc);color:var(--acc);background:#F2F4FF}
+.ta{width:100%;border:1px solid var(--line);border-radius:6px;padding:10px 11px;font-size:13px;line-height:1.7;
+    font-family:inherit;color:var(--txt);resize:vertical;min-height:66px}
+.ta:focus{outline:none;border-color:var(--acc)}
+.drow{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:12.5px}
+.drow:last-child{border-bottom:0}
+.drow .nm{font-weight:600;flex:0 0 auto} .drow .ds{color:var(--sub);font-size:11.5px;text-align:right;line-height:1.5}
+.side{width:212px;background:#fff;border-right:1px solid var(--line);padding:12px 10px;flex:0 0 212px}
+.side .it{font-size:12.5px;padding:7px 9px;border-radius:4px;margin-bottom:4px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.side .it.on{background:#EEF2FF;color:var(--acc);font-weight:600}
+.side .it .cnt{font-size:11px;color:var(--sub)}
+.side .hd{font-size:11px;color:var(--sub);font-weight:600;padding:10px 9px 4px}
+.gwrap{background:#fff;border:1px solid var(--line);border-radius:8px;height:380px;overflow:hidden;position:relative}
+</style>
+</head>
+<body>
+
+<div class="guide" id="guide">
+  <div class="gin">
+    <b>v2 · 这一轮改了什么</b>
+    <span>主要变化：<b style="color:#fff">「编译行为树」的入口从图谱页搬到「本体构建」页</b>，因为一棵树的主语是「一次任务编排」，不是某个技能节点。</span>
+    <button class="gtog" id="gtog">展开说明 / 收起</button>
+  </div>
+  <div class="gbody">
+    <table>
+      <tr><th style="width:150px">变化</th><th style="width:230px">上一版</th><th>这一版</th></tr>
+      <tr><td>编译入口</td><td>图谱页 · 技能节点详情里的「编译为行为树」</td>
+          <td><b>本体构建页 · 新增 Tab「编排行为树」</b>；技能节点上只保留只读的「被哪些任务引用」</td></tr>
+      <tr><td>编译的输入</td><td>一个技能节点</td>
+          <td><b>自然语言描述 + 已建好的本体</b>（技能 / 实体 / 条件 / 参数全部从本体引用）</td></tr>
+      <tr><td>产物</td><td>一棵树</td><td><b>一次任务编排</b>（含任务 + 树 + 编译清单），落在「产物库」</td></tr>
+      <tr><td>侧栏</td><td>9 组</td><td><b>9 组，一个字没改</b>；新增 3 个 Tab、0 个页面</td></tr>
+    </table>
+    <div style="margin-top:8px"><span class="k">理由：</span>「编排行为树」和「构建本体」是<b>同一类操作</b>——都是「输入 → 提议 → 确定性裁决 → 质量闸门 → 人审 → 产物」，
+    所以复用同一条链、同一个 SSE 推送、同一套三态验收、同一个评审台，而不是另起一个子系统。</div>
+  </div>
+</div>
+
+<div class="topbar">
+  <div class="wm">◈ COSMO DataMind <small>数据智脑 · 治理 × 本体 × 问数</small></div>
+  <div class="tools"><span class="pill">深度问数</span><span class="pill solid">引擎就绪</span><span class="av">IM</span></div>
+</div>
+
+<div class="shell">
+  <aside>
+    <div class="ucard"><div class="av">◈</div><div class="nm">COSMO 工作区</div><div class="rl">数据智脑 · 治理×本体×问数</div></div>
+    <div class="nav">总览驾驶舱</div>
+    <div class="nav-group"><div class="gh">数据资产<span>▾</span></div>
+      <div class="nav">数据连接</div><div class="nav">数据目录</div><div class="nav">数仓分层</div></div>
+    <div class="nav-group"><div class="gh">本体工程<span>▾</span></div>
+      <div class="nav">本体图谱</div><div class="nav on">本体构建</div><div class="nav">本体对话</div>
+      <div class="nav">本体评审</div><div class="nav">元数据覆盖</div><div class="nav">本体库</div><div class="nav">SPARQL 查询</div></div>
+    <div class="nav-group"><div class="gh">指标平台<span>▾</span></div>
+      <div class="nav">契约中心</div><div class="nav">构成规则</div></div>
+    <div class="nav-group"><div class="gh">数据治理<span>▾</span></div>
+      <div class="nav">数据质量</div><div class="nav">术语管理</div></div>
+    <div class="nav-group"><div class="gh">智能问数<span>▾</span></div>
+      <div class="nav">深度问数</div><div class="nav">业务助手</div><div class="nav">问数评测</div></div>
+    <div class="nav-group"><div class="gh">智能体与技能<span>▾</span></div>
+      <div class="nav">智能体列表</div><div class="nav">技能中心</div></div>
+    <div class="nav-group"><div class="gh">动作执行<span>▾</span></div>
+      <div class="nav">动作中心</div></div>
+    <div class="nav-group"><div class="gh">开发与服务<span>▾</span></div>
+      <div class="nav">SQL 工作台</div><div class="nav">API 服务目录</div></div>
+    <div class="nav-group"><div class="gh">运维管理<span>▾</span></div>
+      <div class="nav">作业中心</div><div class="nav">引擎设置</div><div class="nav">系统管理</div></div>
+    <div class="dombox">
+      <div class="dh">已装载领域</div>
+      <div style="font-size:12.5px;font-weight:600;margin-bottom:5px">机器人 · 天驭</div>
+      <span class="dchip">设备</span><span class="dchip">能力</span><span class="dchip">技能</span>
+      <span class="dchip off">+ 化工</span>
+      <div class="muted" style="margin-top:6px;line-height:1.6">领域只贡献词表 / 数据源 / 契约 / 产物，不新增导航项、不新增页面。</div>
+    </div>
+  </aside>
+
+  <main>
+    <!-- ① 侧栏 -->
+    <section id="s1">
+      <h2>① 侧栏：领域不新增导航项</h2>
+      <div class="sub">9 个导航组全部保持原样 —— 它们组织的是"人要做的动作"（连接 / 建模 / 定口径 / 治理 / 问数 / 执行 / 开发 / 运维），不是"领域"。</div>
+      <div class="grid2">
+        <div class="card">
+          <h3>机器人的东西各自去哪了</h3>
+          <table>
+            <tr><th>天驭要的东西</th><th>落在哪</th><th style="width:92px">新增导航项</th></tr>
+            <tr><td>设备 / 能力 / 技能</td><td>本体图谱多三种节点</td><td><span class="tag ok">0</span></td></tr>
+            <tr><td>ROS 接口契约</td><td>数据连接多一类数据源</td><td><span class="tag ok">0</span></td></tr>
+            <tr><td>参数与标定</td><td>契约中心多一个 Tab</td><td><span class="tag ok">0</span></td></tr>
+            <tr><td>编排行为树</td><td>本体构建多一个 Tab</td><td><span class="tag ok">0</span></td></tr>
+            <tr><td>行为树产物</td><td>本体库扩成产物库</td><td><span class="tag ok">0</span></td></tr>
+            <tr><td>执行观测</td><td>深度问数多一个数据源</td><td><span class="tag ok">0</span></td></tr>
+            <tr><td colspan="2"><b>合计</b></td><td><span class="tag ok">0 组 · 0 页 · 3 Tab</span></td></tr>
+          </table>
+          <div class="callout" style="margin-top:12px">
+            <b>一句话：</b>页面是"人要做的事"的容器，领域是填进容器里的料。<br>
+            容器按动作分类，所以稳定；料按领域变化，所以无限。<b>两者不混在一起，UI 就不会乱。</b>
+          </div>
+        </div>
+        <div class="card">
+          <h3>通用性的验收标准</h3>
+          <div class="callout ok" style="margin-bottom:10px">
+            <b>接入第二个领域（化工）时：</b><br>
+            内核代码改动 = <b>0 行</b>；顶级导航项 = <b>0 个</b>；新页面 = <b>0 个</b>。
+          </div>
+          <div class="muted" style="line-height:1.8">
+            化工领域贡献：词表（反应 / 物质 / 批次）、证据来源（DCS 点表 + 工艺规程 PDF）、契约方言（收率 / 纯度）、产物（批次工艺卡）。<br><br>
+            <b>做不到，就说明抽象没做对。</b>
+          </div>
+          <h3 style="margin-top:14px">领域 / 节点 / 词表 的关系</h3>
+          <div class="muted" style="line-height:1.8">
+            <b>领域</b>（插件包）往 <b>vocab.py</b> 这张全局表里加几个 kind；<b>节点</b>是本体里的实例，<b>全局唯一</b>，不属于任何领域。<br><br>
+            一个领域贡献若干 kind（<b>不是一对一</b>）：机器人贡献 <code>device</code> <code>function</code> <code>skill</code>。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ② 变更点 -->
+    <section id="s2" hidden>
+      <h2>② 这一轮的改动：编译入口搬家</h2>
+      <div class="sub">上一版把「编译为行为树」挂在技能节点上——语义不对，因为一棵树的主语是「一次任务编排」，不是某个技能。</div>
+      <div class="grid2">
+        <div class="card">
+          <h3 style="color:#b91c1c">上一版（错）</h3>
+          <div class="callout bad" style="margin-bottom:12px">
+            技能节点 → 点「编译为行为树」→ 出一棵树
+          </div>
+          <ul style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.9;color:#334155">
+            <li>技能只是树的一部分 —— 缺参数、缺条件、缺实体绑定，编译不出完整的树</li>
+            <li>把「编译」显得像轻量操作，实际上它是整条构建链</li>
+            <li>同一棵树的入口分散在每个技能节点上</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3 style="color:var(--ok)">这一版（对）</h3>
+          <div class="callout ok" style="margin-bottom:12px">
+            本体构建页 → Tab「编排行为树」→ 输入自然语言 → 出一棵完整的树
+          </div>
+          <ul style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.9;color:#334155">
+            <li>输入 = <b>自然语言描述 + 已建好的本体</b>（技能 / 实体 / 条件 / 参数全部从本体<b>引用</b>）</li>
+            <li>产物 = <b>一次任务编排</b>（任务 + 树 + 编译清单），落在产物库</li>
+            <li>技能节点上只保留只读的「被哪些任务引用」</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <h3>为什么放进「本体构建」而不是新开一页</h3>
+        <table>
+          <tr><th style="width:120px">环节</th><th>构建本体</th><th>编排行为树</th><th style="width:130px">是否复用</th></tr>
+          <tr><td>输入</td><td>数据源 + 验收问题 + 技能正文</td><td><b>自然语言 + 已建好的本体</b></td><td><span class="tag mute">形态不同</span></td></tr>
+          <tr><td>提议</td><td>LLM 提对象 / 关系 / 候选键</td><td>LLM 提技能调用 / 绑定 / 条件引用 / 参数引用</td><td><span class="tag ok">同一套</span></td></tr>
+          <tr><td>裁决</td><td>用真实数据裁决连接关系</td><td>用本体裁决引用是否成立、参数状态、规则有效性</td><td><span class="tag ok">三态同一套</span></td></tr>
+          <tr><td>验收</td><td>图结构 / 证据契约 / 定义 / 验收问题</td><td>引用完整性 / 参数闸门 / 收尾 / 单位漂移 / 扇出</td><td><span class="tag ok">三态同一套</span></td></tr>
+          <tr><td>人审</td><td>评审台</td><td>评审台</td><td><span class="tag ok">同一套</span></td></tr>
+          <tr><td>推进</td><td>SSE 逐步推送</td><td>SSE 逐步推送</td><td><span class="tag ok">同一套</span></td></tr>
+        </table>
+        <div class="muted" style="margin-top:10px;line-height:1.8">
+          两行的形状完全一样 → <b>它就是「本体构建」的第二个实例</b>，不是新子系统。所以复用全部基础设施，也让侧栏保持不变。
+        </div>
+      </div>
+    </section>
+
+    <!-- ③ 本体图谱 -->
+    <section id="s3" hidden>
+      <h2>③ 本体图谱：多三种节点，技能节点变只读</h2>
+      <div class="sub">图谱是通用的。领域只是往词表里加了几种节点种类 —— 渲染代码一行不改。</div>
+      <div class="legend">
+        <span><i style="background:#16a34a"></i>对象</span><span><i style="background:#0ea5e9"></i>资产</span>
+        <span><i style="background:#0891b2"></i>设备<span class="new">新增</span></span>
+        <span><i style="background:#0d9488"></i>能力<span class="new">新增</span></span>
+        <span><i style="background:#ea580c"></i>技能<span class="new">新增</span></span>
+        <span><i style="background:#7c6ff0"></i>信息内容</span>
+      </div>
+      <div class="grid2" style="grid-template-columns:1.35fr 1fr">
+        <div class="gwrap">
+          <svg width="100%" height="380" viewBox="0 0 640 380" style="display:block">
+            <defs><marker id="ar" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L8,3 z" fill="#94a3b8"/></marker></defs>
+            <line x1="150" y1="90"  x2="290" y2="90"  stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ar)"/>
+            <line x1="150" y1="90"  x2="290" y2="200" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="2 2" marker-end="url(#ar)"/>
+            <line x1="150" y1="300" x2="290" y2="200" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ar)"/>
+            <line x1="430" y1="200" x2="510" y2="90"  stroke="#4a5ff3" stroke-width="1.3" stroke-dasharray="2 2" marker-end="url(#ar)"/>
+            <line x1="430" y1="200" x2="510" y2="300" stroke="#4a5ff3" stroke-width="1.3" stroke-dasharray="2 2" marker-end="url(#ar)"/>
+            <text x="200" y="82"  font-size="10" fill="#64748b">承载</text>
+            <text x="196" y="160" font-size="10" fill="#64748b">参与</text>
+            <text x="200" y="268" font-size="10" fill="#64748b">实现</text>
+            <text x="452" y="140" font-size="10" fill="#64748b">输入</text>
+            <text x="452" y="272" font-size="10" fill="#64748b">输出</text>
+            <g><rect x="40" y="60"  width="110" height="60" rx="6" fill="#e0f9fb" stroke="#0891b2" stroke-width="1.4"/>
+              <text x="95" y="85" text-anchor="middle" font-size="13" fill="#0e7490">UR 机械臂</text>
+              <text x="95" y="103" text-anchor="middle" font-size="10" fill="#0891b2">设备</text></g>
+            <g><rect x="40" y="270" width="110" height="60" rx="6" fill="#e0f9fb" stroke="#0891b2" stroke-width="1.4"/>
+              <text x="95" y="295" text-anchor="middle" font-size="13" fill="#0e7490">MechMind 相机</text>
+              <text x="95" y="313" text-anchor="middle" font-size="10" fill="#0891b2">设备</text></g>
+            <g><rect x="290" y="60"  width="140" height="60" rx="6" fill="#f0fdfa" stroke="#0d9488" stroke-width="1.4"/>
+              <text x="360" y="85" text-anchor="middle" font-size="13" fill="#0f766e">MoveL</text>
+              <text x="360" y="103" text-anchor="middle" font-size="10" fill="#0d9488">能力</text></g>
+            <g><rect x="290" y="170" width="140" height="60" rx="6" fill="#fff7ed" stroke="#ea580c" stroke-width="1.4"/>
+              <text x="360" y="195" text-anchor="middle" font-size="13" fill="#c2410c">抓取技能</text>
+              <text x="360" y="213" text-anchor="middle" font-size="10" fill="#ea580c">技能</text></g>
+            <g><rect x="510" y="60"  width="100" height="60" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.4"/>
+              <text x="560" y="85" text-anchor="middle" font-size="13" fill="#15803d">ac07</text>
+              <text x="560" y="103" text-anchor="middle" font-size="10" fill="#16a34a">对象</text></g>
+            <g><rect x="510" y="270" width="100" height="60" rx="6" fill="#fef0ff" stroke="#a855f7" stroke-width="1.4"/>
+              <text x="560" y="295" text-anchor="middle" font-size="13" fill="#7c3aed">载具 B01</text>
+              <text x="560" y="313" text-anchor="middle" font-size="10" fill="#a855f7">资产</text></g>
+          </svg>
+        </div>
+        <div class="card">
+          <h3>对象详情 · 抓取技能</h3>
+          <div class="muted" style="margin-bottom:10px">技能 · PlannedProcess · 已确认</div>
+          <div class="drow"><div class="nm">能力组成</div><div class="ds">固定 5 步（模板，不随任务变）</div></div>
+          <div class="drow"><div class="nm">前置条件</div><div class="ds">2 条 · 均已确认</div></div>
+          <div class="drow"><div class="nm">参数</div><div class="ds">3 项 · 2 已确认 1 待确认</div></div>
+          <div class="drow"><div class="nm">适用零件</div><div class="ds">ac07</div></div>
+          <div class="drow"><div class="nm">被哪些任务引用</div><div class="ds"><span class="tag">move_ac07_to_B01</span></div></div>
+          <div class="callout" style="margin-top:12px">
+            <b>节点上不再有「编译」按钮。</b><br>
+            技能是<b>被调用者</b>，不是任务。想知道它被谁用，看「被哪些任务引用」；要编排任务，去
+            <b>本体构建 → 编排行为树</b>。
+          </div>
+          <h3 style="margin-top:14px">领域面板挂载点</h3>
+          <div class="muted" style="line-height:1.8;margin-bottom:8px">
+            点别的节点（UR 机械臂 / ac07 / 载具），这块内容会换 —— 但它始终是<b>嵌在详情面板里的一块</b>，不是新页面。
+          </div>
+          <table>
+            <tr><th>节点</th><th>面板内容</th></tr>
+            <tr><td>UR 机械臂</td><td>设备接口清单（端点 / 种类 / 在线状态）</td></tr>
+            <tr><td>MoveL</td><td>能力契约（端口 / 单位 / 坐标系）</td></tr>
+            <tr><td>ac07</td><td>零件与技能（可用技能 / 识别模型）</td></tr>
+            <tr><td>载具 B01</td><td>槽位占用</td></tr>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ④ 编排行为树 Tab -->
+    <section id="s4" hidden>
+      <h2>④ 本体构建 · 新 Tab「编排行为树」</h2>
+      <div class="sub">这是编译行为树的入口。输入 = 自然语言描述 + 已建好的本体；输出 = 一次任务编排（一棵完整的树 + 编译清单）。</div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="tabs" style="margin-bottom:16px">
+          <div class="tb">构建本体</div>
+          <div class="tb on">编排行为树<span class="bd">新</span></div>
+        </div>
+        <div class="grid2" style="grid-template-columns:1.15fr 1fr">
+          <div>
+            <h3>任务描述</h3>
+            <textarea class="ta" rows="4">把 ac07 从工位A搬到载具B01的槽位3。先拍照确认零件在位，
+抓取前要检查槽位可用。抓完要撤离。</textarea>
+            <div style="display:flex;gap:14px;align-items:center;margin-top:10px">
+              <div><div class="muted" style="margin-bottom:4px">锚定本体</div>
+                <div class="pillrow" style="margin:0"><span class="on">机器人作业本体</span><span>示例企业数据本体</span></div></div>
+              <div><div class="muted" style="margin-bottom:4px">验收问题</div>
+                <div class="pillrow" style="margin:0"><span class="on">3 条</span><span>+ 新增</span></div></div>
+            </div>
+            <div style="margin-top:12px"><button class="ghost pri">开始编排</button>
+              <button class="ghost">从空白任务开始</button></div>
+          </div>
+          <div>
+            <h3>推进过程（与「构建本体」同一套 SSE）</h3>
+            <div class="tl">
+              <div class="it ok"><div class="st">范围与任务</div><div class="dt">ac07 · 工位A → 载具B01/槽3 · 3 条验收问题</div></div>
+              <div class="it ok"><div class="st">锚定</div><div class="dt">命中 5 个对象 · 2 个技能 · 4 个能力 · 2 条规则 · 3 个参数</div></div>
+              <div class="it ok"><div class="st">提议</div><div class="dt">3 个技能调用 · 3 条绑定 · 2 个条件引用 · 3 个参数引用</div></div>
+              <div class="it warn"><div class="st">裁决</div><div class="dt">全部引用都在本体中找到；1 个参数状态不足 → 不填端口</div></div>
+              <div class="it bad"><div class="st">质量闸门</div><div class="dt">FAIL —— 1 阻断 · 2 待审</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h3>提议明细：只引用，不新造</h3>
+          <table>
+            <tr><th style="width:30px">序</th><th>技能</th><th>绑定</th><th>参数引用</th><th>条件引用</th></tr>
+            <tr><td>1</td><td><span class="tag">perception_at_station</span></td>
+                <td class="muted">part=ac07<br>station=station_A</td>
+                <td class="muted"><code>@param:ac07.detect_model</code><br><code>@param:ac07.exposure_time</code></td>
+                <td class="muted"><code>rule:part_visible</code></td></tr>
+            <tr><td>2</td><td><span class="tag">grasp_from_pose</span></td>
+                <td class="muted">part=ac07<br>pose={obj_in_camera}</td>
+                <td class="muted"><code>@param:ac07.grasp_offset</code></td>
+                <td class="muted"><code>rule:part_in_position</code><br><code>rule:slot_available</code></td></tr>
+            <tr><td>3</td><td><span class="tag">place_into_slot</span></td>
+                <td class="muted">part=ac07<br>slot=slot_B01_3</td>
+                <td class="muted"><code>@param:slot_B01_3.place_pose</code></td>
+                <td class="muted"><code>rule:slot_available</code></td></tr>
+          </table>
+          <div class="callout" style="margin-top:12px">
+            <b>三条硬边界，违反就编译失败：</b><br>
+            ① 不得给裸参数值 —— 只能 <code>@param:</code> 引用参数对象<br>
+            ② 不得自造条件 —— 只能 <code>rule:</code> 引用已有规则<br>
+            ③ 不得自造能力组合 —— 技能的能力组成是<b>固定模板</b>，由人定义并确认
+          </div>
+        </div>
+        <div class="card">
+          <h3>质量闸门（与构建本体同一套三态）</h3>
+          <table>
+            <tr><th>检查</th><th style="width:88px">结果</th></tr>
+            <tr><td>引用完整性（技能 / 条件 / 参数都在本体里）</td><td><span class="tag ok">通过</span></td></tr>
+            <tr><td>参数状态闸门（只有 certified 可填端口）</td><td><span class="tag bad">阻断 1</span></td></tr>
+            <tr><td>收尾动作存在且无条件执行</td><td><span class="tag ok">通过</span></td></tr>
+            <tr><td>独占资源声明（槽位 / 夹爪）</td><td><span class="tag ok">通过</span></td></tr>
+            <tr><td>单位 / 坐标系一致</td><td><span class="tag warn">待审 2</span></td></tr>
+            <tr><td>规则冲突（同一条件不同结论）</td><td><span class="tag ok">通过</span></td></tr>
+          </table>
+          <div class="callout bad" style="margin-top:12px">
+            <b>阻断 1</b>：参数 <code>ac07.detect_threshold</code> 状态为 candidate —— 未经确认的值不填端口。<br>
+            <span class="muted">处理：去「契约中心 → 参数契约」确认后重新编排。</span>
+          </div>
+          <h3 style="margin-top:14px">编排产物预览</h3>
+          <pre>Sequence
+├─ Precondition  slot_available == 'FREE'
+│  └─ Sequence
+│     ├─ SubTree perception_at_station
+│     └─ SubTree grasp_from_pose
+├─ Precondition  slot_available == 'FREE'
+│  └─ SubTree place_into_slot
+└─ Sequence            ← 收尾：无论成败都执行
+   └─ SubTree retreat_to_pre_grasp</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ⑤ 产物库 -->
+    <section id="s5" hidden>
+      <h2>⑤ 本体库 → 产物库</h2>
+      <div class="sub">本体构建产出的东西统一在这里管理。现在有两类产物：本体图谱、行为树编排。</div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="display:flex">
+          <div class="side" style="border-right:1px solid var(--line)">
+            <div class="hd">产物类型</div>
+            <div class="it on">本体图谱<span class="cnt">12</span></div>
+            <div class="it">行为树编排<span class="cnt">5</span></div>
+          </div>
+          <div style="flex:1;padding:14px 16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+              <h3 style="margin:0">行为树编排</h3>
+              <button class="ghost">导出选中</button>
+            </div>
+            <table>
+              <tr><th>名称</th><th>锚定本体</th><th>技能数</th><th>校验</th><th>状态</th><th>更新</th><th>操作</th></tr>
+              <tr><td>move_ac07_to_B01</td><td>机器人作业本体</td><td>3</td><td><span class="tag bad">FAIL 1 阻断</span></td>
+                  <td><span class="tag warn">草稿</span></td><td class="muted">10:12</td>
+                  <td><button class="ghost">查看</button> <button class="ghost">导出</button></td></tr>
+              <tr><td>place_ac07_generic</td><td>机器人作业本体</td><td>2</td><td><span class="tag ok">PASS</span></td>
+                  <td><span class="tag ok">已确认</span></td><td class="muted">昨天</td>
+                  <td><button class="ghost">查看</button> <button class="ghost">导出</button></td></tr>
+              <tr><td>inspect_stationA</td><td>机器人作业本体</td><td>1</td><td><span class="tag ok">PASS</span></td>
+                  <td><span class="tag ok">已确认</span></td><td class="muted">10-20</td>
+                  <td><button class="ghost">查看</button> <button class="ghost">导出</button></td></tr>
+            </table>
+            <div class="callout" style="margin-top:12px">
+              点「查看」打开一个<b>抽屉</b>：左边技能与步骤、中间生成的树、右边参数来源 + 阻断项 + 节点溯源；顶部 Tab 可切「编译报告 / 与现有树对比」。<br>
+              <b>抽屉是"看产物"的地方，"做产物"在「本体构建 → 编排行为树」。</b>
+            </div>
+            <h3 style="margin-top:14px">每个产物都带一份编译清单</h3>
+            <div class="muted" style="line-height:1.8">
+              记录编译时的<b>本体指纹</b>、每个带单位的参数取值与它的单位/坐标系、每个引用的规则与参数的状态。<br>
+              本体变了 → 指纹对不上 → 这个产物被标为<b>待复核</b>，不会被误当成最新的下发出去。
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ⑥ 契约中心 -->
+    <section id="s6" hidden>
+      <h2>⑥ 契约中心 · 多一个 Tab「参数契约」</h2>
+      <div class="sub">指标契约和参数契约是同一种东西 —— 声明 → 编译 → 执行 → 比对 → 裁决 → 状态机。界面共用，spec 不同。</div>
+      <div class="tabs">
+        <div class="tb">指标契约<span class="bd">75</span></div>
+        <div class="tb on">参数契约<span class="bd">42</span></div>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><div class="n">42</div><div class="l">参数总数</div></div>
+        <div class="kpi"><div class="n" style="color:var(--ok)">18</div><div class="l">已确认 certified</div></div>
+        <div class="kpi"><div class="n" style="color:var(--acc2)">9</div><div class="l">已核验 verified</div></div>
+        <div class="kpi"><div class="n" style="color:var(--warn)">12</div><div class="l">待确认 candidate</div></div>
+        <div class="kpi"><div class="n" style="color:#b91c1c">3</div><div class="l">被树引用但未确认</div></div>
+      </div>
+      <div class="card">
+        <table>
+          <tr><th>参数</th><th>技能</th><th>作用对象</th><th>值</th><th>单位 / 坐标系</th><th>状态</th><th>证据</th><th>确认人</th><th>操作</th></tr>
+          <tr><td>detect_threshold</td><td>感知</td><td>ac07</td><td>0.8</td><td>—</td>
+            <td><span class="tag warn">candidate</span></td><td class="muted">手写字面量</td><td>—</td>
+            <td><button class="ghost">核验</button> <button class="ghost">确认</button></td></tr>
+          <tr><td>exposure_time</td><td>感知</td><td>ac07</td><td>123</td><td>μs</td>
+            <td><span class="tag ok">certified</span></td><td class="muted">标定记录 CAL-014</td><td>张三</td>
+            <td><button class="ghost">停用</button> <button class="ghost">撤回</button></td></tr>
+          <tr><td>place_pose</td><td>放置</td><td>载具B01/槽3</td><td>[178,-985,480,…]</td><td>mm · robot_base</td>
+            <td><span class="tag blue">verified</span></td><td class="muted">标定记录 CAL-021</td><td>—</td>
+            <td><button class="ghost">核验</button> <button class="ghost">确认</button></td></tr>
+          <tr><td>grasp_offset</td><td>抓取</td><td>ac07</td><td>[0,0,-100,1,0,0,0]</td><td>mm · robot_base</td>
+            <td><span class="tag ok">certified</span></td><td class="muted">标定记录 CAL-014</td><td>张三</td>
+            <td><button class="ghost">停用</button></td></tr>
+        </table>
+        <div class="muted" style="margin-top:10px;line-height:1.8">
+          操作列与指标契约<b>完全一致</b>：核验 / 确认 / 停用 / 撤回。<b>没有别的规则</b> —— 因为本来就是同一套状态机：<br>
+          <code>verified</code> 只由机器核验产生（可执行 ∧ 与参照一致）；<code>certified</code> 只能由人授予并记录确认人。
+        </div>
+      </div>
+    </section>
+
+    <!-- ⑦ 数据连接 + 问数 -->
+    <section id="s7" hidden>
+      <h2>⑦ 数据连接多两类数据源 · 问数多一个数据源</h2>
+      <div class="sub">证据来源也是插件。数据表 / ROS 接口契约 / 行为树 XML / 工艺文档 / 历史执行记录 —— 同一套裁决流程。</div>
+      <div class="grid2">
+        <div class="card">
+          <h3>数据连接 · 数据源类型</h3>
+          <div class="pillrow" style="margin-bottom:12px">
+            <span>SQLite 数据库</span>
+            <span class="on">ROS 接口契约<span class="tag ok" style="margin-left:4px">新</span></span>
+            <span>行为树 XML<span class="tag ok" style="margin-left:4px">新</span></span>
+            <span>工艺文档 / 参数表</span>
+            <span>历史执行记录</span>
+          </div>
+          <table>
+            <tr><th>来源</th><th>采集什么</th><th>裁决依据</th></tr>
+            <tr><td>数据库表</td><td>表 → 列 → 外键</td><td>值域重叠 · 父键唯一 · 命名 · 方向</td></tr>
+            <tr><td><b>ROS 接口契约</b></td><td>端点 → 消息类型 → 字段</td><td><b>同一实体的跨系统 ID 对齐</b> · 资源唯一性 · 契约存在性</td></tr>
+            <tr><td><b>行为树 XML</b></td><td>技能 · 步骤 · 数据流 · 参数字面量</td><td>结构事实（asserted）；字面量 → <b>candidate</b></td></tr>
+            <tr><td>工艺文档</td><td>术语 · 步骤 · 参数说明</td><td>只作命名与定义证据</td></tr>
+            <tr><td>历史执行记录</td><td>调用频次 · 失败模式 · 节拍</td><td>指标反解的输入</td></tr>
+          </table>
+          <div class="callout" style="margin-top:12px">
+            <b>裁决协议不变，只是"证据"换了一种。</b>三态判定、证据分层、人工确认产生 asserted —— 全部照旧。<br>
+            <b>不能</b>把行为树 XML 当"表"去算值域重叠 —— 那会产出看起来可信、实则伪造的 verified。
+          </div>
+        </div>
+        <div class="card">
+          <h3>深度问数 · 执行记录就是一个数据源</h3>
+          <div class="muted" style="margin-bottom:6px">锚定源</div>
+          <div class="pillrow" style="margin-bottom:12px">
+            <span class="on">机器人作业本体</span><span>示例企业数据本体</span><span>执行记录库</span>
+          </div>
+          <div style="border:1px solid var(--line);border-radius:6px;padding:10px;margin-bottom:12px;font-size:13px">
+            上周 ac07 抓取失败的主要原因和现场检查清单？
+          </div>
+          <div style="background:#F7F8FC;border:1px solid var(--line);border-radius:6px;padding:10px;font-size:12px;line-height:1.9">
+            <b>本体锚定</b> 机器人作业本体
+            <span style="color:var(--sub)">· 51 对象 → 6 命中 → 4 扩展 → 14 入上下文 → 3 SQL 实际用</span>
+            <div style="margin-top:6px"><span class="tag ok">意图一致</span> <span class="tag mute">口径校验通过</span> <span class="tag">仅 certified 口径</span></div>
+          </div>
+          <h3 style="margin-top:14px">答案</h3>
+          <div style="font-size:12.5px;line-height:1.85">
+            近 7 天 ac07 抓取共 <b>142</b> 次，失败 <b>8</b> 次（<b>5.6%</b>）。
+            <div style="margin-top:8px">
+              <div class="drow"><div class="nm">① 视觉未检出（7/8）</div><div class="ds"><span class="tag ok">verified</span></div></div>
+              <div class="drow"><div class="nm">② 曝光时间偏短（4/8）</div><div class="ds"><span class="tag warn">candidate</span></div></div>
+              <div class="drow"><div class="nm">③ 夹爪闭合超时（1/8）</div><div class="ds"><span class="tag ok">verified</span></div></div>
+            </div>
+            <div class="muted" style="margin-top:6px">根因诊断与检查清单是<b>现成能力</b>，执行记录落了表就能用，不需要新开发。</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+document.querySelectorAll('.guide .gtog,#gtog').forEach(b=>b.onclick=()=>{
+  const g=document.getElementById('guide');
+  g.classList.toggle('open');
+  b.textContent=g.classList.contains('open')?'收起说明':'展开说明 / 收起';
+});
+const BTNS=[
+ ['1','侧栏：领域不新增导航项'],['2','这一轮改了什么：编译入口搬家'],
+ ['3','本体图谱：多三种节点'],['4','本体构建 · 编排行为树 Tab（核心）'],
+ ['5','产物库：本体 + 行为树'],['6','契约中心：参数契约 Tab'],['7','数据源与问数']
+];
+const bar=document.createElement('div');
+bar.style.cssText='background:#1f2d3d;color:#cbd5e1;font-size:12px;padding:7px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center';
+bar.innerHTML='<b style="color:#fff">v2 原型 · 点着看</b>'+BTNS.map(b=>
+ `<button class="gbtn" data-s="${b[0]}" style="background:#334155;border:1px solid #475569;color:#e2e8f0;border-radius:4px;padding:3px 10px;font-size:12px;cursor:pointer;font-family:inherit">${b[1]}</button>`).join('');
+document.querySelector('.guide').after(bar);
+function show(n){
+  document.querySelectorAll('.gbtn').forEach(b=>b.classList.toggle('on',b.dataset.s===n));
+  document.querySelectorAll('.gbtn').forEach(b=>{b.style.background=b.dataset.s===n?'#4A5FF3':'#334155';
+    b.style.borderColor=b.dataset.s===n?'#4A5FF3':'#475569';b.style.color=b.dataset.s===n?'#fff':'#e2e8f0';});
+  for(let i=1;i<=7;i++) document.getElementById('s'+i).hidden=(i!==+n);
+}
+bar.querySelectorAll('.gbtn').forEach(b=>b.onclick=()=>show(b.dataset.s));
+show('1');
+</script>
+</body>
+</html>

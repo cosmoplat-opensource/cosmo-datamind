@@ -299,11 +299,6 @@ def ontology(ir, name=None):
                    "description": "由 COSMO DataMind 本体 IR 导出;仅包含 verified/asserted 关系", "ontology": comps})
 
 
-def build(ir, model_name=None):
-    """兼容旧调用:返回核心语义模型文档。"""
-    return semantic_model(ir, model_name)
-
-
 def to_yaml(ir, model_name=None, kind="semantic_model"):
     doc = ontology(ir, model_name) if kind == "ontology" else semantic_model(ir, model_name)
     return emit(doc) + "\n"

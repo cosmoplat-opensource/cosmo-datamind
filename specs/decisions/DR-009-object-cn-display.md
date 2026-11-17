@@ -7,7 +7,7 @@
 
 ## 上下文 / Context
 构建出的对象/事件显示成英文表名/键名(dim_customer),不可读。排查:LLM 抽取**本就生成了 cn**(dim_customer→客户),
-但 `ir_to_graph` 的应用/构建本体分支显示名误用了英文 `name`(示例 分支用的是 `cn`)——两分支不一致的显示 bug。
+但 `ir_to_graph` 的应用/构建本体分支显示名误用了英文 `name`(示例分支用的是 `cn`)——两分支不一致的显示 bug。
 
 ## 决定 / Decision
 - **id 稳定用英文 name**(边引用 source_concept/target_concept 依赖它,不可改);**显示名一律 `o.get("cn") or o["name"]`**,应用/构建/demo 三分支统一。

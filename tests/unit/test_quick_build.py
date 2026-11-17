@@ -51,7 +51,7 @@ class TestBuildIntegration:
     def test_missing_action_types_file_is_tolerated(self, make_sqlite, tmp_path):
         """全新 workdir 没有 action_types.json:按无已登记动作处理,不崩构建。
 
-        与服务端 load_action_types 的缺档口径一致;此前 FileNotFoundError 使
+        与服务端 load_action_types 的缺档处理规则一致;此前 FileNotFoundError 使
         /api/build/run 与 build_inquire 的 LLM 超时回退在干净环境全部无产物
         (DR-058 端到端实测发现)。"""
         db = make_sqlite({"dim_customer": ("id INTEGER PRIMARY KEY", [(1,)])})

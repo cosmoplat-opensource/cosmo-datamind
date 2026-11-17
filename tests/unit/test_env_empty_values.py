@@ -21,7 +21,7 @@ import pytest
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
 # 这些变量在 .env.example 中留空发布,或语义上「空 == 未配置」。
-# 读它们时不得依赖 os.environ.get 的第二参数兜底。
+# 读它们时不得依赖 os.environ.get 的第二参数提供默认值。
 MUST_TOLERATE_EMPTY = {
     "DATAMIND_LOG_LEVEL",
     "DATAMIND_HOST",
@@ -59,7 +59,7 @@ def _get_with_default_calls(path):
         if not (isinstance(name, ast.Constant) and isinstance(name.value, str)):
             continue
         # 默认值本身就是空串时,空串与默认值等价,不构成隐患(如 get(X, ""))。
-        # 只有默认值非空,空串才会顶掉它 —— 那才是要抓的。
+        # 只有默认值非空,空串才会覆盖它,这种情况需要检出。
         if isinstance(default, ast.Constant) and default.value in ("", None):
             continue
         out.append((name.value, node.lineno))
@@ -109,5 +109,5 @@ def test_env_example_blank_vars_are_covered():
                 risky.add(var)
     assert not risky, (
         "这些变量在 .env.example 中留空发布,却用 get(NAME, DEFAULT) 读取,"
-        "空串会顶掉默认值:" + ", ".join(sorted(risky))
+        "空串会覆盖默认值:" + ", ".join(sorted(risky))
     )

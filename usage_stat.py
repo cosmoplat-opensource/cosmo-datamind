@@ -15,7 +15,7 @@
 埋点规范(与本系统的可用性原则一致):
 - **只读旁路**。记录失败一律静默吞掉,绝不因统计问题影响问数主流程。
 - **不引入新锁竞争**。落盘走 workdir JSON,与既有运行时产物同一套路径与 gitignore。
-- **不记录问句原文**,只记对象键与计数——避免把业务问句沉淀成需要脱敏的资产。
+- **不记录问句原文**,只记对象键与计数——避免把业务问句保存成需要脱敏的资产。
 """
 import json
 import os
@@ -72,7 +72,8 @@ def report(workdir, ir, graph):
         rels, sk, tk = ir["links"], "source", "target"
     else:
         rels, sk, tk = ir.get("relations", []), "source_concept", "target_concept"
-    strong, weak = {}, {}
+    strong: dict = {}
+    weak: dict = {}
     for r in rels:
         st = (r.get("status") or "")
         for side in (r.get(sk), r.get(tk)):
@@ -112,7 +113,7 @@ def report(workdir, ir, graph):
             "reason": f"{len(zero)}/{len(rows)} 个对象自统计以来零调用",
             "action": "疑似建模过度,下一轮可评估裁剪;但需先确认统计窗口足够长",
         })
-    # 指标使用度(DR-054):键以 metric: 开头;高频 × candidate 的指标优先补核验/人工确认口径
+    # 指标使用度(DR-054):键以 metric: 开头;高频 × candidate 的指标优先补核验/人工确认计算规则
     mstat = {}
     for arr in ((ir.get("metric_layers") or {}).values() if isinstance(ir.get("metric_layers"), dict) else []):
         for m in (arr or []):
@@ -130,8 +131,8 @@ def report(workdir, ir, graph):
         if r["status"] in ("candidate", "unknown") and r["calls"] > 0:
             advice.append({
                 "priority": "high", "object": None, "cn": r["name"], "metric": r["name"],
-                "reason": f"指标「{r['name']}」被问到 {r['calls']} 次,口径仍为 {r['status']}",
-                "action": "补参照 SQL/参考基准重跑核验,或由业务确认口径后置 certified——口径未核验却高频使用,风险最高",
+                "reason": f"指标「{r['name']}」被问到 {r['calls']} 次,计算规则状态仍为 {r['status']}",
+                "action": "补参照 SQL/参考基准重跑核验,或由业务确认计算规则后置 certified——计算规则未核验却高频使用,风险最高",
             })
     return {
         "graph": graph, "objects": len(rows),

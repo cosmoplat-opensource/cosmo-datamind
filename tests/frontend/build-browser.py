@@ -49,6 +49,7 @@ async def main(output, base_url=None):
             body = "".join("data: " + json.dumps(event, ensure_ascii=False) + "\r\n\r\n" for event in events)
             return await route.fulfill(content_type="text/event-stream", body=body)
         fixtures = {
+            "/api/data/context": {"source": {"id": "demo", "name": "隔离测试源"}, "tables": 2, "graphs": ["built_test"], "default_graph": "built_test"},
             "/api/ont/runtimes": {"current": "test", "runtimes": []},
             "/api/build/defaults": {"build_query": "补充订单与客户关系", "build_name": "测试本体"},
             "/api/build/sources": {"sources": [{"id": "demo", "name": "隔离测试源", "kind": "sqlite", "tables": 2, "ready": True, "builtin": True}], "assets": []},
@@ -72,7 +73,7 @@ async def main(output, base_url=None):
         page.on("pageerror", lambda error: failures.append(str(error)))
         await page.route("**/*", serve)
         await page.goto((base_url or "http://datamind-ui.test").rstrip("/") + "/#build", wait_until="networkidle")
-        await page.locator("#bc_skills .bc-skcard").wait_for()
+        await page.locator("#bc_skills .bc-skcard").first.wait_for()
         assert await page.locator("#bc_q").get_attribute("aria-label")
         await page.locator("#bc_q").fill("补充订单与客户关系")
         await page.locator("#bc_send").click()

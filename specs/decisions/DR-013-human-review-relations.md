@@ -8,7 +8,7 @@
 
 1. `confirm` 算子只能确认**对象**(obj:<id>),机器提议的 candidate **关系**没有任何人审动作(通过/否决);没有待审队列 UI——人机协同的"人"无处下手。
 2. 本体图谱页点边只读;关系编辑只埋在建模工作台的对象面板里。
-3. 更深一层:平台 `find_object/find_link` 只认 示例 形状(`objects[].id` + `links[source/target]`),而**问询台构建产物(built_*)与应用本体用 `objects[].name` + `relations[source_concept/target_concept]`——最需要人审的机器构建图谱,所有编辑算子根本跑不通**。
+3. 更深一层:平台 `find_object/find_link` 只认示例形状(`objects[].id` + `links[source/target]`),而**问询台构建产物(built_*)与应用本体用 `objects[].name` + `relations[source_concept/target_concept]`——最需要人审的机器构建图谱,所有编辑算子根本跑不通**。
 
 ## 决定
 
@@ -30,7 +30,7 @@
 
 ## 验证(实测)
 
-- built_f2050f(76 关系/8 待审):confirm→asserted+approved、reject→rejected 且图渲染剔除、verb 改动词、undo 逐条回退 ✓;demo(links 形状)同套往返 ✓;Playwright 无头验证评审页表格/按钮与图谱页边卡动作在 示例 与 built 图谱均渲染 ✓;test_all.py 119/119 ✓。
+- built_f2050f(76 关系/8 待审):confirm→asserted+approved、reject→rejected 且图渲染剔除、verb 改动词、undo 逐条回退 ✓;demo(links 形状)同套往返 ✓;Playwright 无头验证评审页表格/按钮与图谱页边卡动作在示例与 built 图谱均渲染 ✓;test_all.py 119/119 ✓。
 
 ## 增补(2026-07-25 下午):评审人 / 评审意见 / 删元素
 
@@ -43,7 +43,7 @@
 ## 教训
 
 - 「有编辑算子」≠「有人审流程」:算子散落在对象面板里,没有队列、没有关系级裁决,人机协同就只是口号。
-- 形状不统一是隐性断层:平台算子默认 示例 形状,构建产物悄悄不可编辑——统一入口(apply_any)比到处修补更稳。
+- 形状不统一是隐性断层:平台算子默认示例形状,构建产物悄悄不可编辑——统一入口(apply_any)比到处修补更稳。
 
 ## 关联
 

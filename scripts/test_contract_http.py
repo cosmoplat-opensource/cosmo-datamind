@@ -31,7 +31,6 @@ READ_ONLY_ENDPOINTS = [
     "/api/ont/metadata",
     "/api/metrics",
     "/api/glossary",
-    "/api/skills",
     "/api/build/defaults",
     "/api/build/sources",
     "/api/conn/tables",

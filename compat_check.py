@@ -5,7 +5,7 @@
 《本体智能研究报告(1.0)》阶段六:"本体版本管理与**向后兼容性保障**";
 阶段五:"本体版本管理(建立版本发布与回滚机制)"。
 
-本体是**语义契约**:问数靠它召回表与口径、规则靠它锚定对象、动作靠它绑定表、
+本体是**语义契约**:问数靠它召回表与计算规则、规则靠它锚定对象、动作靠它绑定表、
 穿透链路靠它连通。改本体不是改一份文档,是改一份被多方消费的契约——
 删掉一个对象,可能让三条规则失效、两个动作绑不到表、一条链路断开,
 而这些直到线上报错才会被发现。
@@ -14,7 +14,7 @@
 
 两层判断:
   ① 结构 diff —— 相比基线,删了什么、改了什么、降级了什么
-  ② 下游影响 —— 这些变更命中了哪些**已注册的消费者**(规则/动作/沉淀技能)
+  ② 下游影响 —— 这些变更命中了哪些**已注册的消费者**(规则/动作/已保存技能)
 
 分级:
   breaking  删除或改绑:下游必然失效
@@ -29,7 +29,7 @@
 """
 
 
-from ir_shape import rels as _rels                     # IR 形状单一事实源
+from ir_shape import rels as _rels                     # IR 形状集中定义
 
 
 def _objs(ir):
@@ -134,7 +134,7 @@ def impact(changes, rules=None, actions=None, qa_skills=None, base_ir=None):
         for t in tables_gone:
             if t and t in low:
                 hits.append({"kind": "qa_skill", "id": s.get("question", "")[:30],
-                             "why": f"沉淀技能的 SQL 引用了被删对象的表 {t}",
+                             "why": f"已保存技能的 SQL 引用了被删对象的表 {t}",
                              "severity": "breaking"})
                 break
     return hits
@@ -161,7 +161,7 @@ def check(base_ir, new_ir, rules=None, actions=None, qa_skills=None):
     for c in ch["removed_attrs"]:
         breaking.append({"type": "attrs_removed", "target": c["object"],
                          "desc": f"对象 {c['object']} 移除属性 {', '.join(c['removed'][:5])}",
-                         "fix": "引用这些列的口径与 SQL 会失效"})
+                         "fix": "引用这些列的计算规则与 SQL 会失效"})
     for c in ch["downgraded_relations"]:
         risky.append({"type": "status_downgraded", "target": c["relation"],
                       "desc": f"关系 {c['relation']} 状态降级 {c['from']}→{c['to']}",

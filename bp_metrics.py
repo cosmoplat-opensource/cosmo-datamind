@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """指标契约 blueprint(DR-054)。
 
-路由(4):GET /api/metric/contract、POST /api/metric/status、POST /api/metric/adjudicate、
-GET /api/metric/dimensions。人工只能授予 certified / deprecated;verified 只能由核验产生,
+路由(3):GET /api/metric/contract(含可用维度)、POST /api/metric/status、POST /api/metric/adjudicate。
+人工只能授予 certified / deprecated;verified 只能由核验产生,
 本 blueprint 不提供把指标直接置为 verified 的途径。
 """
 import time
@@ -18,10 +18,10 @@ bp_metrics = Blueprint("metrics", __name__)
 _deps: dict = {}
 
 
-def configure_metrics(load_graph, open_writable, db_for_source, write_json, write_lock):
+def configure_metrics(load_graph, open_writable, db_for_source, write_json, write_lock, default_graph=lambda: 'demo'):
     """注入主应用的图谱读写与数据源解析,避免 blueprint 反向导入 ``server``。"""
     _deps.update(load_graph=load_graph, open_writable=open_writable, db_for_source=db_for_source,
-                 write_json=write_json, write_lock=write_lock)
+                 write_json=write_json, write_lock=write_lock, default_graph=default_graph)
 
 
 def _find(ir, name):
@@ -34,7 +34,7 @@ def _find(ir, name):
 
 @bp_metrics.get("/api/metric/contract")
 def metric_contract_view():
-    key = (request.args.get("graph") or "demo").strip()
+    key = (request.args.get("graph") or _deps['default_graph']()).strip()
     name = (request.args.get("name") or "").strip()
     ir = _deps["load_graph"](key)
     if ir is None: return jsonify({"error": "非法图谱键"}), 400
@@ -50,22 +50,9 @@ def metric_contract_view():
     return jsonify(out)
 
 
-@bp_metrics.get("/api/metric/dimensions")
-def metric_dimensions():
-    key = (request.args.get("graph") or "demo").strip()
-    name = (request.args.get("name") or "").strip()
-    ir = _deps["load_graph"](key)
-    if ir is None: return jsonify({"error": "非法图谱键"}), 400
-    _, _, m = _find(ir or {}, name)
-    if not m: return jsonify({"error": "指标不存在"}), 404
-    if not metric_contract.is_contract(m):
-        return jsonify({"error": "该指标尚无契约(旧形状),不能推导维度可达性"}), 400
-    return jsonify({"graph": key, "metric": name, **metric_contract.allowed_dimensions(m, ir)})
-
-
 @bp_metrics.post("/api/metric/status")
 def metric_status():
-    """人工确认口径:certified(等价于关系的 asserted)/ deprecated / 撤回到 candidate。
+    """人工确认计算规则:certified(等价于关系的 asserted)/ deprecated / 撤回到 candidate。
     不接受 verified——那只能由核验产生。"""
     body = request.json or {}
     key = str(body.get("graph") or "").strip()
@@ -84,11 +71,11 @@ def metric_status():
         if not m: return jsonify({"error": "指标不存在"}), 404
         if status == "certified":
             if not metric_contract.is_contract(m):
-                return jsonify({"error": "旧形状指标没有可编译口径,不能确认为 certified;先补契约"}), 400
+                return jsonify({"error": "旧形状指标没有可编译的计算规则,不能确认为 certified;先补契约"}), 400
             try:
                 metric_contract.compile_sql(m)
             except ValueError as exc:
-                return jsonify({"error": f"口径无法编译:{exc}"}), 400
+                return jsonify({"error": f"计算规则无法编译:{exc}"}), 400
         m["status"] = status
         m["candidate"] = status == "candidate"
         if status == "certified":

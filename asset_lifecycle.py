@@ -1,8 +1,8 @@
 """Host composition for lifecycle migration, legacy keys and HTTP — DR-157."""
 from contextlib import nullcontext
+from copy import deepcopy
 import io
 import hashlib
-import json
 from pathlib import Path
 import sqlite3
 
@@ -49,26 +49,55 @@ def deleted(host,key):
     return bool(state and state['state']=='deleted')
 
 
-def effective(host,key):
-    found=binding(host,key)
-    if not found:return None
-    require(found['lifecycle']['state']=='active','ontology_deleted')
-    require(found['restore_available'],'legacy_snapshot_unavailable')
+def _snapshot(host, key):
+    found = binding(host, key)
+    if not found:
+        return None
+    require(found['lifecycle']['state'] == 'active', 'ontology_deleted')
+    require(found['restore_available'], 'legacy_snapshot_unavailable')
     from ontology_assets import AssetStore
-    return AssetStore(root_for(host),read_only=True).load_data_ir(found['ontology_id'],found['version_id'])
+    assets = AssetStore(root_for(host), read_only=True)
+    return assets, found, assets.get_version(found['ontology_id'], found['version_id'])
+
+
+def base(host, key):
+    """DR-158: immutable baseline, separate from the effective edited version."""
+    snapshot = _snapshot(host, key)
+    if snapshot is None:
+        return None
+    assets, found, version = snapshot
+    saved = version['metadata'].get('provenance', {})
+    if isinstance(saved.get('base_ir'), dict):
+        return deepcopy(saved['base_ir'])
+    # Compatibility with schema-9 snapshots created before baseline recording.
+    if provenance(host, key)['source_sha256'] == saved.get('source_sha256'):
+        return _original(host, key)
+    if saved.get('edit_count', 0) == 0:
+        return assets.load_data_ir(found['ontology_id'], found['version_id'])
+    require(False, 'legacy_changed')
+
+
+def effective(host,key):
+    snapshot = _snapshot(host, key)
+    if snapshot is None:
+        return None
+    assets, found, version = snapshot
+    if getattr(host, '_pinned', lambda k: False)(key):
+        saved = version['metadata'].get('provenance', {})
+        ops = saved.get('edit_ops', host._load_edits(key).get('ops', []))
+        return host._replay_ir(key, base(host, key), ops[:host._IR_PIN.get()[key]])
+    return assets.load_data_ir(found['ontology_id'],found['version_id'])
+
+
+def _original(host,key):
+    value = host._load_json(host._forged_path(key[7:])) if key.startswith('forged_') else host._load_ir_original(key)
+    if not value:
+        raise FileNotFoundError('missing legacy graph')
+    return deepcopy(value)
 
 
 def _raw(host,key):
-    if key.startswith('forged_'):
-        path=host._forged_path(key[7:])
-        value=host._load_json(path)
-    else:value=host._load_ir_original(key)
-    if not value:raise FileNotFoundError('missing legacy graph')
-    value=json.loads(json.dumps(value))
-    for op in host._load_edits(key).get('ops',[]):
-        try:host.apply_any(value,op)
-        except (ValueError,KeyError):pass
-    return value
+    return host._replay_ir(key, _original(host, key), host._load_edits(key).get('ops', []))
 
 
 def provenance(host,key):
@@ -81,7 +110,9 @@ def provenance(host,key):
     edit=Path(host._edits_path(key))
     return {'source_sha256':hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None,
             'edits_sha256':hashlib.sha256(edit.read_bytes()).hexdigest() if edit.is_file() else None,
-            'edit_count':len(host._load_edits(key).get('ops',[]))}
+            'edit_count':len(host._load_edits(key).get('ops',[])),
+            'edit_ops':deepcopy(host._load_edits(key).get('ops', [])),
+            'base_ir':_original(host, key)}
 
 
 def initialize(host):
@@ -117,6 +148,13 @@ def failure(exc):
     return jsonify(error={'code':exc.code,'message':str(exc)}),status
 
 
+def invalidate(host):
+    for name in ('_QA_CACHE', '_GRAPH_ROW_CACHE', '_SOURCE_KEYS_CACHE', '_DEMO_FITS', '_REV_CACHE'):
+        cache = getattr(host, name, None)
+        if cache is not None:
+            cache.clear()
+
+
 def legacy_delete(host,key,body):
     """Unmigrated IR028 hosts retain their versioned protocol; persisted v1 roots never do."""
     known=binding(host,key)
@@ -127,7 +165,7 @@ def legacy_delete(host,key,body):
     args={k:v for k,v in body.items() if k not in ('key','id')}
     validate_body(args)
     result=LifecycleService(root_for(host)).delete(known['ontology_id'],**args)
-    host._QA_CACHE.clear();host._GRAPH_ROW_CACHE.clear()
+    invalidate(host)
     return {'ok':True,**result}
 
 
@@ -161,7 +199,7 @@ def init_app(app, *, root_provider, host=None):
         with lock:
             result=getattr(LifecycleService(root_provider()),operation)(oid,**body)
             if host is not None:
-                host._QA_CACHE.clear();host._GRAPH_ROW_CACHE.clear()
+                invalidate(host)
         response=jsonify(result);response.set_etag(str(result['lifecycle']['revision']));return response
     @bp.post('/api/ontology-assets/<oid>/delete')
     def delete(oid):return change(oid,'delete')
@@ -195,25 +233,14 @@ def write_graph(host,path,value,writer):
         try:
             writer(str(path),value)
             document=None
+            baseline=None
             if is_edit and found:
-                from ontology_assets import AssetStore
-                assets=AssetStore(root_for(host),read_only=True)
-                version=assets.get_version(found['ontology_id'],found['version_id'])
-                count=version['metadata'].get('provenance',{}).get('edit_count',0)
-                ops=value.get('ops',[])
-                if len(ops)>=count:
-                    document=assets.load_data_ir(found['ontology_id'],found['version_id'])
-                    for op in ops[count:]:host.apply_any(document,op)
-                else:
-                    for old in reversed(assets.list_versions(found['ontology_id'])):
-                        if old['metadata'].get('provenance',{}).get('edit_count')==len(ops):
-                            document=assets.load_data_ir(found['ontology_id'],old['version_id']);break
-                    if document is None:
-                        require(provenance(host,key)['source_sha256']==version['metadata'].get('provenance',{}).get('source_sha256'),'legacy_changed')
+                baseline=base(host,key)
+                document=host._replay_ir(key, deepcopy(baseline), value.get('ops',[]))
             LifecycleService(root_for(host)).bind_legacy(key,name=(value.get('scenario') or {}).get('name',key),
                 load_effective=lambda k:document if document is not None else _raw(host,k),
-                provenance=lambda k:provenance(host,k))
-            host._GRAPH_ROW_CACHE.clear();host._QA_CACHE.clear()
+                provenance=lambda k:{**provenance(host,k), **({'base_ir':baseline} if baseline is not None else {})})
+            invalidate(host)
         except BaseException:
             if original is None:path.unlink(missing_ok=True)
             else:

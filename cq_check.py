@@ -5,7 +5,7 @@
 本模块对外称「验收问题」;CQ / Competency Questions 是同一概念的学界叫法,
 文件名与字段名沿用 cq 以免破坏既有接口,展示文案一律不出现 CQ。
 
-在**已建成的本体 IR** 上做确定性的结构可达性判定,回答一个记分卡回答不了的问题:
+在**已建成的本体 IR** 上做确定性的结构可达性判定,回答完备度评分回答不了的问题:
 「这个本体到底能不能支撑当初要解决的业务问题」。
 
 判定完全不调 LLM:对象在不在、路径通不通、边的状态够不够,都是图上算出来的,
@@ -44,10 +44,10 @@ def relation_is_strong(relation):
     return semantic not in {"fail", "rejected", "disputed"}
 
 
-from ir_shape import rels as _rels                     # IR 形状单一事实源
+from ir_shape import rels as _rels                     # IR 形状集中定义
 
 
-from ir_shape import obj_names as _obj_names           # 取名规则单一事实源(超集)
+from ir_shape import obj_names as _obj_names           # 取名规则集中定义(超集)
 
 
 def _key_of(o, idx):
@@ -108,7 +108,7 @@ def anchor_objects(question, ir):
 def _adj(ir, strong_only):
     """无向邻接表。strong_only=True 时只保留证据充分的边。"""
     rels, sk, tk = _rels(ir)
-    g = {}
+    g: dict = {}
     for r in rels:
         if strong_only and not relation_is_strong(r):
             continue
@@ -235,14 +235,109 @@ def check_one(question, ir, expect=None):
             "fix": ""}
 
 
+def _resolve(names, ir):
+    """按完整名称把一串对象名解析成 (已解析列表, 找不到的名字)。"""
+    resolved, missing = [], []
+    for name in names:
+        hit = None
+        for i, o in enumerate(ir.get("objects", [])):
+            if any(n.lower() == str(name).strip().lower() for n in _obj_names(o)):
+                hit = {"name": name, "key": _key_of(o, i), "cn": o.get("cn") or o.get("name")}
+                break
+        if hit:
+            resolved.append(hit)
+        else:
+            missing.append(name)
+    return resolved, missing
+
+
+def check_route(route, ir, roles=None):
+    """按方向核验一条业务路线(DR-116)。route 是按业务顺序排列的对象名,相邻两步之间必须有一条
+    **直接**的、方向一致的关系;roles 可逐段指定角色(如「流转」「返工」)。
+
+    与 check_chain 的区别:check_chain 判无向连通、允许借道,回答「连不连得上」;
+    这里不借道、看方向,回答「能不能按这个顺序走」。每段的结果:
+      ok        有方向一致的强关系(verified/asserted,语义无争议)
+      weak      方向一致的关系存在,但还是候选或证据不足
+      reversed  只有反方向的关系,或同方向但角色不符
+      broken    两步之间没有直接关系
+    """
+    if not isinstance(route, (list, tuple)) or len(route) < 2:
+        return {"route": route, "verdict": "invalid", "reason": "路线至少需 2 个节点", "segments": []}
+    resolved, missing = _resolve(route, ir)
+    if missing:
+        return {"route": list(route), "verdict": "unanswerable", "missing": missing, "segments": [],
+                "reason": "路线节点未在本体中找到: " + "、".join(str(m) for m in missing),
+                "fix": "补建模:这些工序或对象尚未进入本体"}
+    rels, sk, tk = _rels(ir)
+    roles = list(roles or [])
+    segments = []
+    for i in range(len(resolved) - 1):
+        a, b = resolved[i], resolved[i + 1]
+        want = str(roles[i]).strip() if i < len(roles) and roles[i] else ""
+        fwd = [r for r in rels if r.get(sk) == a["key"] and r.get(tk) == b["key"]]
+        back = [r for r in rels if r.get(sk) == b["key"] and r.get(tk) == a["key"]]
+        fit = [r for r in fwd if not want or str(r.get("role") or "") == want]
+        seg = {"from": a["name"], "to": b["name"]}
+        if want:
+            seg["required_role"] = want
+        strong = next((r for r in fit if relation_is_strong(r)), None)
+        if strong is not None:
+            seg.update(status="ok", role=str(strong.get("role") or ""), verb=strong.get("verb"))
+        elif fit:
+            seg.update(status="weak", role=str(fit[0].get("role") or ""), verb=fit[0].get("verb"),
+                       note="方向一致的关系还是候选或证据不足")
+        elif fwd:
+            seg.update(status="reversed",
+                       note=f"两步之间有关系,但角色不是「{want}」(现有:"
+                            + "、".join(str(r.get("role") or "未标角色") for r in fwd) + ")")
+        elif back:
+            seg.update(status="reversed", note="只有反方向的关系:" + "、".join(
+                f"{b['name']}→{a['name']}" + (f"（{r.get('role')}）" if r.get("role") else "") for r in back))
+        else:
+            seg.update(status="broken", note="两步之间没有直接关系,路线在此断开")
+        segments.append(seg)
+    order = ("broken", "reversed", "weak")
+    worst = next((s for s in order if any(x["status"] == s for x in segments)), "ok")
+    verdict = {"ok": "intact"}.get(worst, worst)
+    n = sum(1 for x in segments if x["status"] == worst)
+    return {
+        "route": list(route), "verdict": verdict, "segments": segments,
+        "intact_segments": sum(1 for x in segments if x["status"] == "ok"), "total_segments": len(segments),
+        "reason": {"intact": "路线各段都有方向一致的 verified/asserted 关系",
+                   "weak": f"{n} 段的关系方向一致但还是候选或证据不足",
+                   "reversed": f"{n} 段的方向或角色与路线不符",
+                   "broken": f"{n} 段之间没有直接关系"}[verdict],
+        "fix": {"intact": "", "weak": "对这些段的候选关系补数据证据或完成人审",
+                "reversed": "核对路线顺序;若顺序无误,按业务方向补建关系并标明角色",
+                "broken": "补关系:按工序顺序补建相邻两步之间的直接关系"}[verdict],
+    }
+
+
+def _check_directed(question, route, roles, ir):
+    """带路线的验收问题:按方向核验,结果折算成与结构类问题相同的三态。"""
+    rep = check_route(route, ir, roles)
+    verdict = {"intact": "answerable", "weak": "partial"}.get(rep["verdict"], "unanswerable")
+    reason = rep["reason"]
+    if rep["verdict"] == "reversed":
+        reason = "路线的方向或角色不符: " + reason
+    return {"question": question, "verdict": verdict, "kind": "directed", "route": rep.get("route"),
+            "segments": rep.get("segments", []), "anchors": [], "path": None,
+            "reason": reason, "fix": rep.get("fix", "")}
+
+
 def check_all(cqs, ir):
-    """批量核验,返回覆盖报告。cqs 元素可为 str,或 {"q": ..., "expect": [...]}。"""
+    """批量核验,返回覆盖报告。cqs 元素可为 str,或 {"q": ..., "expect": [...]};
+    带 "route"(按业务顺序的对象名)的问题按方向核验(DR-116),可用 "roles" 逐段指定角色。"""
     items = []
     for c in (cqs or []):
         if isinstance(c, str):
             items.append(check_one(c, ir))
         elif isinstance(c, dict) and (c.get("q") or c.get("question")):
-            items.append(check_one(c.get("q") or c.get("question"), ir, c.get("expect")))
+            if isinstance(c.get("route"), list) and len(c["route"]) >= 2:
+                items.append(_check_directed(c.get("q") or c.get("question"), c["route"], c.get("roles"), ir))
+            else:
+                items.append(check_one(c.get("q") or c.get("question"), ir, c.get("expect")))
     n = len(items)
     cnt = {v: sum(1 for i in items if i["verdict"] == v)
            for v in ("answerable", "partial", "unanswerable")}
