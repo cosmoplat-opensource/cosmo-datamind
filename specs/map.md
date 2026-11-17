@@ -37,9 +37,9 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 工作分支为 `feat/studio-ui-integration`，以下规约尚未实施或交付。
 
 - [DR-159 · Studio 图谱组件与本体构建可视化](decisions/DR-159-studio-ontology-visualization.md)：accepted（2026-11-17 用户授权启动）；[T01 视图契约](contracts/studio-graph-view-v1.md) 已冻结，明确对 DR-150 的局部替代及现有主线兼容约束。
-- [IR-031 · 共享组件与机器人连续可视化](iterations/IR-031-studio-robotics-visualization.md)：in-progress（规约阶段）；STV-R01～06。
+- [IR-031 · 共享组件与机器人连续可视化](iterations/IR-031-studio-robotics-visualization.md)：in-progress；T01 契约已冻结并提交，T02 RED 待测试人审（29 预期失败／2 夹具通过，相关回归 44 通过），STV-R01～06。
 - [IR-032 · 数据本体画布与业务交互](iterations/IR-032-studio-data-visualization.md)：in-progress（规约阶段，依赖 IR-031 交付）；STV-D01～06。
-- 验收计划登记于 `acceptance.json` 的 `planned_requirements`；T02／T04 实际测试落地后迁入正式映射，不宣称现有覆盖。
+- 验收计划登记于 `acceptance.json` 的 `planned_requirements`；IR-031 已落地用例在正式映射标记 red，浏览器与 IR-032 仍保留计划，不宣称功能已通过。
 
 ## 机器人双路径构建（2026-11-10，已确认方案）
 

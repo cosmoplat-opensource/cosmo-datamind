@@ -1,6 +1,6 @@
 # IR-031 · Studio 共享图谱与机器人连续可视化
 
-- **状态 / Status**：in-progress（T01 契约冻结，准备 T02 RED）。
+- **状态 / Status**：in-progress（T01 已提交，T02 RED 完成并提交测试人审；T03 GREEN 尚未开始）。
 - **日期 / Date**：2026-11-17。
 - **关联 / Refs**：[DR-159](../decisions/DR-159-studio-ontology-visualization.md)、[IR-024](IR-024-robotics-dual-build.md)、[IR-027](IR-027-ontology-detail-experience.md)、[IR-032](IR-032-studio-data-visualization.md)。
 - **工作分支 / Branch**：`feat/studio-ui-integration`。
@@ -98,3 +98,15 @@ T01 已冻结共享图谱契约；产品实现及最终全量尚未完成。
 T01 的验收限于契约、来源和基线，尚未声明组件性能或完整 IR 验收通过。
 
 T01 相关基线 16 项通过，来源摘要／链接／diff 检查通过，见 [T01 记录](../../docs/audits/IR-031-t01-contract-review.md)。
+
+
+## T02 RED 执行记录（2026-11-17）
+
+新增纯投影行为用例与共享控制器 Node 行为用例，包含手算 RDF 夹具、真实候选读取只读性、完整 IRI、显式实例、并集及独立 domain、稳定身份、异常和规模限制。
+组件用例覆盖 revision／epoch、固定和暂停状态、删除后选择清理、分批及共享实例、多 SVG 标识、销毁与回调。
+RED 为 29 failed／2 passed／0 errors／0 skipped；失败均首先指向尚未实现的产品投影或控制器，底层行为断言尚待 T03 实现后逐项验证，不宣称已观察到 29 种独立产品故障。
+2 个通过项是独立 RDF 语义和设计确认摘要夹具检查，不算新能力通过。
+既有追溯、关系图、设计候选和设计控制器相关回归 44 passed，ruff／Node 语法／diff 检查通过。
+STV-R01／02／04／05／06 的实际测试已进入正式映射并标为 red，浏览器计划保留；STV-R03 的真实拖拽与几何验收仍为计划项。
+测试与证据按本 Task 提交；依技能第⑤环节“人 review 测试是否覆盖到位”，当前提交测试人审，未开始 T03 GREEN。
+详见 [RED 人审记录](../../docs/audits/IR-031-t02-red-review.md) 和 [机器结果](../../docs/audits/IR-031-t02-results.json)。

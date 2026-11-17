@@ -3927,6 +3927,97 @@
         "tests/unit/test_merge_qa_regressions.py::test_model_probes_cannot_bypass_semantic_validation",
         "tests/unit/test_database_scope_ui.py::test_database_source_frontend_behavior"
       ]
+    },
+    {
+      "id": "STV-R01",
+      "decision": "DR-159",
+      "iteration": "IR-031",
+      "status": "red",
+      "criterion": "机器人设计按已保存修订依次显示类别、关系与属性、实例，等待和失败不虚构结果，返回修改阶段清除失效内容。",
+      "tests": [
+        "tests/unit/test_studio_robotics_projection.py::test_design_stages_project_only_valid_revision_content",
+        "tests/unit/test_studio_robotics_projection.py::test_classes_stage_never_renders_stale_properties_or_vocabulary_instances",
+        "tests/unit/test_studio_robotics_projection.py::test_waiting_and_failure_keep_saved_design_without_simulated_progress",
+        "tests/unit/test_studio_robotics_projection.py::test_no_saved_result_is_empty_not_a_vocabulary_seed",
+        "tests/unit/test_studio_robotics_projection.py::test_invalid_design_snapshot_is_rejected"
+      ],
+      "coverage_note": "IR-031 T02 RED：纯投影／组件用例已存在，因产品能力缺失而失败；集成 HTTP、浏览器与性能覆盖待 T04/T05，尚未通过。planned_tests 保留后续覆盖计划。",
+      "planned_tests": [
+        "tests/unit/test_studio_robotics_projection.py::test_design_stages_project_only_valid_revision_content",
+        "tests/frontend/studio-robotics-browser.py::test_classes_properties_instances_update_one_canvas"
+      ]
+    },
+    {
+      "id": "STV-R02",
+      "decision": "DR-159",
+      "iteration": "IR-031",
+      "status": "red",
+      "criterion": "同一来源的增量更新保留有效布局、缩放、选择与展开状态，新增修改删除可辨识，历史与迟到响应不能覆盖当前设计。",
+      "tests": [
+        "tests/unit/test_studio_graph_ui.py::test_revision_updates_preserve_view_and_reject_stale_context",
+        "tests/unit/test_studio_graph_ui.py::test_deleting_node_clears_selection_and_marks_removal",
+        "tests/unit/test_studio_graph_ui.py::test_snapshot_is_detached_and_pause_pin_are_preserved"
+      ],
+      "coverage_note": "IR-031 T02 RED：纯投影／组件用例已存在，因产品能力缺失而失败；集成 HTTP、浏览器与性能覆盖待 T04/T05，尚未通过。planned_tests 保留后续覆盖计划。",
+      "planned_tests": [
+        "tests/unit/test_studio_graph_ui.py::test_revision_updates_preserve_view_and_reject_stale_context",
+        "tests/frontend/studio-robotics-browser.py::test_revision_changes_preserve_view_and_history_is_read_only"
+      ]
+    },
+    {
+      "id": "STV-R04",
+      "decision": "DR-159",
+      "iteration": "IR-031",
+      "status": "red",
+      "criterion": "双击类别可展开收起全部可访问的显式归属实例，多类型去重，无实例明确说明，大类别分批显示准确数量且可继续访问。",
+      "tests": [
+        "tests/unit/test_studio_robotics_projection.py::test_explicit_membership_counts_deduplicate_without_inference",
+        "tests/unit/test_studio_graph_ui.py::test_paged_expansion_deduplicates_shared_membership",
+        "tests/unit/test_studio_graph_ui.py::test_empty_classes_notice_and_updates_do_not_trigger_writes",
+        "tests/unit/test_studio_robotics_projection.py::test_oversized_projection_refuses_instead_of_silently_truncating"
+      ],
+      "coverage_note": "IR-031 T02 RED：纯投影／组件用例已存在，因产品能力缺失而失败；集成 HTTP、浏览器与性能覆盖待 T04/T05，尚未通过。planned_tests 保留后续覆盖计划。",
+      "planned_tests": [
+        "tests/unit/test_studio_robotics_projection.py::test_explicit_membership_counts_deduplicate_without_inference",
+        "tests/frontend/studio-robotics-browser.py::test_class_expansion_empty_shared_and_paged_instances"
+      ]
+    },
+    {
+      "id": "STV-R05",
+      "decision": "DR-159",
+      "iteration": "IR-031",
+      "status": "red",
+      "criterion": "固定版本新旧机器人本体使用同一浏览体验，保留类别关系、实例事实、属性及并集含义，并按版本摘要验证来源。",
+      "tests": [
+        "tests/unit/test_studio_robotics_projection.py::test_fixed_legacy_and_design_payloads_preserve_rdf_semantics",
+        "tests/unit/test_studio_robotics_projection.py::test_blank_expression_and_edge_identity_are_stable_after_rdf_reparse",
+        "tests/unit/test_studio_robotics_projection.py::test_fixed_version_integrity_is_checked_before_display",
+        "tests/unit/test_studio_robotics_projection.py::test_legacy_robotics_payload_preserves_declared_classes_and_instance_identity",
+        "tests/unit/test_studio_robotics_projection.py::test_equal_local_names_keep_full_iri_identity",
+        "tests/unit/test_studio_robotics_projection.py::test_empty_rdf_is_valid_empty_view_without_dummy_nodes"
+      ],
+      "coverage_note": "IR-031 T02 RED：纯投影／组件用例已存在，因产品能力缺失而失败；集成 HTTP、浏览器与性能覆盖待 T04/T05，尚未通过。planned_tests 保留后续覆盖计划。",
+      "planned_tests": [
+        "tests/unit/test_studio_robotics_projection.py::test_fixed_legacy_and_design_payloads_preserve_rdf_semantics",
+        "tests/unit/test_studio_graph_http.py::test_fixed_version_mismatch_and_deleted_asset_follow_existing_policy"
+      ]
+    },
+    {
+      "id": "STV-R06",
+      "decision": "DR-159",
+      "iteration": "IR-031",
+      "status": "red",
+      "criterion": "画布只读操作不触发模型或本体写入，多画布并存与销毁不串状态，错误不会显示另一资产作为成功结果。",
+      "tests": [
+        "tests/unit/test_studio_robotics_projection.py::test_real_saved_design_and_fixed_candidate_projection_are_read_only",
+        "tests/unit/test_studio_graph_ui.py::test_multiple_canvases_dispose_resources_and_scope_events",
+        "tests/unit/test_studio_graph_ui.py::test_empty_classes_notice_and_updates_do_not_trigger_writes"
+      ],
+      "coverage_note": "IR-031 T02 RED：纯投影／组件用例已存在，因产品能力缺失而失败；集成 HTTP、浏览器与性能覆盖待 T04/T05，尚未通过。planned_tests 保留后续覆盖计划。",
+      "planned_tests": [
+        "tests/unit/test_studio_graph_ui.py::test_multiple_canvases_dispose_resources_and_scope_events",
+        "tests/frontend/studio-robotics-browser.py::test_navigation_failure_and_read_only_actions_do_not_mutate_assets"
+      ]
     }
   ],
   "planned_requirements": [
@@ -3988,30 +4079,6 @@
       ]
     },
     {
-      "id": "STV-R01",
-      "decision": "DR-159",
-      "iteration": "IR-031",
-      "status": "planned",
-      "criterion": "机器人设计按已保存修订依次显示类别、关系与属性、实例，等待和失败不虚构结果，返回修改阶段清除失效内容。",
-      "tests": [
-        "tests/unit/test_studio_robotics_projection.py::test_design_stages_project_only_valid_revision_content",
-        "tests/frontend/studio-robotics-browser.py::test_classes_properties_instances_update_one_canvas"
-      ],
-      "coverage_note": "计划路径；尚未编写或运行。T02/T04 随实际行为测试落地迁入正式 requirements。"
-    },
-    {
-      "id": "STV-R02",
-      "decision": "DR-159",
-      "iteration": "IR-031",
-      "status": "planned",
-      "criterion": "同一来源的增量更新保留有效布局、缩放、选择与展开状态，新增修改删除可辨识，历史与迟到响应不能覆盖当前设计。",
-      "tests": [
-        "tests/unit/test_studio_graph_ui.py::test_revision_updates_preserve_view_and_reject_stale_context",
-        "tests/frontend/studio-robotics-browser.py::test_revision_changes_preserve_view_and_history_is_read_only"
-      ],
-      "coverage_note": "计划路径；尚未编写或运行。T02/T04 随实际行为测试落地迁入正式 requirements。"
-    },
-    {
       "id": "STV-R03",
       "decision": "DR-159",
       "iteration": "IR-031",
@@ -4019,42 +4086,6 @@
       "criterion": "Studio 风格类别圆圈和关系标签可读，拖拽产生力导向联动，固定释放、搜索、缩放及键盘详情入口可用。",
       "tests": [
         "tests/frontend/studio-robotics-browser.py::test_force_drag_pin_search_zoom_and_keyboard_details"
-      ],
-      "coverage_note": "计划路径；尚未编写或运行。T02/T04 随实际行为测试落地迁入正式 requirements。"
-    },
-    {
-      "id": "STV-R04",
-      "decision": "DR-159",
-      "iteration": "IR-031",
-      "status": "planned",
-      "criterion": "双击类别可展开收起全部可访问的显式归属实例，多类型去重，无实例明确说明，大类别分批显示准确数量且可继续访问。",
-      "tests": [
-        "tests/unit/test_studio_robotics_projection.py::test_explicit_membership_counts_deduplicate_without_inference",
-        "tests/frontend/studio-robotics-browser.py::test_class_expansion_empty_shared_and_paged_instances"
-      ],
-      "coverage_note": "计划路径；尚未编写或运行。T02/T04 随实际行为测试落地迁入正式 requirements。"
-    },
-    {
-      "id": "STV-R05",
-      "decision": "DR-159",
-      "iteration": "IR-031",
-      "status": "planned",
-      "criterion": "固定版本新旧机器人本体使用同一浏览体验，保留类别关系、实例事实、属性及并集含义，并按版本摘要验证来源。",
-      "tests": [
-        "tests/unit/test_studio_robotics_projection.py::test_fixed_legacy_and_design_payloads_preserve_rdf_semantics",
-        "tests/unit/test_studio_graph_http.py::test_fixed_version_mismatch_and_deleted_asset_follow_existing_policy"
-      ],
-      "coverage_note": "计划路径；尚未编写或运行。T02/T04 随实际行为测试落地迁入正式 requirements。"
-    },
-    {
-      "id": "STV-R06",
-      "decision": "DR-159",
-      "iteration": "IR-031",
-      "status": "planned",
-      "criterion": "画布只读操作不触发模型或本体写入，多画布并存与销毁不串状态，错误不会显示另一资产作为成功结果。",
-      "tests": [
-        "tests/unit/test_studio_graph_ui.py::test_multiple_canvases_dispose_resources_and_scope_events",
-        "tests/frontend/studio-robotics-browser.py::test_navigation_failure_and_read_only_actions_do_not_mutate_assets"
       ],
       "coverage_note": "计划路径；尚未编写或运行。T02/T04 随实际行为测试落地迁入正式 requirements。"
     },
