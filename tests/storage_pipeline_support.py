@@ -1,4 +1,4 @@
-"""Fresh robotics assets and independent persistence assertions — DR-064 / DR-065."""
+"""Fresh robotics assets and independent persistence assertions — DR-146 / DR-147."""
 from functools import lru_cache
 import hashlib
 import importlib

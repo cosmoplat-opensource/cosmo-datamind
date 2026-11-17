@@ -1,4 +1,4 @@
-"""T04 integration fixtures: real SQLite/HTTP, synthetic checker facts only — DR-071."""
+"""T04 integration fixtures: real SQLite/HTTP, synthetic checker facts only — DR-153."""
 from copy import deepcopy
 import importlib
 import sqlite3

@@ -2,7 +2,7 @@
 
 - **状态 / Status**：delivered（2026-11-12 用户确认交付并授权提交）。
 - **日期 / Date**：2026-11-12。
-- **关联 / Refs**：[DR-071](../decisions/DR-071-application-contract-registry.md)。
+- **关联 / Refs**：[DR-153](../decisions/DR-153-application-contract-registry.md)。
 - **T01 冻结契约**：[应用契约基础 v1](../contracts/application-contracts-v1.md)。
 
 ## 目标 Goal

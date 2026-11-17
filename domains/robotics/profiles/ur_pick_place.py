@@ -1,4 +1,4 @@
-"""Fixed UR vocabulary, procedure and source-derived examples — DR-060 / DR-062.
+"""Fixed UR vocabulary, procedure and source-derived examples — DR-142 / DR-144.
 
 Migrated from yang ontology_pipeline; examples remain illustrative, never confirmed.
 """

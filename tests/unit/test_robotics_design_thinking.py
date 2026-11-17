@@ -1,4 +1,4 @@
-"""Scoped TBox thinking policy without changing other applications — DR-070."""
+"""Scoped TBox thinking policy without changing other applications — DR-152."""
 import io
 import json
 from copy import deepcopy

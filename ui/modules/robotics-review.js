@@ -1,4 +1,4 @@
-/* Fixed-version knowledge editing and review state — DR-059 / DR-061 / DR-063 / DR-064. */
+/* Fixed-version knowledge editing and review state — DR-141 / DR-143 / DR-145 / DR-146. */
 (function (global) {
   'use strict';
   const copy = value => JSON.parse(JSON.stringify(value));

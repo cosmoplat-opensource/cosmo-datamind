@@ -1,4 +1,4 @@
-"""Shared QA admission, content-bound cache and legacy deletion fence — DR-074."""
+"""Shared QA admission, content-bound cache and legacy deletion fence — DR-156."""
 from contextlib import contextmanager
 from copy import deepcopy
 import json

@@ -1,4 +1,4 @@
-"""T02 RED: real XML extraction, candidate semantics and located failures — DR-060 / DR-065."""
+"""T02 RED: real XML extraction, candidate semantics and located failures — DR-142 / DR-147."""
 from copy import deepcopy
 import json
 from pathlib import Path

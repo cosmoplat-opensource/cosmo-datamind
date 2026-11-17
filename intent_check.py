@@ -27,7 +27,7 @@
 """
 import re
 
-# DR-074 / IR-028 T06: SQLite quotes must not turn a correct count into a mismatch.
+# DR-156 / IR-028 T06: SQLite quotes must not turn a correct count into a mismatch.
 _PART = r'(?:[A-Za-z_][A-Za-z0-9_]*|"[^"]+"|`[^`]+`|\[[^\]]+\])'
 _IDENT = _PART + r'(?:\s*\.\s*' + _PART + r')?'
 

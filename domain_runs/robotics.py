@@ -1,4 +1,4 @@
-"""Generate from a pinned published asset and commit durable outputs — DR-062 / DR-064 / DR-065."""
+"""Generate from a pinned published asset and commit durable outputs — DR-144 / DR-146 / DR-147."""
 from pathlib import Path
 import tempfile
 
@@ -26,7 +26,7 @@ def generate_from_version(root, *, ontology_id, version_id, task, mode, session_
 
 
 def generate_application(root, *, ontology_id, version_id, task, mode, session_ref, model_info=None, purpose='strict'):
-    """DR-066: same validated compiler/run pipeline, without automatic publication."""
+    """DR-148: same validated compiler/run pipeline, without automatic publication."""
     assets = AssetStore(root)
     context = assets.load_robotics_application(ontology_id, version_id, mode=mode)
     return _generate(root, assets, context, ontology_id, version_id, task, mode, session_ref, model_info, purpose)
@@ -79,9 +79,9 @@ def _generate(root, assets, context, ontology_id, version_id, task, mode, sessio
 
 
 def _finish_governed(runs, run_id, context, result, artifacts, *, purpose='strict'):
-    """DR-061/064: serialize current evidence admission with durable completion.
+    """DR-143/064: serialize current evidence admission with durable completion.
 
-    A revocation committed during computation blocks strict candidates. DR-067
+    A revocation committed during computation blocks strict candidates. DR-149
     offline candidates instead retain the artifact and report unverified applicability.
     The ordinary RunStore completion contract and old manifest layout stay intact.
     """

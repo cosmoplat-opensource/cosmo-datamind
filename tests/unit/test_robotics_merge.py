@@ -1,4 +1,4 @@
-"""T02 RED: semantic comparison and explicit three-way source merging — DR-059 / DR-060 / DR-061."""
+"""T02 RED: semantic comparison and explicit three-way source merging — DR-141 / DR-142 / DR-143."""
 from copy import deepcopy
 
 import pytest

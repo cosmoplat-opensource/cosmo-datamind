@@ -1,4 +1,4 @@
-"""Load and revalidate a self-contained OWL snapshot — DR-060 / DR-065.
+"""Load and revalidate a self-contained OWL snapshot — DR-142 / DR-147.
 
 Publication validity does not confirm business mappings or execution readiness.
 """
@@ -18,7 +18,7 @@ from .validator import validate_tree
 
 def check_mode(graph, mode):
     from .evidence import policy
-    policy(graph)  # DR-061: an unknown policy cannot silently use the legacy gate.
+    policy(graph)  # DR-143: an unknown policy cannot silently use the legacy gate.
     if mode not in ("real", "demo"):
         raise ValueError("mode 必须为 real 或 demo。")
     kinds = list(graph.objects(ONTOLOGY, S.datasetKind))
@@ -75,7 +75,7 @@ def load_ontology(path, *, mode="real"):
 
 
 def load_ontology_bytes(content, *, mode="real"):
-    """Validate explicit bytes without requiring a published asset or mutable path (DR-060)."""
+    """Validate explicit bytes without requiring a published asset or mutable path (DR-142)."""
     if not isinstance(content, bytes) or not content:
         raise ValueError("本体输入必须为非空 bytes。")
     try:

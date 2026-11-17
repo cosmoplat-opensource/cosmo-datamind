@@ -1,4 +1,4 @@
-"""Atomic, bounded source-build admission — DR-060 / DR-064 / DR-065 / DR-070."""
+"""Atomic, bounded source-build admission — DR-142 / DR-146 / DR-147 / DR-152."""
 from copy import deepcopy
 import json
 from pathlib import Path
@@ -97,7 +97,7 @@ class BuildService:
     def submit(self, *, name, recipe, profile_id, request_id, sources, description='', route_resolver=None):
         """Internal legacy callers retain the late-validation worker contract.
 
-        Public admission supplies a resolver and first runs DR-070 shared checks.
+        Public admission supplies a resolver and first runs DR-152 shared checks.
         The resolver is trusted host composition, never a client-supplied option.
         """
         sources = deepcopy(sources)

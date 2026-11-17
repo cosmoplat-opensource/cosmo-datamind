@@ -1,4 +1,4 @@
-"""T02 RED: actual frozen schema-2 upgrade, rollback and historic compatibility — DR-059 / DR-064 / DR-065."""
+"""T02 RED: actual frozen schema-2 upgrade, rollback and historic compatibility — DR-141 / DR-146 / DR-147."""
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 import json

@@ -1,8 +1,8 @@
-# 应用契约基础 v1 — DR-071 / IR-025 T01
+# 应用契约基础 v1 — DR-153 / IR-025 T01
 
 - 状态：T01/T04 调用面已获人审；T05 公共核心及集成已实现，IR-025 已于 2026-11-12 用户确认交付。
 - 日期：2026-11-12。
-- 依据：[DR-071](../decisions/DR-071-application-contract-registry.md)、[IR-025](../iterations/IR-025-application-contract-registry.md)及用户确认的“构建完成直接入库，点击应用按钮才检查”流程。
+- 依据：[DR-153](../decisions/DR-153-application-contract-registry.md)、[IR-025](../iterations/IR-025-application-contract-registry.md)及用户确认的“构建完成直接入库，点击应用按钮才检查”流程。
 - 本文件保留冻结约定与测试设计历史；已实现的 API、最小默认适配和后续领域边界见 [使用说明](../../docs/application-contracts-guide.md)。
 
 ## 1. 本轮范围与既有行为

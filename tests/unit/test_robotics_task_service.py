@@ -1,4 +1,4 @@
-"""T04 RED: candidate consumption, persisted dialogue and scoped atomic completion — DR-061 / DR-064 / DR-066."""
+"""T04 RED: candidate consumption, persisted dialogue and scoped atomic completion — DR-143 / DR-146 / DR-148."""
 from copy import deepcopy
 import json
 import os

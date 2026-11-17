@@ -1,4 +1,4 @@
-"""Read executable structure from RDF, never archived XML — DR-059 / DR-060.
+"""Read executable structure from RDF, never archived XML — DR-141 / DR-142.
 
 Migrated from yang ontology_pipeline; no disk reads at import or reconstruction.
 """

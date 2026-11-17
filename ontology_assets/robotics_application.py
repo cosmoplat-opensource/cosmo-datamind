@@ -1,4 +1,4 @@
-"""Self-contained versioned application JSON/OWL and atomic completion updates — DR-072."""
+"""Self-contained versioned application JSON/OWL and atomic completion updates — DR-154."""
 from copy import deepcopy
 import base64
 import json

@@ -1,4 +1,4 @@
-"""Deterministic XML rules adapted from Yang; no model or persistence — DR-070."""
+"""Deterministic XML rules adapted from Yang; no model or persistence — DR-152."""
 from collections import Counter, defaultdict
 import hashlib
 import json
@@ -40,7 +40,7 @@ def _xml_roots(evidence):
         for ref, parent in document['nodes']:
             fact = facts[ref]
             tag = {'comment()': ET.Comment, 'processing-instruction()': ET.ProcessingInstruction}.get(fact['tag'], fact['tag'])
-            # DR-070: JSON object ordering is not XML semantics; canonicalize after any restart.
+            # DR-152: JSON object ordering is not XML semantics; canonicalize after any restart.
             node = ET.Element(tag, dict(sorted(fact['attributes'].items())))
             node.text = fact.get('text')
             node.tail = fact.get('tail')

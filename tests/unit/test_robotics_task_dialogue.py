@@ -1,4 +1,4 @@
-"""IR-020 T02: user choices, not model guesses, determine grounding — DR-062 / DR-066."""
+"""IR-020 T02: user choices, not model guesses, determine grounding — DR-144 / DR-148."""
 from copy import deepcopy
 import importlib
 

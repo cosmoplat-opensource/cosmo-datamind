@@ -1,4 +1,4 @@
-"""Read fixed design candidates without UR rendering or model side effects — DR-070."""
+"""Read fixed design candidates without UR rendering or model side effects — DR-152."""
 import json
 
 from rdflib import Graph, Literal, OWL, RDF, RDFS, URIRef

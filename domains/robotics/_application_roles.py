@@ -1,4 +1,4 @@
-"""Explicit confirmed role semantics, independent of labels — DR-072."""
+"""Explicit confirmed role semantics, independent of labels — DR-154."""
 from copy import deepcopy
 from rdflib import RDF, RDFS, OWL, XSD
 from rdflib.collection import Collection

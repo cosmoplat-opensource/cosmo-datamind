@@ -5,7 +5,7 @@
 - 日期：2026-11-10（Asia/Shanghai）。
 - 授权：用户要求“继续下一步”，按已确认 IR-024 的 T06 编写失败测试。
 - 状态：RED 已验证，待测试覆盖人审；没有进入 T07 GREEN。
-- 依据：[DR-070](../../specs/decisions/DR-070-robotics-dual-build.md)、[IR-024](../../specs/iterations/IR-024-robotics-dual-build.md)。
+- 依据：[DR-152](../../specs/decisions/DR-152-robotics-dual-build.md)、[IR-024](../../specs/iterations/IR-024-robotics-dual-build.md)。
 - 接口：[设计服务测试接口 v1](../../specs/contracts/robotics-design-service-v1.md)。
 - 机器记录：[结果、失败原因及文件摘要](IR-024-t06-red-results.json)。
 

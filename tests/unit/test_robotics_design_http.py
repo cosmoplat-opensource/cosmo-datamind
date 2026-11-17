@@ -1,4 +1,4 @@
-"""Public design contracts with real core/storage and synthetic runtime — DR-070 / T08 RED."""
+"""Public design contracts with real core/storage and synthetic runtime — DR-152 / T08 RED."""
 import json
 
 import pytest
@@ -242,7 +242,7 @@ def test_fixed_design_asset_detail_json_graph_catalog_and_task_gate(tmp_path):
         assert detail.status_code == 200, detail.get_data(as_text=True)
         assert detail.json['design']['tbox'] == state['schema_confirmation']['tbox']
         compatibility = get(client, url + '/compatibility').json
-        # DR-071 supersedes DR-070's eager GET assessment; integrity/download gates remain.
+        # DR-153 supersedes DR-152's eager GET assessment; integrity/download gates remain.
         assert compatibility['status'] == 'not_assessed'
         assert detail.json['application_compatibility'] == compatibility
         saved = get(client, url + '/exports/json')
@@ -273,7 +273,7 @@ def test_old_candidate_eligibility_still_supported(tmp_path):
         _, row = actual_build(root)
         ref = row['output_asset_ref']
         response = get(client, f"/api/ontology-assets/{ref['ontology_id']}/versions/{ref['version_id']}/compatibility")
-        # Even an old compatible candidate is not assessed by a read request (DR-071).
+        # Even an old compatible candidate is not assessed by a read request (DR-153).
         assert response.status_code == 200 and response.json['status'] == 'not_assessed'
 
 

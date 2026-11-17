@@ -1,4 +1,4 @@
-/* Persistent design interaction and immutable history — DR-070. */
+/* Persistent design interaction and immutable history — DR-152. */
 (function(g){'use strict';
 const clone=x=>JSON.parse(JSON.stringify(x)),prefix='/api/robotics/design-sessions/',active=s=>['queued','running'].includes(s?.status);
 async function read(fetch,url,options){const r=await fetch(url,options);let b;try{b=await r.json();}catch(_){throw Error('响应不是 JSON（HTTP '+r.status+'）');}if(!r.ok)throw Object.assign(Error(b.error?.message||b.error||'请求失败'),{code:b.error?.code,status:r.status});return b;}
@@ -33,7 +33,7 @@ async function beginRepair(reply,requestId,fetch=g.fetch.bind(g)){
  }
  return reply.href;
 }
-// DR-070: lead with the review task; preserve technical evidence behind disclosures.
+// DR-152: lead with the review task; preserve technical evidence behind disclosures.
 function presentation(result,esc,{classes=[]}={}){
  if(!result)return '';
  const groups=[['classes','描述哪些对象','类别'],['object_properties','对象之间的联系','关系'],['data_properties','需要记录的信息','属性']];

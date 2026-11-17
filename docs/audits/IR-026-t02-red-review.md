@@ -1,4 +1,4 @@
-# IR-026 T02 核心测试评审 — DR-072
+# IR-026 T02 核心测试评审 — DR-154
 
 日期：2026-11-12。状态：RED 测试已编写，待用户审阅；未进入 T03 实现。
 依据：[已确认适配规约](../../specs/contracts/robotics-application-adaptation-v1.md)、[IR-026](../../specs/iterations/IR-026-robotics-application-adaptation.md)。

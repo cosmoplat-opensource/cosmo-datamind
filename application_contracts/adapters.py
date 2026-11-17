@@ -1,4 +1,4 @@
-"""Fixed-version diagnostics with explicit registered repair actions — DR-071 / DR-072 / DR-074."""
+"""Fixed-version diagnostics with explicit registered repair actions — DR-153 / DR-154 / DR-156."""
 from copy import deepcopy
 import json
 import sqlite3
@@ -89,7 +89,7 @@ def registry(root=None, *, data_qa=None):
                 ('environment', 'environment.local', lambda d: row('environment.local'))]]}
     reg.register(spec)
     if data_qa is None:
-        # DR-074: remain unavailable until a host explicitly supplies the data adapter.
+        # DR-156: remain unavailable until a host explicitly supplies the data adapter.
         spec = deepcopy(spec); spec.update(application_id='data.deep_qa', entrypoints=['data.ask'], availability='unavailable')
     else:
         spec = data_qa.descriptor()

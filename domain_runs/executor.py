@@ -1,4 +1,4 @@
-"""Single-owner local build supervisor with disposable compute children — DR-064 / DR-065."""
+"""Single-owner local build supervisor with disposable compute children — DR-146 / DR-147."""
 import fcntl
 import logging
 import math
@@ -89,7 +89,7 @@ class BuildExecutor:
                     self._stop.wait(self.poll_interval)
             if self._stop.is_set():
                 return
-            # DR-064: recovery only after acquiring ownership, scoped to our operation.
+            # DR-146: recovery only after acquiring ownership, scoped to our operation.
             self.runs.recover_interrupted(operation='build_ontology')
             self._owner.set()
             while not self._stop.is_set():

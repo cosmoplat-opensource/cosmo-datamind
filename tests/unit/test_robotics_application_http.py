@@ -1,4 +1,4 @@
-"""T04 RED: actual host checks, repair actions, confirmation and versioned downloads — DR-072."""
+"""T04 RED: actual host checks, repair actions, confirmation and versioned downloads — DR-154."""
 import pytest
 
 from ontology_assets import AssetStore

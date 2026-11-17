@@ -1,4 +1,4 @@
-"""Frozen inputs and independent XML assertions — DR-060 / DR-065."""
+"""Frozen inputs and independent XML assertions — DR-142 / DR-147."""
 import importlib
 import json
 from pathlib import Path

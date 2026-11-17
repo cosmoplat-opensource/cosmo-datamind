@@ -1,4 +1,4 @@
-"""Read-only, task-scoped missing-information projection — DR-061 / DR-066.
+"""Read-only, task-scoped missing-information projection — DR-143 / DR-148.
 
 Ready means no known completion fields, not a compilation or execution approval.
 No values are invented, no confirmation is written, and no asset state is changed.

@@ -1,4 +1,4 @@
-"""Snapshot platform model routing without probing or fallback — DR-070 / IR-024 T03."""
+"""Snapshot platform model routing without probing or fallback — DR-152 / IR-024 T03."""
 from copy import deepcopy
 import hashlib
 import json
@@ -61,7 +61,7 @@ class BuildRoute:
                 or isinstance(timeout, bool) or not isinstance(timeout, (int, float))
                 or not math.isfinite(timeout) or timeout <= 0):
             raise BuildRequestError('invalid_request', '模型调用需要有效会话、文本和正数超时。')
-        # DR-070: per-call evidence, without shared mutable runtime error state.
+        # DR-152: per-call evidence, without shared mutable runtime error state.
         from llm_diagnostics import safe_diagnostic, transport_diagnostic, describe
         diagnostic=None
         try:
@@ -88,7 +88,7 @@ class BuildRoute:
 
 
 def require_same_route(pinned_public, current_public):
-    """DR-070 §7: validate identity before a new turn, never mutate old snapshots."""
+    """DR-152 §7: validate identity before a new turn, never mutate old snapshots."""
     def identity(value):
         if not isinstance(value, dict):
             raise ValueError('route')

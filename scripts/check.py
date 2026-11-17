@@ -50,7 +50,7 @@ def isolated_env(directory):
 
 def run_check(name, args, env, reports, results):
     start = time.monotonic()
-    # DR-072: T03's 2232 cases took 2017s under coverage. T05 adds 52 service/task
+    # DR-154: T03's 2232 cases took 2017s under coverage. T05 adds 52 service/task
     # cases, including repeated immutable JSON/RDF validation and complete task flows.
     # Budget one bounded hour; preserve test selection, coverage gates and other budgets.
     timeout = 3600 if name == "unit" else 360
@@ -92,7 +92,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix="datamind-check-") as raw:
         env = isolated_env(Path(raw))
         env["COVERAGE_FILE"] = str(reports / ".coverage")
-        # DR-065: targeted checks may use different follow-imports settings.
+        # DR-147: targeted checks may use different follow-imports settings.
         # Do not reuse their incremental type cache for the full regression gate.
         env["MYPY_CACHE_DIR"] = str(reports / ".mypy_cache")
         py = sys.executable
@@ -142,7 +142,7 @@ def main():
                         run_check("build-browser", [py, "tests/frontend/build-browser.py",
                                   "--url", env["DATAMIND_URL"], "--output", str(reports / "build-browser")],
                                   env, reports, results)
-                        # DR-065: owns an enabled server/root, never reuses the legacy server.
+                        # DR-147: owns an enabled server/root, never reuses the legacy server.
                         run_check("robotics-browser", [py, "tests/frontend/robotics-build-browser.py",
                                   "--output", str(reports / "robotics-browser")], env, reports, results)
                         run_check("robotics-review-browser", [py, "tests/frontend/robotics-review-browser.py",
@@ -151,7 +151,7 @@ def main():
                                   "--output", str(reports / "robotics-task-browser")], env, reports, results)
                         run_check("robotics-design-browser", [py, "tests/frontend/robotics-design-browser.py",
                                   "--output", str(reports / "robotics-design-browser")], env, reports, results)
-                        # DR-073: real fixed-version detail, preparation and history navigation.
+                        # DR-155: real fixed-version detail, preparation and history navigation.
                         run_check("ontology-detail-browser", [py, "tests/frontend/ontology-detail-browser.py",
                                   "--output", str(reports / "ontology-detail-browser")], env, reports, results)
                 finally:

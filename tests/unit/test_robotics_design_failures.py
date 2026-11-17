@@ -1,4 +1,4 @@
-"""Injected disk, commit and source-integrity failures — DR-070 / T06 RED."""
+"""Injected disk, commit and source-integrity failures — DR-152 / T06 RED."""
 from contextlib import contextmanager
 import sqlite3
 

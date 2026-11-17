@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Runnable offline task workflow and synthetic completion examples — DR-062 / DR-064 / DR-066."""
+"""Runnable offline task workflow and synthetic completion examples — DR-144 / DR-146 / DR-148."""
 import argparse
 import json
 from pathlib import Path

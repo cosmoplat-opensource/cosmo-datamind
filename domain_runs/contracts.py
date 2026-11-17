@@ -1,4 +1,4 @@
-"""Serializable run inputs and public artifact contracts — DR-064 / DR-065."""
+"""Serializable run inputs and public artifact contracts — DR-146 / DR-147."""
 import json
 
 from ontology_assets.payloads import json_text

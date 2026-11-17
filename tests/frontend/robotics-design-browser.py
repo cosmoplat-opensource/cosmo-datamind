@@ -1,4 +1,4 @@
-"""Real Chromium + Gunicorn + persisted designs; only model HTTP scripted — DR-070 / T08 RED."""
+"""Real Chromium + Gunicorn + persisted designs; only model HTTP scripted — DR-152 / T08 RED."""
 import argparse
 import json
 import os
@@ -187,7 +187,7 @@ def test_model_ui_stage_confirmations_final_downloads_and_history(live):
         site.evidence['downloads'].append({'name': target.name, 'bytes': len(expected)})
     page.goto(site.url + '/#build?recipe=robotics&session=' + sid)
     wait_design(page, sid, 'abox', 'completed')
-    # DR-070: user removed this selector; historical bytes remain readable.
+    # DR-152: user removed this selector; historical bytes remain readable.
     expect(page.get_by_label('设计修订', exact=True)).to_have_count(0)
     assert DesignService(site.root, read_only=True).export_revision(sid, schema['revision'], format='json') == old_json
     assert session(site, sid)['revision'] == final['revision'] and len(calls) == 2
@@ -300,7 +300,7 @@ def test_design_candidate_library_graph_and_application_filter(live):
     expect(card).to_contain_text('设计测试')
     page.goto(site.url + '/#robotics-view?asset=' + ref['ontology_id'] + '&version=' + ref['version_id'] + '&view=relations')
     expect(page.locator('#rv_canvas canvas')).to_be_visible()
-    # DR-071: unassessed/incomplete candidates retain the application diagnosis entry.
+    # DR-153: unassessed/incomplete candidates retain the application diagnosis entry.
     expect(page.get_by_role('link', name='基于此本体生成行为树', exact=True)).to_be_visible()
     expect(page.locator('#rv_host')).to_contain_text('尚未检查')
     page.goto(site.url + '/#robotics-task')
@@ -319,7 +319,7 @@ def application_posts(site):
 @pytest.mark.parametrize('live', [{'prepare': prepare_candidate}], indirect=True)
 @pytest.mark.parametrize('entry', ['detail', 'graph'])
 def test_application_click_checks_once_and_reload_only_reads_history(live, entry):
-    """DR-071: real HTTP/SQLite/browser; no route fulfillment or synthetic application response."""
+    """DR-153: real HTTP/SQLite/browser; no route fulfillment or synthetic application response."""
     site, page, calls = live; ref = site.prepared['output_asset_ref']
     suffix = '?asset=' + ref['ontology_id'] + '&version=' + ref['version_id']
     page.goto(site.url + ('/#library' if entry == 'detail' else '/#robotics-view') + suffix)
@@ -425,7 +425,7 @@ def test_model_text_is_displayed_without_executing_html(live):
     done(site)
 
 
-# IR-026 T04 integration RED — DR-072. Existing browser assertions above remain unchanged.
+# IR-026 T04 integration RED — DR-154. Existing browser assertions above remain unchanged.
 def test_application_adaptation_build_enters_library_without_application_selection(live):
     site, page, calls = live
     admitted = ui_admit(page, site); sid = admitted['session_id']
@@ -516,7 +516,7 @@ def test_application_adaptation_browser_worker_downloads_and_returns_to_existing
         else: assert target.read_bytes() == expected
         site.evidence['downloads'].append({'name': target.name, 'bytes': target.stat().st_size})
     assert DesignAssets(site.root).export_json(**ref) == old_json and calls == []
-    # DR-073: user-approved direct entry supersedes the old successful-check hop.
+    # DR-155: user-approved direct entry supersedes the old successful-check hop.
     report = assess_candidate(page, site, new, diagnosis=False)
     assert report['preparation_status'] == 'available' and report['execution_status'] == 'not_evaluated'
     task = page.get_by_test_id('robotics-task')

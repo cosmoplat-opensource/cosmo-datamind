@@ -1,7 +1,7 @@
-# 机器人双路径构建契约 v1 — DR-070 / IR-024 T01
+# 机器人双路径构建契约 v1 — DR-152 / IR-024 T01
 
 - 冻结日期：2026-11-10。
-- 依据：[已确认 DR-070](../decisions/DR-070-robotics-dual-build.md) 与 [IR-024](../iterations/IR-024-robotics-dual-build.md)。
+- 依据：[已确认 DR-152](../decisions/DR-152-robotics-dual-build.md) 与 [IR-024](../iterations/IR-024-robotics-dual-build.md)。
 - 本文件冻结实现接口，不表示功能已经实现；T02 仅覆盖路由、共同准入及原离线路径，设计持久化和完整 UI 按后续任务验证。
 
 ## 1. 平台模型路由接口

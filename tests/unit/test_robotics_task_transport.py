@@ -1,4 +1,4 @@
-"""T04 controls: exercise default urllib transport against loopback HTTP — DR-062 / DR-066."""
+"""T04 controls: exercise default urllib transport against loopback HTTP — DR-144 / DR-148."""
 import json
 import threading
 

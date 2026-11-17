@@ -1,4 +1,4 @@
-"""T02 RED: explicit semantic roles and stage-specific requirements — DR-072."""
+"""T02 RED: explicit semantic roles and stage-specific requirements — DR-154."""
 from copy import deepcopy
 
 import pytest

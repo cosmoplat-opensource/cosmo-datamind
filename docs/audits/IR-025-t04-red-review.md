@@ -1,4 +1,4 @@
-# IR-025 T04 集成测试评审 — DR-071
+# IR-025 T04 集成测试评审 — DR-153
 
 日期：2026-11-12。状态：RED 测试已编写，待人审；没有进入 T05 实现。
 依据：[应用契约基础 v1](../../specs/contracts/application-contracts-v1.md)、[IR-025](../../specs/iterations/IR-025-application-contract-registry.md)。
@@ -78,7 +78,7 @@ RED 用例中的后续断言尚需 T05 实现后实际走通；目前失败位�
 - `test_tampered_final_json_is_invalid_and_cannot_be_downloaded`：历史应用摘要不主动探测损坏；原 exports/json 返回 409/artifact_integrity 的断言保留。
 - `test_design_candidate_library_graph_and_application_filter`：不再隐藏入口或从选择列表排除候选；浏览不 POST、不写库、不调用模型。
 
-这些变更依据 DR-071／T01 第 8 节明确批准的行为替代，集中在 RED 阶段提交人审；不修改 T02 已审 80 项测试。
+这些变更依据 DR-153／T01 第 8 节明确批准的行为替代，集中在 RED 阶段提交人审；不修改 T02 已审 80 项测试。
 函数旧名称保留，避免旧验收引用失效；当前语义以本轮断言与迁移说明为准。
 
 ## 明确未覆盖的交付

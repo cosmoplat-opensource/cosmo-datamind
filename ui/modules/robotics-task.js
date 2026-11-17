@@ -1,9 +1,9 @@
-/* Persistent task controller and minimal task-page composition — DR-063 / DR-064 / DR-066 / DR-073. */
+/* Persistent task controller and minimal task-page composition — DR-145 / DR-146 / DR-148 / DR-155. */
 (function(global){
   'use strict';
   const copy = value => JSON.parse(JSON.stringify(value));
   const esc = value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  // DR-066: normalize legacy display names, including restored sessions, without
+  // DR-148: normalize legacy display names, including restored sessions, without
   // rewriting immutable OWL versions or treating a name as binding status.
   const legacyLabels = new Map([
     ['源文件当前感知参数；尚未绑定业务零件类型', '源文件感知配置'],
@@ -98,7 +98,7 @@
   let active=null;
   function link(oid,vid,mode='real'){return '#robotics-task?asset='+encodeURIComponent(oid)+'&version='+encodeURIComponent(vid)+'&mode='+encodeURIComponent(mode);}
   function renderTree(node){return `<li data-node-tag="${esc(node.tag)}"><details><summary>${esc(node.attributes?.ID || node.attributes?.name || node.tag)}</summary><small>${esc(Object.entries(node.attributes||{}).filter(([k])=>!['ID','name'].includes(k)).map(([k,v])=>k+'='+v).join(' · '))}</small></details>${node.children?.length?'<ul>'+node.children.map(renderTree).join('')+'</ul>':''}</li>`;}
-  // DR-073: drafts belong to a fixed session/revision, never another ontology version.
+  // DR-155: drafts belong to a fixed session/revision, never another ontology version.
   function draftKey(sid){return 'robotics-task-draft:'+sid;}
   function readDraft(sid){try{return JSON.parse(global.sessionStorage.getItem(draftKey(sid))||'null');}catch(_){return null;}}
   function saveDraft(view){

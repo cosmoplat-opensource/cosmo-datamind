@@ -1,4 +1,4 @@
-"""Preserve robotics graph meaning and reject unsupported inputs — DR-059 / DR-060 / ROB-03."""
+"""Preserve robotics graph meaning and reject unsupported inputs — DR-141 / DR-142 / ROB-03."""
 from copy import deepcopy
 import hashlib
 import xml.etree.ElementTree as ET

@@ -1,4 +1,4 @@
-/* Design controller contracts; synthetic transport only — DR-070 / T08 RED. */
+/* Design controller contracts; synthetic transport only — DR-152 / T08 RED. */
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const ROOT=path.resolve(__dirname,'../..'),clone=x=>JSON.parse(JSON.stringify(x));

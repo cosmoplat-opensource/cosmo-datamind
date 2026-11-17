@@ -1,4 +1,4 @@
-"""T04: schema and fixed-asset integrity at the run boundary — DR-059 / DR-064 / DR-065."""
+"""T04: schema and fixed-asset integrity at the run boundary — DR-141 / DR-146 / DR-147."""
 from copy import deepcopy
 import sqlite3
 

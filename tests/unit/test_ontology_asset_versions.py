@@ -1,4 +1,4 @@
-"""T02 RED: immutable payloads, RDF identity and publication gate — DR-059 / DR-060 / DR-065."""
+"""T02 RED: immutable payloads, RDF identity and publication gate — DR-141 / DR-142 / DR-147."""
 from copy import deepcopy
 import hashlib
 

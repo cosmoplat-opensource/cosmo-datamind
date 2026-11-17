@@ -1,4 +1,4 @@
-"""RDF graph semantics, not serializer whitespace — DR-070 / T04 RED."""
+"""RDF graph semantics, not serializer whitespace — DR-152 / T04 RED."""
 from copy import deepcopy
 
 import pytest

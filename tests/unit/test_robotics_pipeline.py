@@ -1,4 +1,4 @@
-"""T08 RED: fresh source through explicit demo supplementation to candidate — DR-060 / DR-065."""
+"""T08 RED: fresh source through explicit demo supplementation to candidate — DR-142 / DR-147."""
 from copy import deepcopy
 import hashlib
 import json

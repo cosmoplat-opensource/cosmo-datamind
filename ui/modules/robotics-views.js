@@ -1,4 +1,4 @@
-/* Fixed-version read-only relationship and behavior tree canvases — DR-068. */
+/* Fixed-version read-only relationship and behavior tree canvases — DR-150. */
 (function (global) {
   'use strict';
   const escape = value => global.RoboticsAssets.escape(value);
@@ -90,7 +90,7 @@
         defaultNode:{type:'rect',size:[172,44],anchorPoints:view==='relations'?[[0,.5],[1,.5]]:[[.5,0],[.5,1]],style:{radius:9,lineWidth:1.3},labelCfg:{style:{fontSize:12,fill:'#243247'}}},
         nodeStateStyles:{selected:{lineWidth:3,shadowColor:'#4a5ff3',shadowBlur:8}},
         defaultEdge:{type:'polyline',style:{stroke:'#b6bfd7',radius:10,offset:20,endArrow:{path:global.G6.Arrow.triangle(6,7,0),fill:'#b6bfd7'}},labelCfg:{style:{fontSize:10,fill:'#64748b',background:{fill:'#fff',padding:[3,4]}}}}});
-      // DR-068: G6 canvas dirty-region refresh can retain stale pixels after group
+      // DR-150: G6 canvas dirty-region refresh can retain stale pixels after group
       // transforms. Full redraw keeps zoom/pan and selected-node focus in sync.
       canvas.get('canvas').set('localRefresh',false);
       const drawing=canvas;
@@ -135,7 +135,7 @@
     (async()=>{
       try {
         if(!oid||!vid||!['relations','behavior-tree'].includes(view))throw Error('缺少本体、版本或有效视图，请从本体库重新打开。');
-        // DR-068 scope update: source workflows are not user-facing task results.
+        // DR-150 scope update: source workflows are not user-facing task results.
         if(view==='behavior-tree'){
           host.innerHTML=`<section class="card ra-overview"><h2>请在任务生成完成后查看行为树</h2><p class="rv-help" role="status">本体构建来源中的流程暂不展示。请进入本体详情，输入任务描述并生成行为树。</p><div class="ra-detail-actions"><a class="ra-button" href="${escape(global.RoboticsAssets.versionLink(oid,vid))}">返回本体详情</a><a class="ra-button" href="${escape(link(oid,vid))}">打开本体图谱</a></div></section>`;
           return;
@@ -144,7 +144,7 @@
         const body=await response.json();if(current!==token)return;
         if(!response.ok)throw Error(body.error?.message||`读取失败（HTTP ${response.status}）`);
         if(body.ontology_id!==oid||body.version_id!==vid||body.view!==view)throw Error('返回的本体版本不匹配。');
-        // DR-068: share task-page aliases for historical names. Only display
+        // DR-150: share task-page aliases for historical names. Only display
         // labels change; fixed OWL bytes, identifiers and parameter values stay intact.
         const displayLabel=global.RoboticsTask.displayLabel;
         data=view==='relations'?{...body,nodes:body.nodes.filter(node=>!node.kind||node.kind==='individual').map(node=>({...node,

@@ -1,4 +1,4 @@
-"""Fixed UR structural and symbolic checks, never physical execution — DR-062.
+"""Fixed UR structural and symbolic checks, never physical execution — DR-144.
 
 Migrated from yang authoring runtime; draft handling remains an explicit caller policy.
 """

@@ -1,4 +1,4 @@
-"""T02 RED: frozen schema-4 migration, rollback and old consumption — DR-059 / DR-064 / DR-065."""
+"""T02 RED: frozen schema-4 migration, rollback and old consumption — DR-141 / DR-146 / DR-147."""
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 import json

@@ -1,4 +1,4 @@
-"""T02 RED: scoped human evidence, expiry and strict generation — DR-061 / DR-062 / DR-065."""
+"""T02 RED: scoped human evidence, expiry and strict generation — DR-143 / DR-144 / DR-147."""
 from copy import deepcopy
 
 import pytest

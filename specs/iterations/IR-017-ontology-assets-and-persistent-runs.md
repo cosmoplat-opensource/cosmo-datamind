@@ -3,7 +3,7 @@
 - **状态 / Status**: delivered
 - **日期 / Date**: 2026-11-03
 - **当前环节**：2026-11-04 用户在了解演示流程、子进程机制及验收内容后回复“可以进行下一步了”，据此确认本轮交付；T01～T08 完成。
-- **关联 / Refs**: [[DR-059-unified-domain-semantic-graph]]、[[DR-064-persistent-build-runs-and-artifact-manifests]]、[[DR-065-robotics-migration-and-compatibility-validation]]。
+- **关联 / Refs**: [[DR-141-unified-domain-semantic-graph]]、[[DR-146-persistent-build-runs-and-artifact-manifests]]、[[DR-147-robotics-migration-and-compatibility-validation]]。
 - **前置**：[IR-016](IR-016-robotics-contract-integration.md) 已于 2026-11-03 经用户确认交付。
 - **方案**：[集成 Proposal](../PROPOSAL-yang-datamind-integration.md) 第 6 节步骤 2。
 - **流程依据**：[SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第③～⑤步。
@@ -135,7 +135,7 @@ summary 输出 storage_root、run_id、版本引用和独立检查结果，说�
 ### 验证与人审记录
 
 - 2026-11-03：用户确认 IR-016 并授权下一步；完成现有接口核对，建立本 IR 与计划验收映射。
-- 用户澄清后续 UI 与联动安排后授权继续，确认本轮范围与验收；DR-059/064 等跨阶段设计仍保持 proposed，不将本轮范围扩展成整份设计批准。
+- 用户澄清后续 UI 与联动安排后授权继续，确认本轮范围与验收；DR-141/064 等跨阶段设计仍保持 proposed，不将本轮范围扩展成整份设计批准。
 - 首批测试编写后按 skill 第⑤步“人 review 测试是否覆盖到位”提交审查，通过后进入实现。
 - 最终执行 `.venv/bin/python scripts/check.py --suite all` 并记录实际环境、退出码及必要补验；未达成的要求不得标为交付。
 

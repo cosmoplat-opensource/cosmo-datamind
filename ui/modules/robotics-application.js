@@ -1,4 +1,4 @@
-/* Explicit application role review and immutable adaptation — DR-072. */
+/* Explicit application role review and immutable adaptation — DR-154. */
 (function(global){
   'use strict';
   const esc=value=>global.RoboticsAssets.escape(value),prefix='/api/robotics/application-adaptations';

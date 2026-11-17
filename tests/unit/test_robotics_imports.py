@@ -1,4 +1,4 @@
-"""Require explicit package imports without legacy name collisions — DR-065 / ROB-02."""
+"""Require explicit package imports without legacy name collisions — DR-147 / ROB-02."""
 import os
 from pathlib import Path
 import subprocess

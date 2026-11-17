@@ -1,4 +1,4 @@
-"""Admission, revision identity and durable failure boundaries — DR-070 / T06 RED."""
+"""Admission, revision identity and durable failure boundaries — DR-152 / T06 RED."""
 from copy import deepcopy
 import json
 

@@ -2,7 +2,7 @@
 
 - **状态 / Status**：delivered（2026-11-17 用户确认整个 IR029 最终验收；当前代码全量通过）。
 - **日期 / Date**：2026-11-12。
-- **关联 / Refs**：[DR-075](../decisions/DR-075-ontology-asset-lifecycle.md)。
+- **关联 / Refs**：[DR-157](../decisions/DR-157-ontology-asset-lifecycle.md)。
 
 ## 目标 Goal
 
@@ -46,7 +46,7 @@ T02 已将具体核心测试路径登记到正式 requirements，criterion 沿�
 
 ## T01／T02 启动记录（2026-11-16）
 
-用户授权继续 IR029，按 DR-075 的逻辑删除方向启动；未将 IR028 的阶段免等待授权扩大到本轮。
+用户授权继续 IR029，按 DR-157 的逻辑删除方向启动；未将 IR028 的阶段免等待授权扩大到本轮。
 冻结 [生命周期规约 v1](../contracts/ontology-asset-lifecycle-v1.md)：active／deleted 与发布状态分离、revision／影响摘要和确认、幂等审计、共享来源和历史保留、内置保护、旧 key 快照及迁移先后顺序。
 明确无历史快照的旧物理删除不能凭空恢复，只保留删除记录并阻止 fallback／扫描复活。
 新增 `tests/unit/test_asset_lifecycle.py` 共 52 项 RED，0 环境错误／跳过；使用临时真实 SQLite 和不可变文件，无模型调用、无用户数据变更。

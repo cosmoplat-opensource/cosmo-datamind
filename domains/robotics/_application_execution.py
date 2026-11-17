@@ -1,4 +1,4 @@
-"""Source-located execution extraction, scoped static configuration tracing — DR-072."""
+"""Source-located execution extraction, scoped static configuration tracing — DR-154."""
 from copy import deepcopy
 from .modeling.common import digest
 from .modeling.evidence import source_digests

@@ -1,4 +1,4 @@
-"""T04 RED: durable admission and real local executor lifecycle — DR-060 / DR-064 / DR-065."""
+"""T04 RED: durable admission and real local executor lifecycle — DR-142 / DR-146 / DR-147."""
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from copy import deepcopy

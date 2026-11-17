@@ -1,4 +1,4 @@
-"""Pinned source/design inputs and complete candidate JSON validation — DR-070."""
+"""Pinned source/design inputs and complete candidate JSON validation — DR-152."""
 import json
 from pathlib import Path
 

@@ -1,4 +1,4 @@
-"""T06 RED: both compilation entries operate without source XML — DR-060 / DR-062 / DR-065."""
+"""T06 RED: both compilation entries operate without source XML — DR-142 / DR-144 / DR-147."""
 import builtins
 import hashlib
 from pathlib import Path

@@ -1,4 +1,4 @@
-/* Fixed asset versions, catalog and safe artifact presentation — DR-063 / DR-064 / DR-073. */
+/* Fixed asset versions, catalog and safe artifact presentation — DR-145 / DR-146 / DR-155. */
 (function (global) {
   'use strict';
   const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

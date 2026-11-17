@@ -1,4 +1,4 @@
-"""Application contract core; no registration or evaluation on import — DR-071 / IR-025."""
+"""Application contract core; no registration or evaluation on import — DR-153 / IR-025."""
 from .checks import evaluate, require_ready
 from .freshness import compare_freshness, make_basis
 from .models import ContractError

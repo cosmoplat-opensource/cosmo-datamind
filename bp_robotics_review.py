@@ -1,4 +1,4 @@
-"""Knowledge governance HTTP transport and version downloads — DR-059 / DR-061 / DR-063 / DR-064 / DR-065."""
+"""Knowledge governance HTTP transport and version downloads — DR-141 / DR-143 / DR-145 / DR-146 / DR-147."""
 import io
 from pathlib import Path
 import re
@@ -179,10 +179,10 @@ def init_app(app, runtime):
 
     @bp.get(prefix + '/versions/<version_id>/views/<view>')
     def visualization(ontology_id, version_id, view):
-        # DR-068: GET only, fixed version, same read-only integrity boundary.
+        # DR-150: GET only, fixed version, same read-only integrity boundary.
         if request.args or view not in {'relations', 'behavior-tree'}:
             raise invalid()
-        service(ontology_id)  # DR-070: retain the original domain guard before resolving versions.
+        service(ontology_id)  # DR-152: retain the original domain guard before resolving versions.
         from ontology_assets.robotics_design import DesignAssets
         from application_contracts.adapters import service as application_checks
         assets = runtime.assets()

@@ -1,4 +1,4 @@
-"""Task, completion and optional OWL import HTTP composition — DR-063 / DR-066."""
+"""Task, completion and optional OWL import HTTP composition — DR-145 / DR-148."""
 import io
 import sqlite3
 
@@ -60,7 +60,7 @@ def init_app(app, runtime):
 
     @bp.get('/api/robotics/tasks')
     def history():
-        # DR-069: read-only even when robotics is disabled or no database exists.
+        # DR-151: read-only even when robotics is disabled or no database exists.
         if set(request.args) - {'limit', 'offset', 'q'} or any(len(request.args.getlist(k)) != 1 for k in request.args):
             raise TaskError('invalid_request', '不支持的历史查询参数。')
         try:

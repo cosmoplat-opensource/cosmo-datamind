@@ -1,4 +1,4 @@
-"""Trusted publication protocol and SHACL checks — DR-060 / DR-065.
+"""Trusted publication protocol and SHACL checks — DR-142 / DR-147.
 
 Validation migrated from the hash-verified yang agent; source details in IR-016.
 """
@@ -17,7 +17,7 @@ CONDITIONS = {name: {"kind": kind, "mechanism": mechanism, "rule": rule, "skills
               for name, kind, label, mechanism, rule, skills in CONDITION_SPECS}
 
 class _ValidationGraph(Graph):
-    """DR-063: prepare repeated SHACL queries once, execute every focus binding.
+    """DR-145: prepare repeated SHACL queries once, execute every focus binding.
 
     This graph is an isolated copy owned by one validation. No validation result,
     mutable source graph, query bindings or global RDFLib behavior is cached.

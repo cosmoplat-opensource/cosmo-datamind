@@ -1,4 +1,4 @@
-"""Validate typed payloads without converting their authoritative bytes — DR-059 / DR-060."""
+"""Validate typed payloads without converting their authoritative bytes — DR-141 / DR-142."""
 import json
 from xml.sax import SAXException
 

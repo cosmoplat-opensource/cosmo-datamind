@@ -1,4 +1,4 @@
-"""Configuration replacement uses the existing task controller safely — DR-066."""
+"""Configuration replacement uses the existing task controller safely — DR-148."""
 from pathlib import Path
 import shutil
 import subprocess

@@ -27,7 +27,7 @@ from qa_application import (QAContractError, QARequestGate, qa_contract_failure,
 import llm_json      # DR-058:LLM 回复 JSON 抽取与提议形状校验的单一事实源
 
 class _QAHost:
-    """Live host globals also work for importlib loaders without sys.modules registration — DR-074."""
+    """Live host globals also work for importlib loaders without sys.modules registration — DR-156."""
     def __getattr__(self, name):
         try:
             return globals()[name]
@@ -634,7 +634,7 @@ JOBS: dict[str, dict[str, Any]] = {}
 # rdflib 的 SPARQL 解析器基于 pyparsing,其 packrat 缓存/语法状态为进程级全局且非线程安全:
 # 多请求并发跑 SPARQL(或 SPARQL 与 pyshacl 内部 SPARQL 相撞)会污染语法,报出
 # 『Expected SelectQuery, found OPTIONAL』『postParse2() missing arg』等假语法错。故串行化所有 SPARQL 语法操作。
-# _RDF_LOCK is shared with ontology_assets through srv_context (DR-064).
+# _RDF_LOCK is shared with ontology_assets through srv_context (DR-146).
 def run_job(cmd, cwd=None, env=None, tag=""):
     jid = uuid.uuid4().hex[:8]
     logf = os.path.join(WORK, f"job_{jid}.log")
@@ -936,7 +936,7 @@ def _table_cols(table):
     # 表名来自本体产物,按标识符白名单校验后才拼进 PRAGMA —— 与全站标识符消毒口径一致
     if not t or not re.fullmatch(_SQL_IDENT, t): return []
     cache_key = raw
-    # DR-074: another request may clear this cache while refreshing a connection.
+    # DR-156: another request may clear this cache while refreshing a connection.
     cached_columns = _COLS_CACHE.get(cache_key)
     if cached_columns is not None: return cached_columns
     try:
@@ -1143,7 +1143,7 @@ def _trace_objs(trace, objs, reason, hits=None):
 
 
 def _qa_literal_tables(question, objects):
-    """DR-074: recognize bound SQL identifiers beside Chinese, without prefix matches."""
+    """DR-156: recognize bound SQL identifiers beside Chinese, without prefix matches."""
     return {o['table'] for o in objects if o.get('table') and re.search(
         r'(?<![A-Za-z0-9_])' + re.escape(o['table']) + r'(?![A-Za-z0-9_])',
         question, re.I)}
@@ -3624,7 +3624,7 @@ def _qa_anchor_explanation(anchor, results=None):
 
 
 def _qa_key(question, history, focus=None, graphs=None, _gate=None):
-    """DR-074: content/order/contract/catalog/lifecycle identity, before cache lookup."""
+    """DR-156: content/order/contract/catalog/lifecycle identity, before cache lookup."""
     return qa_contract_cache_key(_QA_HOST, question, history, focus, graphs, _gate)
 
 
@@ -6752,7 +6752,7 @@ from bp_semantic import bp_semantic as _bp_semantic, configure_semantic as _conf
 _configure_semantic(load_graph=lambda k: (None if _bad_gkey(k) else (load_ir_edited(k) or load_ir(k))))
 app.register_blueprint(_bp_semantic)
 
-# DR-063 / DR-064: independent robotics routes; no migration from catalog GETs.
+# DR-145 / DR-146: independent robotics routes; no migration from catalog GETs.
 def _robotics_legacy_catalog():
     entries = {row["id"]: {"key": row["id"], "name": row["name"]} for row in graphs().get_json()}
     for row in ont_forged().get_json()["ontologies"]:
@@ -6775,7 +6775,7 @@ def _atomic_json_lifecycle(path,value):
 
 _atomic_json = _atomic_json_lifecycle
 
-# DR-075: migrate only at explicit startup, never from a catalog/check GET.
+# DR-157: migrate only at explicit startup, never from a catalog/check GET.
 _lifecycle_default = '0' if os.environ.get('DATAMIND_ROBOTICS_ENABLED','').lower() in ('0','false','off') else '1'
 if os.environ.get('DATAMIND_LIFECYCLE_ENABLED',_lifecycle_default).lower() not in ('0','false','off'):
     try:init_asset_lifecycle()

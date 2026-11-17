@@ -1,4 +1,4 @@
-"""Pin fixed-template and public-input semantics — DR-062 / ROB-08 (T02 structural subset)."""
+"""Pin fixed-template and public-input semantics — DR-144 / ROB-08 (T02 structural subset)."""
 from copy import deepcopy
 
 import pytest

@@ -1,4 +1,4 @@
-"""Read-only effective-IR adapter for the existing QA consumer — DR-074 / IR-028 T03."""
+"""Read-only effective-IR adapter for the existing QA consumer — DR-156 / IR-028 T03."""
 from copy import deepcopy
 import json
 

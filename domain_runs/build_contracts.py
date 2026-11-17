@@ -1,4 +1,4 @@
-"""Source snapshots and candidate completion contracts — DR-060 / DR-064 / DR-065."""
+"""Source snapshots and candidate completion contracts — DR-142 / DR-146 / DR-147."""
 from ontology_assets.storage import digest
 from ontology_assets.store import _required
 from srv_context import _RDF_LOCK

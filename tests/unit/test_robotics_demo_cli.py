@@ -1,4 +1,4 @@
-"""T08 RED: runnable offline evidence, accurate exit status and isolated runs — DR-065 / ROB-13."""
+"""T08 RED: runnable offline evidence, accurate exit status and isolated runs — DR-147 / ROB-13."""
 import hashlib
 import importlib
 import json

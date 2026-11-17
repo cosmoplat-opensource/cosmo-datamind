@@ -1,4 +1,4 @@
-"""IR-025 core RED fixtures: synthetic checkers, never real application readiness — DR-071."""
+"""IR-025 core RED fixtures: synthetic checkers, never real application readiness — DR-153."""
 from copy import deepcopy
 import importlib
 import socket

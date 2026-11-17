@@ -1,4 +1,4 @@
-"""Explicit application diagnostics HTTP boundary — DR-071 / DR-074."""
+"""Explicit application diagnostics HTTP boundary — DR-153 / DR-156."""
 from flask import Blueprint, jsonify, request
 from werkzeug.exceptions import BadRequest, RequestEntityTooLarge
 from application_contracts.models import ContractError, require

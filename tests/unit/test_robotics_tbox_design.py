@@ -1,4 +1,4 @@
-"""Checked model proposals and pure confirmation transitions — DR-070 / T04 RED."""
+"""Checked model proposals and pure confirmation transitions — DR-152 / T04 RED."""
 from copy import deepcopy
 import json
 

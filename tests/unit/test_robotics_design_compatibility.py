@@ -1,4 +1,4 @@
-"""Candidate eligibility is independent of model availability — DR-070 / T06 RED."""
+"""Candidate eligibility is independent of model availability — DR-152 / T06 RED."""
 import json
 
 import pytest

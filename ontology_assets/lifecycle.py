@@ -1,4 +1,4 @@
-"""Transactional reversible asset lifecycle and legacy snapshots — DR-075."""
+"""Transactional reversible asset lifecycle and legacy snapshots — DR-157."""
 from contextlib import contextmanager
 from datetime import datetime, timezone
 import json

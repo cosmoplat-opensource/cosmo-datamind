@@ -1,4 +1,4 @@
-"""Evidence occurrence identity and bundled vocabulary contracts — DR-070 / T04 RED."""
+"""Evidence occurrence identity and bundled vocabulary contracts — DR-152 / T04 RED."""
 from copy import deepcopy
 import hashlib
 import json

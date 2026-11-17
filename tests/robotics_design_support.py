@@ -1,4 +1,4 @@
-"""Real storage/core with synthetic runtime for IR-024 T06 RED — DR-070."""
+"""Real storage/core with synthetic runtime for IR-024 T06 RED — DR-152."""
 import base64
 from copy import deepcopy
 import importlib

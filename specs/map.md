@@ -30,28 +30,28 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 
 ## 机器人双路径构建（2026-11-10，已确认方案）
 
-- [DR-070 · 机器人本体统一入口与模型／离线双路径](decisions/DR-070-robotics-dual-build.md)：accepted；必须上传双 XML，有模型走新 TBox/ABox 方案，无模型保留旧 UR 离线构建；模型错误不静默降级，设计候选与应用资格分开。
+- [DR-152 · 机器人本体统一入口与模型／离线双路径](decisions/DR-152-robotics-dual-build.md)：accepted；必须上传双 XML，有模型走新 TBox/ABox 方案，无模型保留旧 UR 离线构建；模型错误不静默降级，设计候选与应用资格分开。
 - [IR-024 · 机器人本体模型辅助与离线双路径构建](iterations/IR-024-robotics-dual-build.md)：delivered（2026-11-11 用户确认）：双路径、完整 JSON/OWL、设计修订和应用准入已交付；T10 全量 13 阶段通过，1988 单元通过、覆盖率 85.0%，真实模型运行已核验。
 
 ## 当前机器人集成方向（2026-11-05）
 
-- [DR-066 · 简洁的本体构建到行为树生成流程](decisions/DR-066-minimal-robotics-task-workflow.md)：用户已确认先打通主流程，默认只显示当前版本；参数、映射和必要适配在 DataMind 按当前任务缺口补齐，高级维护暂缓。
+- [DR-148 · 简洁的本体构建到行为树生成流程](decisions/DR-148-minimal-robotics-task-workflow.md)：用户已确认先打通主流程，默认只显示当前版本；参数、映射和必要适配在 DataMind 按当前任务缺口补齐，高级维护暂缓。
 - [IR-020 · 基础版任务流程](iterations/IR-020-minimal-robotics-task-workflow.md)：in-progress，T03 解析/澄清/缺口投影与全量回归 GREEN；下一步 T04 服务和浏览器 RED。IR-019 T07 实现保留，T08 整轮验收暂缓。
 
 ## 索引
 
 ### 提议 / Proposals（未立项，落地时拆为独立 DR/IR）
-- [PROPOSAL · DataMind 与 yang 本体构建及行为树生成深度集成](PROPOSAL-yang-datamind-integration.md) — **proposed，2026-11-02 代码复核版**。包含跨项目复测结果、后端与 UI 方案、8 个实施切片，以及 DR-059…DR-065 的修订依据；区分现有能力、已知断点和待实施设计。
+- [PROPOSAL · DataMind 与 yang 本体构建及行为树生成深度集成](PROPOSAL-yang-datamind-integration.md) — **proposed，2026-11-02 代码复核版**。包含跨项目复测结果、后端与 UI 方案、8 个实施切片，以及 DR-141…DR-147 的修订依据；区分现有能力、已知断点和待实施设计。
 - [PROPOSAL · 领域可插拔扩展架构（词表下沉 + 契约抽象 + 导出格式与本体应用分离 + 领域包）](PROPOSAL-domain-extension-architecture.md) — **待实施**。为接入外部机器人领域而做的架构提议：9 个编号变更项（C1 词表 · C2 契约 · C3 导出格式 · C4 应用框架 · C5 领域包 · C6–C8 天驭域 · C9 UI）、术语钉死（"领域/节点/词表"非一对一、"导出格式 ≠ 本体应用"、"契约方言"实为证据通道不同）、6 阶段顺序与 10 条回归红线。**本文是待实施清单，不是现状说明**；现状仍以 `README.md`/`ARCHITECTURE.md`/`docs/pipelines/ontology_build.yaml` 为准。
 
 ### 决定 / Decisions
-- [DR-059 · 统一本体资产、版本与领域权威载荷](decisions/DR-059-unified-domain-semantic-graph.md) · **proposed**
-- [DR-060 · 机器人本体自动构建、增量编辑与发布契约](decisions/DR-060-robotics-source-recipes-and-reverse-build.md) · **proposed**
-- [DR-061 · 参数依据、适配证据与分层准入](decisions/DR-061-parameter-contracts-calibration-and-readiness.md) · **proposed**
-- [DR-062 · 受约束任务解析与版本化行为树应用](decisions/DR-062-behavior-tree-compilation-as-ontology-application.md) · **proposed**
-- [DR-063 · 渐进领域接入与本体全流程 UI](decisions/DR-063-local-domain-registration-and-application-ui.md) · **proposed**
-- [DR-064 · 持久化运行、会话隔离与工件追溯](decisions/DR-064-persistent-build-runs-and-artifact-manifests.md) · **proposed**
-- [DR-065 · 跨工程契约对齐与渐进迁移验证](decisions/DR-065-robotics-migration-and-compatibility-validation.md) · **proposed**
+- [DR-141 · 统一本体资产、版本与领域权威载荷](decisions/DR-141-unified-domain-semantic-graph.md) · **proposed**
+- [DR-142 · 机器人本体自动构建、增量编辑与发布契约](decisions/DR-142-robotics-source-recipes-and-reverse-build.md) · **proposed**
+- [DR-143 · 参数依据、适配证据与分层准入](decisions/DR-143-parameter-contracts-calibration-and-readiness.md) · **proposed**
+- [DR-144 · 受约束任务解析与版本化行为树应用](decisions/DR-144-behavior-tree-compilation-as-ontology-application.md) · **proposed**
+- [DR-145 · 渐进领域接入与本体全流程 UI](decisions/DR-145-local-domain-registration-and-application-ui.md) · **proposed**
+- [DR-146 · 持久化运行、会话隔离与工件追溯](decisions/DR-146-persistent-build-runs-and-artifact-manifests.md) · **proposed**
+- [DR-147 · 跨工程契约对齐与渐进迁移验证](decisions/DR-147-robotics-migration-and-compatibility-validation.md) · **proposed**
 - [DR-058 · 构建能力对外 MCP 化与 LLM 回复解析单一事实源(Agent 只能发起构建与阅读结论,不能改写结论状态)](decisions/DR-058-build-mcp-and-llm-json.md)
 - [DR-057 · 常驻部署与真实链路验收](decisions/DR-057-persistent-deployment-and-live-validation.md)
 - [DR-056 · 完整取证、指标状态新鲜度、后端安全与隔离验收](decisions/DR-056-evidence-integrity-and-isolated-validation.md)
@@ -251,11 +251,11 @@ Consult @specs/map.md to find relevant context.
 [总方案](../docs/datamind-application-contract-design.md)，IR-025 T03 核心及全量回归已通过；IR-025 已于 2026-11-12 用户确认 delivered。
 [T01 应用契约基础 v1](contracts/application-contracts-v1.md)：已冻结；[T02 RED 评审](../docs/audits/IR-025-t02-red-review.md)。
 
-- [DR-071 应用契约注册与分层检查](decisions/DR-071-application-contract-registry.md) ／ [IR-025](iterations/IR-025-application-contract-registry.md)：delivered（2026-11-12 用户确认）。
-- [DR-072 机器人应用检查与可追溯补全](decisions/DR-072-robotics-application-adaptation.md) ／ [IR-026](iterations/IR-026-robotics-application-adaptation.md)：T01 [规约](contracts/robotics-application-adaptation-v1.md) 已冻结，T05 [集成 GREEN](../docs/audits/IR-026-t05-green-review.md) 的 57 项已审测试及全量 13 段通过，70 项核心仍绿；T06 [真实副本验收](../docs/audits/IR-026-t06-delivery-review.md) 及全量 13 段已通过（2333 passed／5 可选跳过，覆盖率 86.1%），自动匹配与人工例外已纳入，2026-11-13 用户要求提交代码，确认 delivered。
-- [DR-073 本体详情与应用修复体验](decisions/DR-073-ontology-detail-experience.md) ／ [IR-027](iterations/IR-027-ontology-detail-experience.md)：delivered，[T03 GREEN](../docs/audits/IR-027-t03-green-review.md) 及全量回归已通过；[T04 集成 RED](../docs/audits/IR-027-t04-red-review.md) 已于 2026-11-16 获继续指令，[T05 GREEN](../docs/audits/IR-027-t05-green-review.md) 已实现直达任务对话、只读历史与修复入口及历史读取锁冲突修复，14 段全量回归通过；[T06 真实副本技术验证](../docs/audits/IR-027-t06-delivery-review.md) 20 项通过，已于 2026-11-16 获用户确认交付。
-- [DR-074 深度问数应用契约兼容](decisions/DR-074-deepqa-application-compatibility.md) ／ [IR-028](iterations/IR-028-deepqa-application-compatibility.md)：delivered；2026-11-16 用户确认后完成 T06，原句计数与实际 SQL 说明修复、8 道真实模型基线、48 组协议／模式复放和完整浏览器验收通过；最终全量 14 段完整退出 0。详见 [T06 验收](../docs/audits/IR-028-t06-acceptance.md)。
-- [DR-075 本体删除恢复与历史保留](decisions/DR-075-ontology-asset-lifecycle.md) ／ [IR-029](iterations/IR-029-ontology-asset-lifecycle.md)：delivered（2026-11-17 用户明确确认整个 IR 最终验收）；删除／恢复及精简 UI 完成，工作副本和浏览器验证通过，最终刷新全量 14 段退出 0。详见 [T06 验收](../docs/audits/IR-029-t06-acceptance.md)。
+- [DR-153 应用契约注册与分层检查](decisions/DR-153-application-contract-registry.md) ／ [IR-025](iterations/IR-025-application-contract-registry.md)：delivered（2026-11-12 用户确认）。
+- [DR-154 机器人应用检查与可追溯补全](decisions/DR-154-robotics-application-adaptation.md) ／ [IR-026](iterations/IR-026-robotics-application-adaptation.md)：T01 [规约](contracts/robotics-application-adaptation-v1.md) 已冻结，T05 [集成 GREEN](../docs/audits/IR-026-t05-green-review.md) 的 57 项已审测试及全量 13 段通过，70 项核心仍绿；T06 [真实副本验收](../docs/audits/IR-026-t06-delivery-review.md) 及全量 13 段已通过（2333 passed／5 可选跳过，覆盖率 86.1%），自动匹配与人工例外已纳入，2026-11-13 用户要求提交代码，确认 delivered。
+- [DR-155 本体详情与应用修复体验](decisions/DR-155-ontology-detail-experience.md) ／ [IR-027](iterations/IR-027-ontology-detail-experience.md)：delivered，[T03 GREEN](../docs/audits/IR-027-t03-green-review.md) 及全量回归已通过；[T04 集成 RED](../docs/audits/IR-027-t04-red-review.md) 已于 2026-11-16 获继续指令，[T05 GREEN](../docs/audits/IR-027-t05-green-review.md) 已实现直达任务对话、只读历史与修复入口及历史读取锁冲突修复，14 段全量回归通过；[T06 真实副本技术验证](../docs/audits/IR-027-t06-delivery-review.md) 20 项通过，已于 2026-11-16 获用户确认交付。
+- [DR-156 深度问数应用契约兼容](decisions/DR-156-deepqa-application-compatibility.md) ／ [IR-028](iterations/IR-028-deepqa-application-compatibility.md)：delivered；2026-11-16 用户确认后完成 T06，原句计数与实际 SQL 说明修复、8 道真实模型基线、48 组协议／模式复放和完整浏览器验收通过；最终全量 14 段完整退出 0。详见 [T06 验收](../docs/audits/IR-028-t06-acceptance.md)。
+- [DR-157 本体删除恢复与历史保留](decisions/DR-157-ontology-asset-lifecycle.md) ／ [IR-029](iterations/IR-029-ontology-asset-lifecycle.md)：delivered（2026-11-17 用户明确确认整个 IR 最终验收）；删除／恢复及精简 UI 完成，工作副本和浏览器验证通过，最终刷新全量 14 段退出 0。详见 [T06 验收](../docs/audits/IR-029-t06-acceptance.md)。
 
 IR-025 当前结果：[T06 交付评审](../docs/audits/IR-025-t06-delivery-review.md)，公共服务／HTTP／最小 UI 与生成守卫已验证并获用户确认交付。
 

@@ -1,4 +1,4 @@
-# 设计 HTTP 与页面测试接口 v1 — DR-070 / IR-024 T08
+# 设计 HTTP 与页面测试接口 v1 — DR-152 / IR-024 T08
 
 本文件细化已确认的双路径与服务契约，供 T08 RED 测试评审；不表示公开功能已实现。
 沿用 [T01](robotics-dual-build-v1.md) 与 [T06](robotics-design-service-v1.md) 的字段、阶段、错误及完整 JSON 约束。

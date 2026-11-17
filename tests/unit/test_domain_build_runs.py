@@ -1,4 +1,4 @@
-"""T02 RED: source-input runs and atomic candidate completion — DR-059 / DR-060 / DR-064 / DR-065."""
+"""T02 RED: source-input runs and atomic candidate completion — DR-141 / DR-142 / DR-146 / DR-147."""
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from copy import deepcopy

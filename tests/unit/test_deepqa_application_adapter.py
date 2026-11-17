@@ -1,4 +1,4 @@
-"""T02 RED: actual QA helpers, edited IR and SQLite; no model/SQL execution — DR-074."""
+"""T02 RED: actual QA helpers, edited IR and SQLite; no model/SQL execution — DR-156."""
 from copy import deepcopy
 import importlib
 import json

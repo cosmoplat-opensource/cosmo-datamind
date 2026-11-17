@@ -1,4 +1,4 @@
-"""Existing real build/storage boundaries remain valid before application integration — DR-071 / IR-025."""
+"""Existing real build/storage boundaries remain valid before application integration — DR-153 / IR-025."""
 import pytest
 
 from domain_runs import RunStore

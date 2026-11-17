@@ -2,7 +2,7 @@
 
 - **状态 / Status**：delivered（2026-11-16 用户确认本轮功能并要求继续；T01～T06 完成，真实问数／浏览器验收及最终全量 14 段通过）。
 - **日期 / Date**：2026-11-12。
-- **关联 / Refs**：[DR-074](../decisions/DR-074-deepqa-application-compatibility.md)。
+- **关联 / Refs**：[DR-156](../decisions/DR-156-deepqa-application-compatibility.md)。
 
 ## 目标 Goal
 

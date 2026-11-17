@@ -3,7 +3,7 @@
 - 日期：2026-11-10。
 - 授权：用户确认总 JSON 文件组织方式后要求“继续下一步”，进入 T07 GREEN。
 - 当前状态：82 项 T06 测试与既有 141 项测试共 223 项定向通过；全量 12 阶段通过，T07 GREEN 完成。
-- 依据：[DR-070](../../specs/decisions/DR-070-robotics-dual-build.md)、[设计服务契约](../../specs/contracts/robotics-design-service-v1.md)。
+- 依据：[DR-152](../../specs/decisions/DR-152-robotics-dual-build.md)、[设计服务契约](../../specs/contracts/robotics-design-service-v1.md)。
 - 人审测试基线：[统一 JSON 修订记录](IR-024-t06-unified-json.md)。
 
 ## 实现范围

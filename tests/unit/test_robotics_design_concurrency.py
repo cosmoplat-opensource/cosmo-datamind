@@ -1,4 +1,4 @@
-"""Real SQLite contention and stale worker publication — DR-070 / T06 RED."""
+"""Real SQLite contention and stale worker publication — DR-152 / T06 RED."""
 from concurrent.futures import ThreadPoolExecutor
 import sqlite3
 from threading import Barrier, Event

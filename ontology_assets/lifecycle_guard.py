@@ -1,4 +1,4 @@
-"""Transaction-local lifecycle admission; history remains readable — DR-075."""
+"""Transaction-local lifecycle admission; history remains readable — DR-157."""
 from copy import deepcopy
 import json
 

@@ -1,4 +1,4 @@
-"""Deterministically import supported BT XML into RDF — DR-060.
+"""Deterministically import supported BT XML into RDF — DR-142.
 
 Extraction migrated from yang ontology_pipeline; all inputs are explicit snapshots.
 """

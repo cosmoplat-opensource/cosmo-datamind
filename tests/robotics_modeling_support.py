@@ -1,4 +1,4 @@
-"""Synthetic proposals and frozen XML oracles for IR-024 T04 RED — DR-070."""
+"""Synthetic proposals and frozen XML oracles for IR-024 T04 RED — DR-152."""
 from copy import deepcopy
 import hashlib
 import importlib

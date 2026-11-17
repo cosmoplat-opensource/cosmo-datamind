@@ -1,4 +1,4 @@
-"""IR-020 T02: real parser contract with a scripted model transport — DR-062 / DR-066.
+"""IR-020 T02: real parser contract with a scripted model transport — DR-144 / DR-148.
 
 Only the external model is replaced; these tests do not claim live model quality.
 Imports are inside tests so absent production modules yield failures, not collection errors.

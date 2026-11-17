@@ -1,4 +1,4 @@
-"""Scoped, explicitly reviewed applicability evidence — DR-061 / DR-062 / DR-065.
+"""Scoped, explicitly reviewed applicability evidence — DR-143 / DR-144 / DR-147.
 
 Hashes bind declarations to snapshots; neither a signature nor a file proves a
 physical measurement. Platform revocations are additional to exported RDF.

@@ -1,4 +1,4 @@
-"""T06 RED: actual governance UI + Gunicorn + SQLite; no fulfilled core routes — DR-063 / DR-064 / DR-065."""
+"""T06 RED: actual governance UI + Gunicorn + SQLite; no fulfilled core routes — DR-145 / DR-146 / DR-147."""
 import argparse
 import json
 import os

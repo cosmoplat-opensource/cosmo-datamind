@@ -1,4 +1,4 @@
-"""Read-only RDF instance and executable structure projections — DR-068."""
+"""Read-only RDF instance and executable structure projections — DR-150."""
 from rdflib import Literal, OWL, RDF, RDFS, URIRef
 
 from .graph import CLASSES, S

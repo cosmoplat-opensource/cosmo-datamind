@@ -1,4 +1,4 @@
-"""Strict structured-task generation and explicit authoring drafts — DR-061 / DR-062.
+"""Strict structured-task generation and explicit authoring drafts — DR-143 / DR-144.
 
 No LLM, source XML, online XML editor or physical robot execution is involved.
 """

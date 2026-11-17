@@ -1,4 +1,4 @@
-"""Direct schema repair phases preserve confirmed classes and old versions — DR-070 / DR-072."""
+"""Direct schema repair phases preserve confirmed classes and old versions — DR-152 / DR-154."""
 from copy import deepcopy
 
 import pytest

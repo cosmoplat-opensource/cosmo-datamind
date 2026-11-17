@@ -1,4 +1,4 @@
-"""Persistent, revision-bound robot design; model waits hold no write locks — DR-070."""
+"""Persistent, revision-bound robot design; model waits hold no write locks — DR-152."""
 from copy import deepcopy
 import json
 import sqlite3

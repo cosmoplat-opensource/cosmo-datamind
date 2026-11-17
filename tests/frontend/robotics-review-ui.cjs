@@ -1,4 +1,4 @@
-/* IR-019 deterministic UI state contracts; synthetic HTTP, not end-to-end proof — DR-063 / DR-064 / DR-065. */
+/* IR-019 deterministic UI state contracts; synthetic HTTP, not end-to-end proof — DR-145 / DR-146 / DR-147. */
 'use strict';
 const assert=require('node:assert/strict'), fs=require('node:fs'), path=require('node:path'), vm=require('node:vm');
 const ROOT=path.resolve(__dirname,'../..'), S='https://example.org/ur-skill#';

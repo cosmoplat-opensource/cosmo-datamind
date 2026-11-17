@@ -1,4 +1,4 @@
-"""Located checks for the supported XML dialect before RDF extraction — DR-060 / DR-065."""
+"""Located checks for the supported XML dialect before RDF extraction — DR-142 / DR-147."""
 from copy import deepcopy
 import xml.etree.ElementTree as ET
 

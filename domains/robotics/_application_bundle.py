@@ -1,4 +1,4 @@
-"""Pure current-fact bundle and validated RDF restoration — DR-072."""
+"""Pure current-fact bundle and validated RDF restoration — DR-154."""
 from copy import deepcopy
 import base64
 import hashlib

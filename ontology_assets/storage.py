@@ -1,4 +1,4 @@
-"""SQLite transactions and exclusive immutable byte files — DR-059 / DR-064 / DR-073."""
+"""SQLite transactions and exclusive immutable byte files — DR-141 / DR-146 / DR-155."""
 from contextlib import contextmanager
 from contextvars import ContextVar
 import hashlib
@@ -36,7 +36,7 @@ SCHEMA = (
         version_id TEXT NOT NULL REFERENCES versions(version_id), fingerprint TEXT NOT NULL)""",
 )
 
-# DR-064: additive v1 -> v2 migration in the same metadata transaction.
+# DR-146: additive v1 -> v2 migration in the same metadata transaction.
 RUN_SCHEMA = (
     """CREATE TABLE runs (
         run_id TEXT PRIMARY KEY, ontology_id TEXT NOT NULL REFERENCES assets(ontology_id),
@@ -63,7 +63,7 @@ def digest(content):
 
 
 def _migrate_build_runs(conn):
-    """DR-064: rebuild the three related tables in one transaction, retaining raw JSON.
+    """DR-146: rebuild the three related tables in one transaction, retaining raw JSON.
 
     Foreign keys remain enabled. Save children first, remove them before the parent,
     and restore retry references in original insertion order. No artifact is rewritten.
@@ -126,7 +126,7 @@ class Storage:
                 _migrate_build_runs(conn)
                 version = 3
             if version == 3:
-                # DR-064: admission identity and run enqueue share one transaction.
+                # DR-146: admission identity and run enqueue share one transaction.
                 conn.execute("""CREATE TABLE build_requests (
                     request_id TEXT PRIMARY KEY, fingerprint TEXT NOT NULL,
                     run_id TEXT NOT NULL UNIQUE REFERENCES runs(run_id))""")
@@ -175,7 +175,7 @@ class Storage:
             conn.commit()
         except BaseException:
             conn.rollback()
-            # DR-064/066: a rejected atomic save cannot leave its private immutable blobs.
+            # DR-146/066: a rejected atomic save cannot leave its private immutable blobs.
             for target in created or ():
                 target.unlink(missing_ok=True)
             raise
@@ -186,7 +186,7 @@ class Storage:
 
     @contextmanager
     def read_snapshot(self):
-        """Detach consistent metadata before expensive immutable-file verification — DR-073."""
+        """Detach consistent metadata before expensive immutable-file verification — DR-155."""
         snapshot = sqlite3.connect(':memory:')
         snapshot.row_factory = sqlite3.Row
         try:

@@ -4,7 +4,7 @@
 - **日期 / Date**: 2026-11-02
 - **最近更新**：2026-11-03
 - **当前环节**：T08 覆盖已确认，T09 演示补充与 CLI 已实现；89 项机器人测试、实际三场景演示及全量检查各段均通过；用户于 2026-11-03 确认没有问题并授权下一步，SDD 第⑨步交付完成。
-- **关联 / Refs**: [[DR-059-unified-domain-semantic-graph]]、[[DR-060-robotics-source-recipes-and-reverse-build]]、[[DR-061-parameter-contracts-calibration-and-readiness]]、[[DR-062-behavior-tree-compilation-as-ontology-application]]、[[DR-065-robotics-migration-and-compatibility-validation]]
+- **关联 / Refs**: [[DR-141-unified-domain-semantic-graph]]、[[DR-142-robotics-source-recipes-and-reverse-build]]、[[DR-143-parameter-contracts-calibration-and-readiness]]、[[DR-144-behavior-tree-compilation-as-ontology-application]]、[[DR-147-robotics-migration-and-compatibility-validation]]
 - **方案**：[集成 Proposal](../PROPOSAL-yang-datamind-integration.md) 第 6 节步骤 0～1。
 - **验收映射**：[acceptance.json](../acceptance.json) 的 ROB-01～ROB-13。
 - **流程依据**：[项目 SDD skill](../../.agents/skills/sdd-workflow/SKILL.md)。

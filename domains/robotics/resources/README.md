@@ -1,4 +1,4 @@
-# UR v2 发布规则 — DR-060 / DR-065
+# UR v2 发布规则 — DR-142 / DR-147
 
 `ur_pick_place_v2.ttl` 是冻结夹具 `tests/fixtures/robotics/owl/agent_real.owl` 中
 `https://example.org/ur-skill#validationShapes` 字符串的原始 UTF-8 字节。

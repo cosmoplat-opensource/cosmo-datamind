@@ -1,4 +1,4 @@
-"""IR-029 T02 RED: reversible asset state, stable previews and history — DR-075."""
+"""IR-029 T02 RED: reversible asset state, stable previews and history — DR-157."""
 from contextlib import contextmanager
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
@@ -22,7 +22,7 @@ COMPONENTS = {'profile_id': None, 'compiler_version': None, 'rule_digest': None,
 
 def lifecycle(root, **kwargs):
     # A missing implementation is an explicit RED assertion, not a collection error.
-    assert importlib.util.find_spec('ontology_assets.lifecycle') is not None, 'DR-075 lifecycle service is not implemented'
+    assert importlib.util.find_spec('ontology_assets.lifecycle') is not None, 'DR-157 lifecycle service is not implemented'
     module = importlib.import_module('ontology_assets.lifecycle')
     return module.LifecycleService(root, **kwargs)
 

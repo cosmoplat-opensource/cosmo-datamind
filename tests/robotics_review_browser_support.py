@@ -1,4 +1,4 @@
-"""Actual governance UI interactions and independently read persisted results — DR-063 / DR-064 / DR-065."""
+"""Actual governance UI interactions and independently read persisted results — DR-145 / DR-146 / DR-147."""
 from pathlib import Path
 
 from playwright.sync_api import expect

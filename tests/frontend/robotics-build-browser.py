@@ -1,4 +1,4 @@
-"""T06 RED: real Chromium + owned Gunicorn + actual robotics storage — DR-063 / DR-064 / DR-065.
+"""T06 RED: real Chromium + owned Gunicorn + actual robotics storage — DR-145 / DR-146 / DR-147.
 
 Run: .venv/bin/python tests/frontend/robotics-build-browser.py --output .check-results/robotics-browser
 No route interception, synthetic success response, external service or paid model.
@@ -370,7 +370,7 @@ if __name__ == '__main__':
 
 
 def test_fixed_robotics_relationship_view(live):
-    """DR-068: real RDF endpoints, navigation, keyboard details and read-only refresh."""
+    """DR-150: real RDF endpoints, navigation, keyboard details and read-only refresh."""
     site, page = live
     choose_robotics(page, site)
     fill_robotics(page)
@@ -403,7 +403,7 @@ def test_fixed_robotics_relationship_view(live):
 
 @pytest.mark.parametrize('view', ['relations'])
 def test_view_zoom_remains_effective_after_node_selection(live, view):
-    """DR-068: measure the real G6 viewport, not just successful button clicks."""
+    """DR-150: measure the real G6 viewport, not just successful button clicks."""
     site, page = live
     ref = site.submit()['output_asset_ref']
     page.goto(site.url + '/#library')
@@ -449,7 +449,7 @@ def test_view_zoom_remains_effective_after_node_selection(live, view):
 
 
 def test_catalog_hides_source_tree_and_old_tree_link_cannot_display_it(live):
-    """DR-068 scope update: only generated task results expose a behavior tree UI."""
+    """DR-150 scope update: only generated task results expose a behavior tree UI."""
     site, page = live
     ref = site.submit()['output_asset_ref']
     page.goto(site.url + '/#library')
@@ -476,7 +476,7 @@ def test_catalog_hides_source_tree_and_old_tree_link_cannot_display_it(live):
 
 
 def test_legacy_configuration_names_match_task_page_without_changing_owl(live):
-    """DR-068: normalize historical names throughout the graph, preserving RDF data."""
+    """DR-150: normalize historical names throughout the graph, preserving RDF data."""
     from rdflib import Literal, RDFS
     from tests.robotics_support import S
     from tests.robotics_task_support import fixture

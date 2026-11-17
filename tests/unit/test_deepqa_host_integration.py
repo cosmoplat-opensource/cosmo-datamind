@@ -1,4 +1,4 @@
-"""T05 supplemental host bridges and atomic admission, no frozen RED edits — DR-074."""
+"""T05 supplemental host bridges and atomic admission, no frozen RED edits — DR-156."""
 from concurrent.futures import ThreadPoolExecutor
 import json
 import threading

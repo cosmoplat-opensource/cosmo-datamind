@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the three offline robotics acceptance scenarios — DR-060 / DR-065 / IR-016."""
+"""Run the three offline robotics acceptance scenarios — DR-142 / DR-147 / IR-016."""
 import argparse
 from pathlib import Path
 import sys
