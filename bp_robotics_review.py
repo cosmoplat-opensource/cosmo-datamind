@@ -180,12 +180,26 @@ def init_app(app, runtime):
     @bp.get(prefix + '/versions/<version_id>/views/<view>')
     def visualization(ontology_id, version_id, view):
         # DR-150: GET only, fixed version, same read-only integrity boundary.
-        if request.args or view not in {'relations', 'behavior-tree'}:
+        if request.args or view not in {'relations', 'behavior-tree', 'studio'}:
             raise invalid()
         service(ontology_id)  # DR-152: retain the original domain guard before resolving versions.
         from ontology_assets.robotics_design import DesignAssets
         from application_contracts.adapters import service as application_checks
         assets = runtime.assets()
+        if view == 'studio':
+            # DR-159: use the same provenance readers as fixed-version exports.
+            from ontology_assets.studio_view import project_version
+            from ontology_assets.robotics_application import ApplicationAssets, is_application
+            from ontology_assets.robotics_offline import OfflineAssets
+            version = assets.get_version(ontology_id, version_id)
+            reader = (ApplicationAssets(runtime.root) if is_application(version) else DesignAssets(runtime.root)
+                      if version['metadata'].get('design_contract') else OfflineAssets(runtime.root))
+            try:
+                document = project_version(version, reader.payload(ontology_id, version_id))
+            except (ValueError, OSError) as exc:
+                raise BuildRequestError('artifact_integrity', '固定版本或来源工件缺失、损坏或规模不受支持。', 409) from exc
+            return response({**document, 'ontology_id': ontology_id, 'version_id': version_id, 'view': view,
+                'name': assets.get_asset(ontology_id)['name'], 'version_number': assets.version_number(ontology_id, version_id)})
         if assets.get_version(ontology_id, version_id)['metadata'].get('design_contract'):
             if view != 'relations': raise invalid()
             reader=DesignAssets(runtime.root)

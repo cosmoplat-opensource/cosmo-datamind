@@ -1,6 +1,6 @@
 # IR-031 · Studio 共享图谱与机器人连续可视化
 
-- **状态 / Status**：in-progress（T01 已提交，T02 RED 完成并提交测试人审；T03 GREEN 尚未开始）。
+- **状态 / Status**：in-progress（T03 核心 GREEN；用户授权免中间 review，继续 T04～T06）。
 - **日期 / Date**：2026-11-17。
 - **关联 / Refs**：[DR-159](../decisions/DR-159-studio-ontology-visualization.md)、[IR-024](IR-024-robotics-dual-build.md)、[IR-027](IR-027-ontology-detail-experience.md)、[IR-032](IR-032-studio-data-visualization.md)。
 - **工作分支 / Branch**：`feat/studio-ui-integration`。
@@ -110,3 +110,10 @@ RED 为 29 failed／2 passed／0 errors／0 skipped；失败均首先指向尚�
 STV-R01／02／04／05／06 的实际测试已进入正式映射并标为 red，浏览器计划保留；STV-R03 的真实拖拽与几何验收仍为计划项。
 测试与证据按本 Task 提交；依技能第⑤环节“人 review 测试是否覆盖到位”，当前提交测试人审，未开始 T03 GREEN。
 详见 [RED 人审记录](../../docs/audits/IR-031-t02-red-review.md) 和 [机器结果](../../docs/audits/IR-031-t02-results.json)。
+
+
+## T03 连续推进
+
+用户于 2026-11-17 授权继续本 IR 全部剩余 Task，不等待中间 review。
+投影、控制器与只读接口完成，31 项新用例 GREEN，相关回归合计 103 passed。
+原 T02 的 6 项 Node 启动错误已纠正并保留原始证据，不将环境错误冒称产品 RED；详见 [T03 记录](../../docs/audits/IR-031-t03-green-review.md)。

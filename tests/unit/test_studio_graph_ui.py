@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def run_case(case):
     node = shutil.which('node') or str(Path(playwright.__file__).parent / 'driver/node')
     assert Path(node).is_file(), 'Node runtime must be available before collecting RED evidence'
-    run = subprocess.run([node, '--experimental-default-type=module',
+    run = subprocess.run([node,
                           str(ROOT / 'tests/frontend/studio-graph-ui.mjs'), case],
                          cwd=ROOT, text=True, capture_output=True, timeout=20)
     assert run.returncode == 0, run.stdout + run.stderr

@@ -289,10 +289,15 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True, data_host=Non
         except (ValueError, OSError) as exc:
             raise BuildRequestError('artifact_integrity', '设计文件缺失或损坏。', 409) from exc
 
+    def design_display(row):
+        # DR-159: saved state projects read-only; confirmation remains explicit.
+        from ontology_assets.studio_view import project_design
+        return {**row, 'studio': design_read(lambda: project_design(row))}
+
     @bp.get('/api/robotics/design-sessions/<sid>')
     def design_session(sid):
         _query_fields(set())
-        return jsonify(runtime.public(designs().get(sid)))
+        return jsonify(runtime.public(design_display(designs().get(sid))))
 
     @bp.get('/api/robotics/design-sessions/<sid>/revisions')
     def design_revisions(sid):
@@ -308,7 +313,11 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True, data_host=Non
         service = designs()
         raw = design_read(lambda: service.export_revision(sid, int(revision), format=format or 'json'))
         if format is None:
-            return jsonify(runtime.public(__import__('json').loads(raw)))
+            document = __import__('json').loads(raw)
+            from ontology_assets.studio_view import project_design
+            document['studio'] = design_read(lambda: project_design({**document['state'], 'session_id': sid,
+                'status': 'historical'}))
+            return jsonify(runtime.public(document))
         return send_file(io.BytesIO(raw), mimetype='application/json' if format=='json' else 'application/rdf+xml',
             as_attachment=True, download_name='design.'+format, max_age=0)
 
@@ -329,7 +338,7 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True, data_host=Non
         if type(rev) is not int or rev<0:
             raise _invalid()
         function = getattr(service, 'message' if operation=='messages' else operation.replace('-', '_'))
-        return jsonify(runtime.public(function(sid, **body))), 202 if operation in ('messages','confirm-schema','retry') else 200
+        return jsonify(runtime.public(design_display(function(sid, **body)))), 202 if operation in ('messages','confirm-schema','retry') else 200
 
     def application_summary(oid, vid):
         from application_contracts.adapters import service
