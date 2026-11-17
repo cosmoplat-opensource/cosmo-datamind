@@ -2,6 +2,7 @@
 
 > 2026-11-16：「未通过核验的概念带原因重提」已由 [DR-138](DR-138-concept-repair-and-repeated-replay.md) 补上。
 > 2026-11-17：[DR-139](DR-139-review-of-dr133-138.md) 把数据接地改为在有界线程里执行。
+> 2026-11-17：[DR-140](DR-140-cancel-and-paired-replay.md) 把「有对象需要起名时才改用画像摘要」改为有取值画像就用，与实验分支一致。
 
 状态：已实现。日期：2026-11-16。
 关联：DATA-GROUNDING-01；DR-093、DR-133。

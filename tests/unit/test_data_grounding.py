@@ -179,7 +179,7 @@ def test_repair_stops_after_two_rounds_and_is_off_without_the_profile(make_sqlit
     assert len(calls) == 1
 
 
-def test_a_repair_round_cannot_add_more_concepts_than_failed(make_sqlite):
+def test_re_proposals_count_as_proposals_so_dropped_is_never_negative(make_sqlite):
     import json
     import workload_concepts
     con = sqlite3.connect(make_sqlite({"tb001": ("cl0001 TEXT, cl0003 INTEGER, cl0004 INTEGER",
@@ -195,7 +195,8 @@ def test_a_repair_round_cannot_add_more_concepts_than_failed(make_sqlite):
         return first if len(calls) == 1 else many
     out = workload_concepts.build(con, {"objects": [{"table": "tb001"}]}, {}, ["q"], ask, json.loads, brief="B",
                                   repair={"tables_brief": lambda t: "b", "groundings": []})
-    assert out["repair"]["recovered"] == 1 and out["dropped"] >= 0 and out["accepted"] <= out["proposed"]
+    # 与实验分支一致:重提不限于未通过的那几条;重提的条数计入提议,所以成立的条数不会超过提议的条数
+    assert out["repair"]["recovered"] == 3 and out["proposed"] == 4 and out["accepted"] == 3 and out["dropped"] == 1
 
 
 # ── DR-140:构建放弃等待后,后台不再发起新的模型调用 ─────────────────────────────────────────────
@@ -264,3 +265,25 @@ def test_closing_the_stream_early_also_cancels():
             break
         time.sleep(0.05)
     assert seen.get("cancelled") is True
+
+
+
+# ── DR-140 对比基准重测时发现的移植偏差:画像与重提在有画像时就用,不以「有表需要起名」为前提 ─────────────
+
+def test_the_concept_step_gets_the_profile_even_when_no_table_needs_a_name(make_sqlite):
+    import server
+    db = make_sqlite({"tb001": ("cl0001 TEXT, cl0003 INTEGER", [("a", 1), ("b", 0), ("c", 1)])})
+    ir = {"objects": [{"name": "tb001", "cn": "学校", "table": "tb001", "attrs": []}], "relations": []}
+    out = server._data_grounding(db, ir, ["有多少所磁石学校?\n说明:磁石学校指 cl0003 = 1"], ask=lambda _p: "{}")
+    assert out["naming"]["tables_considered"] == 0
+    brief, repair = server._concept_inputs(out)
+    assert brief and "cl0003" in brief and repair and repair["groundings"]
+    assert "已由数据核验的问题用语 → 列" in brief and "'磁石学校' -> tb001.cl0003" in brief
+    assert server._concept_inputs(None) == (None, None)
+
+
+def test_repair_context_adds_tables_whose_verified_terms_share_words_with_the_failed_concept():
+    import workload_concepts
+    failed = [({"name": "MagnetSchool", "table": "tb001"}, "name_or_column_missing")]
+    groundings = [{"term": "magnet school", "table": "tb009", "column": "cl1"}, {"term": "county", "table": "tb004", "column": "c"}]
+    assert workload_concepts._related_tables(failed, groundings) == ["tb001", "tb009"]

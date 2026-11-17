@@ -9612,6 +9612,21 @@ def _data_grounding(db, ir, workload, ask=None, deadline=None, cancel=None):
                        "groundings": eg["groundings"]}}
 
 
+def _concept_inputs(grounded):
+    """数据接地的结果 → 业务概念步骤所用的(结构摘要, 重提材料)。
+    与对比实验分支一致(DR-140):有取值画像就用画像摘要并附上已核验的「用语 → 列」,未通过核验的概念带原因重提;
+    不以「有表需要起名」为前提。模型抽取时常已给代码名的表起了中文名,按起名判断会漏掉名称不透明的库。"""
+    if not grounded:
+        return None, None
+    brief = grounded["brief"]
+    gs = grounded.get("groundings") or []
+    if gs:
+        brief += "\n\n已由数据核验的问题用语 → 列(可直接采用):\n" + "\n".join(
+            f"- '{g['term']}' -> {g['table']}.{g['column']}" + (f" WHERE {g['filter']}" if g.get("filter") else "")
+            for g in gs[:300])
+    return brief, grounded["repair"]
+
+
 def _workload_concepts(db, ir, workload, brief=None, repair=None, cancel=None):
     import copy
     import data_catalog
@@ -10213,11 +10228,10 @@ def build_inquire():
                        f"理由在数据里找不到而未采用 {len(_gn['rejected'])} 条")
         except Exception as exc:                 # noqa: BLE001
             yield push("data_grounding", False, f"按数据核对用语与命名未完成:{type(exc).__name__};不影响关系产物")
-        _gbrief = _grounded["brief"] if _grounded and _grounded["naming"]["tables_considered"] else None
+        _gbrief, _grepair = _concept_inputs(_grounded)
         if workload or any(ir.get(k) for k in ('concepts', 'themes', 'derived', 'caveats')):
             yield sse({'type': 'status', 'text': '核验业务概念与主题的取数依据；业务含义仍需确认…'})
             _wc = None
-            _grepair = _grounded["repair"] if _gbrief else None
             for _item in _cancellable_stream(lambda _log, _cancel: _workload_concepts(db, ir, workload, _gbrief, _grepair, _cancel),
                                              250):
                 if _item[0] == 'tick':

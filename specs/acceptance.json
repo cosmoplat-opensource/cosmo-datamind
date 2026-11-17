@@ -1447,9 +1447,9 @@
     },
     {
       "id": "DATA-GROUNDING-03",
-      "criterion": "概念重提每轮不超过未通过的条数,未保留条数不为负;数据库的适用本体按文件指纹缓存",
+      "criterion": "重提的条数计入提议,未保留条数不为负;数据库的适用本体按文件指纹缓存",
       "tests": [
-        "tests/unit/test_data_grounding.py::test_a_repair_round_cannot_add_more_concepts_than_failed",
+        "tests/unit/test_data_grounding.py::test_re_proposals_count_as_proposals_so_dropped_is_never_negative",
         "tests/unit/test_database_scope.py::test_the_graphs_of_a_database_are_cached_until_an_ontology_file_changes"
       ]
     },
@@ -1464,12 +1464,14 @@
     },
     {
       "id": "DATA-GROUNDING-04",
-      "criterion": "构建放弃等待(超时或客户端断开)后,数据接地与业务概念两步不再发起新的模型调用;取值画像的查询可被中断",
+      "criterion": "构建放弃等待(超时或客户端断开)后,数据接地与业务概念两步不再发起新的模型调用;取值画像的查询可被中断;有取值画像时概念步骤就用画像摘要(附已核验的用语 → 列)并重提,不以「有表需要起名」为前提;重提材料包含与概念名有共同词的已核验用语所在的表",
       "tests": [
         "tests/unit/test_data_grounding.py::test_naming_stops_starting_batches_once_cancelled",
         "tests/unit/test_data_grounding.py::test_the_concept_call_is_not_made_after_cancel",
         "tests/unit/test_data_grounding.py::test_the_cancellable_runner_signals_the_worker_when_it_stops_waiting",
-        "tests/unit/test_data_grounding.py::test_closing_the_stream_early_also_cancels"
+        "tests/unit/test_data_grounding.py::test_closing_the_stream_early_also_cancels",
+        "tests/unit/test_data_grounding.py::test_the_concept_step_gets_the_profile_even_when_no_table_needs_a_name",
+        "tests/unit/test_data_grounding.py::test_repair_context_adds_tables_whose_verified_terms_share_words_with_the_failed_concept"
       ]
     },
     {

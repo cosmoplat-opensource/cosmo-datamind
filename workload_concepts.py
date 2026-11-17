@@ -192,12 +192,23 @@ REPAIR_PROMPT = """上一轮提议的下列业务概念没有通过数据核验(
 """
 
 
+def _related_tables(failed, groundings, k=8):
+    """重提时给模型看的表:未通过的概念提议的表,加上已核验用语与概念名有共同英文词(4 个字母以上)的那些表(与实验分支相同)。"""
+    out = [str(c.get("table") or "") for c, _why in failed if c.get("table")]
+    words = {w for c, _why in failed
+             for w in re.findall(r"[a-z]{4,}", re.sub(r"([a-z])([A-Z])", r"\1 \2", str(c.get("name") or "")).lower())}
+    for g in groundings or []:
+        if words & set(re.findall(r"[a-z]{4,}", str(g.get("term") or "").lower())):
+            out.append(g["table"])
+    return list(dict.fromkeys(out))[:k]
+
+
 def _repair_concepts(con, failed, repair, ask, extract, tables, entity_of, result, seen, deadline):
     """DR-138 未通过核验的概念带着原因和真实结构重提,至多 REPAIR_ROUNDS 轮(做法来自对比实验)。"""
     for rnd in range(1, REPAIR_ROUNDS + 1):
         if not failed or (deadline is not None and time.monotonic() >= deadline):
             return
-        rel = list(dict.fromkeys(str(c.get("table") or "") for c, _w in failed if c.get("table")))[:8]
+        rel = _related_tables(failed, repair.get("groundings"))
         fl = "\n".join(f"- {c.get('name')}: 提议 {c.get('table')}.{c.get('column') or ''}"
                        + (f" WHERE {c['filter']}" if c.get("filter") else "") + f" → {why}" for c, why in failed[:40])
         gl = "\n".join(f"- '{g['term']}' -> {g['table']}.{g['column']}" + (f" WHERE {g['filter']}" if g.get("filter") else "")
@@ -207,7 +218,8 @@ def _repair_concepts(con, failed, repair, ask, extract, tables, entity_of, resul
         except Exception:
             return
         todo = [c for c in (d.get("concepts") if isinstance(d, dict) and isinstance(d.get("concepts"), list) else [])
-                if isinstance(c, dict)][:len(failed)]       # 重提只替换未通过的那几条,不借机多提
+                if isinstance(c, dict)][:40]
+        result["proposed"] += len(todo)              # 重提的条数计入提议:成立的条数不会超过提议的条数
         result["repair"]["rounds"] += 1
         result["repair"]["resubmitted"] += len(todo)
         failed = []
@@ -274,7 +286,7 @@ def build(con, ir, docs, questions, ask, extract, deadline=None, brief=None, rep
                     result[kind].append(v)
                 elif v:
                     _reject(result['rejected'], c, 'duplicate')
-        if repair and failed:                    # 只在提供了画像(名称不透明的库)时重提
+        if repair and failed:                    # 有取值画像(数据接地的结果)时重提
             _repair_concepts(con, failed, repair, ask, extract, tables, entity_of, result, seen, deadline)
         pending += [c for c in d.get('derived', [])[:100] if isinstance(c, dict)] if isinstance(d.get('derived'), list) else []
     inputs = _concept_index(result['concepts'])

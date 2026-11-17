@@ -34,7 +34,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 ## 索引
 
 ### 决定 / Decisions
-- [DR-140 · 构建放弃等待后停止模型调用;本体修改前后的配对回放](decisions/DR-140-cancel-and-paired-replay.md)
+- [DR-140 · 构建放弃等待后停止模型调用;本体修改前后的配对回放;数据接地的移植偏差与对比基准重测](decisions/DR-140-cancel-and-paired-replay.md)
 - [DR-139 · DR-133 至 DR-138 的复查修正](decisions/DR-139-review-of-dr133-138.md)
 - [DR-138 · 概念重提与多次回放](decisions/DR-138-concept-repair-and-repeated-replay.md)
 - [DR-137 · 反馈的回放验证](decisions/DR-137-feedback-replay.md)
