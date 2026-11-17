@@ -7,6 +7,9 @@ from domain_runs.robotics_application_service import ApplicationService, Applica
 
 def init_app(app,runtime):
     bp=Blueprint('robotics_application',__name__)
+    from ontology_assets.lifecycle import LifecycleError
+    from asset_lifecycle import failure as lifecycle_failure
+    bp.register_error_handler(LifecycleError,lifecycle_failure)
     def service(write=False):
         if write: runtime.writer()
         return ApplicationService(runtime.root,read_only=not write)

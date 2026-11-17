@@ -9,8 +9,12 @@ import tempfile
 
 from srv_context import confine
 
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 _TRANSACTION_FILES = ContextVar('asset_transaction_files', default=None)
+
+
+class Connection(sqlite3.Connection):
+    write_intent = False
 SCHEMA = (
     """CREATE TABLE assets (
         ontology_id TEXT PRIMARY KEY, name TEXT NOT NULL, domain TEXT NOT NULL,
@@ -146,6 +150,10 @@ class Storage:
             if version == 7:
                 from .application_schema import migrate as migrate_application
                 migrate_application(conn)
+                version = 8
+            if version == 8:
+                from .lifecycle_schema import migrate as migrate_lifecycle
+                migrate_lifecycle(conn)
             elif version != SCHEMA_VERSION:
                 raise ValueError(f"不支持的资产数据库 schema 版本：{version}")
 
@@ -155,7 +163,8 @@ class Storage:
         if self.read_only and write:
             raise ValueError("只读存储不能执行写入。")
         database = Path(path).as_uri() + "?mode=ro" if self.read_only else path
-        conn = sqlite3.connect(database, uri=self.read_only, timeout=30, isolation_level=None)
+        conn = sqlite3.connect(database, uri=self.read_only, timeout=30, isolation_level=None, factory=Connection)
+        conn.write_intent = write
         conn.row_factory = sqlite3.Row
         created = [] if write else None
         token = _TRANSACTION_FILES.set(created) if write else None

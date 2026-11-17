@@ -82,13 +82,18 @@ class ApplicationService:
         require(text(aid))
         row = conn.execute('SELECT record FROM robotics_adaptations WHERE adaptation_id=?',(aid,)).fetchone()
         require(row is not None,'not_found','适配记录不存在。')
-        return json.loads(row[0])
+        from ontology_assets.lifecycle_guard import session_get
+        return session_get(conn,json.loads(row[0]))
 
     def get(self, adaptation_id):
         require((self.root/'domain.sqlite3').is_file(),'not_found','适配记录不存在。')
-        with self._atomic() as conn: return self._get(conn,adaptation_id)
+        with self._atomic() as conn:
+            from ontology_assets.lifecycle_guard import project
+            return project(conn,self._get(conn,adaptation_id))
 
     def _put(self, conn, state):
+        from ontology_assets.lifecycle_guard import session_put
+        session_put(conn,'robotics_adaptations','adaptation_id',state)
         conn.execute('INSERT INTO robotics_adaptations VALUES (?,?) ON CONFLICT(adaptation_id) DO UPDATE SET record=excluded.record',
                      (state['adaptation_id'],json_text(state)))
 
@@ -117,6 +122,8 @@ class ApplicationService:
         require(self._head(conn,state['asset_ref']['ontology_id'])==state['head'],'head_conflict','本体已有新修订，请刷新并明确选择版本。')
 
     def _prepare(self, conn, *, ontology_id, version_id, mode, task_ref, request_id, automatic=False):
+        from ontology_assets.lifecycle import require_active
+        require_active(conn,ontology_id)
         require(type(automatic) is bool)
         ref={'ontology_id':ontology_id,'version_id':version_id}
         require(all(text(v) for v in ref.values()) and version_id!='latest' and mode in ('real','demo'))

@@ -16,6 +16,7 @@ from srv_context import _RDF_LOCK
 
 from .payloads import json_text, validate_payload
 from .storage import digest
+from .lifecycle import LifecycleError
 from .store import AssetStore, _required, _version
 
 
@@ -46,6 +47,8 @@ class GovernanceService:
                 yield conn
         except GovernanceError:
             raise
+        except LifecycleError as exc:
+            raise GovernanceError(exc.code,str(exc)) from None
         except KeyError as exc:
             raise GovernanceError('not_found', '资产、版本或记录不存在。') from exc
         except OSError as exc:
@@ -60,6 +63,9 @@ class GovernanceService:
 
     def _version(self, conn, oid, vid):
         self._asset(conn, oid)
+        if getattr(conn,'write_intent',False):
+            from .lifecycle import require_active
+            require_active(conn,oid)
         return _version(_required(conn, 'SELECT * FROM versions WHERE ontology_id=? AND version_id=?', (oid,vid)))
 
     def _bytes(self, record):

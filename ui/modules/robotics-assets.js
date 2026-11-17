@@ -26,11 +26,12 @@
     const failure = e => ({message:e.message || String(e), status:e.status, code:e.code});
     return {
       snapshot,
-      async loadCatalog({domain} = {}) {
+      async loadCatalog({domain,state:filter} = {}) {
         const token = ++catalogToken;
         state.error = null; state.loading=true; notify();
         try {
-          const body = await json(fetcher, '/api/ontology-assets' + (domain ? '?domain=' + encodeURIComponent(domain) : ''));
+          const query=[];if(domain)query.push('domain='+encodeURIComponent(domain));if(filter&&filter!=='active')query.push('state='+encodeURIComponent(filter));
+          const body = await json(fetcher, '/api/ontology-assets' + (query.length?'?'+query.join('&'):''));
           if (dead || token !== catalogToken) return;
           state.items = body.items || []; state.error = null; state.loading=false; state.catalogLoaded=true;
         } catch (e) { if (dead || token !== catalogToken) return; state.items = []; state.error = failure(e); state.loading=false; state.catalogLoaded=true; }
@@ -69,8 +70,8 @@
     return rows?.length ? `<details class="rb-sources"${expanded ? ' open' : ''}><summary>构建来源</summary><p class="rb-source-note">本体基于上传或登记时保存的文件副本构建。</p>` + rows.map(source => `<div class="rb-source-file"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-6-6Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg><div><b>${escape(labels[source.role] || '来源文件')}</b><p>${escape(sourceSize(source.byte_size))}</p></div></div>`).join('') + '</details>' : '';
   }
   function downloads(rows = []) {
-    return '<div class="rb-actions rb-downloads">' + (rows || []).filter(a => ['ontology','validation','manifest'].includes(a.kind)).map(a =>
-      `<a href="${escape(a.download_url)}" data-artifact-name="${escape(a.name || a.version_id + '-' + a.kind + (a.kind === 'ontology' ? '.owl' : '.json'))}">${({ontology:'下载 OWL',validation:'下载报告',manifest:'下载 manifest'})[a.kind]}</a>`).join('') + '</div>';
+    return '<div class="rb-actions rb-downloads">' + (rows || []).filter(a => ['ontology','data_ontology','validation','manifest'].includes(a.kind)).map(a =>
+      `<a href="${escape(a.download_url)}" data-artifact-name="${escape(a.name || a.version_id + '-' + a.kind + (a.kind === 'ontology' ? '.owl' : '.json'))}">${({ontology:'下载 OWL',data_ontology:'下载 JSON',validation:'下载报告',manifest:'下载 manifest'})[a.kind]}</a>`).join('') + '</div>';
   }
   function bindDownloads(container) {
     container.querySelectorAll('[data-artifact-name]').forEach(link => { link.onclick = async event => {
@@ -79,7 +80,7 @@
       message.hidden = true; message.textContent = '';
       try {
         const url = new URL(link.getAttribute('href'), global.location.origin);
-        if (url.origin !== global.location.origin || !(/^\/api\/domain-runs\/[^/]+\/artifacts\/[^/]+$/.test(url.pathname) || /^\/api\/ontology-assets\/[^/]+\/versions\/[^/]+\/(payload|artifacts\/[^/]+)$/.test(url.pathname))) throw new Error('下载地址不可信。');
+        if (url.origin !== global.location.origin || !(/^\/api\/domain-runs\/[^/]+\/artifacts\/[^/]+$/.test(url.pathname) || /^\/api\/ontology-assets\/[^/]+\/versions\/[^/]+\/(payload|data-payload|artifacts\/[^/]+)$/.test(url.pathname))) throw new Error('下载地址不可信。');
         const response = await global.fetch(url.href);
         if (!response.ok) {
           let body; try { body = await response.json(); } catch (_) { body = {}; }
@@ -98,13 +99,13 @@
     else if (!jobsActive) { jobsActive = true; loadJobs(); }
     if (pageName !== 'library' || new URLSearchParams(global.location.hash.split('?')[1] || '').get('tab') === 'knowledge') { active?.dispose(); active = null; routeKey = null; return; }
     const params = new URLSearchParams(global.location.hash.startsWith('#library?') ? global.location.hash.split('?')[1] : '');
-    const oid = params.get('asset'), vid = params.get('version'), key = (oid || '') + ':' + (vid || '');
+    const oid = params.get('asset'), vid = params.get('version'), key = (oid || '') + ':' + (vid || '')+':'+params.get('domain')+':'+params.get('state');
     if (active && routeKey === key) return;
     active?.dispose(); routeKey = key;
     const doc = global.document, host = doc.getElementById('ra_host'), version = !!(oid || vid);
     host.innerHTML = version ? '<section class="ra-detail" data-testid="robotics-version"><p class="ra-empty" role="status">正在读取指定版本…</p></section>' :
       `<header class="rb-hero ra-hero"><div class="rb-hero-copy">${assetIcon}<div><h2>让本体知识持续复用</h2><p>管理数据与机器人本体，从已有知识开始探索或生成任务。</p></div></div><a class="ra-button ra-hero-action" href="#build">构建本体 <span aria-hidden="true">＋</span></a></header>
-      <div class="ra-toolbar card"><label for="ra_domain">本体领域</label><select id="ra_domain" aria-label="本体领域"><option value="">全部领域</option><option value="data">数据本体</option><option value="robotics">机器人本体</option></select><div class="ra-import-host"></div></div><div data-testid="ontology-catalog" class="rb-catalog ra-catalog"></div>`;
+      <div class="ra-toolbar card"><label for="ra_domain">本体领域</label><select id="ra_domain" aria-label="本体领域"><option value="">全部领域</option><option value="data">数据本体</option><option value="robotics">机器人本体</option></select><label for="ra_state">展示</label><select id="ra_state" aria-label="本体状态"><option value="active">本体目录</option><option value="deleted">回收站</option></select><div class="ra-import-host"></div></div><div data-testid="ontology-catalog" class="rb-catalog ra-catalog"></div>`;
     if(!version)global.RoboticsTask?.importButton(host.querySelector('.ra-import-host'));
     const legacy = doc.getElementById('lib_legacy'); if (legacy) legacy.hidden = version;
     const controller = createController({onChange:state => {
@@ -129,6 +130,7 @@
           ${Object.keys(counts).length ? `<section class="card ra-section"><div class="ra-section-heading"><h3>知识概览</h3><span>本体中的技能与配置</span></div><div class="rb-counts">${Object.entries(counts).map(([kind,n]) => `<div><strong data-count-kind="${escape(kind)}">${escape(n)}</strong><span>${escape(({AtomicSkill:'原子技能',CompositeSkill:'复合技能',SkillInvocation:'技能调用',DataReference:'数据引用',ImplementationConfiguration:'实现配置',ParameterBinding:'参数绑定',SkillParameter:'技能参数'})[kind] || kind)}</span></div>`).join('')}</div></section>` : ''}
           ${d.sources?.length || d.build_run_id || d.asset?.domain === 'robotics' ? `<section class="card ra-section ra-provenance"><div class="ra-section-heading"><h3>来源与维护</h3><span>需要追溯或调整知识时展开查看</span></div>${sources(d.sources,{expanded:false})}<div class="ra-secondary-links">${d.build_run_id ? `<a href="${escape(designLink||runLink(d.build_run_id))}">查看构建运行与阶段记录 →</a>` : ''}${d.design ? (designLink?`<a href="${escape(designLink)}">继续修改设计 →</a>`:'') : d.asset?.domain === 'robotics' ? `<a aria-label="维护知识" href="${escape(versionLink(d.ontology_id,d.version_id) + '&tab=knowledge')}">维护知识 →</a>` : ''}</div></section>` : ''}${issues(d.result?.issues)}`;
         bindDownloads(panel);
+        global.OntologyLifecycle?.attach(panel,{...d,name:d.asset?.name},()=>{global.location.hash='#library';});
       } else {
         const list = host.querySelector('[data-testid="ontology-catalog"]');
         if (state.error) { list.innerHTML = `<div role="alert">${escape(errorText(state.error))}</div>`; return; }
@@ -136,22 +138,27 @@
         list.innerHTML = state.items.map(item => {
           const legacy = item.entry_kind === 'legacy_reference';
           const title = escape(item.name || item.legacy_key || '未命名本体');
-          const link = legacy || (item.domain === 'data' && item.legacy_key)
+          const link = item.lifecycle?.state==='deleted'&&item.version_id ? `<a href="${escape(versionLink(item.ontology_id,item.version_id))}">查看固定版本</a>` : legacy || (item.domain === 'data' && item.legacy_key)
             ? `<a href="#graph=${escape(encodeURIComponent(item.legacy_key))}">打开数据图谱</a>`
             : item.domain==='robotics'&&item.version_id ? `<a href="${escape(global.RoboticsViews.link(item.ontology_id,item.version_id))}">打开图谱</a>`
             : item.version_id ? `<a href="${escape(versionLink(item.ontology_id,item.version_id))}">查看固定版本</a>` : '<span class="muted">暂无版本</span>';
-          return `<article class="card ra-asset" ${legacy ? `data-legacy-key="${escape(item.legacy_key)}"` : `data-ontology-id="${escape(item.ontology_id)}"`}><div class="ra-card-top"><span class="ra-icon">${domainIcon(legacy ? 'data' : item.domain)}</span><span class="rb-soft-tag">${legacy ? '未登记版本' : escape(statusText(item.publication_state))}</span></div><span class="rt-eyebrow">${legacy ? '旧数据图谱' : item.domain === 'robotics' ? '机器人本体' : '数据本体'}</span><h3>${title}</h3><p class="ra-version">${item.version_number ? '版本 '+escape(item.version_number) : '保留原有数据图谱'}</p><div class="ra-card-actions">${link}</div></article>`;
+          return `<article class="card ra-asset" ${legacy ? `data-legacy-key="${escape(item.legacy_key)}"` : `data-ontology-id="${escape(item.ontology_id)}"`}><div class="ra-card-top"><span class="ra-icon">${domainIcon(legacy ? 'data' : item.domain)}</span><span class="rb-soft-tag"${item.lifecycle?.state==='deleted'?' role="status"':''}>${item.lifecycle?.state==='deleted'?'已删除':legacy ? '未登记版本' : escape(statusText(item.publication_state))}</span></div><span class="rt-eyebrow">${legacy ? '旧数据图谱' : item.domain === 'robotics' ? '机器人本体' : '数据本体'}</span><h3>${title}</h3><p class="ra-version">${item.version_number ? '版本 '+escape(item.version_number) : '保留原有数据图谱'}</p><div class="ra-card-actions">${link}</div></article>`;
         }).join('') || '<div class="card ra-empty"><div class="rb-empty-mark" aria-hidden="true">◇</div><h3>此领域暂无登记条目</h3><p>构建或导入本体后，即可在这里查看和使用。</p></div>';
+        state.items.forEach(item=>{if(!item.ontology_id)return;const card=list.querySelector('[data-ontology-id="'+CSS.escape(item.ontology_id)+'"]');if(card)global.OntologyLifecycle?.attach(card,item,()=>controller.loadCatalog({domain:doc.getElementById('ra_domain').value,state:doc.getElementById('ra_state').value}));});
       }
     }});
     active = controller;
     if (version) controller.openVersion(oid || '', vid || '');
     else {
       doc.getElementById('ra_domain').onchange = event => {
-        if (legacy) legacy.hidden = event.target.value === 'robotics';
-        controller.loadCatalog({domain:event.target.value});
+        if (legacy) legacy.hidden = event.target.value === 'robotics'||doc.getElementById('ra_state').value==='deleted';
+        controller.loadCatalog({domain:event.target.value,state:doc.getElementById('ra_state')?.value});
       };
-      controller.loadCatalog();
+      doc.getElementById('ra_state').onchange=()=>{if(legacy)legacy.hidden=doc.getElementById('ra_domain').value==='robotics'||doc.getElementById('ra_state').value==='deleted';controller.loadCatalog({domain:doc.getElementById('ra_domain').value,state:doc.getElementById('ra_state').value});};
+      const domain=params.get('domain')||'',filter=params.get('state')==='deleted'?'deleted':'active';
+      doc.getElementById('ra_domain').value=['data','robotics'].includes(domain)?domain:'';doc.getElementById('ra_state').value=filter;
+      if(legacy)legacy.hidden=domain==='robotics'||filter==='deleted';
+      controller.loadCatalog({domain:doc.getElementById('ra_domain').value,state:filter});
     }
   }
   async function loadJobs(offset = 0) {

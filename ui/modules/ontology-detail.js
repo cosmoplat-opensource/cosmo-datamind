@@ -128,6 +128,7 @@
       };
     });
     A.bindDownloads(host);
+    global.OntologyLifecycle?.attach(host,{...detail,name:detail.asset?.name},()=>{global.location.hash='#library';});
     render();
   }
   global.OntologyDetail = {mount};

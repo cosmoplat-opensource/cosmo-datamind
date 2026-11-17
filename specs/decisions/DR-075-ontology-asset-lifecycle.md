@@ -1,6 +1,6 @@
 # DR-075 · 本体删除恢复与历史保留
 
-- **状态 / Status**：proposed（待方案评审）。
+- **状态 / Status**：accepted（2026-11-16 用户授权继续 IR029，按既有逻辑删除方向启动；用户后续授权连续推进至 T06，2026-11-17 用户确认最终验收，IR029 已交付）。
 - **日期 / Date**：2026-11-12。
 - **关联 / Refs**：[IR-029](../iterations/IR-029-ontology-asset-lifecycle.md)、[总方案](../../docs/datamind-application-contract-design.md)。
 
@@ -10,7 +10,7 @@
 
 ## 决定 / Decision
 
-以下为建议方案，用户方向已明确，具体接口和取舍仍待评审。
+用户授权按以下方向推进 IR029；具体接口、状态和迁移边界见 [T01 规约 v1](../contracts/ontology-asset-lifecycle-v1.md)，随 T02 测试提交阶段人审。
 
 1. 第一版提供逻辑删除和恢复，资产状态 active／deleted 与版本发布状态分别存储；页面明确说明从目录和应用选择中移除但保留历史，不承诺物理擦除。永久清理和留存期限另行设计。
 

@@ -52,15 +52,23 @@ class DesignService:
         row = conn.execute('SELECT record FROM design_sessions WHERE session_id=?', (session_id,)).fetchone()
         if row is None:
             raise _error('not_found', '设计会话不存在。', 404)
-        return json.loads(row[0])
+        from ontology_assets.lifecycle_guard import session_get
+        return session_get(conn,json.loads(row[0]))
 
     def _put(self, conn, record):
+        from ontology_assets.lifecycle_guard import session_put
+        session_put(conn,'design_sessions','session_id',record)
         conn.execute('INSERT INTO design_sessions VALUES (?,?) ON CONFLICT(session_id) '
             'DO UPDATE SET record=excluded.record', (record['session_id'], json_text(record)))
 
     def get(self, session_id):
         with self.storage.transaction() as conn:
-            return _public(self._get(conn, session_id))
+            from ontology_assets.lifecycle_guard import project
+            record=self._get(conn,session_id);result=_public(record)
+            state=project(conn,record)
+            for key in ('lifecycle','write_frozen'):
+                if key in state:result[key]=state[key]
+            return result
 
     def _revision_files(self, conn, session_id, revision):
         self._get(conn, session_id)

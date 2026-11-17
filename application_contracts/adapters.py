@@ -1,4 +1,4 @@
-"""Fixed-version diagnostics with explicit registered repair actions — DR-071 / DR-072."""
+"""Fixed-version diagnostics with explicit registered repair actions — DR-071 / DR-072 / DR-074."""
 from copy import deepcopy
 import json
 import sqlite3
@@ -16,8 +16,12 @@ class Resolver:
         try:
             for ref in asset_refs:
                 v = assets.get_version(**ref)
+                from ontology_assets.lifecycle import state_in, require_active
+                with assets.storage.transaction() as conn:
+                    life=state_in(conn,ref['ontology_id'])
+                    if not _history:require_active(conn,ref['ontology_id'])
                 snapshots.append({**ref, 'domain': assets.get_asset(ref['ontology_id'])['domain'],
-                    'payload_kind': v['payload_kind'], 'payload': assets.read_payload(**ref), 'lifecycle_revision': 0})
+                    'payload_kind': v['payload_kind'], 'payload': assets.read_payload(**ref), 'lifecycle_revision': life['revision']})
             task = None; policy = 'offline'
             if context.get('task_ref'):
                 with sqlite3.connect(self.root / 'domain.sqlite3') as conn:
@@ -70,7 +74,7 @@ class Resolver:
         return resource_revision(self.root,target)
 
 
-def registry(root=None):
+def registry(root=None, *, data_qa=None):
     reg = Registry()
     from .robotics_checks import row, schema, execution, task, repair
     from functools import partial
@@ -84,7 +88,11 @@ def registry(root=None):
                 ('execution', 'execution.consumer', execution), ('task', 'task.configuration', task),
                 ('environment', 'environment.local', lambda d: row('environment.local'))]]}
     reg.register(spec)
-    spec = deepcopy(spec); spec.update(application_id='data.deep_qa', entrypoints=['data.ask'], availability='unavailable')
+    if data_qa is None:
+        # DR-074: remain unavailable until a host explicitly supplies the data adapter.
+        spec = deepcopy(spec); spec.update(application_id='data.deep_qa', entrypoints=['data.ask'], availability='unavailable')
+    else:
+        spec = data_qa.descriptor()
     reg.register(spec)
     return reg
 

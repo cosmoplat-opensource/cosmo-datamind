@@ -724,7 +724,7 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
 <script src="/assets/modules/robotics-application.js?v=4"></script>
 <script src="/assets/modules/robotics-task.js?v=12"></script>
 <script src="/assets/modules/robotics-task-app.js?v=3"></script>
-<script src="/assets/modules/robotics-assets.js?v=16"></script>
+<script src="/assets/modules/robotics-assets.js?v=16"></script><script src="/assets/modules/ontology-lifecycle.js?v=1"></script>
 <script src="/assets/modules/ontology-detail.js?v=5"></script>
 <script src="/assets/modules/robotics-views.js?v=9"></script>
 <script src="/assets/modules/robotics-design.js?v=9"></script>
@@ -738,6 +738,7 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
 <script src="/assets/modules/qa-ontology.js?v=4"></script>
 <script src="/assets/modules/qa-history.js?v=1"></script>
 <script src="/assets/modules/qa-anchor.js?v=1"></script>
+<script src="/assets/modules/qa-contract.js?v=1"></script>
 <script>const $=s=>document.querySelector(s), J=async(u,o)=>{try{const r=await fetch(u,o);const t=await r.text();try{return JSON.parse(t)}catch(_){return{error:`请求失败(HTTP ${r.status})`}}}catch(e){return{error:'网络错误:'+(e&&e.message||e)}}};  // 永不抛:后端 404/500 返回 HTML 时降级为 {error},交由既有 d.error 守卫提示,避免页面半渲染无提示
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // 安全地把值放进 onclick 等内联 JS 字符串:JSON.stringify 产生合法 JS 字面量,esc 再转义引号使其在属性内不越界
@@ -914,12 +915,13 @@ function graphOptions(gs,label){
   if(!items.length)return '';
   return `<optgroup label="${gl}">`+items.map(g=>`<option value="${esc(g.id)}">${esc(label(g))}</option>`).join('')+`</optgroup>`;}).join('');
 }
+let G_DELETED_SELECTION=false; window.addEventListener('ontology-lifecycle-changed',e=>{DQ_GRAPHS=null;loaded.graph=0;if(e.detail.state==='deleted'&&(e.detail.legacy_keys||[]).includes($('#g_sel')?.value)){G_DELETED_SELECTION=true;$('#g_sel').value='';gQaSync(null);if(gChart){gChart.destroy();gChart=null;}GRAPH_CUR={key:'',nodes:[],edges:[]};GRAPH_HL=null;$('#g_canvas').textContent='当前本体已移到回收站，请明确选择本体后继续。';$('#g_info').textContent='';$('#g_legend').textContent='';$('#g_detail').style.display='none';$('#g_hlbar').style.display='none';}if(e.detail.state==='deleted'&&(e.detail.legacy_keys||[]).includes(BC.base))bcIterClear();});
 async function graphs(pref){const gs=await J('/api/graphs');
  DQ_GRAPHS=gs;
  $('#g_sel').innerHTML=graphOptions(gs,g=>`${g.name}(${g.nodes}节点/${g.edges}关系)`);
- $('#g_sel').onchange=()=>{const k=$('#g_sel').value;gQaSync(k);drawGraph(k);};
- const want=(pref&&gs.some(g=>g.id===pref))?pref:(gs[0]&&gs[0].id);
- if(want){$('#g_sel').value=want;gQaSync(want);drawGraph(want);}}
+ $('#g_sel').onchange=()=>{G_DELETED_SELECTION=false;const k=$('#g_sel').value;gQaSync(k);drawGraph(k);};
+ if(G_DELETED_SELECTION&&!pref){$('#g_sel').value='';gQaSync(null);return;} const want=(pref&&gs.some(g=>g.id===pref))?pref:(gs[0]&&gs[0].id);
+ if(want){G_DELETED_SELECTION=false;$('#g_sel').value=want;gQaSync(want);drawGraph(want);}}
 // 与平台原版一致的 G6 渲染:dagre 分层 + 圆角矩形四色节点 + 折线边(按 status 分色虚实)
 const GKIND={object:{fill:'#eef2ff',stroke:'#4a5ff3',text:'#4a5ff3'},event:{fill:'#fff5eb',stroke:'#ff7d00',text:'#d46b08'},
  action:{fill:'#fff7e6',stroke:'#d97706',text:'#b45309'},asset:{fill:'#fef0ff',stroke:'#a855f7',text:'#7c3aed'},role:{fill:'#e0f7fa',stroke:'#00bcd4',text:'#00838f'},ice:{fill:'#f5f3ff',stroke:'#7c6ff0',text:'#5b4fc8'}};
@@ -979,7 +981,7 @@ function g6render(containerId,g,lay,opts){opts=opts||{};
   observer.observe(c);graph.on('beforedestroy',()=>observer.disconnect());}
  return graph;
 }
-async function drawGraph(k){const g=await J('/api/graph/'+k);
+async function drawGraph(k){const g=await J('/api/graph/'+k);if(G_DELETED_SELECTION)return;
  if(g.error||!Array.isArray(g.nodes)){$('#g_info').textContent=g.error||'图谱加载失败';return;}
  GRAPH_CUR={key:k,nodes:g.nodes,edges:g.edges};
  $('#g_info').textContent=`${g.nodes.length} 节点 · ${g.edges.length} 关系`;
@@ -988,7 +990,7 @@ async function drawGraph(k){const g=await J('/api/graph/'+k);
   $('#g_info').innerHTML=`${g.nodes.length} 节点 · ${g.edges.length} 关系 · <span title="元数据覆盖:定义${cp.objects.withDefinition}/${cp.objects.total}、反例${cp.objects.withCounterExample}、标准关系映射${cp.relations.grounded}/${cp.relations.total}；不代表本体完备性" style="color:${c};font-weight:600">元数据覆盖 ${cp.score}%</span>`;}}).catch(()=>{});
  const kset=[...new Set(g.nodes.map(n=>n.kind))].filter(x=>x);
  $('#g_legend').innerHTML=kset.map(x=>`<span class="tag" style="background:${KCOL(x)}22;color:${KCOL(x)}">${KNM(x)}</span>`).join('');
- if(gChart){try{gChart.destroy();}catch(_){}gChart=null;}
+ if(gChart){try{gChart.destroy();}catch(_){}gChart=null;}$('#g_canvas').textContent='';
  const hl=(GRAPH_HL&&GRAPH_HL.key===k)?GRAPH_HL:null;
  const hb=$('#g_hlbar');
  if(hl&&hb){const inG=g.nodes.filter(x=>hl.set.has(x.id)).length;
@@ -1784,6 +1786,7 @@ async function dqFb(el,q,verdict,mode){const on=!el.classList.contains('on');
  const r=await J('/api/chat/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q,verdict:'useful',mode:mode||'chat'})}).catch(e=>({error:''+e}));
  if(r.error){toast(r.error,false);return;}toast('已记录:有帮助',true);}
 // ── 根因诊断(P21 前三步实演):意图 → 沿关系召回 → 本体边界内约束生成 ──
+
 async function diagAsk(){const inp=$('#chat_q');const q=inp.value.trim();if(!q)return;inp.value='';$('#chat_btn').disabled=true;
  DQ_ANC_LAST=null;dqAncBar(null);        // 根因诊断走的是另一条链路,不能挂着深度问数上一轮的锚定条
  $('#dqv_deep').classList.remove('dqv-empty');
@@ -1852,9 +1855,9 @@ async function ask(){if(DQ_MODE==='diag')return diagAsk();
      nd.textContent+=ev.text;scroll();}
     else if(ev.type==='anchor'){const ab=card.querySelector('#_dqanc');if(ab){ab.innerHTML=dqAnchorHTML(ev.anchor);scroll();}dqAncBar(ev.anchor);}
     else if(ev.type==='done'){done=ev;}
-    else if(ev.type==='error'){card.innerHTML=`<span class="dq-t warn">${esc(ev.error)}</span>`;}}}
+    else if(ev.type==='error'){card.innerHTML=dqContractErrorHTML(ev);}}}
   if(done&&card.isConnected){CHAT_HIST.push({q,summary:done.summary||''});dqRenderCard(card,q,done);dqAncBar(done.anchor);
-   const dT={narrative:done.narrative,summary:done.summary,anchor:done.anchor,cached:done.cached,elapsed:done.elapsed,session:done.session,steps:done.steps,results:(done.results||[]).map(r=>({title:r.title,sql:r.sql,chart:r.chart,data:{columns:r.data.columns,rows:(r.data.rows||[]).slice(0,200)}}))};
+   const dT={narrative:done.narrative,summary:done.summary,anchor:done.anchor,application_check:done.application_check,cached:done.cached,elapsed:done.elapsed,session:done.session,steps:done.steps,results:(done.results||[]).map(r=>({title:r.title,sql:r.sql,chart:r.chart,data:{columns:r.data.columns,rows:(r.data.rows||[]).slice(0,200)}}))};
    myConv.turns.push({q,d:dT});if(!myConv.title)myConv.title=q;dqSaveConv(myConv);}
  }catch(e){if(e&&e.name==='AbortError')return;
   if(card.isConnected){
@@ -2017,7 +2020,7 @@ async function bcDelBuilt(key,el){if(BC_BUSY&&BC.base===key){toast('该本体正
  if(BC_DEL_ARM[key]==='pending')return;
  if(!BC_DEL_ARM[key]){BC_DEL_ARM[key]=1;toast('再点一次 ✕ 确认删除该构建产物',false);
   setTimeout(()=>{if(BC_DEL_ARM[key]!=='pending')delete BC_DEL_ARM[key];},4000);return;}
- BC_DEL_ARM[key]='pending';
+ BC_DEL_ARM[key]='pending';if(window.OntologyLifecycle){try{await OntologyLifecycle.legacy(key,()=>{if(BC.base===key)bcIterClear();bcBuilt();});}catch(error){toast(error.message,false);}finally{delete BC_DEL_ARM[key];}return;}
  const d=await J('/api/build/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key})});delete BC_DEL_ARM[key];
  if(!d||d.error){toast(d&&d.error||'删除失败',false);return;}
  if(BC.base===key)bcIterClear();          // 底本被删就解除选定,不留一个指向已不存在图谱的目标
@@ -2462,7 +2465,7 @@ async function library(){const d=await J('/api/ont/forged');
    <td><a href="#" onclick="event.preventDefault();bcView('forged_'+${jsAttr(o.id)})">查看↗</a>
    <a href="#" style="margin-left:8px" onclick="event.preventDefault();dqStartFromOntology('forged_'+${jsAttr(o.id)})">问数</a>
    <a href="#" style="color:#b91c1c;margin-left:8px" onclick="event.preventDefault();if(confirm('删除 '+${jsAttr(o.id)}+'?'))libDel(${jsAttr(o.id)})">删除</a></td></tr>`).join('')+'</table>';}
-async function libDel(id){const d=await J('/api/ont/forged/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+async function libDel(id){if(window.OntologyLifecycle){await OntologyLifecycle.legacy('forged_'+id,()=>library());return;}const d=await J('/api/ont/forged/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
  if(d.error)toast(d.error);library();}
 async function sparqlRun(){$('#sq_info').textContent='查询中…';
  const d=await J('/api/sparql',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:$('#sq_q').value})}).catch(e=>({error:''+e}));

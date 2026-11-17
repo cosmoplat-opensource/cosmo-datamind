@@ -187,7 +187,9 @@ def test_model_ui_stage_confirmations_final_downloads_and_history(live):
         site.evidence['downloads'].append({'name': target.name, 'bytes': len(expected)})
     page.goto(site.url + '/#build?recipe=robotics&session=' + sid)
     wait_design(page, sid, 'abox', 'completed')
-    page.get_by_label('设计修订', exact=True).select_option(str(schema['revision']))
+    # DR-070: user removed this selector; historical bytes remain readable.
+    expect(page.get_by_label('设计修订', exact=True)).to_have_count(0)
+    assert DesignService(site.root, read_only=True).export_revision(sid, schema['revision'], format='json') == old_json
     assert session(site, sid)['revision'] == final['revision'] and len(calls) == 2
     click_operation(page, '返回类别修改', '/edit-classes')
     changed = session(site, sid)
