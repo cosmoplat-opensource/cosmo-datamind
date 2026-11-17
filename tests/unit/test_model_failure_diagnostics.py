@@ -1,4 +1,4 @@
-"""Safe, per-call LLM failure evidence and persistent design errors — DR-029 / DR-070."""
+"""Safe, per-call LLM failure evidence and persistent design errors — DR-029 / DR-152."""
 import io
 import json
 import urllib.error

@@ -1,4 +1,4 @@
-"""Read-only display projection of the verified current fixed RDF payload — DR-073 §1–5."""
+"""Read-only display projection of the verified current fixed RDF payload — DR-155 §1–5."""
 import hashlib
 
 from rdflib import BNode, Graph, Literal, OWL, RDF, RDFS, URIRef
@@ -62,7 +62,7 @@ def _project(graph, version, role_map):
             rows.append(row)
         result[key] = rows
 
-    # DR-073 §4: use full trusted type IRIs, never local-name similarity.
+    # DR-155 §4: use full trusted type IRIs, never local-name similarity.
     business, skills = {str(S[name]) for name in BUSINESS}, {str(S[name]) for name in SKILLS}
     for binding in role_map.get('bindings', []):
         if binding.get('kind') == 'classes':

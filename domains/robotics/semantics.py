@@ -1,4 +1,4 @@
-"""Read executable structure from RDF, never archived XML — DR-059 / DR-060.
+"""Read executable structure from RDF, never archived XML — DR-141 / DR-142.
 
 Migrated from the ontology_pipeline of the robotics source project; no disk reads at import or reconstruction.
 """

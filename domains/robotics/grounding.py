@@ -1,4 +1,4 @@
-"""Ground task entities, profiles and applicability evidence — DR-061 / DR-062 / DR-065.
+"""Ground task entities, profiles and applicability evidence — DR-143 / DR-144 / DR-147.
 
 Migrated from the T01 hash-verified agent of the robotics source project. Reads graph knowledge only;
 user selection never modifies confirmation status or creates evidence.
@@ -142,7 +142,7 @@ def resolve_request(g, request, *, mode="real", revocations=(), require_applicab
                        for item in g.subjects(S.forImplementation, implementation)):
                     issue('evidence_revoked', 'evidence', '对应范围的适配证据已撤销或被替代。')
         if not require_applicability:
-            # DR-067: report evidence honestly, while retaining every parameter/entity gate.
+            # DR-149: report evidence honestly, while retaining every parameter/entity gate.
             applicability_issues.extend(issues[first_issue:])
             del issues[first_issue:]
 

@@ -1,4 +1,4 @@
-"""Confirmed deterministic extraction and source-located failures — DR-070."""
+"""Confirmed deterministic extraction and source-located failures — DR-152."""
 from . import _extractor, _schema
 from .common import ModelingError, checked_tbox, digest
 from .evidence import source_digests

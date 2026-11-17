@@ -1,4 +1,4 @@
-"""T06 RED: real robotics generation through durable version/run services — DR-059 / DR-064 / DR-065."""
+"""T06 RED: real robotics generation through durable version/run services — DR-141 / DR-146 / DR-147."""
 import json
 from pathlib import Path
 import subprocess

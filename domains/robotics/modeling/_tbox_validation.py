@@ -1,4 +1,4 @@
-"""TBox proposal contracts and local semantics, adapted from the robotics source project — DR-070."""
+"""TBox proposal contracts and local semantics, adapted from the robotics source project — DR-152."""
 from copy import deepcopy
 import re
 

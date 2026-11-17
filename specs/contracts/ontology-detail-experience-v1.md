@@ -1,8 +1,8 @@
-# 本体详情体验 v1 — DR-073 / IR-027 T01
+# 本体详情体验 v1 — DR-155 / IR-027 T01
 
 日期：2026-11-13。
 状态：T01／T02 已确认，T03 GREEN 及回归完成；T04 集成调用面与测试已于 2026-11-16 获用户继续指令，T05 GREEN 及全量回归已通过，T06 的 20 项真实副本技术验证已通过，已于 2026-11-16 获用户确认交付。
-依据：[DR-073](../decisions/DR-073-ontology-detail-experience.md)、[IR-027](../iterations/IR-027-ontology-detail-experience.md)。
+依据：[DR-155](../decisions/DR-155-ontology-detail-experience.md)、[IR-027](../iterations/IR-027-ontology-detail-experience.md)。
 ODE-01／02／04 沿用既有业务 criterion；ODE-03 已按用户确认补充检查通过直达任务对话，其余细化内容不改变既有验收要求。
 
 ## 1. 现状、问题与实施顺序

@@ -1,7 +1,7 @@
-# 机器人抓移放应用适配 v1 — DR-072 / IR-026 T01
+# 机器人抓移放应用适配 v1 — DR-154 / IR-026 T01
 
 日期：2026-11-12。状态：T01 与 T02 核心调用面已确认；T03 纯核心已实现并回归通过；T04 测试与第 12 节调用面已确认，T05 集成实现和全量回归通过，待 T06 实际副本验收。
-依据：[DR-072](../decisions/DR-072-robotics-application-adaptation.md)、[IR-026](../iterations/IR-026-robotics-application-adaptation.md)、[已交付公共协议](application-contracts-v1.md)。
+依据：[DR-154](../decisions/DR-154-robotics-application-adaptation.md)、[IR-026](../iterations/IR-026-robotics-application-adaptation.md)、[已交付公共协议](application-contracts-v1.md)。
 
 ## 1. 范围和主流程
 

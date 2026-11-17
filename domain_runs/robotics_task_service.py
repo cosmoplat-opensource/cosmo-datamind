@@ -1,4 +1,4 @@
-"""Persistent task dialogue and atomic, scoped knowledge completion — DR-061 / DR-064 / DR-066.
+"""Persistent task dialogue and atomic, scoped knowledge completion — DR-143 / DR-146 / DR-148.
 
 Model calls run outside database/RDF locks. Public state is a fixed session snapshot;
 requests are idempotent, and immutable versions/runs remain the source of truth.
@@ -66,7 +66,7 @@ class TaskService:
         self.root = self.storage.root
         self.governance = GovernanceService(root)
         self.model = model_client if model_client is not None else ModelClient.from_datamind()
-        # DR-064: additive application tables; the shared asset schema/version stays compatible.
+        # DR-146: additive application tables; the shared asset schema/version stays compatible.
         with self.storage.transaction(write=True) as conn:
             for statement in SCHEMA:
                 conn.execute(statement)
@@ -103,7 +103,7 @@ class TaskService:
     def _put(self, conn, state):
         from ontology_assets.lifecycle_guard import session_put
         session_put(conn,'robotics_task_sessions','session_id',state)
-        # DR-069: timestamps live in the existing session JSON, with no schema upgrade.
+        # DR-151: timestamps live in the existing session JSON, with no schema upgrade.
         now = _now()
         state.setdefault('created_at', now)
         state['updated_at'] = now
@@ -224,12 +224,12 @@ class TaskService:
         return self._finish(state, request_id)
 
     def _project(self, state, graph, revocations):
-        """DR-067: split optional applicability from required knowledge, without writes."""
+        """DR-149: split optional applicability from required knowledge, without writes."""
         projection = inspect_gaps(graph, state['task'], mode=state['mode'], revocations=revocations)
         items = projection['items']
         optional = [g for g in items if g['kind'] == 'applicability'] if state['generation_policy'] == 'offline' else []
         required = [g for g in items if g not in optional]
-        # DR-072: confirm current business/configuration facts before reviewing their applicability.
+        # DR-154: confirm current business/configuration facts before reviewing their applicability.
         if state.get('application_contract') and any(g['kind']!='applicability' for g in required):
             required = [g for g in required if g['kind']!='applicability']
         status = projection['status']
@@ -265,7 +265,7 @@ class TaskService:
                 if state['status'] == 'error':
                     state['error'] = {'code': 'invalid_ontology', 'message': '本体知识格式不兼容。'}
                 return
-            # Keep admission busy while persisting the facts read by the guard (DR-071).
+            # Keep admission busy while persisting the facts read by the guard (DR-153).
             with self._atomic() as conn:
                 self._put(conn, {**state, 'status': 'running'})
             from application_contracts.adapters import service as application_service

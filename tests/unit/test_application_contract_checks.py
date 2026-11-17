@@ -1,4 +1,4 @@
-"""Layer outcomes, diagnostics and read-only evaluation — DR-071 / IR-025 T02 RED."""
+"""Layer outcomes, diagnostics and read-only evaluation — DR-153 / IR-025 T02 RED."""
 from copy import deepcopy
 import hashlib
 import json

@@ -1,4 +1,4 @@
-"""T04 RED: real adaptation admission, atomic versions and restart/CAS behavior — DR-072."""
+"""T04 RED: real adaptation admission, atomic versions and restart/CAS behavior — DR-154."""
 from concurrent.futures import ThreadPoolExecutor
 import json
 import os

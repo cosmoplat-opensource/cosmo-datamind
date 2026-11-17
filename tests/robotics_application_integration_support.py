@@ -1,4 +1,4 @@
-"""IR-026 integration fixtures: real design/store/core, synthetic model transport only — DR-072."""
+"""IR-026 integration fixtures: real design/store/core, synthetic model transport only — DR-154."""
 from copy import deepcopy
 import hashlib
 import importlib

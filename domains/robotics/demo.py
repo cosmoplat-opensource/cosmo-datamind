@@ -1,4 +1,4 @@
-"""Explicit synthetic business knowledge for offline demonstration — DR-061 / DR-065.
+"""Explicit synthetic business knowledge for offline demonstration — DR-143 / DR-147.
 
 The supplement never replaces a graph or edits executable template definitions.
 """

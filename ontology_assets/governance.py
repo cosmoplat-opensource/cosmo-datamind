@@ -1,4 +1,4 @@
-"""Transactional version governance, precise reviews and source merging — DR-059 / DR-060 / DR-061 / DR-064.
+"""Transactional version governance, precise reviews and source merging — DR-141 / DR-142 / DR-143 / DR-146.
 
 Actors are declarations, not authenticated identities. Only local registered
 sources are dereferenced; references/URLs are never fetched by this service.
@@ -266,7 +266,7 @@ class GovernanceService:
             return [json.loads(row[0]) for row in conn.execute('SELECT record FROM governance_events WHERE ontology_id=? ORDER BY rowid',(ontology_id,))]
 
     def visualize(self, ontology_id, version_id, view):
-        """DR-068: both projections share the exact immutable, verified RDF version."""
+        """DR-150: both projections share the exact immutable, verified RDF version."""
         if view not in {'relations', 'behavior-tree'}:
             raise GovernanceError('invalid_request', '未知视图。')
         with self._atomic() as conn:
@@ -282,7 +282,7 @@ class GovernanceService:
                     'mode': version['metadata'].get('mode') or version.get('publication_mode') or 'real', **projection}
 
     def inspect(self, ontology_id, version_id):
-        """DR-059/061: project one RDF snapshot and current governance in one read transaction."""
+        """DR-141/061: project one RDF snapshot and current governance in one read transaction."""
         with self._atomic() as conn:
             version = self._version(conn, ontology_id, version_id)
             graph = self._graph(conn, version)

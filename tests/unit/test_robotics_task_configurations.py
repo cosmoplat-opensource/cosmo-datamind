@@ -1,4 +1,4 @@
-"""Task configuration inspection and explicit replacement — DR-061 / DR-066."""
+"""Task configuration inspection and explicit replacement — DR-143 / DR-148."""
 from copy import deepcopy
 import json
 

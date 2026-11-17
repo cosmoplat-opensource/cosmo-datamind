@@ -1,4 +1,4 @@
-"""T06 RED: executable browser-independent UI contracts — DR-063 / DR-064 / DR-065."""
+"""T06 RED: executable browser-independent UI contracts — DR-145 / DR-146 / DR-147."""
 import ast
 from pathlib import Path
 import shutil

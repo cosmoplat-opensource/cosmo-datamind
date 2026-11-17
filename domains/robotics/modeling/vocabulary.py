@@ -1,4 +1,4 @@
-"""Bundled controlled vocabulary, adapted from the robotics source project — DR-070."""
+"""Bundled controlled vocabulary, adapted from the robotics source project — DR-152."""
 import hashlib
 import json
 from pathlib import Path

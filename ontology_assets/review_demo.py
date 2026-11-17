@@ -1,4 +1,4 @@
-"""Fresh XML governance demonstrations and read-only independent verification — DR-060 / DR-061 / DR-064 / DR-065."""
+"""Fresh XML governance demonstrations and read-only independent verification — DR-142 / DR-143 / DR-146 / DR-147."""
 import json
 import os
 from pathlib import Path

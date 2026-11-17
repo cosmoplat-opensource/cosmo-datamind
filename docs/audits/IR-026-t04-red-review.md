@@ -1,4 +1,4 @@
-# IR-026 T04 集成测试评审 — DR-072
+# IR-026 T04 集成测试评审 — DR-154
 
 日期：2026-11-12。状态：RED 测试待用户审阅；T05 实现未开始。
 依据：[IR-026](../../specs/iterations/IR-026-robotics-application-adaptation.md)、[已确认规约及本轮第 12 节调用面](../../specs/contracts/robotics-application-adaptation-v1.md)。

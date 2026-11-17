@@ -1,4 +1,4 @@
-"""Isolated asset inputs and proposed service contract — DR-059 / DR-064 / DR-065."""
+"""Isolated asset inputs and proposed service contract — DR-141 / DR-146 / DR-147."""
 import importlib
 import json
 

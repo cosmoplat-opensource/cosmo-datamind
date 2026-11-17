@@ -1,4 +1,4 @@
-"""Explicit schema-5 to schema-6 design migration, retaining historic bytes — DR-070."""
+"""Explicit schema-5 to schema-6 design migration, retaining historic bytes — DR-152."""
 
 SCHEMA = (
     '''CREATE TABLE design_sessions (

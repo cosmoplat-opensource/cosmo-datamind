@@ -1,4 +1,4 @@
-"""Explicit fresh-source demo assets and offline task cases — DR-061 / DR-064 / DR-066.
+"""Explicit fresh-source demo assets and offline task cases — DR-143 / DR-146 / DR-148.
 
 Packaged examples originate in the hash-registered IR-016 migration fixtures.
 Synthetic parameters/evidence are never applied to an uploaded user ontology.

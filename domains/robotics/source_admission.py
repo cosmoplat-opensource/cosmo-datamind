@@ -1,4 +1,4 @@
-"""Bounded shared XML intake before public build admission — DR-070 / IR-024 T03.
+"""Bounded shared XML intake before public build admission — DR-152 / IR-024 T03.
 
 This checks source roles and parser limits, not the fixed UR execution template.
 The legacy worker still checks its full domain contract, including old archives.

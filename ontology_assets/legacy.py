@@ -1,4 +1,4 @@
-"""Read-only registration of effective legacy IR via injected loaders — DR-059 / DR-065."""
+"""Read-only registration of effective legacy IR via injected loaders — DR-141 / DR-147."""
 import json
 
 from .payloads import json_text, validate_payload

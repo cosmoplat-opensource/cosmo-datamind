@@ -118,11 +118,11 @@ flowchart TD
 
 | 决策 | 迭代 | 交付范围 | 依赖 |
 |---|---|---|---|
-| [DR-071](../specs/decisions/DR-071-application-contract-registry.md) | [IR-025](../specs/iterations/IR-025-application-contract-registry.md) | 后端应用注册、分层检查与修复协议 | 先行 |
-| [DR-072](../specs/decisions/DR-072-robotics-application-adaptation.md) | [IR-026](../specs/iterations/IR-026-robotics-application-adaptation.md) | 机器人执行结构适配和任务补全闭环 | IR-025 |
-| [DR-073](../specs/decisions/DR-073-ontology-detail-experience.md) | [IR-027](../specs/iterations/IR-027-ontology-detail-experience.md) | 详情页、行为树操作入口和修复导航 | 布局可先行，动作接 IR-025／026／028／029 |
-| [DR-074](../specs/decisions/DR-074-deepqa-application-compatibility.md) | [IR-028](../specs/iterations/IR-028-deepqa-application-compatibility.md) | 深度问数兼容适配和缓存新鲜性 | IR-025 |
-| [DR-075](../specs/decisions/DR-075-ontology-asset-lifecycle.md) | [IR-029](../specs/iterations/IR-029-ontology-asset-lifecycle.md) | 统一资产删除恢复、旧 key 兼容 | 核心可并行，接 IR-025／IR-028 |
+| [DR-153](../specs/decisions/DR-153-application-contract-registry.md) | [IR-025](../specs/iterations/IR-025-application-contract-registry.md) | 后端应用注册、分层检查与修复协议 | 先行 |
+| [DR-154](../specs/decisions/DR-154-robotics-application-adaptation.md) | [IR-026](../specs/iterations/IR-026-robotics-application-adaptation.md) | 机器人执行结构适配和任务补全闭环 | IR-025 |
+| [DR-155](../specs/decisions/DR-155-ontology-detail-experience.md) | [IR-027](../specs/iterations/IR-027-ontology-detail-experience.md) | 详情页、行为树操作入口和修复导航 | 布局可先行，动作接 IR-025／026／028／029 |
+| [DR-156](../specs/decisions/DR-156-deepqa-application-compatibility.md) | [IR-028](../specs/iterations/IR-028-deepqa-application-compatibility.md) | 深度问数兼容适配和缓存新鲜性 | IR-025 |
+| [DR-157](../specs/decisions/DR-157-ontology-asset-lifecycle.md) | [IR-029](../specs/iterations/IR-029-ontology-asset-lifecycle.md) | 统一资产删除恢复、旧 key 兼容 | 核心可并行，接 IR-025／IR-028 |
 
 每个 IR 分契约评审、核心 RED/GREEN、HTTP/UI RED/GREEN、全量回归及人审交付。原方案验收共 21 条；IR-025 已于 2026-11-12 获用户确认 delivered。IR-026 的 5 条及新增的 2 条自动匹配要求已完成真实副本与全量回归（2333 passed／5 可选跳过、覆盖率 86.1%），2026-11-13 用户要求提交代码，确认 delivered；IR-027 的 ODE-01／02 已有 T03 部分 GREEN 覆盖，全量 13 项检查通过（2359 passed／5 可选跳过，覆盖率 86.2%），ODE-03／04 已登记 T04 集成 RED，2026-11-16 用户确认继续，T05 GREEN 及 14 段全量回归通过（2387 passed／5 原有可选跳过、覆盖率 86.2%），T06 真实副本技术验证 20 项通过，已于 2026-11-16 获用户确认交付，其余 8 条保留 planned_requirements，不声称整轮验收通过。
 System Design Word 文档保留方案阶段概要，实施进度与测试状态以各 IR 和验收映射为准。

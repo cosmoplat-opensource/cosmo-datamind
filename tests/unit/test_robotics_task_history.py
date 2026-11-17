@@ -1,4 +1,4 @@
-"""Application history retains distinct task runs and immutable downloads — DR-069."""
+"""Application history retains distinct task runs and immutable downloads — DR-151."""
 import json
 
 from tests.build_pipeline_support import db_rows

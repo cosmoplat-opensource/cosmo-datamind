@@ -1,4 +1,4 @@
-"""Selected schema and ABox assertion checks, adapted from the robotics source project — DR-070."""
+"""Selected schema and ABox assertion checks, adapted from the robotics source project — DR-152."""
 from copy import deepcopy
 import json
 import re

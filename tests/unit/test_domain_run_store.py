@@ -1,4 +1,4 @@
-"""T04 RED: durable snapshots, events, lifecycle and explicit recovery — DR-064 / DR-065."""
+"""T04 RED: durable snapshots, events, lifecycle and explicit recovery — DR-146 / DR-147."""
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 import json

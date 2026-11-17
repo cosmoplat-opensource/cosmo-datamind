@@ -1,4 +1,4 @@
-"""Bounded six-field extraction using DataMind model configuration — DR-062 / DR-066.
+"""Bounded six-field extraction using DataMind model configuration — DR-144 / DR-148.
 
 Migrated from the robotics source project's JSON-only parser. The model never supplies robot values or XML.
 The injectable transport replaces only the HTTP boundary, not parsing or validation.

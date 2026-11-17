@@ -1,4 +1,4 @@
-"""Read-only application history over existing sessions and immutable runs — DR-069 / DR-073."""
+"""Read-only application history over existing sessions and immutable runs — DR-151 / DR-155."""
 import json
 from pathlib import Path
 import xml.etree.ElementTree as ET

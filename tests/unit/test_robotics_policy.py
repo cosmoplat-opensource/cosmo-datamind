@@ -1,4 +1,4 @@
-"""T06 RED: strict task grounding and explicit authoring drafts — DR-061 / DR-062 / DR-065."""
+"""T06 RED: strict task grounding and explicit authoring drafts — DR-143 / DR-144 / DR-147."""
 from copy import deepcopy
 from pathlib import Path
 import xml.etree.ElementTree as ET

@@ -3,7 +3,7 @@
 - **状态 / Status**: delivered
 - **日期 / Date**: 2026-11-04
 - **当前环节**：2026-11-04 用户明确确认整轮交付；T01～T08 完成，Deliverables 与 RBU-01～10 已验收。
-- **关联 / Refs**: [[DR-059-unified-domain-semantic-graph]]、[[DR-060-robotics-source-recipes-and-reverse-build]]、[[DR-063-local-domain-registration-and-application-ui]]、[[DR-064-persistent-build-runs-and-artifact-manifests]]、[[DR-065-robotics-migration-and-compatibility-validation]]。
+- **关联 / Refs**: [[DR-141-unified-domain-semantic-graph]]、[[DR-142-robotics-source-recipes-and-reverse-build]]、[[DR-145-local-domain-registration-and-application-ui]]、[[DR-146-persistent-build-runs-and-artifact-manifests]]、[[DR-147-robotics-migration-and-compatibility-validation]]。
 - **前置**：[IR-017](IR-017-ontology-assets-and-persistent-runs.md) 于 2026-11-04 经用户确认 delivered；IR-016 业务内核已交付。
 - **方案**：[集成 Proposal](../PROPOSAL-robotics-source-integration.md) 第 6 节步骤 3 与第 6.1 节前后端联动要求。
 - **流程依据**：[SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第③～⑤步；本轮范围确认不替代各批新测试覆盖审查。

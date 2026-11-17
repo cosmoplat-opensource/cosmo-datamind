@@ -1,4 +1,4 @@
-"""T04 RED: five runnable offline cases and independent saved-byte checks — DR-062 / DR-064 / DR-066."""
+"""T04 RED: five runnable offline cases and independent saved-byte checks — DR-144 / DR-146 / DR-148."""
 import importlib
 import json
 import os

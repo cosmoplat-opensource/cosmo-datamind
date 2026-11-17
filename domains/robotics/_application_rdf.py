@@ -1,4 +1,4 @@
-"""Bounded self-contained RDF decoding for application artifacts — DR-072."""
+"""Bounded self-contained RDF decoding for application artifacts — DR-154."""
 from xml.sax import SAXException
 from rdflib import Graph, OWL
 from rdflib.exceptions import Error as RDFError

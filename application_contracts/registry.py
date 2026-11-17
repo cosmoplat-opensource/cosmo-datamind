@@ -1,4 +1,4 @@
-"""Explicit backend application bindings and dependency validation — DR-071 §2."""
+"""Explicit backend application bindings and dependency validation — DR-153 §2."""
 from threading import RLock
 
 from .models import ContractError, LAYERS, copy_descriptor, identifier, require
@@ -78,7 +78,7 @@ class Registry:
             return copy_descriptor(self._applications[self._entrypoints[entrypoint]])
 
     def descriptors(self):
-        """Static public descriptors without callable/configuration internals — DR-071."""
+        """Static public descriptors without callable/configuration internals — DR-153."""
         with self._lock:
             return [{k: copy_descriptor(spec[k]) for k in ('application_id', 'contract_version', 'entrypoints', 'availability')}
                     for spec in self._applications.values()]

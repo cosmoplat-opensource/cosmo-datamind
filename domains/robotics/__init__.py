@@ -1,4 +1,4 @@
-"""Offline robotics ontology primitives — DR-060 / DR-062.
+"""Offline robotics ontology primitives — DR-142 / DR-144.
 
 Importing this package does not read domain assets or configure platform state.
 """

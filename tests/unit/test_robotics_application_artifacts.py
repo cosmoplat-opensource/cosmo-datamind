@@ -1,4 +1,4 @@
-"""T02 RED: identity preservation, real RDF consumers and complete v2 bundle — DR-072."""
+"""T02 RED: identity preservation, real RDF consumers and complete v2 bundle — DR-154."""
 from copy import deepcopy
 import hashlib
 import json

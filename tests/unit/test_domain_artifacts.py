@@ -1,4 +1,4 @@
-"""T04 RED: artifact integrity, manifest provenance and atomic completion — DR-064 / DR-065."""
+"""T04 RED: artifact integrity, manifest provenance and atomic completion — DR-146 / DR-147."""
 from contextlib import contextmanager
 from copy import deepcopy
 import hashlib

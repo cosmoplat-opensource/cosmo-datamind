@@ -1,4 +1,4 @@
-"""Offline UI requests, note retention and readable version transitions — DR-067."""
+"""Offline UI requests, note retention and readable version transitions — DR-149."""
 import shutil
 import subprocess
 from pathlib import Path

@@ -1,4 +1,4 @@
-"""Configuration routing and single-provider failure boundaries — DR-070 / IR-024 T02 RED."""
+"""Configuration routing and single-provider failure boundaries — DR-152 / IR-024 T02 RED."""
 from copy import deepcopy
 import json
 from types import SimpleNamespace

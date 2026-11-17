@@ -1,4 +1,4 @@
-"""Shared input admission and observable legacy behavior — DR-070 / IR-024 T02 RED."""
+"""Shared input admission and observable legacy behavior — DR-152 / IR-024 T02 RED."""
 import io
 from pathlib import Path
 import xml.etree.ElementTree as ET

@@ -1,4 +1,4 @@
-"""T04 RED: persisted reports, replay, transaction rollback and repair dispatch — DR-071."""
+"""T04 RED: persisted reports, replay, transaction rollback and repair dispatch — DR-153."""
 from concurrent.futures import ThreadPoolExecutor
 import json
 import os

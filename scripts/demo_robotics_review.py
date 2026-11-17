@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Offline knowledge review scenarios and independent verification — DR-061 / DR-064 / DR-065."""
+"""Offline knowledge review scenarios and independent verification — DR-143 / DR-146 / DR-147."""
 import argparse
 import json
 from pathlib import Path

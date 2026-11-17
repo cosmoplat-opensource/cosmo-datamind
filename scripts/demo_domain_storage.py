@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run offline storage scenarios or independently verify persisted files — DR-064 / DR-065."""
+"""Run offline storage scenarios or independently verify persisted files — DR-146 / DR-147."""
 import argparse
 import json
 from pathlib import Path

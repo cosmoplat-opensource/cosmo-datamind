@@ -1,8 +1,8 @@
-# IR-026 T06 真实副本验收与交付评审 — DR-072
+# IR-026 T06 真实副本验收与交付评审 — DR-154
 
 日期：2026-11-13。
 状态：真实副本的 11 项流程验证、真实 Chromium／Gunicorn 验证及整项目全量 13 段通过；技术验收完成，2026-11-13 用户要求提交代码，确认本轮交付。
-依据：[DR-072](../../specs/decisions/DR-072-robotics-application-adaptation.md)、[IR-026](../../specs/iterations/IR-026-robotics-application-adaptation.md)、[当前规约](../../specs/contracts/robotics-application-adaptation-v1.md)。
+依据：[DR-154](../../specs/decisions/DR-154-robotics-application-adaptation.md)、[IR-026](../../specs/iterations/IR-026-robotics-application-adaptation.md)、[当前规约](../../specs/contracts/robotics-application-adaptation-v1.md)。
 机器记录见 [T06 结果](IR-026-t06-results.json)。
 
 ## 真实输入及隔离方式

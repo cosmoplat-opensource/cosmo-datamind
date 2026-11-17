@@ -1,4 +1,4 @@
-"""Robot build HTTP composition and downloads — DR-060 / DR-063 / DR-064 / DR-070 / DR-073."""
+"""Robot build HTTP composition and downloads — DR-142 / DR-145 / DR-146 / DR-152 / DR-155."""
 import atexit
 import io
 import math
@@ -64,7 +64,7 @@ class Runtime:
         if isinstance(value, dict):
             result = {k: self.public(v) for k, v in value.items()
                       if k not in {'path', 'storage_root', 'database_path', 'command'}}
-            # Existing build_ontology runs are immutable legacy XML runs (DR-070).
+            # Existing build_ontology runs are immutable legacy XML runs (DR-152).
             # Project new metadata without changing archived manifests or fingerprints.
             if value.get('operation') == 'build_ontology':
                 result.update(method='legacy_xml', model=None)
@@ -379,7 +379,7 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True, data_host=Non
                 versions = assets.list_versions(asset['ontology_id'])
                 versions = [{**v, 'version_number': i} for i, v in enumerate(versions, 1)]
                 latest = versions[-1] if versions else None
-                # DR-070: the catalog offers the current version; historic eligibility is checked on explicit access.
+                # DR-152: the catalog offers the current version; historic eligibility is checked on explicit access.
                 if latest and asset['domain']=='robotics':
                     latest['application_compatibility'] = application_summary(asset['ontology_id'], latest['version_id'])
                 item = {**asset, 'lifecycle':life, 'entry_kind': 'asset', 'version_id': latest['version_id'] if latest else None,
@@ -422,7 +422,7 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True, data_host=Non
             result['design'] = design_read(lambda: design_assets().detail(ontology_id, version_id))
         if result['asset']['domain']=='robotics':
             result['application_compatibility'] = application_summary(ontology_id, version_id)
-            # DR-073: contract readers above verify v1/v2; project current bytes, never the parent snapshot.
+            # DR-155: contract readers above verify v1/v2; project current bytes, never the parent snapshot.
             from ontology_assets.detail_view import project
             result['detail_view'] = design_read(lambda: project(row, assets.read_payload(ontology_id, version_id),
                 role_map=result.get('application_design', {}).get('role_map')))

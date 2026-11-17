@@ -1,6 +1,6 @@
-/* Shared structured QA issue presentation — DR-074. */
+/* Shared structured QA issue presentation — DR-156. */
 (function(global){
-// DR-074: actionable structured QA failures; existing navigation keeps the selected scope.
+// DR-156: actionable structured QA failures; existing navigation keeps the selected scope.
 function dqContractErrorHTML(ev){
  const issues=ev.application_check?.issues||[];
  const connection=issues.some(i=>i.code==='data.table_unavailable');

@@ -1,4 +1,4 @@
-"""Offline candidates, optional notes and stable version labels — DR-067."""
+"""Offline candidates, optional notes and stable version labels — DR-149."""
 from copy import deepcopy
 import json
 

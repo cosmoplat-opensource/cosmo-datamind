@@ -4,7 +4,7 @@
 - 授权：用户了解 T04 测试内容与模型替身边界后要求“继续下一步”。
 - 当前状态：T05 GREEN；79 项核心测试及 62 项旧分流测试通过，完整 12 阶段检查退出码 0；不是 IR-024 整轮交付。
 - 机器记录：[完整结果与实现／测试摘要](IR-024-t05-green-results.json)。
-- 依据：[DR-070](../../specs/decisions/DR-070-robotics-dual-build.md)、[核心接口 v1](../../specs/contracts/robotics-modeling-core-v1.md)。
+- 依据：[DR-152](../../specs/decisions/DR-152-robotics-dual-build.md)、[核心接口 v1](../../specs/contracts/robotics-modeling-core-v1.md)。
 - 上阶段：[T04 RED](IR-024-t04-red.md)。
 
 ## 实现内容

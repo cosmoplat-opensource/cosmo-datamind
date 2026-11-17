@@ -34,10 +34,10 @@ from llm_diagnostics import safe_diagnostic, transport_diagnostic, describe
 
 _LOG=logging.getLogger(__name__)
 
-# DR-070: routing and the platform runtime share the same default model identity.
+# DR-152: routing and the platform runtime share the same default model identity.
 DEFAULT_MODEL = 'gpt-4o-mini'
 
-# DR-070: verified thinking-toggle protocols only; never infer a provider from
+# DR-152: verified thinking-toggle protocols only; never infer a provider from
 # the OpenAI-compatible transport alone or change a reasoning-only model.
 _TBOX_THINKING_MODELS = frozenset(('deepseek-flash', 'deepseek-v4-flash', 'deepseek-v4-pro'))
 
@@ -90,7 +90,7 @@ class OpenAICompatRuntime:
         return ok,text
 
     def run_tbox_turn_detailed(self, session_id, message, timeout=300, model=None):
-        """DR-070: per-call TBox policy, separate from QA/task runtime defaults."""
+        """DR-152: per-call TBox policy, separate from QA/task runtime defaults."""
         mode = os.environ.get('DATAMIND_ROBOTICS_DESIGN_THINKING', 'disabled').strip().lower()
         if mode not in ('disabled', 'low', 'inherit'):
             raise ThinkingConfigurationError(
@@ -99,7 +99,7 @@ class OpenAICompatRuntime:
                                       thinking_mode=mode)
 
     def run_turn_detailed(self, session_id, message, timeout=300, model=None, *, thinking_mode=None):
-        """DR-070: return only allowlisted metadata alongside the usual result."""
+        """DR-152: return only allowlisted metadata alongside the usual result."""
         started=time.monotonic()
         maximum=_int_env('DATAMIND_LLM_MAX_TOKENS',16384)
         def outcome(ok,text,diagnostic):

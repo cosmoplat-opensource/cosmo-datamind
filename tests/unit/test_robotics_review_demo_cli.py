@@ -1,4 +1,4 @@
-"""T06 RED: offline governance demo and independent read-only verification — DR-061 / DR-064 / DR-065."""
+"""T06 RED: offline governance demo and independent read-only verification — DR-143 / DR-146 / DR-147."""
 import importlib
 import json
 import os

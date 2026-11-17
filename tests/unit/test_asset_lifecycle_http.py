@@ -1,4 +1,4 @@
-"""IR-029 T04 RED: actual legacy host, HTTP, cache and lifecycle races — DR-075."""
+"""IR-029 T04 RED: actual legacy host, HTTP, cache and lifecycle races — DR-157."""
 from concurrent.futures import ThreadPoolExecutor
 import json
 import threading
@@ -14,7 +14,7 @@ __all__ = ['qa_http']
 
 
 def activate(fixture):
-    assert hasattr(server, 'init_asset_lifecycle'), 'DR-075 lifecycle host is not connected'
+    assert hasattr(server, 'init_asset_lifecycle'), 'DR-157 lifecycle host is not connected'
     server.init_asset_lifecycle()
     service = LifecycleService(fixture[1] / 'domain_assets')
     binding = service.resolve_legacy('built_scope')

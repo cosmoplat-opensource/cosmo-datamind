@@ -1,4 +1,4 @@
-"""Shared values and strict JSON validation for application checks — DR-071."""
+"""Shared values and strict JSON validation for application checks — DR-153."""
 from copy import deepcopy
 import hashlib
 import json

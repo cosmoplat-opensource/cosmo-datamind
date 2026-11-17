@@ -1,4 +1,4 @@
-"""Content-bound application decisions and read-only freshness comparison — DR-071 §5."""
+"""Content-bound application decisions and read-only freshness comparison — DR-153 §5."""
 from copy import deepcopy
 import hashlib
 

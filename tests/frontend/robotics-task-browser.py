@@ -1,4 +1,4 @@
-"""T04 RED: real browser/build/OWL/completion/compiler/download; only model HTTP is scripted — DR-063 / DR-066."""
+"""T04 RED: real browser/build/OWL/completion/compiler/download; only model HTTP is scripted — DR-145 / DR-148."""
 import argparse
 import os
 from pathlib import Path
@@ -35,7 +35,7 @@ class TaskSite(LiveSite):
         super().start()
 
     def enable_task_model(self):
-        # DR-070: create the legacy asset offline, then configure task extraction.
+        # DR-152: create the legacy asset offline, then configure task extraction.
         # A configured build now belongs to the new TBox/ABox flow.
         if not self.model_enabled:
             self.model_enabled = True
@@ -398,7 +398,7 @@ if __name__ == '__main__':
 
 
 def test_task_application_history_retains_two_generations_and_reopens_without_model(live):
-    """DR-069: one ontology, independent tasks, discoverable fixed results after restart."""
+    """DR-151: one ontology, independent tasks, discoverable fixed results after restart."""
     from tests.robotics_task_support import fixture
     site, page, calls = live
     _, version, _ = fixture(site.root, ready=True)
@@ -450,7 +450,7 @@ def test_graph_starts_task_with_selected_ontology_version(live):
     site.enable_task_model()
     page.goto(site.url + '/#robotics-view?asset=' + ref['ontology_id'] + '&version=' + ref['version_id'] + '&view=relations')
     page.get_by_role('link', name='基于此本体生成行为树', exact=True).click()
-    # DR-073: retain preflight, enter directly, and expose the bound check in the task page.
+    # DR-155: retain preflight, enter directly, and expose the bound check in the task page.
     panel = page.get_by_test_id('robotics-task')
     expect(panel).to_have_attribute('data-ontology-id', ref['ontology_id'])
     expect(panel).to_have_attribute('data-version-id', ref['version_id'])

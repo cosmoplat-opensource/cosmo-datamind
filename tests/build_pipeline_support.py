@@ -1,4 +1,4 @@
-"""T02 build contracts, independent observations and frozen schema-2 restore — DR-060 / DR-064 / DR-065."""
+"""T02 build contracts, independent observations and frozen schema-2 restore — DR-142 / DR-146 / DR-147."""
 import base64
 from copy import deepcopy
 import hashlib

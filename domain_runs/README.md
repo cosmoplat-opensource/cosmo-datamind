@@ -1,6 +1,6 @@
 # 持久化运行、事件与工件
 
-依据 DR-064 / DR-065，实现 IR-017 T05 的 Python 服务。
+依据 DR-146 / DR-147，实现 IR-017 T05 的 Python 服务。
 与 AssetStore 使用同一个显式绝对根目录和 `domain.sqlite3`，工件保存到 `artifacts/<run_id>/<artifact_id>/<name>`。
 这是存储接口；T07 已提供机器人内核接入及离线演示，后台调度、HTTP/SSE 和新页面由后续阶段完成。
 

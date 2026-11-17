@@ -1,4 +1,4 @@
-"""Asset/version services with explicit publication and consumption — DR-059 / DR-064 / DR-065."""
+"""Asset/version services with explicit publication and consumption — DR-141 / DR-146 / DR-147."""
 from datetime import datetime, timezone
 import json
 from pathlib import Path
@@ -64,7 +64,7 @@ class AssetStore:
             return self._put_source(conn, content, role=role, media_type=media_type)
 
     def _put_source(self, conn, content, *, role, media_type):
-        """DR-064: allow source registration inside an admission transaction."""
+        """DR-146: allow source registration inside an admission transaction."""
         if not isinstance(content, bytes):
             raise ValueError("来源必须为 bytes。")
         _text(role, "role")
@@ -152,7 +152,7 @@ class AssetStore:
                                       (ontology_id, version_id)))
 
     def _version_number(self, conn, ontology_id, version_id):
-        """DR-067: asset-local ordinal in the append-only registration order."""
+        """DR-149: asset-local ordinal in the append-only registration order."""
         row = _required(conn, 'SELECT rowid AS position FROM versions WHERE ontology_id=? AND version_id=?',
                         (ontology_id, version_id))
         return conn.execute('SELECT COUNT(*) FROM versions WHERE ontology_id=? AND rowid<=?',
@@ -176,7 +176,7 @@ class AssetStore:
         if record["payload_kind"] != "robotics_rdf":
             raise ValueError("指定版本不是机器人本体。")
         from domains.robotics.consumer import load_ontology
-        # DR-064: use the same lock as server SPARQL/SHACL, not a per-store lock.
+        # DR-146: use the same lock as server SPARQL/SHACL, not a per-store lock.
         with _RDF_LOCK:
             self.storage.read_bytes(record["path"], record["payload_sha256"])
             from .robotics_application import is_application, load, verify_sources
@@ -216,7 +216,7 @@ class AssetStore:
         return self._robotics_context(record, mode)
 
     def load_robotics_application(self, ontology_id, version_id, *, mode="real"):
-        """DR-066: candidate application still uses the complete consumer validation."""
+        """DR-148: candidate application still uses the complete consumer validation."""
         from .lifecycle import require_active
         with self.storage.transaction() as conn: require_active(conn, ontology_id)
         return self._robotics_context(self.get_version(ontology_id, version_id), mode)

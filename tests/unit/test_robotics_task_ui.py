@@ -1,4 +1,4 @@
-"""T04 RED: task controller races plus mandatory actual-browser check wiring — DR-063 / DR-066."""
+"""T04 RED: task controller races plus mandatory actual-browser check wiring — DR-145 / DR-148."""
 import ast
 from pathlib import Path
 import shutil

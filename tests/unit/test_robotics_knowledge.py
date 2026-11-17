@@ -1,4 +1,4 @@
-"""T02 RED: RDF authority, typed business edits and protected structure — DR-059 / DR-060 / DR-061."""
+"""T02 RED: RDF authority, typed business edits and protected structure — DR-141 / DR-142 / DR-143."""
 from copy import deepcopy
 
 import pytest

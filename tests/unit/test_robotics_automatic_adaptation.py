@@ -1,4 +1,4 @@
-"""Automatic canonical matching and explicit manual exceptions — DR-072."""
+"""Automatic canonical matching and explicit manual exceptions — DR-154."""
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 

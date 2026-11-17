@@ -1,4 +1,4 @@
-"""User-visible detail summaries, bounded tables and honest application state — DR-073 / T02 RED."""
+"""User-visible detail summaries, bounded tables and honest application state — DR-155 / T02 RED."""
 import os
 from pathlib import Path
 

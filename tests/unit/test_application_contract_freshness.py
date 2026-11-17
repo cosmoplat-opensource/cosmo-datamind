@@ -1,4 +1,4 @@
-"""Bind application decisions to current facts, never client readiness — DR-071 / IR-025 T02 RED."""
+"""Bind application decisions to current facts, never client readiness — DR-153 / IR-025 T02 RED."""
 from copy import deepcopy
 
 import pytest

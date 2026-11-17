@@ -1,4 +1,4 @@
-"""Read-only verification of persisted catalog, history and actual files — DR-064 / DR-065."""
+"""Read-only verification of persisted catalog, history and actual files — DR-146 / DR-147."""
 import json
 import os
 

@@ -1,4 +1,4 @@
-"""Additive governance migration; no historic row/file rewrites — DR-059 / DR-064."""
+"""Additive governance migration; no historic row/file rewrites — DR-141 / DR-146."""
 SCHEMA = (
     '''CREATE TABLE governance_heads (
         ontology_id TEXT PRIMARY KEY REFERENCES assets(ontology_id),

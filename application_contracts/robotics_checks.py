@@ -1,4 +1,4 @@
-"""Read-only robotics diagnostics and registered explicit repair navigation — DR-072."""
+"""Read-only robotics diagnostics and registered explicit repair navigation — DR-154."""
 import json
 from urllib.parse import urlencode
 

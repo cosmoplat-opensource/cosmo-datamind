@@ -1,4 +1,4 @@
-"""Read-only instance / procedure projections — DR-068."""
+"""Read-only instance / procedure projections — DR-150."""
 import importlib
 
 import pytest

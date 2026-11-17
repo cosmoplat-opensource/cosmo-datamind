@@ -1,4 +1,4 @@
-"""Deterministic layered evaluation and execution guard — DR-071 §3–6."""
+"""Deterministic layered evaluation and execution guard — DR-153 §3–6."""
 from copy import deepcopy
 
 from .freshness import make_basis
@@ -99,7 +99,7 @@ def _run(spec, data, unsupported):
             try:
                 rows = _normalize(checker['check'](deepcopy(data)), checker, spec['repair_handlers'])
             except Exception:
-                # 依据 DR-071 第 6 条：异常不变成 missing，也不将原始异常暴露到报告。
+                # 依据 DR-153 第 6 条：异常不变成 missing，也不将原始异常暴露到报告。
                 rows = [_outcome(checker, code, 'error', issue=_issue(
                     'system.checker_failed', checker['layer'], '检查器异常或返回结果不完整，请重试检查。'))
                         for code in checker['required_codes']]

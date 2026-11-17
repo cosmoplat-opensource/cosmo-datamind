@@ -1,4 +1,4 @@
-"""Fixed-version detail, truthful history and concurrent read availability — DR-073 / T04 RED."""
+"""Fixed-version detail, truthful history and concurrent read availability — DR-155 / T04 RED."""
 from copy import deepcopy
 import json
 import sqlite3

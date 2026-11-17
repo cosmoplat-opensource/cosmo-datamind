@@ -1,4 +1,4 @@
-"""RDF semantic differences and explicit source three-way merging — DR-059 / DR-060 / DR-061."""
+"""RDF semantic differences and explicit source three-way merging — DR-141 / DR-142 / DR-143."""
 from collections import defaultdict
 from copy import deepcopy
 import hashlib

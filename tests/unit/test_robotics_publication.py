@@ -1,4 +1,4 @@
-"""Publish and consume the trusted OWL contract — DR-060 / DR-065 / ROB-04 / ROB-05.
+"""Publish and consume the trusted OWL contract — DR-142 / DR-147 / ROB-04 / ROB-05.
 
 T04 RED: the publisher and consumer do not exist yet; imports stay inside tests.
 """

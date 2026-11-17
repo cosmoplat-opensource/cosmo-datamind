@@ -1,4 +1,4 @@
-"""T04 RED: genuine task completion, synchronized artifacts and source-independent execution — DR-072."""
+"""T04 RED: genuine task completion, synchronized artifacts and source-independent execution — DR-154."""
 from copy import deepcopy
 import json
 import xml.etree.ElementTree as ET

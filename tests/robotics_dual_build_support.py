@@ -1,4 +1,4 @@
-"""Synthetic runtime boundary and isolated platform state — DR-070 / IR-024 T02.
+"""Synthetic runtime boundary and isolated platform state — DR-152 / IR-024 T02.
 
 Only model configuration/registry/transport are replaced. XML, HTTP guards,
 asset storage and the legacy RDF pipeline remain production implementations.

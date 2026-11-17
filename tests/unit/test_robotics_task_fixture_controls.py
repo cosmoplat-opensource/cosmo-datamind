@@ -1,4 +1,4 @@
-"""T04 GREEN controls: fixtures and independent oracle work before task service exists — DR-062 / DR-066."""
+"""T04 GREEN controls: fixtures and independent oracle work before task service exists — DR-144 / DR-148."""
 import xml.etree.ElementTree as ET
 
 import pytest

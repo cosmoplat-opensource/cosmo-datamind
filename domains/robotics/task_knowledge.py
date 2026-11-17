@@ -1,4 +1,4 @@
-"""Inspect incomplete candidates and apply only task-scoped answers — DR-061 / DR-066.
+"""Inspect incomplete candidates and apply only task-scoped answers — DR-143 / DR-148.
 
 Inspection tolerates missing editable knowledge, never damaged executable semantics.
 Strict consumption still uses the unmodified consumer/SHACL contract.
@@ -80,7 +80,7 @@ def pending_answer(graph, item, *, revocations=()):
 
 
 def replace_configuration(graph, task, *, field, mode, target=None, create=None, revocations=()):
-    """DR-066: explicitly replace only a resolved task's current profile binding."""
+    """DR-148: explicitly replace only a resolved task's current profile binding."""
     projection = inspect_gaps(graph, task, mode=mode, revocations=revocations)
     item = next((row for row in projection['configurations'] if row['field'] == field), None)
     if item is None:

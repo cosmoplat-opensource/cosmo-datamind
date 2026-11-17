@@ -1,6 +1,6 @@
 # IR-024 T10 — 回归、真实模型试运行核验与待人审交付
 
-依据 [DR-070](../../specs/decisions/DR-070-robotics-dual-build.md) 和 [IR-024](../../specs/iterations/IR-024-robotics-dual-build.md)。
+依据 [DR-152](../../specs/decisions/DR-152-robotics-dual-build.md) 和 [IR-024](../../specs/iterations/IR-024-robotics-dual-build.md)。
 用户要求先完成原 SDD 最后一个 Task，再讨论整体流程的新 DR。
 本次整理原范围的使用文档、真实运行与回归证据，不扩展建模或行为树生成算法。
 最终交付勾选和 delivered 状态仍由用户人审确认。

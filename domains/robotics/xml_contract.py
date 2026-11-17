@@ -1,4 +1,4 @@
-"""Shared XML interface and literal helpers — DR-060 / DR-062."""
+"""Shared XML interface and literal helpers — DR-142 / DR-144."""
 import json
 import math
 import re

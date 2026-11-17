@@ -1,4 +1,4 @@
-"""Canonical identities and public modeling failures — DR-070."""
+"""Canonical identities and public modeling failures — DR-152."""
 from copy import deepcopy
 import hashlib
 import json

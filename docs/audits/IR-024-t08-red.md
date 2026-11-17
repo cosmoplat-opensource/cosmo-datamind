@@ -2,7 +2,7 @@
 
 - 日期：2026-11-10。
 - 授权：用户在 T07 完成后要求“继续下一步”，本次完成 T08 测试，不进入 T09 实现。
-- 依据：[DR-070](../../specs/decisions/DR-070-robotics-dual-build.md)、[IR-024](../../specs/iterations/IR-024-robotics-dual-build.md)。
+- 依据：[DR-152](../../specs/decisions/DR-152-robotics-dual-build.md)、[IR-024](../../specs/iterations/IR-024-robotics-dual-build.md)。
 - 新增接口细化：[HTTP 与页面测试接口 v1](../../specs/contracts/robotics-design-http-ui-v1.md)。
 - 状态：RED，测试待人审；既有实现、已审阅测试和夹具保持不变。
 

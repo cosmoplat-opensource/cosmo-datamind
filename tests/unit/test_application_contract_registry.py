@@ -1,4 +1,4 @@
-"""Backend registration and fixed application entrypoints — DR-071 / IR-025 T02 RED."""
+"""Backend registration and fixed application entrypoints — DR-153 / IR-025 T02 RED."""
 from copy import deepcopy
 
 import pytest

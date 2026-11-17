@@ -1,4 +1,4 @@
-"""Deterministically import supported BT XML into RDF — DR-060.
+"""Deterministically import supported BT XML into RDF — DR-142.
 
 Extraction migrated from the ontology_pipeline of the robotics source project; all inputs are explicit snapshots.
 """

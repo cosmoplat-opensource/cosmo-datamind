@@ -3,7 +3,7 @@
 - **状态 / Status**：delivered（2026-11-13 用户在 T06 交付评审后要求提交代码，确认本轮交付）。
 - **日期 / Date**：2026-11-12。
 - **更新 / Updated**：2026-11-13。
-- **关联 / Refs**：[DR-072](../decisions/DR-072-robotics-application-adaptation.md)。
+- **关联 / Refs**：[DR-154](../decisions/DR-154-robotics-application-adaptation.md)。
 - **T01 规约**：[机器人应用适配 v1](../contracts/robotics-application-adaptation-v1.md)。
 
 ## 目标 Goal

@@ -1,4 +1,4 @@
-"""T06 user acceptance: literal table names beside Chinese text — DR-074."""
+"""T06 user acceptance: literal table names beside Chinese text — DR-156."""
 import json
 import sqlite3
 

@@ -1,4 +1,4 @@
-"""Explicit role confirmation, durable adaptation and original-task return — DR-072."""
+"""Explicit role confirmation, durable adaptation and original-task return — DR-154."""
 from contextlib import contextmanager
 from copy import deepcopy
 import json

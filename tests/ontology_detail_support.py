@@ -1,4 +1,4 @@
-"""Synthetic fixed-version detail responses and isolated real DOM harness — DR-073."""
+"""Synthetic fixed-version detail responses and isolated real DOM harness — DR-155."""
 from copy import deepcopy
 import json
 from pathlib import Path

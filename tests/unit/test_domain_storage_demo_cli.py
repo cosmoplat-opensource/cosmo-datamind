@@ -1,4 +1,4 @@
-"""T06 RED: offline storage demo, real process boundaries and verifiable history — DR-064 / DR-065."""
+"""T06 RED: offline storage demo, real process boundaries and verifiable history — DR-146 / DR-147."""
 import importlib
 import json
 import os

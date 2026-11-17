@@ -2,7 +2,7 @@
 
 - 状态：in-progress。
 - 日期：2026-11-09。
-- 关联：[DR-069](../decisions/DR-069-robotics-task-application.md)。
+- 关联：[DR-151](../decisions/DR-151-robotics-task-application.md)。
 - 范围依据：用户要求同级导航、图谱直达、一对多生成和带本体名称的历史记录，风格与问数一致。
 
 ## 目标

@@ -1,4 +1,4 @@
-"""T02 RED: typed catalog, source integrity and data access isolation — DR-059 / DR-065."""
+"""T02 RED: typed catalog, source integrity and data access isolation — DR-141 / DR-147."""
 import hashlib
 import json
 import os

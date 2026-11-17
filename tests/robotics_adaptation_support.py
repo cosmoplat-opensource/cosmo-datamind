@@ -1,4 +1,4 @@
-"""IR-026 pure-core fixtures: real XML/evidence/ABox, no application implementation — DR-072."""
+"""IR-026 pure-core fixtures: real XML/evidence/ABox, no application implementation — DR-154."""
 from copy import deepcopy
 import hashlib
 import importlib

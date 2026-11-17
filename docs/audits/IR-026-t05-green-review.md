@@ -1,4 +1,4 @@
-# IR-026 T05 集成实现评审 — DR-072
+# IR-026 T05 集成实现评审 — DR-154
 
 日期：2026-11-12。状态：57 项已审集成用例及全量 13 段通过；IR-026 未交付，T06 未开始。
 依据：[适配规约](../../specs/contracts/robotics-application-adaptation-v1.md)、[T04 测试评审](IR-026-t04-red-review.md)、[IR-026](../../specs/iterations/IR-026-robotics-application-adaptation.md)。

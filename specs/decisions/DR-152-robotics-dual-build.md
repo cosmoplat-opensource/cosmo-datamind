@@ -1,8 +1,8 @@
-# DR-070 · 机器人本体统一入口与模型／离线双路径
+# DR-152 · 机器人本体统一入口与模型／离线双路径
 
 - **状态 / Status**：accepted（2026-11-10 用户确认方案无问题并要求继续下一步）。
 - **日期 / Date**：2026-11-09。
-- **关联 / Refs**：[IR-024](../iterations/IR-024-robotics-dual-build.md)、[DR-060](DR-060-robotics-source-recipes-and-reverse-build.md)、[DR-064](DR-064-persistent-build-runs-and-artifact-manifests.md)、[DR-067](DR-067-offline-candidates-and-readable-versions.md)、[DR-069](DR-069-robotics-task-application.md)。
+- **关联 / Refs**：[IR-024](../iterations/IR-024-robotics-dual-build.md)、[DR-142](DR-142-robotics-source-recipes-and-reverse-build.md)、[DR-146](DR-146-persistent-build-runs-and-artifact-manifests.md)、[DR-149](DR-149-offline-candidates-and-readable-versions.md)、[DR-151](DR-151-robotics-task-application.md)。
 
 ## 上下文 / Context
 

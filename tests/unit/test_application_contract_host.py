@@ -1,4 +1,4 @@
-"""T04 RED: real host wiring, read paths and existing generation guard — DR-071."""
+"""T04 RED: real host wiring, read paths and existing generation guard — DR-153."""
 from copy import deepcopy
 import json
 import sqlite3

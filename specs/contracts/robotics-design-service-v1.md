@@ -1,7 +1,7 @@
-# 设计会话与候选服务测试接口 v1 — DR-070 / IR-024 T06
+# 设计会话与候选服务测试接口 v1 — DR-152 / IR-024 T06
 
 - 日期：2026-11-10。
-- 依据：[已确认 DR-070](../decisions/DR-070-robotics-dual-build.md)、[IR-024](../iterations/IR-024-robotics-dual-build.md)、[T01 接口](robotics-dual-build-v1.md)、[T04 核心接口](robotics-modeling-core-v1.md)。
+- 依据：[已确认 DR-152](../decisions/DR-152-robotics-dual-build.md)、[IR-024](../iterations/IR-024-robotics-dual-build.md)、[T01 接口](robotics-dual-build-v1.md)、[T04 核心接口](robotics-modeling-core-v1.md)。
 - 本文件细化已确认行为的 Python 服务接点；用户于 2026-11-10 确认推进 T07，82 项测试已转绿，完整回归 12 阶段全部通过。
 - 不增加无 XML 输入、不更换平台模型配置、不重构已有任务模型客户端。
 

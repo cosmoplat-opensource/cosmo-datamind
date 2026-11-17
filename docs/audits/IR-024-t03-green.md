@@ -1,4 +1,4 @@
-# IR-024 T03 GREEN 记录 — DR-070
+# IR-024 T03 GREEN 记录 — DR-152
 
 - 日期：2026-11-10（Asia/Shanghai）。
 - 授权：用户确认 T02 测试覆盖无问题，要求继续 T03 实现并让测试转绿。
@@ -49,7 +49,7 @@
 
 ## 全量回归
 
-首轮在旧 HTTP 用例 `test_actual_invalid_xml_is_accepted_then_reported_as_located_failure` 发现冲突：旧约定返回 202 后由后台报告坏 XML，新 DR-070 要求共同准入返回 400 且不登记来源／运行。
+首轮在旧 HTTP 用例 `test_actual_invalid_xml_is_accepted_then_reported_as_located_failure` 发现冲突：旧约定返回 202 后由后台报告坏 XML，新 DR-152 要求共同准入返回 400 且不登记来源／运行。
 2026-11-10 用户明确回复“同意，更新冲突的旧测试”。
 据此将该项更名为 `test_actual_invalid_xml_is_rejected_before_admission_with_location`，保留真实 HTTP、错误代码、来源角色、行号与路径不泄露检查，并改为验证数据库／文件零变更及无 run_id。
 新断言单独运行 1 passed；同步 RBU-03／RBU-04 的测试引用，并从下载验收 RBU-06 移除此用例，因为准入拒绝不再生成工件。
@@ -67,7 +67,7 @@ env PATH="<Node.js 安装目录>/bin:$PATH" \
 单元回归 1743 passed、5 项缺少可选上游引擎跳过；覆盖率 84.5%，门槛 81.0%。
 HTTP 集成 551 通过、8 项可选上游跳过；严格十轮 10/10。
 旧 UI 64 通过；UI 实操 50 通过、3 项未配置真实模型跳过；数据构建、机器人构建及机器人审阅浏览器段均通过。
-任务浏览器失败集中在准备资产：旧 TaskSite 启动即配置任务解析模型，随后还要求上传 XML 走旧构建；DR-070 下请求正确走模型路径并返回 model_build_pending，因此尚未到达任务语义断言。
+任务浏览器失败集中在准备资产：旧 TaskSite 启动即配置任务解析模型，随后还要求上传 XML 走旧构建；DR-152 下请求正确走模型路径并返回 model_build_pending，因此尚未到达任务语义断言。
 2026-11-10 用户明确回复“同意，调整夹具并重跑受影响检查”，已应用准备顺序修正：先无模型真实构建旧资产，再启用本地合成模型测试任务。
 原有 59 条 assert 和 42 条 Playwright 断言按 AST 核对全部不变，继续使用真实 HTTP／存储／编译／下载；未配置模型用例保持离线。
 T02 的 62 项新测试及本轮生产实现均不因这一夹具冲突而修改。

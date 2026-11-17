@@ -1,4 +1,4 @@
-"""T02 RED: immutable governance transactions, reviews and publication — DR-059 / DR-061 / DR-064 / DR-065."""
+"""T02 RED: immutable governance transactions, reviews and publication — DR-141 / DR-143 / DR-146 / DR-147."""
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from copy import deepcopy

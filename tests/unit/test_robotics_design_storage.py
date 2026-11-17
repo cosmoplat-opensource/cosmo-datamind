@@ -1,4 +1,4 @@
-"""Frozen schema-5 migration, restart and immutable revisions — DR-070 / T06 RED."""
+"""Frozen schema-5 migration, restart and immutable revisions — DR-152 / T06 RED."""
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 import json

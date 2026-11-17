@@ -1,4 +1,4 @@
-"""T04 RED: real sync/SSE, edited files, SQLite and legacy deletion — DR-074."""
+"""T04 RED: real sync/SSE, edited files, SQLite and legacy deletion — DR-156."""
 from copy import deepcopy
 import importlib
 import json

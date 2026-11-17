@@ -1,4 +1,4 @@
-"""Allowlisted per-request LLM diagnostics; never persist provider text or credentials — DR-029 / DR-070."""
+"""Allowlisted per-request LLM diagnostics; never persist provider text or credentials — DR-029 / DR-152."""
 import urllib.error
 
 CODES={'model_http_error','model_timeout','model_connection_failed','model_invalid_response',

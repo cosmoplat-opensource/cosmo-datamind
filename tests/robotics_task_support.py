@@ -1,4 +1,4 @@
-"""IR-020 real storage fixtures, scripted HTTP model and independent XML oracle — DR-062 / DR-064 / DR-066.
+"""IR-020 real storage fixtures, scripted HTTP model and independent XML oracle — DR-144 / DR-146 / DR-148.
 
 Synthetic inputs test software contracts only; never evidence of physical applicability.
 Only the external model is replaced. No task/save/compiler/download service is mocked.

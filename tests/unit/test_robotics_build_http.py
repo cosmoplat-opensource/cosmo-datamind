@@ -1,4 +1,4 @@
-"""T04 RED: robotics Blueprint contracts with real stores and application guards — DR-060 / DR-063 / DR-064 / DR-065."""
+"""T04 RED: robotics Blueprint contracts with real stores and application guards — DR-142 / DR-145 / DR-146 / DR-147."""
 from copy import deepcopy
 import io
 import json
@@ -454,7 +454,7 @@ finally:
 
 
 def test_actual_invalid_xml_is_rejected_before_admission_with_location(tmp_path):
-    # DR-070: shared XML intake supersedes the old HTTP late-failure contract.
+    # DR-152: shared XML intake supersedes the old HTTP late-failure contract.
     # User approved this expectation change during IR-024 T03.
     with http_app(tmp_path, start_executor=True) as (_, client, _, root):
         data = multipart()

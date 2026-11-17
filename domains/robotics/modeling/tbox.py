@@ -1,4 +1,4 @@
-"""Pure staged TBox design using the platform route protocol — DR-070 / IR-024 T05."""
+"""Pure staged TBox design using the platform route protocol — DR-152 / IR-024 T05."""
 from copy import deepcopy
 import json
 
@@ -109,7 +109,7 @@ def revise(state, text, route, *, session_id, timeout):
             state['class_confirmation']['classes'] if stage == 'properties' else None)})
     structural_schema = RESPONSE_SCHEMA if stage == 'classes' else PROPERTY_RESPONSE_SCHEMA
     for attempt in range(2):
-        # DR-070 §13: transport errors propagate; no second provider or offline fallback.
+        # DR-152 §13: transport errors propagate; no second provider or offline fallback.
         raw = route.request(session_id, prompt, timeout=timeout)
         try:
             proposal = _strict_json(raw)

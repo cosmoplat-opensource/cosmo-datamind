@@ -1,4 +1,4 @@
-/* Reversible lifecycle confirmation and recycle bin actions — DR-075. */
+/* Reversible lifecycle confirmation and recycle bin actions — DR-157. */
 (function(global){
  'use strict';
  const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

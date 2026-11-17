@@ -1,4 +1,4 @@
-"""RDF vocabulary and construction helpers migrated from the robotics source project — DR-059 / DR-060."""
+"""RDF vocabulary and construction helpers migrated from the robotics source project — DR-141 / DR-142."""
 from rdflib import BNode, Graph, Literal, Namespace, RDF, RDFS, OWL, XSD, URIRef
 from rdflib.collection import Collection
 

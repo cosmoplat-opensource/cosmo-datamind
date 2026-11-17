@@ -3,7 +3,7 @@
 - 日期：2026-11-10（Asia/Shanghai）。
 - 授权：用户在 T03 完成后要求“继续下一步”，按 IR-024 顺序进入 T04 RED。
 - 状态：测试已创建并验证预期失败，待覆盖人审；未进入 T05 GREEN。
-- 依据：[DR-070](../../specs/decisions/DR-070-robotics-dual-build.md)、[IR-024](../../specs/iterations/IR-024-robotics-dual-build.md)。
+- 依据：[DR-152](../../specs/decisions/DR-152-robotics-dual-build.md)、[IR-024](../../specs/iterations/IR-024-robotics-dual-build.md)。
 - 测试接口：[建模核心 v1](../../specs/contracts/robotics-modeling-core-v1.md)。
 - 机器记录：[结果与测试摘要](IR-024-t04-red-results.json)。
 

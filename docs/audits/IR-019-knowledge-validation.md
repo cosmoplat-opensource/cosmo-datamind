@@ -1,7 +1,7 @@
 # IR-019 · 机器人知识维护、重建合并与发布审计
 
 - 日期：2026-11-05（Asia/Shanghai）
-- 依据：DR-059 / DR-060 / DR-061 / DR-063 / DR-064 / DR-065。
+- 依据：DR-141 / DR-142 / DR-143 / DR-145 / DR-146 / DR-147。
 - 当前阶段：T07 GREEN；全量 11 段通过，待 T08 人审交付。
 - 规约：[IR-019](../../specs/iterations/IR-019-robotics-knowledge-review-and-publication.md)。
 

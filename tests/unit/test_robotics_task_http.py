@@ -1,4 +1,4 @@
-"""T04 RED: real Blueprint, guards, OWL import and task artifact identity — DR-063 / DR-064 / DR-066."""
+"""T04 RED: real Blueprint, guards, OWL import and task artifact identity — DR-145 / DR-146 / DR-148."""
 import io
 import json
 

@@ -1,4 +1,4 @@
-# IR-027 T03 详情展示 GREEN — DR-073
+# IR-027 T03 详情展示 GREEN — DR-155
 
 日期：2026-11-13。
 状态：T03 GREEN 及全量 13 项检查通过；IR-027 仍为 in-progress，待 T04 集成 RED。

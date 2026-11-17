@@ -1,4 +1,4 @@
-"""Transactionally persist run state, events and artifacts — DR-064 / DR-065 / DR-070 / DR-073."""
+"""Transactionally persist run state, events and artifacts — DR-146 / DR-147 / DR-152 / DR-155."""
 from datetime import datetime, timezone
 import json
 import uuid
@@ -198,7 +198,7 @@ class RunStore:
                 "SELECT * FROM run_events WHERE run_id=? AND seq>? ORDER BY seq", (run_id, after))]
 
     def recover_interrupted(self, *, operation=None):
-        """Call once from a single host's startup, before accepting new work (DR-064)."""
+        """Call once from a single host's startup, before accepting new work (DR-146)."""
         with self.storage.transaction(write=True) as conn:
             clause, params = (" AND operation=?", (operation,)) if operation is not None else ("", ())
             ids = [row[0] for row in conn.execute(
@@ -208,7 +208,7 @@ class RunStore:
             return ids
 
     def claim_build(self):
-        """DR-064: only an exclusive executor calls this atomic FIFO claim.
+        """DR-146: only an exclusive executor calls this atomic FIFO claim.
 
         Unlike start(), claim also admits damaged snapshots to computation, so
         verification produces a durable failure instead of stranding the queue.
@@ -330,7 +330,7 @@ class RunStore:
             _expect(run, "completed", "failed")
             records = [dict(row) for row in conn.execute("SELECT * FROM run_artifacts WHERE run_id=? ORDER BY rowid",
                                                          (run_id,))]
-        # DR-073: retain one consistent metadata read without pinning SQLite during I/O.
+        # DR-155: retain one consistent metadata read without pinning SQLite during I/O.
         manifests = [item for item in records if item["kind"] == "manifest"]
         if len(manifests) != 1:
             raise ValueError("运行缺少唯一的产物清单。")

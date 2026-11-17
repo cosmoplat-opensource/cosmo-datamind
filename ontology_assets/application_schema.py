@@ -1,4 +1,4 @@
-"""Additive application workflow and run-output migration — DR-072."""
+"""Additive application workflow and run-output migration — DR-154."""
 SCHEMA = (
     'CREATE TABLE robotics_adaptations(adaptation_id TEXT PRIMARY KEY, record TEXT NOT NULL)',
     '''CREATE TABLE robotics_adaptation_requests(scope TEXT NOT NULL,request_id TEXT NOT NULL,

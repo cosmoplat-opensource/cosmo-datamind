@@ -1,4 +1,4 @@
-"""T02 RED: explicit effective-IR registration without legacy migration — DR-059 / DR-065."""
+"""T02 RED: explicit effective-IR registration without legacy migration — DR-141 / DR-147."""
 from copy import deepcopy
 import hashlib
 import importlib

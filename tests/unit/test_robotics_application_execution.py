@@ -1,4 +1,4 @@
-"""T02 RED: source-bound execution semantics, scoped values and public-only editing — DR-072."""
+"""T02 RED: source-bound execution semantics, scoped values and public-only editing — DR-154."""
 from copy import deepcopy
 import xml.etree.ElementTree as ET
 

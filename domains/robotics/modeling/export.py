@@ -1,4 +1,4 @@
-"""Selected schema and checked instance RDF/XML, adapted from the robotics source project — DR-070."""
+"""Selected schema and checked instance RDF/XML, adapted from the robotics source project — DR-152."""
 from rdflib import BNode, Graph, Literal, Namespace, OWL, RDF, RDFS, URIRef, XSD
 from rdflib.collection import Collection
 
@@ -64,6 +64,6 @@ def tbox_owl(result_or_schema, namespace):
 
 def abox_owl(result, tbox, evidence_rows):
     schema = checked_tbox(tbox)
-    # DR-070 §9/12: supplied evidence authorizes references, never the result itself.
+    # DR-152 §9/12: supplied evidence authorizes references, never the result itself.
     checked = validate_result(result, schema, evidence_rows, set())
     return _render(schema, checked)

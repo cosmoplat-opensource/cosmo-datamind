@@ -1,4 +1,4 @@
-"""Fixed UR vocabulary, procedure and source-derived examples — DR-060 / DR-062.
+"""Fixed UR vocabulary, procedure and source-derived examples — DR-142 / DR-144.
 
 Migrated from the ontology_pipeline of the robotics source project; examples remain illustrative, never confirmed.
 """

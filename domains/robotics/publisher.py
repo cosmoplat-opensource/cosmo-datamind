@@ -1,4 +1,4 @@
-"""Validate and atomically publish new OWL files without overwrite — DR-060 / DR-065."""
+"""Validate and atomically publish new OWL files without overwrite — DR-142 / DR-147."""
 from copy import deepcopy
 import os
 from pathlib import Path

@@ -1,4 +1,4 @@
-"""Typed edits over the authoritative RDF graph — DR-059 / DR-060 / DR-061.
+"""Typed edits over the authoritative RDF graph — DR-141 / DR-142 / DR-143.
 
 Projection is for display only. Writes use a bounded allowlist and preserve all
 unrelated RDF statements, including unknown vocabulary and blank nodes.
@@ -169,7 +169,7 @@ def inspect_knowledge(graph):
         if label and len(identities) > 1: issues.append({'code': 'ambiguous_label', 'label': label, 'entities': identities})
     changes = [{'iri': str(graph.value(item, S.entityIRI)), 'field': str(graph.value(item, S.field)),
                 'basis': str(graph.value(item, S.basis))} for item in sorted(graph.subjects(RDF.type, S.KnowledgeChange), key=str)]
-    # DR-063: selectors need immutable reference identities, not editable skill templates.
+    # DR-145: selectors need immutable reference identities, not editable skill templates.
     references = [{'iri': str(entity), 'entity_type': name,
                    'label': str(graph.value(entity, RDFS.label) or entity)}
                   for name in ('SkillImplementation', 'CoordinateFrame')

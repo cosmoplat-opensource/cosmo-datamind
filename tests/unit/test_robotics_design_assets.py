@@ -1,4 +1,4 @@
-"""Design candidate contracts, fixed exports and old consumer isolation — DR-070 / T06 RED."""
+"""Design candidate contracts, fixed exports and old consumer isolation — DR-152 / T06 RED."""
 from copy import deepcopy
 import json
 

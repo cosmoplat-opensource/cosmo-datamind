@@ -1,4 +1,4 @@
-"""Additive lifecycle metadata; immutable assets and files stay intact — DR-075."""
+"""Additive lifecycle metadata; immutable assets and files stay intact — DR-157."""
 SCHEMA = (
     '''CREATE TABLE asset_lifecycle(ontology_id TEXT PRIMARY KEY REFERENCES assets(ontology_id),
        state TEXT NOT NULL CHECK(state IN ('active','deleted')), revision INTEGER NOT NULL CHECK(revision>=0),

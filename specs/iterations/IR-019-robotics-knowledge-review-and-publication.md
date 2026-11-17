@@ -2,8 +2,8 @@
 
 - **状态 / Status**: in-progress
 - **日期 / Date**: 2026-11-05
-- **当前环节**：T07 实现与全量回归 GREEN；用户要求简化默认体验，T08 整轮交付暂缓，由 [DR-066](../decisions/DR-066-minimal-robotics-task-workflow.md) / [IR-020](IR-020-minimal-robotics-task-workflow.md) 优先打通构建到行为树生成。
-- **关联 / Refs**: [[DR-059-unified-domain-semantic-graph]]、[[DR-060-robotics-source-recipes-and-reverse-build]]、[[DR-061-parameter-contracts-calibration-and-readiness]]、[[DR-063-local-domain-registration-and-application-ui]]、[[DR-064-persistent-build-runs-and-artifact-manifests]]、[[DR-065-robotics-migration-and-compatibility-validation]]。
+- **当前环节**：T07 实现与全量回归 GREEN；用户要求简化默认体验，T08 整轮交付暂缓，由 [DR-148](../decisions/DR-148-minimal-robotics-task-workflow.md) / [IR-020](IR-020-minimal-robotics-task-workflow.md) 优先打通构建到行为树生成。
+- **关联 / Refs**: [[DR-141-unified-domain-semantic-graph]]、[[DR-142-robotics-source-recipes-and-reverse-build]]、[[DR-143-parameter-contracts-calibration-and-readiness]]、[[DR-145-local-domain-registration-and-application-ui]]、[[DR-146-persistent-build-runs-and-artifact-manifests]]、[[DR-147-robotics-migration-and-compatibility-validation]]。
 - **前置**：[IR-018](IR-018-robotics-build-api-and-ui.md) 已于 2026-11-04 经用户确认 delivered。
 - **方案**：[集成 Proposal](../PROPOSAL-robotics-source-integration.md) 步骤 4；步骤 5～6 的任务提取和行为树应用仍另立 IR。
 - **流程依据**：[SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第③～⑤步；本轮范围确认与各批测试覆盖确认分别记录。

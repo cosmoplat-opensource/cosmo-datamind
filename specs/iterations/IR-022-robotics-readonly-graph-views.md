@@ -2,7 +2,7 @@
 
 - 状态：in-progress。
 - 日期：2026-11-09。
-- 关联：DR-063、[DR-068](../decisions/DR-068-robotics-readonly-graph-views.md)。
+- 关联：DR-145、[DR-150](../decisions/DR-150-robotics-readonly-graph-views.md)。
 - 范围依据：用户后续明确要求暂不展示构建来源行为树；本体关系图与任务结果行为树保留。
 
 ## 目标

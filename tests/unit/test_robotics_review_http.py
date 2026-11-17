@@ -1,4 +1,4 @@
-"""T04 RED: knowledge HTTP, exact-version review and publication — DR-059 / DR-061 / DR-063 / DR-064 / DR-065."""
+"""T04 RED: knowledge HTTP, exact-version review and publication — DR-141 / DR-143 / DR-145 / DR-146 / DR-147."""
 from concurrent.futures import ThreadPoolExecutor
 import io
 import json

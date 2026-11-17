@@ -1,4 +1,4 @@
-"""Design controller behavior and mandatory browser regression wiring — DR-070 / T08 RED."""
+"""Design controller behavior and mandatory browser regression wiring — DR-152 / T08 RED."""
 import ast
 from pathlib import Path
 import shutil

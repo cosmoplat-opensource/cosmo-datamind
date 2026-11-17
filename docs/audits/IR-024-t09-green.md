@@ -2,7 +2,7 @@
 
 - 日期：2026-11-10。
 - 授权：用户解释并审阅 T08 测试后要求“继续下一步”，进入 T09 实现。
-- 依据：[DR-070](../../specs/decisions/DR-070-robotics-dual-build.md)、[HTTP 与页面契约](../../specs/contracts/robotics-design-http-ui-v1.md)。
+- 依据：[DR-152](../../specs/decisions/DR-152-robotics-dual-build.md)、[HTTP 与页面契约](../../specs/contracts/robotics-design-http-ui-v1.md)。
 - 当前状态：98 项 T08 检查已转绿，完整 13 阶段通过；IR 保持 in-progress。
 
 ## 实现

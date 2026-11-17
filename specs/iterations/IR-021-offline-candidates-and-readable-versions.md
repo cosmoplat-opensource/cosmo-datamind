@@ -2,7 +2,7 @@
 
 - 状态：in-progress。
 - 日期：2026-11-06。
-- 关联：[DR-067](../decisions/DR-067-offline-candidates-and-readable-versions.md)。
+- 关联：[DR-149](../decisions/DR-149-offline-candidates-and-readable-versions.md)。
 - 范围依据：用户批准离线生成与适配记录分离，并要求直观版本编号。
 
 ## 目标 Goal
