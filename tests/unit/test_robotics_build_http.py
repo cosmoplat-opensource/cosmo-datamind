@@ -15,6 +15,45 @@ from tests.build_pipeline_support import blob_bytes, db_rows, failure_result, sh
 from tests.build_runtime_support import BASE_URL, ROOT, http_app, multipart, post, terminal, upload_args
 
 
+@pytest.mark.parametrize('value, expected', [(None, True), ('1', True), ('true', True), ('yes', True), ('on', True),
+                                          ('0', False), ('false', False), ('no', False), ('off', False)])
+def test_robotics_defaults_on_and_explicit_environment_switch_is_respected(tmp_path, monkeypatch, value, expected):
+    from flask import Flask
+    from bp_robotics import _config
+    monkeypatch.delenv('DATAMIND_ROBOTICS_ENABLED', raising=False)
+    if value is not None:
+        monkeypatch.setenv('DATAMIND_ROBOTICS_ENABLED', value)
+    app = Flask('robotics-default-switch')
+    root, enabled, _ = _config(app, tmp_path)
+    assert enabled is expected and not root.exists()
+    app.config['DATAMIND_ROBOTICS_ENABLED'] = not expected
+    assert _config(app, tmp_path)[1] is not expected
+
+
+def test_real_server_enables_robotics_without_an_explicit_switch(tmp_path):
+    import os
+    env = {k: v for k, v in os.environ.items() if not k.startswith('DATAMIND_')}
+    work = tmp_path / 'work'
+    work.mkdir()
+    (work / 'demo_ir.json').write_bytes(data_bytes())
+    env.update(DATAMIND_WORKDIR=str(work), DATAMIND_DB=str(ROOT / 'examples/demo_metrics.db'),
+               DATAMIND_DOMAIN_STORAGE_ROOT=str(tmp_path / 'storage'),
+               DATAMIND_ENGINE_DIR=str(tmp_path / 'no-engine'), DATAMIND_OUTPUTS_DIR=str(tmp_path / 'no-outputs'))
+    code = '''from server import app
+try:
+    with app.test_client() as client:
+        response = client.get('/api/robotics/capabilities', base_url='http://127.0.0.1')
+        assert response.status_code == 200 and response.json['enabled'] is True
+        response = client.post('/api/robotics/builds', json={}, base_url='http://127.0.0.1')
+        assert response.status_code == 400, response.get_data(as_text=True)
+finally:
+    app.extensions['robotics'].close()
+'''
+    result = subprocess.run([sys.executable, '-c', code], cwd=ROOT, env=env,
+                            capture_output=True, text=True, timeout=30)
+    assert result.returncode == 0, result.stderr + result.stdout
+
+
 def get(client, path):
     return client.get(path, base_url=BASE_URL)
 
