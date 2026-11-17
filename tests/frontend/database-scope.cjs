@@ -17,6 +17,23 @@ function fixture(){
  return {c,ctx,$,saved,messages,run:s=>vm.runInContext(s,ctx)};
 }
 const cases={
+ async explicit_graph_link_never_falls_back_to_another_source(){
+  const f=fixture(),drawn=[],scopes=[];let destroyed=0;
+  const ui=fs.readFileSync(path.join(root,'ui/index.html'),'utf8');
+  f.c.JL=async()=>[{id:'demo',name:'current source'}];
+  f.c.graphOptions=()=>'<option value="demo">current source</option>';
+  f.c.gQaSync=k=>scopes.push(k);f.c.drawGraph=k=>drawn.push(k);
+  f.c.gChart={destroy(){destroyed++;}};
+  f.run("let G_LIST_SEQ=0,G_DELETED_SELECTION=false,GRAPH_CUR={key:'demo'},GRAPH_HL={old:true};");
+  vm.runInContext(ui.slice(ui.indexOf('async function graphs(pref)'),ui.indexOf('// 与平台原版一致的 G6 渲染')),f.ctx);
+  f.$('#g_sel').value='demo';
+  await f.c.graphs('built_other_database');
+  assert.deepEqual(drawn,[]);assert.equal(f.$('#g_sel').value,'');
+  assert.equal(destroyed,1);assert.equal(f.c.gChart,null);
+  assert.equal(f.run('GRAPH_CUR.key'),'');assert.equal(f.run('GRAPH_HL'),null);
+  assert.match(f.$('#g_info').textContent,/数据库/);assert.equal(scopes.at(-1),null);
+  await f.c.graphs('demo');assert.deepEqual(drawn,['demo']);
+ },
  async scalar_kpi_does_not_invent_a_period(){
   const f=fixture();f.run("VZ_DATA={columns:['n'],rows:[{n:200}]}");
   f.$('#vz_type').value='kpi';f.$('#vz_x').value='n';f.$('#vz_y').selectedOptions=[{value:'n'}];

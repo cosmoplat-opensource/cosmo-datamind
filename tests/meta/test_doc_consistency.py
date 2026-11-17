@@ -5,25 +5,31 @@
 计数却曾漂移(文档称 119/531,实为 122/535)。本测试把真实计数与规范值对齐——
 代码一变即红,逼你同步更新文档与此常量。这是「文档漂移」的确定性校验。
 """
+import ast
 import re
 import pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
 # 规范值(集中定义)。改动路由/断言数时,必须同步改这里 + ARCHITECTURE.md/specs/map.md。
-EXPECT_ROUTES = 144
+EXPECT_ROUTES = 206
 EXPECT_ASSERTIONS = 548
 
 
 def _server_route_count():
-    """路由总数 = server.py 的 @app.* + 各 blueprint(bp_*.py)的 @bp_*.*。
-    IR-011 起路由按簇迁往 blueprint,总数不变、位置改变——故按全体来源计数。"""
+    """Count nested blueprint factories too; compare the actual merged route surface."""
     total = 0
-    src = (ROOT / "server.py").read_text(encoding="utf-8")
-    total += len(re.findall(r"^@app\.(?:route|get|post)", src, re.M))
-    for bp in sorted(ROOT.glob("bp_*.py")):
-        total += len(re.findall(r"^@bp_\w+\.(?:route|get|post)",
-                                bp.read_text(encoding="utf-8"), re.M))
+    for path in [ROOT / "server.py", ROOT / "asset_lifecycle.py", *ROOT.glob("bp_*.py")]:
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            for decorator in node.decorator_list:
+                if not (isinstance(decorator, ast.Call) and isinstance(decorator.func, ast.Attribute)):
+                    continue
+                owner = decorator.func.value
+                if (decorator.func.attr in {"route", "get", "post", "put", "patch", "delete"}
+                        and isinstance(owner, ast.Name) and (owner.id == "app" or owner.id.startswith("bp"))):
+                    total += 1
     return total
 
 

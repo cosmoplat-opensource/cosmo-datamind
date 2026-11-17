@@ -28,3 +28,9 @@ def test_multi_database_switch_keeps_catalog_and_answer_consistent(results):
     mine=[c for c in results if c.scenario=='多数据库切换']
     assert len(mine)==6
     assert all(c.ok for c in mine), '\n'.join(f'{c.id}: {c.detail}' for c in mine if not c.ok)
+
+
+def test_merged_contract_repair_and_lifecycle_match_golden_answers(results):
+    mine = [c for c in results if c.scenario == '合并后的问数与回收站']
+    assert len(mine) == 4
+    assert all(c.ok for c in mine), '\n'.join(f'{c.id}: {c.detail}' for c in mine if not c.ok)

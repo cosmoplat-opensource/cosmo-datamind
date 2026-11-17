@@ -1,0 +1,54 @@
+{
+  "iteration": "IR-029",
+  "decision": "DR-157",
+  "stage": "T02 RED",
+  "date": "2026-11-16",
+  "status": "pending-human-test-review",
+  "delivered": false,
+  "implementation_started": false,
+  "git_commit_created": false,
+  "user_database_changed": false,
+  "user_host_restarted": false,
+  "command": ".venv/bin/python -m pytest tests/unit/test_asset_lifecycle.py -q --junitxml=.check-results/ir029-t02/red-final.xml",
+  "exit_code": 1,
+  "result": {
+    "tests": 52,
+    "failures": 52,
+    "errors": 0,
+    "skipped": 0
+  },
+  "failure_reason": "All cases explicitly assert the missing ontology_assets.lifecycle service inside the test body; no collection/fixture errors.",
+  "sha256": {
+    "tests/unit/test_asset_lifecycle.py": "2ce043b87c5f5edd3639cb909bf7db7ae9cf71917609ebf944805899dbe65f90",
+    "specs/contracts/ontology-asset-lifecycle-v1.md": "ba2bad6a514ee0d4ed15bf5920b14304dc7e9a22f530136359608ff8b47f7732"
+  },
+  "review": "docs/audits/IR-029-t02-red-review.md",
+  "criterion_unchanged": true,
+  "deferred_to_t04_t05": [
+    "queue/delete admission races",
+    "waiting-session write freeze",
+    "all actual HTTP entrypoints and UI",
+    "old physical-delete entry delegation",
+    "scan resurrection, cache invalidation and process restart"
+  ],
+  "earlier_red": {
+    "tests": 45,
+    "failures": 45,
+    "errors": 0,
+    "skipped": 0,
+    "junit": ".check-results/ir029-t02/red.xml"
+  },
+  "frozen_red_file": ".check-results/ir029-t02/reviewed-tests.py",
+  "checks": {
+    "metadata": {
+      "tests": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "ruff": "passed",
+    "mypy": "passed",
+    "git_diff_check": "passed",
+    "ir028_product_source_hashes_unchanged": true
+  }
+}

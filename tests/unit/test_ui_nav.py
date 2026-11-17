@@ -34,10 +34,10 @@ def _groups():
     for gm in re.finditer(r'<div class="nav-group">(.*?)</div></div>', aside, re.S):
         blk = gm.group(1)
         name = re.search(r'class="gh"[^>]*>([^<]+)', blk)
-        items = re.findall(r'class="nav"\s+data-p="([a-z_]+)"', blk)
+        items = re.findall(r'class="nav"\s+data-p="([a-z_-]+)"', blk)
         out.append(((name.group(1).strip() if name else "?"), items))
         rest = rest.replace(gm.group(0), "")     # 摘掉分组块,余下才是顶层项
-    top = re.findall(r'class="nav(?: on)?" data-p="([a-z_]+)"', rest)
+    top = re.findall(r'class="nav(?: on)?" data-p="([a-z_-]+)"', rest)
     return out, top
 
 
@@ -115,11 +115,12 @@ class TestCatalogAndResponsiveBehavior:
 
 class TestNavGrouping:
     def test_every_page_reachable_and_count_stable(self):
-        """重排分组不得丢页:18 个页面模块必须仍可从侧栏抵达(DR-108、DR-109 共去掉 9 个页面)。"""
+        """重排分组不得丢页:22 个页面入口：保留 master 的 18 项及 DR-158 合并的四个领域入口。"""
         groups, top = _groups()
         allp = top + [p for _, ps in groups for p in ps]
-        assert len(allp) == 18, f"页面数 {len(allp)} ≠ 18"
-        assert not {"layers", "apis", "sysadmin", "agents", "assistant", "library", "skills", "jobs", "rules"} & set(allp)
+        assert len(allp) == 22, f"页面数 {len(allp)} ≠ 22"
+        assert {"library", "jobs", "robotics-task", "robotics-view"} <= set(allp)
+        assert not {"layers", "apis", "sysadmin", "agents", "assistant", "skills", "rules"} & set(allp)
         assert len(set(allp)) == len(allp), "存在重复的 data-p"
 
     def test_ontology_pages_in_one_group(self):

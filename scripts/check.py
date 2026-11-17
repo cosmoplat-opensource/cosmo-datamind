@@ -19,7 +19,9 @@ import time
 from urllib.request import urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
-ROUTE_LAYER = "server.py,bp_actions.py,bp_engine.py,bp_metrics.py,bp_semantic.py,bp_decision.py,srv_actions.py,srv_engine.py"
+ROUTE_LAYER = ("server.py,bp_actions.py,bp_engine.py,bp_metrics.py,bp_semantic.py,bp_decision.py,srv_actions.py,srv_engine.py,"
+               "asset_lifecycle.py,bp_robotics.py,bp_robotics_application.py,bp_robotics_review.py,"
+               "bp_robotics_task.py,bp_application_contracts.py")
 
 
 def isolated_env(directory):
@@ -51,13 +53,17 @@ def isolated_env(directory):
 
 def run_check(name, args, env, reports, results):
     start = time.monotonic()
+    # DR-154: T03's 2232 cases took 2017s under coverage. T05 adds 52 service/task
+    # cases, including repeated immutable JSON/RDF validation and complete task flows.
+    # Budget one bounded hour; preserve test selection, coverage gates and other budgets.
+    timeout = 3600 if name == "unit" else 360
     with (reports / f"{name}.log").open("w", encoding="utf-8") as log:
         process = subprocess.Popen(args, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT,
                                    start_new_session=True)
         try:
-            code = process.wait(timeout=360)
+            code = process.wait(timeout=timeout)
         except subprocess.TimeoutExpired:
-            log.write("\nFAIL: acceptance process exceeded 360 seconds\n")
+            log.write(f"\nFAIL: acceptance process exceeded {timeout} seconds\n")
             code = 124
         finally:
             if os.name == "posix":
@@ -89,6 +95,9 @@ def main():
     with tempfile.TemporaryDirectory(prefix="datamind-check-") as raw:
         env = isolated_env(Path(raw))
         env["COVERAGE_FILE"] = str(reports / ".coverage")
+        # DR-147: targeted checks may use different follow-imports settings.
+        # Do not reuse their incremental type cache for the full regression gate.
+        env["MYPY_CACHE_DIR"] = str(reports / ".mypy_cache")
         py = sys.executable
         if args.suite in ("unit", "all"):
             for name, command in (
@@ -140,6 +149,18 @@ def main():
                         run_check("build-browser", [py, "tests/frontend/build-browser.py",
                                   "--url", env["DATAMIND_URL"], "--output", str(reports / "build-browser")],
                                   env, reports, results)
+                        # DR-147: owns an enabled server/root, never reuses the legacy server.
+                        run_check("robotics-browser", [py, "tests/frontend/robotics-build-browser.py",
+                                  "--output", str(reports / "robotics-browser")], env, reports, results)
+                        run_check("robotics-review-browser", [py, "tests/frontend/robotics-review-browser.py",
+                                  "--output", str(reports / "robotics-review-browser")], env, reports, results)
+                        run_check("robotics-task-browser", [py, "tests/frontend/robotics-task-browser.py",
+                                  "--output", str(reports / "robotics-task-browser")], env, reports, results)
+                        run_check("robotics-design-browser", [py, "tests/frontend/robotics-design-browser.py",
+                                  "--output", str(reports / "robotics-design-browser")], env, reports, results)
+                        # DR-155: real fixed-version detail, preparation and history navigation.
+                        run_check("ontology-detail-browser", [py, "tests/frontend/ontology-detail-browser.py",
+                                  "--output", str(reports / "ontology-detail-browser")], env, reports, results)
                 finally:
                     server.terminate()
                     try:

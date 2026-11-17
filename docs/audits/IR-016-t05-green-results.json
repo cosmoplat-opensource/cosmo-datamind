@@ -1,0 +1,111 @@
+{
+  "iteration": "IR-016",
+  "task": "T05",
+  "phase": "GREEN",
+  "date": "2026-11-02",
+  "robotics_tests": {
+    "passed": 39,
+    "failed": 0,
+    "skipped": 0
+  },
+  "approved_test_sha256": {
+    "tests/robotics_support.py": "87d5e6601cc52115384fab6917ff748a9dae82cff5a04265bb7f6779abe2f44a",
+    "tests/unit/test_robotics_baseline.py": "c8e5de2b1eef6968094f2e9377788cc9c9125ecc824c850c675a4c20634d4162",
+    "tests/unit/test_robotics_imports.py": "84b300e4ca22e2610712e553f542921fef5ff1c69f0d1688268a4638d1178501",
+    "tests/unit/test_robotics_semantics.py": "3628b70bdd7456dd1e64f7c8c14a6874e89d1e63d788aa90c7aaef3e46d5692c",
+    "tests/unit/test_robotics_compiler.py": "e8cd7dd3ac6db4142f2353d32610bf9dd8ef1de708193dd0a9c2bf60ceecbabf",
+    "tests/unit/test_robotics_publication.py": "54464a4b937e1069ba78adc01a001a56a8fcb44be9a870b3e062ea20965a8775"
+  },
+  "full_check_command": "env PATH=\"/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH\" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir016-t05-all",
+  "full_check_exit_code": 0,
+  "checks": [
+    {
+      "name": "lint",
+      "exit_code": 0,
+      "seconds": 0.064,
+      "log": "lint.log"
+    },
+    {
+      "name": "types",
+      "exit_code": 0,
+      "seconds": 0.566,
+      "log": "types.log"
+    },
+    {
+      "name": "unit",
+      "exit_code": 0,
+      "seconds": 48.495,
+      "log": "unit.log"
+    },
+    {
+      "name": "coverage",
+      "exit_code": 0,
+      "seconds": 0.365,
+      "log": "coverage.log"
+    },
+    {
+      "name": "integration",
+      "exit_code": 0,
+      "seconds": 7.688,
+      "log": "integration.log"
+    },
+    {
+      "name": "strict10",
+      "exit_code": 0,
+      "seconds": 0.216,
+      "log": "strict10.log"
+    },
+    {
+      "name": "test_ui",
+      "exit_code": 0,
+      "seconds": 123.092,
+      "log": "test_ui.log"
+    },
+    {
+      "name": "test_ui_ops",
+      "exit_code": 0,
+      "seconds": 42.994,
+      "log": "test_ui_ops.log"
+    },
+    {
+      "name": "build-browser",
+      "exit_code": 0,
+      "seconds": 2.321,
+      "log": "build-browser.log"
+    }
+  ],
+  "report_directory": ".check-results/ir016-t05-all",
+  "unit_result": "868 passed, 5 optional upstream skips",
+  "integration_result": "551 passed, 8 optional upstream skips",
+  "coverage_percent": 87.2,
+  "coverage_threshold": 81.0,
+  "ui_result": "64 checks passed; UI operations 50 passed, 3 live-model skips; build-browser 10 passed",
+  "compatibility": {
+    "original_agent": {
+      "exit_code": 0,
+      "stdout": "True True",
+      "source_sha256": {
+        "ontology_backend.py": "0602cff05c5ec083d284301858ae96592a6835c39b111fab16be7c4712f74a7b",
+        "skill_runtime.py": "fee8ec4ed2d7a1438e8b528d35363a8fa4f1ac05b1e75b615ba601fe8eaeafce"
+      }
+    },
+    "normalized_negative_checks": [
+      {
+        "change": "binding",
+        "rejected": true,
+        "reason": "Validation Report\nConforms: False\nResults (1):\nConstraint Violation in SPARQLConstraintComponent (http://www.w3.org/ns/shacl#SPARQLConstraintComponent):\n\tSeverity: sh:Violation\n\tSource Shape: s:BindingOwnershipShape\n\tFocus Node: s:grasp_3__target\n\tValue Node: s:grasp_3__target\n\tSource Constraint: [ sh:message Literal(\"绑定参数必须属于被调用技能，且方向一致。\") ; sh:select Literal(\"PREFIX s: <https://example.org/ur-skill#>\n        SELECT $this WHERE {\n          ?call s:hasBinding $this ; s:invokesSkill ?skill .\n          $this s:bindsParameter ?p ; s:bindingDirection ?d .\n          FILTER NOT EXISTS {\n            ?skill (s:hasInput|s:hasOutput) ?p . ?p (s:direction|s:mapsToPort/s:direction) ?d .\n          }\n        }\") ]\n\tMessage: 绑定参数必须属于被调用技能，且方向一致。\n"
+      },
+      {
+        "change": "condition",
+        "rejected": true,
+        "reason": "Validation Report\nConforms: False\nResults (1):\nConstraint Violation in HasValueConstraintComponent (http://www.w3.org/ns/shacl#HasValueConstraintComponent):\n\tSeverity: sh:Violation\n\tSource Shape: [ sh:hasValue Literal(\"coordinate_frame\", datatype=xsd:string) ; sh:maxCount Literal(\"1\", datatype=xsd:integer) ; sh:path s:ruleId ]\n\tFocus Node: s:PoseInRobotFrame\n\tResult Path: s:ruleId\n\tMessage: Node s:PoseInRobotFrame->s:ruleId does not contain a value in the set: ['Literal(\"coordinate_frame\", datatype=xsd:string)']\n"
+      },
+      {
+        "change": "duplicate_step",
+        "rejected": true,
+        "reason": "Validation Report\nConforms: False\nResults (1):\nConstraint Violation in SPARQLConstraintComponent (http://www.w3.org/ns/shacl#SPARQLConstraintComponent):\n\tSeverity: sh:Violation\n\tSource Shape: s:ProcedureShape\n\tFocus Node: s:PickPlace_Procedure\n\tValue Node: s:PickPlace_Procedure\n\tSource Constraint: [ sh:message Literal(\"同一流程内步骤序号不能重复。\") ; sh:select Literal(\"PREFIX s: <https://example.org/ur-skill#>\n        SELECT $this WHERE {\n          $this s:hasStep ?a, ?b . ?a s:stepIndex ?i . ?b s:stepIndex ?i .\n          FILTER (?a != ?b)\n        }\") ]\n\tMessage: 同一流程内步骤序号不能重复。\n"
+      }
+    ]
+  },
+  "scope": "Publication and loading only; strict task generation, authoring draft API and offline demo remain pending."
+}

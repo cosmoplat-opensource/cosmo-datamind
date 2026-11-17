@@ -27,7 +27,13 @@
 """
 import re
 
-_IDENT = r"[A-Za-z_][A-Za-z0-9_.\"`\[\]]*"
+# DR-156 / IR-028 T06: SQLite quotes must not turn a correct count into a mismatch.
+_PART = r'(?:[A-Za-z_][A-Za-z0-9_]*|"[^"]+"|`[^`]+`|\[[^\]]+\])'
+_IDENT = _PART + r'(?:\s*\.\s*' + _PART + r')?'
+
+
+def _table_name(value):
+    return re.sub(r'["`\[\]\s]', '', value).lower()
 
 
 from ir_shape import obj_names as _obj_names           # 取名规则集中定义(超集)
@@ -64,11 +70,11 @@ def actual_intent(sql, ir):
     只认真实表:剔除 CTE 名与子查询别名——把 CTE 当成表会让「SQL 查了什么」失真。
     """
     s = re.sub(r"'(?:[^']|'')*'", "''", sql or "")       # 字符串常量里的词不是表名(DR-080)
-    ctes = {m.group(1).lower() for m in
+    ctes = {_table_name(m.group(1)) for m in
             re.finditer(r"(?:\bwith\b|,)\s*(%s)\s+as\s*\(" % _IDENT, s, re.I)}
     tabs = set()
     for m in re.finditer(r"\b(?:from|join)\s+(%s)" % _IDENT, s, re.I):
-        t = m.group(1).strip().strip('"`[]').lower()
+        t = _table_name(m.group(1))
         t = t.split(".")[-1] if t.startswith("up.") else t   # 上传库前缀不影响表名比对
         if t and t not in ctes:
             tabs.add(t)

@@ -24,6 +24,8 @@ import ontology_release
 import skill_registry
 import ontology_grounding
 import content_quality
+from qa_application import (QAContractError, QARequestGate, qa_contract_failure,
+                            qa_contract_cache_key, qa_record_delete)
 import doc_chunks
 import build_prep
 import ontology_domain  # DR-066:有效行规则(验收与问数共用)
@@ -39,6 +41,18 @@ import intent_check     # DR-026/073:双盲意图核对、答非所问时重写�
 import build_cleaning   # DR-063:构建后自动复核、问数时套用清洗规则
 import ext_sample
 import llm_json      # DR-058:LLM 回复 JSON 抽取与提议形状校验的集中定义
+
+class _QAHost:
+    """Live host globals also work for importlib loaders without sys.modules registration — DR-156."""
+    def __getattr__(self, name):
+        try:
+            return globals()[name]
+        except KeyError:
+            raise AttributeError(name) from None
+
+
+_QA_HOST = _QAHost()
+
 
 # ── 运维日志(结构化、可分级、可重定向)──────────────────────────────
 # 诊断信息一律走 logging 而非 print:print 混在 stdout 里既无级别也无时间戳,
@@ -79,7 +93,7 @@ _LOG = logging.getLogger("datamind")
 # DR-043 蓝图化前置:基础路径与原语(路径/只读连接/只读SQL判定/写锁/原子写)收敛到共享上下文,与后续 blueprint 共用
 from srv_context import (HERE, ROOT, DB, UPLOAD_DB, WORK, confine, sql_code,
                          ro_connect, sql_is_readonly, _WRITE_LOCK, _atomic_json, _atomic_text,
-                         _atomic_bytes)
+                         _atomic_bytes, _RDF_LOCK)
 # 引擎运行时与配置层(跨簇共享,故先于路由抽出;见 srv_engine 模块头)
 # engine 路由迁出后,server 仅用这几项:运行时选择、引擎回复语义、启动自举与按任务选模
 from srv_engine import (runtime_cached, _drv_order, _looks_like_error,
@@ -497,7 +511,7 @@ def _open_api_url(url, timeout=12):
     req = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": "DataMind/1.0"})
     return opener.open(req, timeout=timeout)
 
-def load_ir(key):
+def _load_ir_original(key):
     if _bad_gkey(key): return None
     if key.startswith("built_"):
         raw = _load_json(_confined(WORK, key + ".json"))
@@ -507,6 +521,11 @@ def load_ir(key):
     if key.startswith("forged_"):
         return _load_json(_confined(os.path.join(PLATFORM, "data", "forged"), key[7:] + ".json"))
     return _load_json(IR_SOURCES.get(key, {}).get("paths", []))
+
+def load_ir(key):
+    import asset_lifecycle
+    fixed=asset_lifecycle.effective(_QA_HOST,key)
+    return fixed if fixed is not None else _load_ir_original(key)
 
 # ── BFO 2020 / IOF Core 对齐(官方 IRI + 定义域/值域检查)──
 _KIND_BFO = ontology_grounding.KIND_DEFAULTS
@@ -636,7 +655,16 @@ def q(sql, db=None, limit=500, attach_uploads=False, clean=None):
     con.set_progress_handler(lambda: 1 if time.time() > deadline[0] else 0, 10000)
     # 单个值的上限:挡住 zeroblob / 递归拼接造出的几百 MB 的值,否则一条查询就能占满内存
     try: con.setlimit(sqlite3.SQLITE_LIMIT_LENGTH, _MAX_VALUE_BYTES)
-    except (AttributeError, sqlite3.Error): pass
+    except AttributeError:
+        # Python 3.10 has no Connection.setlimit. Bound explicit BLOB allocation
+        # before SQLite allocates it; retain the existing time/result limits.
+        def blob_size(value, minimum):
+            try: size = int(float(value)) if value is not None else 0
+            except (TypeError, ValueError, OverflowError): size = 0
+            if size > _MAX_VALUE_BYTES: raise sqlite3.DataError('value too large')
+            return max(minimum, size)
+        con.create_function('zeroblob', 1, lambda n: bytes(blob_size(n, 0)))
+        con.create_function('randomblob', 1, lambda n: os.urandom(blob_size(n, 1)))
     try:
         cur = con.execute(sql)
         rows, cut = [], 0
@@ -693,7 +721,7 @@ app.register_blueprint(_bp_actions)
 # rdflib 的 SPARQL 解析器基于 pyparsing,其 packrat 缓存/语法状态为进程级全局且非线程安全:
 # 多请求并发跑 SPARQL(或 SPARQL 与 pyshacl 内部 SPARQL 相撞)会污染语法,报出
 # 『Expected SelectQuery, found OPTIONAL』『postParse2() missing arg』等假语法错。故串行化所有 SPARQL 语法操作。
-_RDF_LOCK = threading.Lock()
+# _RDF_LOCK is shared with ontology_assets through srv_context (DR-146).
 
 def _bounded(fn, secs, default=None):
     """守护线程内跑 fn,最多等 secs 秒;超时则放弃并返回 default,保证外层请求永不卡死。"""
@@ -981,7 +1009,9 @@ def _data_window():
     if hit and time.time() - hit[0] < 600:
         return hit[1]
     win = ""
+    available, _ = _qa_table_inventory()
     for tbl, col in (("fact_sales_order", "order_date"), ("dws_production_daily", "date")):
+        if tbl not in available: continue
         try:
             r = q(f'SELECT MIN("{col}") a, MAX("{col}") b FROM "{tbl}"', limit=1)
             row = (r.get("rows") or [{}])[0]
@@ -1103,7 +1133,9 @@ def _table_cols(table):
     # 表名来自本体产物,按标识符白名单校验后才拼进 PRAGMA,与全站的标识符校验规则一致
     if not t or not re.fullmatch(_SQL_IDENT, t): return []
     cache_key = (db_path, raw, _stat_sig(db_path, str(db_path) + "-wal"))
-    if cache_key in _COLS_CACHE: return _COLS_CACHE[cache_key]
+    # DR-156: another request may clear this cache while refreshing a connection.
+    cached_columns = _COLS_CACHE.get(cache_key)
+    if cached_columns is not None: return cached_columns
     try:
         con = ro_connect(db_path)
         try:
@@ -1644,7 +1676,7 @@ def _anchor_ir(graph_keys=None):
     objs, links, seen, sl = [], [], set(), set()
     import workload_concepts
     layers = {}
-    for k in keys:                                   # 多选:归一到示例形状后合并,按主键/端点对去重
+    for k in keys:                                   # 多选:按对象主键及关系端点+角色去重
         ir = load_ir_edited(k) or load_ir(k) or {}
         layers = workload_concepts.merge_layers(layers, ir)
         rels, sk, tk = _rels(ir)
@@ -1658,8 +1690,9 @@ def _anchor_ir(graph_keys=None):
             objs.append(o)
         for r in rels:
             pair = (r.get(sk), r.get(tk))
-            if not all(pair) or pair in sl: continue
-            sl.add(pair); r = dict(r); r["source"], r["target"] = pair; links.append(r)
+            identity = ir_shape.rel_id(r)
+            if not all(pair) or identity in sl: continue
+            sl.add(identity); r = dict(r); r["source"], r["target"] = pair; links.append(r)
     return {"objects": objs, "links": links, **layers}, keys, ""
 
 
@@ -1716,7 +1749,9 @@ _SOURCE_KEYS_CACHE: dict = {}
 def _source_graph_keys(path):
     """适用于 path 这个库的本体键。结论按相关文件的指纹缓存:没有适用的内置示例本体时,
     默认图谱的判断在每个请求上都会走到这里,不能每次都读一遍所有构建产物。"""
-    files = [path, _BUILD_CONN_F, *(q for v in IR_SOURCES.values() for q in v.get("paths", []))]
+    import asset_lifecycle
+    lifecycle_db = str(asset_lifecycle.root_for(_QA_HOST) / 'domain.sqlite3')
+    files = [lifecycle_db, lifecycle_db + '-wal', path, _BUILD_CONN_F, *(q for v in IR_SOURCES.values() for q in v.get("paths", []))]
     files += sorted(glob.glob(os.path.join(PLATFORM, 'data', 'forged', '*.json')))
     files += sorted(glob.glob(os.path.join(WORK, 'built_*.json'))) + sorted(glob.glob(os.path.join(WORK, 'edits_*.json')))
     if _IR_PIN.get():                            # 配对回放读的是旧版本,不读也不写缓存
@@ -1738,6 +1773,8 @@ def _source_graph_keys_uncached(path):
     keys += [os.path.basename(p)[:-5] for p in sorted(glob.glob(os.path.join(WORK, 'built_*.json')), key=os.path.getmtime, reverse=True)]
     out = []
     for key in dict.fromkeys(keys):
+        import asset_lifecycle
+        if asset_lifecycle.deleted(_QA_HOST, key): continue
         ir = load_ir_edited(key)
         if not ir or not database_scope.same_path(_source_graph_path(ir), path):
             continue                             # 读不到内容的不算
@@ -1834,6 +1871,8 @@ def _database_scope_guard():
     for key in filter(None, keys):
         if not isinstance(key, str) or _bad_gkey(key):
             return jsonify({'error': '非法图谱键'}), 400
+        import asset_lifecycle
+        if request.endpoint in _QA_ENDPOINTS and asset_lifecycle.deleted(_QA_HOST, key): continue
         ir = load_ir_edited(key)
         if not ir:
             return jsonify({'error': '所选本体不存在，请重新选择', 'code': 'graph_not_found'}), 404
@@ -1872,6 +1911,8 @@ def _qa_source_for(graph_keys):
     for k in dict.fromkeys(graph_keys or []):
         if not k or _bad_gkey(k):
             continue
+        import asset_lifecycle
+        if asset_lifecycle.deleted(_QA_HOST, k): continue
         paths.add(_graph_source_db(load_ir_edited(k) or load_ir(k) or {}))
     return paths.pop() if len(paths) == 1 and None not in paths else None
 
@@ -2017,6 +2058,13 @@ def _trace_objs(trace, objs, reason, hits=None):
                                  "ncol": len(o.get("attrs") or [])})
 
 
+def _qa_literal_tables(question, objects):
+    """DR-156: recognize bound SQL identifiers beside Chinese, without prefix matches."""
+    return {o['table'] for o in objects if o.get('table') and re.search(
+        r'(?<![A-Za-z0-9_])' + re.escape(o['table']) + r'(?![A-Za-z0-9_])',
+        question, re.I)}
+
+
 def build_context(question, focus_tables=None, trace=None, graph_keys=None):
     """从本体挑相关表/列/指标,组紧凑 schema 上下文。
 
@@ -2128,6 +2176,7 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
         if trace is not None:
             trace["focus_miss"] = len(ft)             # 点选的表在本体里一张都没有 → 转打分召回,不静默当作已限定
     tabs, hmap = [], {}
+    literal_tables = _qa_literal_tables(question, ir.get('objects', []))
     _kw_tables = {w.lower() for w in kws if "_" in w}
     _found: list = []
     _owners = _value_owners(question, [x for x in ir.get("objects", []) if x.get("table")], found=_found)
@@ -2158,6 +2207,8 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
         hs += [h for h in _sem if h not in hs]
         _own = _owners.get((o.get("table") or "").lower()) or []
         hs = _own + [h for h in hs if h not in _own]
+        if o.get("table") in literal_tables and o["table"] not in hs:
+            hs.insert(0, o["table"])
         if hs and o.get("table"): hmap[o["table"]] = hs[:6]
         # DR-070 计分:中文名称命中按长度计(问句里原样出现的业务名最可信),术语词典折出的英文词每个记 1 分。
         # 只数命中个数时,「配置 → config」一类泛词让一串配置表与「计量关系」同分,后者按顺序被挤出上下文
@@ -2175,7 +2226,7 @@ def build_context(question, focus_tables=None, trace=None, graph_keys=None):
             _rs += 12
         # DR-072 同分时偏向主数据表:已验证关系多的对象(设备主表、用能单元)排在外围同名表前面
         tabs.append((_rs + (min(3.0, math.log2(1 + _deg.get(o.get("name"), 0))) if _rs > 0 else 0), o))
-    tabs.sort(key=lambda x: -x[0])
+    tabs.sort(key=lambda x: (x[1].get('table') in literal_tables, x[0]), reverse=True)
     _hit = [o for s0, o in tabs[:8] if s0 > 0]
     picked = _hit or [o for _, o in tabs[:5]]
     _trace_objs(trace, picked, "关键词命中" if _hit else "无命中·默认候选", hmap)
@@ -2894,7 +2945,7 @@ def agent_sql_plan(question, context, steps, probe_runner=None):
     return None
 
 
-def _probe_runner(clean=None, scope=None):
+def _probe_runner(clean=None, scope=None, gate=None):
     """探查查询的执行器:只读、最多 20 行、语句超时同 q();出错时把错误原文返回给模型。
     scope(sql) → (ok, 原因):限定了本体或数据表范围时,探查同样不得读范围之外的表(DR-098)。"""
     def run(sql):
@@ -2905,7 +2956,9 @@ def _probe_runner(clean=None, scope=None):
             if not okp:
                 return "拒绝:" + whyp
         try:
-            d = q(sql, limit=20, attach_uploads=True, clean=clean)
+            from contextlib import nullcontext
+            with gate.execution(sql) if gate is not None else nullcontext():
+                d = q(sql, limit=20, attach_uploads=True, clean=clean)
         except Exception as e:                                   # noqa: BLE001
             return f"错误:{str(e)[:160]}"
         cols = d.get("columns") or []
@@ -2948,7 +3001,9 @@ def fallback_plan(question, ir=None, focus_tables=None):
     if count_question and not qualified_count:
         matched = [o for o in available if any(
             len(n) >= 2 and n.lower() in question.lower() for n in ir_shape.name_variants(o))]
-        targets = matched or (available if focused else [])
+        literal_tables = _qa_literal_tables(question, available)
+        targets = ([o for o in available if o['table'] in literal_tables]
+                   if literal_tables else matched or (available if focused else []))
         by_table = {o["table"]: o for o in targets}
         if len(by_table) == 1:
             table, obj = next(iter(by_table.items()))
@@ -2964,7 +3019,7 @@ def fallback_plan(question, ir=None, focus_tables=None):
                 if len(name) >= 2 and name.lower() in remaining.lower():
                     remaining = re.sub(re.escape(name), "", remaining, count=1, flags=re.I)
                     break
-            remaining = re.sub(r"^(?:请问|请统计|统计)?\s*(?:这张表|该表|当前表|所选数据表|所选表|选中的表)?", "", remaining)
+            remaining = re.sub(r"^(?:请问|请统计|统计)?\s*(?:这个表|这张表|该表|当前表|所选数据表|所选表|选中的表)?", "", remaining)
             simple_count = re.fullmatch(
                 r"(?:的)?(?:(?:一共|总共|共有|共|有)?(?:多少|几)(?:条|行)?(?:记录|数据)|"
                 r"(?:记录|数据|行)(?:总数|数|数量)(?:是|有)?(?:多少|几)?(?:条|行)?)(?:吗)?|"
@@ -3169,6 +3224,8 @@ def graphs():
     inv_sig = _stat_sig(_active_db(), UPLOAD_DB)
     seen = set()
     def add(k, cat, paths, name=None):
+        import asset_lifecycle
+        if asset_lifecycle.deleted(_QA_HOST,k): return
         row = _graph_row(k, cat, paths, inventory, inv_sig, name=name)
         if row: seen.add(k); out.append(row)
     for k, v in IR_SOURCES.items():
@@ -3620,6 +3677,9 @@ def load_ir_edited(key):
     某条操作应用不上(目标关系已不在图谱里、记录文件损坏)时,其余操作照常应用,
     失败的那条记入 edit_replay_failures(key) 并计数(DR-097)。此前异常被直接吞掉:
     人工确认过的结论从视图里消失,接口照常返回 200,没有任何线索。"""
+    import asset_lifecycle
+    fixed=asset_lifecycle.effective(_QA_HOST,key)
+    if fixed is not None:return fixed
     ir = load_ir(key)
     if not ir: return None
     ir = json.loads(json.dumps(ir))
@@ -3631,6 +3691,12 @@ def load_ir_edited(key):
         failed.append({"index": -1, "op": "(编辑记录)", "target": "", "error": "编辑记录无法读取:" + type(e).__name__})
     if _pinned(key):
         ops = ops[:_IR_PIN.get()[key]]
+    return _replay_ir(key, ir, ops, failed)
+
+
+def _replay_ir(key, ir, ops, failed=None):
+    """DR-158: one replay path for raw files, fixed versions and feedback pins."""
+    failed = [] if failed is None else failed
     for i, op in enumerate(ops):
         try: apply_any(ir, op)
         except Exception as e:                                  # noqa: BLE001
@@ -3794,7 +3860,6 @@ def _forged_path(fid):
         p = _confined(d, fid + ".json")
         if os.path.exists(p): return p
     return _confined(FORGED_DIR, fid + ".json")
-
 @app.get("/api/ont/runtimes")
 def ont_runtimes():
     try:
@@ -4245,6 +4310,8 @@ def ont_forged():
     for dirp in _forged_dirs():
         for p2 in sorted(glob.glob(os.path.join(dirp, "*.json"))):
             fid = os.path.basename(p2)[:-5]
+            import asset_lifecycle
+            if asset_lifecycle.deleted(_QA_HOST,'forged_'+fid):continue
             if fid in seen: continue          # 同 id 以先扫到的(当前写入目录)为准
             seen.add(fid)
             try:
@@ -4279,10 +4346,19 @@ def ont_save():
 @app.post("/api/ont/forged/delete")
 def ont_forged_delete():
     fid = str((request.json or {}).get("id") or "")
+    import asset_lifecycle
+    with _WRITE_LOCK:
+        logical=asset_lifecycle.legacy_delete(_QA_HOST,'forged_'+str(fid),request.json or {})
+        if logical is not None:return jsonify(logical)
     if not re.match(r"^[\w\-]+$", fid): return jsonify({"error": "bad id"}), 400
     p2 = _forged_path(fid)
     if not os.path.exists(p2): return jsonify({"error": "不存在"}), 404
-    os.remove(p2)
+    try:
+        with _WRITE_LOCK:
+            qa_record_delete(_QA_HOST, 'forged_' + fid)
+            os.remove(p2)
+    except (QAContractError, OSError):
+        return jsonify({"error": "删除记录保存失败，请稍后重试"}), 503
     # 同删 .ttl 伴生文件,避免孤儿。按 json 的实际所在目录取 —— 产物可能在引擎目录,
     # 而写入目录是 workdir,拿写入目录去拼会漏删
     ttl = p2[:-5] + ".ttl"
@@ -4821,7 +4897,9 @@ def _open_writable(key, need_objects=False):
     wp = _ir_write_path(key)
     if not wp:
         return None, None, (jsonify({"error": "该图谱为只读平台源,不支持回写(请选示例/应用/构建/锻造图谱)"}), 400)
-    ir = load_ir(key)
+    import asset_lifecycle
+    ir = asset_lifecycle.base(_QA_HOST, key)
+    if ir is None: ir = load_ir(key)
     if not ir:
         return None, None, (jsonify({"error": "图谱不存在"}), 404)
     if need_objects and not isinstance(ir.get("objects"), list):
@@ -5036,7 +5114,11 @@ def ont_rebuild():
     if os.path.exists(ep):
         with _WRITE_LOCK:
             discarded = ep + ".discarded"
-            os.replace(ep, discarded)          # 留底而非删除:误触可恢复
+            # Version the cleared overlay before moving the journal aside.
+            old_edits = _load_edits(key)
+            _atomic_json(ep, {**old_edits, 'ops': []})
+            _atomic_json_before_lifecycle(discarded, old_edits)
+            os.remove(ep)          # 留底而非删除:误触可恢复
     ir = load_ir(key)
     return jsonify({"ok": True, "objects": len(ir.get("objects", [])) if ir else 0,
                     "discarded_ops": n_ops,
@@ -5121,9 +5203,9 @@ def _qa_bypass_cache(body):
     return bool(value)
 
 
-def _qa_cache_begin(question, history, focus_tables, graph_keys, bypass=False, clean=True):
+def _qa_cache_begin(question, history, focus_tables, graph_keys, bypass=False, clean=True, gate=None):
     """为一次问数固定缓存键，并以线程安全方式读取或清除旧值。"""
-    key = _qa_key(question, history, focus_tables, graph_keys, clean=clean)
+    key = _qa_key(question, history, focus_tables, graph_keys, clean=clean, _gate=gate)
     with _QA_CACHE_LOCK:
         if bypass:
             _QA_CACHE.pop(key, None)
@@ -5147,7 +5229,7 @@ def _qa_scope(body):
     focus_tables = []
     for value in raw_tables:
         table = str(value or "").strip()
-        if table and re.fullmatch(_SQL_IDENT, table) and table not in focus_tables:
+        if table and re.fullmatch(r"(?:up\.)?" + _SQL_IDENT, table, re.I) and table not in focus_tables:
             focus_tables.append(table)
     graph_keys = []
     for value in raw_graphs:
@@ -5190,17 +5272,20 @@ def _qa_anchor_explanation(anchor, results=None):
         }
 
     used_tables, join_count, sql_count = [], 0, 0
-    ident = r'[A-Za-z_][A-Za-z0-9_."`\[\]]*'
+    part = r'(?:[A-Za-z_][A-Za-z0-9_]*|"[^"]+"|`[^`]+`|\[[^\]]+\])'
+    ident = part + r'(?:\s*\.\s*' + part + r')?'
+    def table_name(value):
+        return re.sub(r'["`\[\]\s]', '', value).lower()
     for result in results or []:
         sql = str((result or {}).get("sql") or "")
         if not sql:
             continue
         sql_count += 1
         join_count += len(re.findall(r"\bjoin\b", sql, re.I))
-        ctes = {m.group(1).lower() for m in
+        ctes = {table_name(m.group(1)) for m in
                 re.finditer(r"(?:\bwith\b|,)\s*(%s)\s+as\s*\(" % ident, sql, re.I)}
         for match in re.finditer(r"\b(?:from|join)\s+(%s)" % ident, sql, re.I):
-            table = match.group(1).strip().strip('"`[]').lower()
+            table = table_name(match.group(1))
             if table.startswith("up."):
                 table = table.split(".")[-1]
             if table and table not in ctes and table not in used_tables:
@@ -5223,7 +5308,7 @@ def _qa_anchor_explanation(anchor, results=None):
     }
 
 
-def _qa_key(question, history, focus=None, graphs=None, clean=True):
+def _qa_key(question, history, focus=None, graphs=None, clean=True, _gate=None):
     import hashlib
     db = _qa_db()
     source_sig = _stat_sig(db, db + "-wal", UPLOAD_DB, UPLOAD_DB + "-wal")
@@ -5242,7 +5327,13 @@ def _qa_key(question, history, focus=None, graphs=None, clean=True):
                    if isinstance(h, dict)]
     sig = json.dumps([question, history_sig, sorted(focus or []), sorted(graphs or []),
                       source_sig, _stat_sig(*paths), bool(clean), _ANSWER_STYLE.get()], ensure_ascii=False)
-    return hashlib.md5(sig.encode("utf-8")).hexdigest()
+    contract = qa_contract_cache_key(_QA_HOST, question, history, focus, graphs, _gate)
+    return hashlib.sha256((sig + contract).encode("utf-8")).hexdigest()
+
+
+def _qa_request_gate(body, question, focus, graphs):
+    return QARequestGate(_QA_HOST, graphs, focus, question, body=body)
+
 
 def _gate_category(why):
     """本体约束拦截原因归类,供指标统计(不含具体表名)。"""
@@ -5397,6 +5488,9 @@ def chat():
         results = (data or {}).get("results") if isinstance(data, dict) else None
         run.finish("ok" if results else "empty", results=len(results or []), cached=bool((data or {}).get("cached")))
         return resp
+    except QAContractError as exc:
+        run.finish("error", error=exc.code)
+        return jsonify(qa_contract_failure(exc)), 409
     except Exception as exc:
         run.finish("error", error=type(exc).__name__)
         raise
@@ -5412,17 +5506,18 @@ def _chat_impl():
     focus_tables, graph_keys = _qa_scope(body)
     if not question: return jsonify({"error": "empty"}), 400
     exact = _ANSWER_STYLE.get() == "exact"
-    bypass_cache = _qa_bypass_cache(body) or exact          # 精确作答与分析报告的结果不同,不共用缓存
-    cache_key, hit = _qa_cache_begin(
-        question, history, focus_tables, graph_keys, bypass=bypass_cache,
-        clean=body.get("clean", True) is not False)
-    if hit:
-        return jsonify({**hit, "cached": True})
-    ir_gate, gate_keys, fallback, qa_profile = _qa_anchor_ir(graph_keys)
-    scope_error = _qa_scope_error(graph_keys, gate_keys, fallback, qa_profile)
-    if scope_error:
-        return jsonify({"error": scope_error, "code": "ontology_not_queryable",
-                        "ontology": {"keys": gate_keys, **qa_profile}}), 422
+    bypass_cache = _qa_bypass_cache(body) or exact
+    try:
+        gate = _qa_request_gate(body, question, focus_tables, graph_keys)
+        if gate.blocked:
+            return jsonify(gate.failure()), 422
+        cache_key, hit = _qa_cache_begin(
+            question, history, focus_tables, graph_keys, bypass=bypass_cache, gate=gate, clean=body.get("clean", True) is not False)
+        if hit and gate.cached(hit):
+            return jsonify({**hit, "application_check": gate.public(), "cached": True})
+    except QAContractError as exc:
+        return jsonify(qa_contract_failure(exc)), 422
+    ir_gate, gate_keys, fallback, qa_profile = (gate.info[k] for k in ('ir','actual_keys','fallback','profile'))
     load_info = "加载本体上下文 · " + "、".join(_graph_name(key) for key in gate_keys) + _qa_source_note()
     if fallback: load_info += " · " + fallback
     steps = [{"step": "load_ontology", "ok": True, "info": load_info}]
@@ -5445,7 +5540,8 @@ def _chat_impl():
     if _dq["route"]["type"] != "lookup" and _PLAN_VARIANT.get():
         return jsonify({"routed_skip": True})       # 多路候选:非查数类型只由默认一路求解(推演会调用动作,不能重复发起)
     _strict = bool(graph_keys and gate_keys != ["demo"] and not fallback)
-    _ans = _qa_decision_answer(question, ir_gate, _dq,
+    with gate.reading():
+        _ans = _qa_decision_answer(question, ir_gate, _dq,
                                lambda _s: _qa_validate_sql(_s, ir_gate, strict=_strict, focus_tables=focus_tables), _qa_operator(body),
                                scope=lambda _t: _qa_scope_check(f'SELECT 1 FROM "{_t}"', ir_gate, strict=_strict, focus_tables=focus_tables))
     if _dq.get("error") and not any(x["step"] == "decision_error" for x in steps):
@@ -5453,7 +5549,7 @@ def _chat_impl():
     if _ans is not None:                            # 非查数类型:确定性求解的结果不进缓存(规则与数据随时会变)
         anchor["explanation"] = _qa_anchor_explanation(anchor)
         return jsonify(_qa_attach_record({"steps": steps, **_ans, "note": "", "summary": _ans["narrative"][:1200],
-                                          "metric_cards": _metric_cards(question, ir_gate), "anchor": anchor}, question, gate_keys))
+                                          "metric_cards": _metric_cards(question, ir_gate), "anchor": anchor, "application_check": gate.public()}, question, gate_keys))
     _xtext, _xn = _exemplar_text(q_eff)                     # DR-084 相似问题的已验证查询
     if _xn:
         ctx += "\n\n" + _xtext
@@ -5473,7 +5569,7 @@ def _chat_impl():
         _probe_scope = lambda _sql: _qa_scope_check(                               # noqa: E731
             _sql, ir_gate, strict=bool(graph_keys and gate_keys != ["demo"] and not fallback), focus_tables=focus_tables)
         plan = _bounded(lambda: agent_sql_plan(q_eff, ctx, steps,
-                                               probe_runner=_probe_runner(clean_rules, scope=_probe_scope)), 150)
+                                               probe_runner=_probe_runner(clean_rules, scope=_probe_scope, gate=gate)), 150)
     engine_plan = bool(plan) and not _sk
     degraded = False                           # DR-098 引擎没给出计划、改用内置模板作答:如实标出,且不进缓存
     if not plan:
@@ -5481,9 +5577,12 @@ def _chat_impl():
         plan = fallback_plan(q_eff, ir=ir_gate, focus_tables=focus_tables)
         degraded = True
     results, dim_warns, unresolved, blocked = [], [], [], []
-    held = []                                  # DR-086 精确作答:被拦下或意图存疑的查询,全部落空时作为带警示的答案
     for a in (plan.get("analyses") or [])[:1 if exact else 4]:
         sql = a.get("sql", "")
+        try:
+            gate.fresh()
+        except QAContractError as exc:
+            return jsonify(gate.failure(exc)), 409
         if not sql_is_readonly(sql):
             steps.append({"step": "exec_sql", "ok": False, "info": "非只读SQL被拒: " + sql[:60]}); continue
         okv, why = _qa_validate_sql(
@@ -5499,8 +5598,8 @@ def _chat_impl():
                     sql, ir_gate, strict=bool(graph_keys and gate_keys != ["demo"] and not fallback),
                     focus_tables=focus_tables)
         if not okv:
+            gate.validate_sql(sql)
             blocked.append(why)
-            held.append((a, sql, "未通过本体约束校验:" + str(why)[:120]))
             steps.append({"step": "ontology_gate", "ok": False, "info": "本体约束拦截:" + why}); continue
         # DR-026 双盲意图检测:本体约束校验管「SQL 合不合规」,这里管「答的是不是问的那件事」。
         # 只观测不阻断——确定性反解也会有漏判(如计算规则卡走视图名),
@@ -5520,7 +5619,6 @@ def _chat_impl():
                         steps.append({"step": "intent_repair", "ok": True, "info": "按问句提到的业务对象重写查询"})
             if _ic["verdict"] == "mismatch" and engine_plan:      # 已保存技能复用的 SQL 只观测不阻断(DR-026)
                 unresolved.append(_ic)
-                held.append((a, sql, "查询与问句提到的业务对象对不上"))
                 steps.append({"step": "intent_repair", "ok": False, "info": "查询与问句对象仍对不上,不作为答案给出"})
                 continue
             steps.append(intent_check.step_of(_ic))
@@ -5536,8 +5634,11 @@ def _chat_impl():
             pass
         data, err = None, ""
         try:
-            data = q(sql, attach_uploads=True, clean=clean_rules)
+            with gate.execution(sql):
+                data = q(sql, attach_uploads=True, clean=clean_rules)
             steps.append({"step": "exec_sql", "ok": True, "info": f'{a.get("title","")} → {len(data["rows"])}行'})
+        except QAContractError as exc:
+            return jsonify(gate.failure(exc)), 409
         except Exception as e:
             err = str(e)[:200]
             steps.append({"step": "exec_sql", "ok": False, "info": f'{a.get("title","")}: {err[:100]}'})
@@ -5551,8 +5652,11 @@ def _chat_impl():
                     focus_tables=focus_tables)
                 if okr:
                     try:
-                        data, sql, err = q(revised, attach_uploads=True, clean=clean_rules), revised, ""
+                        with gate.execution(revised):
+                            data, sql, err = q(revised, attach_uploads=True, clean=clean_rules), revised, ""
                         steps.append({"step": "self_check", "ok": True, "info": f"按结果核对后改写 → {len(data['rows'])}行"})
+                    except QAContractError as exc:
+                        return jsonify(gate.failure(exc)), 409
                     except Exception as e2:
                         steps.append({"step": "self_check", "ok": False, "info": "改写后执行出错:" + str(e2)[:80]})
                 else:
@@ -5563,15 +5667,6 @@ def _chat_impl():
             for _st in _clean_steps(data):
                 steps.append(_st)
             results.append({"title": a.get("title", "分析"), "sql": sql, "chart": a.get("chart") or {}, "data": data})
-    if exact and not results and held:          # DR-086 精确作答须给出一条 SQL:用第一条被拦下的查询,明确标注未通过校验
-        _a, _sql, _why = held[0]
-        try:
-            _d = q(_sql, attach_uploads=True, clean=clean_rules)
-            results.append({"title": _a.get("title", "分析"), "sql": _sql, "chart": _a.get("chart") or {}, "data": _d,
-                            "unverified": _why})
-            steps.append({"step": "exact_fallback", "ok": False, "info": "精确作答:采用未通过校验的查询 · " + _why})
-        except Exception as e:
-            steps.append({"step": "exact_fallback", "ok": False, "info": "未通过校验的查询执行出错:" + str(e)[:80]})
     if results:
         text = (_rule_summary(results) if exact
                 else _bounded(lambda: narrative_llm(question, results, steps), 50) or _rule_summary(results))
@@ -5586,7 +5681,7 @@ def _chat_impl():
     anchor["used"] = anchor["explanation"]["used_tables"]
     resp = {"steps": steps, "results": results, "narrative": text, "note": plan.get("note", ""),
             "summary": summary, "metric_cards": _record_metric_usage(_metric_cards(question, ir_gate), gate_keys[0]),
-            "anchor": anchor}
+            "anchor": anchor, "application_check": gate.public()}
     resp["evidence_card"] = _qa_lookup_card(question, results, ir_gate, _dq, resp["metric_cards"], text)
     _qa_attach_record(resp, question, gate_keys)
     if degraded: resp["degraded"] = True
@@ -5609,11 +5704,16 @@ def chat_stream():
         if not question:
             yield sse({"type": "error", "error": "empty"}); return
         focus_tables, graph_keys = _qa_scope(body)          # 与同步 /api/chat 共用作用域归一
-        cache_key, hit = _qa_cache_begin(
-            question, history, focus_tables, graph_keys, bypass=bypass_cache,
-            clean=body.get("clean", True) is not False)
-        if hit:
-            yield sse({"type": "done", **hit, "cached": True, "elapsed": 0.0, "session": session}); return
+        try:
+            gate = _qa_request_gate(body, question, focus_tables, graph_keys)
+            if gate.blocked:
+                yield sse({"type": "error", **gate.failure()}); return
+            cache_key, hit = _qa_cache_begin(
+                question, history, focus_tables, graph_keys, bypass=bypass_cache, gate=gate, clean=body.get("clean", True) is not False)
+            if hit and gate.cached(hit):
+                yield sse({"type": "done", **hit, "application_check": gate.public(), "cached": True, "elapsed": 0.0, "session": session}); return
+        except QAContractError as exc:
+            yield sse({"type": "error", **qa_contract_failure(exc)}); return
         def stp(step, ok, info=""):
             return {"step": step, "ok": ok, "info": info, "ts": _t.strftime("%H:%M:%S")}
         steps = []
@@ -5621,7 +5721,7 @@ def chat_stream():
             s = stp(step, ok, info); steps.append(s); return sse({"type": "step", **s})
         if focus_tables:
             yield push("scope_source", True, f"数据源限定 · {len(focus_tables)} 张表")
-        ir_gate, _gate_keys, _gate_fallback, qa_profile = _qa_anchor_ir(graph_keys)
+        ir_gate, _gate_keys, _gate_fallback, qa_profile = (gate.info[k] for k in ('ir','actual_keys','fallback','profile'))
         # 本体名要据实回显:此处曾写死「示例」,选了自建本体也照喊示例,
         # 与下一步 anchor_ontology 打架,读日志的人会以为锚错了本体
         yield push("load_ontology", True,
@@ -5630,7 +5730,7 @@ def chat_stream():
         if scope_error:
             yield push("scope_ontology", False, qa_profile.get("reason") or "所选本体不可问数")
             yield sse({"type": "error", "code": "ontology_not_queryable", "error": scope_error,
-                       "ontology": {"keys": _gate_keys, **qa_profile}})
+                       "ontology": {"keys": _gate_keys, **qa_profile}, "application_check": gate.public()})
             return
         q_eff, co = _carryover(question, history, ir_gate)      # B5 多轮指代:上文本体对象延续
         if co:
@@ -5656,7 +5756,8 @@ def chat_stream():
         for _st in _qa_decision_steps(_dq):
             yield push(*_st)
         _strict = bool(graph_keys and _gate_keys != ["demo"] and not _gate_fallback)
-        _ans = _qa_decision_answer(question, ir_gate, _dq,
+        with gate.reading():
+            _ans = _qa_decision_answer(question, ir_gate, _dq,
                                    lambda _s: _qa_validate_sql(_s, ir_gate, strict=_strict, focus_tables=focus_tables), _qa_operator(body),
                                    scope=lambda _t: _qa_scope_check(f'SELECT 1 FROM "{_t}"', ir_gate, strict=_strict, focus_tables=focus_tables))
         if _dq.get("error") and not any(x["step"] == "decision_error" for x in steps):
@@ -5664,7 +5765,7 @@ def chat_stream():
         if _ans is not None:
             anchor["explanation"] = _qa_anchor_explanation(anchor)
             _done = _qa_attach_record({"steps": steps, **_ans, "note": "", "summary": _ans["narrative"][:1200],
-                                       "metric_cards": _metric_cards(question, ir_gate), "anchor": anchor}, question, _gate_keys)
+                                       "metric_cards": _metric_cards(question, ir_gate), "anchor": anchor, "application_check": gate.public()}, question, _gate_keys)
             yield sse({"type": "done", **_done, "cached": False, "elapsed": round(_t.time() - t0, 1), "session": session})
             return
         _xtext, _xn = _exemplar_text(q_eff)                 # DR-084 相似问题的已验证查询
@@ -5702,7 +5803,7 @@ def chat_stream():
             try: box["v"] = agent_sql_plan(q_eff, ctx, plan_steps, probe_runner=_probe_runner(
                 clean_rules, scope=lambda _sql: _qa_scope_check(
                     _sql, ir_gate, strict=bool(graph_keys and _gate_keys != ["demo"] and not _gate_fallback),
-                    focus_tables=focus_tables)))
+                    focus_tables=focus_tables), gate=gate))
             except Exception: pass
             box["done"] = True
         if plan is not None:
@@ -5736,6 +5837,10 @@ def chat_stream():
             title = a.get("title", "分析")
             sql = a.get("sql", "")
             yield push("gen_sql", True, f"[{idx}/{len(analyses)}] 生成 SQL 规范:{title}")
+            try:
+                gate.fresh()
+            except QAContractError as exc:
+                yield sse({"type": "error", **gate.failure(exc)}); return
             if not sql_is_readonly(sql):
                 yield push("exec_sql", False, f"[{idx}] 非只读SQL被拒: " + sql[:50]); continue
             okv, why = _qa_validate_sql(
@@ -5752,6 +5857,7 @@ def chat_stream():
                         strict=bool(graph_keys and _gate_keys != ["demo"] and not _gate_fallback),
                         focus_tables=focus_tables)
             if not okv:
+                gate.validate_sql(sql)
                 blocked.append(why)
                 yield push("ontology_gate", False, f"[{idx}] 本体约束拦截:{why}"); continue
             yield push("ontology_gate", True, f"[{idx}] 本体校验通过 · 表与 JOIN 键均在本体边界内")
@@ -5785,7 +5891,8 @@ def chat_stream():
             except Exception:
                 pass
             try:
-                data = q(sql, attach_uploads=True, clean=clean_rules)
+                with gate.execution(sql):
+                    data = q(sql, attach_uploads=True, clean=clean_rules)
                 nrow = len(data["rows"])
                 yield push("exec_sql", True, f"[{idx}] 执行查询 → {nrow} 行 × {len(data['columns'])} 列")
                 for _st in _clean_steps(data):
@@ -5797,6 +5904,8 @@ def chat_stream():
                 one = {"title": title, "sql": sql, "chart": a.get("chart") or {}, "data": data}
                 results.append(one)
                 yield sse({"type": "result", "index": idx - 1, "result": one})   # 渐进推送:每完成一图即出
+            except QAContractError as exc:
+                yield sse({"type": "error", **gate.failure(exc)}); return
             except Exception as e:
                 yield push("exec_sql", False, f"[{idx}] {title}: {str(e)[:90]}")
         if results:
@@ -5834,7 +5943,7 @@ def chat_stream():
         anchor["used"] = anchor["explanation"]["used_tables"]
         resp = {"steps": steps, "results": results, "narrative": text, "note": plan.get("note", ""),
                 "summary": summary, "metric_cards": _record_metric_usage(_metric_cards(question, ir_gate), _gate_keys[0]),
-                "anchor": anchor}   # 随 done 落一份:命中缓存与历史回放时锚定视图不丢
+                "anchor": anchor, "application_check": gate.public()}   # 随 done 落一份:命中缓存与历史回放时锚定视图不丢
         resp["evidence_card"] = _qa_lookup_card(question, results, ir_gate, _dq, resp["metric_cards"], text)
         _qa_attach_record(resp, question, _gate_keys)
         if degraded: resp["degraded"] = True
@@ -5865,6 +5974,9 @@ def chat_stream():
                         results = max(results, len(ev.get("results") or []))
                 yield chunk
             run.finish("ok" if results else "empty", results=results)
+        except QAContractError as exc:
+            run.finish("error", error=exc.code)
+            yield "data: " + json.dumps({"type":"error", **qa_contract_failure(exc)}, ensure_ascii=False) + "\n\n"
         except GeneratorExit:
             run.finish("aborted")
             raise
@@ -7623,7 +7735,9 @@ def build_built():
     """已构建本体清单(built_*.json),供本体构建页展示历史产物"""
     out = []
     for p in sorted(glob.glob(os.path.join(WORK, "built_*.json")), key=os.path.getmtime, reverse=True):
-        k = os.path.basename(p)[:-5]; ir = _load_json(p)
+        import asset_lifecycle
+        if asset_lifecycle.deleted(_QA_HOST,os.path.basename(p)[:-5]):continue
+        k = os.path.basename(p)[:-5]; ir = load_ir_edited(k)
         if not isinstance(ir, dict) or not ir.get("objects"): continue
         if _active_source() and not database_scope.same_path(_source_graph_path(ir), _active_db()): continue
         g = ir_to_graph(k, ir)
@@ -7690,7 +7804,9 @@ def _release_guard():
     body = request.get_json(silent=True) if request.is_json else {}
     body = body if isinstance(body, dict) else {}
     keys = _qa_scope(body)[1] or ["demo"]
-    states = {k: _release_state(k) for k in keys if load_ir(k) is not None}
+    import asset_lifecycle
+    states = {k: _release_state(k) for k in keys
+              if not asset_lifecycle.deleted(_QA_HOST, k) and load_ir(k) is not None}
     blocked = {k: s for k, s in states.items() if not s["usable"]}
     preview = bool(body.get("preview")) and not request.headers.get("X-DataMind-Actor")
     if blocked and not preview:
@@ -7808,10 +7924,16 @@ def build_delete():
     """删除一个已构建本体产物"""
     k = str((request.json or {}).get("key") or "")
     if not re.match(r"^built_[\w]+$", k): return jsonify({"error": "非法 key"}), 400
+    import asset_lifecycle
+    with _WRITE_LOCK:
+        logical=asset_lifecycle.legacy_delete(_QA_HOST,k,request.json or {})
+        if logical is not None:return jsonify(logical)
     p = _confined(WORK, k + ".json")
     try:
-        if os.path.exists(p): os.remove(p)
-    except Exception as e: return jsonify({"error": str(e)[:80]}), 500
+        with _WRITE_LOCK:
+            qa_record_delete(_QA_HOST, k)
+            if os.path.exists(p): os.remove(p)
+    except (QAContractError, OSError): return jsonify({"error": "删除记录保存失败，请稍后重试"}), 503
     return jsonify({"ok": True})
 
 def _build_intent(q, sname, skills):
@@ -10959,17 +11081,47 @@ def viz_save():
 from bp_metrics import bp_metrics as _bp_metrics, configure_metrics as _configure_metrics  # noqa: E402
 _configure_metrics(load_graph=lambda k: (None if _bad_gkey(k) else (load_ir_edited(k) or load_ir(k))),
                    open_writable=lambda k: _open_writable(k), db_for_source=lambda s: _db_for_source(s),
-                   write_json=_atomic_json, write_lock=_WRITE_LOCK, default_graph=_active_graph_key)
+                   write_json=lambda path,value: _atomic_json(path,value), write_lock=_WRITE_LOCK, default_graph=_active_graph_key)
 app.register_blueprint(_bp_metrics)
 # ── 工艺路线层与决策层 blueprint(DR-117):约束 / 工艺路线 / 点亮矩阵 / 审计 ──
 from bp_decision import bp_decision as _bp_decision, configure_decision as _configure_decision  # noqa: E402
 _configure_decision(load_graph=lambda k: (None if _bad_gkey(k) else (load_ir_edited(k) or load_ir(k) or {})),
-                    open_writable=lambda k: _open_writable(k), write_json=_atomic_json, write_lock=_WRITE_LOCK,
+                    open_writable=lambda k: _open_writable(k), write_json=lambda path, value: _atomic_json(path, value), write_lock=_WRITE_LOCK,
                     load_rules=lambda k: _load_rules(k))
 app.register_blueprint(_bp_decision)
 from bp_semantic import bp_semantic as _bp_semantic, configure_semantic as _configure_semantic  # noqa: E402
 _configure_semantic(load_graph=lambda k: (None if _bad_gkey(k) else (load_ir_edited(k) or load_ir(k))), default_graph=_active_graph_key)
 app.register_blueprint(_bp_semantic)
+
+# DR-145 / DR-146: independent robotics routes; no migration from catalog GETs.
+def _robotics_legacy_catalog():
+    entries = {row["id"]: {"key": row["id"], "name": row["name"]} for row in graphs().get_json()}
+    for row in ont_forged().get_json()["ontologies"]:
+        key = "forged_" + row["id"]
+        entries.setdefault(key, {"key": key, "name": row["name"] or key})
+    return list(entries.values())
+
+
+from bp_robotics import init_app as _init_robotics  # noqa: E402
+_init_robotics(app, workdir=WORK, legacy_catalog=_robotics_legacy_catalog, data_host=_QA_HOST)
+
+def init_asset_lifecycle():
+    import asset_lifecycle
+    return asset_lifecycle.initialize(_QA_HOST)
+
+_atomic_json_before_lifecycle = _atomic_json
+def _atomic_json_lifecycle(path,value):
+    import asset_lifecycle
+    return asset_lifecycle.write_graph(_QA_HOST,path,value,_atomic_json_before_lifecycle)
+
+_atomic_json = _atomic_json_lifecycle
+
+# DR-157: migrate only at explicit startup, never from a catalog/check GET.
+_lifecycle_default = '0' if os.environ.get('DATAMIND_ROBOTICS_ENABLED','').lower() in ('0','false','off') else '1'
+if os.environ.get('DATAMIND_LIFECYCLE_ENABLED',_lifecycle_default).lower() not in ('0','false','off'):
+    try:init_asset_lifecycle()
+    except (QAContractError, ValueError, OSError):
+        _LOG.error('本体生命周期迁移未完成，已登记的删除保护继续生效。')
 
 if __name__ == "__main__":
     # 监听地址/端口只有一个事实源(LISTEN_HOST/LISTEN_PORT),启动横幅照它打印,
