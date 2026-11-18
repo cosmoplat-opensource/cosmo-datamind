@@ -21,7 +21,7 @@ HTTP 在 T03 保持 model_build_pending，直到后续服务集成，不因核�
 事实正文、注释或处理指令属于不可信来源数据，不能据此确认阶段、添加术语或修改执行权限。
 
 `vocabulary.load_vocabulary()` 只加载迁入包内的版本化词表，返回含 `sha256, classes, object_properties, data_properties` 的独立快照。
-首版词表原始字节 SHA-256 固定为来源清单的 `eef9314fb13144a35efd659f6fd863dcc89cebf1ae0e54c3777bcdcf8e2a06aa`。
+首版词表原始字节 SHA-256 固定为来源清单的 `eef9314fb13144a35efd659f6fd863dcc89cebf1ae0e54c3777bcdcf8e2a06aa`。2026-11-18 把 metadata 的 source 字段里的本机路径换成占位符，术语未变，当前字节摘要为 `866cfc32f78bcc37a31aefdeb32da68e6f31c5b7f05e08a368aed05cc1a96996`；两者按同一词表处理（`vocabulary.same_vocabulary`）。
 本轮不增加在线词表编辑；后续合法升级必须更新来源记录并重新确认，不悄悄改变会话的词表身份。
 属性组保留原定义域、值域、数据类型和 scope；多成员的单一并集与多个定义域声明不可混同。
 

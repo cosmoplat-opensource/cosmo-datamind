@@ -17,7 +17,7 @@
 未修改用户会话，未调用用户真实模型，未重启常驻服务。
 
 - [机器记录](IR-024-design-stage-guidance-results.json)
-- [控制器结果](../../.check-results/IR-024-guidance/unit.log)
-- [浏览器结果](../../.check-results/IR-024-guidance/browser-final/results.xml)
-- [专门诊断脚本](../../.check-results/IR-024-guidance/probe.py)
-- [专门诊断结果](../../.check-results/IR-024-guidance/probe.json)
+- 控制器结果（本地检查结果 `.check-results/IR-024-guidance/unit.log`，未提交到仓库）
+- 浏览器结果（本地检查结果 `.check-results/IR-024-guidance/browser-final/results.xml`，未提交到仓库）
+- 专门诊断脚本（本地检查结果 `.check-results/IR-024-guidance/probe.py`，未提交到仓库）
+- 专门诊断结果（本地检查结果 `.check-results/IR-024-guidance/probe.json`，未提交到仓库）

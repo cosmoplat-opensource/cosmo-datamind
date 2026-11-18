@@ -60,7 +60,7 @@ RBD-04 与 RBD-12 明确为部分测试覆盖；持久化保留旧修订、格�
 不运行整套 `check.py --suite all` 冒充全绿，因为新增行为测试此阶段应保持 RED。
 上述合成模型用例不验证模型的建模质量，也不表示新模型构建页面已经可用。
 
-按 [sdd-workflow 第⑤环节](../../.agents/skills/sdd-workflow/SKILL.md) 的“人 review 测试是否覆盖到位”，先审阅本组测试，再进入 T03 GREEN。
+按 [SDD 工作流 第⑤环节](../../AGENTS.md) 的“人 review 测试是否覆盖到位”，先审阅本组测试，再进入 T03 GREEN。
 T03 只实现已冻结路由与共同准入／旧路径接点，不提前实现后续未审的 TBox/ABox 状态机。
 
 原始记录保存在 `.check-results/IR-024-t02-red/pytest.log`、`junit.xml`、`baseline.log` 和 `baseline-junit.xml`。

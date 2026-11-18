@@ -21,6 +21,6 @@ IR-024 的 T10 为真实模型试运行、回归、文档及待人审交付，�
 语法、ruff、mypy、diff 检查通过；仅修改前端，未重复运行完整后端套件，未重启服务或修改用户数据。
 
 - [机器记录](IR-024-design-detail-results.json)
-- [控制器结果](../../.check-results/IR-024-detail/unit.log)
-- [浏览器结果](../../.check-results/IR-024-detail/browser/results.xml)
-- [在线验证](../../.check-results/IR-024-detail/live-result.json)
+- 控制器结果（本地检查结果 `.check-results/IR-024-detail/unit.log`，未提交到仓库）
+- 浏览器结果（本地检查结果 `.check-results/IR-024-detail/browser/results.xml`，未提交到仓库）
+- 在线验证（本地检查结果 `.check-results/IR-024-detail/live-result.json`，未提交到仓库）

@@ -10,7 +10,7 @@
 ## 1. 范围与检查方法
 
 开始时保存了 91 个自有源码文件的内容快照和 SHA-256，共 34,537 行：77 个 Python、8 个 JavaScript、1 个 HTML、2 个 CSS、3 个 Shell 文件。
-清单和快照分别在 [baseline_files.json](../../.check-results/cleanup-20261012/baseline_files.json) 与 [before/](../../.check-results/cleanup-20261012/before/)。
+清单和快照分别在 baseline_files.json（本地检查结果 `.check-results/cleanup-20261012/baseline_files.json`，未提交到仓库） 与 before/（本地检查结果 `.check-results/cleanup-20261012/before/`，未提交到仓库）。
 第三方前端库、虚拟环境、生成数据和密钥配置未按自有代码清理。
 
 检查采用源码结构与引用扫描、关键执行路径逐行阅读、清理差异逐项审查、自动回归和实际浏览器操作。
@@ -35,7 +35,7 @@
 
 五个生产文件合计净减少 26 行，包含下述部署修复新增的检查。
 该数字仅描述本轮增删，不代表性能提升。
-完整清理差异保存在 [本轮证据目录](../../.check-results/cleanup-20261012/)，每个文件的前后指纹见 [changed_files.json](../../.check-results/cleanup-20261012/changed_files.json)。
+完整清理差异保存在 本轮证据目录（本地检查结果 `.check-results/cleanup-20261012/`，未提交到仓库），每个文件的前后指纹见 changed_files.json（本地检查结果 `.check-results/cleanup-20261012/changed_files.json`，未提交到仓库）。
 
 公开辅助函数、Flask 装饰器入口、HTML 内联事件函数和独立 MCP 进程使用的实现保留。
 这些代码可能没有普通内部调用，不能仅凭引用数量删除。
@@ -46,7 +46,7 @@
 
 原来 `restart` 先停止当前 Gunicorn，再读取新配置。
 新配置引号不闭合或数据库文件缺失时，服务已经停下，启动却失败。
-两个负向用例在修改前确实失败，记录为 [restart_before_fix.log](../../.check-results/cleanup-20261012/restart_before_fix.log)。
+两个负向用例在修改前确实失败，记录为 restart_before_fix.log（本地检查结果 `.check-results/cleanup-20261012/restart_before_fix.log`，未提交到仓库）。
 
 现在先解析环境文件、归一目标配置并检查数据库文件，检查通过后才执行原有的停止、启动顺序。
 新增三项测试覆盖两种错误和正常重启；需求登记在 `acceptance.json` 的 DEP-01。
@@ -54,7 +54,7 @@
 
 实际部署中再次提交两种错误重启请求，均以退出码 1 拒绝。
 测试前后 PID 均为 **38291**，数据库健康检查仍通过。
-证据：[deployed-restart-preflight.json](../../.check-results/cleanup-20261012/deployed-restart-preflight.json)。
+证据：deployed-restart-preflight.json（本地检查结果 `.check-results/cleanup-20261012/deployed-restart-preflight.json`，未提交到仓库）。
 此修复只覆盖上述已验证的基本配置错误，不承诺任意启动失败都能自动恢复旧进程。
 
 已逐项检查 `start.sh`、`wsgi.py`、`gunicorn.conf.py`、服务管理器、Nginx 模板及 CI 配置。
@@ -70,11 +70,11 @@
 - 排除脚本和样式正文后，HTML 页面结构及事件属性一致；有效事件函数另通过浏览器检查。
 - 未控制时间及哈希顺序时出现的差异记录在 `contract_differences.json`，未删除或伪装成一致。
 
-对应记录：[equivalence.json](../../.check-results/cleanup-20261012/equivalence.json)。
+对应记录：equivalence.json（本地检查结果 `.check-results/cleanup-20261012/equivalence.json`，未提交到仓库）。
 响应样本是有界比较，不能代表所有输入和外部环境。
 
 示例数据库、本体文件及人工编辑记录共 **42 个文件**的 SHA-256 前后完全一致。
-证据：[protected_data_after.json](../../.check-results/cleanup-20261012/protected_data_after.json)。
+证据：protected_data_after.json（本地检查结果 `.check-results/cleanup-20261012/protected_data_after.json`，未提交到仓库）。
 真实上传验收只创建一个唯一命名的临时 CSV，并通过界面删除自己的测试资产；原有上传资料保留。
 未清理用户本体、编辑记录、模型配置、实验结果或历史数据。
 
@@ -82,21 +82,21 @@
 
 | 验证 | 最终结果 | 证据 |
 |---|---|---|
-| Lint、类型、单元、覆盖率 | 全部通过；1252 项 pytest；确定性模块覆盖率 89.0% | [final-unit/](../../.check-results/cleanup-20261012-final-unit/) |
-| 合成端到端场景 | 45/45 | [scenarios.log](../../.check-results/cleanup-20261012/scenarios.log) |
-| 隔离 HTTP 集成 | 551 通过、0 失败、8 条件跳过 | [integration.log](../../.check-results/cleanup-20261012-final/integration.log) |
-| 十轮变序回归 | 10/10 | [strict10.json](../../.check-results/cleanup-20261012-final/strict10.json) |
-| 浏览器页面走查 | 64 通过、0 失败 | [test_ui.log](../../.check-results/cleanup-20261012-final/test_ui.log) |
-| 浏览器操作 | 50 通过、0 失败、3 条件跳过 | [test_ui_ops.log](../../.check-results/cleanup-20261012-final/test_ui_ops.log) |
-| 构建页面 | 10 个用例；1440/768/390 三种宽度通过 | [build-browser/](../../.check-results/cleanup-20261012-final/build-browser/) |
-| 实际部署 HTTP | 58/58；检查前后数据表数一致 | [deployed-http.json](../../.check-results/cleanup-20261012/deployed-http.json) |
-| 实际上传及失败恢复 | 9/9；无 API 替身；无页面脚本错误 | [live-upload/report.json](../../.check-results/cleanup-20261012/live-upload/report.json) |
-| 实际部署页面与布局 | 27 页可达；1162 个内联事件属性中的 130 个调用函数均存在；无页面脚本错误 | [live-views/report.json](../../.check-results/cleanup-20261012/live-views/report.json) |
+| Lint、类型、单元、覆盖率 | 全部通过；1252 项 pytest；确定性模块覆盖率 89.0% | final-unit/（本地检查结果 `.check-results/cleanup-20261012-final-unit/`，未提交到仓库） |
+| 合成端到端场景 | 45/45 | scenarios.log（本地检查结果 `.check-results/cleanup-20261012/scenarios.log`，未提交到仓库） |
+| 隔离 HTTP 集成 | 551 通过、0 失败、8 条件跳过 | integration.log（本地检查结果 `.check-results/cleanup-20261012-final/integration.log`，未提交到仓库） |
+| 十轮变序回归 | 10/10 | strict10.json（本地检查结果 `.check-results/cleanup-20261012-final/strict10.json`，未提交到仓库） |
+| 浏览器页面走查 | 64 通过、0 失败 | test_ui.log（本地检查结果 `.check-results/cleanup-20261012-final/test_ui.log`，未提交到仓库） |
+| 浏览器操作 | 50 通过、0 失败、3 条件跳过 | test_ui_ops.log（本地检查结果 `.check-results/cleanup-20261012-final/test_ui_ops.log`，未提交到仓库） |
+| 构建页面 | 10 个用例；1440/768/390 三种宽度通过 | build-browser/（本地检查结果 `.check-results/cleanup-20261012-final/build-browser/`，未提交到仓库） |
+| 实际部署 HTTP | 58/58；检查前后数据表数一致 | deployed-http.json（本地检查结果 `.check-results/cleanup-20261012/deployed-http.json`，未提交到仓库） |
+| 实际上传及失败恢复 | 9/9；无 API 替身；无页面脚本错误 | live-upload/report.json（本地检查结果 `.check-results/cleanup-20261012/live-upload/report.json`，未提交到仓库） |
+| 实际部署页面与布局 | 27 页可达；1162 个内联事件属性中的 130 个调用函数均存在；无页面脚本错误 | live-views/report.json（本地检查结果 `.check-results/cleanup-20261012/live-views/report.json`，未提交到仓库） |
 
-清理前完整回归保存在 [baseline/](../../.check-results/cleanup-20261012-baseline/)。
+清理前完整回归保存在 baseline/（本地检查结果 `.check-results/cleanup-20261012-baseline/`，未提交到仓库）。
 清理后的首次综合运行有一项单测失败：测试用已删除的 `KINDS` 常量定位 `KIND` 标签区域。
 随后改用仍存在的 `KCOL` 作为区域边界，保留全部原有标签断言，并在清理前页面快照上验证该测试。
-首次失败日志保留在 [final/unit.log](../../.check-results/cleanup-20261012-final/unit.log)；修订后的完整单元结果在表中 `final-unit/`。
+首次失败日志保留在 final/unit.log（本地检查结果 `.check-results/cleanup-20261012-final/unit.log`，未提交到仓库）；修订后的完整单元结果在表中 `final-unit/`。
 首次综合运行的 HTTP 与 UI 已通过；其后应用前后端未再修改，只调整测试定位和部署管理器，因此没有重复整套 GUI 测试。
 
 HTTP 的八项跳过来自未提供的可选上游本体引擎；UI 的三项跳过来自隔离测试未配置的 OpenAI 兼容端点。
@@ -114,7 +114,7 @@ HTTP 的八项跳过来自未提供的可选上游本体引擎；UI 的三项跳
 三种宽度均完成 **108 节点、60 关系**布局，保留当前可读缩放方式，未修改图谱实现。
 有效截图文件名含 `-ready`；先前截图保留，避免覆盖检查过程。
 
-代表性截图：[桌面构建](../../.check-results/cleanup-20261012/live-views/build-1440-ready.png)、[桌面图谱](../../.check-results/cleanup-20261012/live-views/graph-1440-ready.png)、[手机图谱](../../.check-results/cleanup-20261012/live-views/graph-390-ready.png)、[手机评审](../../.check-results/cleanup-20261012/live-views/review-390-ready.png)、[上传失败后保留数据](../../.check-results/cleanup-20261012/live-upload/upload-error-preserved.png)。
+代表性截图：桌面构建（本地检查结果 `.check-results/cleanup-20261012/live-views/build-1440-ready.png`，未提交到仓库）、桌面图谱（本地检查结果 `.check-results/cleanup-20261012/live-views/graph-1440-ready.png`，未提交到仓库）、手机图谱（本地检查结果 `.check-results/cleanup-20261012/live-views/graph-390-ready.png`，未提交到仓库）、手机评审（本地检查结果 `.check-results/cleanup-20261012/live-views/review-390-ready.png`，未提交到仓库）、上传失败后保留数据（本地检查结果 `.check-results/cleanup-20261012/live-upload/upload-error-preserved.png`，未提交到仓库）。
 
 ## 6. 验证边界
 

@@ -48,6 +48,6 @@ Resource／RobotArm／Camera／Gripper／CoordinateFrame／CartesianPose／Joint
 本次先完成内容核实，未变更本体或上述行为。
 
 - [机器记录](IR-024-ontology-content-comparison-results.json)
-- [新旧统计](../../.check-results/IR-024-content-audit/counts.json)
-- [源项目同输入复现](../../.check-results/IR-024-content-audit/源项目-comparison.json)
-- [原始 XML 独立核对](../../.check-results/IR-024-content-audit/facts-check.json)
+- 新旧统计（本地检查结果 `.check-results/IR-024-content-audit/counts.json`，未提交到仓库）
+- 源项目同输入复现（本地检查结果 `.check-results/IR-024-content-audit/源项目-comparison.json`，未提交到仓库）
+- 原始 XML 独立核对（本地检查结果 `.check-results/IR-024-content-audit/facts-check.json`，未提交到仓库）

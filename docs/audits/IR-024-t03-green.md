@@ -33,7 +33,7 @@
 
 结果：62 passed，0 failed、0 error、0 skipped，退出码 0，报告用时 4.32 秒。
 本轮生产修改文件的 ruff 和 mypy 检查通过。
-记录：[定向日志](../../.check-results/IR-024-t03-green/pytest.log)、[JUnit](../../.check-results/IR-024-t03-green/junit.xml)。
+记录：定向日志（本地检查结果 `.check-results/IR-024-t03-green/pytest.log`，未提交到仓库）、JUnit（本地检查结果 `.check-results/IR-024-t03-green/junit.xml`，未提交到仓库）。
 
 ## 额外隔离诊断
 
@@ -45,7 +45,7 @@
 4. 交换行为树与节点模型文件角色时返回 invalid_source，不登记来源。
 
 4 项通过，网络模型调用数为零。
-记录：[诊断结果](../../.check-results/IR-024-t03-green/manual-probes.json)。
+记录：诊断结果（本地检查结果 `.check-results/IR-024-t03-green/manual-probes.json`，未提交到仓库）。
 
 ## 全量回归
 

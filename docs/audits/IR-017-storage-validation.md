@@ -77,7 +77,7 @@ domain_runs 尚未实现，整体 IR-017 仍未交付。
 - 本次没有执行全量回归；新的预期 RED 测试存在时，不能声称当前工作树全绿。
 - 新 UI、页面调用新后端及完整产品验收仍在 Proposal 步骤 3～7，不以本批或旧 UI 回归代替。
 
-依据 [SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第⑤步“人 review 测试是否覆盖到位”，本批已由用户明确确认，随后进入 T03；三个已审测试文件和辅助模块摘要保持不变。
+依据 [SDD 工作流](../../AGENTS.md) 第⑤步“人 review 测试是否覆盖到位”，本批已由用户明确确认，随后进入 T03；三个已审测试文件和辅助模块摘要保持不变。
 
 
 ## T03 GREEN 与回归记录
@@ -192,7 +192,7 @@ components 包含 profile_id、compiler_version、rule_digest、prompt_version�
 进程恢复测试启动新 Python 进程，将运行置为 running 后 os._exit(23)，再由另一个新进程读取已完成记录、校验 manifest 并显式恢复中断记录。
 所有文件写入、损坏、删除及符号链接操作都限定在测试临时目录，不修改用户工作目录。
 
-依据 [SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第⑤步“人 review 测试是否覆盖到位”，本批先提交覆盖审查。用户听取解释后回复“确认没问题”，据此进入 T05；上述 RED 结果保留为历史证据。
+依据 [SDD 工作流](../../AGENTS.md) 第⑤步“人 review 测试是否覆盖到位”，本批先提交覆盖审查。用户听取解释后回复“确认没问题”，据此进入 T05；上述 RED 结果保留为历史证据。
 
 
 ## T05 实现与验证
@@ -325,7 +325,7 @@ verification 包含独立进程 pid、passed、run_ids、assets，必须来自�
 还实际启动四个子进程，验证网络、预制 OWL、归档、server 导入禁用机制及 PID 日志有效。
 这些只是夹具和检查机制的前提验证，不计入新功能通过数量，也不替代 T07 后的 30 项真实联动测试。
 
-依据 [SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第⑤步“人 review 测试是否覆盖到位”，本批先提交审查；用户听取测试解释后回复“继续下一步”，据此确认 T06 覆盖并进入 T07。上述 RED 记录保留，整份 IR 尚未交付。
+依据 [SDD 工作流](../../AGENTS.md) 第⑤步“人 review 测试是否覆盖到位”，本批先提交审查；用户听取测试解释后回复“继续下一步”，据此确认 T06 覆盖并进入 T07。上述 RED 记录保留，整份 IR 尚未交付。
 
 
 ## T07 实现与验证
@@ -414,7 +414,7 @@ T07 实现与检查完成，T08 整理最终交付记录；未将 IR 提前标�
 
 边界保持：这是存储基础和离线接入验收，不涉及 LLM 提取、后台队列、新页面/HTTP 下载、真实机器人执行或新前后端联动。
 后续产品集成仍按 Proposal 步骤 3～7 的独立 IR 继续。
-依据 [SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第⑨步“人确认这一轮做完了”，在用户确认前不把本 IR 标记 delivered。
+依据 [SDD 工作流](../../AGENTS.md) 第⑨步“人确认这一轮做完了”，在用户确认前不把本 IR 标记 delivered。
 
 
 ## 2026-11-04 最终交付确认

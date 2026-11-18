@@ -6,7 +6,7 @@
 - **关联 / Refs**: [[DR-141-unified-domain-semantic-graph]]、[[DR-142-robotics-source-recipes-and-reverse-build]]、[[DR-143-parameter-contracts-calibration-and-readiness]]、[[DR-145-local-domain-registration-and-application-ui]]、[[DR-146-persistent-build-runs-and-artifact-manifests]]、[[DR-147-robotics-migration-and-compatibility-validation]]。
 - **前置**：[IR-018](IR-018-robotics-build-api-and-ui.md) 已于 2026-11-04 经用户确认 delivered。
 - **方案**：[集成 Proposal](../PROPOSAL-robotics-source-integration.md) 步骤 4；步骤 5～6 的任务提取和行为树应用仍另立 IR。
-- **流程依据**：[SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第③～⑤步；本轮范围确认与各批测试覆盖确认分别记录。
+- **流程依据**：[SDD 工作流](../../AGENTS.md) 第③～⑤步；本轮范围确认与各批测试覆盖确认分别记录。
 
 ## 目标 Goal（已确认）
 

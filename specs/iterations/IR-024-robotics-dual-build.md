@@ -4,7 +4,7 @@
 - **日期 / Date**：2026-11-09。
 - **关联 / Refs**：[DR-152](../decisions/DR-152-robotics-dual-build.md)。
 - **范围依据**：用户要求“当前先不考虑无 XML 的情况，要求用户必须上传 XML 文件，有 LLM 时走新方案，无时走原来的旧方案”。
-- **流程依据**：[sdd-workflow](../../.agents/skills/sdd-workflow/SKILL.md)、[specs/meta.md](../meta.md)。
+- **流程依据**：[SDD 工作流](../../AGENTS.md)、[specs/meta.md](../meta.md)。
 - **验收映射**：[acceptance.json](../acceptance.json)；已创建的测试进入 requirements，未创建的测试继续保留计划状态，不标记功能已验收。
 - **冻结契约**：[机器人双路径构建 v1](../contracts/robotics-dual-build-v1.md)。
 - **来源清单**：[IR-024 来源摘要](../sources/IR-024-robotics-sources.json)。

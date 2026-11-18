@@ -29,9 +29,9 @@ schema 8→9 后，迁移前全部行逐行保持一致：11 资产、61 版本�
 本体当前版本与原 RDF 摘要保持不变。
 详见 `.check-results/ir029-t06/existing-history-results.json`、`http.jsonl` 和 `browser-results.json`。
 
-![删除影响预览](../../.check-results/ir029-t06/delete-preview.png)
+!删除影响预览（本地检查结果 `.check-results/ir029-t06/delete-preview.png`，未提交到仓库）
 
-![删除后的机器人历史详情](../../.check-results/ir029-t06/robotics-deleted-history.png)
+!删除后的机器人历史详情（本地检查结果 `.check-results/ir029-t06/robotics-deleted-history.png`，未提交到仓库）
 
 ## 失败与回退
 

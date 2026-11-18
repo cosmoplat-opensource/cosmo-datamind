@@ -46,7 +46,7 @@ ABox 不接收 route/model/client/prompt，只根据已确认 TBox 与 XML 规�
 141 passed、0 failed、0 skipped，用时 6.24 秒；其中 T04 新核心 79 项与 T03 原路径 62 项。
 已审阅测试及夹具未修改，摘要依据 T04 RED 记录逐项核对。
 新增包 ruff 与 mypy 通过。
-日志：[定向日志](../../.check-results/IR-024-t05-green/targeted.log)、[JUnit](../../.check-results/IR-024-t05-green/targeted.xml)。
+日志：定向日志（本地检查结果 `.check-results/IR-024-t05-green/targeted.log`，未提交到仓库）、JUnit（本地检查结果 `.check-results/IR-024-t05-green/targeted.xml`，未提交到仓库）。
 
 ## 整条核心链路诊断
 
@@ -55,7 +55,7 @@ ABox 不接收 route/model/client/prompt，只根据已确认 TBox 与 XML 规�
 结果：两次平台适配调用、revision=4、25 次调用、129 个绑定、2706 个 RDF 三元组；重复抽取结果相同，重复导出图同构。
 网络连接被禁止；公开状态和提示中不含测试密钥；ABox 和导出不会增加模型调用。
 额外诊断确认超过 20000 个保留注释或处理指令被拒绝。
-记录：[核心链路](../../.check-results/IR-024-t05-green/core-probe.json)。
+记录：核心链路（本地检查结果 `.check-results/IR-024-t05-green/core-probe.json`，未提交到仓库）。
 这是程序集成证据，不是实际 LLM 输出质量证据；真实模型调用数为 0。
 
 ## 完整回归
@@ -79,7 +79,7 @@ env PATH="<Node.js 安装目录>/bin:$PATH" \
 | 数据构建浏览器 | 10 通过 |
 | 机器人构建 / 审阅 / 任务浏览器 | 18 / 16 / 12 通过，无跳过 |
 
-完整日志见 [检查汇总](../../.check-results/IR-024-t05-green/all-final/summary.json)。
+完整日志见 检查汇总（本地检查结果 `.check-results/IR-024-t05-green/all-final/summary.json`，未提交到仓库）。
 653 条实际验收引用、文档链接、实现／来源及已审阅测试摘要与 diff 格式检查通过。
 较早一轮在复核发现注释／处理指令也需节点计数后主动中止（当时未见断言失败）；日志留在 `all/`，不作为通过证据。
 修正后重新跑定向检查和完整回归；最终以 `all-final/` 为准。

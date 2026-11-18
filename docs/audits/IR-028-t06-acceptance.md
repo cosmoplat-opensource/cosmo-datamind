@@ -43,7 +43,7 @@ Q7 原始探针优先提取数值，误取了同时返回的产量，因此原�
 浏览器错误日志为空；390px 视口中错误提示内容溢出为 0。
 最终截图含实际返回值 80 及 SQL：
 
-![真实模型计数及 SQL](../../.check-results/ir028-t06/browser/real-model-count-data.png)
+!真实模型计数及 SQL（本地检查结果 `.check-results/ir028-t06/browser/real-model-count-data.png`，未提交到仓库）
 
 全部截图、DOM、真实 HTTP、模型计划和复放记录位于 `.check-results/ir028-t06/`。
 可复现脚本：`serve-acceptance.py`、`http-acceptance.py`、`model-baseline.py`、`grade-model-baseline.py`、`replay-baseline.py`；运行边界与探针更正记录见 `evidence.json`。

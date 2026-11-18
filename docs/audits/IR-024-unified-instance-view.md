@@ -19,8 +19,8 @@
 语法、ruff、mypy、diff 检查通过；本次未重复执行完整后端回归套件。
 
 - [机器记录](IR-024-unified-instance-view-results.json)
-- [单元结果](../../.check-results/IR-024-instance-view/unit.xml)
-- [新设计浏览器](../../.check-results/IR-024-instance-view/design-browser.log)
-- [旧本体浏览器](../../.check-results/IR-024-instance-view/legacy-browser.log)
-- [分组与不变性诊断](../../.check-results/IR-024-instance-view/projection-result.json)
-- [在线验证](../../.check-results/IR-024-instance-view/live-result.json)
+- 单元结果（本地检查结果 `.check-results/IR-024-instance-view/unit.xml`，未提交到仓库）
+- 新设计浏览器（本地检查结果 `.check-results/IR-024-instance-view/design-browser.log`，未提交到仓库）
+- 旧本体浏览器（本地检查结果 `.check-results/IR-024-instance-view/legacy-browser.log`，未提交到仓库）
+- 分组与不变性诊断（本地检查结果 `.check-results/IR-024-instance-view/projection-result.json`，未提交到仓库）
+- 在线验证（本地检查结果 `.check-results/IR-024-instance-view/live-result.json`，未提交到仓库）

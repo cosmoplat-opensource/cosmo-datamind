@@ -7,6 +7,11 @@ from urllib.parse import urlsplit
 
 
 VOCABULARY_PATH = Path(__file__).resolve().parent/'data'/'ur_skill_terminology.json'
+# 与当前词表术语相同、只有元数据不同的早期字节摘要。首版的 source 字段含开发者本机路径,2026-11-18 换成占位符,
+# 术语内容未变;按首版冻结的设计仍按同一词表处理。
+EQUIVALENT_SHA256 = {
+    'eef9314fb13144a35efd659f6fd863dcc89cebf1ae0e54c3777bcdcf8e2a06aa': 'v1:source 字段的本机路径换成占位符',
+}
 INVALID_TEXT = re.compile('[\x00-\x08\x0b\x0c\x0e-\x1f\ud800-\udfff\ufffe\uffff]')
 
 
@@ -120,3 +125,8 @@ def _class_expression(expressions, class_iris, identifier):
             or len(set(members)) != len(members)):
         raise ValueError(f'术语词表 {identifier} 的类别定义域或值域无效。')
     return [class_iris[member] for member in members]
+
+
+def same_vocabulary(sha256):
+    """冻结时记录的词表摘要是否就是当前随代码发布的词表(含只改了元数据的早期版本)。"""
+    return sha256 == load_vocabulary()['sha256'] or sha256 in EQUIVALENT_SHA256

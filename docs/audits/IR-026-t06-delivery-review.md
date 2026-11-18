@@ -42,7 +42,7 @@ Workpiece、Workstation、Carrier、PlacementSlot 各为 0，证明执行适配�
 再次检查得到可准备任务，点击“继续描述任务”进入绑定新版本的原任务界面，状态为未开始。
 未发出确认角色或提交生成的额外 POST，没有页面脚本错误和模型请求。
 截图、下载文件、请求观察及宿主日志保存在 `.check-results/IR-026-t06-real/browser/`。
-本地复核产物：[新本体副本生成的行为树](../../.check-results/IR-026-t06-real/real-copy-behavior-tree.xml)、[旧 UR 对照行为树](../../.check-results/IR-026-t06-real/legacy-behavior-tree.xml)、[副本完整 JSON](../../.check-results/IR-026-t06-real/real-copy-design.json)、[副本 OWL](../../.check-results/IR-026-t06-real/real-copy-final.owl)。
+本地复核产物：新本体副本生成的行为树（本地检查结果 `.check-results/IR-026-t06-real/real-copy-behavior-tree.xml`，未提交到仓库）、旧 UR 对照行为树（本地检查结果 `.check-results/IR-026-t06-real/legacy-behavior-tree.xml`，未提交到仓库）、副本完整 JSON（本地检查结果 `.check-results/IR-026-t06-real/real-copy-design.json`，未提交到仓库）、副本 OWL（本地检查结果 `.check-results/IR-026-t06-real/real-copy-final.owl`，未提交到仓库）。
 这些产物只在隔离验收目录中，不是用户正式本体的新版本。
 
 ## 工件升级与运行边界

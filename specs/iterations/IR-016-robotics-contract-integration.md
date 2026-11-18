@@ -7,7 +7,7 @@
 - **关联 / Refs**: [[DR-141-unified-domain-semantic-graph]]、[[DR-142-robotics-source-recipes-and-reverse-build]]、[[DR-143-parameter-contracts-calibration-and-readiness]]、[[DR-144-behavior-tree-compilation-as-ontology-application]]、[[DR-147-robotics-migration-and-compatibility-validation]]
 - **方案**：[集成 Proposal](../PROPOSAL-robotics-source-integration.md) 第 6 节步骤 0～1。
 - **验收映射**：[acceptance.json](../acceptance.json) 的 ROB-01～ROB-13。
-- **流程依据**：[项目 SDD skill](../../.agents/skills/sdd-workflow/SKILL.md)。
+- **流程依据**：[SDD 工作流](../../AGENTS.md)。
 
 ## 目标 Goal
 

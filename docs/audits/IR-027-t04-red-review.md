@@ -78,7 +78,7 @@ ODE-03／04 从 planned_requirements 登记为实际测试引用，状态 `creat
 
 请审阅上述自动进入、只读报告／历史入口、并发可用性和失败边界的测试范围，以及规约第 9 节的调用面。
 确认后进入 T05 实现，并保持审定后的测试不变；T06 再完成真实副本、视觉和性能验收。
-此处遵循 [sdd-workflow](../../.agents/skills/sdd-workflow/SKILL.md) 第⑤步“人 review 测试是否覆盖到位”，需要先完成人审，再进入 GREEN。
+此处遵循 [SDD 工作流](../../AGENTS.md) 第⑤步“人 review 测试是否覆盖到位”，需要先完成人审，再进入 GREEN。
 
 ## 人审结论（2026-11-16）
 

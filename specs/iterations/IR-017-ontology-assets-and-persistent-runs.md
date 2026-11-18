@@ -6,7 +6,7 @@
 - **关联 / Refs**: [[DR-141-unified-domain-semantic-graph]]、[[DR-146-persistent-build-runs-and-artifact-manifests]]、[[DR-147-robotics-migration-and-compatibility-validation]]。
 - **前置**：[IR-016](IR-016-robotics-contract-integration.md) 已于 2026-11-03 经用户确认交付。
 - **方案**：[集成 Proposal](../PROPOSAL-robotics-source-integration.md) 第 6 节步骤 2。
-- **流程依据**：[SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第③～⑤步。
+- **流程依据**：[SDD 工作流](../../AGENTS.md) 第③～⑤步。
 
 ## 目标 Goal
 

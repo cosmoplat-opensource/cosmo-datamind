@@ -120,7 +120,7 @@ RKG-10/12 保留计划项，未填写不存在的函数；T04 编写 HTTP/附件
 本批没有宣称证据内容真实性、署名身份或机器人现场适配经自动验证；演示正例仍明确为 demo，真实缺证据仍是负例。
 当前是预期 RED，因此没有执行或声称全量检查通过；全量回归属于实现后的 T03。
 
-按 [SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第⑤步“**人 review 测试是否覆盖到位**”，当前提交测试覆盖审查；收到确认后进入 T03，不提前实现新治理功能。
+按 [SDD 工作流](../../AGENTS.md) 第⑤步“**人 review 测试是否覆盖到位**”，当前提交测试覆盖审查；收到确认后进入 T03，不提前实现新治理功能。
 
 T02 静态与规约核验：新增 6 个 Python 文件 ruff、mypy 均通过；21 项规格元测试通过，0 失败/错误/跳过；git diff --check 通过。
 
@@ -244,7 +244,7 @@ RKG-10/12 的 UI、浏览器全链路与 CLI 留在 T06 编写失败测试，不
 ### 当前审查边界与下一步
 
 本次请审查上表是否覆盖预期接口行为，特别是“保存知识、审核业务对象、审核证据、审核版本、发布”这几个动作的区别。
-依据 [SDD skill 第⑤步](../../.agents/skills/sdd-workflow/SKILL.md) 的“**人 review 测试是否覆盖到位**”，本批停在覆盖审查；用户确认后进入 T05，实现 HTTP/版本详情并跑全量回归。
+依据 [SDD 工作流 第⑤步](../../AGENTS.md) 的“**人 review 测试是否覆盖到位**”，本批停在覆盖审查；用户确认后进入 T05，实现 HTTP/版本详情并跑全量回归。
 这次没有需要访问本机真实机器人或认定现场适配的验收，所有材料均为合成测试输入；UI 操作和实际浏览器交付仍属后续任务。
 
 
@@ -368,7 +368,7 @@ env PATH="<Node.js 安装目录>/bin:$PATH" .venv/bin/python -m pytest tests/uni
 
 ### 下一步的审查边界
 
-按 [SDD skill 第⑤步](../../.agents/skills/sdd-workflow/SKILL.md)“人 review 测试是否覆盖到位”，本批提交后等待覆盖审查；确认后进入 T07，实现并运行全部已审测试及全量回归。
+按 [SDD 工作流 第⑤步](../../AGENTS.md)“人 review 测试是否覆盖到位”，本批提交后等待覆盖审查；确认后进入 T07，实现并运行全部已审测试及全量回归。
 当前无需确认 UI 已实现；请审查上表中的操作、异常和预期结果是否符合需求。IR-019 整轮仍为 in-progress。
 
 ## T07 · 知识维护 UI、离线演示与联动实现（2026-11-05，GREEN）
@@ -445,5 +445,5 @@ env PATH="<Node.js 安装目录>/bin:$PATH" .venv/bin/python scripts/check.py --
 acceptance 的 criterion 与已审测试引用不变，仅将状态更新为 T07 GREEN、待交付审查。
 完整机器结果见 [T07 GREEN 审计](IR-019-t07-green-results.json)。
 
-T07 实现任务完成。按 [SDD skill 第⑨步](../../.agents/skills/sdd-workflow/SKILL.md)“人确认这一轮做完了”，下一步为 T08 人审交付；IR-019 保持 in-progress，交付/验收复选框暂不代替用户勾选。
+T07 实现任务完成。按 [SDD 工作流 第⑨步](../../AGENTS.md)“人确认这一轮做完了”，下一步为 T08 人审交付；IR-019 保持 in-progress，交付/验收复选框暂不代替用户勾选。
 可按[操作指南](../robotics-knowledge-service.md)启动并试用本体库→维护知识→机器人评审→发布下载，或运行四场景离线演示。

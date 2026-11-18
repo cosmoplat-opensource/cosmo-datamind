@@ -67,7 +67,7 @@ def test_modeling_parser_enforces_common_xml_safety(role, bad):
 def test_bundled_vocabulary_has_pinned_identity_and_separate_term_kinds(monkeypatch):
     monkeypatch.setenv('TBOX_LLM_KEY', 'unused-source-project-secret')
     vocab = api('vocabulary').load_vocabulary()
-    assert vocab['sha256'] == 'eef9314fb13144a35efd659f6fd863dcc89cebf1ae0e54c3777bcdcf8e2a06aa'
+    assert vocab['sha256'] == '866cfc32f78bcc37a31aefdeb32da68e6f31c5b7f05e08a368aed05cc1a96996'
     assert {'AtomicSkill', 'CompositeSkill', 'SkillInvocation'} <= {r['id'] for r in vocab['classes']}
     assert 'hasInput' in {r['id'] for r in vocab['object_properties']}
     assert 'stepIndex' in {r['id'] for r in vocab['data_properties']}
@@ -75,3 +75,11 @@ def test_bundled_vocabulary_has_pinned_identity_and_separate_term_kinds(monkeypa
     again = api('vocabulary').load_vocabulary()
     vocab['classes'].clear()
     assert again['classes'], 'Callers must not mutate a shared vocabulary cache'
+
+
+def test_designs_frozen_on_the_first_vocabulary_bytes_still_count_as_the_same_vocabulary():
+    """首版词表只改了 source 字段里的本机路径(换成占位符),术语未变:按首版字节冻结的设计仍按同一词表处理。"""
+    module = api('vocabulary')
+    assert module.same_vocabulary('eef9314fb13144a35efd659f6fd863dcc89cebf1ae0e54c3777bcdcf8e2a06aa')
+    assert module.same_vocabulary(module.load_vocabulary()['sha256'])
+    assert not module.same_vocabulary('0' * 64)

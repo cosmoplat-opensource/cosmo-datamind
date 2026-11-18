@@ -55,7 +55,7 @@ ROBOTICS 用户权限和运行并发不属于当前纯函数包化任务，由�
 ## 当前流程位置
 
 用户已要求按 SDD 继续下一步，本轮据 IR 执行 T01 和 T02。
-依据 [项目 SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第⑤步“人 review 测试是否覆盖到位”，上述测试已由用户明确确认，随后进入 T03。
+依据 [SDD 工作流](../../AGENTS.md) 第⑤步“人 review 测试是否覆盖到位”，上述测试已由用户明确确认，随后进入 T03。
 审查后若需要补充或调整测试，应在进入 T03 之前记录修改原因；进入 GREEN 后按 skill 只修改实现，不为变绿削弱已审测试。
 IR 的最终交付与验收框尚未勾选，DR 状态不自动提升为 accepted。
 
@@ -110,7 +110,7 @@ HTTP 551 通过 / 8 可选上游跳过，10 轮变序通过，UI 64 通过，UI 
 这些测试验证发布和加载边界，严格任务的缺证据拒绝及完整离线演示仍分别属于 T06 和 T08。
 
 用户此前的“测试覆盖已确认”用于 T02，本批 T04 是新的测试审查范围。
-依据 [项目 SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第⑤步“人 review 测试是否覆盖到位”，本批测试已由用户明确回复“T04已确认”，随后进入 T05 实现。
+依据 [SDD 工作流](../../AGENTS.md) 第⑤步“人 review 测试是否覆盖到位”，本批测试已由用户明确回复“T04已确认”，随后进入 T05 实现。
 T03 已通过的 23 项与 T04 新增的 16 项预期失败分开记录；此处保留 T04 当时的失败记录，后续结果见 T05。
 
 
@@ -174,7 +174,7 @@ HTTP 551 通过 / 8 可选上游跳过，10 轮变序通过；UI 64 项、UI 实
 ```
 
 T05 全量回归退出 0 的记录保留；加入本批测试后工作树为预期 RED，不声明当前全量通过。
-依据 [项目 SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第⑤步“人 review 测试是否覆盖到位”，用户已确认本批覆盖及草稿边界，随后进入 T07 实现。
+依据 [SDD 工作流](../../AGENTS.md) 第⑤步“人 review 测试是否覆盖到位”，用户已确认本批覆盖及草稿边界，随后进入 T07 实现。
 
 
 ## T07 GREEN 与全量回归
@@ -235,7 +235,7 @@ summary 记录 run_dir、passed，以及每场景的 case、expected_status、ac
 `--source` 支持显式输入覆盖，用于复现来源缺失；默认仍使用随工程提供的来源文件，不要求模型密钥或原归档目录。
 
 这些新增测试加入后，当前工作树为预期 RED；T07 全量退出 0 的记录不代表新增测试已通过。
-依据 [项目 SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第⑤步“人 review 测试是否覆盖到位”，用户已确认本批覆盖，随后进入 T09，实现离线演示并完成第一阶段最终验证。
+依据 [SDD 工作流](../../AGENTS.md) 第⑤步“人 review 测试是否覆盖到位”，用户已确认本批覆盖，随后进入 T09，实现离线演示并完成第一阶段最终验证。
 
 
 ## T09 GREEN 与最终交付审查证据
@@ -259,7 +259,7 @@ summary 记录 run_dir、passed，以及每场景的 case、expected_status、ac
 | invalid-contract | rejected，PASS | unknown-v99 协议被拒绝；正常发布物保留，无候选 XML |
 
 实际运行目录为 `.check-results/robotics-demo/20261103T015738Z-bg93d6z2/`。
-[本次可读汇总](../../.check-results/robotics-demo/20261103T015738Z-bg93d6z2/summary.md)可直接打开；工件摘要、汇总内容和检查结果亦归档于 [T09 机器记录](IR-016-t09-green-results.json)。
+本次可读汇总（本地检查结果 `.check-results/robotics-demo/20261103T015738Z-bg93d6z2/summary.md`，未提交到仓库）可直接打开；工件摘要、汇总内容和检查结果亦归档于 [T09 机器记录](IR-016-t09-green-results.json)。
 用户说明见 [离线演示使用说明](../robotics-offline-demo.md)。
 
 首次全量检查退出 1，单元为 917 通过 / 1 失败 / 5 跳过。
@@ -287,7 +287,7 @@ env PATH="<Node.js 安装目录>/bin:$PATH" .venv/bin/python scripts/check.py --
 
 首次全量退出 1 和补验退出 0 分开记录，最终所有必需检查段通过。
 第一阶段业务内核与离线演示已就绪；平台 UI/API、真实 LLM 提取、持久化运行服务、在线 XML 编辑与机器人执行不在本轮范围。
-依据 [项目 SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第⑨步“人确认这一轮做完了”，用户于 2026-11-03 回复“确认没有问题，可以进行下一步了”，已据此勾选清单并将 IR 标记 delivered。
+依据 [SDD 工作流](../../AGENTS.md) 第⑨步“人确认这一轮做完了”，用户于 2026-11-03 回复“确认没有问题，可以进行下一步了”，已据此勾选清单并将 IR 标记 delivered。
 
 
 ## 最终人审交付确认

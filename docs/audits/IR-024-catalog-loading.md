@@ -16,7 +16,7 @@
 本次作用范围验证如上，未重跑整套后端回归，未调用真实模型。
 
 - [机器记录](IR-024-catalog-loading-results.json)
-- [定向检查](../../.check-results/IR-024-catalog/tests.log)
-- [加载状态诊断](../../.check-results/IR-024-catalog/loading.cjs)
-- [在线浏览器诊断](../../.check-results/IR-024-catalog/live_check.py)
-- [在线结果](../../.check-results/IR-024-catalog/live-result.json)
+- 定向检查（本地检查结果 `.check-results/IR-024-catalog/tests.log`，未提交到仓库）
+- 加载状态诊断（本地检查结果 `.check-results/IR-024-catalog/loading.cjs`，未提交到仓库）
+- 在线浏览器诊断（本地检查结果 `.check-results/IR-024-catalog/live_check.py`，未提交到仓库）
+- 在线结果（本地检查结果 `.check-results/IR-024-catalog/live-result.json`，未提交到仓库）

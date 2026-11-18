@@ -38,7 +38,7 @@
 完整回归命令退出码 0，13 阶段全部通过；单元测试 1988 项通过、5 项既有可选组件跳过，覆盖率 85.0%（门槛 81%）。
 静态、类型、验收引用、HTTP 集成、strict10、UI 走查／实操、数据构建及机器人构建／审阅／任务／设计浏览器检查均通过。
 最终 JavaScript/CSS 经浏览器重跑；领域检查兼容修复后，133 项相关检查通过，最终完整回归重新启动，全部生产实现保持冻结。
-详见 [机器记录](IR-024-t09-green-results.json)、[定向日志](../../.check-results/IR-024-t09-green/targeted.log)、[浏览器日志](../../.check-results/IR-024-t09-green/browser-presented/results.xml) 及 [全量阶段](../../.check-results/IR-024-t09-green/all-complete/summary.json)。
+详见 [机器记录](IR-024-t09-green-results.json)、定向日志（本地检查结果 `.check-results/IR-024-t09-green/targeted.log`，未提交到仓库）、浏览器日志（本地检查结果 `.check-results/IR-024-t09-green/browser-presented/results.xml`，未提交到仓库） 及 全量阶段（本地检查结果 `.check-results/IR-024-t09-green/all-complete/summary.json`，未提交到仓库）。
 T08 已审阅的 98 项测试及其辅助文件摘要已核对保持不变；既有已审阅测试也在最终记录中核对。
 
 ## 范围

@@ -50,4 +50,4 @@
 - 本轮未修改产品代码、原 XML、用户本体或运行服务，未提交 Git。未使用真实用户本体副本替代测试夹具；该最终验收留给 T06。
 
 RAC-01～05 原 criterion 不变，只添加真实测试引用并标记 created-red-partial；业务验收保持未勾选。
-下一步按 [sdd-workflow](../../.agents/skills/sdd-workflow/SKILL.md) 第⑤步“人 review 测试是否覆盖到位”提交评审；用户确认后进入 T05 GREEN，保持这些测试不变。
+下一步按 [SDD 工作流](../../AGENTS.md) 第⑤步“人 review 测试是否覆盖到位”提交评审；用户确认后进入 T05 GREEN，保持这些测试不变。

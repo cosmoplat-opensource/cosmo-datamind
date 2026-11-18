@@ -40,7 +40,7 @@ IR-017 已关闭为 delivered；本次建立 [IR-018](../../specs/iterations/IR-
 
 acceptance.json 本轮条目仅在 planned_requirements 中登记拟覆盖文件，不引用尚不存在的 pytest 函数。
 本次只验证文档结构、映射及已交付代码/测试摘要，没有重新跑未变更实现的完整回归。
-按 [SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第③步“人填 Goal（这一轮范围）和 Acceptance（什么叫做完）”，本 IR 的新增范围与验收草案需确认后进入 T02。
+按 [SDD 工作流](../../AGENTS.md) 第③步“人填 Goal（这一轮范围）和 Acceptance（什么叫做完）”，本 IR 的新增范围与验收草案需确认后进入 T02。
 
 ### T01 文档检查结果
 
@@ -100,7 +100,7 @@ acceptance.json 本轮条目仅在 planned_requirements 中登记拟覆盖文件
 
 ### 下一步
 
-按 [SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第⑤步的明确要求“人 review 测试是否覆盖到位”，本批等待用户审查覆盖内容。
+按 [SDD 工作流](../../AGENTS.md) 第⑤步的明确要求“人 review 测试是否覆盖到位”，本批等待用户审查覆盖内容。
 确认后执行 T03：只修改实现使这 61 项测试转绿，不修改已审测试或重生成旧库夹具来绕过失败。
 
 ## T03 · 来源构建、候选提交与 schema 3（已实现，全量回归通过）
@@ -221,7 +221,7 @@ T05 需实现后逐项运行这些断言，并按 skill 跑完整回归；不能
 
 ### 下一步：覆盖审查后进入 T05
 
-依据 [SDD skill 第⑤步](../../.agents/skills/sdd-workflow/SKILL.md) 的明确要求：“人 review 测试是否覆盖到位”。
+依据 [SDD 工作流 第⑤步](../../AGENTS.md) 的明确要求：“人 review 测试是否覆盖到位”。
 本批测试及以上覆盖表已经写好，当前停在该审查点；用户确认后，T05 才实现服务受理、执行器、Blueprint、启动装配、查询与下载，使这 70 项测试转绿。
 IR-018 仍为 in-progress，不把 T04 视为整轮交付，也不标记 UI 已实现。
 
@@ -346,7 +346,7 @@ env PATH="<Node.js 安装目录>/bin:$PATH" .venv/bin/python -m pytest tests/uni
 
 ### 下一步：覆盖审查后进入 T07
 
-依据 [SDD skill 第⑤步](../../.agents/skills/sdd-workflow/SKILL.md) 的明确要求：“人 review 测试是否覆盖到位”。
+依据 [SDD 工作流 第⑤步](../../AGENTS.md) 的明确要求：“人 review 测试是否覆盖到位”。
 本批测试和具体 UI 约定已经写好，当前停在覆盖审查点；确认后，T07 实现页面、路由、轮询清理、目录/详情/下载及统一检查接线，保持已审测试不变。
 IR-018 仍为 in-progress；最终交付和新 UI 联动通过需由 T07/T08 提供实际证据。
 

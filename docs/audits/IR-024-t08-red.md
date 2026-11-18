@@ -50,14 +50,14 @@ env PATH="<Node.js 安装目录>/bin:$PATH" \
   --output .check-results/IR-024-t08-red/browser-final
 ```
 
-- [HTTP／控制器结果](../../.check-results/IR-024-t08-red/targeted-final.log)
-- [浏览器／宿主结果](../../.check-results/IR-024-t08-red/browser-final.log)
-- [浏览器 JUnit](../../.check-results/IR-024-t08-red/browser-final/results.xml)，同目录各用例保存服务器日志、请求响应记录及最终截图。
-- [既有基线结果](../../.check-results/IR-024-t08-red/baseline.log)
+- HTTP／控制器结果（本地检查结果 `.check-results/IR-024-t08-red/targeted-final.log`，未提交到仓库）
+- 浏览器／宿主结果（本地检查结果 `.check-results/IR-024-t08-red/browser-final.log`，未提交到仓库）
+- 浏览器 JUnit（本地检查结果 `.check-results/IR-024-t08-red/browser-final/results.xml`，未提交到仓库），同目录各用例保存服务器日志、请求响应记录及最终截图。
+- 既有基线结果（本地检查结果 `.check-results/IR-024-t08-red/baseline.log`，未提交到仓库）
 - [机器记录与冻结摘要](IR-024-t08-red-results.json)
 
 ## 下一阶段
 
-按 [sdd-workflow](../../.agents/skills/sdd-workflow/SKILL.md) 第⑤环节“人 review 测试是否覆盖到位”，本次提交具体测试与 RED 证据供评审。
+按 [SDD 工作流](../../AGENTS.md) 第⑤环节“人 review 测试是否覆盖到位”，本次提交具体测试与 RED 证据供评审。
 评审通过后进入 T09，实现公开接口、宿主调度、同页设计工作区、下载与候选分流，并使这些测试转绿。
 真实模型质量验证仍属于 T10；本轮未调用用户模型端点、未重启用户服务、未迁移用户数据库。
