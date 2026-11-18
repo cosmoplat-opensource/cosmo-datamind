@@ -1,8 +1,10 @@
 # DR-153 · 应用契约注册与分层检查
 
+> 引用的开发中间材料仅保留本地副本；历史记录不代表当前版本已验证。
+
 - **状态 / Status**：accepted（用户确认核心流程，并继续进入 T02；实现未交付）。
 - **日期 / Date**：2026-11-12。
-- **关联 / Refs**：[IR-025](../iterations/IR-025-application-contract-registry.md)、[总方案](../../docs/datamind-application-contract-design.md)。
+- **关联 / Refs**：[IR-025](../iterations/IR-025-application-contract-registry.md)、总方案（本地材料）。
 
 ## 上下文 / Context
 
@@ -10,7 +12,7 @@
 
 ## 决定 / Decision
 
-用户已确认以下核心流程；接口、状态与迁移细则见 [T01 冻结契约](../contracts/application-contracts-v1.md)。
+用户已确认以下核心流程；接口、状态与迁移细则见 T01 冻结契约（本地材料）。
 T01 已冻结供 T02 测试使用，不表示已经实现。
 
 1. 构建沿用现有 TBox＋ABox 和 LLM／离线路径，保留类别、关系、属性确认及实例化步骤；构建成功即入库。只执行既有来源、语法、设计一致性和存储完整性检查，不运行应用契约检查，不增加应用选择或契约匹配步骤，不自动加入应用类或示例实例。

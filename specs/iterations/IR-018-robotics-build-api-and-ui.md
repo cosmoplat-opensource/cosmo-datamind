@@ -1,11 +1,13 @@
 # IR-018 · 第三阶段：机器人本体构建 API 与平台 UI
 
+> 引用的开发中间材料仅保留本地副本；历史记录不代表当前版本已验证。
+
 - **状态 / Status**: delivered
 - **日期 / Date**: 2026-11-04
 - **当前环节**：2026-11-04 用户明确确认整轮交付；T01～T08 完成，Deliverables 与 RBU-01～10 已验收。
 - **关联 / Refs**: [[DR-141-unified-domain-semantic-graph]]、[[DR-142-robotics-source-recipes-and-reverse-build]]、[[DR-145-local-domain-registration-and-application-ui]]、[[DR-146-persistent-build-runs-and-artifact-manifests]]、[[DR-147-robotics-migration-and-compatibility-validation]]。
 - **前置**：[IR-017](IR-017-ontology-assets-and-persistent-runs.md) 于 2026-11-04 经用户确认 delivered；IR-016 业务内核已交付。
-- **方案**：[集成 Proposal](../PROPOSAL-robotics-source-integration.md) 第 6 节步骤 3 与第 6.1 节前后端联动要求。
+- **方案**：集成 Proposal（本地材料） 第 6 节步骤 3 与第 6.1 节前后端联动要求。
 - **流程依据**：[SDD 工作流](../../AGENTS.md) 第③～⑤步；本轮范围确认不替代各批新测试覆盖审查。
 
 ## 目标 Goal
@@ -32,7 +34,7 @@
 | `ui/index.html` 的 #build 使用原生 JS；#library 读取 /api/ont/forged；#jobs 读取旧 JOBS | 沿用这些入口及样式，新模块承接机器人表单、目录详情和持久化运行展示，保留旧条目和深链 |
 | 现有 `tests/frontend/build-browser.py` 会拦截关键构建接口返回夹具 | 继续作为旧 UI 回归；新增机器人浏览器用例不得拦截核心上传/构建/查询/下载 API 返回成功替身 |
 
-详细盘点见 [IR-018 审计记录](../../docs/audits/IR-018-build-ui-validation.md)。
+详细盘点见 IR-018 审计记录（本地材料）。
 
 ### 用户操作路径与本轮边界
 
@@ -193,7 +195,7 @@ IR-017 的通过结果作为旧能力基线，不替代本轮的 RED/GREEN 与 U
 ### T02 范围确认与失败测试
 
 2026-11-04：用户确认本轮范围；新增三组测试及测试辅助模块、schema 2 冻结夹具。
-T02 当时尚未实现新增业务代码、HTTP 和 UI；以下是该批固定的 T03 服务边界，最终统计及覆盖表见 [审计记录](../../docs/audits/IR-018-build-ui-validation.md)。
+T02 当时尚未实现新增业务代码、HTTP 和 UI；以下是该批固定的 T03 服务边界，最终统计及覆盖表见 审计记录（本地材料）。
 
 | 接口 / 字段 | T02 固定的含义 |
 |---|---|
@@ -227,7 +229,7 @@ T02 实测：61 项，4 通过、57 预期失败，0 收集错误/跳过；旧�
 来源输入型运行、只读构建计算、候选原子提交、结构化来源问题及 schema 2→3 迁移已实现。
 已审 T02 的 61 项全部通过；113 个既有测试/夹具文件保持不变。
 完整九段检查退出 0：1088 单元通过、5 可选上游跳过，覆盖率 85.0%（门槛 81%）；551 HTTP 通过、8 可选上游跳过，严格 10/10；旧 UI 64 项、UI 实操 50 项（3 未配置真实模型跳过）、旧浏览器 10 项通过。
-详细证据见 [T03 GREEN 报告](../../docs/audits/IR-018-t03-green-results.json) 与 [审计记录](../../docs/audits/IR-018-build-ui-validation.md)。
+详细证据见 T03 GREEN 报告（本地材料） 与 审计记录（本地材料）。
 本批没有新增 HTTP/UI，不将旧浏览器回归当作新机器人链路验收；RBU-01～04/09 标为 partial-green-t03，整轮 Deliverables / Acceptance 仍待后续任务及最终交付确认。
 下一任务 T04 为 HTTP/执行器/恢复/下载等失败测试，按 skill 第⑤步写完后再进行新覆盖审查。
 
@@ -264,7 +266,7 @@ T02 实测：61 项，4 通过、57 预期失败，0 收集错误/跳过；旧�
 测试将预算缩短至 30 秒，超时场景使用受控阻塞子进程及 1.5 秒预算，避免依赖 RDF 性能；注入仅存在于测试 Python 组合，不是用户可选算法。
 
 本批包含真实 Flask 应用装配、实际构建子进程、实际宿主终止及新进程导入 WSGI 回查；尚不包含网络服务器/浏览器操作，不能替代 T06 的真实浏览器联动。
-详细覆盖、运行统计与文件摘要见 [审计记录](../../docs/audits/IR-018-build-ui-validation.md) 及 [T04 RED 记录](../../docs/audits/IR-018-t04-red-results.json)。
+详细覆盖、运行统计与文件摘要见 审计记录（本地材料） 及 T04 RED 记录（本地材料）。
 按照 skill 第⑤步“人 review 测试是否覆盖到位”，本批覆盖确认后才进入 T05；届时保持这些测试不变，只修改实现使其转绿。
 
 T04 检查补记：T03 已审 61 项回归通过、规格元测试 21 项通过，新三文件 ruff/mypy 通过；登记的 167 份基线文件（含 113 份既有测试/夹具）摘要未变，未运行本批全量回归。
@@ -282,7 +284,7 @@ T04 已审 70 项全部通过；116 份已跟踪测试/夹具摘要保持不变�
 完整九段检查退出 0：1158 单元通过、5 可选上游跳过；覆盖率 85.0%（保留 81% 门槛）；551 HTTP 通过、8 可选上游跳过；严格 10/10；旧 UI 64、UI 实操 50（3 未配置真实模型跳过）、旧浏览器 10 项通过。
 单元段实际耗时 806.106 秒，保留全部检查与门槛，将原 720 秒预算调整为有界 1200 秒；其他段仍为 360 秒。
 额外完成真实旧 schema 3 库的升级/回滚/只读验证，以及实际 Gunicorn 网络上传、工件摘要核对和整服务重启回查；临时存储和服务均已清理。
-配置、隔离启动及可直接使用的 curl 命令见 [API 指南](../../docs/robotics-build-api.md)；结果见 [T05 GREEN 记录](../../docs/audits/IR-018-t05-green-results.json)。
+配置、隔离启动及可直接使用的 curl 命令见 [API 指南](../../docs/robotics-build-api.md)；结果见 T05 GREEN 记录（本地材料）。
 本任务没有新 UI，实际网络验证也不冒充浏览器联动；整轮仍 in-progress，交付与验收复选框留最终人审。
 下一任务 T06 编写 UI 行为及真实后端浏览器失败测试，再按 skill 第⑤步提交覆盖审查。
 
@@ -363,7 +365,7 @@ env PATH="<Node.js 安装目录>/bin:$PATH" .venv/bin/python -m pytest tests/uni
 Node/Chromium 缺失时明确失败，不通过 skip 隐藏覆盖；当前使用已安装 Node 22 与 /usr/bin/google-chrome。
 T07 要在 scripts/check.py 的统一检查里调用真实浏览器程序；本次用一条失败断言约束这项接线，尚未修改检查入口。
 RED：40 项状态/接线测试失败；14 项浏览器中环境对照 1 通过、13 项 UI 相关失败；共 54 项、53 预期失败，0 收集错误/跳过。
-T05 已审后端 70 项回归通过，静态/规格检查通过；详细证据见 [审计记录](../../docs/audits/IR-018-build-ui-validation.md) 和 [T06 RED 记录](../../docs/audits/IR-018-t06-red-results.json)。
+T05 已审后端 70 项回归通过，静态/规格检查通过；详细证据见 审计记录（本地材料） 和 T06 RED 记录（本地材料）。
 依据 skill 第⑤步“人 review 测试是否覆盖到位”，等待本批覆盖确认后进入 T07；T07 保持这些已审测试不变实现页面和接线，本轮不提前交付。
 
 
@@ -390,7 +392,7 @@ T05 已审后端 70 项回归通过，静态/规格检查通过；详细证据�
 | 来源保护 | 119 份测试/夹具完全不变；另一份仅有用户明确授权的 lambda 回调修正，全部断言不变 |
 
 使用路径和可直接执行的独立服务命令见 [UI 指南](../../docs/robotics-build-ui.md)。
-实际空工作目录启动、页面构建与桌面/手机截图已经核验；完整记录见 [T07 审计](../../docs/audits/IR-018-build-ui-validation.md) 和 [机器可读 GREEN 记录](../../docs/audits/IR-018-t07-green-results.json)。
+实际空工作目录启动、页面构建与桌面/手机截图已经核验；完整记录见 T07 审计（本地材料） 和 机器可读 GREEN 记录（本地材料）。
 本任务只完成 T07，不代替整轮人审；下一步 T08 汇总本轮交付、复核清单及遗留边界，IR 状态与全部验收复选框仍待人审。
 
 
@@ -401,7 +403,7 @@ T05 已审后端 70 项回归通过，静态/规格检查通过；详细证据�
 本次只补使用说明、验收对照与阶段状态，不改实现或测试；复用 T07 全量十段 GREEN，不把证据复核写成重新运行全部测试。
 已补 start.sh/.env 正常启动与重启路径、隔离试用区别、结构/任务适配/执行状态说明；不读取或修改用户业务存储，不提交 .env。
 RBU-01～10 criterion 与 tests 引用保持不变，状态更新为 verified-awaiting-human-delivery。
-最终审查入口见 [验收对照表](../../docs/audits/IR-018-build-ui-validation.md#t08-最终交付审查)、[交付机器记录](../../docs/audits/IR-018-t08-delivery-review.json) 和 [使用指南](../../docs/robotics-build-ui.md)。
+最终审查入口见 验收对照表（本地材料）、交付机器记录（本地材料） 和 [使用指南](../../docs/robotics-build-ui.md)。
 依 SDD skill 第⑨步“人确认这一轮做完了”，本 IR 的状态及 Deliverables/Acceptance 复选框留整轮人审；本次页面确认不自动批准后续图谱维护、发布、模型配置与行为树生成 UI。
 
 

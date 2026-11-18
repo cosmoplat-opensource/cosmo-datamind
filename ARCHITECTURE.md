@@ -210,5 +210,4 @@ LLM 构建与 quick_build 共用 `sqlite_evidence.relation_signals`，在完整�
 图谱范围与显式选表在 SQL 执行前用 SQLite authorizer 检查；离线模板不支持的问题报告为未覆盖。
 构建 SSE 必须有 done 才算完成，前端异步选择按当前请求判定，失败可重试。
 `python scripts/check.py --suite all` 在临时数据目录运行完整检查，清理服务，保存日志与退出码。
-最近一次代码清理、实际部署与 UI 检查见 [2026-10-12 复核报告](docs/audits/2026-10-12-code-cleanup.md)。
-此前检查见 [2026-09-07 审计报告](docs/audits/2026-09-07.md)。
+每次检查须关联代码版本、依赖与退出码；执行记录保留在本地或 CI 附件中。

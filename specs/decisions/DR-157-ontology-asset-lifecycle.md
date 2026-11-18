@@ -1,10 +1,12 @@
 # DR-157 · 本体删除恢复与历史保留
 
+> 引用的开发中间材料仅保留本地副本；历史记录不代表当前版本已验证。
+
 > 2026-11-18：已删除本体的版本详情、构建历史和数据改为只在 `?state=deleted` 的历史视图里返回，见 [DR-159](DR-159-pr1-review-fixes.md)。
 
 - **状态 / Status**：accepted（2026-11-16 用户授权继续 IR029，按既有逻辑删除方向启动；用户后续授权连续推进至 T06，2026-11-17 用户确认最终验收，IR029 已交付）。
 - **日期 / Date**：2026-11-12。
-- **关联 / Refs**：[IR-029](../iterations/IR-029-ontology-asset-lifecycle.md)、[总方案](../../docs/datamind-application-contract-design.md)。
+- **关联 / Refs**：[IR-029](../iterations/IR-029-ontology-asset-lifecycle.md)、总方案（本地材料）。
 
 ## 上下文 / Context
 
@@ -12,7 +14,7 @@
 
 ## 决定 / Decision
 
-用户授权按以下方向推进 IR029；具体接口、状态和迁移边界见 [T01 规约 v1](../contracts/ontology-asset-lifecycle-v1.md)，随 T02 测试提交阶段人审。
+用户授权按以下方向推进 IR029；具体接口、状态和迁移边界见 T01 规约 v1（本地材料），随 T02 测试提交阶段人审。
 
 1. 第一版提供逻辑删除和恢复，资产状态 active／deleted 与版本发布状态分别存储；页面明确说明从目录和应用选择中移除但保留历史，不承诺物理擦除。永久清理和留存期限另行设计。
 

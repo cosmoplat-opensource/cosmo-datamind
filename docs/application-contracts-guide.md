@@ -96,7 +96,7 @@ IR-028 T05 已在实际宿主启用 data.deep_qa，现有同步／SSE 问数自�
 report 含 check_id、checked_at、application_id、contract_version、asset_refs、payload_hashes、task_ref、task_hash、context、environment_revision、basis、layers、issues、allowed_actions 和三类判断字段。
 四层的 checks 保留每项结果；issues 使用稳定 code，并保留关联实体、证据和修复建议。
 无任务时 task_ref=null、execution_status=not_evaluated。
-真实接口取得的完整样例见 [T06 HTTP 样例](audits/IR-025-t06-http-examples.json)，其中资产只存在于隔离测试库，不能直接复用其 ID。
+调用时使用当前环境的资产与版本 ID；隔离测试生成的 ID 不能直接用于其他环境。
 
 同 request_id、相同输入返回 200／replayed=true，不重新运行检查。
 同 ID 不同输入返回 409/request_conflict；主动复查必须使用新 ID。
@@ -207,20 +207,11 @@ strict 先补全业务知识，再提供当前范围的适配依据；offline �
 下载时选择同一固定版本的 OWL 和完整 JSON，不能将父版本 v1 JSON 与子版本 v2 OWL 混用。
 回退应恢复升级前匹配的数据库及工件备份，并保留回退后新版本的独立备份；不覆盖旧文件或删除新版本来伪装格式降级。
 
-## 后续交接
+## 深度问数接入
 
-- IR-026 T06：真实副本、新旧 UR 对照和全量回归均已通过，已由用户提交指令确认交付；见 [交付评审](audits/IR-026-t06-delivery-review.md)。
-- IR-027：完整本体详情、历史状态呈现与修复导航体验；[T03 GREEN](audits/IR-027-t03-green-review.md) 及回归已通过，[T04 集成 RED](audits/IR-027-t04-red-review.md) 已获继续指令，[T05 GREEN](audits/IR-027-t05-green-review.md) 及全量回归已通过；[T06 真实副本验证](audits/IR-027-t06-delivery-review.md) 20 项通过，已于 2026-11-16 获用户确认交付。
-- IR-028：现有深度问数接入、数据连接与编辑／缓存新鲜性。
-- IR-029：删除恢复、生命周期修订与执行受理保护。
-
-### IR-028 问数接入（T05）
-
-兼容与接口见 [深度问数兼容规约 v1](../specs/contracts/deepqa-application-compatibility-v1.md)。
 `application_contracts.deepqa.DataQAAdapter` 绑定现有宿主的有效 IR、查询连接画像、只读／单语句／本体 SQL 校验、指标卡与离线规划函数。
 适配器读取人工编辑后的旧图谱或已登记的固定数据版本，保留多图顺序、可查询子集、上传表及原指标状态；不发起模型调用、业务 SQL 执行或隐式入库。
 数据表未绑定／不可用时返回对象或表定位及修复建议；部分表不可用时仍可询问可用子集，具体 SQL 继续走现有守卫。
-T05 已接入现有 HTTP 问数和缓存；T06 仍需完成真实数据／浏览器验收及人审交付。
 
 同步响应及 SSE done/error 增量返回 `application_check`，含准备状态、缺项建议、依据摘要和影子比较；旧字段及事件顺序兼容，历史对话保留该摘要。
 缺项错误可展开查看问题，并进入现有数据连接或本体评审；不新增应用选择步骤。
@@ -229,13 +220,5 @@ T05 已接入现有 HTTP 问数和缓存；T06 仍需完成真实数据／浏览
 现有 build/delete 和 forged/delete 在删文件前写 `qa_deleted_graphs.json`；记录损坏时拒绝删除／问数，不回退示例。此记录不提供 IR-029 的资产删除恢复功能。
 固定数据版本可通过已有 `/api/application-checks` 显式保存及读取准备检查；现有 `/api/chat` 仍使用 graphs/tables，不能借 asset_refs 或伪造的检查结果跳过实际检查。
 
-IR-028 T05 最终验证：156 项定向通过，原始全量命令 14 段完整退出 0，2518 单元通过／5 原有可选跳过，覆盖率 86.3%；真实用户数据和完整流程验收留待 T06。详见 [T05 评审](audits/IR-028-t05-green-review.md)。
-
-### IR-028 T06 验收与交付（2026-11-16）
-
-用户确认本轮功能并要求继续后，已补齐实际问数、完整浏览器验收和最终全量回归，IR-028 收尾为 delivered。
-物理表名可以与中文相邻，例如 `fact_ap这个表有多少条记录?`；当前示例数据返回 80 条，无模型时亦可通过限定范围内的计数兜底回答，带业务筛选条件仍不会被无条件总数替代。
-SQL 引号不会使实际用表数归零或触发错误的意图不一致提示；多图、部分可用、缺项修复、旧会话删除拒绝及历史范围恢复已在实际页面验证。
-8 道既有题与参考答案相符，48 组模式／协议复放、21 次真实 HTTP 请求和 199 项定向检查通过；最终原始全量 14 段通过，2553 单元通过／5 原有可选跳过，覆盖率 86.3%。
-真实模型验证只覆盖 SQL 规划，叙述使用现有规则摘要；UI 仍绕过缓存，真实缓存命中另由 HTTP 验证。
-未重启用户服务、未提交 Git；修复需运行服务加载新代码后生效。详见 [T06 验收与截图](audits/IR-028-t06-acceptance.md)。
+物理表名可以与中文相邻，例如 `fact_ap这个表有多少条记录?`；无模型时可在限定范围内进行计数兜底，带业务筛选条件时不会用无条件总数替代。
+SQL 使用引号时仍按实际用表检查本体范围；删除的旧会话拒绝继续执行，历史读取和恢复受生命周期边界约束。

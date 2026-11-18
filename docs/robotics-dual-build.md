@@ -72,8 +72,7 @@ TBox 声明了工位、槽位、位姿等类别，也不意味着当前规则能
 升级前按现有部署流程备份存储；不要把存储根切换为未知 schema 或多机器共享调度目录。
 关闭机器人功能后拒绝新的设计写操作，已有当前 schema 会话、运行和工件仍可只读访问。
 
-公开 HTTP 的字段和错误见 [设计 HTTP 契约](../specs/contracts/robotics-design-http-ui-v1.md) 和 [设计服务契约](../specs/contracts/robotics-design-service-v1.md)。
-核心迁入来源见 [上游摘要清单](../specs/sources/IR-024-robotics-sources.json) 和 [包内迁入清单](../specs/sources/IR-024-t05-migration.json)。
+构建上传与运行查询见 [构建 API](robotics-build-api.md)，应用检查与缺项修复见 [应用指南](application-contracts-guide.md)。
 运行时不依赖源项目工程目录，不加载其 `.env`、Web 服务或聊天模型客户端；ABox 不使用模型自由生成实例。
 
 全量复核：`.venv/bin/python scripts/check.py --suite all`，Node 必须在 PATH 中。

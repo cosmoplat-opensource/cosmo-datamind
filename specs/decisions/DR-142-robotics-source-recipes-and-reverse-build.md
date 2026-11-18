@@ -1,8 +1,10 @@
 # DR-142 · 机器人本体自动构建、增量编辑与发布契约
 
+> 引用的开发中间材料仅保留本地副本；历史记录不代表当前版本已验证。
+
 - **状态 / Status**: accepted（2026-11-18 由仓库维护者确认：代码已于 2026-11-17 经 PR #1 合入 master，合入后的审查与修复见 DR-159）
 - **日期 / Date**: 2026-11-02
-- **关联 / Refs**: [[DR-050-executable-ontology-build-gate]]、[[DR-056-evidence-integrity-and-isolated-validation]]、[[DR-141-unified-domain-semantic-graph]]、[集成技术方案](../PROPOSAL-robotics-source-integration.md)
+- **关联 / Refs**: [[DR-050-executable-ontology-build-gate]]、[[DR-056-evidence-integrity-and-isolated-validation]]、[[DR-141-unified-domain-semantic-graph]]、集成技术方案（本地材料）
 
 ## 上下文 / Context
 

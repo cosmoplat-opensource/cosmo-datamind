@@ -64,7 +64,6 @@ SQLite 写事务串行分配运行内事件序号；`events(run_id, after=N)` �
 T07 的 `domain_runs.robotics.generate_from_version` 接收指定已发布版本和结构化任务，保存实际候选字节及报告。
 `domain_runs.verification.verify_storage` 通过只读连接核验历史及文件，不初始化、迁移或恢复运行。
 可直接运行的 CLI、三场景说明和接口用法见 [离线演示](../docs/domain-storage-demo.md)。
-审计见 [IR-017 验证记录](../docs/audits/IR-017-storage-validation.md)。
 
 ## 机器人构建 API 与执行器（IR-018 T05）
 
