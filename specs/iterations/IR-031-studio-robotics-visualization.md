@@ -1,5 +1,7 @@
 # IR-031 · Studio 共享图谱与机器人连续可视化
 
+> 引用的开发中间材料仅保留本地副本；历史记录不代表当前版本已验证。
+
 - **状态 / Status**：delivered（2026-11-17 按用户免等待 review 授权完成技术交付，17 阶段全量通过）。
 - **日期 / Date**：2026-11-17。
 - **关联 / Refs**：[DR-159](../decisions/DR-159-studio-ontology-visualization.md)、[IR-024](IR-024-robotics-dual-build.md)、[IR-027](IR-027-ontology-detail-experience.md)、[IR-032](IR-032-studio-data-visualization.md)。
@@ -91,8 +93,8 @@ T01 已冻结共享图谱契约；产品实现及最终全量尚未完成。
 
 ## T01 执行记录（2026-11-17）
 
-已冻结 [视图契约 v1](../contracts/studio-graph-view-v1.md)，补齐完整 IRI、匿名并集、显式实例口径、revision／epoch 与 50 条分批的具体规则。
-源码摘要与环境见 [来源清单](../sources/IR-031-studio-sources.json)，运行不依赖附件路径。
+已冻结 视图契约 v1（本地材料），补齐完整 IRI、匿名并集、显式实例口径、revision／epoch 与 50 条分批的具体规则。
+源码摘要与环境见 来源清单（本地材料），运行不依赖附件路径。
 当前详情投影展平 unionOf、旧关系投影缩短类型 IRI 的信息损失已列为新投影必须解决项。
 T01 的验收限于契约、来源和基线，尚未声明组件性能或完整 IR 验收通过。
 
@@ -107,25 +109,25 @@ T01 相关基线 16 项通过，来源摘要／链接／diff 检查通过，见 
 2 个通过项是独立 RDF 语义和设计确认摘要夹具检查，不算新能力通过。
 既有追溯、关系图、设计候选和设计控制器相关回归 44 passed，ruff／Node 语法／diff 检查通过。
 STV-R01／02／04／05／06 的实际测试已进入正式映射并标为 red，浏览器计划保留；STV-R03 的真实拖拽与几何验收仍为计划项。
-详见 [RED 人审记录](../../docs/audits/IR-031-t02-red-review.md) 和 [机器结果](../../docs/audits/IR-031-t02-results.json)。
+详见 RED 人审记录（本地材料） 和 机器结果（本地材料）。
 
 
 ## T03 连续推进
 
 投影、控制器与只读接口完成，31 项新用例 GREEN，相关回归合计 103 passed。
-原 T02 的 6 项 Node 启动错误已纠正并保留原始证据，不将环境错误冒称产品 RED；详见 [T03 记录](../../docs/audits/IR-031-t03-green-review.md)。
+原 T02 的 6 项 Node 启动错误已纠正并保留原始证据，不将环境错误冒称产品 RED；详见 T03 记录（本地材料）。
 
 
 ## T04 页面 RED
 
-见 [T04 记录](../../docs/audits/IR-031-t04-red-review.md)。
+见 T04 记录（本地材料）。
 
 
 ## T05 页面 GREEN
 
 六项新浏览器检查、65 项相关基线、19 项旧构建浏览器和三项固定版本 HTTP 通过；历史选择器的两项旧断言按 DR-159 更新并补强只读验证，定向通过。
 大类别通过 50 条分页可访问到最后实例；新增浏览器纳入标准完整检查链。
-详见 [T05 记录](../../docs/audits/IR-031-t05-green-review.md) 与 [使用说明](../../docs/studio-robotics-guide.md)。
+详见 T05 记录（本地材料） 与 [使用说明](../../docs/studio-robotics-guide.md)。
 
 
 ## T06 最终交付（2026-11-17）
@@ -134,5 +136,5 @@ STV-R01／02／04／05／06 的实际测试已进入正式映射并标为 red，
 HTTP 536 通过，严格 10 轮通过，Studio 浏览器 7 项和既有机器人／详情浏览器全部通过。
 702 份源码／测试／配置输入在验证期间未变；随后仅补交付文档与验收元数据。
 补齐默认可读字号、全图切换、历史选择期间晚到产物缓存与恢复、既有故障注入跨库污染的隔离修正。
-详见 [最终验收](../../docs/audits/IR-031-t06-acceptance.md)、[机器结果](../../docs/audits/IR-031-t06-results.json) 与 [最终截图](../../docs/img/studio-robotics-workspace.png)。
+详见 最终验收（本地材料）、机器结果（本地材料） 与 [最终截图](../../docs/img/studio-robotics-workspace.png)。
 全部交付和验收按本次授权勾选，IR 标记 delivered；本轮未启动 IR-032。

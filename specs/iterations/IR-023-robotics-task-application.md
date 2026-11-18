@@ -1,5 +1,7 @@
 # IR-023 · 行为树生成应用与历史记录
 
+> 引用的开发中间材料仅保留本地副本；历史记录不代表当前版本已验证。
+
 - 状态：in-progress。
 - 日期：2026-11-09。
 - 关联：[DR-151](../decisions/DR-151-robotics-task-application.md)。
@@ -26,7 +28,7 @@
 任务提交：T01 `acf6290`；T02 `0714ecc`；T03 为本次验证与交付记录提交。
 
 使用说明：[行为树生成应用](../../docs/robotics-task-application.md)。
-审计：[本轮验证记录](../../docs/audits/IR-023-task-application-validation.md)。
+审计：本轮验证记录（本地材料）。
 
 ## 验收
 

@@ -4,7 +4,7 @@
 
 ## 环境
 
-Python 3.10+，使用项目虚拟环境及 `requirements.txt` / `requirements-dev.txt`。Node 必须在测试子进程 PATH 中；项目已有 Playwright 随包 Node 时可复用。浏览器使用 Playwright Chromium 或 `DATAMIND_BROWSER_EXECUTABLE` 指定的 Chrome。不得加载真实模型凭据、生产数据库或用户运行目录。
+Python 3.10+，使用项目虚拟环境及固定开发依赖：`pip install -r requirements-dev.txt -r requirements-ui.txt`。完整单元检查包含详情组件浏览器用例，还需 `python -m playwright install --with-deps chromium` 或已安装的 Chrome。Node 必须在测试子进程 PATH 中；项目已有 Playwright 随包 Node 时可复用。浏览器使用 Playwright Chromium 或 `DATAMIND_BROWSER_EXECUTABLE` 指定的 Chrome。不得加载真实模型凭据、生产数据库或用户运行目录。
 
 ```bash
 # 仅为当前命令选择已有运行时，不修改系统 PATH。
@@ -30,3 +30,13 @@ env PATH="$NODE_BIN:$PATH" .venv/bin/python scripts/check.py --suite all
 
 来源清单中的 `${ROBOTICS_SOURCE_ROOT}` 是脱敏后的来源标识，历史诊断中的 `${HOME}` 代替个人目录；这些占位符不构成应用运行时依赖，不需要为运行程序配置外部源码目录。
 受控词表只修改来源元数据，术语定义不变；文件摘要因此变化，新会话绑定新摘要。已有会话按自身保存的词表及摘要校验，固定版本继续按原始载荷摘要读取，不重写用户历史。演示文件及迁移测试快照的摘要随脱敏副本更新，不应将测试副本写入用户存量资产。
+
+## 执行时间与测试隔离
+
+单元检查默认使用不超过 4 个、且不超过 `os.cpu_count()` 的工作进程，完整测试集和三层覆盖率门槛不变。`--workers 1` 可运行单进程对照。pytest-cov 使用原 `pyproject.toml` 的 source、branch 和 omit 配置并汇总各进程覆盖率。
+
+任务测试仅复用真实构建得到的初始本体字节和报告；每个用例仍经原受理及保存服务获得新资产、运行身份和独立数据库，保存会重新检查来源与完整本体语义。测试中的变更、读取、校验、生成、持久化和回滚均保持原实现。直接验证构建流程的用例继续每次真实构建，不复用其待测结果。
+
+默认报告目录包含 `unit.xml` 的逐用例耗时和 `unit.log` 的慢用例排行。对比性能时记录代码版本、依赖、CPU、进程数、测试数量、覆盖率以及总耗时；只比较相同配置的运行，将准备数据优化与并行加速分开说明。逐次运行记录保留在本地或 CI 附件。
+
+验证优化是否损失既有覆盖时，可用 `coverage.CoverageData` 分别读取同一生产代码版本的两份 `.coverage`，按生产文件比较 `lines()` 和 `arcs()` 集合，确认旧运行中覆盖的行与分支在新运行中仍存在。不同检出目录需先按仓库相对路径归一化；仅比较覆盖率百分比不能替代这一检查。

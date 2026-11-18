@@ -3,7 +3,7 @@
 T05 接通真实双 XML 上传、后台构建、持久运行、候选版本和下载；T07 已接入页面，操作路径见 [UI 指南](robotics-build-ui.md)。
 仅支持 `bt_xml` 配方和 `ur_pick_place` profile，不自动正式发布或执行机器人动作。
 IR-024 已增加平台模型路由；未配置模型时沿用本文旧离线构建，配置有效时受理为设计会话。
-当前双路径操作、完整 JSON 和限制见 [双路径指南](robotics-dual-build.md)，接口见 [设计 HTTP 契约](../specs/contracts/robotics-design-http-ui-v1.md)。
+当前双路径操作、完整 JSON 和限制见 [双路径指南](robotics-dual-build.md)，接口见 设计 HTTP 契约。
 
 ## 隔离启动
 
@@ -100,7 +100,7 @@ curl -sS -X POST 'http://127.0.0.1:8093/api/domain-runs/<run_id>/retry' \
 ## 验证边界
 
 T04 已审的 70 项测试验证服务/HTTP/真实计算子进程/宿主交接与实际应用装配；T05 另有实际 Gunicorn 网络上传、下载和重启回查证据。
-T07 已完成新 UI 与实际后端浏览器联动，证据见 [T07 审计记录](audits/IR-018-build-ui-validation.md)；整轮交付仍待 T08 人审。
+T07 已完成新 UI 与实际后端浏览器联动，证据见 T07 审计记录；整轮交付仍待 T08 人审。
 
 ```bash
 .venv/bin/python -m pytest tests/unit/test_domain_build_executor.py tests/unit/test_robotics_build_http.py -q
@@ -109,4 +109,4 @@ env PATH="${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" \
 ```
 
 最后一条 PATH 使用当前环境已安装的 Node 22；其他机器应把可用 Node 加入 PATH。
-结果与范围见 [IR-018 审计记录](audits/IR-018-build-ui-validation.md)。
+结果与范围见 IR-018 审计记录。

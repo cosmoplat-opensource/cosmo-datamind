@@ -51,6 +51,17 @@ def isolated_env(directory):
     return env
 
 
+def unit_command(py, reports, workers):
+    if workers not in range(1, 5):
+        raise ValueError('Unit workers must be between 1 and 4')
+    command = [py, '-m', 'pytest', 'tests/', '-ra', '--cov', '--cov-report=',
+               '--cov-config=' + str(ROOT / 'pyproject.toml'), '--durations=30',
+               '--junitxml=' + str(Path(reports) / 'unit.xml')]
+    if workers > 1:
+        command.extend(['-n', str(workers), '--dist', 'worksteal'])
+    return command
+
+
 def run_check(name, args, env, reports, results):
     start = time.monotonic()
     # DR-154: T03's 2232 cases took 2017s under coverage. T05 adds 52 service/task
@@ -86,6 +97,8 @@ def run_check(name, args, env, reports, results):
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--suite", choices=("unit", "integration", "ui", "all", "serve"), default="all")
+    ap.add_argument("--workers", type=int, choices=range(1, 5), default=min(4, os.cpu_count() or 1),
+                    help="Bounded unit workers; use 1 for the serial comparison")
     ap.add_argument("--report-dir", type=Path, default=ROOT / ".check-results")
     args = ap.parse_args()
     reports = args.report_dir.resolve()
@@ -103,7 +116,7 @@ def main():
             for name, command in (
                 ("lint", [py, "-m", "ruff", "check", "."]),
                 ("types", [py, "-m", "mypy", ".", "--no-error-summary"]),
-                ("unit", [py, "-m", "coverage", "run", "-m", "pytest", "tests/", "-ra"]),
+                ("unit", unit_command(py, reports, args.workers)),
                 ("coverage", [py, "-m", "coverage", "report"]),
                 # 分层下限(DR-106):确定性模块与路由层各自不得低于基线,避免高覆盖的小模块掩盖 server.py
                 ("coverage-core", [py, "-m", "coverage", "report", "--omit=" + ROUTE_LAYER + ",tests/*,ath_adapter/e2e/*",

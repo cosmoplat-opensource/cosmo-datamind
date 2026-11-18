@@ -1,11 +1,13 @@
 # IR-019 · 第四阶段：机器人知识维护、重建合并与评审发布
 
+> 引用的开发中间材料仅保留本地副本；历史记录不代表当前版本已验证。
+
 - **状态 / Status**: in-progress
 - **日期 / Date**: 2026-11-05
 - **当前环节**：T07 实现与全量回归 GREEN；用户要求简化默认体验，T08 整轮交付暂缓，由 [DR-148](../decisions/DR-148-minimal-robotics-task-workflow.md) / [IR-020](IR-020-minimal-robotics-task-workflow.md) 优先打通构建到行为树生成。
 - **关联 / Refs**: [[DR-141-unified-domain-semantic-graph]]、[[DR-142-robotics-source-recipes-and-reverse-build]]、[[DR-143-parameter-contracts-calibration-and-readiness]]、[[DR-145-local-domain-registration-and-application-ui]]、[[DR-146-persistent-build-runs-and-artifact-manifests]]、[[DR-147-robotics-migration-and-compatibility-validation]]。
 - **前置**：[IR-018](IR-018-robotics-build-api-and-ui.md) 已于 2026-11-04 经用户确认 delivered。
-- **方案**：[集成 Proposal](../PROPOSAL-robotics-integration.md) 步骤 4；步骤 5～6 的任务提取和行为树应用仍另立 IR。
+- **方案**：集成 Proposal（本地材料） 步骤 4；步骤 5～6 的任务提取和行为树应用仍另立 IR。
 - **流程依据**：[SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第③～⑤步；本轮范围确认与各批测试覆盖确认分别记录。
 
 ## 目标 Goal（已确认）
@@ -47,7 +49,7 @@ API、RDF 类与字段标识不随文案改名；后续界面禁止把上述三�
 | RunStore 现有构建/生成输入契约固定，旧 HTTP 运行入口只支持 build_ontology | 治理记录按资产/版本独立保存，不伪装成构建运行，不放宽旧运行输入或修改旧 manifest |
 | UI 为原生 JS，library 固定版本详情已有路由；本体评审页主要是原数据功能 | 新增知识维护模块与机器人评审区，复用本体库/评审入口，保留原数据操作 |
 
-更多证据及文件位置见 [本轮审计起点](../../docs/audits/IR-019-knowledge-validation.md)。
+更多证据及文件位置见 本轮审计起点（本地材料）。
 
 ### 本轮边界与具体用户路径
 
@@ -373,7 +375,7 @@ planned_requirements 中列预计测试文件，尚无真实测试函数引用�
 冻结夹具 `tests/fixtures/domain_storage/schema4_snapshot.json` 由真实 schema 4 代码生成，记录生成提交，复用 schema2 冻结文件的摘要和原字节。
 恢复测试直接建冻结 SQL/文件，不调用当前初始化器伪造旧 schema；包含旧状态运行、已完成新来源构建、排队构建和去重记录。
 所有材料、署名、审核及 demo 正例均为合成测试输入；真实负例仍要求缺证据不能生成。
-本批结果、实际映射、失败原因和覆盖审查清单见 [T02 审计](../../docs/audits/IR-019-knowledge-validation.md)。
+本批结果、实际映射、失败原因和覆盖审查清单见 T02 审计（本地材料）。
 
 
 ## T03 实施记录（2026-11-05）
@@ -408,7 +410,7 @@ T03 为后端切片完成，完整 UI/HTTP/CLI 的交付和 RKG 最终勾选仍�
 HTTP 契约与失败测试已编写；34 个函数展开为 83 项，最终 7 项对照通过、76 项预期失败，0 错误、0 跳过。
 现有全局保护 6 项与 T03 夹具对照 1 项已通过，不代表新增 HTTP 已实现；失败来自新增路由缺失或版本详情尚无新工件字段。
 元测试 21 项、ruff、mypy 和 diff 检查通过；原 127 个已审测试/夹具与 T03 生产实现保持不变。
-覆盖矩阵、运行命令、失败边界见 [T04 审计](../../docs/audits/IR-019-knowledge-validation.md#t04--http-red-覆盖审查2026-11-05)。
+覆盖矩阵、运行命令、失败边界见 T04 审计（本地材料）。
 当前等待 SDD 第⑤步的覆盖审查；T05 HTTP 实现与全量回归尚未开始，Deliverables/Acceptance 不提前勾选。
 
 
@@ -421,7 +423,7 @@ HTTP 契约与失败测试已编写；34 个函数展开为 83 项，最终 7 �
 T05 最终结果：新增治理 HTTP、固定版本知识/差异/附件读取与写入、审核发布及版本下载已实现；未修改已审测试。
 定向 158 项通过；全量独立重跑十段均退出 0，其中单元 1403 通过 / 5 可选跳过，覆盖率 85.4%，HTTP 551 通过 / 8 条件跳过，严格场景 10/10，UI 64 通过，UI 实操 50 通过 / 3 未配置模型跳过，原构建浏览器 10 通过，机器人真实浏览器 14 通过。
 首轮外层 SIGTERM 中断未计为完整通过；保留日志并独立重跑同一全量命令取得退出码 0，未缩减检查或修改预算。
-详细结果与中断记录见 [T05 审计](../../docs/audits/IR-019-knowledge-validation.md#t05--治理-http-与版本下载实现2026-11-05) 和 [机器审计](../../docs/audits/IR-019-t05-green-results.json)。
+详细结果与中断记录见 T05 审计（本地材料） 和 机器审计（本地材料）。
 本批仍不包含新知识维护 UI / 独立演示 CLI；下一步 T06 先写状态、浏览器与 CLI 失败测试并提交覆盖审查，整轮 Deliverables/Acceptance 不提前勾选。
 
 ## T06 执行记录（2026-11-05，待覆盖审查）
@@ -431,7 +433,7 @@ T05 最终结果：新增治理 HTTP、固定版本知识/差异/附件读取与
 后续断言已经写入但尚未到达，不把 RED 结果当作 UI/CLI 功能通过。
 新增测试静态检查通过，规约元测试 21 项通过；129 个已有已审文件和 16 个生产文件保持不变。
 acceptance 的 RKG-10 / RKG-12 已由计划映射转成实际测试引用，全部 criterion 和旧测试引用保留。
-具体范围、阈值发布前提修正、命令及日志见 [T06 审计](../../docs/audits/IR-019-knowledge-validation.md)与[机器结果](../../docs/audits/IR-019-t06-red-results.json)。
+具体范围、阈值发布前提修正、命令及日志见 T06 审计（本地材料）与机器结果（本地材料）。
 按 SDD 第⑤步等待人审覆盖后再进入 T07，实现知识维护/审核 UI、独立演示 CLI 及统一浏览器检查；整轮交付与验收项不提前勾选。
 
 ## T07 执行记录（2026-11-05，GREEN）
@@ -454,5 +456,5 @@ T07 最终结果：全量单元 1452 通过、5 个可选上游组件跳过（71
 HTTP 集成 551 通过、8 个可选依赖跳过；严格场景 10/10；原 UI 走查 64 通过、实操 50 通过/3 未配置模型跳过；原构建 10、机器人构建 14、新知识治理浏览器 16 项全部通过。
 全量外层耗时 1044.638 秒；生产 10 文件与全量前冻结摘要一致，已审 134 文件不变。没有将跳过计入通过。
 四个独立离线演示场景实际运行成功，独立核验 13 个固定版本；操作步骤见 [指南](../../docs/robotics-knowledge-service.md)。
-完整日志、早期失败、校验优化对照及最终摘要见 [T07 审计](../../docs/audits/IR-019-knowledge-validation.md)和[机器结果](../../docs/audits/IR-019-t07-green-results.json)。
+完整日志、早期失败、校验优化对照及最终摘要见 T07 审计（本地材料）和机器结果（本地材料）。
 T07 已完成，下一步 T08 按 SDD 第⑨步进行人审交付；本轮范围不包含完整图画布、自然语言生成或 XML 在线编辑。

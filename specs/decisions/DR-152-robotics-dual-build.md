@@ -1,5 +1,7 @@
 # DR-152 · 机器人本体统一入口与模型／离线双路径
 
+> 引用的开发中间材料仅保留本地副本；历史记录不代表当前版本已验证。
+
 - **状态 / Status**：accepted（2026-11-10 用户确认方案无问题并要求继续下一步）。
 - **日期 / Date**：2026-11-09。
 - **关联 / Refs**：[IR-024](../iterations/IR-024-robotics-dual-build.md)、[DR-142](DR-142-robotics-source-recipes-and-reverse-build.md)、[DR-146](DR-146-persistent-build-runs-and-artifact-manifests.md)、[DR-149](DR-149-offline-candidates-and-readable-versions.md)、[DR-151](DR-151-robotics-task-application.md)。
@@ -36,7 +38,7 @@
 ### 已确认的技术细则
 
 以下细则随本方案于 2026-11-10 获用户确认。
-具体接口和配置判定冻结于 [构建契约 v1](../contracts/robotics-dual-build-v1.md)，实现不得绕过下面的语义边界。
+具体接口和配置判定冻结于 构建契约 v1（本地材料），实现不得绕过下面的语义边界。
 
 5. UI 不提供模型／离线模式选择器，由后端决定并显示实际构建方式。
 自然语言建模要求在模型路径中作为输入，在离线路径中明确显示不参与语义建模，不宣称旧方案理解了文本要求。

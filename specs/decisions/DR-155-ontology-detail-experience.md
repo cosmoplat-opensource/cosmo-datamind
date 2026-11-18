@@ -1,9 +1,11 @@
 # DR-155 · 本体详情与应用修复体验
 
+> 引用的开发中间材料仅保留本地副本；历史记录不代表当前版本已验证。
+
 - **状态 / Status**：accepted（2026-11-13 用户在 T01／T02 评审后要求继续下一步，进入 T03 GREEN）。
 - **日期 / Date**：2026-11-12。
-- **关联 / Refs**：[IR-027](../iterations/IR-027-ontology-detail-experience.md)、[总方案](../../docs/datamind-application-contract-design.md)。
-- **细化规约**：[本体详情体验 v1](../contracts/ontology-detail-experience-v1.md)（2026-11-13，T01／T02 已获继续指令）。
+- **关联 / Refs**：[IR-027](../iterations/IR-027-ontology-detail-experience.md)、总方案（本地材料）。
+- **细化规约**：本体详情体验 v1（本地材料）（2026-11-13，T01／T02 已获继续指令）。
 
 ## 上下文 / Context
 

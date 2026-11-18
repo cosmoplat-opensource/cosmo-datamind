@@ -1,10 +1,12 @@
 # IR-026 · 机器人应用检查与可追溯补全
 
+> 引用的开发中间材料仅保留本地副本；历史记录不代表当前版本已验证。
+
 - **状态 / Status**：delivered（2026-11-13 用户在 T06 交付评审后要求提交代码，确认本轮交付）。
 - **日期 / Date**：2026-11-12。
 - **更新 / Updated**：2026-11-13。
 - **关联 / Refs**：[DR-154](../decisions/DR-154-robotics-application-adaptation.md)。
-- **T01 规约**：[机器人应用适配 v1](../contracts/robotics-application-adaptation-v1.md)。
+- **T01 规约**：机器人应用适配 v1（本地材料）。
 
 ## 目标 Goal
 
@@ -73,7 +75,7 @@ T02／T04 已建立正式验收映射；T06 真实副本与全量回归通过，
 用户确认业务补全复用原载具／槽位／感知配置步骤后，明确确认没有问题并要求继续；据此冻结 T01，进入 T02。
 新增三组纯核心测试与一个共用夹具，共 70 个参数化用例；68 项缺目标模块的预期失败，2 项旧语义／编译基线通过，0 收集错误、0 跳过。
 角色完整 IRI 和语义、XML 执行顺序／scope／端口／静态绑定、身份映射、公开配置及总 JSON／OWL 一致性均有断言。
-详见 [测试评审](../../docs/audits/IR-026-t02-red-review.md)、[结果记录](../../docs/audits/IR-026-t02-red-results.json)；第 11 节固定本轮纯核心调用面。
+详见 测试评审（本地材料）、结果记录（本地材料）；第 11 节固定本轮纯核心调用面。
 没有修改旧测试、产品代码、来源输入或用户数据库，没有创建假实现，没有调用外部模型，没有提交 Git。
 HTTP／持久化／原任务返回／业务表单复用和移走 XML 后的整条任务链路继续由 T04/T05 覆盖；不提前宣称完整业务验收。
 RAC-01～05 原 criterion 不变，已加入实际测试引用并标记 created-red-partial；业务验收未勾选。
@@ -84,7 +86,7 @@ RAC-01～05 原 criterion 不变，已加入实际测试引用并标记 created-
 
 用户在解释测试后明确要求继续，T02 测试获准进入 GREEN。
 70 项已审用例全部通过，测试／夹具哈希不变；定向 lint／类型检查通过。
-实现角色校验、执行提取、标准身份映射、总 JSON/OWL 导出与独立恢复；详细实现及边界见 [T03 评审](../../docs/audits/IR-026-t03-green-review.md)、[结果记录](../../docs/audits/IR-026-t03-green-results.json)。
+实现角色校验、执行提取、标准身份映射、总 JSON/OWL 导出与独立恢复；详细实现及边界见 T03 评审（本地材料）、结果记录（本地材料）。
 T03 先交付纯核心派生结果及血缘数据，不建库、不发布；真实保存、修复、任务表单接入及无原 XML 的整条链路，按 T04 RED 后在 T05 GREEN 实现。
 整轮业务验收保持未勾选。
 
@@ -100,7 +102,7 @@ T03 最终全量 13 段通过：单测 2232 passed、5 skipped，覆盖率 85.7%
 已编写任务 choose／configure／complete 到真实编译器的断言，含业务创建／关联／确认、公开阈值与旧路径对照、每次版本的总 JSON／OWL 同步、原任务 CAS 返回和移走源 XML 后完整生成及历史。
 当前 RED 多数停在服务入口，后续断言尚未执行到，不能视为业务闭环已经通过。
 服务重放、并发、源损坏、工作头冲突、写入回滚、重启、旧库升级、HTTP 守卫与 v2 篡改也纳入测试。
-完整评审见 [T04 测试说明](../../docs/audits/IR-026-t04-red-review.md) 和 [结果记录](../../docs/audits/IR-026-t04-red-results.json)，第 12 节调用面随测试人审。
+完整评审见 T04 测试说明（本地材料） 和 结果记录（本地材料），第 12 节调用面随测试人审。
 已审核心测试和原浏览器测试函数不变；浏览器文件只追加新用例，产品代码／用户本体不改，无真实外部模型调用，未提交 Git。
 RAC 原 criterion 不变，只补实际测试引用；业务验收仍未勾选。等待测试人审后进入 T05 GREEN。
 
@@ -112,7 +114,7 @@ RAC 原 criterion 不变，只补实际测试引用；业务验收仍未勾选�
 复用原业务补全、消费者、编译器和校验器；移走源 XML 后的整条任务链、strict／offline 及 real／demo 边界通过。
 57 项已审集成／浏览器用例全部通过，70 项核心测试保持通过；测试和夹具哈希不变。
 全量 13 段通过：单测 2284 passed、5 skipped，覆盖率 86.0%；跳过均为原可选上游引擎。
-详见 [T05 评审](../../docs/audits/IR-026-t05-green-review.md)、[结果记录](../../docs/audits/IR-026-t05-green-results.json) 和 [使用与升级说明](../../docs/application-contracts-guide.md)。
+详见 T05 评审（本地材料）、结果记录（本地材料） 和 [使用与升级说明](../../docs/application-contracts-guide.md)。
 增量 schema 8 保留旧字段和工件；用户运行库未迁移，现有宿主未重启。T06 再以真实本体副本和旧 UR 样例验收。
 没有修改已审测试或业务 criterion，没有调用付费模型，没有操作用户本体，未提交 Git。
 RAC-01～05 登记集成 created-green-partial，业务验收保持未勾选；本 IR 仍 in-progress。
@@ -142,7 +144,7 @@ RAC-01～05 登记集成 created-green-partial，业务验收保持未勾选；�
 规约追溯检查 21 passed，ruff 通过，mypy 328 个源文件通过，git diff --check 通过。
 上述为本次相关回归，不替代整项目全量检查或 T06 真实副本验收；历史 T05 全量结果保持原记录。
 `acceptance.json` 已登记 RAC-AUTO-01、RAC-AUTO-02 及实际测试引用，接口和兼容约定同步至规约第 12 节，使用文档已更新。
-详见 [自动适配验证记录](../../docs/audits/robotics-automatic-adaptation-20261113.json) 和 [使用与升级说明](../../docs/application-contracts-guide.md)。
+详见 自动适配验证记录（本地材料） 和 [使用与升级说明](../../docs/application-contracts-guide.md)。
 
 ### 现有本体与运行环境
 
@@ -170,7 +172,7 @@ RAC-AUTO-01／02 已移入正式 requirements，参与规约引用校验；原�
 通用 UI 走查 64 通过、实操 50 通过，3 项因隔离环境未配模型端点条件跳过；机器人构建／评审／任务／设计浏览器分别 18／16／12／29 项通过。
 既有行为测试与夹具摘要保持不变，规约引用 21 项通过；测试、覆盖率、lint 和类型门槛未放宽。
 技术验收完成时，交付物和整轮业务验收仍待用户按 SDD 第⑨步人审勾选，IR 当时保持 in-progress；最终状态见下方人审交付记录。
-详见 [T06 交付评审](../../docs/audits/IR-026-t06-delivery-review.md)、[机器结果](../../docs/audits/IR-026-t06-results.json) 和 [使用与升级说明](../../docs/application-contracts-guide.md)。
+详见 T06 交付评审（本地材料）、机器结果（本地材料） 和 [使用与升级说明](../../docs/application-contracts-guide.md)。
 
 ## 人审交付（2026-11-13）
 

@@ -4062,6 +4062,54 @@
         "tests/meta/test_publication_hygiene.py::test_encoded_fixture_blobs_use_only_synthetic_pose_types",
         "tests/meta/test_publication_hygiene.py::test_published_demo_parameters_are_synthetic"
       ]
+    },
+    {
+      "id": "PERF-T01",
+      "criterion": "准备数据复用保持数据库、文件、资产和运行身份独立；已有目录不被覆盖，生成失败不缓存",
+      "tests": [
+        "tests/unit/test_robotics_seed_support.py::test_seed_clones_database_files_and_detaches_return_values",
+        "tests/unit/test_robotics_seed_support.py::test_seed_failure_is_not_cached_and_existing_directory_is_not_overwritten",
+        "tests/unit/test_robotics_seed_support.py::test_task_fixture_reuses_real_build_only_for_preconditions",
+        "tests/unit/test_robotics_seed_support.py::test_ready_mutations_are_isolated_and_existing_roots_keep_real_build"
+      ]
+    },
+    {
+      "id": "PERF-T02",
+      "criterion": "复用准备数据后，保存和每次读取仍完整执行原语义校验并拒绝损坏",
+      "tests": [
+        "tests/unit/test_robotics_seed_support.py::test_warm_seed_keeps_full_semantic_validation_and_rejects_corruption"
+      ]
+    },
+    {
+      "id": "PERF-T03",
+      "criterion": "有界并行保留完整测试发现、单进程对照、逐用例耗时及分支覆盖率汇总",
+      "tests": [
+        "tests/unit/test_check_parallel.py::test_unit_command_keeps_all_tests_and_explicit_parallel_coverage",
+        "tests/unit/test_check_parallel.py::test_parallel_workers_merge_coverage_and_propagate_failures"
+      ]
+    },
+    {
+      "id": "PERF-T04",
+      "criterion": "并行子进程测试失败不得被报告为成功，既有三层覆盖率门槛保持",
+      "tests": [
+        "tests/unit/test_check_parallel.py::test_parallel_workers_merge_coverage_and_propagate_failures",
+        "tests/meta/test_gates.py::test_coverage_counts_the_route_layer_and_has_layered_floors",
+        "tests/unit/test_check_parallel.py::test_ci_unit_job_installs_dependencies_required_by_all_collected_tests"
+      ]
+    },
+    {
+      "id": "REPO-MATERIAL-01",
+      "decision": "DR-162",
+      "criterion": "指定的开发过程材料与 specs/contracts 不随产品仓库提交；决策与迭代、运行时规则保留，公开文档不链接未发布材料，兼容基线可在新克隆中直接回放。",
+      "tests": [
+        "tests/meta/test_repository_materials.py::test_development_materials_are_not_tracked",
+        "tests/meta/test_repository_materials.py::test_local_material_paths_are_ignored",
+        "tests/meta/test_repository_materials.py::test_retained_specifications_are_not_ignored",
+        "tests/meta/test_repository_materials.py::test_published_markdown_does_not_link_to_local_materials",
+        "tests/unit/test_robotics_baseline.py::test_fixture_digests_and_compatibility_cases_are_recorded",
+        "tests/unit/test_robotics_baseline.py::test_frozen_consumer_contract_cases_execute",
+        "tests/unit/test_robotics_baseline.py::test_frozen_real_task_without_evidence_still_refuses_a_candidate"
+      ]
     }
   ],
   "planned_requirements": [
