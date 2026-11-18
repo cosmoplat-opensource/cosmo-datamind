@@ -7,7 +7,7 @@
 ## 冻结内容
 
 - [双路径构建契约 v1](../../specs/contracts/robotics-dual-build-v1.md)：配置判定、路由快照、单模型调用边界、共同 XML 准入、HTTP 状态及后续设计接口。
-- [来源摘要](../../specs/sources/IR-024-yang-sources.json)：两个用户提供工程的 17 份核心代码／词表／样例／参考测试 SHA-256；未迁入其生产代码或配置。
+- [来源摘要](../../specs/sources/IR-024-robotics-sources.json)：两个用户提供工程的 17 份核心代码／词表／样例／参考测试 SHA-256；未迁入其生产代码或配置。
 - [路由测试](../../tests/unit/test_robotics_dual_build_routing.py)：无模型、有效配置、残缺／错误／残留配置、多运行时优先序、环境优先、模型错误、身份固定和恢复。
 - [HTTP 与旧路径测试](../../tests/unit/test_robotics_dual_build_http.py)：双 XML、提前拒绝不合法 XML、禁止客户端指定方法、功能开关、方法标识及真实旧链路。
 - [合成运行时边界](../../tests/robotics_dual_build_support.py)：仅替换模型配置、注册和调用；所有实际网络连接被测试夹具阻止。

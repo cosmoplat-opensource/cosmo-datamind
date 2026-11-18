@@ -1,4 +1,4 @@
-"""TBox proposal contracts and local semantics, adapted from Yang — DR-152."""
+"""TBox proposal contracts and local semantics, adapted from upstream — DR-152."""
 from copy import deepcopy
 import re
 

@@ -27,7 +27,7 @@ def audit(event, args):
         raise AssertionError('Offline storage demo attempted network access')
     if event == 'open':
         name = str(args[0]).replace('\\\\', '/')
-        if 'yang_implementation/' in name or '/fixtures/robotics/owl/' in name:
+        if ('_implementation/' in name or 'external_robotics/' in name) or '/fixtures/robotics/owl/' in name:
             raise AssertionError('Demo must build fresh OWL, not read archive/prebuilt OWL')
     if event == 'import' and args[0] == 'server':
         raise AssertionError('Offline storage must not import the live server')

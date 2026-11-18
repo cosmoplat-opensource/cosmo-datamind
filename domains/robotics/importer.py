@@ -1,6 +1,6 @@
 """Deterministically import supported BT XML into RDF — DR-142.
 
-Extraction migrated from yang ontology_pipeline; all inputs are explicit snapshots.
+Extraction migrated from upstream ontology_pipeline; all inputs are explicit snapshots.
 """
 import hashlib
 import json

@@ -135,7 +135,7 @@ T02 静态与规约核验：新增 6 个 Python 文件 ruff、mypy 均通过；2
 全量命令使用仓库现有隔离工作目录检查器，不复制用户新增本体或修改本地业务存储：
 
 ```bash
-env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" \
+env PATH="${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" \
   .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir019-t03-all
 ```
 
@@ -278,7 +278,7 @@ RKG-10/12 的 UI、浏览器全链路与 CLI 留在 T06 编写失败测试，不
 
 ```bash
 .venv/bin/python -m pytest tests/unit/test_robotics_review_http.py tests/unit/test_robotics_evidence.py tests/unit/test_robotics_build_http.py --tb=short --junitxml=.check-results/ir019-t05-green/targeted.xml
-env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir019-t05-all
+env PATH="${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir019-t05-all
 ```
 
 本批生产代码在定向通过后冻结，再运行全量；不以回归进程启动前的旧模块代表后续实现。
@@ -355,7 +355,7 @@ acceptance 保留全部 criterion 和已有测试引用，把 RKG-10 / RKG-12 �
 | 冻结检查 | T05 的 129 个已审测试/辅助/夹具、16 个生产文件 SHA-256 均未变化 |
 
 ```bash
-env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python -m pytest tests/unit/test_robotics_review_ui.py tests/unit/test_robotics_review_demo_cli.py --tb=short --junitxml=.check-results/ir019-t06-red/unit-final.xml
+env PATH="${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python -m pytest tests/unit/test_robotics_review_ui.py tests/unit/test_robotics_review_demo_cli.py --tb=short --junitxml=.check-results/ir019-t06-red/unit-final.xml
 .venv/bin/python tests/frontend/robotics-review-browser.py --output .check-results/ir019-t06-red/browser-reviewed
 .venv/bin/python -m pytest tests/meta --junitxml=.check-results/ir019-t06-red/meta.xml
 ```
@@ -418,7 +418,7 @@ env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/pyth
 冻结 10 个本批生产文件后，以独立启动器运行：
 
 ```bash
-env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir019-t07-all
+env PATH="${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir019-t07-all
 ```
 
 全量已完成，summary.json 的 11 段 exit_code 均为 0，exit.json 的外层退出码为 0。用户配置、常驻服务与业务资产未作本任务修改。

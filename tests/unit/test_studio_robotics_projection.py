@@ -242,3 +242,26 @@ def test_oversized_projection_refuses_instead_of_silently_truncating():
     version, raw = fixed(graph.serialize(format='xml', encoding='utf-8'))
     with pytest.raises(ValueError, match='规模|limit|large'):
         projector.project_version(version, raw)
+
+
+def test_cartesian_property_expansion_is_rejected_before_allocating_edges(monkeypatch):
+    from rdflib import OWL, RDF, RDFS, URIRef
+    projector = api()
+    graph = Graph()
+    prop = URIRef(NS + 'wide')
+    graph.add((prop, RDF.type, OWL.ObjectProperty))
+    for i in range(320):
+        graph.add((prop, RDFS.domain, URIRef(NS + 'd' + str(i))))
+        graph.add((prop, RDFS.range, URIRef(NS + 'r' + str(i))))
+    calls = []
+    original = projector._edge
+
+    def counted(*args):
+        calls.append(1)
+        return original(*args)
+
+    monkeypatch.setattr(projector, '_edge', counted)
+    version, raw = fixed(graph.serialize(format='xml', encoding='utf-8'))
+    with pytest.raises(ValueError, match='规模|上限'):
+        projector.project_version(version, raw)
+    assert calls == [], 'reject the Cartesian product before constructing its edges'

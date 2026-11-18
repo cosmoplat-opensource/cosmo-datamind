@@ -17,7 +17,11 @@
 未修改用户会话，未调用用户真实模型，未重启常驻服务。
 
 - [机器记录](IR-024-design-stage-guidance-results.json)
-- [控制器结果](../../.check-results/IR-024-guidance/unit.log)
-- [浏览器结果](../../.check-results/IR-024-guidance/browser-final/results.xml)
-- [专门诊断脚本](../../.check-results/IR-024-guidance/probe.py)
-- [专门诊断结果](../../.check-results/IR-024-guidance/probe.json)
+- 控制器结果（本地输出位置：`../../.check-results/IR-024-guidance/unit.log`，不作为公开证据）
+- 浏览器结果（本地输出位置：`../../.check-results/IR-024-guidance/browser-final/results.xml`，不作为公开证据）
+- 专门诊断脚本（本地输出位置：`../../.check-results/IR-024-guidance/probe.py`，不作为公开证据）
+- 专门诊断结果（本地输出位置：`../../.check-results/IR-024-guidance/probe.json`，不作为公开证据）
+
+## 验证记录的适用范围
+
+本页保留历史运行摘要；其中本地输出位置不随仓库提供，不能作为当前版本通过的证明。按 `docs/studio-validation.md` 中的环境与命令在目标修订重新执行，保留退出码、环境和报告后再判断该修订。历史日志中的个人路径已脱敏，日志文本摘要不再代表原始字节。

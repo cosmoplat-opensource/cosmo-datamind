@@ -1,6 +1,6 @@
 """Replay explicit user choices for the fixed robotics procedure — DR-144 / DR-148.
 
-Adapted from Yang's grounded_mentions; full IRIs preserve duplicate-name identities.
+Adapted from upstream's grounded_mentions; full IRIs preserve duplicate-name identities.
 Only business names enter the model catalog, never robot parameters or credentials.
 """
 import re

@@ -81,6 +81,16 @@ def _project(source, context, name):
     nodes, properties, individuals, edges, relations = {}, {}, {}, {}, {}
     warnings = set()
 
+    def check_budget(*, entities=0, links=0):
+        if (len(nodes) + len(properties) + len(individuals) + entities > 20000
+                or len(edges) + len(relations) + links > 100000):
+            raise ValueError('本体规模超过视图上限。')
+
+    def add_edge(target, kind, s, p, t):
+        edge = _edge(kind, s, p, t)
+        check_budget(links=int(edge['id'] not in target))
+        target[edge['id']] = edge
+
     def labels(term):
         return [{'value': str(v), 'language': v.language or ''}
                 for v in sorted(graph.objects(term, RDFS.label), key=lambda v: (getattr(v, 'language', '') or '', str(v)))
@@ -96,6 +106,7 @@ def _project(source, context, name):
         key = _id(term)
         if key in nodes:
             return key
+        check_budget(entities=1)
         node = base(term, 'expression' if isinstance(term, BNode) else kind)
         node['individuals'] = []
         nodes[key] = node
@@ -109,8 +120,7 @@ def _project(source, context, name):
                 node['expression'] = {'operator': 'unionOf', 'operands': sorted(_id(m) for m in members)}
                 for member in members:
                     add_node(member)
-                    edge = _edge('expression', term, OWL.unionOf, member)
-                    edges[edge['id']] = edge
+                    add_edge(edges, 'expression', term, OWL.unionOf, member)
             else:
                 warnings.add('存在尚未绘制的匿名 OWL 表达式；请查看原始本体。')
         return key
@@ -126,26 +136,27 @@ def _project(source, context, name):
             domains = sorted(set(graph.objects(term, RDFS.domain)), key=_id)
             ranges = sorted(set(graph.objects(term, RDFS.range)), key=_id)
             prop.update(domains=[_id(t) for t in domains], ranges=[_id(t) for t in ranges])
+            check_budget(entities=int(_id(term) not in properties))
             properties[_id(term)] = prop
             for t in domains:
                 add_node(t)
             for t in ranges:
                 add_node(t, 'datatype' if kind == 'data' else 'class')
+            check_budget(links=len(domains) * len(ranges))
             for s in domains:
                 for t in ranges:
-                    edge = _edge(kind, s, term, t)
-                    edges[edge['id']] = edge
+                    add_edge(edges, kind, s, term, t)
     for predicate, kind in ((RDFS.subClassOf, 'subclass'), (OWL.disjointWith, 'disjoint'),
                             (OWL.equivalentClass, 'equivalent')):
         for s, t in graph.subject_objects(predicate):
             add_node(s); add_node(t)
-            edge = _edge(kind, s, predicate, t)
-            edges[edge['id']] = edge
+            add_edge(edges, kind, s, predicate, t)
     subjects = set(graph.subjects(RDF.type, OWL.NamedIndividual))
     for term in class_terms:
         subjects.update(graph.subjects(RDF.type, term))
     subjects = {s for s in subjects if isinstance(s, URIRef)} - class_terms - property_terms
     for term in sorted(subjects, key=_id):
+        check_budget(entities=1)
         item = base(term, 'individual')
         item['types'] = sorted({_id(t) for t in graph.objects(term, RDF.type) if isinstance(t, (URIRef, BNode)) and t != OWL.NamedIndividual})
         item['data'] = []
@@ -157,8 +168,7 @@ def _project(source, context, name):
                 item['data'].append({'predicate': str(p), 'value': str(o), 'datatype': str(o.datatype) if o.datatype else '',
                                      'language': o.language or ''})
             elif o in subjects and p != RDF.type:
-                edge = _edge('relation', term, p, o)
-                relations[edge['id']] = edge
+                add_edge(relations, 'relation', term, p, o)
         individuals[_id(term)] = item
     if len(nodes) + len(properties) + len(individuals) > 20000 or len(edges) + len(relations) > 100000:
         raise ValueError('本体规模超过视图上限。')

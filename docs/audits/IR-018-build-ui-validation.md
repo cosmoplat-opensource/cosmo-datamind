@@ -132,7 +132,7 @@ acceptance.json 本轮条目仅在 planned_requirements 中登记拟覆盖文件
 - 使用上一阶段已有 Node v22.20.0，仅为检查进程补 PATH 后重新完整执行；完整结果见下表。
 
 ```bash
-env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir018-t03-all
+env PATH="${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir018-t03-all
 ```
 
 数据库迁移只由可写 AssetStore / RunStore 打开时执行；read_only 查询仍不执行迁移，不会把打开存储当作任务恢复。
@@ -259,7 +259,7 @@ IR-018 仍为 in-progress，不把 T04 视为整轮交付，也不标记 UI 已�
 ### 完整回归
 
 ```bash
-env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir018-t05-all
+env PATH="${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir018-t05-all
 ```
 
 完整检查退出码 0，九段均通过；结果及日志/源文件摘要见 [T05 GREEN 记录](IR-018-t05-green-results.json)。
@@ -335,7 +335,7 @@ env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/pyth
 ### 复核命令和证据
 
 ```bash
-env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python -m pytest tests/unit/test_robotics_build_ui.py -q
+env PATH="${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python -m pytest tests/unit/test_robotics_build_ui.py -q
 .venv/bin/python tests/frontend/robotics-build-browser.py --output .check-results/robotics-browser
 ```
 
@@ -397,7 +397,7 @@ IR-018 仍为 in-progress；最终交付和新 UI 联动通过需由 T07/T08 提
 
 ### 全量 GREEN 与交付边界
 
-统一命令：`env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir018-t07-all`。
+统一命令：`env PATH="${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir018-t07-all`。
 十段全部退出 0：lint、types、unit、coverage、integration、strict10、test_ui、test_ui_ops、build-browser、robotics-browser。
 1198 单元通过、5 可选上游组件跳过，单元段 817.154 秒；覆盖率 85.0%，保留 81% 门槛。
 551 HTTP 通过、8 可选上游组件跳过；严格检查 10/10；旧 UI 64、UI 实操 50、旧浏览器 10 项通过，UI 实操另有 3 未配置真实模型场景跳过。

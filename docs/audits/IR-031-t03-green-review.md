@@ -7,7 +7,7 @@
 
 T02 证据复核发现六项 Node 失败是“不支持 --experimental-default-type 参数”，原报告将其归为产品 RED 不准确。
 保留原 JSON 原样，移除测试启动器中的无效参数，增加 ES module package 声明；未修改任何行为断言。
-在临时空产品目录复放原 Node harness，六项均确实触发缺失控制器断言；详见 IR-031-t02-node-red-correction.json。
+在临时空产品目录复放原 Node harness，六项均确实触发缺失控制器断言；原先启动参数失败不计为产品行为失败。
 Python 投影原 RED 仍有效，不能把原六项环境失败算成产品行为复现。
 
 新增 31 项全部转绿；连同旧图、候选、设计 HTTP 和追溯测试共 103 passed（38.83s）。

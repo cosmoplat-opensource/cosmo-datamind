@@ -48,6 +48,10 @@ export function mountPanel(host,{canvasId=null}={}){
       const props=current.properties.filter(p=>p.domains.includes(entity.id));
       if(props.length){text(details,'h4','关系与数据属性');for(const prop of props)text(details,'p',`${label(prop)} → ${prop.ranges.map(id=>label(controller.state.entity(id)||id)).join('、')}`);}
     }
+    if(controller.state.properties.has(entity.id)){
+      text(details,'p',`作用对象：${entity.domains.map(id=>label(controller.state.entity(id)||id)).join('、')||'未声明'}`);
+      text(details,'p',`目标或类型：${entity.ranges.map(id=>label(controller.state.entity(id)||id)).join('、')||'未声明'}`);
+    }
     if(entity.type==='individual'){
       button(details,'查看实例关系',()=>{controller.state.toggleRelations();controller.draw();counts();});
       button(details,'展开数据值',()=>{controller.state.toggleData();controller.draw();counts();});
@@ -61,7 +65,7 @@ export function mountPanel(host,{canvasId=null}={}){
   function setOptions(){
     const group=q('select[aria-label="展示范围"]').value;
     const skill=iri=>/\b(?:AtomicSkill|CompositeSkill|SkillInvocation|SkillImplementation|TaskProcedure)$/.test(iri.split('#').pop());
-    const items=[...current.nodes,...current.individuals].filter(n=>group==='all'||(group==='skills'?(n.types||[]).some(skill):!(n.types||[]).some(skill)));
+    const items=[...current.nodes,...current.individuals,...current.properties].filter(n=>group==='all'||(group==='skills'?(n.types||[]).some(skill):!(n.types||[]).some(skill)));
     nodeSelect.replaceChildren(new Option('选择对象查看详情',''));
     for(const item of items)nodeSelect.add(new Option(label(item),item.id));
   }
@@ -77,7 +81,7 @@ export function mountPanel(host,{canvasId=null}={}){
   };
   q('select[aria-label="展示范围"]').onchange=setOptions;
   q('form').onsubmit=e=>{e.preventDefault();if(!current)return;const term=q('input').value.toLocaleLowerCase();const found=[...current.nodes,...current.individuals,...current.properties].find(n=>label(n).toLocaleLowerCase().includes(term));
-    if(found){nodeSelect.value=found.id;nodeSelect.onchange();}else notice.textContent='未找到匹配对象。';};
+    if(found){controller.state.returnToClasses();q('select[aria-label="展示范围"]').value='all';setOptions();nodeSelect.value=found.id;nodeSelect.onchange();}else notice.textContent='未找到匹配对象。';};
   host.querySelectorAll('[data-op]').forEach(b=>{b.onclick=()=>{
     const op=b.dataset.op;
     if(op==='types'){controller.filters.datatypes=!controller.filters.datatypes;controller.draw();counts();b.textContent=controller.filters.datatypes?'隐藏属性类型':'显示属性类型';}
@@ -89,9 +93,9 @@ export function mountPanel(host,{canvasId=null}={}){
   return {controller,present(document,{scope:nextScope=JSON.stringify([document.context.kind,document.context.key])}={}){
     if(dead)return;const fingerprint=JSON.stringify(document);
     if(nextScope!==scope){scope=nextScope;epoch=controller.beginContext(document.context);controller.graph.options.readableMinimum=.9;selected=null;show(null);last=null;}
-    host.dataset.stage=document.context.stage;host.dataset.kind=document.context.kind;host.dataset.revision=String(document.context.revision);
     if(fingerprint===last)return;
     if(controller.update(document,{epoch})){
+      host.dataset.stage=document.context.stage;host.dataset.kind=document.context.kind;host.dataset.revision=String(document.context.revision);
       current=document;last=fingerprint;setOptions();counts();notice.textContent=document.nodes.length&&!controller.graph.data.nodes.length?'当前图谱超出同屏范围，请从节点详情选择类别查看局部关联。':document.warnings.join(' ');
       q('.studio-context').textContent=document.context.status==='historical'?`历史修订 ${document.context.revision} · 只读`:`${document.context.kind==='design'?'设计修订 '+document.context.revision:'固定版本 · '+({candidate:'候选',draft:'草案',published:'已发布'}[document.context.status]||document.context.status)} · 只读浏览 · 执行未验证`;
     }

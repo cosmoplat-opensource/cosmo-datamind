@@ -23,7 +23,7 @@ def audit(event,args):
         raise AssertionError('Offline task demo attempted network access')
     if event == 'open':
         name=str(args[0]).replace('\\\\','/')
-        if 'yang_implementation/' in name or '/fixtures/robotics/owl/' in name:
+        if ('_implementation/' in name or 'external_robotics/' in name) or '/fixtures/robotics/owl/' in name:
             raise AssertionError('Build fresh XML; do not consume archive or prebuilt OWL')
     if event == 'import' and args[0] == 'server':
         raise AssertionError('Offline demo must not import live application')

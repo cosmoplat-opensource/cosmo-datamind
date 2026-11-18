@@ -67,7 +67,7 @@ def test_modeling_parser_enforces_common_xml_safety(role, bad):
 def test_bundled_vocabulary_has_pinned_identity_and_separate_term_kinds(monkeypatch):
     monkeypatch.setenv('TBOX_LLM_KEY', 'unused-source-project-secret')
     vocab = api('vocabulary').load_vocabulary()
-    assert vocab['sha256'] == 'eef9314fb13144a35efd659f6fd863dcc89cebf1ae0e54c3777bcdcf8e2a06aa'
+    assert vocab['sha256'] == 'f90d2c16c92372ff904e8200641411b6873d415f105441fd5fc1915e1400e9dc'
     assert {'AtomicSkill', 'CompositeSkill', 'SkillInvocation'} <= {r['id'] for r in vocab['classes']}
     assert 'hasInput' in {r['id'] for r in vocab['object_properties']}
     assert 'stepIndex' in {r['id'] for r in vocab['data_properties']}

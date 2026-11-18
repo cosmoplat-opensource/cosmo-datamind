@@ -7,7 +7,7 @@
 - **流程依据**：[sdd-workflow](../../.agents/skills/sdd-workflow/SKILL.md)、[specs/meta.md](../meta.md)。
 - **验收映射**：[acceptance.json](../acceptance.json)；已创建的测试进入 requirements，未创建的测试继续保留计划状态，不标记功能已验收。
 - **冻结契约**：[机器人双路径构建 v1](../contracts/robotics-dual-build-v1.md)。
-- **来源清单**：[IR-024 来源摘要](../sources/IR-024-yang-sources.json)。
+- **来源清单**：[IR-024 来源摘要](../sources/IR-024-robotics-sources.json)。
 
 ## 目标 Goal
 
@@ -38,7 +38,7 @@
 | 新 `tbox_chat_agent` | XML 证据、词表、阶段式模型设计、校验导出 | 提取为包内核心；重接平台模型、状态和存储 |
 | 新 `abox_chat_agent` | TBox + XML 规则抽取、覆盖率与导出 | 提取确定性核心，不迁入其解释型模型调用 |
 
-外部参考根目录为 `../yang_implementation/tbox_chat_agent/tbox_chat_agent/` 与 `../yang_implementation/abox_chat_agent/abox_chat_agent/`。
+外部参考根目录为 `../external_robotics/tbox_chat_agent/tbox_chat_agent/` 与 `../external_robotics/abox_chat_agent/abox_chat_agent/`。
 运行时不得引用上述目录、通过 sys.path 加载其模块或依赖它们的 .env、sessions 和 generated。
 迁入前记录来源版本或文件摘要，区分被复用算法、修改内容与可再分发的词表／样例；不复制无关个人资料。
 前期复核已观察到新 ABox 导出可通过 RDF/XML 语法检查，却被旧消费者以缺少 artifactContract 拒绝；实现时应固化为兼容边界用例。

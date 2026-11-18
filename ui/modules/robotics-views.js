@@ -142,9 +142,8 @@
         }
         if(view==='studio'){
           const module=await import('/assets/modules/studio/panel.js');if(current!==token)return;
-          const response=await global.fetch('/api/ontology-assets/'+encodeURIComponent(oid)+'/versions/'+encodeURIComponent(vid)+'/views/studio',{signal:abort.signal});
-          const body=await response.json();if(current!==token)return;
-          if(!response.ok)throw Error(body.error?.message||'读取失败');
+          const body=await global.RoboticsAssets.readJSON(global.fetch.bind(global),'/api/ontology-assets/'+encodeURIComponent(oid)+'/versions/'+encodeURIComponent(vid)+'/views/studio',{signal:abort.signal});
+          if(current!==token)return;
           if(body.ontology_id!==oid||body.version_id!==vid)throw Error('返回的本体版本不匹配。');
           host.innerHTML=`<a class="ra-back" href="${escape(global.RoboticsAssets.versionLink(oid,vid))}">← 返回本体详情</a><header class="rt-heading"><div><h2>${escape(body.name)}</h2><p>当前：版本 ${escape(body.version_number)} · 只读浏览</p></div><a class="ra-button" href="${escape(global.RoboticsTask.link(oid,vid)+'&assess=1')}">基于此本体生成行为树</a></header><div class="rv-studio"></div>`;
           const panel=module.mountPanel(host.querySelector('.rv-studio'),{canvasId:'rv_canvas'});

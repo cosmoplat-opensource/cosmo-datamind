@@ -16,7 +16,11 @@
 本次作用范围验证如上，未重跑整套后端回归，未调用真实模型。
 
 - [机器记录](IR-024-catalog-loading-results.json)
-- [定向检查](../../.check-results/IR-024-catalog/tests.log)
-- [加载状态诊断](../../.check-results/IR-024-catalog/loading.cjs)
-- [在线浏览器诊断](../../.check-results/IR-024-catalog/live_check.py)
-- [在线结果](../../.check-results/IR-024-catalog/live-result.json)
+- 定向检查（本地输出位置：`../../.check-results/IR-024-catalog/tests.log`，不作为公开证据）
+- 加载状态诊断（本地输出位置：`../../.check-results/IR-024-catalog/loading.cjs`，不作为公开证据）
+- 在线浏览器诊断（本地输出位置：`../../.check-results/IR-024-catalog/live_check.py`，不作为公开证据）
+- 在线结果（本地输出位置：`../../.check-results/IR-024-catalog/live-result.json`，不作为公开证据）
+
+## 验证记录的适用范围
+
+本页保留历史运行摘要；其中本地输出位置不随仓库提供，不能作为当前版本通过的证明。按 `docs/studio-validation.md` 中的环境与命令在目标修订重新执行，保留退出码、环境和报告后再判断该修订。历史日志中的个人路径已脱敏，日志文本摘要不再代表原始字节。

@@ -29,9 +29,9 @@ schema 8→9 后，迁移前全部行逐行保持一致：11 资产、61 版本�
 本体当前版本与原 RDF 摘要保持不变。
 详见 `.check-results/ir029-t06/existing-history-results.json`、`http.jsonl` 和 `browser-results.json`。
 
-![删除影响预览](../../.check-results/ir029-t06/delete-preview.png)
+!删除影响预览（本地输出位置：`../../.check-results/ir029-t06/delete-preview.png`，不作为公开证据）
 
-![删除后的机器人历史详情](../../.check-results/ir029-t06/robotics-deleted-history.png)
+!删除后的机器人历史详情（本地输出位置：`../../.check-results/ir029-t06/robotics-deleted-history.png`，不作为公开证据）
 
 ## 失败与回退
 
@@ -71,3 +71,7 @@ IR 已为 delivered，业务 Acceptance 已确认；本次未提交 Git。
 报告目录：`.check-results/ir029-final-20261117/all`；退出码、14 段结果与 36 份代码／测试 SHA 一致，核心冻结测试未改。
 涵盖最终精简的版本／对话计数、删除与恢复页面；原报告仅作为历史记录，当前交付依据为本次刷新报告。
 IR029 已交付，T06 与所有 Acceptance 勾选完成。本次未提交代码或开始下一 IR。
+
+## 验证记录的适用范围
+
+本页保留历史运行摘要；其中本地输出位置不随仓库提供，不能作为当前版本通过的证明。按 `docs/studio-validation.md` 中的环境与命令在目标修订重新执行，保留退出码、环境和报告后再判断该修订。历史日志中的个人路径已脱敏，日志文本摘要不再代表原始字节。

@@ -42,7 +42,7 @@ Workpiece、Workstation、Carrier、PlacementSlot 各为 0，证明执行适配�
 再次检查得到可准备任务，点击“继续描述任务”进入绑定新版本的原任务界面，状态为未开始。
 未发出确认角色或提交生成的额外 POST，没有页面脚本错误和模型请求。
 截图、下载文件、请求观察及宿主日志保存在 `.check-results/IR-026-t06-real/browser/`。
-本地复核产物：[新本体副本生成的行为树](../../.check-results/IR-026-t06-real/real-copy-behavior-tree.xml)、[旧 UR 对照行为树](../../.check-results/IR-026-t06-real/legacy-behavior-tree.xml)、[副本完整 JSON](../../.check-results/IR-026-t06-real/real-copy-design.json)、[副本 OWL](../../.check-results/IR-026-t06-real/real-copy-final.owl)。
+本地复核产物：新本体副本生成的行为树（本地输出位置：`../../.check-results/IR-026-t06-real/real-copy-behavior-tree.xml`，不作为公开证据）、旧 UR 对照行为树（本地输出位置：`../../.check-results/IR-026-t06-real/legacy-behavior-tree.xml`，不作为公开证据）、副本完整 JSON（本地输出位置：`../../.check-results/IR-026-t06-real/real-copy-design.json`，不作为公开证据）、副本 OWL（本地输出位置：`../../.check-results/IR-026-t06-real/real-copy-final.owl`，不作为公开证据）。
 这些产物只在隔离验收目录中，不是用户正式本体的新版本。
 
 ## 工件升级与运行边界
@@ -58,7 +58,7 @@ T06 技术验收阶段没有修改产品实现或既有行为测试，没有修�
 
 ## 回归与交付状态
 
-全量命令：`PATH=/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH .venv/bin/python scripts/check.py --suite all --report-dir .check-results/IR-026-t06-full`。
+全量命令：`PATH=${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH .venv/bin/python scripts/check.py --suite all --report-dir .check-results/IR-026-t06-full`。
 全量使用临时工作目录、已提交的测试输入和清除模型配置的环境，保留原测试选择、覆盖率门槛及有界运行预算。
 整项目全量 13 段均通过：单测 2333 passed、5 skipped，覆盖率 86.1%；lint、类型、宿主集成、10 轮严格校验、通用页面与全部浏览器阶段均通过。
 5 项单测跳过均为原有可选上游引擎；UI 走查 64 通过，UI 实操 50 通过、3 项因隔离环境未配置模型端点而条件跳过。
@@ -66,3 +66,7 @@ T06 技术验收阶段没有修改产品实现或既有行为测试，没有修�
 既有行为测试与夹具摘要保持不变，规约引用检查 21 项通过；本次没有靠修改断言或增加跳过规避失败。
 RAC-AUTO-01／02 从 planned_requirements 移入正式 requirements，既有实际用例参与规约引用校验，业务 criterion 保持原文。
 用户在本评审及技术验收完成后明确要求“提交代码”，IR-026 据此更新为 delivered；深度问数、删除恢复和完整详情体验仍分别属于 IR-028、IR-029、IR-027。
+
+## 验证记录的适用范围
+
+本页保留历史运行摘要；其中本地输出位置不随仓库提供，不能作为当前版本通过的证明。按 `docs/studio-validation.md` 中的环境与命令在目标修订重新执行，保留退出码、环境和报告后再判断该修订。历史日志中的个人路径已脱敏，日志文本摘要不再代表原始字节。

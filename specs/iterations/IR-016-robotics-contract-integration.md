@@ -5,7 +5,7 @@
 - **最近更新**：2026-11-03
 - **当前环节**：T08 覆盖已确认，T09 演示补充与 CLI 已实现；89 项机器人测试、实际三场景演示及全量检查各段均通过；用户于 2026-11-03 确认没有问题并授权下一步，SDD 第⑨步交付完成。
 - **关联 / Refs**: [[DR-141-unified-domain-semantic-graph]]、[[DR-142-robotics-source-recipes-and-reverse-build]]、[[DR-143-parameter-contracts-calibration-and-readiness]]、[[DR-144-behavior-tree-compilation-as-ontology-application]]、[[DR-147-robotics-migration-and-compatibility-validation]]
-- **方案**：[集成 Proposal](../PROPOSAL-yang-datamind-integration.md) 第 6 节步骤 0～1。
+- **方案**：[集成 Proposal](../PROPOSAL-robotics-integration.md) 第 6 节步骤 0～1。
 - **验收映射**：[acceptance.json](../acceptance.json) 的 ROB-01～ROB-13。
 - **流程依据**：[项目 SDD skill](../../.agents/skills/sdd-workflow/SKILL.md)。
 
@@ -175,7 +175,7 @@ T09 如暴露额外行为缺陷，先补可复现用例再修复，不扩大到 
 
 - T04 已由用户确认；实现发布器、消费加载器、共享可信规则与条件契约，39 项机器人测试全部通过，已审测试未修改。
 - 发布规范化仅消除一致的重复端口属性，输出经消费复验后原子创建，原输入不变。
-- 新发布 OWL 通过原 yang agent 的加载及生成准备；归一化发布物上的三类语义破坏均拒绝。
+- 新发布 OWL 通过原 upstream agent 的加载及生成准备；归一化发布物上的三类语义破坏均拒绝。
 - 全量检查实际退出 0：单元 868 通过 / 5 跳过，HTTP 551 通过 / 8 跳过，覆盖率 87.2%，其余检查段通过，真实模型 3 项跳过。
 - 详见 [T05 审计记录](../../docs/audits/IR-016-t05-green-results.json)，下一任务 T06 编写严格任务和作者草稿失败测试。
 

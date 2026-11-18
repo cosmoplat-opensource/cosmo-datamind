@@ -1,7 +1,6 @@
 # Specs Map · COSMO DataMind 数据智脑
 
-> 入口文件。AI 代理与协作者从这里查找相关 spec。
-> 规约驱动开发(SDD)。消费方式:`Consult @specs/map.md to find relevant context.`
+> 产品规约索引，用于查找设计决策、接口契约与验收范围。
 
 > **阅读说明（2026-08-28）：** `decisions/`、`iterations/` 与下文带日期的条目是历史决策记录，
 > 会保留当时的页面名、接口名和测试数字，不代表当前能力。当前能力以 `README.md`、
@@ -20,7 +19,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 > 本 `specs/` 只记录 DataMind 自身的决定与迭代,与平台 specs 前缀独立、勿混用。
 
 ## 开发约定(DR-066)
-- 需求 → 测试映射 `specs/acceptance.json`;有效行规则 `specs/models/valid_rows_rules.json`;场景回归基准 `tests/scenarios`(`scripts/scenario_bench.py`);构建步骤说明 `docs/pipelines/ontology_build.yaml`;开发顺序见根目录 `AGENTS.md`。
+- 需求 → 测试映射 `specs/acceptance.json`;有效行规则 `specs/models/valid_rows_rules.json`;场景回归基准 `tests/scenarios`(`scripts/scenario_bench.py`);构建步骤说明 `docs/pipelines/ontology_build.yaml`。
 
 ## 关键契约
 - **数据执行**:侧栏选择已登记的 SQLite 来源，总览、目录、问数、指标与可视化沿用该来源；SQL 和可视化可显式覆盖。`DATAMIND_DB` 为默认库。防写由 `mode=ro`、`sql_is_readonly` 与单句执行共同实现。SPARQL 在当前本体的本地 rdflib RDF 图(IR→Turtle)执行。见 DR-001、DR-095。
@@ -33,11 +32,12 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 
 ## Studio 图谱集成（2026-11-17）
 
-用户已选定“机器人连续可视化与共享组件 → 数据本体图谱及构建结果预览”两步范围。
+集成采用“机器人连续可视化与共享组件 → 数据本体图谱及构建结果预览”两步范围。
 工作分支为 `feat/studio-ui-integration`，IR-031 已交付，IR-032 保持规约阶段。
 
-- [DR-159 · Studio 图谱组件与本体构建可视化](decisions/DR-159-studio-ontology-visualization.md)：accepted（2026-11-17 用户授权启动）；[T01 视图契约](contracts/studio-graph-view-v1.md) 已冻结，明确对 DR-150 的局部替代及现有主线兼容约束。
+- [DR-159 · Studio 图谱组件与本体构建可视化](decisions/DR-159-studio-ontology-visualization.md)：accepted（2026-11-17）；[T01 视图契约](contracts/studio-graph-view-v1.md) 已冻结，明确对 DR-150 的局部替代及现有主线兼容约束。
 - [IR-031 · 共享组件与机器人连续可视化](iterations/IR-031-studio-robotics-visualization.md)：delivered；[T06 验收](../docs/audits/IR-031-t06-acceptance.md)，全量 17 阶段退出 0，3803 单元通过、5 可选跳过，Studio 7 项浏览器通过；STV-R01～06 完成。
+- [DR-160 · 图谱更新、请求边界与公开材料](decisions/DR-160-studio-limits-and-publication-boundary.md)：超限更新保持上一修订、关系展开预算、请求时限及公开材料边界；STV-H01～H05；[验证复现方法](../docs/studio-validation.md)。
 - [IR-032 · 数据本体画布与业务交互](iterations/IR-032-studio-data-visualization.md)：in-progress（规约阶段，依赖 IR-031 交付）；STV-D01～06。
 - 验收计划登记于 `acceptance.json` 的 `planned_requirements`；IR-031 已落地用例与浏览器均在正式映射标记 delivered，IR-032 保留计划。
 
@@ -54,8 +54,8 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 ## 索引
 
 ### 提议 / Proposals（未立项，落地时拆为独立 DR/IR）
-- [PROPOSAL · DataMind 与 yang 本体构建及行为树生成深度集成](PROPOSAL-yang-datamind-integration.md) — **proposed，2026-11-02 代码复核版**。包含跨项目复测结果、后端与 UI 方案、8 个实施切片，以及 DR-141…DR-147 的修订依据；区分现有能力、已知断点和待实施设计。
-- [PROPOSAL · 领域可插拔扩展架构（词表下沉 + 契约抽象 + 导出格式与本体应用分离 + 领域包）](PROPOSAL-domain-extension-architecture.md) — **待实施**。为接入外部机器人领域而做的架构提议：9 个编号变更项（C1 词表 · C2 契约 · C3 导出格式 · C4 应用框架 · C5 领域包 · C6–C8 天驭域 · C9 UI）、术语钉死（"领域/节点/词表"非一对一、"导出格式 ≠ 本体应用"、"契约方言"实为证据通道不同）、6 阶段顺序与 10 条回归红线。**本文是待实施清单，不是现状说明**；现状仍以 `README.md`/`ARCHITECTURE.md`/`docs/pipelines/ontology_build.yaml` 为准。
+- [PROPOSAL · DataMind 与 upstream 本体构建及行为树生成深度集成](PROPOSAL-robotics-integration.md) — **proposed，2026-11-02 代码复核版**。包含跨项目复测结果、后端与 UI 方案、8 个实施切片，以及 DR-141…DR-147 的修订依据；区分现有能力、已知断点和待实施设计。
+- [PROPOSAL · 领域可插拔扩展架构（词表下沉 + 契约抽象 + 导出格式与本体应用分离 + 领域包）](PROPOSAL-domain-extension-architecture.md) — **待实施**。为接入外部机器人领域而做的架构提议：9 个编号变更项（C1 词表 · C2 契约 · C3 导出格式 · C4 应用框架 · C5 领域包 · C6–C8 外部机器人平台域 · C9 UI）、术语钉死（"领域/节点/词表"非一对一、"导出格式 ≠ 本体应用"、"契约方言"实为证据通道不同）、6 阶段顺序与 10 条回归红线。**本文是待实施清单，不是现状说明**；现状仍以 `README.md`/`ARCHITECTURE.md`/`docs/pipelines/ontology_build.yaml` 为准。
 
 ### 决定 / Decisions
 - [DR-158 · master 与机器人开发分支兼容集成](decisions/DR-158-master-development-integration.md) ／ [IR-030](iterations/IR-030-master-development-integration.md)：in-progress；[编号迁移表](merge-numbering.md)。

@@ -1,6 +1,6 @@
 """Read executable structure from RDF, never archived XML — DR-141 / DR-142.
 
-Migrated from yang ontology_pipeline; no disk reads at import or reconstruction.
+Migrated from upstream ontology_pipeline; no disk reads at import or reconstruction.
 """
 import json
 import xml.etree.ElementTree as ET

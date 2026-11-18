@@ -1,6 +1,6 @@
 """Ground task entities, profiles and applicability evidence — DR-143 / DR-144 / DR-147.
 
-Migrated from the T01 hash-verified yang agent. Reads graph knowledge only;
+Migrated from the T01 hash-verified upstream agent. Reads graph knowledge only;
 user selection never modifies confirmation status or creates evidence.
 """
 from datetime import datetime, timezone
@@ -127,7 +127,7 @@ def resolve_request(g, request, *, mode="real", revocations=(), require_applicab
         if value(g, item, "confirmationStatus") != expected_status:
             issue("unconfirmed_business_entity", field, f"{local_name(item)}尚无当前模式要求的业务确认。", entity=local_name(item))
     if len(pp) != 1:
-        issue("perception_mapping", "part", "缺少唯一的业务零件→感知参数映射，不能把A自动等同于ac07。")
+        issue("perception_mapping", "part", "缺少唯一的业务零件→感知参数映射，不能把A自动等同于sample_part。")
     if len(dp) != 1:
         issue("placement_mapping", "slot", "缺少唯一的槽位→机器人目标位姿映射。")
     for kind, implementation in (("grasp_compatibility", S.grasp_Subtree_Impl), ("placement_compatibility", S.Place_Subtree_Impl)):

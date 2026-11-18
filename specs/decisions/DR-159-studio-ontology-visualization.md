@@ -16,7 +16,7 @@
 
 ### 当前基线与来源
 
-附件源码位于 `/home/dyh/workspace/Project/yang_implementation/Ontology Studio/Ontology Studio`。
+附件源码位于 `${ROBOTICS_SOURCE_ROOT}/Ontology Studio/Ontology Studio`。
 可复用核心为 `static/graph.js`、`static/model.js`、`static/edgeRouting.js`、`static/labelLayout.js` 及相关视觉样式。
 Studio 的 SVG 渲染、力导向布局与实例展开已有实现，但不理解 Datamind 的修订确认、资产状态或数据证据状态。
 Datamind 接点包括 `ui/modules/robotics-design.js`、`robotics-views.js`、`graph-render.js`、`qa-anchor.js`、`build-stream.js` 和 `ui/index.html`。

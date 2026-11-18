@@ -3,7 +3,7 @@
 用于 IR-018 T02，验证旧数据真实迁移，不用新版初始化器伪造旧库。
 
 - 冻结来源提交：`05a6df947568e0645a37c25944003f7dc0e7f017`。
-- 文件：`schema2_snapshot.json`，SHA-256：`b97203848dddd87c306bd287fd9cfe97d7a2f68c0172a6df03af96220cd44b39`。
+- 文件：`schema2_snapshot.json`，SHA-256：`7e421534fe626d93ebc618d2da56ba4bf2b48196fd1b099ae74e92496c4ad27b`。
 - 来源：在临时目录运行 IR-017 原有 AssetStore / RunStore 服务，读取 SQLite 的真实 schema、行与实际磁盘文件，序列化成可审查 JSON；文件内容使用 base64 保存。
 - 包含数据资产及来源/版本、legacy_assets 绑定、queued/running/completed/failed 运行、retry_of、事件、报告和 manifest。
 - 包含从冻结双 XML 新构建、经消费验证且显式发布的真实模式机器人 OWL；实际运行结果为 needs_information，未补 demo 证据。
@@ -20,3 +20,5 @@
 测试通过 `tests.robotics_design_support.restore_v5` 直接恢复 SQL、行与字节，再调用待测初始化器，不能在 T07 用新 schema 反造旧库。
 没有读取用户数据库、聊天或模型配置，没有调用真实模型。
 文件摘要记录在 `docs/audits/IR-024-t06-red-results.json`；人审后冻结该文件及新测试。
+
+公开副本已经脱敏，保留历史结构与记录身份；Base64 附件也替换为合成参数和测试类型，并更新字节摘要及关联引用，不代表原始平台资产。

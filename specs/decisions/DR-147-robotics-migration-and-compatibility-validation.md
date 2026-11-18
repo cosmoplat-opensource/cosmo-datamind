@@ -2,14 +2,14 @@
 
 - **状态 / Status**: proposed
 - **日期 / Date**: 2026-11-02
-- **关联 / Refs**: [[DR-045-engineering-harness-and-tdd]]、[[DR-141-unified-domain-semantic-graph]]、[[DR-142-robotics-source-recipes-and-reverse-build]]、[[DR-146-persistent-build-runs-and-artifact-manifests]]、[集成技术方案](../PROPOSAL-yang-datamind-integration.md)
+- **关联 / Refs**: [[DR-045-engineering-harness-and-tdd]]、[[DR-141-unified-domain-semantic-graph]]、[[DR-142-robotics-source-recipes-and-reverse-build]]、[[DR-146-persistent-build-runs-and-artifact-manifests]]、[集成技术方案](../PROPOSAL-robotics-integration.md)
 
 ## 上下文 / Context
 
 本次复测 agent 的 7 个测试脚本通过，构建侧 3 个脚本通过，但跨目录 ontology-only 测试因同名 skill_runtime 混用失败。
 新构建 OWL 与 agent 预置 OWL 不满足同一发布契约，不能只测试预置产物证明前后段已联通。
 两份运行时在参数定位、条件定义与不完整草稿策略上已经分叉，直接去重可能改变生成语义。
-DataMind 与 yang 虚拟环境使用的 pySHACL 版本不同，原环境测试通过不等于迁入环境兼容。
+DataMind 与 upstream 虚拟环境使用的 pySHACL 版本不同，原环境测试通过不等于迁入环境兼容。
 原计划经 Graph v2 再回 OWL 的双重转换增加风险，并不是本次集成必经步骤。
 
 ## 决定 / Decision

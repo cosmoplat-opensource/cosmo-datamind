@@ -39,3 +39,7 @@ def test_empty_classes_notice_and_updates_do_not_trigger_writes():
 
 def test_snapshot_is_detached_and_pause_pin_are_preserved():
     run_case('snapshot_is_detached_and_pause_pin_are_preserved')
+
+
+def test_oversized_updates_are_transactional():
+    run_case('oversized_updates_are_transactional')

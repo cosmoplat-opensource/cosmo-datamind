@@ -2,7 +2,7 @@
 
 日期：2026-11-17。
 分支：`feat/studio-ui-integration`。
-状态：delivered；按用户“继续完成本次 IR 剩余的任务，不用等我 review”的明确授权完成技术交付，不冒称另有人工验收。
+状态：delivered；记录技术交付，不代表人工验收。
 
 ## 交付行为
 
@@ -14,7 +14,7 @@
 
 ![最终浏览器画布](../img/studio-robotics-workspace.png)
 
-## 当前代码完整验证
+## 历史版本验证摘要
 
 标准命令：`.venv/bin/python scripts/check.py --suite all --report-dir .check-results/IR-031/acceptance-final`。
 仅测试子进程 PATH 补充已有 Playwright Node 路径，没有安装运行时、修改系统 PATH 或调用真实外部模型。
@@ -59,7 +59,9 @@ Chrome 156.0.8078.47，Intel Core Ultra 9 285K，24 logical CPU，桌面 1440×1
 
 ## 提交与使用
 
-T01～T05 分别提交为 `4905b5f`、`808f943`、`ee5160b`、`250973c`、`a94a246`。
+T01～T05 分别提交为 `7ec5715`、`724c239`、`a7de54e`、`34c3c0b`、`efff6d4`。
 T06 提交包含最终可读视图、字号、历史竞态、故障测试隔离修正及本交付记录。
 参见 [使用说明](../studio-robotics-guide.md)、[视图契约](../../specs/contracts/studio-graph-view-v1.md)。
 本轮未修改用户数据或重启用户服务；运行服务需重新加载后才能使用新增接口。
+
+本页记录的是上述历史版本，后续修订的复现方法见 `docs/studio-validation.md`。本地忽略目录不作为公开可访问证据。输入指纹清单保留历史原值，不重新计算为脱敏后的字节，也不证明当前材料与历史原文相同。

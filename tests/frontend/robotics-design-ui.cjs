@@ -13,6 +13,7 @@ function fixture(build=false){
   assert.ok(fs.existsSync(file),'Reviewed design controller module is missing');
   const context=vm.createContext({console,URL,URLSearchParams,FormData,File,Blob,Response,AbortController,
     setTimeout,clearTimeout,crypto:require('node:crypto').webcrypto});context.window=context;
+  vm.runInContext(fs.readFileSync(path.join(ROOT,'ui/modules/robotics-assets.js'),'utf8'),context);
   vm.runInContext(fs.readFileSync(file,'utf8'),context,{filename:file});
   const api=context[build?'RoboticsBuild':'RoboticsDesign'];assert.equal(typeof api?.createController,'function');
   const f={calls:[],emissions:[],timers:new Map(),handler:async url=>response(url.includes('/events?')?{items:[]}:

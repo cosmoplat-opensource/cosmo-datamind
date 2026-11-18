@@ -104,7 +104,7 @@ T07 已完成新 UI 与实际后端浏览器联动，证据见 [T07 审计记录
 
 ```bash
 .venv/bin/python -m pytest tests/unit/test_domain_build_executor.py tests/unit/test_robotics_build_http.py -q
-env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" \
+env PATH="${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" \
   .venv/bin/python scripts/check.py --suite all --report-dir .check-results/robotics-build-api
 ```
 

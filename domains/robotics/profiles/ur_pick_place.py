@@ -1,6 +1,6 @@
 """Fixed UR vocabulary, procedure and source-derived examples — DR-142 / DR-144.
 
-Migrated from yang ontology_pipeline; examples remain illustrative, never confirmed.
+Migrated from upstream ontology_pipeline; examples remain illustrative, never confirmed.
 """
 from ..graph import S, individual, invocation, literal
 

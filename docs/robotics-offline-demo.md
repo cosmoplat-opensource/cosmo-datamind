@@ -19,7 +19,7 @@
 也可以从任意目录使用绝对路径运行：
 
 ```bash
-/home/dyh/workspace/Project/cosmo-datamind/.venv/bin/python /home/dyh/workspace/Project/cosmo-datamind/scripts/demo_robotics.py --case all --output-dir /tmp/datamind-robotics-demo
+.venv/bin/python scripts/demo_robotics.py --case all --output-dir /tmp/datamind-robotics-demo
 ```
 
 三个场景均可独立运行，将 `--case all` 替换为下表中的场景名即可。
@@ -72,7 +72,7 @@ PASS 表示符合场景预期，不是现场机器人可执行证明；成功候
 - `sources/xingweishu.xml`、`sources/xml_models.xml`：来源行为树与节点模型。
 - `demo_supplement.json`：显式合成的业务对象映射、公开参数、模拟适配依据和结构化任务。
 
-不读取原 yang 归档、预置 agent OWL、相邻 SHACL 文件或外部推理报告。
+不读取原 upstream 归档、预置 agent OWL、相邻 SHACL 文件或外部推理报告。
 补充资料只适用于其中明确登记的来源/模型摘要，不能用模拟资料冒充真实证据、修改固定技能或替换整张图。
 其处理产生独立的 demo 图；真实缺证据场景使用未补充的独立新构建图。
 修改输入需提供相匹配且经过检查的补充资料，不能只修改摘要来掩盖语义不兼容。
@@ -91,7 +91,7 @@ PASS 表示符合场景预期，不是现场机器人可执行证明；成功候
 离线演示通过后，可运行工程全量检查。本机 Node 已安装但默认不在 PATH，使用：
 
 ```bash
-env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir016-final
+env PATH="${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir016-final
 ```
 
 最终以审计记录中的实际退出码和跳过原因判断，不把可选上游组件、真实模型检查的跳过写成验证成功。

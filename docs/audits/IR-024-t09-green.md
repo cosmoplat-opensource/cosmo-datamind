@@ -38,7 +38,7 @@
 完整回归命令退出码 0，13 阶段全部通过；单元测试 1988 项通过、5 项既有可选组件跳过，覆盖率 85.0%（门槛 81%）。
 静态、类型、验收引用、HTTP 集成、strict10、UI 走查／实操、数据构建及机器人构建／审阅／任务／设计浏览器检查均通过。
 最终 JavaScript/CSS 经浏览器重跑；领域检查兼容修复后，133 项相关检查通过，最终完整回归重新启动，全部生产实现保持冻结。
-详见 [机器记录](IR-024-t09-green-results.json)、[定向日志](../../.check-results/IR-024-t09-green/targeted.log)、[浏览器日志](../../.check-results/IR-024-t09-green/browser-presented/results.xml) 及 [全量阶段](../../.check-results/IR-024-t09-green/all-complete/summary.json)。
+详见 [机器记录](IR-024-t09-green-results.json)、定向日志（本地输出位置：`../../.check-results/IR-024-t09-green/targeted.log`，不作为公开证据）、浏览器日志（本地输出位置：`../../.check-results/IR-024-t09-green/browser-presented/results.xml`，不作为公开证据） 及 全量阶段（本地输出位置：`../../.check-results/IR-024-t09-green/all-complete/summary.json`，不作为公开证据）。
 T08 已审阅的 98 项测试及其辅助文件摘要已核对保持不变；既有已审阅测试也在最终记录中核对。
 
 ## 范围
@@ -47,3 +47,7 @@ T08 已审阅的 98 项测试及其辅助文件摘要已核对保持不变；既
 未调用用户真实模型，尚未验证真实模型的领域解释质量；该项仍属 T10。
 测试仅启动临时服务器、使用临时数据库，未重启用户常驻服务或迁移用户实际资产库。
 完整 IR 的 Deliverables／Acceptance 复选框和 delivered 状态仍待最后人审。
+
+## 验证记录的适用范围
+
+本页保留历史运行摘要；其中本地输出位置不随仓库提供，不能作为当前版本通过的证明。按 `docs/studio-validation.md` 中的环境与命令在目标修订重新执行，保留退出码、环境和报告后再判断该修订。历史日志中的个人路径已脱敏，日志文本摘要不再代表原始字节。

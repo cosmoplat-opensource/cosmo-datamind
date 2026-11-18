@@ -4024,6 +4024,44 @@
       ],
       "coverage_note": "IR-031 T06 完整 17 阶段通过：3803 passed / 5 可选跳过，覆盖率 83.0% / 88.1% / 73.4%；Studio 7 项浏览器通过。按用户免等待 review 授权完成技术交付。",
       "validation_report": "docs/audits/IR-031-t06-results.json"
+    },
+    {
+      "id": "STV-H01",
+      "criterion": "超限更新拒绝且上一修订、选择、坐标和提示一致",
+      "tests": [
+        "tests/unit/test_studio_graph_ui.py::test_oversized_updates_are_transactional",
+        "tests/frontend/studio-robotics-browser.py::test_panel_rejects_oversized_revision_without_changing_caption"
+      ]
+    },
+    {
+      "id": "STV-H02",
+      "criterion": "属性笛卡尔积在分配连线前校验预算",
+      "tests": [
+        "tests/unit/test_studio_robotics_projection.py::test_cartesian_property_expansion_is_rejected_before_allocating_edges"
+      ]
+    },
+    {
+      "id": "STV-H03",
+      "criterion": "请求和响应体有总时限，销毁取消且释放资源",
+      "tests": [
+        "tests/unit/test_studio_network.py::test_studio_network_deadlines_and_cleanup"
+      ]
+    },
+    {
+      "id": "STV-H04",
+      "criterion": "关系搜索显示对象定义和约束，不静默清空选择",
+      "tests": [
+        "tests/frontend/studio-robotics-browser.py::test_property_search_shows_definition_and_constraint_details"
+      ]
+    },
+    {
+      "id": "STV-H05",
+      "criterion": "跟踪的产品材料不含本机路径、工作流、工具署名或不可访问的本地证据链接",
+      "tests": [
+        "tests/meta/test_publication_hygiene.py::test_tracked_materials_respect_publication_boundary",
+        "tests/meta/test_publication_hygiene.py::test_encoded_fixture_blobs_use_only_synthetic_pose_types",
+        "tests/meta/test_publication_hygiene.py::test_published_demo_parameters_are_synthetic"
+      ]
     }
   ],
   "planned_requirements": [

@@ -6,7 +6,7 @@
 
 ## 上下文 / Context
 
-DataMind 当前 JOBS 与 yang 的会话都主要依赖进程内状态，无法作为完整的跨重启运行历史。
+DataMind 当前 JOBS 与 upstream 的会话都主要依赖进程内状态，无法作为完整的跨重启运行历史。
 DataMind 已有对话持久化：本体对话保存在服务端 ont_chats.json，构建对话历史保存在浏览器 localStorage。
 已有消息历史应复用，新增需求是将固定输入版本、任务状态、验证过程与产物可靠关联，而不是重建一套聊天系统。
 AgentService 当前使用一个 RLock 包围整次任务处理，包括模型调用，会串行化不同用户会话。

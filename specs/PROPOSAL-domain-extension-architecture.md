@@ -1,6 +1,6 @@
 # PROPOSAL · 领域可插拔扩展架构（本体应用 + 契约抽象 + 词表下沉）
 
-> **后续澄清**：本次 yang 深度集成以 [代码复核版技术方案](PROPOSAL-yang-datamind-integration.md) 与 DR-141～DR-147 为准。
+> **后续澄清**：本次 upstream 深度集成以 [代码复核版技术方案](PROPOSAL-robotics-integration.md) 与 DR-141～DR-147 为准。
 > 当前基础版进一步以 [DR-148](decisions/DR-148-minimal-robotics-task-workflow.md) / [IR-020](iterations/IR-020-minimal-robotics-task-workflow.md) 为准：当前任务缺少的参数、映射和适配在 DataMind 内补齐，不依赖外部编辑器。
 > 本文保留为早期架构探索，不作为当前直接实施清单；统一载荷、参数状态、运行追溯、UI 范围及模板能力以新方案修订为准。
 > 当前方案复用已有对话历史，补充运行与产物关联；manifest 指产物来源清单，与本文的领域插件 manifest 含义不同。
@@ -9,8 +9,8 @@
 > **消费方式**：`Consult @specs/map.md` 找到本文；本文是**待实施清单**，不是现状说明。
 > 现状口径仍以 `README.md`、`ARCHITECTURE.md`、`docs/pipelines/ontology_build.yaml` 为准。
 >
-> **背景**：为接入「天驭机器人平台」这一外部领域而做的架构设计。天驭侧素材（行为树 XML、节点模型、
-> 本体框架图、ROS 接口）在本仓之外，故本文只描述**本仓要改什么**，不描述天驭内部实现。
+> **背景**：为接入「外部机器人平台」这一外部领域而做的架构设计。外部机器人平台侧素材（行为树 XML、节点模型、
+> 本体框架图、ROS 接口）在本仓之外，故本文只描述**本仓要改什么**，不描述外部机器人平台内部实现。
 >
 > **本文档的三条纪律**：
 > 1. **每个变更项有稳定编号（C1…C9）**，供 DR/IR/提交信息引用。
@@ -69,7 +69,7 @@
 | **词表 vocab** | 全局唯一的「kind → 名称/颜色/上层类别」映射表 | **一张表，领域往里追加，内核条目不可被覆盖** |
 
 - IR 是全局单份；领域**不拥有节点**，领域只"消费"节点。
-- 同一节点可被多个领域以不同方式解读（例：`ac07` 在机器人域是物料、在数据域是物料主数据）→ **正常，无需处理**。
+- 同一节点可被多个领域以不同方式解读（例：`sample_part` 在机器人域是物料、在数据域是物料主数据）→ **正常，无需处理**。
 - 同一节点被多个 producer/应用各自投影 → **各自产各的，输出通道互不共享**。
 
 ### 2.2 "导出格式" 与 "本体应用" 是两件事 ⚠️
@@ -100,8 +100,8 @@
 
 ### 2.4 其他已用词
 
-- **能力（function）**：一台设备能做的原子动作。天驭例：`MoveJ` / `MoveL` / `CloseGripper`。
-- **技能（skill）**：由多个能力编排出的业务过程。天驭例：`Perception` / `Grasping` / `Place`。
+- **能力（function）**：一台设备能做的原子动作。外部机器人平台例：`MoveJ` / `MoveL` / `CloseGripper`。
+- **技能（skill）**：由多个能力编排出的业务过程。外部机器人平台例：`Perception` / `Grasping` / `Place`。
 - **任务编排（task）**：一次具体的编排 = 若干技能调用 + 实体绑定 + 条件引用 + 参数引用。**编译的主语是它，不是某个技能。**
 - **能力模板**：技能内部的固定能力序列。**由人定义并确认，不随任务变化**，LLM 不得自由组合。
 
@@ -380,13 +380,13 @@ domains/
 | 方向 | 表间基数方向 | 动作方向（谁生产谁 / 谁包含谁） |
 
 > ⚠️ **红线**：**不得**把行为树 XML 当"表"喂 `dao_core` 去算值域重叠。那会产出**看起来可信、实则伪造的 `verified`**。
-> 天驭的裁决证据必须是**接口契约核对**与**实测标定比对**。
+> 外部机器人平台的裁决证据必须是**接口契约核对**与**实测标定比对**。
 
 **领域包是本地可信代码**：不远程加载、不带前端 JS、只带 JSON 描述 + 确定性 Python。
 
 ---
 
-### C6 · 天驭领域的本体扩展（具体要建什么）
+### C6 · 外部机器人平台领域的本体扩展（具体要建什么）
 
 **词表条目**（追加进 `vocab`，不改内核条目）
 
@@ -398,12 +398,12 @@ domains/
 
 **关系**（**全部是既有官方关系，无需新增**）
 
-| 关系 | IRI | 定义域 → 值域 | 天驭用法 |
+| 关系 | IRI | 定义域 → 值域 | 外部机器人平台用法 |
 |---|---|---|---|
 | `bearerOf` | `obo:BFO_0000196` | MaterialArtifact → Function | UR 机械臂 **承载** MoveL |
 | `realizes` | `obo:BFO_0000055` | Process/PlannedProcess → Role/Disposition/Function | 抓取技能 **实现** MoveL |
-| `hasInput` | `iof:hasInput` | Process/PlannedProcess → Continuant | 抓取技能 **输入** ac07 |
-| `hasOutput` | `iof:hasOutput` | Process/PlannedProcess → Continuant | 抓取技能 **输出** ac07_in_gripper |
+| `hasInput` | `iof:hasInput` | Process/PlannedProcess → Continuant | 抓取技能 **输入** sample_part |
+| `hasOutput` | `iof:hasOutput` | Process/PlannedProcess → Continuant | 抓取技能 **输出** sample_part_in_gripper |
 | `hasParticipantAtSomeTime` | `obo:BFO_0000057` | Process/PlannedProcess → Continuant | 设备 **参与** 技能 |
 
 **能力 ↔ 设备的双重表达**：`bearerOf`（设备拥有能力）+ `participatesInAtSomeTime`（能力参与技能）。
@@ -427,7 +427,7 @@ domains/
 
 ---
 
-### C7 · 行为树编译链（天驭侧应用）
+### C7 · 行为树编译链（外部机器人平台侧应用）
 
 **输入**：自然语言描述 + 选定的本体
 **产物**：一次任务编排（任务 + 树 + 编译清单）
@@ -479,13 +479,13 @@ Sequence
 ```
 
 收尾在 `Precondition` **外面** ⇒ 感知失败导致内层 FAILURE 时**撤离照样执行**。
-纯 Sequence 做不到这一点（天驭现有 `xingweishu.xml` 的 `grasp` 正是这个缺陷：`CloseGripper` 失败 → 末尾 `MoveL` 撤离被跳过 → 机器人停在抓取位）。
+合成示例中，纯 Sequence 的前序动作失败会跳过末尾撤离动作；应显式设计失败后的收尾语义。
 
 **编译清单 manifest**：记录编译时的本体指纹（`ir_digest`，思路同 `osi_export` 模型级扩展）、每个带单位取值的值 + 单位 + 坐标系、每个引用的规则与参数的状态。**本体变了 → 指纹对不上 → 产物标为待复核，不被误当最新的下发。**
 
 ---
 
-### C8 · 证据来源扩展（天驭侧）
+### C8 · 证据来源扩展（外部机器人平台侧）
 
 新增两类可插拔来源，与数据库来源走同一裁决协议：
 
@@ -510,9 +510,9 @@ Sequence
 | 层 | 内容 |
 |---|---|
 | ROS 侧 | `.msg` / `.srv` / `.action` / IDL 定义 + 端点名 + QoS |
-| 天驭内部 | C++ 端口声明（`robot_types::PoseQuat` 的字段序 / 单位 / 坐标系） |
+| 平台正式接口契约 | 外部提供并授权的类型、单位和坐标系声明；私有类型及布局不在产品仓库留存 |
 
-> ⚠️ **已知隐患**：`robot_types::PoseQuat` 在 `xml_models.xml` 里两处注释的**字段序不一致**（`GetTCP.pose` 写 `[x,y,z,w,x,y,z]`，`FrameTransform.robot_pose` 写 `[x,y,z,qw,qx,qy,qz]`），而 ROS `geometry_msgs/Quaternion` 是 `x,y,z,w`。
+> ⚠️ **已知隐患**：`demo::PoseQuat` 在 `xml_models.xml` 里两处注释的**字段序不一致**（`GetTCP.pose` 写 `[x,y,z,w,x,y,z]`，`FrameTransform.robot_pose` 写 `[x,y,z,qw,qx,qy,qz]`），而 ROS `geometry_msgs/Quaternion` 是 `x,y,z,w`。
 > **转换必须重排**；重排错了数值合法但不正确，机器人不报错只是抓偏。
 > → 接口契约采集必须产出**显式的转换规则**（`from` / `to` / `rule` / `verified`），并纳入 C7 的单位/坐标系漂移检查。
 
@@ -585,13 +585,13 @@ Sequence
 
 ```json
 {
-  "id": "ac07.detect_threshold",
+  "id": "sample_part.detect_threshold",
   "type": "parameter",
   "name": "detect_threshold",
   "cn": "检测阈值",
   "status": "candidate",
   "spec": {"value": 0.8, "unit": "1", "frame": null,
-           "scope": "ac07", "owner_skill": "perception_at_station"},
+           "scope": "sample_part", "owner_skill": "perception_at_station"},
   "evidence": {"kind": "calibration", "reference": "CAL-2026-014",
                "executed": true, "match": null, "checked_at": null},
   "certified_by": null, "certified_at": null,
@@ -607,13 +607,13 @@ Sequence
 ```json
 {
   "task": {
-    "id": "move_ac07_to_B01",
-    "cn": "把 ac07 从工位A搬到载具B01的槽位3",
+    "id": "move_sample_part_to_B01",
+    "cn": "把 sample_part 从工位A搬到载具B01的槽位3",
     "graph": "robot_cell",
     "invocations": [
       {"seq": 1, "skill": "perception_at_station",
-       "bindings": {"part": "ac07", "station": "station_A"},
-       "params": {"model_name": "@param:ac07.detect_model"},
+       "bindings": {"part": "sample_part", "station": "station_A"},
+       "params": {"model_name": "@param:sample_part.detect_model"},
        "preconditions": ["rule:part_visible"]}
     ],
     "preconditions": ["rule:part_in_position", "rule:slot_available"],
@@ -710,7 +710,7 @@ Sequence
 | C3 导出格式注册表 | 未开始 | — | — | |
 | C4 应用框架 | 未开始 | — | — | |
 | C5 领域包机制 | 未开始 | — | — | |
-| C6 天驭本体扩展 | 未开始 | — | — | |
+| C6 外部机器人平台本体扩展 | 未开始 | — | — | |
 | C7 行为树编译链 | 未开始 | — | — | |
 | C8 证据来源扩展 | 未开始 | — | — | |
 | C9 UI 改造 | 未开始 | — | — | |

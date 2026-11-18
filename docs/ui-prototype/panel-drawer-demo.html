@@ -188,7 +188,7 @@ code{background:#EEF2FF;color:var(--acc);padding:1px 5px;border-radius:3px;font-
     <div class="nav-group"><div class="gh">智能问数<span>▾</span></div><div class="nav">深度问数</div></div>
     <div class="domnote">
       <div class="t">已装载领域</div>
-      机器人 · 天驭<br>
+      机器人 · 外部机器人平台<br>
       <div style="margin-top:6px">
         · 词表：设备 / 能力 / 技能<br>
         · 数据源：ROS 接口契约<br>
@@ -251,9 +251,9 @@ code{background:#EEF2FF;color:var(--acc);padding:1px 5px;border-radius:3px;font-
               <text x="370" y="225" text-anchor="middle" font-size="13" fill="#b45309">抓取技能</text>
               <text x="370" y="243" text-anchor="middle" font-size="10" fill="#d97706">技能</text>
             </g>
-            <g class="gnode" data-k="obj" data-id="ac07">
+            <g class="gnode" data-k="obj" data-id="sample_part">
               <rect x="530" y="70" width="110" height="60" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.4"/>
-              <text x="585" y="95" text-anchor="middle" font-size="13" fill="#15803d">ac07</text>
+              <text x="585" y="95" text-anchor="middle" font-size="13" fill="#15803d">sample_part</text>
               <text x="585" y="113" text-anchor="middle" font-size="10" fill="#16a34a">对象</text>
             </g>
             <g class="gnode" data-k="ast" data-id="b01">
@@ -279,7 +279,7 @@ code{background:#EEF2FF;color:var(--acc);padding:1px 5px;border-radius:3px;font-
   <div class="drawer" id="drawer">
     <div class="dhead">
       <div>
-        <div class="t">行为树编排 · move_ac07_to_B01</div>
+        <div class="t">行为树编排 · move_sample_part_to_B01</div>
         <div class="muted" style="margin-top:3px">任务编排产物 · 上次编译 2026-10-28 10:12 · 锚定本体：机器人作业本体</div>
       </div>
       <div class="btnrow">
@@ -297,9 +297,9 @@ code{background:#EEF2FF;color:var(--acc);padding:1px 5px;border-radius:3px;font-
       <div class="dcol">
         <div>
           <div class="lv">任务 · 技能调用序列</div>
-          <div class="li on">1 perception_at_station<span class="s"> part=ac07 · station=station_A</span></div>
-          <div class="li">2 grasp_from_pose<span class="s"> part=ac07 · pose={obj_in_camera}</span></div>
-          <div class="li">3 place_into_slot<span class="s"> part=ac07 · slot=slot_B01_3</span></div>
+          <div class="li on">1 perception_at_station<span class="s"> part=sample_part · station=station_A</span></div>
+          <div class="li">2 grasp_from_pose<span class="s"> part=sample_part · pose={obj_in_camera}</span></div>
+          <div class="li">3 place_into_slot<span class="s"> part=sample_part · slot=slot_B01_3</span></div>
           <div class="lv">前置条件（引用本体规则）</div>
           <div class="li">rule:part_in_position<span class="s"> 零件在位</span></div>
           <div class="li">rule:slot_available<span class="s"> 槽位可用</span></div>
@@ -319,7 +319,7 @@ code{background:#EEF2FF;color:var(--acc);padding:1px 5px;border-radius:3px;font-
           <div class="card">
             <h3>阻断项</h3>
             <div style="font-size:12px;line-height:1.75">
-              <span class="tag bad">阻断</span> <code>ac07.detect_threshold</code> 状态为 candidate<br>
+              <span class="tag bad">阻断</span> <code>sample_part.detect_threshold</code> 状态为 candidate<br>
               <span class="muted">未经确认的值不填端口。处理：去「契约中心 → 参数契约」确认后重编译。</span>
             </div>
           </div>
@@ -339,8 +339,8 @@ const DETAIL={
       ['所属设备','UR 机械臂'],['端口','target / tool / vel / acc / radius'],['单位','target: mm · robot_base　vel: m/s'],['超时','无（长动作，靠 action 的 abort）'],['被实现于','抓取技能 · 放置技能']],panel:'cap'},
  skill:{title:'抓取技能',sub:'技能 · PlannedProcess · 已确认',rows:[
       ['能力组成','固定 5 步（模板，不随任务变）'],['前置条件','2 条 · 均已确认'],['参数','3 项 · 2 已确认 1 待确认'],
-      ['适用零件','ac07'],['风险','低 · 无需审批']],panel:'skill'},
- obj:{title:'ac07',sub:'对象 · MaterialEntity · 已确认',rows:[
+      ['适用零件','sample_part'],['风险','低 · 无需审批']],panel:'skill'},
+ obj:{title:'sample_part',sub:'对象 · MaterialEntity · 已确认',rows:[
       ['零件类型','AC07 连接器'],['绑定的技能','抓取技能 · 感知技能'],['关键参数','detect_threshold · exposure_time'],
       ['标定记录','CAL-2026-014']],panel:'obj'},
  ast:{title:'载具 B01',sub:'资产 · MaterialArtifact · 候选',rows:[
@@ -362,14 +362,14 @@ const PANELS={
   '<div class="drow"><div class="nm">能力组成</div><div class="ds">5 步 · 固定模板</div></div>'+
   '<div class="drow"><div class="nm">前置条件</div><div class="ds">2 条 · 已确认</div></div>'+
   '<div class="drow"><div class="nm">参数</div><div class="ds">3 项 · 1 待确认</div></div>'+
-  '<div class="drow"><div class="nm">被哪些任务引用</div><div class="ds"><span class="tag">move_ac07_to_B01</span></div></div>'+
+  '<div class="drow"><div class="nm">被哪些任务引用</div><div class="ds"><span class="tag">move_sample_part_to_B01</span></div></div>'+
   '<div class="btnrow" style="margin-top:11px"><button class="ghost pri" onclick="openDrawer()">以此技能为起点编排</button>'+
   '<button class="ghost">查看已生成的树</button></div>'+
   '<div class="muted" style="margin-top:8px">技能是<b>被调用者</b>，不是任务 —— 所以节点上没有「编译」按钮。'+
   '真正编译一棵树在「本体构建 → 编排行为树」，输入是<b>自然语言 + 本体</b>。这里点按钮只是直接打开编排面板。</div>'},
  obj:{title:'零件与技能（领域面板）',html:
   '<div class="drow"><div class="nm">可用技能</div><div class="ds">抓取技能 · 感知技能</div></div>'+
-  '<div class="drow"><div class="nm">识别模型</div><div class="ds">ac07_rec</div></div>'+
+  '<div class="drow"><div class="nm">识别模型</div><div class="ds">sample_model</div></div>'+
   '<div class="muted" style="margin-top:8px">普通对象（如客户）没有这块。</div>'},
  ast:{title:'槽位占用（领域面板）',html:
   '<table><tr><th>槽位</th><th>状态</th></tr><tr><td>槽 1</td><td>占用</td></tr>'+
@@ -414,10 +414,10 @@ const TAB={
 来自本体的技能模板，<b>不随任务变化</b>。<br><br>
 最外层那个 <code>Sequence</code>（撤离）在 <code>Precondition</code> <b>外面</b> ——
 感知失败导致内层 FAILURE 时，<b>撤离照样执行</b>。<br>
-这正是纯 Sequence 做不到、天驭现有树缺的收尾语义。</div>`,
+这正是纯 Sequence 做不到、合成示例中需要处理的收尾语义。</div>`,
  report:`<div class="lv" style="padding-left:0">编译过程</div>
 <div class="tl">
-  <div class="it ok"><div class="st">范围与任务</div><div class="dt">ac07 · 工位 A → 载具 B01</div></div>
+  <div class="it ok"><div class="st">范围与任务</div><div class="dt">sample_part · 工位 A → 载具 B01</div></div>
   <div class="it ok"><div class="st">提议</div><div class="dt">技能 1 · 绑定 2 · 条件 2 · 参数 3</div></div>
   <div class="it ok"><div class="st">裁决</div><div class="dt">技能/条件/参数全部在本体中找到对应</div></div>
   <div class="it warn"><div class="st">参数状态</div><div class="dt">3 项中 1 项为 candidate → 不填端口</div></div>
@@ -432,7 +432,7 @@ const TAB={
  <tr><td>独占资源声明</td><td><span class="tag ok">通过</span></td></tr>
  <tr><td>单位 / 坐标系一致</td><td><span class="tag warn">待审 2</span></td></tr>
  </table></div>`,
- diff:`<div class="lv" style="padding-left:0">与天驭现有 xingweishu.xml 的差异</div>
+ diff:`<div class="lv" style="padding-left:0">与合成流程示例的差异</div>
 <table>
  <tr><th>差异</th><th>现有树</th><th>本体编排出的树</th></tr>
  <tr><td>结构</td><td>一棵手写树（技能与步骤混在一层）</td><td><span class="tag ok">任务编排：技能调用序列 + 绑定</span></td></tr>

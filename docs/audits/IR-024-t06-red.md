@@ -57,12 +57,12 @@
 3. 原任务 HTTP 拒绝带伪造兼容元数据的通用设计，且不留下任务／运行。
 4. 旧任务服务仍能以 offline 策略打开真实旧 UR 候选。
 
-完整日志：[pytest.log](../../.check-results/IR-024-t06-red/pytest.log)、[JUnit](../../.check-results/IR-024-t06-red/junit.xml)。
+完整日志：pytest.log（本地输出位置：`../../.check-results/IR-024-t06-red/pytest.log`，不作为公开证据）、JUnit（本地输出位置：`../../.check-results/IR-024-t06-red/junit.xml`，不作为公开证据）。
 
 ## 回归与追溯
 
 既有人审的 62 项 T03 分流／HTTP 测试和 79 项 T05 核心测试共 141 项全部通过，用时 6.29 秒。
-日志：[baseline.log](../../.check-results/IR-024-t06-red/baseline.log)。
+日志：baseline.log（本地输出位置：`../../.check-results/IR-024-t06-red/baseline.log`，不作为公开证据）。
 7 个新增 Python 文件通过 ruff 与 mypy，验收引用自检通过。
 87 个验收编号无重复，732 条实际测试引用均有对应函数；本组每个新测试均已映射到至少一条验收要求。
 生产文件、T02/T04 已审阅测试及两项已获准的旧测试调整的摘要均与前阶段审计一致。
@@ -83,3 +83,7 @@ RBD-11 的 UI 验收继续保留计划状态。
 
 [sdd-workflow](../../.agents/skills/sdd-workflow/SKILL.md) 第⑤环节明确要求：“人 review 测试是否覆盖到位”。
 因此本阶段在具体测试、接口与 RED 证据完成后停留于人审接点；用户确认后进入 T07，仅修改实现让这些测试转绿。
+
+## 验证记录的适用范围
+
+本页保留历史运行摘要；其中本地输出位置不随仓库提供，不能作为当前版本通过的证明。按 `docs/studio-validation.md` 中的环境与命令在目标修订重新执行，保留退出码、环境和报告后再判断该修订。历史日志中的个人路径已脱敏，日志文本摘要不再代表原始字节。

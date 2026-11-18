@@ -23,16 +23,24 @@ export class StudioController {
     if(typeof incoming.revision==='number'&&incoming.revision<this.context.revision)return false;
     if(typeof incoming.revision==='string'&&incoming.revision!==this.context.revision)return false;
     const previous=new Map((this.document?.nodes||[]).map(n=>[n.id,n])),next=new Map(document.nodes.map(n=>[n.id,n]));
-    this.changes={added:[...next.keys()].filter(id=>!previous.has(id)),modified:[...next.keys()].filter(id=>previous.has(id)&&JSON.stringify(previous.get(id))!==JSON.stringify(next.get(id))),removed:[...previous.keys()].filter(id=>!next.has(id))};
     const view=this.graph.getView(),selection=this.state.captureView();
-    this.document=copy(document);this.context=copy(incoming);this.state.load(copy(document));this.state.restoreView(selection);
+    const old={document:this.document,state:this.state,expanded:this.expanded,pages:this.pages};
+    this.document=copy(document);this.state=new GraphState(copy(document));this.state.restoreView(selection);
+    this.expanded={...old.expanded};this.pages={...old.pages};
     for(const id of Object.keys(this.expanded)){
       if(!next.has(id)){delete this.expanded[id];delete this.pages[id];}
       else if((this.pages[id]||0)>=(next.get(id).individuals||[]).length)this.pages[id]=0;
     }
+    this.state.expanded=new Set(Object.keys(this.expanded));
+    const projected=this.projected();
+    if(projected.nodes.length>300||projected.edges.length>600){
+      Object.assign(this,old);this.callbacks.onNotice?.('当前范围超过同屏上限，请缩小范围后重试；已有画布保留上一修订。');return false;
+    }
+    this.context=copy(incoming);
+    this.changes={added:[...next.keys()].filter(id=>!previous.has(id)),modified:[...next.keys()].filter(id=>previous.has(id)&&JSON.stringify(previous.get(id))!==JSON.stringify(next.get(id))),removed:[...previous.keys()].filter(id=>!next.has(id))};
     const valid=new Set([...document.nodes,...document.individuals].map(n=>n.id));
     for(const id of this.graph.positions.keys())if(!valid.has(id))this.graph.positions.delete(id);
-    this.state.expanded=new Set(Object.keys(this.expanded));this.draw();
+    this.graph.setData(projected);this.graph.setSelection(this.state.selectedId);
     if(previous.size)this.graph.restoreView(view);
     this.callbacks.onChange?.(this.capture());return true;
   }

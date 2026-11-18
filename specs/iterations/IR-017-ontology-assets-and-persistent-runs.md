@@ -5,7 +5,7 @@
 - **当前环节**：2026-11-04 用户在了解演示流程、子进程机制及验收内容后回复“可以进行下一步了”，据此确认本轮交付；T01～T08 完成。
 - **关联 / Refs**: [[DR-141-unified-domain-semantic-graph]]、[[DR-146-persistent-build-runs-and-artifact-manifests]]、[[DR-147-robotics-migration-and-compatibility-validation]]。
 - **前置**：[IR-016](IR-016-robotics-contract-integration.md) 已于 2026-11-03 经用户确认交付。
-- **方案**：[集成 Proposal](../PROPOSAL-yang-datamind-integration.md) 第 6 节步骤 2。
+- **方案**：[集成 Proposal](../PROPOSAL-robotics-integration.md) 第 6 节步骤 2。
 - **流程依据**：[SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第③～⑤步。
 
 ## 目标 Goal
@@ -33,7 +33,7 @@ AST-08 的旧 UI 回归只能证明旧能力未受破坏，不能作为新 UI �
 
 后续每个涉及 UI 的 IR 必须同时列出页面改动、接口契约、浏览器联动测试及人工操作路径，不把联动全部推迟到最后才检查。
 步骤 5～6 应按可操作的用户流程拆分实施批次，避免只完成 API 或只完成静态页面就宣称该流程交付。
-最终产品完成标准见 [Proposal 第 6.1 节](../PROPOSAL-yang-datamind-integration.md#61-产品集成完成标准与前后端联动验收)。
+最终产品完成标准见 [Proposal 第 6.1 节](../PROPOSAL-robotics-integration.md#61-产品集成完成标准与前后端联动验收)。
 这些说明是后续范围的追踪，不将 UI 工作计入本 IR 的 AST-01～09，也不视为已获验收批准。
 
 ### 代码依据与复用边界
@@ -130,7 +130,7 @@ T02 已将 AST-01～03、08 的首批真实测试入口登记到 `acceptance.jso
 跨进程检查必须由新的 Python 进程读取磁盘记录，不能仅在原进程重新创建一个对象冒充重启。
 summary 输出 storage_root、run_id、版本引用和独立检查结果，说明所有演示依据及执行未验证状态。
 仅当预期状态、工件和摘要检查全部通过时退出 0，异常或不符合预期时退出非零。
-不要求启动 UI、网络模型、原 yang 工程或机器人。
+不要求启动 UI、网络模型、原 upstream 工程或机器人。
 
 ### 验证与人审记录
 

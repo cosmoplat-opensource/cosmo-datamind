@@ -1,19 +1,20 @@
 /* Persistent design interaction and immutable history — DR-152. */
 (function(g){'use strict';
 const clone=x=>JSON.parse(JSON.stringify(x)),prefix='/api/robotics/design-sessions/',active=s=>['queued','running'].includes(s?.status);
-async function read(fetch,url,options){const r=await fetch(url,options);let b;try{b=await r.json();}catch(_){throw Error('响应不是 JSON（HTTP '+r.status+'）');}if(!r.ok)throw Object.assign(Error(b.error?.message||b.error||'请求失败'),{code:b.error?.code,status:r.status});return b;}
+const read=(fetch,url,options)=>g.RoboticsAssets.readJSON(fetch,url,options);
 function createController(o={}){
  const fetch=o.fetch||g.fetch.bind(g),emit=o.onChange||(()=>{}),schedule=o.schedule||g.setTimeout.bind(g),cancel=o.cancelSchedule||g.clearTimeout.bind(g),newId=o.requestId||(()=>g.crypto.randomUUID());
+ const requests=new AbortController();
  let s={session:null,messageText:'',selectedRevision:null,busy:false,error:null},dead=false,epoch=0,id=null,timer=null,flight=null,identity=null;
  const notify=()=>{if(!dead)emit(clone(s));},clear=()=>{if(timer!==null)cancel(timer);timer=null;};
- function later(){clear();if(!dead&&active(s.session))timer=schedule(()=>{timer=null;return poll();},1000);}
+ function later(){clear();if(!dead&&!s.error&&active(s.session))timer=schedule(()=>{timer=null;return poll();},1000);}
  async function poll(){if(dead||!id)return;if(flight)return flight;clear();const token=epoch,sid=id;
-  const p=(async()=>{try{const row=await read(fetch,prefix+encodeURIComponent(sid));if(dead||token!==epoch)return;if(row.session_id!==sid)throw Error('会话身份不匹配');s.session=row;s.error=null;}catch(e){if(!dead&&token===epoch)s.error={message:e.message,code:e.code,status:e.status};}finally{if(!dead&&token===epoch){flight=null;notify();later();}}})();flight=p;return p;}
+  const p=(async()=>{try{const row=await read(fetch,prefix+encodeURIComponent(sid),{signal:requests.signal});if(dead||token!==epoch)return;if(row.session_id!==sid)throw Error('会话身份不匹配');s.session=row;s.error=null;}catch(e){if(!dead&&token===epoch)s.error={message:e.message,code:e.code,status:e.status};}finally{if(!dead&&token===epoch){flight=null;notify();later();}}})();flight=p;return p;}
  async function openSession(sid){if(dead)return;epoch++;if(id!==sid){s.messageText='';identity=null;}id=sid;flight=null;clear();s.busy=false;s.session=null;s.selectedRevision=null;s.error=null;notify();await poll();}
  async function act(op,extra={}){if(dead||s.busy||!s.session)return;const original=clone(s.session),text=s.messageText,token=epoch;
   const body={request_id:'',expected_revision:original.revision,...extra},fingerprint=JSON.stringify([id,op,body]);
   if(identity?.fingerprint!==fingerprint)identity={fingerprint,id:newId()};body.request_id=identity.id;s.busy=true;s.error=null;notify();
-  try{const row=await read(fetch,prefix+encodeURIComponent(id)+'/'+op,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  try{const row=await read(fetch,prefix+encodeURIComponent(id)+'/'+op,{signal:requests.signal,method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
    if(dead||token!==epoch)return;if(row.session_id!==id)throw Error('会话身份不匹配');s.session=row;s.selectedRevision=null;identity=null;if(op==='messages'&&s.messageText===text)s.messageText='';
   }catch(e){if(!dead&&token===epoch)s.error={message:e.message,code:e.code,status:e.status};}finally{if(!dead&&token===epoch){s.busy=false;notify();later();}}}
  return {snapshot:()=>clone(s),openSession,poll,setMessage(text){if(dead)return;s.messageText=text;notify();},
@@ -21,8 +22,8 @@ function createController(o={}){
  confirmClasses(){return act('confirm-classes',{snapshot_sha256:s.session?.snapshot_sha256});},editClasses(){return act('edit-classes');},editProperties(){return act('edit-properties');},
  confirmSchema(){return act('confirm-schema',{snapshot_sha256:s.session?.snapshot_sha256});},retry(){if(!['failed','interrupted'].includes(s.session?.status))return;return act('retry',{failed_run_id:s.session.run_id});},
  showCurrent(){s.selectedRevision=null;notify();},
- async openRevision(revision){const token=epoch;try{const row=await read(fetch,prefix+encodeURIComponent(id)+'/revisions/'+revision);if(!dead&&token===epoch){s.selectedRevision=row;notify();}}catch(e){if(!dead&&token===epoch){s.error={message:e.message};notify();}}},
- dispose(){dead=true;epoch++;clear();}};
+ async openRevision(revision){const token=epoch;try{const row=await read(fetch,prefix+encodeURIComponent(id)+'/revisions/'+revision,{signal:requests.signal});if(!dead&&token===epoch){s.selectedRevision=row;notify();}}catch(e){if(!dead&&token===epoch){s.error={message:e.message};notify();}}},
+ dispose(){dead=true;epoch++;requests.abort();clear();}};
 }
 async function beginRepair(reply,requestId,fetch=g.fetch.bind(g)){
  const phase=reply.design_repair;

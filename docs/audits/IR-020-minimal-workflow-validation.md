@@ -11,7 +11,7 @@
 
 | 实际读取的位置 | 结论 |
 |---|---|
-| `/home/dyh/workspace/Project/yang_implementation/归档/ontology/README.md` | CLI 构建 OWL，Protégé 维护知识，没有当前 DataMind 的五个治理页签 |
+| `${ROBOTICS_SOURCE_ROOT}/归档/ontology/README.md` | CLI 构建 OWL，Protégé 维护知识，没有当前 DataMind 的五个治理页签 |
 | 同目录 `agent/README.md`、`agent/web/index.html`、`agent/web/app.js` | 页面核心是任务对话与本次结果；澄清期间不展示旧生成结果；模型缺配置明确提示 |
 | `agent/llm_client.py` | 完整角色消息、JSON 模式、六字段校验与最多一次格式修复；不是单条自然语言直出 XML |
 | `agent/trusted_agent.py` | 重放用户明确提及，处理否定、撤销、换上游目标；知识缺口与任务歧义分开 |
@@ -152,7 +152,7 @@ T04 将审查真实 HTTP 传输、会话、补齐写入和完整浏览器链路�
 ### T03 最终全量结果
 
 ```bash
-PATH=/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir020-t03-all
+PATH=${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir020-t03-all
 ```
 
 检查进程退出码 0，11 个检查段全部通过。
@@ -214,7 +214,7 @@ T03 完成，下一任务是 T04 的补齐保存、会话接续、HTTP 与真实
 | ui/modules/robotics-task.js | 一个当前版本、自然语言任务、当前缺项表单、一次范围知识确认、实际适配依据/有效期/确认、只读树及下载 |
 | 现有构建/本体库页面 | 新增“生成行为树”入口；高级维护保留为版本详情的次级入口，原显式维护/评审路由仍保留 |
 | srv_engine.py / 引擎设置 | 注册 bt_extract 可选模型覆盖；机器人独立提示词仍在 task_model，不与问数混用 |
-| demo_robotics_task.py / robotics_task_demo.py | 五个可运行离线案例；由随代码登记的双 XML 新构建，不依赖 Yang 路径或预制 OWL |
+| demo_robotics_task.py / robotics_task_demo.py | 五个可运行离线案例；由随代码登记的双 XML 新构建，不依赖 upstream 路径或预制 OWL |
 | scripts/check.py | 统一检查增加机器人任务浏览器段，保留全部既有检查 |
 
 任务表为现有 domain.sqlite3 的应用附加表，资产 schema 仍为 5。
@@ -278,7 +278,7 @@ HTTP 551 项对应检查段及严格 10 场景随后通过；为重跑完整检�
 ### T05 最终全量结果（固定最终代码）
 
 ```bash
-PATH=/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir020-t05-all
+PATH=${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir020-t05-all
 ```
 
 实际退出码 0，12 个检查段全部通过；该结果来自修复后的一次完整运行，不是拼接失败轮次的通过结果。

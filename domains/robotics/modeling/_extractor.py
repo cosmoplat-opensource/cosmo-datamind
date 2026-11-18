@@ -1,4 +1,4 @@
-"""Deterministic XML rules adapted from Yang; no model or persistence — DR-152."""
+"""Deterministic XML rules adapted from upstream; no model or persistence — DR-152."""
 from collections import Counter, defaultdict
 import hashlib
 import json

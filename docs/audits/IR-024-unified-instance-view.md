@@ -19,8 +19,12 @@
 语法、ruff、mypy、diff 检查通过；本次未重复执行完整后端回归套件。
 
 - [机器记录](IR-024-unified-instance-view-results.json)
-- [单元结果](../../.check-results/IR-024-instance-view/unit.xml)
-- [新设计浏览器](../../.check-results/IR-024-instance-view/design-browser.log)
-- [旧本体浏览器](../../.check-results/IR-024-instance-view/legacy-browser.log)
-- [分组与不变性诊断](../../.check-results/IR-024-instance-view/projection-result.json)
-- [在线验证](../../.check-results/IR-024-instance-view/live-result.json)
+- 单元结果（本地输出位置：`../../.check-results/IR-024-instance-view/unit.xml`，不作为公开证据）
+- 新设计浏览器（本地输出位置：`../../.check-results/IR-024-instance-view/design-browser.log`，不作为公开证据）
+- 旧本体浏览器（本地输出位置：`../../.check-results/IR-024-instance-view/legacy-browser.log`，不作为公开证据）
+- 分组与不变性诊断（本地输出位置：`../../.check-results/IR-024-instance-view/projection-result.json`，不作为公开证据）
+- 在线验证（本地输出位置：`../../.check-results/IR-024-instance-view/live-result.json`，不作为公开证据）
+
+## 验证记录的适用范围
+
+本页保留历史运行摘要；其中本地输出位置不随仓库提供，不能作为当前版本通过的证明。按 `docs/studio-validation.md` 中的环境与命令在目标修订重新执行，保留退出码、环境和报告后再判断该修订。历史日志中的个人路径已脱敏，日志文本摘要不再代表原始字节。

@@ -2,12 +2,12 @@
 
 - **状态 / Status**: proposed
 - **日期 / Date**: 2026-11-02
-- **关联 / Refs**: [[DR-018-realtime-consistency]]、[[DR-049-relational-projection-and-explicit-pipeline]]、[[DR-142-robotics-source-recipes-and-reverse-build]]、[集成技术方案](../PROPOSAL-yang-datamind-integration.md)
+- **关联 / Refs**: [[DR-018-realtime-consistency]]、[[DR-049-relational-projection-and-explicit-pipeline]]、[[DR-142-robotics-source-recipes-and-reverse-build]]、[集成技术方案](../PROPOSAL-robotics-integration.md)
 
 ## 上下文 / Context
 
 DataMind 当前主要通过 JSON IR 与编辑覆盖层管理数据本体，并没有现成的跨领域不可变发布体系。
-yang 使用 RDF/OWL 表达技能、实现、调用实例、端口契约、参数及黑板数据流。
+upstream 使用 RDF/OWL 表达技能、实现、调用实例、端口契约、参数及黑板数据流。
 DataMind 当前 OWL 出口把节点表达为类、边表达为属性定义，不能据此恢复机器人实例断言与完整 RDF 语义。
 前版 Graph v2 唯一真相源提议缺少无损映射证明，直接落地会扩大迁移范围并丢失已有语义。
 两个工程需要统一平台治理，同时避免同一版本存在两份可独立修改的权威数据。

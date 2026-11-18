@@ -37,6 +37,18 @@ const position=(c,id)=>new Map(c.capture().positions).get(ns+id);
 const visit=(element,fn)=>{fn(element);element.children.forEach(e=>visit(e,fn));};
 const ids=svg=>{const result=[];visit(svg,e=>{if(e.getAttribute('data-node-id'))result.push(e.getAttribute('data-node-id'));});return result;};
 const cases={
+  oversized_updates_are_transactional(){
+    for(const replace of [false,true]){
+      const notices=[],c=new StudioController(new Element('svg'),{onNotice:n=>notices.push(n)}),d=fixture();
+      const epoch=c.beginContext(d.context);c.update(d,{epoch});c.pause(true);c.select(ns+'A');c.pin(ns+'A',true);
+      const before=c.capture(),data=JSON.stringify(c.graph.data),next=fixture(2);
+      next.nodes=Array.from({length:301},(_,i)=>node(replace?'new'+i:i<2?['A','B'][i]:'n'+i));next.edges=[];
+      assert.equal(c.update(next,{epoch}),false,'an oversized revision must be rejected');
+      assert.deepEqual(c.capture(),before);assert.equal(JSON.stringify(c.graph.data),data);
+      assert.equal(c.document.context.revision,1);assert.match(notices.at(-1),/范围|上限/);
+      const valid=fixture(3);assert.equal(c.update(valid,{epoch}),true);assert.equal(c.context.revision,3);c.destroy();
+    }
+  },
   revision_updates_preserve_view_and_reject_stale_context(){
     const c=new StudioController(new Element('svg'),{}),first=fixture();
     const epoch=c.beginContext(first.context);assert.equal(c.update(first,{epoch}),true);

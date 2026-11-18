@@ -23,7 +23,7 @@
 
 ## 语义质量与范围
 
-“ac07 零件类型→感知配置”来自 XML 明确字段，源值 ac07、ac07_rec、0.8、123 已保存。
+“sample_part 零件类型→感知配置”来自 XML 明确字段，源值 sample_part、sample_model、0.8、123 已保存。
 TBox 已包含工位、载具、槽位、放置配置、关节配置等业务类别，但当前规则不为这些类别自动生成实例。
 拍照关节值和放置位姿已存在于参数绑定，尚未转为对应业务配置对象。
 旧方案的部分业务对象是固定领域示例；不能把数量差异直接当成抽取错误。
@@ -53,7 +53,7 @@ TBox 已包含工位、载具、槽位、放置配置、关节配置等业务类
 
 ## 回归结果
 
-本轮完整命令：`PATH=/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH .venv/bin/python scripts/check.py --suite all --report-dir .check-results/IR-024-t10/all`。
+本轮完整命令：`PATH=${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH .venv/bin/python scripts/check.py --suite all --report-dir .check-results/IR-024-t10/all`。
 完整 13 阶段全部通过，命令退出码 0；单元 1988 项通过、5 项既有可选组件跳过。
 覆盖率汇总：`TOTAL                                           10772   1330   4554    740  85.0%`。
 阶段耗时、实现摘要、真实运行核验和测试冻结检查见 [T10 机器记录](IR-024-t10-results.json)。

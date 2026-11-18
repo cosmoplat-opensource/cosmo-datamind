@@ -112,6 +112,36 @@ def probe(page, site, *, nodes=2, edges=1, instances=0):
     return page.locator('#studio_probe')
 
 
+def test_panel_rejects_oversized_revision_without_changing_caption(live):
+    site, page, _ = live
+    panel = probe(page, site)
+    page.evaluate("""()=>{const {panel,doc}=studioProbe;doc.context.kind='design';doc.context.revision=1;panel.present(doc);panel.controller.pause(true);
+      const next=structuredClone(doc);next.context.revision=2;
+      next.nodes=Array.from({length:301},(_,i)=>({...doc.nodes[0],id:'https://probe.test/#new'+i}));
+      panel.present(next,{scope:JSON.stringify([doc.context.kind,doc.context.key])});
+    }""")
+    expect(panel).to_have_attribute('data-revision', '1')
+    expect(panel.locator('svg [data-node-id]')).to_have_count(2)
+    expect(panel.locator('.studio-notice')).to_contain_text('范围')
+
+
+def test_property_search_shows_definition_and_constraint_details(live):
+    site, page, _ = live
+    panel = probe(page, site)
+    page.evaluate("""()=>{const {panel,doc}=studioProbe;doc.properties=[{id:'https://probe.test/#p',
+      type:'object',labels:[{value:'专用关系'}],definition:'关系定义说明',domains:[doc.nodes[0].id],ranges:[doc.nodes[1].id]}];
+      panel.present(doc);panel.controller.state.focusClass(doc.nodes[0].id);panel.controller.draw();
+    }""")
+    panel.get_by_label('查找节点', exact=True).fill('专用关系')
+    panel.get_by_role('button', name='查找', exact=True).click()
+    expect(panel.locator('.studio-entity h3')).to_have_text('专用关系')
+    expect(panel.locator('.studio-entity')).to_contain_text('关系定义说明')
+    expect(panel.locator('.studio-entity')).to_contain_text('类别 0')
+    expect(panel.locator('.studio-entity')).to_contain_text('类别 1')
+    assert page.evaluate('studioProbe.panel.controller.state.selectedId') == 'https://probe.test/#p'
+    assert page.evaluate('studioProbe.panel.controller.state.classFocusId') is None
+
+
 def test_force_drag_pin_search_zoom_and_keyboard_details(live):
     site, page, calls = live
     panel = probe(page, site, nodes=2)

@@ -45,12 +45,12 @@
 动态 import 放在用例执行中，测试收集完整，没有用 importorskip 或 xfail 隐藏缺失实现。
 通过的独立用例直接解析真实 XML，核对 25 次调用／129 个参数绑定及裁剪夹具 SHA-256；不依赖待实现代码。
 这证明 RED 原因明确，不证明其余断言已经在实现上运行过；T05 仍需逐项验证全部断言。
-日志：[pytest.log](../../.check-results/IR-024-t04-red/pytest.log)、[JUnit](../../.check-results/IR-024-t04-red/junit.xml)。
+日志：pytest.log（本地输出位置：`../../.check-results/IR-024-t04-red/pytest.log`，不作为公开证据）、JUnit（本地输出位置：`../../.check-results/IR-024-t04-red/junit.xml`，不作为公开证据）。
 
 ## 回归及静态检查
 
 T03 的 62 项分流／HTTP 定向回归全部通过，用时 4.34 秒，未改动原测试。
-日志：[T03 回归](../../.check-results/IR-024-t04-red/t03-baseline.log)。
+日志：T03 回归（本地输出位置：`../../.check-results/IR-024-t04-red/t03-baseline.log`，不作为公开证据）。
 5 份新 Python 测试／夹具通过 ruff 和 mypy；生产代码及 T03 已审阅测试摘要保持不变。
 实际验收引用、文档本地链接、唯一验收编号、JSON 与 diff 格式另做自检。
 当前是预期 RED，不运行已知必失败的全量 GREEN 检查；T05 实现后仍需按流程执行完整回归。
@@ -70,3 +70,7 @@ RBD-05/06/07 已映射到实际测试但保持 RED；RBD-04/12 部分核心测�
 
 [sdd-workflow](../../.agents/skills/sdd-workflow/SKILL.md) 第⑤环节要求：“人 review 测试是否覆盖到位”。
 因此先提交上述具体覆盖和失败证据供审阅；用户确认后再进入 T05，实现包内核心并让本组测试转绿。
+
+## 验证记录的适用范围
+
+本页保留历史运行摘要；其中本地输出位置不随仓库提供，不能作为当前版本通过的证明。按 `docs/studio-validation.md` 中的环境与命令在目标修订重新执行，保留退出码、环境和报告后再判断该修订。历史日志中的个人路径已脱敏，日志文本摘要不再代表原始字节。

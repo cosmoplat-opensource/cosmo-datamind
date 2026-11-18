@@ -18,7 +18,7 @@
 | `modeling/export.py` | 同一已选骨架与有效断言的 RDF/XML 导出，保留并集和类型，不补旧 UR 契约 |
 | `modeling/common.py`、`prompts.py` | 确定性摘要、公开错误和版本化提示词 |
 
-复用算法与修改内容可逐文件追溯到 [迁入清单](../../specs/sources/IR-024-t05-migration.json) 和原 [来源摘要](../../specs/sources/IR-024-yang-sources.json)。
+复用算法与修改内容可逐文件追溯到 [迁入清单](../../specs/sources/IR-024-t05-migration.json) 和原 [来源摘要](../../specs/sources/IR-024-robotics-sources.json)。
 词表、映射保留来源原始字节与 SHA-256；算法改为相对包导入，增加平台组合与定位，不通过 sys.path 动态加载外部工程。
 来源工程的 `.env`、独立网络客户端、Web 服务、历史 sessions/generated 与 ABox 解释型模型调用没有迁入。
 新增运行时语义层依赖 `jsonschema>=4.26.0`；开发依赖已有 `jsonschema==4.26.0`，未放宽检查门槛。
@@ -46,7 +46,7 @@ ABox 不接收 route/model/client/prompt，只根据已确认 TBox 与 XML 规�
 141 passed、0 failed、0 skipped，用时 6.24 秒；其中 T04 新核心 79 项与 T03 原路径 62 项。
 已审阅测试及夹具未修改，摘要依据 T04 RED 记录逐项核对。
 新增包 ruff 与 mypy 通过。
-日志：[定向日志](../../.check-results/IR-024-t05-green/targeted.log)、[JUnit](../../.check-results/IR-024-t05-green/targeted.xml)。
+日志：定向日志（本地输出位置：`../../.check-results/IR-024-t05-green/targeted.log`，不作为公开证据）、JUnit（本地输出位置：`../../.check-results/IR-024-t05-green/targeted.xml`，不作为公开证据）。
 
 ## 整条核心链路诊断
 
@@ -55,13 +55,13 @@ ABox 不接收 route/model/client/prompt，只根据已确认 TBox 与 XML 规�
 结果：两次平台适配调用、revision=4、25 次调用、129 个绑定、2706 个 RDF 三元组；重复抽取结果相同，重复导出图同构。
 网络连接被禁止；公开状态和提示中不含测试密钥；ABox 和导出不会增加模型调用。
 额外诊断确认超过 20000 个保留注释或处理指令被拒绝。
-记录：[核心链路](../../.check-results/IR-024-t05-green/core-probe.json)。
+记录：核心链路（本地输出位置：`../../.check-results/IR-024-t05-green/core-probe.json`，不作为公开证据）。
 这是程序集成证据，不是实际 LLM 输出质量证据；真实模型调用数为 0。
 
 ## 完整回归
 
 ```bash
-env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" \
+env PATH="${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" \
   .venv/bin/python scripts/check.py --suite all \
   --report-dir .check-results/IR-024-t05-green/all-final
 ```
@@ -79,7 +79,7 @@ env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" \
 | 数据构建浏览器 | 10 通过 |
 | 机器人构建 / 审阅 / 任务浏览器 | 18 / 16 / 12 通过，无跳过 |
 
-完整日志见 [检查汇总](../../.check-results/IR-024-t05-green/all-final/summary.json)。
+完整日志见 检查汇总（本地输出位置：`../../.check-results/IR-024-t05-green/all-final/summary.json`，不作为公开证据）。
 653 条实际验收引用、文档链接、实现／来源及已审阅测试摘要与 diff 格式检查通过。
 较早一轮在复核发现注释／处理指令也需节点计数后主动中止（当时未见断言失败）；日志留在 `all/`，不作为通过证据。
 修正后重新跑定向检查和完整回归；最终以 `all-final/` 为准。
@@ -93,3 +93,7 @@ T08/T09 接入统一页面、对话确认、修订恢复、设计候选详情及
 摘要证明一致性，不是签名授权；可信服务须从受控确认状态取得封装并核对原始来源，不能接受客户端伪造的“已确认”对象。
 XML 中有可追溯来源不等于模型解释在领域上正确，仍需用户确认设计。
 整轮 Deliverables／Acceptance 保持未勾选，IR-024 继续 in-progress。
+
+## 验证记录的适用范围
+
+本页保留历史运行摘要；其中本地输出位置不随仓库提供，不能作为当前版本通过的证明。按 `docs/studio-validation.md` 中的环境与命令在目标修订重新执行，保留退出码、环境和报告后再判断该修订。历史日志中的个人路径已脱敏，日志文本摘要不再代表原始字节。

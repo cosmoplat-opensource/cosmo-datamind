@@ -94,7 +94,7 @@ domain_runs 尚未实现，整体 IR-017 仍未交付。
 全量命令：
 
 ```bash
-env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir017-t03-all
+env PATH="${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir017-t03-all
 ```
 
 命令实际退出 0，无失败段或补验。
@@ -223,7 +223,7 @@ T04 的本体初始化测试验证当前版本的共库与保真，不能单独�
 ### 全量回归结果
 
 ```bash
-env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir017-t05-all
+env PATH="${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir017-t05-all
 ```
 
 | 检查 | 结果 |
@@ -366,7 +366,7 @@ T02/T04/T06 共 11 个测试与辅助文件摘要保持不变。
 完整运行标识、工件摘要、来源追溯及独立核验 JSON 已保存至 [T07 GREEN 记录](IR-017-t07-green-results.json)。
 
 ```bash
-env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir017-t07-all
+env PATH="${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir017-t07-all
 ```
 
 全量命令退出 0，九个检查段全部通过：

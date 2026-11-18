@@ -77,8 +77,8 @@ IR 的最终交付与验收框尚未勾选，DR 状态不自动提升为 accepte
 失败检查段分别重跑，原全量运行中已经通过的 UI 段保留结果，不伪造原退出码：
 
 ```bash
-env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite unit --report-dir .check-results/ir016-t03-covered-unit
-env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite integration --report-dir .check-results/ir016-t03-fixed-integration
+env PATH="${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite unit --report-dir .check-results/ir016-t03-covered-unit
+env PATH="${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite integration --report-dir .check-results/ir016-t03-fixed-integration
 ```
 
 最终静态/类型检查通过，单元 852 通过 / 5 可选上游跳过，覆盖率 87.1%（含机器人模块，门槛仍为 81%）。
@@ -130,7 +130,7 @@ T04 已审的 16 项全部通过，合并首批共 39 项通过、0 失败、0 �
 全量命令本次实际退出 0：
 
 ```bash
-env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir016-t05-all
+env PATH="${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir016-t05-all
 ```
 
 静态/类型检查通过；单元 868 通过 / 5 可选上游跳过，覆盖率 87.2%（门槛 81%）。
@@ -191,7 +191,7 @@ T06 的 33 项已全部通过，含原有测试共 72 项；已审测试文件�
 T08 新测试加入前启动的全量检查实际退出 0：
 
 ```bash
-env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir016-t07-all
+env PATH="${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir016-t07-all
 ```
 
 静态/类型检查通过，单元 901 通过 / 5 可选上游跳过，覆盖率 87.3%（门槛 81%）。
@@ -259,7 +259,7 @@ summary 记录 run_dir、passed，以及每场景的 case、expected_status、ac
 | invalid-contract | rejected，PASS | unknown-v99 协议被拒绝；正常发布物保留，无候选 XML |
 
 实际运行目录为 `.check-results/robotics-demo/20261103T015738Z-bg93d6z2/`。
-[本次可读汇总](../../.check-results/robotics-demo/20261103T015738Z-bg93d6z2/summary.md)可直接打开；工件摘要、汇总内容和检查结果亦归档于 [T09 机器记录](IR-016-t09-green-results.json)。
+本次可读汇总（本地输出位置：`../../.check-results/robotics-demo/20261103T015738Z-bg93d6z2/summary.md`，不作为公开证据）可直接打开；工件摘要、汇总内容和检查结果亦归档于 [T09 机器记录](IR-016-t09-green-results.json)。
 用户说明见 [离线演示使用说明](../robotics-offline-demo.md)。
 
 首次全量检查退出 1，单元为 917 通过 / 1 失败 / 5 跳过。
@@ -268,8 +268,8 @@ summary 记录 run_dir、passed，以及每场景的 case、expected_status、ac
 原全量通过的 HTTP、变序、UI 检查保留结果，不重复执行或改写原退出码：
 
 ```bash
-env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir016-t09-all
-env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite unit --report-dir .check-results/ir016-t09-fixed-unit
+env PATH="${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite all --report-dir .check-results/ir016-t09-all
+env PATH="${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python scripts/check.py --suite unit --report-dir .check-results/ir016-t09-fixed-unit
 ```
 
 最终验证结果：
@@ -298,3 +298,7 @@ env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/pyth
 `_analyse()` 校验合法性，不独立核对用户期望的公开参数值。
 编译器测试独立断言六处参数的具体位置和值；端到端测试与演示的预期复用了同一编译器，可能存在共同错误，不能表述为独立黄金 XML 校验。
 本次未新增测试要求、修改已审测试或重跑业务回归；原始失败、补验结果与剩余限制保持可追溯。
+
+## 验证记录的适用范围
+
+本页保留历史运行摘要；其中本地输出位置不随仓库提供，不能作为当前版本通过的证明。按 `docs/studio-validation.md` 中的环境与命令在目标修订重新执行，保留退出码、环境和报告后再判断该修订。历史日志中的个人路径已脱敏，日志文本摘要不再代表原始字节。

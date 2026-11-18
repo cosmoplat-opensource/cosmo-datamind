@@ -1,7 +1,7 @@
-# IR-031 T02 · 投影与共享控制器 RED 人审 — DR-159
+# IR-031 T02 · 投影与共享控制器初始验证 — DR-159
 
 日期：2026-11-17。
-分支：`feat/studio-ui-integration`；T01 提交 `4905b5f`。
+分支：`feat/studio-ui-integration`；T01 提交 `7ec5715`。
 依据：[视图契约 v1](../../specs/contracts/studio-graph-view-v1.md)。
 
 ## 测试覆盖与独立依据
@@ -19,8 +19,8 @@ Node 的 Element 小模型只承载控制器／GraphView 状态测试，不模�
 ## 实际结果
 
 `pytest tests/unit/test_studio_robotics_projection.py tests/unit/test_studio_graph_ui.py -q --tb=short -o addopts= --junitxml=...`：29 failed、2 passed、0 errors、0 skipped。
-新增投影及控制器尚不存在；测试通过显式断言报告缺失产品能力，收集正常，Node 和 Python 环境可用。
-所有 RED 目前止于这些能力缺失前置断言，后续语义／状态断言是待 GREEN 验证的固定预期，不能将它们当作已经逐个复现的行为错误。
+原始 29 个失败中，23 个止于缺失产品能力的前置断言，另 6 个是 Node 启动参数错误，未执行产品断言，不计为产品 RED。原始机器计数保留；后续组件行为通过结果见 T03。
+后续语义／状态断言在此批次尚未逐个执行，不能把前置能力缺失或运行器故障当作已逐个复现的行为错误。
 两个通过项独立核对手算 RDF 与设计确认摘要夹具，没有把夹具通过误记成产品 GREEN。
 未加入 skip／xfail，也未更改现有测试断言或业务代码。
 机器明细见 [T02 results](IR-031-t02-results.json)。
@@ -34,6 +34,4 @@ Node 24.18.1 使用 Playwright 自带运行时，旧 Node 测试只在测试子�
 
 STV-R01／02／04／05／06 登记实际存在的测试路径，status=red，保留原 browser 计划和未完成覆盖说明。
 STV-R03 继续保留在 planned_requirements，避免以 Node 状态测试冒充真实拖拽验证。
-按 sdd-workflow 第⑤环节“人 review 测试是否覆盖到位”，本次提交 T02 供人审，下一任务为 T03 GREEN。
-评审重点是显式实例口径、并集含义、历史／当前隔离、展开分批以及真实浏览器留给 T04 的边界是否符合需求。
 T03 只能实现这些既定行为；不得通过弱化断言、跳过或删除用例获得 GREEN。

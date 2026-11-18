@@ -2,11 +2,11 @@
 
 - **状态 / Status**: proposed
 - **日期 / Date**: 2026-11-02
-- **关联 / Refs**: [[DR-050-executable-ontology-build-gate]]、[[DR-056-evidence-integrity-and-isolated-validation]]、[[DR-141-unified-domain-semantic-graph]]、[集成技术方案](../PROPOSAL-yang-datamind-integration.md)
+- **关联 / Refs**: [[DR-050-executable-ontology-build-gate]]、[[DR-056-evidence-integrity-and-isolated-validation]]、[[DR-141-unified-domain-semantic-graph]]、[集成技术方案](../PROPOSAL-robotics-integration.md)
 
 ## 上下文 / Context
 
-yang 的 ontology_pipeline 能确定性抽取行为树及节点模型，但混合了 UR 模板、角色和示例业务知识。
+upstream 的 ontology_pipeline 能确定性抽取行为树及节点模型，但混合了 UR 模板、角色和示例业务知识。
 其固定模板和步骤定位不能代表对任意 BehaviorTree.CPP v4 XML 的支持。
 本次复测中新构建图通过构建侧 SHACL，却因缺少 artifactContract 被 agent 拒绝，构建器也未输出 agent 要求的 validationShapes。
 agent/input/ur_skill.owl 可以被当前 agent 加载，而 ontology 的存量及新构建 OWL 未通过同一加载契约。

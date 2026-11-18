@@ -43,17 +43,17 @@ T09 GREEN 需要接入新浏览器检查并执行完整回归。
 ## 复现与证据
 
 ```bash
-env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" \
+env PATH="${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" \
   .venv/bin/python -m pytest tests/unit/test_robotics_design_http.py \
   tests/unit/test_robotics_design_ui.py --tb=short
 .venv/bin/python tests/frontend/robotics-design-browser.py \
   --output .check-results/IR-024-t08-red/browser-final
 ```
 
-- [HTTP／控制器结果](../../.check-results/IR-024-t08-red/targeted-final.log)
-- [浏览器／宿主结果](../../.check-results/IR-024-t08-red/browser-final.log)
-- [浏览器 JUnit](../../.check-results/IR-024-t08-red/browser-final/results.xml)，同目录各用例保存服务器日志、请求响应记录及最终截图。
-- [既有基线结果](../../.check-results/IR-024-t08-red/baseline.log)
+- HTTP／控制器结果（本地输出位置：`../../.check-results/IR-024-t08-red/targeted-final.log`，不作为公开证据）
+- 浏览器／宿主结果（本地输出位置：`../../.check-results/IR-024-t08-red/browser-final.log`，不作为公开证据）
+- 浏览器 JUnit（本地输出位置：`../../.check-results/IR-024-t08-red/browser-final/results.xml`，不作为公开证据），同目录各用例保存服务器日志、请求响应记录及最终截图。
+- 既有基线结果（本地输出位置：`../../.check-results/IR-024-t08-red/baseline.log`，不作为公开证据）
 - [机器记录与冻结摘要](IR-024-t08-red-results.json)
 
 ## 下一阶段
@@ -61,3 +61,7 @@ env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" \
 按 [sdd-workflow](../../.agents/skills/sdd-workflow/SKILL.md) 第⑤环节“人 review 测试是否覆盖到位”，本次提交具体测试与 RED 证据供评审。
 评审通过后进入 T09，实现公开接口、宿主调度、同页设计工作区、下载与候选分流，并使这些测试转绿。
 真实模型质量验证仍属于 T10；本轮未调用用户模型端点、未重启用户服务、未迁移用户数据库。
+
+## 验证记录的适用范围
+
+本页保留历史运行摘要；其中本地输出位置不随仓库提供，不能作为当前版本通过的证明。按 `docs/studio-validation.md` 中的环境与命令在目标修订重新执行，保留退出码、环境和报告后再判断该修订。历史日志中的个人路径已脱敏，日志文本摘要不再代表原始字节。

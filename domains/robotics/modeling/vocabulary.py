@@ -1,4 +1,4 @@
-"""Bundled controlled vocabulary, adapted from Yang — DR-152."""
+"""Bundled controlled vocabulary, adapted from upstream — DR-152."""
 import hashlib
 import json
 from pathlib import Path

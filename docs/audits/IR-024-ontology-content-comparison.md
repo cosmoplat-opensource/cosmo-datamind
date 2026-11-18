@@ -1,8 +1,8 @@
-# IR-024 新旧机器人本体与 Yang 原工程内容审计
+# IR-024 新旧机器人本体与 upstream 原工程内容审计
 
 日期：2026-11-11。只读分析，不修改用户本体、生产实现或原工程，不调用模型。
 新版本为 test / ver_18e28eb686724027a403ea83efb8061d；旧比较版本为 UR抓移放 / ver_1171f2e60c24456b854d7a255ee210f6。
-两版本以及 Yang 自带 UR 示例的两份 XML 字节摘要一致，差异不来自输入文件。
+两版本以及 upstream 自带 UR 示例的两份 XML 字节摘要一致，差异不来自输入文件。
 
 ## 402 个图谱节点的实际组成
 
@@ -23,10 +23,10 @@
 
 ## 与原工程的直接复现
 
-直接调用外部 Yang abox_chat_agent 的 extractor.build_result 和 ontology.export_owl，使用当前固定 TBox 与证据，未修改原抽取代码。
+直接调用外部 upstream abox_chat_agent 的 extractor.build_result 和 ontology.export_owl，使用当前固定 TBox 与证据，未修改原抽取代码。
 得到 358 实例、578 对象断言、689 数据断言，与已保存 JSON 逐项比较（忽略数组顺序）完全一致。
 两个导出 RDF 图通过 rdflib isomorphic 检查：命名实体和断言相同，匿名节点编号／XML 排版不影响结论。
-Yang 自带 UR TBox（27 类、28 对象属性、18 数据属性）配同字节 XML 得到 363 实例；这与当前 358 的差异来自骨架选择，非 Datamind 额外造点。
+upstream 自带 UR TBox（27 类、28 对象属性、18 数据属性）配同字节 XML 得到 363 实例；这与当前 358 的差异来自骨架选择，非 Datamind 额外造点。
 原 ABox 网页将骨架单独展示，实例按类型／搜索筛选；并非把这些内容全部放进同一张网络图。
 
 ## 正确性边界与实际缺口
@@ -37,7 +37,7 @@ Yang 自带 UR TBox（27 类、28 对象属性、18 数据属性）配同字节 
 按唯一主体／值去重，覆盖报告记录 3 个固定配置关联、59 个固定绑定、8 个复合参数来源、8 个参数数据关联、132 个类型断言和 24 个数据作用域断言未生成。
 Resource／RobotArm／Camera／Gripper／CoordinateFrame／CartesianPose／JointConfiguration 等只有类别声明，没有相应显式实例；Skill 作为父类没有直接类型实例本身不构成错误。
 多项所选数据属性也没有实际断言。设备、位姿和业务用途相关问题不能仅凭“类别存在”视为已回答。
-上述缺口与 Yang 的相同 TBox 重跑一致，属于骨架选择和确定性映射覆盖能力的限制，并非节点膨胀造成。
+上述缺口与 upstream 的相同 TBox 重跑一致，属于骨架选择和确定性映射覆盖能力的限制，并非节点膨胀造成。
 与旧 UR 的差别还包括旧固定领域契约、额外接口与实现、业务对象和配置表示；新方案不应仅靠加旧契约标记声称具备旧任务生成能力。
 
 ## 建议顺序
@@ -48,6 +48,10 @@ Resource／RobotArm／Camera／Gripper／CoordinateFrame／CartesianPose／Joint
 本次先完成内容核实，未变更本体或上述行为。
 
 - [机器记录](IR-024-ontology-content-comparison-results.json)
-- [新旧统计](../../.check-results/IR-024-content-audit/counts.json)
-- [Yang 同输入复现](../../.check-results/IR-024-content-audit/yang-comparison.json)
-- [原始 XML 独立核对](../../.check-results/IR-024-content-audit/facts-check.json)
+- 新旧统计（本地输出位置：`../../.check-results/IR-024-content-audit/counts.json`，不作为公开证据）
+- upstream 同输入复现（本地输出位置：`../../.check-results/IR-024-content-audit/upstream-comparison.json`，不作为公开证据）
+- 原始 XML 独立核对（本地输出位置：`../../.check-results/IR-024-content-audit/facts-check.json`，不作为公开证据）
+
+## 验证记录的适用范围
+
+本页保留历史运行摘要；其中本地输出位置不随仓库提供，不能作为当前版本通过的证明。按 `docs/studio-validation.md` 中的环境与命令在目标修订重新执行，保留退出码、环境和报告后再判断该修订。历史日志中的个人路径已脱敏，日志文本摘要不再代表原始字节。

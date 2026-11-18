@@ -5,7 +5,7 @@
 
 ## 来源与环境
 
-来源是用户指定的 `/home/dyh/workspace/Project/yang_implementation/归档`。
+来源是用户指定的 `${ROBOTICS_SOURCE_ROOT}/归档`。
 冻结输入见 [夹具清单](../../tests/fixtures/robotics/manifest.json)，包括来源 XML、节点模型、构建侧规则、三份 OWL 和两份任务/配置样例。
 用于复测的 17 份代码和输入文件摘要记录在原始结果的 source_sha256 中。
 复测使用 DataMind 虚拟环境：Python 3.10.12、rdflib 7.6.0、pySHACL 0.31.0。
@@ -35,7 +35,7 @@ pySHACL 0.31.0 在上述项目中可运行，不代表所有集成场景都已�
 
 ```bash
 .venv/bin/python scripts/probe_robotics_baseline.py \
-  --archive /home/dyh/workspace/Project/yang_implementation/归档 \
+  --archive ${ROBOTICS_SOURCE_ROOT}/归档 \
   --output .check-results/ir016-baseline-rerun.json
 ```
 

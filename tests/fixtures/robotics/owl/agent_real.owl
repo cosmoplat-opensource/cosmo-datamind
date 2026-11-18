@@ -156,8 +156,8 @@
     <rdf:type rdf:resource="https://example.org/ur-skill#PerceptionProfile"/>
     <rdfs:label xml:lang="zh">源文件当前感知参数；尚未绑定业务零件类型</rdfs:label>
     <s:confirmationStatus rdf:datatype="http://www.w3.org/2001/XMLSchema#string">source_extracted</s:confirmationStatus>
-    <s:objectName rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ac07</s:objectName>
-    <s:modelName rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ac07_rec</s:modelName>
+    <s:objectName rdf:datatype="http://www.w3.org/2001/XMLSchema#string">sample_part</s:objectName>
+    <s:modelName rdf:datatype="http://www.w3.org/2001/XMLSchema#string">sample_model</s:modelName>
     <s:threshold rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.8</s:threshold>
     <s:exposureTime rdf:datatype="http://www.w3.org/2001/XMLSchema#string">123</s:exposureTime>
     <s:hasCaptureJoints rdf:resource="https://example.org/ur-skill#CaptureJoints_Current"/>
@@ -323,9 +323,9 @@
       &lt;input_port name="vel" type="std::string" /&gt;
     &lt;/Action&gt;
     &lt;Action ID="FrameTransform"&gt;
-      &lt;output_port name="pos_target" type="robot_types::PoseQuat" /&gt;
-      &lt;input_port name="robot_pose" type="robot_types::PoseQuat"&gt;TCP [x,y,z,qw,qx,qy,qz], metres, in the message frame&lt;/input_port&gt;
-      &lt;input_port name="pos_source" type="robot_types::PoseQuat" /&gt;
+      &lt;output_port name="pos_target" type="demo::PoseQuat" /&gt;
+      &lt;input_port name="robot_pose" type="demo::PoseQuat"&gt;Synthetic pose port; physical layout unspecified&lt;/input_port&gt;
+      &lt;input_port name="pos_source" type="demo::PoseQuat" /&gt;
       &lt;input_port name="target" type="std::string" /&gt;
       &lt;input_port name="source" type="std::string" /&gt;
     &lt;/Action&gt;
@@ -335,14 +335,14 @@
       &lt;input_port name="service_name" type="std::string"&gt;Service name&lt;/input_port&gt;
     &lt;/Action&gt;
     &lt;Condition ID="GetTCP"&gt;
-      &lt;output_port name="pose" type="robot_types::PoseQuat"&gt;TCP [x,y,z,w,x,y,z], metres/radians, in the message frame&lt;/output_port&gt;
-      &lt;input_port name="tool" type="robot_types::PoseRPY" /&gt;
+      &lt;output_port name="pose" type="demo::PoseQuat"&gt;Synthetic pose port; physical layout unspecified&lt;/output_port&gt;
+      &lt;input_port name="tool" type="demo::PoseRPY" /&gt;
       &lt;input_port name="topic_name" default="/topic" type="std::string"&gt;Topic name&lt;/input_port&gt;
     &lt;/Condition&gt;
     &lt;Action ID="IncOffsetByObjCor"&gt;
-      &lt;output_port name="result" type="robot_types::PoseQuat" /&gt;
-      &lt;input_port name="offset" type="robot_types::PoseQuat" /&gt;
-      &lt;input_port name="origin" type="robot_types::PoseQuat" /&gt;
+      &lt;output_port name="result" type="demo::PoseQuat" /&gt;
+      &lt;input_port name="offset" type="demo::PoseQuat" /&gt;
+      &lt;input_port name="origin" type="demo::PoseQuat" /&gt;
     &lt;/Action&gt;
     &lt;Action ID="InitGripper"&gt;
       &lt;input_port name="service_name" type="std::string"&gt;Service name&lt;/input_port&gt;
@@ -361,8 +361,8 @@
       &lt;input_port name="action_name" type="std::string"&gt;Action server name&lt;/input_port&gt;
     &lt;/Action&gt;
     &lt;Action ID="MoveL"&gt;
-      &lt;input_port name="target" type="robot_types::PoseQuat" /&gt;
-      &lt;input_port name="tool" type="robot_types::PoseRPY" /&gt;
+      &lt;input_port name="target" type="demo::PoseQuat" /&gt;
+      &lt;input_port name="tool" type="demo::PoseRPY" /&gt;
       &lt;input_port name="vel" default="[0.2]" type="std::vector&amp;lt;double, std::allocator&amp;lt;double&amp;gt; &amp;gt;"&gt;vel&lt;/input_port&gt;
       &lt;input_port name="acc" default="[0.1]" type="std::vector&amp;lt;double, std::allocator&amp;lt;double&amp;gt; &amp;gt;"&gt;acc&lt;/input_port&gt;
       &lt;input_port name="radius" default="[0.25]" type="std::vector&amp;lt;double, std::allocator&amp;lt;double&amp;gt; &amp;gt;"&gt;r&lt;/input_port&gt;
@@ -395,14 +395,14 @@
       &lt;input_port name="model_name" type="std::string"&gt;模型名&lt;/input_port&gt;
       &lt;input_port name="threshold" type="std::string"&gt;检测阈值&lt;/input_port&gt;
       &lt;input_port name="depth_image_frame_id" default="123" type="std::string"&gt;对应帧&lt;/input_port&gt;
-      &lt;output_port name="pose" type="robot_types::PoseQuat"&gt;相机坐标系下的6D位姿&lt;/output_port&gt;
+      &lt;output_port name="pose" type="demo::PoseQuat"&gt;相机坐标系下的6D位姿&lt;/output_port&gt;
       &lt;input_port name="timeout_s" default="2.0" type="std::string"&gt;timeout&lt;/input_port&gt;
     &lt;/Action&gt;
     &lt;Action ID="ToolPoseCalculate"&gt;
       &lt;input_port name="gripper_ref" type="std::string" /&gt;
-      &lt;output_port name="gripper_pos" type="robot_types::PoseQuat" /&gt;
+      &lt;output_port name="gripper_pos" type="demo::PoseQuat" /&gt;
       &lt;input_port name="robot_ref" type="std::string"&gt;[x,y,z,qw,qx,qy,qz], metres, in the message frame&lt;/input_port&gt;
-      &lt;input_port name="object_in_robot" type="robot_types::PoseQuat" /&gt;
+      &lt;input_port name="object_in_robot" type="demo::PoseQuat" /&gt;
     &lt;/Action&gt;
   &lt;/TreeNodesModel&gt;
 
@@ -637,7 +637,7 @@
     <s:confirmationStatus rdf:datatype="http://www.w3.org/2001/XMLSchema#string">source_extracted</s:confirmationStatus>
     <s:parameterName rdf:datatype="http://www.w3.org/2001/XMLSchema#string">pos_source</s:parameterName>
     <s:direction rdf:datatype="http://www.w3.org/2001/XMLSchema#string">input</s:direction>
-    <s:cppType rdf:datatype="http://www.w3.org/2001/XMLSchema#string">robot_types::PoseQuat</s:cppType>
+    <s:cppType rdf:datatype="http://www.w3.org/2001/XMLSchema#string">demo::PoseQuat</s:cppType>
     <s:defaultPresent rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">false</s:defaultPresent>
     <s:embeddedDefaultPresent rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">false</s:embeddedDefaultPresent>
   </rdf:Description>
@@ -756,7 +756,7 @@
     <s:confirmationStatus rdf:datatype="http://www.w3.org/2001/XMLSchema#string">source_extracted</s:confirmationStatus>
     <s:bindsParameter rdf:resource="https://example.org/ur-skill#SetBlackboard_Skill__value"/>
     <s:bindingDirection rdf:datatype="http://www.w3.org/2001/XMLSchema#string">input</s:bindingDirection>
-    <s:literalValue rdf:datatype="http://www.w3.org/2001/XMLSchema#string">[3.9157,-3.48167,1.8310,-3.34617,-1.190,-0.638]</s:literalValue>
+    <s:literalValue rdf:datatype="http://www.w3.org/2001/XMLSchema#string">[0.1,0.2,0.3,0,0,0]</s:literalValue>
   </rdf:Description>
   <rdf:Description rdf:about="https://example.org/ur-skill#CalibrationKnown">
     <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#NamedIndividual"/>
@@ -814,9 +814,9 @@
     <s:confirmationStatus rdf:datatype="http://www.w3.org/2001/XMLSchema#string">source_extracted</s:confirmationStatus>
     <s:parameterName rdf:datatype="http://www.w3.org/2001/XMLSchema#string">pose</s:parameterName>
     <s:direction rdf:datatype="http://www.w3.org/2001/XMLSchema#string">output</s:direction>
-    <s:cppType rdf:datatype="http://www.w3.org/2001/XMLSchema#string">robot_types::PoseQuat</s:cppType>
+    <s:cppType rdf:datatype="http://www.w3.org/2001/XMLSchema#string">demo::PoseQuat</s:cppType>
     <s:defaultPresent rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">false</s:defaultPresent>
-    <s:description rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TCP [x,y,z,w,x,y,z], metres/radians, in the message frame</s:description>
+    <s:description rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Synthetic pose port; physical layout unspecified</s:description>
     <s:embeddedDefaultPresent rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">false</s:embeddedDefaultPresent>
   </rdf:Description>
   <rdf:Description rdf:about="https://example.org/ur-skill#Place_Sequence_2">
@@ -1282,7 +1282,7 @@
     <s:confirmationStatus rdf:datatype="http://www.w3.org/2001/XMLSchema#string">source_extracted</s:confirmationStatus>
     <s:parameterName rdf:datatype="http://www.w3.org/2001/XMLSchema#string">pos_target</s:parameterName>
     <s:direction rdf:datatype="http://www.w3.org/2001/XMLSchema#string">output</s:direction>
-    <s:cppType rdf:datatype="http://www.w3.org/2001/XMLSchema#string">robot_types::PoseQuat</s:cppType>
+    <s:cppType rdf:datatype="http://www.w3.org/2001/XMLSchema#string">demo::PoseQuat</s:cppType>
     <s:defaultPresent rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">false</s:defaultPresent>
     <s:embeddedDefaultPresent rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">false</s:embeddedDefaultPresent>
   </rdf:Description>
@@ -1736,9 +1736,9 @@ s:EvidenceShape a sh:NodeShape ;
     <s:confirmationStatus rdf:datatype="http://www.w3.org/2001/XMLSchema#string">source_extracted</s:confirmationStatus>
     <s:parameterName rdf:datatype="http://www.w3.org/2001/XMLSchema#string">robot_pose</s:parameterName>
     <s:direction rdf:datatype="http://www.w3.org/2001/XMLSchema#string">input</s:direction>
-    <s:cppType rdf:datatype="http://www.w3.org/2001/XMLSchema#string">robot_types::PoseQuat</s:cppType>
+    <s:cppType rdf:datatype="http://www.w3.org/2001/XMLSchema#string">demo::PoseQuat</s:cppType>
     <s:defaultPresent rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">false</s:defaultPresent>
-    <s:description rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TCP [x,y,z,qw,qx,qy,qz], metres, in the message frame</s:description>
+    <s:description rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Synthetic pose port; physical layout unspecified</s:description>
     <s:embeddedDefaultPresent rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">false</s:embeddedDefaultPresent>
   </rdf:Description>
   <rdf:Description rdf:about="https://example.org/ur-skill#interfaceOrigin">
@@ -2312,7 +2312,7 @@ s:EvidenceShape a sh:NodeShape ;
     <s:confirmationStatus rdf:datatype="http://www.w3.org/2001/XMLSchema#string">source_extracted</s:confirmationStatus>
     <s:bindsParameter rdf:resource="https://example.org/ur-skill#Place_Skill__place_pose"/>
     <s:bindingDirection rdf:datatype="http://www.w3.org/2001/XMLSchema#string">input</s:bindingDirection>
-    <s:literalValue rdf:datatype="http://www.w3.org/2001/XMLSchema#string">[178,-985,480,0.6809719899685098,-0.0035275247427095616,0.005634483666067792,-0.7322792896438723]</s:literalValue>
+    <s:literalValue rdf:datatype="http://www.w3.org/2001/XMLSchema#string">[100,200,300,1,0,0,0]</s:literalValue>
   </rdf:Description>
   <rdf:Description rdf:about="https://example.org/ur-skill#main_4__vel">
     <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#NamedIndividual"/>
@@ -2330,7 +2330,7 @@ s:EvidenceShape a sh:NodeShape ;
     <s:confirmationStatus rdf:datatype="http://www.w3.org/2001/XMLSchema#string">source_extracted</s:confirmationStatus>
     <s:bindsParameter rdf:resource="https://example.org/ur-skill#Perception_Skill__object_name"/>
     <s:bindingDirection rdf:datatype="http://www.w3.org/2001/XMLSchema#string">input</s:bindingDirection>
-    <s:literalValue rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ac07</s:literalValue>
+    <s:literalValue rdf:datatype="http://www.w3.org/2001/XMLSchema#string">sample_part</s:literalValue>
   </rdf:Description>
   <rdf:Description rdf:about="https://example.org/ur-skill#LeftRobotFrame">
     <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#NamedIndividual"/>
@@ -2422,7 +2422,7 @@ s:EvidenceShape a sh:NodeShape ;
     <s:confirmationStatus rdf:datatype="http://www.w3.org/2001/XMLSchema#string">source_extracted</s:confirmationStatus>
     <s:parameterName rdf:datatype="http://www.w3.org/2001/XMLSchema#string">offset</s:parameterName>
     <s:direction rdf:datatype="http://www.w3.org/2001/XMLSchema#string">input</s:direction>
-    <s:cppType rdf:datatype="http://www.w3.org/2001/XMLSchema#string">robot_types::PoseQuat</s:cppType>
+    <s:cppType rdf:datatype="http://www.w3.org/2001/XMLSchema#string">demo::PoseQuat</s:cppType>
     <s:defaultPresent rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">false</s:defaultPresent>
     <s:embeddedDefaultPresent rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">false</s:embeddedDefaultPresent>
   </rdf:Description>
@@ -2584,7 +2584,7 @@ s:EvidenceShape a sh:NodeShape ;
     <s:confirmationStatus rdf:datatype="http://www.w3.org/2001/XMLSchema#string">source_extracted</s:confirmationStatus>
     <s:parameterName rdf:datatype="http://www.w3.org/2001/XMLSchema#string">tool</s:parameterName>
     <s:direction rdf:datatype="http://www.w3.org/2001/XMLSchema#string">input</s:direction>
-    <s:cppType rdf:datatype="http://www.w3.org/2001/XMLSchema#string">robot_types::PoseRPY</s:cppType>
+    <s:cppType rdf:datatype="http://www.w3.org/2001/XMLSchema#string">demo::PoseRPY</s:cppType>
     <s:defaultPresent rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">false</s:defaultPresent>
     <s:embeddedDefaultPresent rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">false</s:embeddedDefaultPresent>
   </rdf:Description>
@@ -2695,7 +2695,7 @@ s:EvidenceShape a sh:NodeShape ;
     <s:confirmationStatus rdf:datatype="http://www.w3.org/2001/XMLSchema#string">source_extracted</s:confirmationStatus>
     <s:parameterName rdf:datatype="http://www.w3.org/2001/XMLSchema#string">pose</s:parameterName>
     <s:direction rdf:datatype="http://www.w3.org/2001/XMLSchema#string">output</s:direction>
-    <s:cppType rdf:datatype="http://www.w3.org/2001/XMLSchema#string">robot_types::PoseQuat</s:cppType>
+    <s:cppType rdf:datatype="http://www.w3.org/2001/XMLSchema#string">demo::PoseQuat</s:cppType>
     <s:defaultPresent rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">false</s:defaultPresent>
     <s:description rdf:datatype="http://www.w3.org/2001/XMLSchema#string">相机坐标系下的6D位姿</s:description>
     <s:embeddedDefaultPresent rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">false</s:embeddedDefaultPresent>
@@ -3100,7 +3100,7 @@ s:EvidenceShape a sh:NodeShape ;
     <s:confirmationStatus rdf:datatype="http://www.w3.org/2001/XMLSchema#string">source_extracted</s:confirmationStatus>
     <s:parameterName rdf:datatype="http://www.w3.org/2001/XMLSchema#string">object_in_robot</s:parameterName>
     <s:direction rdf:datatype="http://www.w3.org/2001/XMLSchema#string">input</s:direction>
-    <s:cppType rdf:datatype="http://www.w3.org/2001/XMLSchema#string">robot_types::PoseQuat</s:cppType>
+    <s:cppType rdf:datatype="http://www.w3.org/2001/XMLSchema#string">demo::PoseQuat</s:cppType>
     <s:defaultPresent rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">false</s:defaultPresent>
     <s:embeddedDefaultPresent rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">false</s:embeddedDefaultPresent>
   </rdf:Description>
@@ -3299,7 +3299,7 @@ s:EvidenceShape a sh:NodeShape ;
     <s:confirmationStatus rdf:datatype="http://www.w3.org/2001/XMLSchema#string">source_extracted</s:confirmationStatus>
     <s:parameterName rdf:datatype="http://www.w3.org/2001/XMLSchema#string">gripper_pos</s:parameterName>
     <s:direction rdf:datatype="http://www.w3.org/2001/XMLSchema#string">output</s:direction>
-    <s:cppType rdf:datatype="http://www.w3.org/2001/XMLSchema#string">robot_types::PoseQuat</s:cppType>
+    <s:cppType rdf:datatype="http://www.w3.org/2001/XMLSchema#string">demo::PoseQuat</s:cppType>
     <s:defaultPresent rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">false</s:defaultPresent>
     <s:embeddedDefaultPresent rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">false</s:embeddedDefaultPresent>
   </rdf:Description>
@@ -3458,7 +3458,7 @@ s:EvidenceShape a sh:NodeShape ;
     <s:confirmationStatus rdf:datatype="http://www.w3.org/2001/XMLSchema#string">source_extracted</s:confirmationStatus>
     <s:parameterName rdf:datatype="http://www.w3.org/2001/XMLSchema#string">tool</s:parameterName>
     <s:direction rdf:datatype="http://www.w3.org/2001/XMLSchema#string">input</s:direction>
-    <s:cppType rdf:datatype="http://www.w3.org/2001/XMLSchema#string">robot_types::PoseRPY</s:cppType>
+    <s:cppType rdf:datatype="http://www.w3.org/2001/XMLSchema#string">demo::PoseRPY</s:cppType>
     <s:defaultPresent rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">false</s:defaultPresent>
     <s:embeddedDefaultPresent rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">false</s:embeddedDefaultPresent>
   </rdf:Description>
@@ -3558,7 +3558,7 @@ s:EvidenceShape a sh:NodeShape ;
     <s:confirmationStatus rdf:datatype="http://www.w3.org/2001/XMLSchema#string">source_extracted</s:confirmationStatus>
     <s:bindsParameter rdf:resource="https://example.org/ur-skill#Perception_Skill__model_name"/>
     <s:bindingDirection rdf:datatype="http://www.w3.org/2001/XMLSchema#string">input</s:bindingDirection>
-    <s:literalValue rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ac07_rec</s:literalValue>
+    <s:literalValue rdf:datatype="http://www.w3.org/2001/XMLSchema#string">sample_model</s:literalValue>
   </rdf:Description>
   <rdf:Description rdf:about="https://example.org/ur-skill#Placement_Current">
     <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#NamedIndividual"/>
@@ -3760,7 +3760,7 @@ s:EvidenceShape a sh:NodeShape ;
     <rdf:type rdf:resource="https://example.org/ur-skill#JointConfiguration"/>
     <rdfs:label xml:lang="zh">当前拍照关节配置</rdfs:label>
     <s:confirmationStatus rdf:datatype="http://www.w3.org/2001/XMLSchema#string">source_extracted</s:confirmationStatus>
-    <s:rawValue rdf:datatype="http://www.w3.org/2001/XMLSchema#string">[3.9157,-3.48167,1.8310,-3.34617,-1.190,-0.638]</s:rawValue>
+    <s:rawValue rdf:datatype="http://www.w3.org/2001/XMLSchema#string">[0.1,0.2,0.3,0,0,0]</s:rawValue>
     <s:unitStatus rdf:datatype="http://www.w3.org/2001/XMLSchema#string">unconfirmed</s:unitStatus>
   </rdf:Description>
   <rdf:Description rdf:about="https://example.org/ur-skill#main_10__radius">
@@ -3927,7 +3927,7 @@ s:EvidenceShape a sh:NodeShape ;
     <s:confirmationStatus rdf:datatype="http://www.w3.org/2001/XMLSchema#string">source_extracted</s:confirmationStatus>
     <s:parameterName rdf:datatype="http://www.w3.org/2001/XMLSchema#string">result</s:parameterName>
     <s:direction rdf:datatype="http://www.w3.org/2001/XMLSchema#string">output</s:direction>
-    <s:cppType rdf:datatype="http://www.w3.org/2001/XMLSchema#string">robot_types::PoseQuat</s:cppType>
+    <s:cppType rdf:datatype="http://www.w3.org/2001/XMLSchema#string">demo::PoseQuat</s:cppType>
     <s:defaultPresent rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">false</s:defaultPresent>
     <s:embeddedDefaultPresent rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">false</s:embeddedDefaultPresent>
   </rdf:Description>
@@ -3989,7 +3989,7 @@ s:EvidenceShape a sh:NodeShape ;
     <rdf:type rdf:resource="https://example.org/ur-skill#CartesianPose"/>
     <rdfs:label xml:lang="zh">当前机器人放置目标原始值</rdfs:label>
     <s:confirmationStatus rdf:datatype="http://www.w3.org/2001/XMLSchema#string">source_extracted</s:confirmationStatus>
-    <s:rawValue rdf:datatype="http://www.w3.org/2001/XMLSchema#string">[178,-985,480,0.6809719899685098,-0.0035275247427095616,0.005634483666067792,-0.7322792896438723]</s:rawValue>
+    <s:rawValue rdf:datatype="http://www.w3.org/2001/XMLSchema#string">[100,200,300,1,0,0,0]</s:rawValue>
     <s:unitStatus rdf:datatype="http://www.w3.org/2001/XMLSchema#string">unconfirmed</s:unitStatus>
     <s:frameStatus rdf:datatype="http://www.w3.org/2001/XMLSchema#string">requires_driver_confirmation</s:frameStatus>
     <s:orientationRepresentation rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PoseQuat_layout_to_verify</s:orientationRepresentation>
@@ -4294,7 +4294,7 @@ s:EvidenceShape a sh:NodeShape ;
     <s:confirmationStatus rdf:datatype="http://www.w3.org/2001/XMLSchema#string">source_extracted</s:confirmationStatus>
     <s:parameterName rdf:datatype="http://www.w3.org/2001/XMLSchema#string">target</s:parameterName>
     <s:direction rdf:datatype="http://www.w3.org/2001/XMLSchema#string">input</s:direction>
-    <s:cppType rdf:datatype="http://www.w3.org/2001/XMLSchema#string">robot_types::PoseQuat</s:cppType>
+    <s:cppType rdf:datatype="http://www.w3.org/2001/XMLSchema#string">demo::PoseQuat</s:cppType>
     <s:defaultPresent rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">false</s:defaultPresent>
     <s:embeddedDefaultPresent rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">false</s:embeddedDefaultPresent>
   </rdf:Description>
@@ -4877,7 +4877,7 @@ s:EvidenceShape a sh:NodeShape ;
     <s:confirmationStatus rdf:datatype="http://www.w3.org/2001/XMLSchema#string">source_extracted</s:confirmationStatus>
     <s:parameterName rdf:datatype="http://www.w3.org/2001/XMLSchema#string">origin</s:parameterName>
     <s:direction rdf:datatype="http://www.w3.org/2001/XMLSchema#string">input</s:direction>
-    <s:cppType rdf:datatype="http://www.w3.org/2001/XMLSchema#string">robot_types::PoseQuat</s:cppType>
+    <s:cppType rdf:datatype="http://www.w3.org/2001/XMLSchema#string">demo::PoseQuat</s:cppType>
     <s:defaultPresent rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">false</s:defaultPresent>
     <s:embeddedDefaultPresent rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">false</s:embeddedDefaultPresent>
   </rdf:Description>

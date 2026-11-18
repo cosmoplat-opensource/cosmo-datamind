@@ -1,9 +1,9 @@
 /* Context identity, legacy reports and stage-aware suggestions — DR-154. */
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
-const context=vm.createContext({console});context.window=context;
+const context=vm.createContext({console,AbortController,setTimeout,clearTimeout});context.window=context;
 context.RoboticsAssets={escape:value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))};
-for(const file of ['robotics-application.js','robotics-design.js'])vm.runInContext(fs.readFileSync(path.resolve(__dirname,'../../ui/modules',file),'utf8'),context);
+for(const file of ['robotics-assets.js','robotics-application.js','robotics-design.js'])vm.runInContext(fs.readFileSync(path.resolve(__dirname,'../../ui/modules',file),'utf8'),context);
 const app=context.RoboticsApplication,design=context.RoboticsDesign;
 const gap=(kind,role)=>({code:'schema.missing_role',layer:'schema',message:'缺少明确的应用角色对应。',
  expected:{kind,role,label:'合成标签',...(kind==='object_properties'?{domain_ids:['SkillInvocation'],range_ids:['ParameterBinding']}:{}),...(kind==='data_properties'?{datatype:'xsd:string'}:{})},

@@ -1,11 +1,11 @@
-# PROPOSAL · DataMind 与 yang 本体构建及行为树生成深度集成
+# PROPOSAL · DataMind 与 upstream 本体构建及行为树生成深度集成
 
 - **状态**：总体方案及跨阶段 DR 仍为 proposed；第一阶段 IR-016 已交付，第二阶段 IR-017 已于 2026-11-04 经用户确认交付；存储/生成接入及离线演示、全量回归通过，第三阶段 IR-018 范围与验收已获用户确认，T02 构建/存储/迁移覆盖已确认，T03 的 61 项 GREEN 与完整九段回归通过；T04 的 70 项 HTTP/执行器覆盖已获确认，T05 后端已实现并通过全量九段回归；T06 覆盖已获确认，T07 页面实现使 40 项状态/接线与 14 项真实浏览器转绿；全量十段检查通过（1198 单元、85.0% 覆盖率），T08 交付材料与证据核对完成，用户于 2026-11-04 明确确认 IR-018 整轮交付，状态为 delivered。
 - **复核日期**：2026-11-02。
 - **工作分支**：`dyh_dev`。
-- **范围**：`cosmo-datamind` 与 `../yang_implementation/归档/{ontology,agent}` 的当前源码。
-- **规约依据**：用户指定的 `/home/dyh/Downloads/SDD开发范式/sdd-workflow-skill/sdd-workflow/SKILL.md` 与本仓 `specs/meta.md`。
-- **架构图**：[可编辑 draw.io 对照图与业务流](../docs/architecture/datamind-yang-integration.drawio)。
+- **范围**：`cosmo-datamind` 与 `../external_robotics/归档/{ontology,agent}` 的当前源码。
+- **规约依据**：用户指定的 `${HOME}/Downloads/SDD开发范式/sdd-workflow-skill/sdd-workflow/SKILL.md` 与本仓 `specs/meta.md`。
+- **架构图**：[可编辑 draw.io 对照图与业务流](../docs/architecture/datamind-robotics-integration.drawio)。
 
 > **2026-11-05 优先级修订**：用户明确选择先打通“构建本体 → 输入任务并澄清 → 按需补齐生成信息 → 查看/下载行为树”，暂缓高级维护。
 > 当前基础版以 [DR-148](decisions/DR-148-minimal-robotics-task-workflow.md) 和 [IR-020](iterations/IR-020-minimal-robotics-task-workflow.md) 为准：只显示当前版本；参数、业务映射和必要适配在 DataMind 当前任务页按缺口补齐，不要求跳转通用知识维护、证据管理、版本合并或人工发布页面，不依赖 Protégé。
@@ -14,7 +14,7 @@
 
 ## 1. 结论与集成目标
 
-建议把 yang 的确定性本体构建器、受约束任务解析器和行为树编译器迁入 DataMind，形成一个产品、一个后端入口和一套可追溯的资产生命周期。
+建议把 upstream 的确定性本体构建器、受约束任务解析器和行为树编译器迁入 DataMind，形成一个产品、一个后端入口和一套可追溯的资产生命周期。
 统一的是本体目录、版本、来源证据、评审、模型配置、运行记录和 UI，领域语义由专门模块负责。
 数据本体继续使用 JSON IR，机器人本体首先保留 RDF/OWL 权威载荷，通过类型化适配器参与同一平台。
 每个本体版本只有一个可写权威载荷，图谱展示 JSON 是只读投影。
@@ -32,7 +32,7 @@
 
 | 方式 | 优点 | 成本与适用判断 |
 |---|---|---|
-| 保留 yang 独立服务，DataMind 调 HTTP | 初期接入快，隔离部署 | 仍要处理双配置、双会话和资产版本同步，适合临时验证，不满足本轮深度集成目标 |
+| 保留 upstream 独立服务，DataMind 调 HTTP | 初期接入快，隔离部署 | 仍要处理双配置、双会话和资产版本同步，适合临时验证，不满足本轮深度集成目标 |
 | 迁入领域 Python 包，统一平台治理，保留类型化载荷 | 能复用经过测试的 RDF 编译链，并覆盖构建与应用两端 | 需整理包边界和版本生命周期，是本方案建议 |
 | 先重写全部知识到通用 Graph v2，再重写编译器 | 长期可形成统一底层表示 | 当前缺少无损模型和兼容验证，首轮风险及改动范围最大，留待后续独立评估 |
 
@@ -62,15 +62,15 @@ IR 是 DataMind 的中间表示结构，JSON 是其保存格式；RDF 是图数�
 | 模块 | 实际能力 | 对集成的影响 |
 |---|---|---|
 | DataMind `server.py::_gather_evidence / _adjudicate_ir / build_inquire` | 数据库、文档文本与模型辅助构建，数据库关系由数据检验裁决 | 机器人 XML 需要独立确定性构建配方，不能套用主键和取值重叠验证 |
-| DataMind `server.py::load_ir_edited / _ir_to_turtle` | 当前 IR 加编辑覆盖层；OWL 出口把节点表达为类，把边表达为属性定义 | 不能无损承载 yang 的实例断言、类型化字面量、RDF 列表与端口绑定 |
+| DataMind `server.py::load_ir_edited / _ir_to_turtle` | 当前 IR 加编辑覆盖层；OWL 出口把节点表达为类，把边表达为属性定义 | 不能无损承载 upstream 的实例断言、类型化字面量、RDF 列表与端口绑定 |
 | DataMind `srv_engine.py / openai_runtime.py` | 集中管理模型配置；普通 `run_turn` 接收单条 user 消息 | 可复用配置，任务解析仍需完整角色消息、JSON 契约与模型响应检查 |
 | DataMind `server.py::run_job / gunicorn.conf.py` | 进程内作业；单 worker、多线程部署 | 需要持久化新运行记录，不能把现有 JOBS 当作完整任务平台 |
 | DataMind `server.py::_chats / _chats_w`、`ui/index.html::bcAllConv` | 本体对话存服务端 ont_chats.json，构建对话历史存浏览器 localStorage | 复用现有历史能力，补充会话与运行、版本、产物的关联，不重建聊天系统 |
-| yang `ontology/ontology_pipeline.py::build_graph` | XML 与节点模型转 RDF，提取技能、调用、端口、绑定、黑板流和来源 | 可迁移算法；`COMPOSITES / ROLES / add_domain` 及固定步骤定位属于 UR 策略 |
-| yang `ontology/ontology_pipeline.py::compile_candidate` | 允许未解决值，输出附待确认标记的离线草稿 | 作者编辑草稿和正式任务生成需要不同准入规则 |
-| yang `agent/ontology_backend.py::load_ontology / graph_validation` | 只读自包含 OWL，检查 artifactContract、内嵌 SHACL 白名单和输入快照 | 必须新增明确的发布封装步骤，不能把任意导出 OWL 当作可消费版本 |
-| yang `agent/llm_client.py / trusted_agent.py` | 模型仅提取六字段任务；多轮澄清、实体锚定、证据检查后确定性编译 | 迁移业务内核，替换独立 HTTP 服务与配置入口，保留拒绝和澄清语义 |
-| yang `agent/skill_runtime.py` | 固定四棵树、六个公开输入；检查模板、参数、数据流及条件 | 当前不是通用 BehaviorTree.CPP 编排器；支持范围必须写入 profile |
+| upstream `ontology/ontology_pipeline.py::build_graph` | XML 与节点模型转 RDF，提取技能、调用、端口、绑定、黑板流和来源 | 可迁移算法；`COMPOSITES / ROLES / add_domain` 及固定步骤定位属于 UR 策略 |
+| upstream `ontology/ontology_pipeline.py::compile_candidate` | 允许未解决值，输出附待确认标记的离线草稿 | 作者编辑草稿和正式任务生成需要不同准入规则 |
+| upstream `agent/ontology_backend.py::load_ontology / graph_validation` | 只读自包含 OWL，检查 artifactContract、内嵌 SHACL 白名单和输入快照 | 必须新增明确的发布封装步骤，不能把任意导出 OWL 当作可消费版本 |
+| upstream `agent/llm_client.py / trusted_agent.py` | 模型仅提取六字段任务；多轮澄清、实体锚定、证据检查后确定性编译 | 迁移业务内核，替换独立 HTTP 服务与配置入口，保留拒绝和澄清语义 |
+| upstream `agent/skill_runtime.py` | 固定四棵树、六个公开输入；检查模板、参数、数据流及条件 | 当前不是通用 BehaviorTree.CPP 编排器；支持范围必须写入 profile |
 
 ### 2.1 必须优先处理的断点
 
@@ -92,7 +92,7 @@ agent 侧保留 `main[1] / main[4] / main[8]` 固定参数定位，并定义额�
 该测试还预期 `status=draft`，与当前 agent 严格生成策略不同，因此修复导入并不意味着行为契约已经统一。
 
 **通用图谱投影不能反向充当机器人知识源。**
-yang 当前 OWL 包含数百个 `NamedIndividual`，并区分技能定义、技能实现、具体调用、参数契约和数据引用。
+upstream 当前 OWL 包含数百个 `NamedIndividual`，并区分技能定义、技能实现、具体调用、参数契约和数据引用。
 把它们只变成普通 nodes/edges 再经 DataMind 当前 OWL 出口导出，会改变原本语义。
 统一目录与显示适配可以立即实施，统一底层表示需要独立的无损性证明。
 
@@ -108,7 +108,7 @@ yang 当前 OWL 包含数百个 `NamedIndividual`，并区分技能定义、技�
 
 可复测入口为在对应目录执行所属虚拟环境的 `python -B test_*.py`，其中 ontology 使用 `../.venv/bin/python`，agent 使用 `.venv/bin/python`。
 这些是脚本级结果，不等同于统计了全部断言，也不代表 DataMind 全量回归已经通过。
-DataMind 环境中的 pySHACL 为 0.31.0，yang 测试环境为 0.30.1；迁入后必须在选定的统一依赖环境重跑语义兼容用例。
+DataMind 环境中的 pySHACL 为 0.31.0，upstream 测试环境为 0.30.1；迁入后必须在选定的统一依赖环境重跑语义兼容用例。
 
 ## 3. 目标架构与权威数据
 
@@ -202,7 +202,7 @@ OWL 导入/下载作为可选交换能力保留；基础流程中的参数、业
 模型负责理解用户的选择；实体定位、Profile 选择、参数取值、模板选择和 XML 输出由确定性代码完成。
 通过平台引擎设置增加 `bt_extract` 用途配置，保留 system 消息、会话历史、JSON 响应模式、字段白名单、拒答和截断检查。
 `bt_extract` 是内部用途标识，UI 名称为“行为树任务解析模型”，可与问数复用同一模型及凭据，无需另行部署模型。
-专用适配的工作是把 yang 已有严格解析协议接到平台配置，输出任务结构，不让模型直接生成 XML 或填位姿。
+专用适配的工作是把 upstream 已有严格解析协议接到平台配置，输出任务结构，不让模型直接生成 XML 或填位姿。
 六字段任务结构与六个公开技能输入是不同契约，前者描述任务，后者由本体配置提供。
 调用时固定模型配置快照，审计只保存非敏感配置与提示词版本，凭据使用已有服务端密钥管理。
 不直接把完整任务协议压成普通 `run_turn` 的单条 user 文本，不继承问数的演示或模板兜底。
@@ -271,7 +271,7 @@ manifest 不保存凭据，历史重放也不保证远程模型返回逐字相�
 以下基础版交互以 IR-020 为准；完整图画布及高级治理保留为后续规划。
 
 沿用当前 `ui/index.html`、hash 路由、设计 token 和 `ui/modules/`，新增模块文件承接机器人页面逻辑。
-无需为此次集成整体迁移到 React/Vue，也无需保留 yang 的独立 Web 服务或 iframe。
+无需为此次集成整体迁移到 React/Vue，也无需保留 upstream 的独立 Web 服务或 iframe。
 
 | 现有位置 | 建议调整 | 用户得到的能力 |
 |---|---|---|

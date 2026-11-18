@@ -118,7 +118,7 @@
                      value="[4.36332, -3.49066, 1.18682, -1.91986, -1.48353, -0.61087]"
                      output_key="home"/>
       <SetBlackboard name="capture_pose"
-                     value="[3.9157,-3.48167,1.8310,-3.34617,-1.190,-0.638]"
+                     value="[0.1,0.2,0.3,0,0,0]"
                      output_key="capture_pose"/>
       <MoveJ name="move_ready_pose"
              target="{home}"
@@ -136,9 +136,9 @@
       <SubTree ID="Perception"
                position="{capture_pose}"
                exposure_time="123"
-               model_name="ac07_rec"
+               model_name="sample_model"
                threshold="0.8"
-               object_name="ac07"
+               object_name="sample_part"
                pose="{obj_in_camera}"/>
       <GetTCP pose="{current_pos}"
               tool="[0, 0, 0,  0, 0, 0]"
@@ -152,7 +152,7 @@
       <SubTree ID="grasp"
                obj_in_robot="{object_in_robot_pose}"/>
       <SubTree ID="Place"
-               place_pose="[178,-985,480,0.6809719899685098,-0.0035275247427095616,0.005634483666067792,-0.7322792896438723]"/>
+               place_pose="[100,200,300,1,0,0,0]"/>
       <MoveJ name="move_ready_pose"
              target="{home}"
              vel="[0.2]"
@@ -200,11 +200,11 @@
     </Action>
     <Action ID="FrameTransform">
       <output_port name="pos_target"
-                   type="robot_types::PoseQuat"/>
+                   type="demo::PoseQuat"/>
       <input_port name="robot_pose"
-                  type="robot_types::PoseQuat">TCP [x,y,z,qw,qx,qy,qz], metres, in the message frame</input_port>
+                  type="demo::PoseQuat">Synthetic pose port; physical layout unspecified</input_port>
       <input_port name="pos_source"
-                  type="robot_types::PoseQuat"/>
+                  type="demo::PoseQuat"/>
       <input_port name="target"
                   type="std::string"/>
       <input_port name="source"
@@ -221,20 +221,20 @@
     </Action>
     <Condition ID="GetTCP">
       <output_port name="pose"
-                   type="robot_types::PoseQuat">TCP [x,y,z,w,x,y,z], metres/radians, in the message frame</output_port>
+                   type="demo::PoseQuat">Synthetic pose port; physical layout unspecified</output_port>
       <input_port name="tool"
-                  type="robot_types::PoseRPY"/>
+                  type="demo::PoseRPY"/>
       <input_port name="topic_name"
                   default="/topic"
                   type="std::string">Topic name</input_port>
     </Condition>
     <Action ID="IncOffsetByObjCor">
       <output_port name="result"
-                   type="robot_types::PoseQuat"/>
+                   type="demo::PoseQuat"/>
       <input_port name="offset"
-                  type="robot_types::PoseQuat"/>
+                  type="demo::PoseQuat"/>
       <input_port name="origin"
-                  type="robot_types::PoseQuat"/>
+                  type="demo::PoseQuat"/>
     </Action>
     <Action ID="InitGripper">
       <input_port name="service_name"
@@ -270,9 +270,9 @@
     </Action>
     <Action ID="MoveL">
       <input_port name="target"
-                  type="robot_types::PoseQuat"/>
+                  type="demo::PoseQuat"/>
       <input_port name="tool"
-                  type="robot_types::PoseRPY"/>
+                  type="demo::PoseRPY"/>
       <input_port name="vel"
                   default="[0.2]"
                   type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;">vel</input_port>
@@ -335,7 +335,7 @@
                   default="123"
                   type="std::string">对应帧</input_port>
       <output_port name="pose"
-                   type="robot_types::PoseQuat">相机坐标系下的6D位姿</output_port>
+                   type="demo::PoseQuat">相机坐标系下的6D位姿</output_port>
       <input_port name="timeout_s"
                   default="2.0"
                   type="std::string">timeout</input_port>
@@ -344,11 +344,11 @@
       <input_port name="gripper_ref"
                   type="std::string"/>
       <output_port name="gripper_pos"
-                   type="robot_types::PoseQuat"/>
+                   type="demo::PoseQuat"/>
       <input_port name="robot_ref"
                   type="std::string">[x,y,z,qw,qx,qy,qz], metres, in the message frame</input_port>
       <input_port name="object_in_robot"
-                  type="robot_types::PoseQuat"/>
+                  type="demo::PoseQuat"/>
     </Action>
   </TreeNodesModel>
 

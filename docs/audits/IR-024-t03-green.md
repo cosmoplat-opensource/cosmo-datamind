@@ -33,7 +33,7 @@
 
 结果：62 passed，0 failed、0 error、0 skipped，退出码 0，报告用时 4.32 秒。
 本轮生产修改文件的 ruff 和 mypy 检查通过。
-记录：[定向日志](../../.check-results/IR-024-t03-green/pytest.log)、[JUnit](../../.check-results/IR-024-t03-green/junit.xml)。
+记录：定向日志（本地输出位置：`../../.check-results/IR-024-t03-green/pytest.log`，不作为公开证据）、JUnit（本地输出位置：`../../.check-results/IR-024-t03-green/junit.xml`，不作为公开证据）。
 
 ## 额外隔离诊断
 
@@ -45,7 +45,7 @@
 4. 交换行为树与节点模型文件角色时返回 invalid_source，不登记来源。
 
 4 项通过，网络模型调用数为零。
-记录：[诊断结果](../../.check-results/IR-024-t03-green/manual-probes.json)。
+记录：诊断结果（本地输出位置：`../../.check-results/IR-024-t03-green/manual-probes.json`，不作为公开证据）。
 
 ## 全量回归
 
@@ -58,7 +58,7 @@
 更新后从头重跑以下完整检查，不跳过冲突用例或降低覆盖率门槛。
 
 ```bash
-env PATH="/home/dyh/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" \
+env PATH="${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" \
   .venv/bin/python scripts/check.py --suite all \
   --report-dir .check-results/IR-024-t03-green/all-final
 ```
@@ -105,3 +105,7 @@ T03 完成，但交付／验收清单保持未勾选；TBox/ABox 和设计会话
 原无模型 XML 路径保持可用。
 持久设计会话、人工确认、ABox 抽取、通用候选视图及应用兼容准入仍需后续任务完成。
 合成模型测试不能证明真实模型的自然语言建模质量，本轮未调用真实模型。
+
+## 验证记录的适用范围
+
+本页保留历史运行摘要；其中本地输出位置不随仓库提供，不能作为当前版本通过的证明。按 `docs/studio-validation.md` 中的环境与命令在目标修订重新执行，保留退出码、环境和报告后再判断该修订。历史日志中的个人路径已脱敏，日志文本摘要不再代表原始字节。

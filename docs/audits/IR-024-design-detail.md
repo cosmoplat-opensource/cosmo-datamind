@@ -21,6 +21,10 @@ IR-024 的 T10 为真实模型试运行、回归、文档及待人审交付，�
 语法、ruff、mypy、diff 检查通过；仅修改前端，未重复运行完整后端套件，未重启服务或修改用户数据。
 
 - [机器记录](IR-024-design-detail-results.json)
-- [控制器结果](../../.check-results/IR-024-detail/unit.log)
-- [浏览器结果](../../.check-results/IR-024-detail/browser/results.xml)
-- [在线验证](../../.check-results/IR-024-detail/live-result.json)
+- 控制器结果（本地输出位置：`../../.check-results/IR-024-detail/unit.log`，不作为公开证据）
+- 浏览器结果（本地输出位置：`../../.check-results/IR-024-detail/browser/results.xml`，不作为公开证据）
+- 在线验证（本地输出位置：`../../.check-results/IR-024-detail/live-result.json`，不作为公开证据）
+
+## 验证记录的适用范围
+
+本页保留历史运行摘要；其中本地输出位置不随仓库提供，不能作为当前版本通过的证明。按 `docs/studio-validation.md` 中的环境与命令在目标修订重新执行，保留退出码、环境和报告后再判断该修订。历史日志中的个人路径已脱敏，日志文本摘要不再代表原始字节。
