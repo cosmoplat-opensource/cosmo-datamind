@@ -1,6 +1,5 @@
 """Real Chromium + Gunicorn + persisted designs; only model HTTP scripted — DR-152 / T08 RED."""
 import argparse
-from tests.browser_runtime import browser_executable
 import json
 import os
 from pathlib import Path
@@ -24,6 +23,10 @@ from tests.robotics_browser_support import choose_robotics, fill_robotics, submi
 from tests.robotics_design_browser_support import DesignSite, model_reply
 from tests.robotics_design_support import Harness, proposals
 from tests.robotics_task_support import model_server
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from tests.browser_runtime import browser_executable  # noqa: E402
 
 
 @pytest.fixture(scope='session')

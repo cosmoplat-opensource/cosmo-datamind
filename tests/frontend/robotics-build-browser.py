@@ -4,7 +4,6 @@ Run: .venv/bin/python tests/frontend/robotics-build-browser.py --output .check-r
 No route interception, synthetic success response, external service or paid model.
 """
 import argparse
-from tests.browser_runtime import browser_executable
 import json
 import os
 from pathlib import Path
@@ -25,6 +24,10 @@ from tests.robotics_browser_support import (LiveSite, choose_robotics, download_
                                             submit_from_ui, wait_run_ui, wait_version_ui)
 from tests.robotics_support import SOURCE, MODELS
 from tests.build_runtime_support import upload_args
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from tests.browser_runtime import browser_executable  # noqa: E402
 
 
 @pytest.fixture(scope='session')

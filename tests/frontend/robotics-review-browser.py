@@ -1,6 +1,5 @@
 """T06 RED: actual governance UI + Gunicorn + SQLite; no fulfilled core routes — DR-145 / DR-146 / DR-147."""
 import argparse
-from tests.browser_runtime import browser_executable
 import json
 import os
 from pathlib import Path
@@ -21,9 +20,13 @@ from ontology_assets import AssetStore
 from ontology_assets.governance import GovernanceService
 from tests.robotics_browser_support import (LiveSite, choose_robotics, fill_robotics, submit_from_ui, wait_run_ui)
 from tests.robotics_governance_support import evidence_spec, field, publish_args, review, save_args
-from tests.robotics_review_browser_support import (action, bytes_snapshot, field_edit, identity, open_editor,
+from tests.robotics_review_browser_support import (REVIEWER, action, bytes_snapshot, field_edit, identity, open_editor,
     ref_from_run, review_publish, save, section, version_download)
 from tests.robotics_support import S, SOURCE
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from tests.browser_runtime import browser_executable  # noqa: E402
 
 
 @pytest.fixture(scope='session')
@@ -226,6 +229,7 @@ def test_unknown_parameter_gap_and_publication_structure_gate_are_distinct(live)
     field_edit(panel, '', iri=str(S.Perception_Current), field='threshold')
     save(page, site, panel)
     expect(panel).to_contain_text('未知')
+    identity(panel, REVIEWER)
     section(panel, '审核发布')
     rejected = action(page, site, panel, '接受当前版本', '/reviews', status=422)
     assert rejected['error']['code'] == 'domain_validation'
@@ -324,7 +328,7 @@ def test_rejected_review_and_changed_version_do_not_enable_publish(live):
     site, page = live
     ref = ref_from_run(site.submit())
     panel = open_editor(page, site, ref)
-    identity(panel)
+    identity(panel, REVIEWER)
     section(panel, '审核发布')
     action(page, site, panel, '退回当前版本', '/reviews')
     expect(panel.get_by_role('button', name='发布当前版本', exact=True)).to_be_disabled()

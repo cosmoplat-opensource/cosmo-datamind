@@ -97,7 +97,7 @@
       const fitAfterPaint=()=>global.requestAnimationFrame(()=>{if(canvas===drawing)fit();});
       canvas.on('afterlayout',fitAfterPaint);
       canvas.on('node:click',event=>selectNode(event.item.getID()));
-      canvas.data({nodes:visibleNodes.map(n=>({id:n.id,...(view==='behavior-tree'?{x:n.x,y:n.y}:{}),label:n.label.length>22?n.label.slice(0,21)+'…':n.label,style:{fill:n.group==='skills'?'#f5efff':n.group==='other'?'#ecfafb':'#eef2ff',stroke:colors[n.group],radius:n.group==='skills'?22:9,lineDash:n.group==='other'?[5,3]:null}})),edges:edges.map(e=>({...e,sourceAnchor:1,targetAnchor:0}))});
+      canvas.data({nodes:visibleNodes.map(n=>({id:n.id,...(view==='behavior-tree'?{x:n.x,y:n.y}:{}),label:n.label.length>22?n.label.slice(0,21)+'…':n.label,style:{fill:n.group==='skills'?'#f5efff':n.group==='other'?'#ecfafb':'#eef2ff',stroke:colors[n.group],...(n.group==='skills'?{radius:22}:{}),...(n.group==='other'?{lineDash:[5,3]}:{})}})),edges:edges.map(e=>({...e,sourceAnchor:1,targetAnchor:0}))});
       canvas.render();fitAfterPaint();
       resize=new ResizeObserver(()=>{if(canvas&&plot.clientWidth&&(canvas.getWidth()!==plot.clientWidth||canvas.getHeight()!==plot.clientHeight)){canvas.changeSize(plot.clientWidth,plot.clientHeight);}});resize.observe(plot);
     }

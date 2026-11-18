@@ -190,3 +190,12 @@ def test_recycle_bin_opens_fixed_versions_through_the_deleted_history_view():
     assert "versionLink(item.ontology_id,item.version_id,true)" in deleted_card
     opener = assets[assets.index("async openVersion("):][:400]
     assert "state=deleted" in opener
+
+
+def test_startup_does_not_route_again_after_a_hash_navigation():
+    """首屏的异步初始化完成时,如果用户(或页面跳转)已经通过 hash 进入了某页,不能再路由一次:
+    那会重新挂载当前页面,清掉刚选中的节点和查找结果(机器人图谱的查找在 macOS 上因此失败)。"""
+    init = INDEX[INDEX.index("(async()=>{if(await appSourceInit())"):][:260]
+    assert "ROUTED_BY_HASH" in init
+    listener = INDEX[INDEX.index("addEventListener('hashchange'"):][:200]
+    assert "ROUTED_BY_HASH=true" in listener

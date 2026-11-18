@@ -3,7 +3,6 @@
 Run: .venv/bin/python tests/frontend/build-browser.py --output /tmp/datamind-build-ui
 """
 import argparse
-from tests.browser_runtime import browser_executable
 import asyncio
 import json
 import mimetypes
@@ -11,6 +10,11 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from playwright.async_api import async_playwright
+import sys
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from tests.browser_runtime import browser_executable  # noqa: E402
 
 
 ROOT = Path(__file__).resolve().parents[2]

@@ -32,8 +32,11 @@ def section(panel, name):
     panel.get_by_role('button', name=name, exact=True).click()
 
 
-def identity(panel):
-    panel.get_by_label('操作者署名', exact=True).fill('合成浏览器测试者')
+AUTHOR, REVIEWER = '合成浏览器测试者', '合成浏览器复核者'   # 评审人不能是版本作者(DR-159)
+
+
+def identity(panel, name=AUTHOR):
+    panel.get_by_label('操作者署名', exact=True).fill(name)
     panel.get_by_label('操作理由', exact=True).fill('只验证软件流程，不证明现场适配')
 
 
@@ -65,7 +68,7 @@ def save(page, site, panel):
 
 
 def review_publish(page, site, panel):
-    identity(panel)
+    identity(panel, REVIEWER)
     section(panel, '审核发布')
     reviewed = action(page, site, panel, '接受当前版本', '/reviews')
     published = action(page, site, panel, '发布当前版本', '/publish', status=200)

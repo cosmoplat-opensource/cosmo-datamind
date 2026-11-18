@@ -1,6 +1,5 @@
 """T04 RED: real browser/build/OWL/completion/compiler/download; only model HTTP is scripted — DR-145 / DR-148."""
 import argparse
-from tests.browser_runtime import browser_executable
 import os
 from pathlib import Path
 import re
@@ -21,6 +20,10 @@ from tests.robotics_browser_support import LiveSite, choose_robotics, fill_robot
 from tests.robotics_support import S, config, trees
 from tests.robotics_task_support import BASIS, TEXT, assert_generated, expected_xml, model_server, tree_json
 from tests.storage_pipeline_support import fresh_payload
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from tests.browser_runtime import browser_executable  # noqa: E402
 
 
 class TaskSite(LiveSite):

@@ -1,6 +1,5 @@
 """Real HTTP/Chromium detail-to-task navigation and existing result access — DR-155 / T04 RED."""
 import argparse
-from tests.browser_runtime import browser_executable
 import os
 from pathlib import Path
 import re
@@ -26,6 +25,10 @@ from tests.ontology_detail_integration_support import (
     task_hash, task_records,
 )
 from tests.robotics_design_browser_support import DesignSite
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from tests.browser_runtime import browser_executable  # noqa: E402
 
 
 @pytest.fixture(scope='module')

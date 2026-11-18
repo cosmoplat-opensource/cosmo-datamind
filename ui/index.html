@@ -2419,7 +2419,9 @@ async function sparqlRun(){$('#sq_info').textContent='查询中…';
  const rows=d.rows||[];const cols=d.vars||(rows[0]?Object.keys(rows[0]):[]);
  $('#sq_out').innerHTML='<table><tr>'+cols.map(c=>`<th>${esc(c)}</th>`).join('')+'</tr>'+rows.map(r=>'<tr>'+cols.map(c=>`<td>${esc(r[c])}</td>`).join('')+'</tr>').join('')+'</table>';}
 // 初始寻址：带 hash 直达对应子页，否则默认首页
-(async()=>{if(await appSourceInit()){if(location.hash.slice(1))routeHash();else{home();loaded.home=1;}}else{goPage('conn');}})();
+// 首屏初始化是异步的:完成前若已经通过 hash 进入了某页,不再重复路由(否则会重新挂载当前页、丢掉页面状态)
+let ROUTED_BY_HASH=false;
+(async()=>{if(await appSourceInit()){if(ROUTED_BY_HASH)return;if(location.hash.slice(1))routeHash();else{home();loaded.home=1;}}else{goPage('conn');}})();
 // hash 路由：每个子页可经 #<page> 寻址；另支持 #graph=<key> / #obj=<key>:<id> 深链
 function routeHash(){if(window.RoboticsReview?.guardHash())return;const h=location.hash.slice(1);
  if(/^robotics-view\?/.test(h)){goPage('robotics-view');return;}
@@ -2431,7 +2433,7 @@ function routeHash(){if(window.RoboticsReview?.guardHash())return;const h=locati
  const mo=h.match(/^obj=([^:]+):(.+)$/);if(mo){loaded.graph=1;goPage('graph');graphs(mo[1]);return;}   // 仅定位到图谱；对象级高亮随 studio 页一并移除
  const on=document.querySelector('.nav.on');if(h&&on&&on.dataset.p===h&&loaded[h]&&!['library','build','review','robotics-task','robotics-view'].includes(h))return;   // 菜单点击已打开该页,hashchange 不再重复进入(首屏 #home 仍要加载)
  if(h){if(!goPage(h)){goPage('home');history.replaceState(null,'','#home');}}else goPage('home');}  // 未知 hash 回首页并纠正 URL，避免地址与页面不一致
-addEventListener('hashchange',routeHash);
+addEventListener('hashchange',()=>{ROUTED_BY_HASH=true;routeHash();});
 // 可访问性：让 onclick 的 div/span 可 Tab 聚焦 + Enter/Space 触发(键盘可操作)
 const A11Y_SEL=`.nav,.dq-mode,.eg,.pill:not(#rt_pill),.dq-sel,.dq-modal .mt,.dq-modal-hd .x,span[title="关闭"],.dq-att .x,.vz-card .x,.cn-row .x,tr[onclick],#cat_tags .tag,.nav-group .gh,.dq-collapse,.dq-hist .it,.ds-card,.sk-card,.dq-react span,.dq-tab .c,.bc-eg[onclick],.bc-srow[onclick],.bc-hist-pop .it,.bc-hist-pop .del,.bc-srow .x,.bc-srow .nm[onclick],.bc-chip .x,.cn-row`;
 function a11yScan(){
