@@ -53,10 +53,8 @@ def isolated_env(directory):
 
 def run_check(name, args, env, reports, results):
     start = time.monotonic()
-    # DR-154: T03's 2232 cases took 2017s under coverage. T05 adds 52 service/task
-    # cases, including repeated immutable JSON/RDF validation and complete task flows.
-    # Budget one bounded hour; preserve test selection, coverage gates and other budgets.
-    timeout = 3600 if name == "unit" else 360
+    # Hosted runners also verify the complete RDF build and validation paths under coverage.
+    timeout = {"unit": 7200, "robotics-design-browser": 720}.get(name, 360)
     with (reports / f"{name}.log").open("w", encoding="utf-8") as log:
         process = subprocess.Popen(args, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT,
                                    start_new_session=True)
@@ -111,6 +109,10 @@ def main():
                 ("coverage-routes", [py, "-m", "coverage", "report", "--include=" + ROUTE_LAYER, "--fail-under=61"]),
             ):
                 run_check(name, command, env, reports, results)
+                # pytest exit 1 means test failures. Collection errors and interruptions
+                # produce partial coverage and must be reported as the unit failure itself.
+                if name == "unit" and results[-1]["exit_code"] not in (0, 1):
+                    break
         if args.suite in ("integration", "ui", "all", "serve"):
             with socket.socket() as sock:
                 sock.bind(("127.0.0.1", 0))

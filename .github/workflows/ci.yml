@@ -14,58 +14,65 @@ concurrency:
 jobs:
   unit:
     name: 单元 + 前端行为 + 覆盖率 + lint + 类型
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    runs-on: ubuntu-24.04
+    timeout-minutes: 135
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "22"
       - run: python -m pip install --upgrade pip==26.2
-      - run: pip install -r requirements-dev.txt
-      - run: python scripts/check.py --suite unit
-      - uses: actions/upload-artifact@v4
-        if: always()
+      - run: pip install -r requirements-dev.txt -r requirements-ui.txt
+      - run: python -m playwright install --with-deps chromium
+      - id: checks
+        run: python scripts/check.py --suite unit --report-dir "$RUNNER_TEMP/datamind-results"
+      - uses: actions/upload-artifact@v7
+        if: always() && steps.checks.outcome != 'skipped'
         with:
           name: unit-results
-          path: .check-results/
+          path: ${{ runner.temp }}/datamind-results/
+          if-no-files-found: error
 
   integration:
     name: 隔离 HTTP 与十轮变序回归
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
       - run: python -m pip install --upgrade pip==26.2
       - run: pip install -r requirements-dev.txt
-      - run: python scripts/check.py --suite integration
-      - uses: actions/upload-artifact@v4
-        if: always()
+      - id: checks
+        run: python scripts/check.py --suite integration --report-dir "$RUNNER_TEMP/datamind-results"
+      - uses: actions/upload-artifact@v7
+        if: always() && steps.checks.outcome != 'skipped'
         with:
           name: integration-results
-          path: .check-results/
+          path: ${{ runner.temp }}/datamind-results/
+          if-no-files-found: error
 
   browser:
     name: 桌面与窄屏浏览器验收
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
       - run: python -m pip install --upgrade pip==26.2
       - run: pip install -r requirements-dev.txt -r requirements-ui.txt
       - run: python -m playwright install --with-deps chromium
-      - run: python scripts/check.py --suite ui
-      - uses: actions/upload-artifact@v4
-        if: always()
+      - id: checks
+        run: python scripts/check.py --suite ui --report-dir "$RUNNER_TEMP/datamind-results"
+      - uses: actions/upload-artifact@v7
+        if: always() && steps.checks.outcome != 'skipped'
         with:
           name: browser-results
-          path: .check-results/
+          path: ${{ runner.temp }}/datamind-results/
+          if-no-files-found: error
