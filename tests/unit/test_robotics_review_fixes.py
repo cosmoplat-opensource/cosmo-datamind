@@ -239,3 +239,16 @@ def test_port_identifiers_that_collide_after_joining_are_located_source_errors(t
     issue = failure.value.issues[0]
     assert issue['code'] == 'identifier_collision' and issue['source_role'] == 'node_models'
     assert {issue['location']['model_id'], issue['location']['port']} & {'Grip', '_b', 'Grip_', 'b'}
+
+
+# 保存版本前把序列化后的 OWL 再解析一次:漏过输入校验的字符也不能写出读不回来的版本
+def test_saved_owl_bytes_are_parsed_back_before_a_version_is_written():
+    from rdflib import Graph, Literal, URIRef
+    from domain_runs.robotics_task_service import TaskError, checked_owl_bytes
+    g = Graph()
+    g.add((URIRef('urn:x:a'), URIRef('urn:x:name'), Literal('ok')))
+    assert b'urn:x:a' in checked_owl_bytes(g)
+    g.add((URIRef('urn:x:b'), URIRef('urn:x:name'), Literal('ab\x01c')))
+    with pytest.raises(TaskError) as failure:
+        checked_owl_bytes(g)
+    assert failure.value.code == 'invalid_answer'

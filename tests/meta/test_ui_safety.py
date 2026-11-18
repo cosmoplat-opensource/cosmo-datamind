@@ -179,3 +179,14 @@ def test_every_browser_test_finds_the_local_browser_the_same_way():
                  if p.name not in ("browser_runtime.py", "test_ui_safety.py") and "chromium.launch" in p.read_text(encoding="utf-8")
                  and "/usr/bin/google-chrome" in p.read_text(encoding="utf-8")]
     assert not own_lists, own_lists
+
+
+def test_recycle_bin_opens_fixed_versions_through_the_deleted_history_view():
+    """已删除本体的版本详情只在 ?state=deleted 的历史视图里返回;回收站里的「查看固定版本」要带上这个状态。"""
+    assets = MODULES["robotics-assets.js"]
+    link = assets[assets.index("const versionLink"):][:300]
+    assert "state=deleted" in link
+    deleted_card = assets[assets.index("item.lifecycle?.state==='deleted'&&item.version_id"):][:200]
+    assert "versionLink(item.ontology_id,item.version_id,true)" in deleted_card
+    opener = assets[assets.index("async openVersion("):][:400]
+    assert "state=deleted" in opener

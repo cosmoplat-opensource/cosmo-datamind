@@ -58,6 +58,16 @@ def _clear(state):
     state.update(optional_gaps=[], task_readiness='not_verified')
 
 
+def checked_owl_bytes(graph):
+    """把本体序列化成 RDF/XML,再解析一次确认能读回;读不回(如含 XML 不允许的控制字符)时不写版本。"""
+    data = graph.serialize(format='xml', encoding='utf-8')
+    try:
+        Graph().parse(data=data, format='xml')
+    except (SAXException, RDFError, ValueError) as exc:
+        raise TaskError('invalid_answer', '填写的内容含有无法保存的字符,请删除控制字符后重试。') from exc
+    return data
+
+
 class TaskService:
     def __init__(self, root, model_client=None, *, generation_policy='strict', max_triples=MAX_TRIPLES):
         if generation_policy not in ('strict', 'offline'):
@@ -314,7 +324,7 @@ class TaskService:
         metadata.update(evidence_policy=evidence.POLICY, mode=state['mode'], task_completion={
             'session_id': state['session_id'], 'origin': 'local_session', 'authenticated_actor': False})
         evidence.mark_governed(graph)
-        version = self.assets._add_version(conn, state['ontology_id'], graph.serialize(format='xml', encoding='utf-8'),
+        version = self.assets._add_version(conn, state['ontology_id'], checked_owl_bytes(graph),
             payload_kind='robotics_rdf', parent_version_id=base['version_id'],
             source_asset_ids=list(dict.fromkeys(base['source_asset_ids'] + list(sources))), metadata=metadata)
         # Keep advanced maintenance's head coherent without overwriting another branch's head.
