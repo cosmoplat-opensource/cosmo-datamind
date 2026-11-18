@@ -24,13 +24,16 @@ from tests.robotics_browser_support import (LiveSite, choose_robotics, download_
                                             submit_from_ui, wait_run_ui, wait_version_ui)
 from tests.robotics_support import SOURCE, MODELS
 from tests.build_runtime_support import upload_args
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from tests.browser_runtime import browser_executable  # noqa: E402
 
 
 @pytest.fixture(scope='session')
 def browser():
     with sync_playwright() as pw:
-        candidates = [os.environ.get('DATAMIND_BROWSER_EXECUTABLE'), '/usr/bin/google-chrome', '/usr/bin/chromium']
-        executable = next((p for p in candidates if p and Path(p).is_file()), None)
+        executable = browser_executable()
         instance = pw.chromium.launch(executable_path=executable)
         yield instance
         instance.close()

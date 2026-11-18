@@ -20,6 +20,10 @@ from tests.robotics_browser_support import LiveSite, choose_robotics, fill_robot
 from tests.robotics_support import S, config, trees
 from tests.robotics_task_support import BASIS, TEXT, assert_generated, expected_xml, model_server, tree_json
 from tests.storage_pipeline_support import fresh_payload
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from tests.browser_runtime import browser_executable  # noqa: E402
 
 
 class TaskSite(LiveSite):
@@ -45,8 +49,7 @@ class TaskSite(LiveSite):
 @pytest.fixture(scope='session')
 def browser():
     with sync_playwright() as pw:
-        executable = next((p for p in (os.environ.get('DATAMIND_BROWSER_EXECUTABLE'),
-            '/usr/bin/google-chrome', '/usr/bin/chromium') if p and Path(p).is_file()), None)
+        executable = browser_executable()
         instance = pw.chromium.launch(executable_path=executable)
         yield instance
         instance.close()

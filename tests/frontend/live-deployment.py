@@ -9,7 +9,6 @@ import argparse
 import asyncio
 from datetime import datetime, timezone
 import json
-import os
 from pathlib import Path
 import re
 import sys
@@ -20,7 +19,7 @@ import uuid
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from tests.browser_runtime import close_browser, managed_playwright  # noqa: E402
+from tests.browser_runtime import browser_executable, close_browser, managed_playwright  # noqa: E402
 
 
 PAGES = ["home", "catalog", "graph", "metrics", "build", "review", "ontquality",
@@ -309,9 +308,7 @@ class Acceptance:
 
     async def run(self):
         async with managed_playwright() as pw:
-            executable = next((value for value in [os.environ.get("DATAMIND_BROWSER_EXECUTABLE"),
-                "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", "/usr/bin/google-chrome", "/usr/bin/chromium"]
-                if value and Path(value).is_file()), None)
+            executable = browser_executable()
             browser = await pw.chromium.launch(executable_path=executable)
             context = await browser.new_context(viewport={"width": 1440, "height": 1000})
             await context.add_init_script("""(() => {

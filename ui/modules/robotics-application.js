@@ -35,7 +35,7 @@
       if(busy)return;busy=true;
       const controls=[...host.querySelectorAll('button,select')].map(el=>[el,el.disabled]);controls.forEach(([el])=>{el.disabled=true;});
       try{
-        const reply=await request(endpoint+'/'+name,{expected_revision:state.revision,request_id:global.crypto.randomUUID(),...extra},abort.signal);
+        const reply=await request(endpoint+'/'+name,{expected_revision:state.revision,request_id:global.dmRequestId(),...extra},abort.signal);
         if(dead)return;
         if(name==='resume-task'){global.location.hash=global.RoboticsTask.link(reply.ontology_id,reply.version_id,reply.mode)+'&session='+encodeURIComponent(reply.session_id);return;}
         state=reply;draft=null;dirty=false;render();
@@ -71,7 +71,7 @@
           const stage=propertyOnly&&design.class_confirmation?'properties':'classes';
           const reply={href:destination,target:{resource_kind:'design_session',resource_id:sid},
             design_repair:{session_id:sid,expected_revision:design.revision,current_stage:design.stage,stage}};
-          const href=await global.RoboticsDesign.beginRepair(reply,global.crypto.randomUUID());
+          const href=await global.RoboticsDesign.beginRepair(reply,global.dmRequestId());
           if(!dead)global.location.hash=href;
         }catch(e){error(e);}finally{busy=false;}
       });

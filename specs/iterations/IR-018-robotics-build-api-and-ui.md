@@ -8,7 +8,7 @@
 - **关联 / Refs**: [[DR-141-unified-domain-semantic-graph]]、[[DR-142-robotics-source-recipes-and-reverse-build]]、[[DR-145-local-domain-registration-and-application-ui]]、[[DR-146-persistent-build-runs-and-artifact-manifests]]、[[DR-147-robotics-migration-and-compatibility-validation]]。
 - **前置**：[IR-017](IR-017-ontology-assets-and-persistent-runs.md) 于 2026-11-04 经用户确认 delivered；IR-016 业务内核已交付。
 - **方案**：集成 Proposal（本地材料） 第 6 节步骤 3 与第 6.1 节前后端联动要求。
-- **流程依据**：[SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第③～⑤步；本轮范围确认不替代各批新测试覆盖审查。
+- **流程依据**：先登记需求与验收映射，再依次运行失败测试、实现及回归；本轮范围确认不替代各批新测试覆盖审查。
 
 ## 目标 Goal
 
@@ -357,7 +357,7 @@ options 接受 fetch、onChange；构建控制器另接受 schedule、cancelSche
 #### 运行与后续接线
 
 ```bash
-env PATH="${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" .venv/bin/python -m pytest tests/unit/test_robotics_build_ui.py -q
+env PATH="<Node.js 安装目录>/bin:$PATH" .venv/bin/python -m pytest tests/unit/test_robotics_build_ui.py -q
 .venv/bin/python tests/frontend/robotics-build-browser.py --output .check-results/robotics-browser
 ```
 

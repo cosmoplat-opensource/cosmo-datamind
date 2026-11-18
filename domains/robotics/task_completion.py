@@ -6,7 +6,6 @@ The save service must re-check the pinned version and task; item IDs are not aut
 """
 import hashlib
 import json
-import re
 
 from rdflib import Graph, Literal, RDF, RDFS, URIRef, XSD
 
@@ -165,31 +164,12 @@ class _Projection:
                 if outcome['valid']:
                     return
                 reasons.extend(item['code'] for item in outcome['issues'])
-            elif self.legacy_evidence_valid(subject, slot, kind):
+            elif evidence.legacy_evidence_valid(self.graph, subject, kind=kind, implementation=implementation,
+                    part_type=part_type, slot=slot, mode=self.mode, revocations=self.revocations, now=self.now):
                 return
         entity = slot if kind == 'placement_compatibility' else part_type
         self.add('applicability', entity, kind, '当前范围缺少有效适配依据，请提供实际依据、有效期并明确确认。',
                  scope=required, issue_codes=sorted(set(reasons)) or ['missing_valid_evidence'])
-
-    def legacy_evidence_valid(self, subject, slot, kind):
-        """Respect the existing legacy OWL gate with the inspection's explicit clock."""
-        value = lambda prop: evidence.value(self.graph, subject, prop)
-        source_hash = evidence.value(self.graph, S.BehaviorTree_Source, 'sha256')
-        if not re.fullmatch(r'[0-9a-f]{64}', source_hash):
-            return False
-        if kind == 'placement_compatibility' and (subject, S.forSlot, slot) not in self.graph:
-            return False
-        if (value('evidenceKind') != kind or value('confirmationStatus') != self.expected_status
-                or value('evidenceReference').strip() in ('', 'None')
-                or value('sourceHash') != source_hash):
-            return False
-        if any(event.get('evidence_iri') == str(subject) and event.get('kind') in ('revoked', 'superseded')
-               for event in self.revocations):
-            return False
-        try:
-            return evidence.timestamp(value('validUntil')) > evidence.timestamp(self.now)
-        except ValueError:
-            return False
 
     def run(self):
         part, station = self.choose('part'), self.choose('station')

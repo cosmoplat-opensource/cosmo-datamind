@@ -1,4 +1,4 @@
-/* Studio graph migration — DR-159; provenance: specs/sources/IR-031-studio-sources.json. */
+/* Studio graph migration — DR-161; provenance: specs/sources/IR-031-studio-sources.json. */
 function onCurve(points, t) {
   const result = points.map(point => ({ ...point }));
   for (let length = result.length - 1; length > 0; length--)

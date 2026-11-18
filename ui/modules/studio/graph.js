@@ -1,4 +1,4 @@
-/* Studio graph migration — DR-159; provenance: specs/sources/IR-031-studio-sources.json. */
+/* Studio graph migration — DR-161; provenance: specs/sources/IR-031-studio-sources.json. */
 import { label, shortIRI } from './model.js';
 import { placeLabels } from './labelLayout.js';
 import { routeEdges } from './edgeRouting.js';

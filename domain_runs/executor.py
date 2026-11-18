@@ -140,6 +140,9 @@ class BuildExecutor:
                     except EOFError:
                         return _failure('worker_crashed', '计算进程异常退出，未返回结果。')
                 if not child.is_alive():
+                    # 子进程可能在上次轮询超时后才发出结果并退出:宣告崩溃前再无等待地读一次。
+                    if receiver.poll(0):
+                        continue
                     return _failure('worker_crashed', '计算进程异常退出，未返回结果。')
             return None
         finally:

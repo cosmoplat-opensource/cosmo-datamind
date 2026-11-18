@@ -19,7 +19,7 @@ before = list(sys.path)
 def guard(event, args):
     if event == 'open' and isinstance(args[0], (str, bytes)):
         path = str(args[0])
-        if path.endswith(('.owl', '.xml', '.ttl')) or ('_implementation' in path or 'external_robotics' in path):
+        if path.endswith(('.owl', '.xml', '.ttl')) or any(part in path for part in ('_implementation', 'external_robotics', 'robotics_source')):
             raise AssertionError('Import attempted to read domain assets: ' + path)
 sys.addaudithook(guard)
 def offline(*a, **k): raise AssertionError('Network during import')

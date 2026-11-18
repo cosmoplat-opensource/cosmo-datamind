@@ -1,4 +1,4 @@
-/* Studio-style graph workspace and read-only details — DR-159 / IR-031 T05. */
+/* Studio-style graph workspace and read-only details — DR-161 / IR-031 T05. */
 import {StudioController} from './controller.js';
 import {label} from './model.js';
 export function mountPanel(host,{canvasId=null}={}){

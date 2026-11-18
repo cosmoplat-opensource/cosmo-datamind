@@ -20,7 +20,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 
 ## 测试执行与隔离
 
-[DR-161 · 独立测试数据与有界并行验证](decisions/DR-161-isolated-test-seeds-and-bounded-parallel-checks.md)：复用真实构建准备产物，保存和读取仍完整校验；独立资产与运行身份；有界进程及完整覆盖率汇总。PERF-T01～T04。
+[DR-163 · 独立测试数据与有界并行验证](decisions/DR-163-isolated-test-seeds-and-bounded-parallel-checks.md)：复用真实构建准备产物，保存和读取仍完整校验；独立资产与运行身份；有界进程及完整覆盖率汇总。PERF-T01～T04。
 
 ## 开发约定(DR-066)
 - 需求 → 测试映射 `specs/acceptance.json`;有效行规则 `specs/models/valid_rows_rules.json`;场景回归基准 `tests/scenarios`(`scripts/scenario_bench.py`);构建步骤说明 `docs/pipelines/ontology_build.yaml`。
@@ -39,9 +39,9 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 集成采用“机器人连续可视化与共享组件 → 数据本体图谱及构建结果预览”两步范围。
 工作分支为 `feat/studio-ui-integration`，IR-031 已交付，IR-032 保持规约阶段。
 
-- [DR-159 · Studio 图谱组件与本体构建可视化](decisions/DR-159-studio-ontology-visualization.md)：accepted（2026-11-17）；T01 视图契约 已冻结，明确对 DR-150 的局部替代及现有主线兼容约束。
+- [DR-161 · Studio 图谱组件与本体构建可视化](decisions/DR-161-studio-ontology-visualization.md)：accepted（2026-11-17）；T01 视图契约 已冻结，明确对 DR-150 的局部替代及现有主线兼容约束。
 - [IR-031 · 共享组件与机器人连续可视化](iterations/IR-031-studio-robotics-visualization.md)：delivered；T06 验收，全量 17 阶段退出 0，3803 单元通过、5 可选跳过，Studio 7 项浏览器通过；STV-R01～06 完成。
-- [DR-160 · 图谱更新、请求边界与公开材料](decisions/DR-160-studio-limits-and-publication-boundary.md)：超限更新保持上一修订、关系展开预算、请求时限及公开材料边界；STV-H01～H05；[验证复现方法](../docs/studio-validation.md)。
+- [DR-162 · 图谱更新、请求边界与公开材料](decisions/DR-162-studio-limits-and-publication-boundary.md)：超限更新保持上一修订、关系展开预算、请求时限及公开材料边界；STV-H01～H05；[验证复现方法](../docs/studio-validation.md)。
 - [IR-032 · 数据本体画布与业务交互](iterations/IR-032-studio-data-visualization.md)：in-progress（规约阶段，依赖 IR-031 交付）；STV-D01～06。
 - 验收计划登记于 `acceptance.json` 的 `planned_requirements`；IR-031 已落地用例与浏览器均在正式映射标记 delivered，IR-032 保留计划。
 
@@ -53,23 +53,26 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 ## 当前机器人集成方向（2026-11-05）
 
 - [DR-148 · 简洁的本体构建到行为树生成流程](decisions/DR-148-minimal-robotics-task-workflow.md)：用户已确认先打通主流程，默认只显示当前版本；参数、映射和必要适配在 DataMind 按当前任务缺口补齐，高级维护暂缓。
-- [IR-020 · 基础版任务流程](iterations/IR-020-minimal-robotics-task-workflow.md)：in-progress，T03 解析/澄清/缺口投影与全量回归 GREEN；下一步 T04 服务和浏览器 RED。IR-019 T07 实现保留，T08 整轮验收暂缓。
+- [IR-020 · 基础版任务流程](iterations/IR-020-minimal-robotics-task-workflow.md)：delivered（2026-11-18 维护者确认，代码已经 PR #1 合入，见 DR-159）。
 
 ## 索引
 
+- [DR-160 · 产品仓库与本地开发材料边界](decisions/DR-160-product-repository-material-boundary.md)：维护者确认保留决策与迭代，指定过程材料和契约草案仅保留本地副本；提交范围由元测试检查。
+
 ### 提议 / Proposals（未立项，落地时拆为独立 DR/IR）
-- PROPOSAL · DataMind 与 upstream 本体构建及行为树生成深度集成 — **proposed，2026-11-02 代码复核版**。包含跨项目复测结果、后端与 UI 方案、8 个实施切片，以及 DR-141…DR-147 的修订依据；区分现有能力、已知断点和待实施设计。
+- PROPOSAL · DataMind 与源项目本体构建及行为树生成深度集成 — **proposed，2026-11-02 代码复核版**。包含跨项目复测结果、后端与 UI 方案、8 个实施切片，以及 DR-141…DR-147 的修订依据；区分现有能力、已知断点和待实施设计。
 - PROPOSAL · 领域可插拔扩展架构（词表下沉 + 契约抽象 + 导出格式与本体应用分离 + 领域包） — **待实施**。为接入外部机器人领域而做的架构提议：9 个编号变更项（C1 词表 · C2 契约 · C3 导出格式 · C4 应用框架 · C5 领域包 · C6–C8 外部机器人平台域 · C9 UI）、术语钉死（"领域/节点/词表"非一对一、"导出格式 ≠ 本体应用"、"契约方言"实为证据通道不同）、6 阶段顺序与 10 条回归红线。**本文是待实施清单，不是现状说明**；现状仍以 `README.md`/`ARCHITECTURE.md`/`docs/pipelines/ontology_build.yaml` 为准。
 
 ### 决定 / Decisions
+- [DR-159 · PR #1 合入后的审查与修复](decisions/DR-159-pr1-review-fixes.md)：已实现；公开内容清理、生命周期与问数闸门、机器人领域与接口、界面与测试。
 - [DR-158 · master 与机器人开发分支兼容集成](decisions/DR-158-master-development-integration.md) ／ [IR-030](iterations/IR-030-master-development-integration.md)：in-progress；编号迁移表。
-- [DR-141 · 统一本体资产、版本与领域权威载荷](decisions/DR-141-unified-domain-semantic-graph.md) · **proposed**
-- [DR-142 · 机器人本体自动构建、增量编辑与发布契约](decisions/DR-142-robotics-source-recipes-and-reverse-build.md) · **proposed**
-- [DR-143 · 参数依据、适配证据与分层准入](decisions/DR-143-parameter-contracts-calibration-and-readiness.md) · **proposed**
-- [DR-144 · 受约束任务解析与版本化行为树应用](decisions/DR-144-behavior-tree-compilation-as-ontology-application.md) · **proposed**
-- [DR-145 · 渐进领域接入与本体全流程 UI](decisions/DR-145-local-domain-registration-and-application-ui.md) · **proposed**
-- [DR-146 · 持久化运行、会话隔离与工件追溯](decisions/DR-146-persistent-build-runs-and-artifact-manifests.md) · **proposed**
-- [DR-147 · 跨工程契约对齐与渐进迁移验证](decisions/DR-147-robotics-migration-and-compatibility-validation.md) · **proposed**
+- [DR-141 · 统一本体资产、版本与领域权威载荷](decisions/DR-141-unified-domain-semantic-graph.md) · **accepted**（2026-11-18 维护者确认，见 DR-159）
+- [DR-142 · 机器人本体自动构建、增量编辑与发布契约](decisions/DR-142-robotics-source-recipes-and-reverse-build.md) · **accepted**（2026-11-18 维护者确认，见 DR-159）
+- [DR-143 · 参数依据、适配证据与分层准入](decisions/DR-143-parameter-contracts-calibration-and-readiness.md) · **accepted**（2026-11-18 维护者确认，见 DR-159）
+- [DR-144 · 受约束任务解析与版本化行为树应用](decisions/DR-144-behavior-tree-compilation-as-ontology-application.md) · **accepted**（2026-11-18 维护者确认，见 DR-159）
+- [DR-145 · 渐进领域接入与本体全流程 UI](decisions/DR-145-local-domain-registration-and-application-ui.md) · **accepted**（2026-11-18 维护者确认，见 DR-159）
+- [DR-146 · 持久化运行、会话隔离与工件追溯](decisions/DR-146-persistent-build-runs-and-artifact-manifests.md) · **accepted**（2026-11-18 维护者确认，见 DR-159）
+- [DR-147 · 跨工程契约对齐与渐进迁移验证](decisions/DR-147-robotics-migration-and-compatibility-validation.md) · **accepted**（2026-11-18 维护者确认，见 DR-159）
 - [DR-140 · 构建放弃等待后停止模型调用;本体修改前后的配对回放;数据接地的移植偏差与对比基准重测](decisions/DR-140-cancel-and-paired-replay.md)
 - [DR-139 · DR-133 至 DR-138 的复查修正](decisions/DR-139-review-of-dr133-138.md)
 - [DR-138 · 概念重提与多次回放](decisions/DR-138-concept-repair-and-repeated-replay.md)
@@ -193,7 +196,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - [IR-016 · 第一阶段：机器人包边界与构建消费契约贯通](iterations/IR-016-robotics-contract-integration.md) · **delivered（2026-11-03 用户确认）**：Proposal 步骤 0～1，89 项机器人测试与实际三场景演示通过，各回归检查段经补验通过，最终交付已确认。
 - [IR-017 · 第二阶段：本体资产、不可变版本与持久化运行基础](iterations/IR-017-ontology-assets-and-persistent-runs.md) · **delivered（2026-11-04 用户确认）**：资产/版本、运行/事件/工件、真实生成接入、离线三场景与独立进程核验已交付；109 项已审用例及全量九段通过，覆盖率 84.6%。后续构建 API/UI 与浏览器联动继续按 Proposal 步骤 3～7 实施。
 - [IR-018 · 第三阶段：机器人本体构建 API 与平台 UI](iterations/IR-018-robotics-build-api-and-ui.md) · **delivered（2026-11-04 用户确认整轮交付）**：Proposal 步骤 3，双 XML 上传、来源型运行、候选目录/详情/下载及真实浏览器联动；构建/存储、HTTP/执行器及 UI 已实现；40 项前端状态与 14 项真实浏览器通过，全量十段检查退出 0。
-- [IR-019 · 第四阶段：机器人知识维护、重建合并与评审发布](iterations/IR-019-robotics-knowledge-review-and-publication.md) · **in-progress（T07 GREEN，待 T08 人审交付）**：Proposal 步骤 4，受控业务编辑、参数/证据、并发版本、三方冲突合并与审核发布；122 项领域/存储测试及 83 项治理 HTTP 测试转绿，全量十段通过；知识维护、审核发布与版本下载已接入 HTTP/UI，离线 CLI 四场景可运行；T07 全量 11 段通过，待 T08 人审交付。
+- [IR-019 · 第四阶段：机器人知识维护、重建合并与评审发布](iterations/IR-019-robotics-knowledge-review-and-publication.md) · **delivered（2026-11-18 维护者确认，代码已经 PR #1 合入，见 DR-159）**：Proposal 步骤 4，受控业务编辑、参数/证据、并发版本、三方冲突合并与审核发布；122 项领域/存储测试及 83 项治理 HTTP 测试转绿，全量十段通过；知识维护、审核发布与版本下载已接入 HTTP/UI，离线 CLI 四场景可运行；T07 全量 11 段通过，待 T08 人审交付。
 - [IR-015 · 实际部署与前后端验收](iterations/IR-015-live-deployment-acceptance.md) · **delivered**
 - [IR-014 · 算法、安全、UI 与 SDD/TDD 综合验收](iterations/IR-014-evidence-security-ui-validation.md) · **delivered**
 - [IR-001 · DataMind 基座(目录/图谱/指标/质量/SQL)](iterations/IR-001-foundation.md) · **delivered**
@@ -355,4 +358,8 @@ IR-029 于 2026-11-17 按用户反馈精简删除／恢复弹窗及回收站卡�
 
 ## 产品仓库材料边界
 
-[DR-162 · 产品仓库与本地开发材料边界](decisions/DR-162-product-repository-material-boundary.md)：保留决策与迭代；指定开发中间材料及契约草案仅保留本地副本。
+[DR-160 · 产品仓库与本地开发材料边界](decisions/DR-160-product-repository-material-boundary.md)：保留决策与迭代；指定开发中间材料及契约草案仅保留本地副本。
+
+## master 与 Studio 兼容集成
+
+[DR-164 · master 修复与 Studio 功能兼容集成](decisions/DR-164-master-and-studio-compatibility-integration.md)：保留两边功能；master 编号保持，Studio 相关记录使用 DR-161、DR-162、DR-163，DR-160 保持不变；MERGE-STUDIO-01。

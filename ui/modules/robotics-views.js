@@ -89,7 +89,7 @@
         modes:{default:['drag-canvas','zoom-canvas','drag-node']},animate:false,fitView:false,minZoom:.02,maxZoom:3,
         defaultNode:{type:'rect',size:[172,44],anchorPoints:view==='relations'?[[0,.5],[1,.5]]:[[.5,0],[.5,1]],style:{radius:9,lineWidth:1.3},labelCfg:{style:{fontSize:12,fill:'#243247'}}},
         nodeStateStyles:{selected:{lineWidth:3,shadowColor:'#4a5ff3',shadowBlur:8}},
-        defaultEdge:{type:'polyline',style:{stroke:'#b6bfd7',radius:10,offset:20,endArrow:{path:global.G6.Arrow.triangle(6,7,0),fill:'#b6bfd7'}},labelCfg:{style:{fontSize:10,fill:'#64748b',background:{fill:'#fff',padding:[3,4]}}}}});
+        defaultEdge:{type:'polyline',style:{stroke:'#b6bfd7',radius:10,offset:20,endArrow:{path:global.G6.Arrow.triangle(6,7,0),fill:'#b6bfd7'}},labelCfg:{style:{fontSize:12,fill:'#64748b',background:{fill:'#fff',padding:[3,4]}}}}});
       // DR-150: G6 canvas dirty-region refresh can retain stale pixels after group
       // transforms. Full redraw keeps zoom/pan and selected-node focus in sync.
       canvas.get('canvas').set('localRefresh',false);
@@ -97,7 +97,7 @@
       const fitAfterPaint=()=>global.requestAnimationFrame(()=>{if(canvas===drawing)fit();});
       canvas.on('afterlayout',fitAfterPaint);
       canvas.on('node:click',event=>selectNode(event.item.getID()));
-      canvas.data({nodes:visibleNodes.map(n=>({id:n.id,...(view==='behavior-tree'?{x:n.x,y:n.y}:{}),label:n.label.length>22?n.label.slice(0,21)+'…':n.label,style:{fill:n.group==='skills'?'#f5efff':n.group==='other'?'#ecfafb':'#eef2ff',stroke:colors[n.group]}})),edges:edges.map(e=>({...e,sourceAnchor:1,targetAnchor:0}))});
+      canvas.data({nodes:visibleNodes.map(n=>({id:n.id,...(view==='behavior-tree'?{x:n.x,y:n.y}:{}),label:n.label.length>22?n.label.slice(0,21)+'…':n.label,style:{fill:n.group==='skills'?'#f5efff':n.group==='other'?'#ecfafb':'#eef2ff',stroke:colors[n.group],...(n.group==='skills'?{radius:22}:{}),...(n.group==='other'?{lineDash:[5,3]}:{})}})),edges:edges.map(e=>({...e,sourceAnchor:1,targetAnchor:0}))});
       canvas.render();fitAfterPaint();
       resize=new ResizeObserver(()=>{if(canvas&&plot.clientWidth&&(canvas.getWidth()!==plot.clientWidth||canvas.getHeight()!==plot.clientHeight)){canvas.changeSize(plot.clientWidth,plot.clientHeight);}});resize.observe(plot);
     }
@@ -110,7 +110,7 @@
         <form id="rv_search"><label>查找节点<input id="rv_query" placeholder="输入节点名称" autocomplete="off"></label><button class="ghost" type="submit">查找</button></form><span id="rv_search_result" role="status"></span>
         ${tree?'<button type="button" class="ghost" id="rv_tree_back" hidden>返回上一级</button>':''}<div class="rv-controls"><button type="button" data-zoom="in" aria-label="放大">＋</button><button type="button" data-zoom="out" aria-label="缩小">−</button><button type="button" id="rv_fit">适应画布</button></div></section>
         <p class="rv-help" id="rv_scope_notice" role="status"></p>
-        <div class="rv-workspace"><section class="card rv-graph"><div class="ra-section-heading"><h3>${tree?'流程结构':'对象关联'}</h3><span id="rv_counts"></span></div><div id="rv_canvas" role="img" aria-label="${tree?'行为树流程图':'机器人本体关系图'}"></div><p class="rv-legend">${tree?'从上到下执行，同级节点从左到右排列；点击 SubTree 节点可查看子树。':'蓝色：业务对象与配置　紫色：技能与流程　青色：参数与其他对象'} · 拖动画布移动，滚轮缩放</p></section>
+        <div class="rv-workspace"><section class="card rv-graph"><div class="ra-section-heading"><h3>${tree?'流程结构':'对象关联'}</h3><span id="rv_counts"></span></div><div id="rv_canvas" role="img" aria-label="${tree?'行为树流程图':'机器人本体关系图'}"></div><p class="rv-legend">${tree?'从上到下执行，同级节点从左到右排列；点击 SubTree 节点可查看子树。':'方框：业务对象与配置　圆角长条：技能与流程　虚线框：参数与其他对象'} · 拖动画布移动，滚轮缩放</p></section>
         <aside class="card rv-sidebar"><label for="rv_node">节点详情</label><select id="rv_node"></select><div id="rv_properties"></div></aside></div>`;
       if(tree){
         host.querySelector('#rv_tree').value=selectedTree;

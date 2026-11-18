@@ -6,11 +6,15 @@ import argparse
 import asyncio
 import json
 import mimetypes
-import os
 from pathlib import Path
 from urllib.parse import urlparse
 
 from playwright.async_api import async_playwright
+import sys
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from tests.browser_runtime import browser_executable  # noqa: E402
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -64,10 +68,7 @@ async def main(output, base_url=None):
         return await route.fulfill(status=404, json={"error": "fixture route not found: " + name})
 
     async with async_playwright() as pw:
-        candidates = [os.environ.get("DATAMIND_BROWSER_EXECUTABLE"),
-                      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-                      "/usr/bin/google-chrome", "/usr/bin/chromium"]
-        executable = next((value for value in candidates if value and Path(value).is_file()), None)
+        executable = browser_executable()
         browser = await pw.chromium.launch(executable_path=executable)
         page = await browser.new_page(viewport={"width": 1440, "height": 1000})
         page.on("pageerror", lambda error: failures.append(str(error)))

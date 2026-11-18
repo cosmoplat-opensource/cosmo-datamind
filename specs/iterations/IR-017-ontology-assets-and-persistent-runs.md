@@ -8,7 +8,7 @@
 - **关联 / Refs**: [[DR-141-unified-domain-semantic-graph]]、[[DR-146-persistent-build-runs-and-artifact-manifests]]、[[DR-147-robotics-migration-and-compatibility-validation]]。
 - **前置**：[IR-016](IR-016-robotics-contract-integration.md) 已于 2026-11-03 经用户确认交付。
 - **方案**：集成 Proposal（本地材料） 第 6 节步骤 2。
-- **流程依据**：[SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第③～⑤步。
+- **流程依据**：先登记需求与验收映射，再依次运行失败测试、实现及回归。
 
 ## 目标 Goal
 
@@ -132,7 +132,7 @@ T02 已将 AST-01～03、08 的首批真实测试入口登记到 `acceptance.jso
 跨进程检查必须由新的 Python 进程读取磁盘记录，不能仅在原进程重新创建一个对象冒充重启。
 summary 输出 storage_root、run_id、版本引用和独立检查结果，说明所有演示依据及执行未验证状态。
 仅当预期状态、工件和摘要检查全部通过时退出 0，异常或不符合预期时退出非零。
-不要求启动 UI、网络模型、原 upstream 工程或机器人。
+不要求启动 UI、网络模型、原源项目工程或机器人。
 
 ### 验证与人审记录
 

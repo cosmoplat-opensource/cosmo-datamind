@@ -1,4 +1,4 @@
-"""Selected schema and checked instance RDF/XML, adapted from upstream — DR-152."""
+"""Selected schema and checked instance RDF/XML, adapted from the robotics source project — DR-152."""
 from rdflib import BNode, Graph, Literal, Namespace, OWL, RDF, RDFS, URIRef, XSD
 from rdflib.collection import Collection
 

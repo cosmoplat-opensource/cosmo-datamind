@@ -147,3 +147,23 @@ def test_manual_http_confirmation_and_queue_are_one_idempotent_request(tmp_path,
         assert response.json['role_map']['confirmed'] is True
         assert client.post(path, json=body, base_url=BASE_URL).json == response.json
         assert len(db_rows(root)['runs']) == len(before['runs']) + 1
+
+
+def test_same_repair_finished_by_another_request_after_the_lookup_is_replayed(tmp_path, monkeypatch):
+    """同号修复请求:本请求查过「是否已受理」之后、核对新鲜度之前,另一个同号请求先完成了修复。
+    此时资源已变,新鲜度不再是 current;应返回先到者的受理结果,而不是报结果已过期(DR-159)。"""
+    _, _, ref = candidate(tmp_path); checks = check_service(tmp_path)
+    report = checks.evaluate(**check_body(ref))['report']; args = repair_args(report)
+    real = type(checks)._freshness
+    state = {'raced': False}
+
+    def freshness(self, rep):
+        if not state['raced']:
+            state['raced'] = True
+            monkeypatch.setattr(type(checks), '_freshness', real)
+            self.repair(**args)                      # 另一个同号请求在此刻完成
+            return real(self, rep)
+        return real(self, rep)
+    monkeypatch.setattr(type(checks), '_freshness', freshness)
+    reply = checks.repair(**args)
+    assert reply['replayed'] is True and len(RunStore(tmp_path).list_runs()) >= 1

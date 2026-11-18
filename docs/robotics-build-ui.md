@@ -104,7 +104,7 @@ IR-018 当时未提供的后续能力已陆续接入；图谱与任务入口见 
 
 ```bash
 # 前端状态与检查接线：合成 HTTP，检查并发、重发、错误、游标与清理。
-env PATH="${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" \
+env PATH="<Node.js 安装目录>/bin:$PATH" \
     .venv/bin/python -m pytest tests/unit/test_robotics_build_ui.py -q
 
 # 真实浏览器：自动创建和清理隔离的实际 Gunicorn 服务及存储。
@@ -112,7 +112,7 @@ env PATH="${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" \
     --output .check-results/robotics-browser
 
 # 包括旧功能和新浏览器联动的统一检查。
-env PATH="${HOME}/.local/opt/node-v22.20.0-linux-x64/bin:$PATH" \
+env PATH="<Node.js 安装目录>/bin:$PATH" \
     .venv/bin/python scripts/check.py --suite all
 ```
 

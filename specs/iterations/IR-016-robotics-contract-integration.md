@@ -9,7 +9,7 @@
 - **关联 / Refs**: [[DR-141-unified-domain-semantic-graph]]、[[DR-142-robotics-source-recipes-and-reverse-build]]、[[DR-143-parameter-contracts-calibration-and-readiness]]、[[DR-144-behavior-tree-compilation-as-ontology-application]]、[[DR-147-robotics-migration-and-compatibility-validation]]
 - **方案**：集成 Proposal（本地材料） 第 6 节步骤 0～1。
 - **验收映射**：[acceptance.json](../acceptance.json) 的 ROB-01～ROB-13。
-- **流程依据**：[项目 SDD skill](../../.agents/skills/sdd-workflow/SKILL.md)。
+- **流程依据**：[SDD 工作流](../../AGENTS.md)。
 
 ## 目标 Goal
 
@@ -177,7 +177,7 @@ T09 如暴露额外行为缺陷，先补可复现用例再修复，不扩大到 
 
 - T04 已由用户确认；实现发布器、消费加载器、共享可信规则与条件契约，39 项机器人测试全部通过，已审测试未修改。
 - 发布规范化仅消除一致的重复端口属性，输出经消费复验后原子创建，原输入不变。
-- 新发布 OWL 通过原 upstream agent 的加载及生成准备；归一化发布物上的三类语义破坏均拒绝。
+- 新发布 OWL 通过原源项目 agent 的加载及生成准备；归一化发布物上的三类语义破坏均拒绝。
 - 全量检查实际退出 0：单元 868 通过 / 5 跳过，HTTP 551 通过 / 8 跳过，覆盖率 87.2%，其余检查段通过，真实模型 3 项跳过。
 - 详见 T05 审计记录（本地材料），下一任务 T06 编写严格任务和作者草稿失败测试。
 

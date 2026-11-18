@@ -170,7 +170,7 @@ def test_graph_list_reload_is_last_call_wins():
 def test_hash_route_skips_the_page_the_nav_click_already_opened():
     """点菜单先 goPage 再改 hash,hashchange 又 goPage 一次:重访逻辑跑两遍,且第二次按旧选中项重取图谱,
     会盖掉紧接着打开的新本体。当前页已是该页时 hash 路由不再重复进入。"""
-    fn = UI[UI.index("function routeHash(){"):UI.index("addEventListener('hashchange',routeHash);")]
+    fn = UI[UI.index("function routeHash(){"):UI.index("addEventListener('hashchange',")]
     assert "document.querySelector('.nav.on')" in fn
     assert "on.dataset.p===h&&loaded[h]" in fn                 # 首屏带 #home 时该页尚未加载,不能跳过
 

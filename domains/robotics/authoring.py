@@ -12,6 +12,7 @@ import uuid
 from rdflib import Literal, OWL, RDF, RDFS, URIRef, XSD
 
 from .graph import S, individual
+from .xml_text import invalid_xml_text
 
 EDITABLE = {'Workpiece', 'PartType', 'Workstation', 'Carrier', 'PlacementSlot',
             'PerceptionProfile', 'PlacementProfile', 'JointConfiguration', 'CartesianPose'}
@@ -32,6 +33,8 @@ RELATIONS = {
 def text(value, name, limit=4096):
     if not isinstance(value, str) or not value.strip() or len(value) > limit:
         raise ValueError(f'{name} 必须为非空且长度合理的文字。')
+    if invalid_xml_text(value):
+        raise ValueError(f'{name} 含无法写入 XML 的控制字符。')
     return value
 
 

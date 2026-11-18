@@ -2,14 +2,14 @@
 
 > 引用的开发中间材料仅保留本地副本；历史记录不代表当前版本已验证。
 
-- **状态 / Status**: proposed
+- **状态 / Status**: accepted（2026-11-18 由仓库维护者确认：代码已于 2026-11-17 经 PR #1 合入 master，合入后的审查与修复见 DR-159）
 - **日期 / Date**: 2026-11-02
 - **关联 / Refs**: [[DR-018-realtime-consistency]]、[[DR-049-relational-projection-and-explicit-pipeline]]、[[DR-142-robotics-source-recipes-and-reverse-build]]、集成技术方案（本地材料）
 
 ## 上下文 / Context
 
 DataMind 当前主要通过 JSON IR 与编辑覆盖层管理数据本体，并没有现成的跨领域不可变发布体系。
-upstream 使用 RDF/OWL 表达技能、实现、调用实例、端口契约、参数及黑板数据流。
+源项目使用 RDF/OWL 表达技能、实现、调用实例、端口契约、参数及黑板数据流。
 DataMind 当前 OWL 出口把节点表达为类、边表达为属性定义，不能据此恢复机器人实例断言与完整 RDF 语义。
 前版 Graph v2 唯一真相源提议缺少无损映射证明，直接落地会扩大迁移范围并丢失已有语义。
 两个工程需要统一平台治理，同时避免同一版本存在两份可独立修改的权威数据。

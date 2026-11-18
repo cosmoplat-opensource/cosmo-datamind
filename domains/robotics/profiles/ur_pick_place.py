@@ -1,6 +1,6 @@
 """Fixed UR vocabulary, procedure and source-derived examples — DR-142 / DR-144.
 
-Migrated from upstream ontology_pipeline; examples remain illustrative, never confirmed.
+Migrated from the ontology_pipeline of the robotics source project; examples remain illustrative, never confirmed.
 """
 from ..graph import S, individual, invocation, literal
 

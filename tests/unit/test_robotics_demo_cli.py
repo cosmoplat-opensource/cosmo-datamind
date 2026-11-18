@@ -27,7 +27,7 @@ socket.create_connection = no_network
 old_open, old_path_open = builtins.open, pathlib.Path.open
 def check(path):
     text = str(path).replace("\\\\", "/")
-    if ("_implementation/" in text or "external_robotics/" in text) or "/fixtures/robotics/owl/" in text:
+    if any(part in text for part in ("_implementation/", "external_robotics/", "robotics_source/", "/fixtures/robotics/owl/")):
         raise AssertionError("Demo read original archive or prebuilt OWL: " + text)
 def guarded_open(path, *args, **kwargs):
     check(path)

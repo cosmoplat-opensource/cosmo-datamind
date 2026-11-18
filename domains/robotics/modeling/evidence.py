@@ -1,4 +1,4 @@
-"""Role-bound XML evidence, adapted from upstream documents.py — DR-152."""
+"""Role-bound XML evidence, adapted from the robotics source project documents.py — DR-152."""
 from collections import Counter
 from copy import deepcopy
 import hashlib
@@ -79,7 +79,11 @@ def source_digests(bundle):
         sha = doc.get('sha256')
         if not isinstance(sha, str) or len(sha) != 64 or any(c not in '0123456789abcdef' for c in sha):
             raise ModelingError('invalid_source', 'XML 来源摘要无效。')
-    summary = model_summary(bundle['evidence'])
+    try:
+        summary = model_summary(bundle.get('evidence'))
+    except (ValueError, KeyError, TypeError, AttributeError) as exc:
+        message = str(exc) if isinstance(exc, ValueError) else 'XML 证据结构无效。'
+        raise ModelingError('invalid_source', message) from None
     if {d['document_id'] for d in summary['trees']} != {d['id'] for d in documents}:
         raise ModelingError('invalid_source', 'XML 证据与文档身份不一致。')
     return {d['role']: d['sha256'] for d in documents}

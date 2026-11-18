@@ -234,12 +234,14 @@ def test_durable_fault_rolls_back_asset_version_run_events_and_artifact_indexes(
         monkeypatch.setattr(Storage, 'read_bytes', fail_read)
     else:
         transaction = Storage.transaction
+        target = root.resolve()
 
         @contextmanager
         def fail_commit(self, *, write=False):
             with transaction(self, write=write) as conn:
                 yield conn
-                if self.root == root.resolve() and write and conn.execute('SELECT COUNT(*) FROM versions').fetchone()[0] > len(before['versions']):
+                # 进程内常驻执行器(服务导入时启动)也会写各自的库；只对本测试的库注入故障。
+                if write and self.root == target and conn.execute('SELECT COUNT(*) FROM versions').fetchone()[0] > len(before['versions']):
                     # Fail only after the success rows have been staged, not constructor/schema setup.
                     injected.append('commit')
                     assert conn.execute('SELECT status FROM runs WHERE run_id=?', (run['run_id'],)).fetchone()[0] == 'completed'

@@ -2,7 +2,7 @@
 
 - **状态 / Status**：in-progress（规约编写阶段；实现依赖 IR-031 交付）。
 - **日期 / Date**：2026-11-17。
-- **关联 / Refs**：[DR-159](../decisions/DR-159-studio-ontology-visualization.md)、[IR-031](IR-031-studio-robotics-visualization.md)、[DR-114](../decisions/DR-114-relation-identity-includes-role.md)、[DR-158](../decisions/DR-158-master-development-integration.md)。
+- **关联 / Refs**：[DR-161](../decisions/DR-161-studio-ontology-visualization.md)、[IR-031](IR-031-studio-robotics-visualization.md)、[DR-114](../decisions/DR-114-relation-identity-includes-role.md)、[DR-158](../decisions/DR-158-master-development-integration.md)。
 - **工作分支 / Branch**：`feat/studio-ui-integration`。
 
 ## 目标 Goal

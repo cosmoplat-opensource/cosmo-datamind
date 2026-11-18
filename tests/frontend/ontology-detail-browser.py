@@ -25,6 +25,10 @@ from tests.ontology_detail_integration_support import (
     task_hash, task_records,
 )
 from tests.robotics_design_browser_support import DesignSite
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from tests.browser_runtime import browser_executable  # noqa: E402
 
 
 @pytest.fixture(scope='module')
@@ -36,8 +40,7 @@ def detail_seed(tmp_path_factory):
 @pytest.fixture(scope='module')
 def browser():
     with sync_playwright() as playwright:
-        executable = next((name for name in (os.environ.get('DATAMIND_BROWSER_EXECUTABLE'),
-            '/usr/bin/google-chrome', '/usr/bin/chromium') if name and Path(name).is_file()), None)
+        executable = browser_executable()
         instance = playwright.chromium.launch(executable_path=executable)
         yield instance
         instance.close()

@@ -68,6 +68,16 @@ def _advance(state, result):
     return state
 
 
+def _semantic(code, check, *args):
+    """本地语义校验的拒绝统一为带错误码的 ModelingError。"""
+    try:
+        return check(*args)
+    except ModelingError:
+        raise
+    except ValueError as exc:
+        raise ModelingError(code, str(exc)) from None
+
+
 def _strict_json(raw):
     def unique(pairs):
         value = {}
@@ -124,11 +134,11 @@ def revise(state, text, route, *, session_id, timeout):
         # Semantic checks are outside the repair loop's catch: no semantic retry.
         refs, messages = _refs(updated)
         if stage == 'classes':
-            checked = validate_result(proposal, refs, messages, state['vocabulary'])
+            checked = _semantic('model_semantics', validate_result, proposal, refs, messages, state['vocabulary'])
         else:
             frozen = state['class_confirmation']
-            checked = validate_properties(proposal, refs, messages, state['vocabulary'],
-                                           frozen['classes'], frozen['competency_questions'])
+            checked = _semantic('model_semantics', validate_properties, proposal, refs, messages,
+                                state['vocabulary'], frozen['classes'], frozen['competency_questions'])
             checked.update(classes=deepcopy(frozen['classes']),
                            competency_questions=deepcopy(frozen['competency_questions']))
             checked['clarifications'] = list(dict.fromkeys([*frozen['clarifications'], *checked['clarifications']]))
@@ -148,7 +158,8 @@ def _check_confirmation(state, expected, stage):
 def confirm_classes(state, *, snapshot_sha256):
     _check_confirmation(state, snapshot_sha256, 'classes')
     refs, messages = _refs(state)
-    result = validate_result(_classes(state['result']), refs, messages, state['vocabulary'])
+    result = _semantic('invalid_design', validate_result, _classes(state['result']), refs, messages,
+                       state['vocabulary'])
     if result != state['result']:
         raise ModelingError('snapshot_conflict', '设计经校验发生变化，请重新生成并确认。')
     updated = deepcopy(state)
@@ -184,8 +195,8 @@ def confirm_schema(state, *, snapshot_sha256):
         raise ModelingError('confirmation_required', '请先完成关系与属性设计。')
     refs, messages = _refs(state)
     frozen = state['class_confirmation']
-    checked = validate_properties(_properties(state['result']), refs, messages, state['vocabulary'],
-                                   frozen['classes'], frozen['competency_questions'])
+    checked = _semantic('invalid_design', validate_properties, _properties(state['result']), refs, messages,
+                        state['vocabulary'], frozen['classes'], frozen['competency_questions'])
     if checked != _properties(state['result']):
         raise ModelingError('snapshot_conflict', '属性经校验发生变化，请重新生成并确认。')
     schema = checked_tbox({'namespace': state['namespace'], **{k: state['result'][k]

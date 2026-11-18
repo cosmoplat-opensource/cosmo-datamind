@@ -20,6 +20,24 @@ from .lifecycle import LifecycleError
 from .store import AssetStore, _required, _version
 
 
+# 资源护栏默认值；HTTP 层可通过配置覆盖。
+MAX_TRIPLES = 200_000
+SOURCE_QUOTA_BYTES = 100 * 1024 * 1024
+# 评审署名不能冒用系统或模型身份（不区分大小写，去首尾空白后比较）。
+RESERVED_ACTORS = frozenset({'system', 'model', 'llm', 'ai', 'assistant', 'agent', 'bot', 'auto',
+                             'automatic', 'automation', 'datamind', 'anonymous'})
+RESERVED_PREFIXES = ('system:', 'model:', 'llm:', 'ai:', 'agent:', 'bot:')
+AUTHORING_EVENTS = ('save', 'register_evidence', 'review_evidence', 'review_knowledge', 'merge')
+UPLOADS = '''CREATE TABLE IF NOT EXISTS governance_source_uploads (
+    ontology_id TEXT NOT NULL REFERENCES assets(ontology_id), sha256 TEXT NOT NULL,
+    source_asset_id TEXT NOT NULL REFERENCES sources(source_asset_id), byte_size INTEGER NOT NULL,
+    PRIMARY KEY(ontology_id, sha256))'''
+
+
+def _person(value):
+    return value.strip().casefold()
+
+
 class GovernanceError(ValueError):
     def __init__(self, code, message):
         super().__init__(message)
@@ -35,9 +53,10 @@ def _hash(value):
 
 
 class GovernanceService:
-    def __init__(self, root, *, read_only=False):
+    def __init__(self, root, *, read_only=False, max_triples=MAX_TRIPLES, source_quota_bytes=SOURCE_QUOTA_BYTES):
         self.assets = AssetStore(root, read_only=read_only)
         self.storage = self.assets.storage
+        self.max_triples, self.source_quota_bytes = max_triples, source_quota_bytes
 
     @contextmanager
     def _atomic(self, *, write=False):
@@ -98,6 +117,9 @@ class GovernanceService:
             self._sources(conn, record['source_asset_ids'])
         validate_payload('robotics', 'robotics_rdf', content)
         graph = Graph().parse(data=content, format='xml')
+        # 在 SHACL/RDFS 推理之前限制图规模。
+        if len(graph) > self.max_triples:
+            raise GovernanceError('ontology_too_large', f'本体三元组超过上限 {self.max_triples}。')
         if record['metadata'].get('evidence_policy') and evidence.policy(graph) != evidence.POLICY:
             raise GovernanceError('integrity_conflict', '治理版本不能移除受控证据策略。')
         consumer.check_mode(graph, self._mode(record, graph))
@@ -225,6 +247,7 @@ class GovernanceService:
 
     def review_evidence(self, ontology_id, *, evidence_iri, decision, **args):
         call_args = {**args,'evidence_iri':evidence_iri,'decision':decision}
+        self._reviewer(args.get('actor'))
         def approve(conn,base,graph):
             self._check_evidence_attachments(conn,graph,authoring.iri(evidence_iri))
             changed = evidence.review_evidence(graph,evidence_iri,decision=decision,actor=args['actor'],reason=args['reason'])
@@ -245,6 +268,7 @@ class GovernanceService:
 
     def review_knowledge(self, ontology_id, *, entity_iris, decision, **args):
         call_args = {**args,'entity_iris':entity_iris,'decision':decision}
+        self._reviewer(args.get('actor'))
         def approve(conn,base,graph):
             if decision not in ('accepted','rejected') or not isinstance(entity_iris,list) or not 1 <= len(entity_iris) <= 128:
                 raise ValueError('知识审核需要明确对象集合与结论。')
@@ -320,10 +344,46 @@ class GovernanceService:
                     'changes': version_diff.diff_graphs(self._graph(conn, base), self._graph(conn, target))}
 
     def register_source(self, ontology_id, content, media_type):
-        """Register inert evidence bytes only after checking the target asset in the same transaction."""
+        """登记惰性证据字节：同资产同摘要复用已有来源，并限制单资产附件总量。"""
         with self._atomic(write=True) as conn:
             self._asset(conn, ontology_id)
-            return self.assets._put_source(conn, content, role='evidence', media_type=media_type)
+            conn.execute(UPLOADS)
+            sha = digest(content)
+            row = conn.execute('SELECT s.* FROM governance_source_uploads u JOIN sources s '
+                'ON s.source_asset_id=u.source_asset_id WHERE u.ontology_id=? AND u.sha256=?',
+                (ontology_id, sha)).fetchone()
+            if row is not None:
+                return self._sources(conn, [row['source_asset_id']])[0]
+            used = conn.execute('SELECT COALESCE(SUM(byte_size),0) FROM governance_source_uploads WHERE ontology_id=?',
+                                (ontology_id,)).fetchone()[0]
+            if used + len(content) > self.source_quota_bytes:
+                raise GovernanceError('quota_exceeded', '该本体的证据附件总量已达上限。')
+            record = None
+            for candidate in conn.execute("SELECT * FROM sources WHERE role='evidence' AND sha256=? AND byte_size=? "
+                                          'ORDER BY rowid', (sha, len(content))).fetchall():
+                try:
+                    record = self._sources(conn, [candidate['source_asset_id']])[0]
+                    break
+                except GovernanceError:
+                    continue
+            if record is None:
+                record = self.assets._put_source(conn, content, role='evidence', media_type=media_type)
+            conn.execute('INSERT INTO governance_source_uploads VALUES (?,?,?,?)',
+                         (ontology_id, sha, record['source_asset_id'], len(content)))
+            return record
+
+    def _reviewer(self, actor):
+        name = actor.strip() if isinstance(actor, str) else ''
+        folded = _person(name)
+        if not folded or folded in RESERVED_ACTORS or folded.startswith(RESERVED_PREFIXES):
+            raise GovernanceError('reviewer_invalid', '评审与发布需要具体的人署名，不能使用系统或模型身份。')
+        return name
+
+    def _authors(self, conn, oid, vid):
+        marks = ','.join('?' for _ in AUTHORING_EVENTS)
+        rows = conn.execute(f'SELECT record FROM governance_events WHERE ontology_id=? AND version_id=? '
+                            f"AND json_extract(record,'$.kind') IN ({marks})", (oid, vid, *AUTHORING_EVENTS))
+        return {_person(json.loads(r[0])['actor']) for r in rows}
 
     def read_payload(self, ontology_id, version_id):
         with self._atomic() as conn:
@@ -351,11 +411,16 @@ class GovernanceService:
             fingerprint,replay = self._retry(conn,ontology_id,'review',args)
             if replay is not None: return replay
             if decision not in ('accepted','rejected'): raise ValueError('审核结论不合法。')
+            reviewer = self._reviewer(actor)
             version = self._version(conn,ontology_id,version_id)
             if version['payload_sha256'] != payload_sha256: raise GovernanceError('integrity_conflict','审核摘要不一致。')
+            if _person(reviewer) in self._authors(conn,ontology_id,version_id):
+                raise GovernanceError('self_review','版本作者不能评审自己的版本，请由其他人评审。')
             report = self._report(conn,ontology_id,version,self._graph(conn,version))
+            # 署名由客户端声明，本仓无身份认证，记录中明确标注。
             record = {'review_id':_uid('review_'),'ontology_id':ontology_id,'version_id':version_id,
-                      'payload_sha256':payload_sha256,'decision':decision,'actor':actor,'reason':reason,
+                      'payload_sha256':payload_sha256,'decision':decision,'actor':reviewer,'reviewer':reviewer,
+                      'actor_source':'client_declared','authenticated_actor':False,'reason':reason,
                       'created_at':evidence.utc_now(),'report_sha256':_hash(report),'report':report}
             conn.execute('INSERT INTO governance_reviews VALUES (?,?,?,?)',(record['review_id'],ontology_id,version_id,json_text(record)))
             self._event(conn,ontology_id,version_id,'review',args,review_id=record['review_id'],decision=decision)
@@ -379,6 +444,7 @@ class GovernanceService:
         with self._atomic(write=True) as conn:
             fingerprint,replay = self._retry(conn,ontology_id,'publish',args)
             if replay is not None: return replay
+            self._reviewer(actor)
             self._cas(conn,ontology_id,expected_head_version_id,expected_revision)
             if expected_head_version_id != version_id: raise GovernanceError('head_conflict','只能发布当前工作头。')
             version = self._version(conn,ontology_id,version_id)
@@ -388,6 +454,8 @@ class GovernanceService:
             reviewed = json.loads(row[0]) if row else None
             if reviewed is None or reviewed['decision'] != 'accepted' or reviewed['payload_sha256'] != payload_sha256:
                 raise GovernanceError('review_conflict','缺少针对该版本和摘要的接受审核。')
+            if _person(reviewed.get('reviewer') or reviewed['actor']) in self._authors(conn,ontology_id,version_id):
+                raise GovernanceError('self_review','该审核由版本作者本人给出，请由其他人重新评审。')
             graph = self._graph(conn,version)
             report = self._report(conn,ontology_id,version,graph)
             if reviewed['report_sha256'] != _hash(report):

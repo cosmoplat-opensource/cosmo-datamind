@@ -147,7 +147,8 @@ def test_history_payload_and_version_get_stay_readable_after_delete(qa_http):
     path=f'/api/ontology-assets/{oid}/versions/{binding["version_id"]}'
     assert client.get(path).status_code==200
     assert request(client,oid).status_code==200
-    response=client.get(path);assert response.status_code==200 and response.json['lifecycle']['state']=='deleted'
+    assert client.get(path).status_code==409
+    response=client.get(path+"?state=deleted");assert response.status_code==200 and response.json["lifecycle"]["state"]=="deleted"
 
 
 def test_malformed_http_fields_and_if_match_cannot_modify_state(qa_http):

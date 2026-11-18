@@ -1,10 +1,8 @@
 """Ground task entities, profiles and applicability evidence — DR-143 / DR-144 / DR-147.
 
-Migrated from the T01 hash-verified upstream agent. Reads graph knowledge only;
+Migrated from the T01 hash-verified agent of the robotics source project. Reads graph knowledge only;
 user selection never modifies confirmation status or creates evidence.
 """
-from datetime import datetime, timezone
-import re
 from rdflib import Literal, RDF, RDFS, XSD
 from .graph import S, value, local_name
 from .consumer import check_mode
@@ -172,31 +170,12 @@ def compatibility_confirmed(g, kind, implementation, part_type, slot, *, mode="r
         check_mode(g, mode)
     except ValueError:
         return False
-    from .evidence import policy, evaluate_evidence
+    from .evidence import policy, evaluate_evidence, legacy_evidence_valid
     if policy(g):
         required = {'kind': kind, 'implementation': str(implementation), 'part_type': str(part_type)}
         if kind == 'placement_compatibility': required['slot'] = str(slot)
         return any(evaluate_evidence(g, str(item), revocations=revocations, required_scope=required)['valid']
                    for item in g.subjects(RDF.type, S.ReadinessEvidence))
-    source_hash = value(g, S.BehaviorTree_Source, "sha256")
-    if not re.fullmatch(r"[0-9a-f]{64}", source_hash):
-        return False
-    expected_status = "simulated" if mode == "demo" else "confirmed"
-    for item in g.subjects(RDF.type, S.ReadinessEvidence):
-        if (item, S.forImplementation, implementation) not in g or (item, S.forPartType, part_type) not in g:
-            continue
-        if kind == "placement_compatibility" and (item, S.forSlot, slot) not in g:
-            continue
-        if value(g, item, "evidenceKind") != kind or value(g, item, "confirmationStatus") != expected_status:
-            continue
-        if value(g, item, "sourceHash") != source_hash:
-            continue
-        if value(g, item, "evidenceReference").strip() in ("None", ""):
-            continue
-        try:
-            expiry = datetime.fromisoformat(value(g, item, "validUntil").replace("Z", "+00:00"))
-            if expiry.tzinfo is not None and expiry > datetime.now(timezone.utc):
-                return True
-        except ValueError:
-            continue
-    return False
+    return any(legacy_evidence_valid(g, item, kind=kind, implementation=implementation, part_type=part_type,
+                                     slot=slot, mode=mode, revocations=revocations)
+               for item in g.subjects(RDF.type, S.ReadinessEvidence))

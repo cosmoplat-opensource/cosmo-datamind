@@ -15,7 +15,7 @@
 """
 # 等待上限按引擎实测时延取(GLM 单轮问数 ~70s,含推理开销),而非按理想值
 import asyncio, os, sys
-from tests.browser_runtime import close_browser, managed_playwright
+from tests.browser_runtime import browser_executable, close_browser, managed_playwright
 
 # 被测地址:优先 DATAMIND_URL,否则由服务端同一套 DATAMIND_HOST/PORT 组合而来
 # ——不写死 IP 字面量,免得它与 server 的实际监听配置各自漂移。
@@ -31,10 +31,7 @@ def skip(n, why=""):  R["s"].append(f"{n} :: {why}"); print(f"  ⊘ {n} :: {why}
 
 async def launch_browser(pw):
     """优先复用本机浏览器；未找到时回落 Playwright 自带 Chromium。"""
-    candidates = [os.environ.get("DATAMIND_BROWSER_EXECUTABLE"),
-                  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-                  "/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser"]
-    executable = next((path for path in candidates if path and os.path.isfile(path)), None)
+    executable = browser_executable()
     return await pw.chromium.launch(executable_path=executable) if executable else await pw.chromium.launch()
 
 async def main():

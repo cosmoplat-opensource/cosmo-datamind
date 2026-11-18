@@ -1,4 +1,4 @@
-"""Real Chromium and persisted fixtures for Studio integration — DR-159 / IR-031 T04."""
+"""Real Chromium and persisted fixtures for Studio integration — DR-161 / IR-031 T04."""
 import argparse
 import importlib.util
 import json

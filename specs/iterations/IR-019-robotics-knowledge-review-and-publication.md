@@ -2,13 +2,13 @@
 
 > 引用的开发中间材料仅保留本地副本；历史记录不代表当前版本已验证。
 
-- **状态 / Status**: in-progress
+- **状态 / Status**: delivered（2026-11-18 由仓库维护者确认：代码已于 2026-11-17 经 PR #1 合入 master，合入后的审查与修复见 DR-159；原计划的逐步人审节点未单独记录）
 - **日期 / Date**: 2026-11-05
 - **当前环节**：T07 实现与全量回归 GREEN；用户要求简化默认体验，T08 整轮交付暂缓，由 [DR-148](../decisions/DR-148-minimal-robotics-task-workflow.md) / [IR-020](IR-020-minimal-robotics-task-workflow.md) 优先打通构建到行为树生成。
 - **关联 / Refs**: [[DR-141-unified-domain-semantic-graph]]、[[DR-142-robotics-source-recipes-and-reverse-build]]、[[DR-143-parameter-contracts-calibration-and-readiness]]、[[DR-145-local-domain-registration-and-application-ui]]、[[DR-146-persistent-build-runs-and-artifact-manifests]]、[[DR-147-robotics-migration-and-compatibility-validation]]。
 - **前置**：[IR-018](IR-018-robotics-build-api-and-ui.md) 已于 2026-11-04 经用户确认 delivered。
 - **方案**：集成 Proposal（本地材料） 步骤 4；步骤 5～6 的任务提取和行为树应用仍另立 IR。
-- **流程依据**：[SDD skill](../../.agents/skills/sdd-workflow/SKILL.md) 第③～⑤步；本轮范围确认与各批测试覆盖确认分别记录。
+- **流程依据**：先登记需求与验收映射，再依次运行失败测试、实现及回归；本轮范围确认与各批测试覆盖确认分别记录。
 
 ## 目标 Goal（已确认）
 

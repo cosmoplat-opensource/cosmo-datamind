@@ -4,7 +4,7 @@
 
 - **状态 / Status**：delivered（2026-11-17 按用户免等待 review 授权完成技术交付，17 阶段全量通过）。
 - **日期 / Date**：2026-11-17。
-- **关联 / Refs**：[DR-159](../decisions/DR-159-studio-ontology-visualization.md)、[IR-024](IR-024-robotics-dual-build.md)、[IR-027](IR-027-ontology-detail-experience.md)、[IR-032](IR-032-studio-data-visualization.md)。
+- **关联 / Refs**：[DR-161](../decisions/DR-161-studio-ontology-visualization.md)、[IR-024](IR-024-robotics-dual-build.md)、[IR-027](IR-027-ontology-detail-experience.md)、[IR-032](IR-032-studio-data-visualization.md)。
 - **工作分支 / Branch**：`feat/studio-ui-integration`。
 
 ## 目标 Goal
@@ -47,7 +47,7 @@
    迁入所需渲染、布局、标签和图状态代码，建立受控适配器，修复 SVG 标识冲突与资源释放。
    补充只读投影所需字段，保留完整 IRI、表达式与原始语义数据。
    以最小实现满足 T02，不修改已审测试断言来迁就实现。
-   新文件头及关键兼容点关联 DR-159，运行相关单元、组件和 HTTP 回归。
+   新文件头及关键兼容点关联 DR-161，运行相关单元、组件和 HTTP 回归。
 
 4. [x] **T04：构建与浏览集成 RED。**
    使用真实页面和隔离服务，覆盖类别生成、确认后补关系属性、修改删除、失败重试、返回类别修改和构建实例。
@@ -125,7 +125,7 @@ STV-R01／02／04／05／06 的实际测试已进入正式映射并标为 red，
 
 ## T05 页面 GREEN
 
-六项新浏览器检查、65 项相关基线、19 项旧构建浏览器和三项固定版本 HTTP 通过；历史选择器的两项旧断言按 DR-159 更新并补强只读验证，定向通过。
+六项新浏览器检查、65 项相关基线、19 项旧构建浏览器和三项固定版本 HTTP 通过；历史选择器的两项旧断言按 DR-161 更新并补强只读验证，定向通过。
 大类别通过 50 条分页可访问到最后实例；新增浏览器纳入标准完整检查链。
 详见 T05 记录（本地材料） 与 [使用说明](../../docs/studio-robotics-guide.md)。
 

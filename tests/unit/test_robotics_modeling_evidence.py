@@ -75,3 +75,19 @@ def test_bundled_vocabulary_has_pinned_identity_and_separate_term_kinds(monkeypa
     again = api('vocabulary').load_vocabulary()
     vocab['classes'].clear()
     assert again['classes'], 'Callers must not mutate a shared vocabulary cache'
+
+
+def test_designs_frozen_on_the_first_vocabulary_bytes_still_count_as_the_same_vocabulary():
+    """首版词表只改了 source 字段里的本机路径(换成占位符),术语未变:按首版字节冻结的设计仍按同一词表处理。"""
+    module = api('vocabulary')
+    assert module.same_vocabulary('eef9314fb13144a35efd659f6fd863dcc89cebf1ae0e54c3777bcdcf8e2a06aa')
+    assert module.same_vocabulary(module.load_vocabulary()['sha256'])
+    assert not module.same_vocabulary('0' * 64)
+
+
+def test_frozen_vocabulary_identity_survives_both_source_metadata_aliases():
+    module = api('vocabulary')
+    for digest in ('f90d2c16c92372ff904e8200641411b6873d415f105441fd5fc1915e1400e9dc',
+                   '866cfc32f78bcc37a31aefdeb32da68e6f31c5b7f05e08a368aed05cc1a96996'):
+        assert module.same_vocabulary(digest), 'Source-only metadata changes must retain frozen vocabulary identity'
+    assert not module.same_vocabulary('f' * 64)

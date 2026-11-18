@@ -155,9 +155,9 @@ class ApplicationService:
 
     def _automatic(self, conn, state, doc, core):
         """Fixed-ID policy, validated semantics and a known frozen vocabulary only."""
-        from domains.robotics.modeling.vocabulary import load_vocabulary
+        from domains.robotics.modeling.vocabulary import same_vocabulary
         frozen=doc['state']['vocabulary']['sha256']
-        trusted=frozen==load_vocabulary()['sha256']
+        trusted=same_vocabulary(frozen)
         required=state['role_proposal']['required_roles']
         problems=state['issues']
         unresolved=list({(i['kind'],i['role']):{'kind':i['kind'],'role':i['role']}

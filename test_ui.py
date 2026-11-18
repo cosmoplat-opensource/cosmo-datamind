@@ -7,7 +7,7 @@
    覆盖:18 页逐页渲染(激活可见/内容非空/零 pageerror)+ 子 UI 交互
    (弹窗开合/表单执行/详情点击/筛选过滤/图表渲染/技能复用问数)。"""
 import asyncio, json, sys
-from tests.browser_runtime import close_browser, managed_playwright
+from tests.browser_runtime import browser_executable, close_browser, managed_playwright
 
 import os
 # 被测地址:优先 DATAMIND_URL,否则由服务端同一套 DATAMIND_HOST/PORT 组合而来
@@ -27,10 +27,7 @@ def bad(name, why=""): R["fail"].append(f"{name} :: {why}"); print(f"  ✗ {name
 
 async def launch_browser(pw):
     """优先复用本机浏览器；未找到时回落 Playwright 自带 Chromium。"""
-    candidates = [os.environ.get("DATAMIND_BROWSER_EXECUTABLE"),
-                  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-                  "/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser"]
-    executable = next((path for path in candidates if path and os.path.isfile(path)), None)
+    executable = browser_executable()
     return await pw.chromium.launch(executable_path=executable) if executable else await pw.chromium.launch()
 
 async def main():

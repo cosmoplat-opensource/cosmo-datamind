@@ -1,4 +1,4 @@
-"""Read-only saved-design and canonical RDF graph projections — DR-159 §§3–6."""
+"""Read-only saved-design and canonical RDF graph projections — DR-161 §§3–6."""
 from copy import deepcopy
 import hashlib
 import json

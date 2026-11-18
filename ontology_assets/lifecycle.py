@@ -6,7 +6,6 @@ import re
 import sqlite3
 import uuid
 
-from srv_context import _RDF_LOCK
 from .payloads import json_text, validate_payload
 from .storage import Storage, digest
 from .store import AssetStore
@@ -27,6 +26,10 @@ class LifecycleError(ValueError):
             'legacy_changed': '读取期间旧本体或编辑已变化，请重新预览。',
             'legacy_snapshot_unavailable': '旧本体快照不可用，需要从备份恢复。',
         }.get(code, '本体生命周期检查未通过。'))
+
+
+def base_path(sha):
+    return f'legacy_bases/{sha}.json'
 
 
 def require(condition, code='invalid_request'):
@@ -150,8 +153,9 @@ class LifecycleService:
     @contextmanager
     def _atomic(self, *, write=False):
         require(not write or not self.read_only, 'read_only')
+        # 只用 SQLite 事务串行化:RDF 锁只保护 rdflib/pyparsing,生命周期查询不得排在 SPARQL 之后(DR-158)。
         try:
-            with _RDF_LOCK, self.storage.transaction(write=write) as conn: yield conn
+            with self.storage.transaction(write=write) as conn: yield conn
         except (OSError, sqlite3.Error): raise LifecycleError('storage_unavailable') from None
 
     def get(self, oid):
@@ -234,6 +238,19 @@ class LifecycleService:
         if row: return decode(row[0])
         raise LifecycleError('not_found')
 
+    def _put_base(self, value):
+        raw = json_text(value).encode()
+        sha = digest(raw)
+        relative = base_path(sha)
+        try: self.storage.read_bytes(relative, sha)
+        except FileNotFoundError: self.storage.write_bytes(relative, raw)
+        return sha
+
+    def load_base(self, sha):
+        require(isinstance(sha, str) and bool(re.fullmatch('[a-f0-9]{64}', sha)), 'legacy_snapshot_unavailable')
+        try: return json.loads(self.storage.read_bytes(base_path(sha), sha))
+        except (OSError, ValueError): raise LifecycleError('legacy_snapshot_unavailable') from None
+
     def resolve_legacy(self, key):
         with self._atomic() as conn: return self._legacy(conn,key)
 
@@ -268,7 +285,11 @@ class LifecycleService:
                           'lifecycle':{'ontology_id':None,'state':'deleted','revision':1,'protected':False},'restore_available':False}
                 conn.execute('INSERT INTO legacy_tombstones VALUES (?,?)',(key,json_text(result)))
                 return result
-            metadata = {'legacy_key':key,'provenance':decode(before)}
+            saved = decode(before)
+            if isinstance(saved.get('base_ir'), dict):
+                # 基线按内容寻址只存一份;版本元数据只记摘要。
+                saved['base_ir_sha256'] = self._put_base(saved.pop('base_ir'))
+            metadata = {'legacy_key':key,'provenance':saved}
             fingerprint = digest(content+b'\0'+json_text(metadata).encode())
             binding = conn.execute('SELECT * FROM legacy_assets WHERE legacy_key=?',(key,)).fetchone()
             assets = AssetStore.__new__(AssetStore); assets.storage = self.storage

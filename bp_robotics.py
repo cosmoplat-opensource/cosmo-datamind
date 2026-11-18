@@ -25,6 +25,7 @@ class Runtime:
     def __init__(self, root, enabled, limits, *, start_executor):
         self.root, self.enabled, self.limits = root, enabled, limits
         self.service = self.executor = self.design_executor = None
+        self.guards: dict = {}
         if enabled:
             self.service = BuildService(root, max_pending=limits['pending'], file_limit_bytes=limits['file_bytes'])
             if start_executor:
@@ -111,6 +112,19 @@ def _config(app, workdir):
     return root.resolve(), enabled, {'file_bytes': file_bytes, 'pending': pending, 'timeout_seconds': budget}
 
 
+def _guards(app):
+    """资源护栏：单资产附件总量与 RDF 三元组上限，独立于对外公开的 limits。"""
+    from ontology_assets.governance import MAX_TRIPLES, SOURCE_QUOTA_BYTES
+    result = {}
+    for name, key, default in (('asset_source_bytes', 'DATAMIND_ROBOTICS_ASSET_SOURCE_LIMIT_BYTES', SOURCE_QUOTA_BYTES),
+                               ('max_triples', 'DATAMIND_ROBOTICS_MAX_TRIPLES', MAX_TRIPLES)):
+        value = app.config[key] if key in app.config else os.environ.get(key, default)
+        if isinstance(value, bool) or not str(value).isdigit() or int(value) < 1:
+            raise ValueError(f'{key} 必须为正整数。')
+        result[name] = int(value)
+    return result
+
+
 def _invalid(message='请求字段或格式不符合契约。'):
     return BuildRequestError('invalid_request', message)
 
@@ -135,7 +149,9 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True, data_host=Non
     if 'robotics' in app.extensions:
         return app.extensions['robotics']
     root, enabled, limits = _config(app, workdir)
+    guards = _guards(app)
     runtime = Runtime(root, enabled, limits, start_executor=start_executor)
+    runtime.guards = guards
     bp = Blueprint('robotics', __name__)
 
     @bp.errorhandler(BuildRequestError)
@@ -290,7 +306,7 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True, data_host=Non
             raise BuildRequestError('artifact_integrity', '设计文件缺失或损坏。', 409) from exc
 
     def design_display(row):
-        # DR-159: saved state projects read-only; confirmation remains explicit.
+        # DR-161: saved state projects read-only; confirmation remains explicit.
         from ontology_assets.studio_view import project_design
         return {**row, 'studio': design_read(lambda: project_design(row))}
 
@@ -411,6 +427,11 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True, data_host=Non
 
     @bp.get('/api/ontology-assets/<ontology_id>/versions/<version_id>')
     def version(ontology_id, version_id):
+        # 已删除资产仅在显式 state=deleted 历史视图中可读（与目录的 state 参数一致）。
+        _query_fields({'state'})
+        if request.args.get('state', 'active') not in ('active', 'deleted'):
+            raise _invalid()
+        history = request.args.get('state') == 'deleted'
         from asset_lifecycle import root_for
         version_root=root_for(data_host) if data_host is not None else root
         if not (version_root / 'domain.sqlite3').exists():
@@ -419,12 +440,17 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True, data_host=Non
         from ontology_assets.lifecycle import LifecycleService
         row = assets.get_version(ontology_id, version_id)
         rid = row['metadata'].get('build_run_id')
-        result = {**row, 'lifecycle':LifecycleService(version_root,read_only=True).get(ontology_id),
+        lifecycle = LifecycleService(version_root,read_only=True).get(ontology_id)
+        deleted = lifecycle['state'] == 'deleted'
+        if deleted and not history:
+            raise BuildRequestError('ontology_deleted', '本体已移到回收站；查看历史请使用 state=deleted。', 409)
+        result = {**row, 'lifecycle':lifecycle,
                   'version_number': assets.version_number(ontology_id, version_id),
                   'asset': assets.get_asset(ontology_id), 'build_run_id': rid,
                   'sources': [assets.get_source(sid) for sid in row['source_asset_ids']]}
         if result['asset']['domain']=='data':
-            result['artifacts']=[{'name':'ontology.json','kind':'data_ontology','download_url':url_for('asset_lifecycle.data_payload',oid=ontology_id,vid=version_id)}]
+            result['artifacts']=[{'name':'ontology.json','kind':'data_ontology','download_url':url_for('asset_lifecycle.data_payload',oid=ontology_id,vid=version_id,
+                **({'state':'deleted'} if deleted else {}))}]
         is_design = row['metadata'].get('design_contract') is not None
         from ontology_assets.robotics_application import ApplicationAssets, is_application
         application = is_application(row)

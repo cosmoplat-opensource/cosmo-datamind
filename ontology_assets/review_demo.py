@@ -36,8 +36,8 @@ def write(path, body):
     path.write_text(json.dumps(body, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 
 
-def identity():
-    return {'request_id': 'demo-' + uuid.uuid4().hex, 'actor':'离线合成演示',
+def identity(actor='离线合成演示'):
+    return {'request_id': 'demo-' + uuid.uuid4().hex, 'actor':actor,
             'reason':'仅验证软件契约，不证明机器人现场适配'}
 
 
@@ -65,7 +65,7 @@ def build(root, name, source=None):
 
 def publish(service, version):
     oid, vid = version['ontology_id'], version['version_id']
-    reviewed = service.review(oid, vid, payload_sha256=version['payload_sha256'], decision='accepted', **identity())
+    reviewed = service.review(oid, vid, payload_sha256=version['payload_sha256'], decision='accepted', **identity('离线合成评审'))
     head = service.head(oid)
     published = service.publish(oid, version_id=vid, payload_sha256=version['payload_sha256'], review_id=reviewed['review_id'],
                                 expected_head_version_id=head['version_id'], expected_revision=head['revision'], **identity())

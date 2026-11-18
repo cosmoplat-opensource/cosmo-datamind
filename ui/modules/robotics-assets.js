@@ -3,7 +3,8 @@
   'use strict';
   const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const errorText = error => [error.status ? `HTTP ${error.status}` : '', error.code, error.message].filter(Boolean).join(' · ');
-  const versionLink = (oid, vid) => '#library?asset=' + encodeURIComponent(oid) + '&version=' + encodeURIComponent(vid);
+  // 已删除本体的版本只能在 state=deleted 的历史视图里打开
+  const versionLink = (oid, vid, deleted) => '#library?asset=' + encodeURIComponent(oid) + '&version=' + encodeURIComponent(vid) + (deleted ? '&state=deleted' : '');
   const runLink = rid => '#build?recipe=robotics&run=' + encodeURIComponent(rid);
   const assetIcon = '<svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m12 3 9 5-9 5-9-5 9-5Zm-9 9 9 5 9-5M3 16l9 5 9-5"/></svg>';
   const domainIcon = domain => '<svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' + (domain === 'robotics'
@@ -54,11 +55,11 @@
         } catch (e) { if (dead || token !== catalogToken) return; state.items = []; state.error = failure(e); state.loading=false; state.catalogLoaded=true; }
         notify();
       },
-      async openVersion(oid, vid) {
+      async openVersion(oid, vid, deleted) {
         const token = ++detailToken;
         state.detail = null; state.error = null; notify();
         try {
-          const body = await json(fetcher, '/api/ontology-assets/' + encodeURIComponent(oid) + '/versions/' + encodeURIComponent(vid));
+          const body = await json(fetcher, '/api/ontology-assets/' + encodeURIComponent(oid) + '/versions/' + encodeURIComponent(vid) + (deleted ? '?state=deleted' : ''));
           if (dead || token !== detailToken) return;
           if (body.ontology_id !== oid || body.version_id !== vid) throw new Error('返回的本体或版本身份不匹配。');
           state.detail = body; state.error = null;
@@ -155,7 +156,7 @@
         list.innerHTML = state.items.map(item => {
           const legacy = item.entry_kind === 'legacy_reference';
           const title = escape(item.name || item.legacy_key || '未命名本体');
-          const link = item.lifecycle?.state==='deleted'&&item.version_id ? `<a href="${escape(versionLink(item.ontology_id,item.version_id))}">查看固定版本</a>` : legacy || (item.domain === 'data' && item.legacy_key)
+          const link = item.lifecycle?.state==='deleted'&&item.version_id ? `<a href="${escape(versionLink(item.ontology_id,item.version_id,true))}">查看固定版本</a>` : legacy || (item.domain === 'data' && item.legacy_key)
             ? `<a href="#graph=${escape(encodeURIComponent(item.legacy_key))}">打开数据图谱</a>`
             : item.domain==='robotics'&&item.version_id ? `<a href="${escape(global.RoboticsViews.link(item.ontology_id,item.version_id))}">打开图谱</a>`
             : item.version_id ? `<a href="${escape(versionLink(item.ontology_id,item.version_id))}">查看固定版本</a>` : '<span class="muted">暂无版本</span>';
@@ -165,7 +166,7 @@
       }
     }});
     active = controller;
-    if (version) controller.openVersion(oid || '', vid || '');
+    if (version) controller.openVersion(oid || '', vid || '', params.get('state') === 'deleted');
     else {
       doc.getElementById('ra_domain').onchange = event => {
         if (legacy) legacy.hidden = event.target.value === 'robotics'||doc.getElementById('ra_state').value==='deleted';

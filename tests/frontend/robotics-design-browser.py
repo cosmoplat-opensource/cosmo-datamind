@@ -23,13 +23,16 @@ from tests.robotics_browser_support import choose_robotics, fill_robotics, submi
 from tests.robotics_design_browser_support import DesignSite, model_reply
 from tests.robotics_design_support import Harness, proposals
 from tests.robotics_task_support import model_server
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from tests.browser_runtime import browser_executable  # noqa: E402
 
 
 @pytest.fixture(scope='session')
 def browser():
     with sync_playwright() as pw:
-        executable = next((p for p in (os.environ.get('DATAMIND_BROWSER_EXECUTABLE'),
-            '/usr/bin/google-chrome', '/usr/bin/chromium') if p and Path(p).is_file()), None)
+        executable = browser_executable()
         instance = pw.chromium.launch(executable_path=executable)
         yield instance
         instance.close()
@@ -187,7 +190,7 @@ def test_model_ui_stage_confirmations_final_downloads_and_history(live):
         site.evidence['downloads'].append({'name': target.name, 'bytes': len(expected)})
     page.goto(site.url + '/#build?recipe=robotics&session=' + sid)
     wait_design(page, sid, 'abox', 'completed')
-    # DR-159: graph history is explicitly read-only; historical bytes remain unchanged.
+    # DR-161: graph history is explicitly read-only; historical bytes remain unchanged.
     expect(page.get_by_label('设计修订', exact=True)).to_be_visible()
     assert DesignService(site.root, read_only=True).export_revision(sid, schema['revision'], format='json') == old_json
     assert session(site, sid)['revision'] == final['revision'] and len(calls) == 2

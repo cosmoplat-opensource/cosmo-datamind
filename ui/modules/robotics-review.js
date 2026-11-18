@@ -11,7 +11,7 @@
   }
   function createController(options = {}) {
     const fetcher = options.fetch || global.fetch.bind(global), emit = options.onChange || (() => {});
-    const requestId = options.requestId || (() => global.crypto.randomUUID());
+    const requestId = options.requestId || (() => global.dmRequestId());
     let dead = false, generation = 0, edits = 0, identity = {actor:'',reason:''}, retry = null;
     const state = {enabled:false, knowledge:null, operations:[], dirty:false, busy:false, error:null, review:null, diff:null, mergePreview:null};
     const snapshot = () => copy(state), notify = () => { if (!dead) emit(snapshot()); };

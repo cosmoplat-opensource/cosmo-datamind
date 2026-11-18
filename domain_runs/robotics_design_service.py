@@ -2,6 +2,7 @@
 from copy import deepcopy
 import json
 import sqlite3
+import time
 import uuid
 
 from domains.robotics.modeling import abox, evidence, export, tbox, vocabulary
@@ -36,7 +37,7 @@ def _public(record):
 
 class DesignService:
     def __init__(self, root, *, route_resolver=None, max_pending=4, read_only=False,
-                 file_limit_bytes=10 * 1024 * 1024):
+                 file_limit_bytes=10 * 1024 * 1024, run_timeout_seconds=900):
         if type(max_pending) is not int or not 1 <= max_pending <= 64:
             raise ValueError('等待任务上限必须为 1～64。')
         if type(file_limit_bytes) is not int or file_limit_bytes <= 0:
@@ -46,6 +47,8 @@ class DesignService:
         self.storage = self.runs.storage
         self.route_resolver = resolve_route if route_resolver is None else route_resolver
         self.max_pending, self.file_limit_bytes = max_pending, file_limit_bytes
+        # 单次运行的总时限:阶段之间核对,超时记为失败,避免一次慢运行长期占住执行队列。
+        self.run_timeout_seconds = run_timeout_seconds
 
     def _get(self, conn, session_id):
         valid_text(session_id, 'session_id')
@@ -361,6 +364,7 @@ class DesignService:
         # Validator errors can quote untrusted provider content; persist only controlled messages.
         message = {'source_integrity': '来源缺失或损坏，原设计已保留。',
             'configuration_changed': '模型身份已变化，请恢复原配置或新建设计。',
+            'design_timeout': '本轮设计超过时间预算，原有效修订已保留，可显式重试。',
             'unsupported_source': 'XML 包含当前抽取器不支持的结构。'}.get(code, '本轮设计失败，原有效修订已保留，可显式重试。')
         issues = deepcopy(getattr(exc, 'issues', None) or []) if code == 'unsupported_source' else []
         if code=='model_request_failed':
@@ -390,6 +394,13 @@ class DesignService:
             except sqlite3.IntegrityError:
                 raise ValueError('此设计运行已开始执行。') from None
             record = self._get(conn, initial['session_ref']['id'])
+        deadline = time.monotonic() + self.run_timeout_seconds
+
+        def remaining():
+            left = deadline - time.monotonic()
+            if left <= 0:
+                raise _error('design_timeout', '设计运行超过时间预算。')
+            return left
         try:
             with self.storage.transaction() as conn:
                 self._check_snapshot(conn, record)
@@ -400,7 +411,7 @@ class DesignService:
             if initial['operation'] == 'design_tbox':
                 route = self._route(record)
                 revised = tbox.revise(state, initial['design_input']['text'], route,
-                    session_id=record['session_id'], timeout=300)
+                    session_id=record['session_id'], timeout=min(300, remaining()))
                 product, ontology = None, None
             else:
                 if contracts.mapping_digest() != initial['design_input']['mapping_sha256']:
@@ -412,6 +423,7 @@ class DesignService:
                 document = contracts.envelope(record, run=initial, abox=product['result'], coverage=product['report'],
                     validation=contracts.candidate_outcome(), output_asset_ref=None, payload_sha256=digest(ontology))
                 contracts.validate_candidate(document, ontology, initial)
+            remaining()
             with self.storage.transaction(write=True) as conn:
                 run, current, active = self._current(conn, initial)
                 if not active:

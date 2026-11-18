@@ -1,4 +1,4 @@
-"""Keep local review materials outside the published product tree — DR-162."""
+"""Keep local review materials outside the published product tree — DR-160."""
 from fnmatch import fnmatchcase
 from pathlib import Path
 import re

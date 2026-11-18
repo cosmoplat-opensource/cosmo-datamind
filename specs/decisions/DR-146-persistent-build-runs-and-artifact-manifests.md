@@ -1,12 +1,12 @@
 # DR-146 · 持久化运行、会话隔离与工件追溯
 
-- **状态 / Status**: proposed
+- **状态 / Status**: accepted（2026-11-18 由仓库维护者确认：代码已于 2026-11-17 经 PR #1 合入 master，合入后的审查与修复见 DR-159）
 - **日期 / Date**: 2026-11-02
 - **关联 / Refs**: [[DR-044-json-store-abstraction]]、[[DR-056-evidence-integrity-and-isolated-validation]]、[[DR-141-unified-domain-semantic-graph]]、[[DR-144-behavior-tree-compilation-as-ontology-application]]
 
 ## 上下文 / Context
 
-DataMind 当前 JOBS 与 upstream 的会话都主要依赖进程内状态，无法作为完整的跨重启运行历史。
+DataMind 当前 JOBS 与源项目的会话都主要依赖进程内状态，无法作为完整的跨重启运行历史。
 DataMind 已有对话持久化：本体对话保存在服务端 ont_chats.json，构建对话历史保存在浏览器 localStorage。
 已有消息历史应复用，新增需求是将固定输入版本、任务状态、验证过程与产物可靠关联，而不是重建一套聊天系统。
 AgentService 当前使用一个 RLock 包围整次任务处理，包括模型调用，会串行化不同用户会话。

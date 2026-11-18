@@ -1,6 +1,6 @@
 """Trusted publication protocol and SHACL checks — DR-142 / DR-147.
 
-Validation migrated from the hash-verified upstream agent; source details in IR-016.
+Validation migrated from the hash-verified agent of the robotics source project; source details in IR-016.
 """
 import hashlib
 from pathlib import Path

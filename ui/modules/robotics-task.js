@@ -19,7 +19,7 @@
   }
   function createController(options={}){
     const fetcher=options.fetch || global.fetch.bind(global), emit=options.onChange || (()=>{}),
-      requestId=options.requestId || (()=>global.crypto.randomUUID());
+      requestId=options.requestId || (()=>global.dmRequestId());
     let state={session:null,answers:{},noteDrafts:{},notice:null,error:null,busy:false}, generation=0,dead=false,lastRequest=null;
     const snapshot=()=>copy(state), notify=()=>{if(!dead)emit(snapshot());};
     function savedAnswers(){for(const gap of state.session?.gaps||[])
@@ -122,7 +122,7 @@
       if(button.disabled)return;button.disabled=true;
       try{
         const issue=r.issues.find(i=>i.issue_id===button.dataset.issueId),action=issue.repair_actions.find(a=>a.action_id===button.dataset.actionId);
-        const requestId=button.dataset.requestId||(button.dataset.requestId=global.crypto.randomUUID());
+        const requestId=button.dataset.requestId||(button.dataset.requestId=global.dmRequestId());
         const reply=await json(global.fetch.bind(global),'/api/application-checks/'+encodeURIComponent(r.check_id)+'/repairs',
           {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({issue_id:issue.issue_id,action_id:action.action_id,input:{},expected_revision:action.target.expected_revision,request_id:requestId})});
         if(active!==view)return;
@@ -140,7 +140,7 @@
     if(!params.get('session') && params.get('asset') && (params.get('assess') || params.get('check')) && !params.get('prepare')){
       const view={};active=view;
       // Persist admission before sending: refresh and lost responses replay the same operation.
-      if(!params.get('entry'))params.set('entry',global.crypto.randomUUID());
+      if(!params.get('entry'))params.set('entry',global.dmRequestId());
       replaceRoute(params);
       const evaluate=async()=>{
         host.innerHTML='<p role="status">正在检查行为树应用要求…</p>';
@@ -158,7 +158,7 @@
           }
           host.innerHTML=checkMarkup(response);bindRepairs(host,view,response);
           host.querySelector('[data-recheck]').onclick=()=>{
-            params.delete('check');params.delete('readonly');params.set('assess','1');params.set('entry',global.crypto.randomUUID());replaceRoute(params);evaluate();
+            params.delete('check');params.delete('readonly');params.set('assess','1');params.set('entry',global.dmRequestId());replaceRoute(params);evaluate();
           };
         }catch(e){if(active===view){host.innerHTML=`<p role="alert">${esc(e.message)}</p><button type="button" class="ra-button" data-retry>重试检查</button>`;host.querySelector('[data-retry]').onclick=evaluate;}}
       };
@@ -263,7 +263,7 @@
       host.querySelectorAll('[data-attachment]').forEach(el=>el.onchange=async()=>{if(!el.files[0])return;const form=new FormData();form.append('file',el.files[0]);try{const file=await json(global.fetch.bind(global),'/api/ontology-assets/'+encodeURIComponent(s.ontology_id)+'/evidence-sources',{method:'POST',body:form});if(!stillCurrent())return;set(el.dataset.attachment,{source_asset_ids:[file.source_asset_id]});render(view.controller.snapshot());}catch(e){if(stillCurrent())showError(e.message);}});
       host.querySelectorAll('[data-choice]').forEach(el=>el.onchange=()=>{if(el.value)view.controller.choose({field:el.dataset.choice,target:el.value});});
       host.querySelectorAll('[data-create-choice]').forEach(el=>el.onclick=()=>{const field=el.dataset.createChoice,label=global.prompt('请输入当前任务所需对象的名称');if(label)view.controller.choose({field,create:{kind:({part:'Workpiece',station:'Workstation',carrier:'Carrier',slot:'PlacementSlot'})[field],label}});});
-      host.querySelector('[data-demo]')?.addEventListener('click',async event=>{const button=event.currentTarget;button.disabled=true;try{const result=await json(global.fetch.bind(global),'/api/robotics/task-demo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({request_id:global.crypto.randomUUID()})});if(stillCurrent()){view.text='';view.creates={};await view.controller.restore(result.session_id);}}catch(e){if(stillCurrent())showError(e.message);}finally{if(button.isConnected)button.disabled=false;}});
+      host.querySelector('[data-demo]')?.addEventListener('click',async event=>{const button=event.currentTarget;button.disabled=true;try{const result=await json(global.fetch.bind(global),'/api/robotics/task-demo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({request_id:global.dmRequestId()})});if(stillCurrent()){view.text='';view.creates={};await view.controller.restore(result.session_id);}}catch(e){if(stillCurrent())showError(e.message);}finally{if(button.isConnected)button.disabled=false;}});
       host.querySelector('[data-download]')?.addEventListener('click',async e=>{e.preventDefault();try{const response=await global.fetch(e.currentTarget.href);if(!response.ok){const problem=await response.json();throw new Error(problem.error?.message||'下载失败');}const blob=await response.blob();if(!stillCurrent())return;const url=URL.createObjectURL(blob),a=global.document.createElement('a');a.href=url;a.download='behavior-tree.xml';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(e){if(stillCurrent())showError(e.message);}});
       if(error){
         const notice=host.querySelector('.rt-error');
@@ -301,7 +301,7 @@
     const wrap=global.document.createElement('div');wrap.className='rt-import';
     wrap.innerHTML='<button type="button" data-rt-import>导入机器人 OWL</button><form hidden><label>本体名称<input name="name" required></label><label>OWL 文件<input name="file" type="file" accept=".owl" required></label><button>导入</button><p role="alert" hidden></p></form>';
     host.prepend(wrap);wrap.querySelector('button').onclick=()=>{wrap.querySelector('form').hidden=false;};
-    wrap.querySelector('form').onsubmit=async e=>{e.preventDefault();const form=new FormData(e.currentTarget);form.set('mode','real');form.set('request_id',global.crypto.randomUUID());try{const r=await json(global.fetch.bind(global),'/api/robotics/imports',{method:'POST',body:form});global.location.hash=link(r.ontology_id,r.version_id,r.mode);}catch(err){const p=wrap.querySelector('[role=alert]');p.hidden=false;p.textContent=err.message;}};
+    wrap.querySelector('form').onsubmit=async e=>{e.preventDefault();const form=new FormData(e.currentTarget);form.set('mode','real');form.set('request_id',global.dmRequestId());try{const r=await json(global.fetch.bind(global),'/api/robotics/imports',{method:'POST',body:form});global.location.hash=link(r.ontology_id,r.version_id,r.mode);}catch(err){const p=wrap.querySelector('[role=alert]');p.hidden=false;p.textContent=err.message;}};
   }
   global.RoboticsTask={createController,page,link,importButton,displayLabel,renderTree};
 })(window);

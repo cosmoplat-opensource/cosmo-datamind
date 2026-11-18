@@ -346,14 +346,14 @@ python3 -m venv .venv
 
 ### 开发约定(DR-066)
 
-见 [AGENTS.md](AGENTS.md)。主要的回归手段是场景回归基准(DR-067):用湖仓、元数据业务库和名称—取值型指标库的合成数据端到端运行构建前检查、构建、复核与问数,与标准答案比对;`python3 scripts/scenario_bench.py` 逐项打印检查结果。此外有三类自动检查:流水线说明与构建代码的步骤一致
+主要的回归手段是场景回归基准(DR-067):用湖仓、元数据业务库和名称—取值型指标库的合成数据端到端运行构建前检查、构建、复核与问数,与标准答案比对;`python3 scripts/scenario_bench.py` 逐项打印检查结果。此外有三类自动检查:流水线说明与构建代码的步骤一致
 (`tests/meta/test_models.py`)、领域模块不依赖 Web 层(`tests/meta/test_architecture.py`)、
 表族识别与观测脱敏的性质测试(`tests/unit/test_properties.py`)。构建与问数的追踪和指标见
 `/api/obs/metrics`、`/api/obs/runs`。
 
 ## 贡献
 
-欢迎 issue 与 PR。改动请按 [AGENTS.md](AGENTS.md) 先写测试并登记需求,附上对应的 DR 说明,并保证
+欢迎 issue 与 PR。改动请先写测试并登记需求,附上对应的 DR 说明,并保证
 `scripts/check.py --suite unit` 全部通过、`test_all.py` 不出现新的失败项。
 安全问题请勿公开提交,见 [SECURITY.md](SECURITY.md)。
 

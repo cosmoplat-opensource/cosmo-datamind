@@ -1,13 +1,13 @@
 # DR-143 · 参数依据、适配证据与分层准入
 
-- **状态 / Status**: proposed
+- **状态 / Status**: accepted（2026-11-18 由仓库维护者确认：代码已于 2026-11-17 经 PR #1 合入 master，合入后的审查与修复见 DR-159）
 - **日期 / Date**: 2026-11-02
 - **关联 / Refs**: [[DR-054-metric-contract-and-lifecycle]]、[[DR-056-evidence-integrity-and-isolated-validation]]、[[DR-141-unified-domain-semantic-graph]]、[[DR-142-robotics-source-recipes-and-reverse-build]]
 
 ## 上下文 / Context
 
 历史 XML 的数值可证明来源配置，不能证明其适用于当前对象、机器人、坐标系或槽位。
-upstream 构建侧允许不完整草稿，agent 则在缺少业务映射或适配证据时拒绝生成候选。
+源项目构建侧允许不完整草稿，agent 则在缺少业务映射或适配证据时拒绝生成候选。
 直接复用指标的 candidate/verified/certified 状态机并统一阻断所有输出，会丢失作者草稿能力且混淆不同证据含义。
 本体协议合法、参数有来源、适配已确认与机器人可执行是不同结论。
 
@@ -28,7 +28,7 @@ upstream 构建侧允许不完整草稿，agent 则在缺少业务映射或适�
 
 ## 后果 / Consequences
 
-- 正面影响：既支持工程师逐步完善知识，又保留 upstream 严格生成入口的证据边界。
+- 正面影响：既支持工程师逐步完善知识，又保留源项目严格生成入口的证据边界。
 - 正面影响：UI 能解释到底缺少哪一类知识，避免单个“通过”状态误导用户。
 - 代价：领域报告和评审 UI 需要展示多个独立维度，不能机械复用指标认证页面。
 - 代价：真实样例缺证据时仍不能产出严格候选，演示成功不能代替真实适配验收。

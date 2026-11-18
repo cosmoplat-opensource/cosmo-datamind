@@ -1,4 +1,4 @@
-/* Shared graph controller behavioral oracles — DR-159 / IR-031 T02 RED. */
+/* Shared graph controller behavioral oracles — DR-161 / IR-031 T02 RED. */
 import assert from 'node:assert/strict';
 import {existsSync} from 'node:fs';
 import {pathToFileURL} from 'node:url';
@@ -31,7 +31,7 @@ function fixture(revision=1,key='design_A'){
     edges:[{id:'sub',source:ns+'B',target:ns+'A',predicate:'http://www.w3.org/2000/01/rdf-schema#subClassOf',kind:'subclass'}]};
 }
 const modulePath=path.resolve('ui/modules/studio/controller.js');
-assert(existsSync(modulePath),'DR-159 requires the shared StudioController; product module is not implemented');
+assert(existsSync(modulePath),'DR-161 requires the shared StudioController; product module is not implemented');
 const {StudioController}=await import(pathToFileURL(modulePath));
 const position=(c,id)=>new Map(c.capture().positions).get(ns+id);
 const visit=(element,fn)=>{fn(element);element.children.forEach(e=>visit(e,fn));};

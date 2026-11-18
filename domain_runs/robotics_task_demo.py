@@ -11,11 +11,13 @@ from rdflib import Graph
 from domains.robotics import demo, consumer
 from domains.robotics.task_model import ModelClient
 from ontology_assets import AssetStore
+from ontology_assets.lifecycle import state_in
+from ontology_assets.storage import digest
 from srv_context import _RDF_LOCK
 
 from . import RunStore
 from .robotics_build import compute_build
-from .robotics_task_service import TaskService
+from .robotics_task_service import TaskError, TaskService
 
 EXAMPLES = Path(__file__).resolve().parents[1] / 'domains/robotics/resources/task_demo'
 TEXT = '生成把零部件A放到工位B载具B01放置位B01的行为树'
@@ -54,8 +56,54 @@ def build_example(root, *, mode='real'):
             parent_version_id=version['version_id'],
             source_asset_ids=version['source_asset_ids'] + [supplement['source_asset_id']],
             metadata={'mode': 'demo', 'profile_id': 'ur_pick_place', 'synthetic_inputs': True,
-                      'origin_build_run_id': run['run_id']})
+                      'origin_build_run_id': run['run_id'], 'packaged_demo_sha256': packaged_digest()})
     return version
+
+
+def packaged_digest():
+    """打包示例输入的内容摘要，用于复用已构建的演示版本。"""
+    files = ('behavior_tree.xml', 'node_models.xml', 'supplement.json')
+    return digest(json.dumps([digest((EXAMPLES / f).read_bytes()) for f in files]).encode())
+
+
+def packaged_demo(root):
+    """复用仍处于有效状态的同内容演示版本；没有时才构建。"""
+    assets = AssetStore(root)
+    with assets.storage.transaction() as conn:
+        rows = conn.execute("SELECT ontology_id, version_id FROM versions WHERE "
+            "json_extract(metadata,'$.packaged_demo_sha256')=? ORDER BY rowid DESC", (packaged_digest(),)).fetchall()
+        for row in rows:
+            if state_in(conn, row['ontology_id'])['state'] == 'active':
+                return assets.get_version(row['ontology_id'], row['version_id'])
+    return build_example(root, mode='demo')
+
+
+def _forget(service, request_id):
+    with service._atomic() as conn:
+        conn.execute('DELETE FROM robotics_task_requests WHERE scope=? AND request_id=? AND response IS NULL',
+                     ('demo', request_id))
+
+
+def start_demo(service, *, request_id, slots):
+    """演示入口：重放优先，构建并发受限，失败时撤回占位请求。"""
+    with service._atomic() as conn:
+        replay = service._request(conn, 'demo', request_id, 'demo', {})
+        if replay is not None:
+            return replay
+    if not slots.acquire(blocking=False):
+        _forget(service, request_id)
+        raise TaskError('demo_busy', '演示示例正在准备，请稍后重试。')
+    try:
+        version = packaged_demo(service.root)
+        state = service.start(ontology_id=version['ontology_id'], version_id=version['version_id'],
+                              mode='demo', request_id=request_id)
+    except BaseException:
+        _forget(service, request_id)
+        raise
+    finally:
+        slots.release()
+    with service._atomic() as conn:
+        return service._reply(conn, 'demo', request_id, state)
 
 
 def synthetic_model(*, fail=False, clarification=False):

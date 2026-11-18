@@ -94,7 +94,11 @@ def get_service(runtime, *, write=False):
     if not (runtime.root / 'domain.sqlite3').exists():
         raise KeyError('missing storage')
     try:
-        return GovernanceService(runtime.root, read_only=not write)
+        guards = getattr(runtime, 'guards', None) or {}
+        options = {'max_triples': guards['max_triples']} if 'max_triples' in guards else {}
+        if 'asset_source_bytes' in guards:
+            options['source_quota_bytes'] = guards['asset_source_bytes']
+        return GovernanceService(runtime.root, read_only=not write, **options)
     except (ValueError, OSError, sqlite3.Error) as exc:
         raise BuildRequestError('storage_unavailable', '存储暂不可用，请稍后重试。', 503) from exc
 
@@ -135,13 +139,18 @@ def init_app(app, runtime):
         if exc.code == 'not_found': return not_found(exc)
         if exc.code == 'view_unavailable':
             return request_error(BuildRequestError(exc.code, str(exc), 422))
+        if exc.code in ('quota_exceeded', 'ontology_too_large'):
+            return request_error(BuildRequestError(exc.code, str(exc), 413))
+        if exc.code == 'reviewer_invalid':
+            return request_error(BuildRequestError(exc.code, str(exc), 422))
         if exc.code == 'invalid_request':
             return request_error(BuildRequestError('domain_validation', '知识、证据或本体结构不符合领域约束。', 422))
         messages = {'head_conflict': '工作头已变化，请保留输入并比较新版本。',
                     'request_conflict': '此请求 ID 已用于其他输入。',
                     'review_conflict': '审核与当前版本或验证结论不一致，请重新审核。',
                     'merge_conflict': '来源基线、合并预览或冲突选择不满足提交条件。',
-                    'integrity_conflict': '登记内容缺失、损坏或与固定摘要不一致。'}
+                    'integrity_conflict': '登记内容缺失、损坏或与固定摘要不一致。',
+                    'self_review': '版本作者不能评审自己的版本，请由其他人评审。'}
         return request_error(BuildRequestError(exc.code, messages.get(exc.code, '治理请求发生冲突。'), 409))
 
     @bp.errorhandler(KeyError)
@@ -187,7 +196,7 @@ def init_app(app, runtime):
         from application_contracts.adapters import service as application_checks
         assets = runtime.assets()
         if view == 'studio':
-            # DR-159: use the same provenance readers as fixed-version exports.
+            # DR-161: use the same provenance readers as fixed-version exports.
             from ontology_assets.studio_view import project_version
             from ontology_assets.robotics_application import ApplicationAssets, is_application
             from ontology_assets.robotics_offline import OfflineAssets

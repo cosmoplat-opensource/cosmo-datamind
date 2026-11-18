@@ -3,7 +3,7 @@
 > 2026-11-05 基础版优先级由 [DR-148](DR-148-minimal-robotics-task-workflow.md) / [IR-020](../iterations/IR-020-minimal-robotics-task-workflow.md) 调整：参数、业务映射及必要适配在任务页按缺口补齐；不依赖 Protégé，当前仅显示一个版本。
 > 下文全图维护、版本比较/合并和通用审核为后续能力，不作为生成前置。
 
-- **状态 / Status**: proposed
+- **状态 / Status**: accepted（2026-11-18 由仓库维护者确认：代码已于 2026-11-17 经 PR #1 合入 master，合入后的审查与修复见 DR-159）
 - **日期 / Date**: 2026-11-02
 - **关联 / Refs**: [[DR-005-frontend-design-system]]、[[DR-007-url-hash-routing]]、[[DR-043-blueprint-modularization]]、[[DR-141-unified-domain-semantic-graph]]、[[DR-144-behavior-tree-compilation-as-ontology-application]]
 
