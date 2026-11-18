@@ -316,10 +316,11 @@ GLM 的配置步骤(OpenAI 端点的配置方式相同,但未实测)、用自然
 ## 测试
 
 ```bash
-# 单元层:离线,不需起服务(确定性模块的隔离测试;整套耗时随环境变化)
+# 单元测试会启动临时服务，并用 Chromium 验证本体详情页。
 python3 -m venv .venv
 .venv/bin/python -m pip install --upgrade pip==26.2
-.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/pip install -r requirements-dev.txt -r requirements-ui.txt
+.venv/bin/python -m playwright install chromium
 .venv/bin/python -m pytest tests/ -q      # 单测 + 文档与规格映射自检
 .venv/bin/coverage run -m pytest tests/ -q && .venv/bin/coverage report   # 全部模块低于74.0%时失败;分层下限见 scripts/check.py
 
