@@ -332,7 +332,7 @@ def test_application_click_checks_once_and_reload_only_reads_history(live, entry
     assert application_posts(site) == []
     before, files = db_rows(site.root), blob_bytes(site.root)
     with page.expect_response(lambda r: r.request.method == 'POST' and
-                             r.url == site.url + '/api/application-checks') as pending:
+                             r.url == site.url + '/api/application-checks', timeout=30000) as pending:
         action.click()
     assert pending.value.status == 201, pending.value.text()
     sent = pending.value.request.post_data_json
@@ -371,7 +371,7 @@ def test_application_without_task_never_claims_execution_ready(live):
     site, page, calls = live; ref = site.prepared['output_asset_ref']
     page.goto(site.url + '/#library?asset=' + ref['ontology_id'] + '&version=' + ref['version_id'])
     with page.expect_response(lambda r: r.request.method == 'POST' and
-                             r.url == site.url + '/api/application-checks') as pending:
+                             r.url == site.url + '/api/application-checks', timeout=30000) as pending:
         page.get_by_role('link', name=re.compile('^(基于此本体)?生成行为树')).click()
     assert pending.value.status == 201
     report = pending.value.json()['report']
@@ -464,7 +464,7 @@ def application_repair(page, action_id):
 def assess_candidate(page, site, ref, *, diagnosis=True):
     page.goto(site.url + '/#library?asset=' + ref['ontology_id'] + '&version=' + ref['version_id'])
     with page.expect_response(lambda r: r.request.method == 'POST' and
-                             r.url == site.url + '/api/application-checks') as pending:
+                             r.url == site.url + '/api/application-checks', timeout=30000) as pending:
         page.get_by_role('link', name=re.compile('^(基于此本体)?生成行为树')).click()
     assert pending.value.status == 201, pending.value.text()
     if diagnosis:

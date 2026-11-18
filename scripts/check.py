@@ -54,7 +54,7 @@ def isolated_env(directory):
 def run_check(name, args, env, reports, results):
     start = time.monotonic()
     # Hosted runners also verify the complete RDF build and validation paths under coverage.
-    timeout = {"unit": 7200, "robotics-design-browser": 720}.get(name, 360)
+    timeout = 7200 if name == "unit" else 360
     with (reports / f"{name}.log").open("w", encoding="utf-8") as log:
         process = subprocess.Popen(args, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT,
                                    start_new_session=True)
