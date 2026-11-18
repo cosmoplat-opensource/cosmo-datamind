@@ -1,6 +1,6 @@
 # DR-143 · 参数依据、适配证据与分层准入
 
-- **状态 / Status**: proposed
+- **状态 / Status**: accepted（2026-11-18 由仓库维护者确认：代码已于 2026-11-17 经 PR #1 合入 master，合入后的审查与修复见 DR-159）
 - **日期 / Date**: 2026-11-02
 - **关联 / Refs**: [[DR-054-metric-contract-and-lifecycle]]、[[DR-056-evidence-integrity-and-isolated-validation]]、[[DR-141-unified-domain-semantic-graph]]、[[DR-142-robotics-source-recipes-and-reverse-build]]
 

@@ -1,6 +1,6 @@
 # DR-144 · 受约束任务解析与版本化行为树应用
 
-- **状态 / Status**: proposed
+- **状态 / Status**: accepted（2026-11-18 由仓库维护者确认：代码已于 2026-11-17 经 PR #1 合入 master，合入后的审查与修复见 DR-159）
 - **日期 / Date**: 2026-11-02
 - **关联 / Refs**: [[DR-029-openai-compat-runtime-and-test-isolation]]、[[DR-141-unified-domain-semantic-graph]]、[[DR-143-parameter-contracts-calibration-and-readiness]]、[[DR-146-persistent-build-runs-and-artifact-manifests]]
 

@@ -1,6 +1,6 @@
 # IR-021 · 简化适配步骤与版本展示
 
-- 状态：in-progress。
+- 状态：delivered（2026-11-18 由仓库维护者确认：代码已于 2026-11-17 经 PR #1 合入 master，合入后的审查与修复见 DR-159；原计划的逐步人审节点未单独记录）。
 - 日期：2026-11-06。
 - 关联：[DR-149](../decisions/DR-149-offline-candidates-and-readable-versions.md)。
 - 范围依据：用户批准离线生成与适配记录分离，并要求直观版本编号。

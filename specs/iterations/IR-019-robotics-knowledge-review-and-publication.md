@@ -1,6 +1,6 @@
 # IR-019 · 第四阶段：机器人知识维护、重建合并与评审发布
 
-- **状态 / Status**: in-progress
+- **状态 / Status**: delivered（2026-11-18 由仓库维护者确认：代码已于 2026-11-17 经 PR #1 合入 master，合入后的审查与修复见 DR-159；原计划的逐步人审节点未单独记录）
 - **日期 / Date**: 2026-11-05
 - **当前环节**：T07 实现与全量回归 GREEN；用户要求简化默认体验，T08 整轮交付暂缓，由 [DR-148](../decisions/DR-148-minimal-robotics-task-workflow.md) / [IR-020](IR-020-minimal-robotics-task-workflow.md) 优先打通构建到行为树生成。
 - **关联 / Refs**: [[DR-141-unified-domain-semantic-graph]]、[[DR-142-robotics-source-recipes-and-reverse-build]]、[[DR-143-parameter-contracts-calibration-and-readiness]]、[[DR-145-local-domain-registration-and-application-ui]]、[[DR-146-persistent-build-runs-and-artifact-manifests]]、[[DR-147-robotics-migration-and-compatibility-validation]]。

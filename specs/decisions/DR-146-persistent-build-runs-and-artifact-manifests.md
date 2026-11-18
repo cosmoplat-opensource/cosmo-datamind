@@ -1,6 +1,6 @@
 # DR-146 · 持久化运行、会话隔离与工件追溯
 
-- **状态 / Status**: proposed
+- **状态 / Status**: accepted（2026-11-18 由仓库维护者确认：代码已于 2026-11-17 经 PR #1 合入 master，合入后的审查与修复见 DR-159）
 - **日期 / Date**: 2026-11-02
 - **关联 / Refs**: [[DR-044-json-store-abstraction]]、[[DR-056-evidence-integrity-and-isolated-validation]]、[[DR-141-unified-domain-semantic-graph]]、[[DR-144-behavior-tree-compilation-as-ontology-application]]
 
