@@ -16,7 +16,8 @@ BROWSER_CANDIDATES = (
 
 def browser_executable():
     """第一个存在的本机浏览器路径;返回 None 时交给 Playwright 自带的 Chromium。"""
-    for path in (os.environ.get("DATAMIND_BROWSER_EXECUTABLE"), *BROWSER_CANDIDATES):
+    candidates = () if os.environ.get("GITHUB_ACTIONS") == "true" else BROWSER_CANDIDATES
+    for path in (os.environ.get("DATAMIND_BROWSER_EXECUTABLE"), *candidates):
         if path and os.path.isfile(path):
             return path
     return None

@@ -52,7 +52,8 @@ def field_edit(panel, value='浏览器修改的零件类型', *, iri=str(S.PartT
 
 def action(page, site, panel, name, suffix, status=201):
     with page.expect_response(lambda r: r.request.method == 'POST' and
-                              r.url.startswith(site.url + '/api/ontology-assets/') and r.url.endswith(suffix)) as pending:
+                              r.url.startswith(site.url + '/api/ontology-assets/') and r.url.endswith(suffix),
+                              timeout=30000) as pending:
         panel.get_by_role('button', name=name, exact=True).click()
     reply = pending.value
     assert reply.status == status, reply.text()

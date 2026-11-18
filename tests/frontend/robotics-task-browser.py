@@ -127,7 +127,7 @@ def fill_gaps(panel, state):
 
 
 def save_gaps(page, panel):
-    with page.expect_response(lambda r: r.request.method == 'POST' and r.url.endswith('/completion')) as pending:
+    with page.expect_response(lambda r: r.request.method == 'POST' and r.url.endswith('/completion'), timeout=30000) as pending:
         panel.get_by_role('button', name='保存并继续', exact=True).click()
     assert pending.value.status == 200, pending.value.text()
     return pending.value.json()
@@ -229,7 +229,7 @@ def test_missing_parameter_has_no_guessed_default_and_invalid_value_stays_editab
     field.fill('155')
     button = panel.get_by_role('button', name='保存并继续', exact=True)
     button.focus()
-    with page.expect_response(lambda r: r.request.method == 'POST' and r.url.endswith('/completion')) as pending:
+    with page.expect_response(lambda r: r.request.method == 'POST' and r.url.endswith('/completion'), timeout=30000) as pending:
         page.keyboard.press('Enter')
     assert pending.value.status == 200
     after = pending.value.json()
@@ -312,7 +312,10 @@ def test_import_demo_is_explicit_and_real_asset_cannot_use_demo_switch_to_fill_g
     state = submit_task(page, panel)
     assert state['mode'] == 'real' and state['status'] == 'needs_information'
     original = AssetStore(site.root).read_payload(**ref)
-    panel.get_by_role('button', name='打开独立演示', exact=True).click()
+    with page.expect_response(lambda r: r.request.method == 'POST' and r.url.endswith('/api/robotics/task-demo'),
+                              timeout=30000) as pending:
+        panel.get_by_role('button', name='打开独立演示', exact=True).click()
+    assert pending.value.status == 201, pending.value.text()
     expect(panel).to_have_attribute('data-mode', 'demo')
     assert panel.get_attribute('data-ontology-id') != ref['ontology_id']
     assert AssetStore(site.root).read_payload(**ref) == original
