@@ -10,6 +10,7 @@ from pathlib import Path
 import shutil
 import sqlite3
 import tempfile
+import zlib
 import pytest
 
 
@@ -30,6 +31,29 @@ for _key in tuple(os.environ):
 os.environ.update(DATAMIND_WORKDIR=str(_WORK), DATAMIND_DB=str(_ROOT / "examples/demo_metrics.db"),
                   DATAMIND_ENGINE_DIR=str(Path(_SANDBOX.name) / "no-engine"),
                   DATAMIND_OUTPUTS_DIR=str(Path(_SANDBOX.name) / "no-outputs"))
+
+
+def pytest_addoption(parser):
+    parser.addoption("--ci-shard", nargs=2, type=int, metavar=("INDEX", "COUNT"),
+                     help="Run one of COUNT disjoint partitions of the collected tests (1-based).")
+
+
+def pytest_collection_modifyitems(config, items):
+    shard = config.getoption("--ci-shard")
+    if shard is None:
+        return
+    index, count = shard
+    if not 1 <= index <= count:
+        raise pytest.UsageError("--ci-shard requires 1 <= INDEX <= COUNT")
+    selected, deselected = [], []
+    for item in items:
+        bucket = zlib.crc32(item.nodeid.encode("utf-8")) % count + 1
+        if bucket == index:
+            selected.append(item)
+        else:
+            deselected.append(item)
+    config.hook.pytest_deselected(items=deselected)
+    items[:] = selected
 
 
 @pytest.fixture
