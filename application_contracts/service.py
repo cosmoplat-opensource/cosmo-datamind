@@ -98,6 +98,14 @@ class CheckService:
             require(old[0] == fingerprint, 'request_conflict')
             return self._report(conn, old[1])
 
+    def _repair_replayed(self, request_id, fingerprint):
+        with self._storage().transaction() as conn:
+            old = conn.execute('SELECT fingerprint,response FROM application_repair_requests WHERE request_id=?', (request_id,)).fetchone()
+        if not old:
+            return None
+        require(old[0] == fingerprint, 'request_conflict')
+        return {**json.loads(old[1]), 'replayed': True}
+
     def repair(self, *, check_id, issue_id, action_id, input, expected_revision, request_id):
         require(not self.read_only and revision(expected_revision) and identifier(request_id))
         fingerprint = digest({'check_id': check_id, 'issue_id': issue_id, 'action_id': action_id,
@@ -116,7 +124,12 @@ class CheckService:
             handler = spec['repair_handlers'].get(action_id)
             require(action['availability'] == 'available' and handler is not None, 'repair_unavailable')
             # 新鲜度回放要经解析器(可能取宿主写锁),在 RDF 锁与写事务之外核对。
-            require(self._freshness(report) == 'current', 'stale_result')
+            if self._freshness(report) != 'current':
+                # 核对之前,另一个同号请求可能已经完成修复(资源因此变了):返回它的受理结果
+                replay = self._repair_replayed(request_id, fingerprint)
+                if replay is not None:
+                    return replay
+                require(False, 'stale_result')
             target = action['target']
             with _RDF_LOCK, self._storage().transaction(write=True) as conn:
                 old = conn.execute('SELECT fingerprint,response FROM application_repair_requests WHERE request_id=?', (request_id,)).fetchone()

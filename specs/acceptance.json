@@ -3943,7 +3943,7 @@
       "id": "PR1-LIFECYCLE-01",
       "decision": "DR-159",
       "status": "delivered",
-      "criterion": "本体生命周期:工作目录经符号链接时编辑仍生效;迁移跳过坏图谱并完成;启动时对齐外部改写;基线按内容寻址只存一份;已删除本体只在历史视图可读;开关与机器人功能同一配置来源;问数闸门不与写锁/RDF 锁形成死锁,SQL 在锁外执行后复核,数据写入不使进行中的问答失效,空白图谱项被忽略;执行器不丢刚返回的结果,设计运行有总时限",
+      "criterion": "本体生命周期:工作目录经符号链接时编辑仍生效;迁移跳过坏图谱并完成;启动时对齐外部改写;基线按内容寻址只存一份;已删除本体只在历史视图可读;开关与机器人功能同一配置来源;问数闸门不与写锁/RDF 锁形成死锁,SQL 在锁外执行后复核,数据写入不使进行中的问答失效,空白图谱项被忽略;执行器不丢刚返回的结果,设计运行有总时限;修复请求在锁外核对新鲜度时,若同号请求已先完成修复,返回其受理结果",
       "tests": [
         "tests/unit/test_deepqa_host_integration.py::test_legacy_delete_during_sql_is_not_blocked_and_discards_result",
         "tests/unit/test_lifecycle_gate_review_fixes.py::test_symlinked_workdir_edit_and_rewrite_publish_new_versions",
@@ -3965,7 +3965,8 @@
         "tests/unit/test_lifecycle_gate_review_fixes.py::test_blocked_later_sql_does_not_replace_answer_report",
         "tests/unit/test_lifecycle_gate_review_fixes.py::test_design_run_past_deadline_fails_before_commit",
         "tests/unit/test_lifecycle_gate_review_fixes.py::test_blank_graph_entries_are_ignored",
-        "tests/unit/test_lifecycle_gate_review_fixes.py::test_invalid_graph_scope_still_rejected"
+        "tests/unit/test_lifecycle_gate_review_fixes.py::test_invalid_graph_scope_still_rejected",
+        "tests/unit/test_robotics_automatic_adaptation.py::test_same_repair_finished_by_another_request_after_the_lookup_is_replayed"
       ]
     },
     {
