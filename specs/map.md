@@ -43,7 +43,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 
 ## 索引
 
-- [DR-162 · 产品仓库与本地开发材料边界](decisions/DR-162-product-repository-material-boundary.md)：维护者确认保留决策与迭代，指定过程材料和契约草案仅保留本地副本；提交范围由元测试检查。
+- [DR-160 · 产品仓库与本地开发材料边界](decisions/DR-160-product-repository-material-boundary.md)：维护者确认保留决策与迭代，指定过程材料和契约草案仅保留本地副本；提交范围由元测试检查。
 
 ### 提议 / Proposals（未立项，落地时拆为独立 DR/IR）
 - PROPOSAL · DataMind 与源项目本体构建及行为树生成深度集成 — **proposed，2026-11-02 代码复核版**。包含跨项目复测结果、后端与 UI 方案、8 个实施切片，以及 DR-141…DR-147 的修订依据；区分现有能力、已知断点和待实施设计。
