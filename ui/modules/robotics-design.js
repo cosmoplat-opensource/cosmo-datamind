@@ -3,7 +3,7 @@
 const clone=x=>JSON.parse(JSON.stringify(x)),prefix='/api/robotics/design-sessions/',active=s=>['queued','running'].includes(s?.status);
 async function read(fetch,url,options){const r=await fetch(url,options);let b;try{b=await r.json();}catch(_){throw Error('响应不是 JSON（HTTP '+r.status+'）');}if(!r.ok)throw Object.assign(Error(b.error?.message||b.error||'请求失败'),{code:b.error?.code,status:r.status});return b;}
 function createController(o={}){
- const fetch=o.fetch||g.fetch.bind(g),emit=o.onChange||(()=>{}),schedule=o.schedule||g.setTimeout.bind(g),cancel=o.cancelSchedule||g.clearTimeout.bind(g),newId=o.requestId||(()=>g.crypto.randomUUID());
+ const fetch=o.fetch||g.fetch.bind(g),emit=o.onChange||(()=>{}),schedule=o.schedule||g.setTimeout.bind(g),cancel=o.cancelSchedule||g.clearTimeout.bind(g),newId=o.requestId||(()=>g.dmRequestId());
  let s={session:null,messageText:'',selectedRevision:null,busy:false,error:null},dead=false,epoch=0,id=null,timer=null,flight=null,identity=null;
  const notify=()=>{if(!dead)emit(clone(s));},clear=()=>{if(timer!==null)cancel(timer);timer=null;};
  function later(){clear();if(!dead&&active(s.session))timer=schedule(()=>{timer=null;return poll();},1000);}

@@ -1,5 +1,7 @@
 # IR-030 · 本地临时分支合并与兼容验证
 
+> 2026-11-18：本分支已于 2026-11-17 经 GitHub PR #1 合入 master，合入前没有人工代码审查。合入后的审查结果与修复见 [DR-159](../decisions/DR-159-pr1-review-fixes.md)；下文「不推送、不创建 PR」是合并当时的记录。
+
 - 状态：实现与自动化验证完成，待用户复核。
 - 日期：2026-11-17。
 - 关联：[DR-158](../decisions/DR-158-master-development-integration.md)。

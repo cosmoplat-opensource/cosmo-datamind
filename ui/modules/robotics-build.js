@@ -13,7 +13,7 @@
   function createController(options = {}) {
     const fetcher = options.fetch || global.fetch.bind(global), emit = options.onChange || (() => {});
     const schedule = options.schedule || global.setTimeout.bind(global), cancel = options.cancelSchedule || global.clearTimeout.bind(global);
-    const newId = options.requestId || (() => global.crypto.randomUUID());
+    const newId = options.requestId || (() => global.dmRequestId());
     let state = {enabled:false, busy:false, draft:{name:'', profile:'ur_pick_place', behavior_tree:null, node_models:null}, run:null, events:[], after:0, error:null};
     let caps = null, dead = false, generation = 0, timer = null, flight = null, selected = null, requestId = null, retryId = null;
     const snapshot = () => ({...state, draft:{...state.draft}, events:[...state.events]});

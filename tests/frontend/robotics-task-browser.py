@@ -1,5 +1,6 @@
 """T04 RED: real browser/build/OWL/completion/compiler/download; only model HTTP is scripted — DR-145 / DR-148."""
 import argparse
+from tests.browser_runtime import browser_executable
 import os
 from pathlib import Path
 import re
@@ -45,8 +46,7 @@ class TaskSite(LiveSite):
 @pytest.fixture(scope='session')
 def browser():
     with sync_playwright() as pw:
-        executable = next((p for p in (os.environ.get('DATAMIND_BROWSER_EXECUTABLE'),
-            '/usr/bin/google-chrome', '/usr/bin/chromium') if p and Path(p).is_file()), None)
+        executable = browser_executable()
         instance = pw.chromium.launch(executable_path=executable)
         yield instance
         instance.close()

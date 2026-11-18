@@ -3,10 +3,10 @@
 Run: .venv/bin/python tests/frontend/build-browser.py --output /tmp/datamind-build-ui
 """
 import argparse
+from tests.browser_runtime import browser_executable
 import asyncio
 import json
 import mimetypes
-import os
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -64,10 +64,7 @@ async def main(output, base_url=None):
         return await route.fulfill(status=404, json={"error": "fixture route not found: " + name})
 
     async with async_playwright() as pw:
-        candidates = [os.environ.get("DATAMIND_BROWSER_EXECUTABLE"),
-                      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-                      "/usr/bin/google-chrome", "/usr/bin/chromium"]
-        executable = next((value for value in candidates if value and Path(value).is_file()), None)
+        executable = browser_executable()
         browser = await pw.chromium.launch(executable_path=executable)
         page = await browser.new_page(viewport={"width": 1440, "height": 1000})
         page.on("pageerror", lambda error: failures.append(str(error)))

@@ -2,14 +2,13 @@
 import argparse
 import asyncio
 import json
-import os
 from pathlib import Path
 import sys
 import uuid
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from tests.browser_runtime import close_browser, managed_playwright  # noqa: E402
+from tests.browser_runtime import browser_executable, close_browser, managed_playwright  # noqa: E402
 
 
 async def run(args):
@@ -25,8 +24,7 @@ async def run(args):
             raise AssertionError(label)
 
     async with managed_playwright() as pw:
-        executable = next((p for p in [os.environ.get("DATAMIND_BROWSER_EXECUTABLE"),
-            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", "/usr/bin/google-chrome"] if p and Path(p).is_file()), None)
+        executable = browser_executable()
         browser = await pw.chromium.launch(executable_path=executable)
         context = await browser.new_context(viewport={"width": 1440, "height": 1000})
         page = await context.new_page()

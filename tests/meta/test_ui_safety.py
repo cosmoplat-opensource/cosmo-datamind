@@ -114,3 +114,68 @@ def test_paired_replay_controls_are_present():
     """DR-140:单条「修改前后对比」只在记录了版本且保存了答案时出现;批量配对回放显示差值、区间与未配对原因。"""
     assert "rvFbReplay(${jsAttr(x.id)},this,true)" in INDEX and "x.versions&&x.versions.length" in INDEX
     assert "rvFbRegression(this,true)" in INDEX and "p.verdict" in INDEX and "未配对" in INDEX
+
+
+# ── PR #1 审查修复:机器人与本体生命周期界面 ─────────────────────────────────────────────────────
+
+def test_request_ids_do_not_require_a_secure_context():
+    """crypto.randomUUID 只在 HTTPS 或 localhost 下存在;经内网 IP 用 HTTP 打开时,写操作不能因此报错。"""
+    direct = {n: s.count("crypto.randomUUID(") for n, s in MODULES.items() if n != "request-id.js" and "crypto.randomUUID(" in s}
+    assert not direct, direct
+    helper = MODULES["request-id.js"]
+    assert "getRandomValues" in helper and "randomUUID" in helper
+    i = INDEX.index("modules/request-id.js")
+    assert all(i < INDEX.index("modules/" + m) for m in ("robotics-application.js", "ontology-lifecycle.js", "robotics-task.js",
+                                                         "robotics-design.js", "robotics-build.js", "robotics-review.js"))
+
+
+def test_request_id_helper_falls_back_without_random_uuid():
+    import shutil
+    import subprocess
+    if not shutil.which("node"):
+        import pytest
+        pytest.skip("没有 node")
+    js = (ROOT / "ui" / "modules" / "request-id.js").read_text(encoding="utf-8")
+    probe = js + "\nconst ids=new Set();for(let i=0;i<50;i++)ids.add(globalThis.dmRequestId());" \
+                 "console.log(ids.size, [...ids].every(x=>/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(x)))"
+    env_js = "globalThis.window=globalThis;const c=globalThis.crypto;" \
+             "Object.defineProperty(globalThis,'crypto',{value:{getRandomValues:a=>c.getRandomValues(a)},configurable:true});"
+    out = subprocess.run(["node", "-e", env_js + probe], capture_output=True, text=True, timeout=30)
+    assert out.stdout.split() == ["50", "true"], out.stderr
+
+
+def test_ontology_library_reports_failures_and_deletes_through_one_confirmation():
+    lib = INDEX[INDEX.index("async function library()"):][:900]
+    assert "d.error" in lib and "${esc(o.objects" in lib and "${esc(o.links" in lib
+    assert "if(confirm('删除 '" not in lib                     # 生命周期对话框已有确认,不再先弹原生确认框
+    dele = INDEX[INDEX.index("async function libDel("):][:700]
+    assert "try{" in dele and "catch(" in dele and "confirm(" in dele   # 迁移前的旧路径仍要确认一次
+
+
+def test_lifecycle_dialog_is_keyboard_safe_and_closes_on_navigation():
+    life = MODULES["ontology-lifecycle.js"]
+    assert "'Escape'" in life and "'Tab'" in life and "close" in life
+    close = INDEX[INDEX.index("function closeDialogs()"):][:400]
+    assert "OntologyLifecycle" in close
+
+
+def test_chat_tab_uses_the_menu_name():
+    assert "智能问数" not in INDEX
+
+
+def test_robotics_graph_kinds_are_not_told_apart_by_colour_alone():
+    views = MODULES["robotics-views.js"]
+    assert not any(w in views for w in ("蓝色", "紫色", "青色"))
+    assert "lineDash" in views and "fontSize:10" not in views
+
+
+def test_every_browser_test_finds_the_local_browser_the_same_way():
+    """浏览器测试统一经 tests/browser_runtime.browser_executable() 找本机浏览器(含 macOS 的 Chrome),
+    各自维护一份候选清单时,新加的测试漏了 macOS 路径,只能在装了 Playwright 自带 Chromium 的机器上跑。"""
+    import tests.browser_runtime as rt
+    assert "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" in rt.BROWSER_CANDIDATES
+    files = [*(ROOT / "tests").rglob("*.py"), ROOT / "test_ui.py", ROOT / "test_ui_ops.py"]
+    own_lists = [str(p.relative_to(ROOT)) for p in files
+                 if p.name not in ("browser_runtime.py", "test_ui_safety.py") and "chromium.launch" in p.read_text(encoding="utf-8")
+                 and "/usr/bin/google-chrome" in p.read_text(encoding="utf-8")]
+    assert not own_lists, own_lists

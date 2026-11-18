@@ -1,5 +1,6 @@
 """Real Chromium + Gunicorn + persisted designs; only model HTTP scripted — DR-152 / T08 RED."""
 import argparse
+from tests.browser_runtime import browser_executable
 import json
 import os
 from pathlib import Path
@@ -28,8 +29,7 @@ from tests.robotics_task_support import model_server
 @pytest.fixture(scope='session')
 def browser():
     with sync_playwright() as pw:
-        executable = next((p for p in (os.environ.get('DATAMIND_BROWSER_EXECUTABLE'),
-            '/usr/bin/google-chrome', '/usr/bin/chromium') if p and Path(p).is_file()), None)
+        executable = browser_executable()
         instance = pw.chromium.launch(executable_path=executable)
         yield instance
         instance.close()

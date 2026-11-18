@@ -1,6 +1,5 @@
 """User-visible detail summaries, bounded tables and honest application state — DR-155 / T02 RED."""
-import os
-from pathlib import Path
+from tests.browser_runtime import browser_executable
 
 import pytest
 from playwright.sync_api import expect, sync_playwright
@@ -11,8 +10,7 @@ from tests.ontology_detail_support import NS, application_fixture, detail_fixtur
 @pytest.fixture(scope='module')
 def detail_browser():
     with sync_playwright() as playwright:
-        executable = next((p for p in (os.environ.get('DATAMIND_BROWSER_EXECUTABLE'),
-            '/usr/bin/google-chrome', '/usr/bin/chromium') if p and Path(p).is_file()), None)
+        executable = browser_executable()
         browser = playwright.chromium.launch(executable_path=executable)
         yield browser
         browser.close()

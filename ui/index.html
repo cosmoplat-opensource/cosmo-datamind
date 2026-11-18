@@ -415,7 +415,7 @@ a{color:var(--acc)}
  <div class="page" id="p_chat">
   <div class="dq-tabbar">
    <span class="dq-collapse" onclick="dqToggleSide()" title="折叠/展开会话栏">☰</span>
-   <span class="dq-tab">智能问数 <span class="c" onclick="dqNew()" title="新对话">＋</span></span>
+   <span class="dq-tab">深度问数 <span class="c" onclick="dqNew()" title="新对话">＋</span></span>
   </div>
   <div class="dq">
    <div class="dq-side" id="dq_side">
@@ -708,15 +708,16 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
 <div class="page" id="p_robotics-task"><div id="rt_application"></div></div>
 </main>
 </div>
-<script src="/assets/modules/robotics-application.js?v=4"></script>
-<script src="/assets/modules/robotics-task.js?v=12"></script>
+<script src="/assets/modules/request-id.js?v=1"></script>
+<script src="/assets/modules/robotics-application.js?v=5"></script>
+<script src="/assets/modules/robotics-task.js?v=13"></script>
 <script src="/assets/modules/robotics-task-app.js?v=3"></script>
-<script src="/assets/modules/robotics-assets.js?v=16"></script><script src="/assets/modules/ontology-lifecycle.js?v=1"></script>
+<script src="/assets/modules/robotics-assets.js?v=16"></script><script src="/assets/modules/ontology-lifecycle.js?v=2"></script>
 <script src="/assets/modules/ontology-detail.js?v=5"></script>
-<script src="/assets/modules/robotics-views.js?v=9"></script>
-<script src="/assets/modules/robotics-design.js?v=9"></script>
-<script src="/assets/modules/robotics-build.js?v=3"></script>
-<script src="/assets/modules/robotics-review.js?v=1"></script>
+<script src="/assets/modules/robotics-views.js?v=10"></script>
+<script src="/assets/modules/robotics-design.js?v=10"></script>
+<script src="/assets/modules/robotics-build.js?v=4"></script>
+<script src="/assets/modules/robotics-review.js?v=2"></script>
 <script src="/assets/modules/robotics-review-page.js?v=1"></script>
 <script src="/assets/modules/catalog.js?v=3"></script>
 <script src="/assets/modules/database-scope.js?v=2"></script>
@@ -757,6 +758,7 @@ const KCOL=k=>(KIND[k]||{c:'#5b9dff'}).c, KNM=k=>(KIND[k]||{n:k}).n;
 // 页面切换 + URL 寻址：每个子页对应 #<page> hash，可直接寻址/前进后退/刷新保持
 // 弹窗挂在 body 上,不随页面隐藏:切页时一并关掉,否则会留在新页面上挡住操作
 function closeDialogs(){document.querySelectorAll('.dq-modal').forEach(m=>{m.style.display='none'});try{RVM=null}catch(e){}
+ if(window.OntologyLifecycle&&OntologyLifecycle.close)OntologyLifecycle.close();
  const a=document.querySelector('aside');if(a)a.classList.remove('open');}
 function goPage(p){const nav=document.querySelector('[data-p="'+p+'"]');if(!nav)return false;closeDialogs();
  document.querySelectorAll('.nav').forEach(x=>x.classList.remove('on'));nav.classList.add('on');
@@ -2396,13 +2398,19 @@ async function clawAudit(){const d=await J('/api/ont/audit/'+encodeURIComponent(
  h+=`<div class="muted" style="margin-top:6px;font-size:12px">${esc(d.note||'')}</div>`;
  $('#claw_audit').innerHTML=h;}
 async function library(){const d=await J('/api/ont/forged');
+ if(d.error){$('#lib_list').innerHTML=`<div role="alert" style="color:#b91c1c">本体库读取失败:${esc(d.error)}</div>`;return;}
  const rows=(d.ontologies||d.list||[]);
  $('#lib_list').innerHTML='<table><tr><th>ID</th><th>名称</th><th>对象数</th><th>关系数</th><th>操作</th></tr>'+
-  rows.map(o=>`<tr><td>${esc(o.id)}</td><td>${esc(o.name||'')}</td><td>${o.objects??o.entities??'-'}</td><td>${o.links??'-'}</td>
+  rows.map(o=>`<tr><td>${esc(o.id)}</td><td>${esc(o.name||'')}</td><td>${esc(o.objects??o.entities??'-')}</td><td>${esc(o.links??'-')}</td>
    <td><a href="#" onclick="event.preventDefault();bcView('forged_'+${jsAttr(o.id)})">查看↗</a>
    <a href="#" style="margin-left:8px" onclick="event.preventDefault();dqStartFromOntology('forged_'+${jsAttr(o.id)})">问数</a>
-   <a href="#" style="color:#b91c1c;margin-left:8px" onclick="event.preventDefault();if(confirm('删除 '+${jsAttr(o.id)}+'?'))libDel(${jsAttr(o.id)})">删除</a></td></tr>`).join('')+'</table>';}
-async function libDel(id){if(window.OntologyLifecycle){await OntologyLifecycle.legacy('forged_'+id,()=>library());return;}const d=await J('/api/ont/forged/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+   <a href="#" style="color:#b91c1c;margin-left:8px" onclick="event.preventDefault();libDel(${jsAttr(o.id)})">删除</a></td></tr>`).join('')+'</table>';}
+async function libDel(id){
+ if(window.OntologyLifecycle){                 // 生命周期对话框自带影响预览和确认,不再先弹原生确认框
+  try{await OntologyLifecycle.legacy('forged_'+id,()=>library());}catch(e){toast('无法删除:'+(e&&e.message||e),false);}
+  return;}
+ if(!confirm('删除 '+id+'?'))return;
+ const d=await J('/api/ont/forged/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
  if(d.error)toast(d.error);library();}
 async function sparqlRun(){$('#sq_info').textContent='查询中…';
  const d=await J('/api/sparql',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:$('#sq_q').value})}).catch(e=>({error:''+e}));

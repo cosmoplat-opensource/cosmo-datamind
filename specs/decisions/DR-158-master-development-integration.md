@@ -1,5 +1,7 @@
 # DR-158 · master 与机器人开发分支的兼容集成
 
+> 2026-11-18：本分支已于 2026-11-17 经 GitHub PR #1 合入 master，合入前没有人工代码审查。合入后的审查结果与修复见 [DR-159](DR-159-pr1-review-fixes.md)；下文「不推送、不创建 PR」是合并当时的记录。
+
 - 状态：accepted；2026-11-17 用户授权仅在本地临时分支合并、验证并保留两边功能。
 - 基准：master `47dbab0`，dyh_dev `0db54e1`。
 - 关联：[IR-030](../iterations/IR-030-master-development-integration.md)、[编号映射](../merge-numbering.md)。

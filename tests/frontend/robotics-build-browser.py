@@ -4,6 +4,7 @@ Run: .venv/bin/python tests/frontend/robotics-build-browser.py --output .check-r
 No route interception, synthetic success response, external service or paid model.
 """
 import argparse
+from tests.browser_runtime import browser_executable
 import json
 import os
 from pathlib import Path
@@ -29,8 +30,7 @@ from tests.build_runtime_support import upload_args
 @pytest.fixture(scope='session')
 def browser():
     with sync_playwright() as pw:
-        candidates = [os.environ.get('DATAMIND_BROWSER_EXECUTABLE'), '/usr/bin/google-chrome', '/usr/bin/chromium']
-        executable = next((p for p in candidates if p and Path(p).is_file()), None)
+        executable = browser_executable()
         instance = pw.chromium.launch(executable_path=executable)
         yield instance
         instance.close()
