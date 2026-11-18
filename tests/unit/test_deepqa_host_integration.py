@@ -46,26 +46,27 @@ def test_null_optional_graphs_preserves_default_demo(qa_http,route):
     assert answer['results'][0]['data']['rows']==[{'记录数':3}]
 
 
-def test_legacy_delete_and_sql_admission_are_serialized(qa_http,monkeypatch):
-    _,_,_,_,calls=qa_http;entered=threading.Event();release=threading.Event();deleting=threading.Event();events=[]
+def test_legacy_delete_during_sql_is_not_blocked_and_discards_result(qa_http,monkeypatch):
+    # DR-158 评审修订:执行期间不持全局写锁;删除照常完成,执行后重验使结果按删除拒绝。
+    _,_,_,_,calls=qa_http;entered=threading.Event();release=threading.Event();events=[]
     original=server.q
     def query(sql,**kwargs):
         entered.set();assert release.wait(5)
         value=original(sql,**kwargs);events.append('query');return value
     monkeypatch.setattr(server,'q',query)
     def deletion():
-        deleting.set();value=server.app.test_client().post('/api/build/delete',json={'key':'built_scope'})
+        value=server.app.test_client().post('/api/build/delete',json={'key':'built_scope'})
         events.append('delete');return value.status_code
     with ThreadPoolExecutor(max_workers=2) as workers:
         query_future=workers.submit(lambda:server.app.test_client().post('/api/chat',json={'q':'客户有多少条记录？','graphs':['built_scope']}))
         try:
             assert entered.wait(5)
-            delete_future=workers.submit(deletion);assert deleting.wait(5)
-            assert not delete_future.done()
+            delete_future=workers.submit(deletion)
+            assert delete_future.result(timeout=5)==200
         finally:release.set()
-        assert query_future.result(timeout=5).status_code==200
-        assert delete_future.result(timeout=5)==200
-    assert events==['query','delete'] and len(calls['sql'])==1
+        response=query_future.result(timeout=5)
+    assert response.status_code==409 and response.json['code']=='ontology_deleted'
+    assert events==['delete','query'] and len(calls['sql'])==1 and not server._QA_CACHE
 
 
 def test_corrupt_deletion_ledger_prevents_file_removal(qa_http):

@@ -26,18 +26,20 @@ def test_invalid_first_sql_can_be_repaired_before_contract_execution(qa_http,mon
 
 
 def test_catalog_fingerprint_tracks_actual_source_wal(qa_http,tmp_path):
+    # 依据绑定表结构而非文件 stat:业务行写入不改变指纹,未检查点的 WAL 内结构变化仍可见。
     db=tmp_path/'source.db'
     with sqlite3.connect(db) as conn:conn.execute('CREATE TABLE records(id INTEGER)')
     token=server._QA_DB.set(str(db))
     try:
         first=_catalog(server)
         with sqlite3.connect(db) as conn:conn.execute('INSERT INTO records VALUES(1)')
-        assert _catalog(server)!=first
+        assert _catalog(server)==first
         with sqlite3.connect(db) as conn:
             conn.execute('PRAGMA journal_mode=WAL');conn.execute('PRAGMA wal_autocheckpoint=0')
             conn.execute('INSERT INTO records VALUES(2)');conn.commit()
             second=_catalog(server)
-            conn.execute('INSERT INTO records VALUES(3)');conn.commit()
+            assert second==first
+            conn.execute('ALTER TABLE records ADD COLUMN amount REAL');conn.commit()
             assert _catalog(server)!=second
     finally:server._QA_DB.reset(token)
 

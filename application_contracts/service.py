@@ -64,18 +64,25 @@ class CheckService:
         spec = self.registry.resolve(entrypoint)
         if spec['availability'] != 'available': raise ContractError('application_unavailable', '应用暂不可用。')
         fingerprint = digest({'entrypoint': entrypoint, 'asset_refs': asset_refs, 'context': context})
+        # 锁顺序(DR-158):解析器可能取宿主写锁,必须在 RDF 锁与写事务之外调用;
+        # RDF 锁只包住纯计算的检查与最终写入。
         try:
+            report = self._replayed(request_id, fingerprint)
+            if report is not None:
+                return {'report': report, 'freshness': self._freshness(report), 'replayed': True}
+            data = self.resolver.resolve(entrypoint=entrypoint, asset_refs=deepcopy(asset_refs), context=deepcopy(context))
+            with _RDF_LOCK:
+                report = evaluate(registry=self.registry, entrypoint=entrypoint, **data)
+            report.update(schema_version=1, check_id='check_' + uuid.uuid4().hex,
+                checked_at=datetime.now(timezone.utc).isoformat())
+            require(self._freshness(report) == 'current', 'stale_result')
             with _RDF_LOCK, self._storage().transaction(write=True) as conn:
                 old = conn.execute('SELECT fingerprint,check_id FROM application_check_requests WHERE request_id=?', (request_id,)).fetchone()
                 if old:
+                    # 并发的同号请求已先落盘:返回先到者的结论。
                     require(old[0] == fingerprint, 'request_conflict')
                     report = self._report(conn, old[1]); replayed = True
                 else:
-                    data = self.resolver.resolve(entrypoint=entrypoint, asset_refs=deepcopy(asset_refs), context=deepcopy(context))
-                    report = evaluate(registry=self.registry, entrypoint=entrypoint, **data)
-                    report.update(schema_version=1, check_id='check_' + uuid.uuid4().hex,
-                        checked_at=datetime.now(timezone.utc).isoformat())
-                    require(self._freshness(report) == 'current', 'stale_result')
                     conn.execute('INSERT INTO application_checks VALUES (?,?)', (report['check_id'], json.dumps(report)))
                     conn.execute('INSERT INTO application_check_requests VALUES (?,?,?)', (request_id, fingerprint, report['check_id']))
                     replayed = False
@@ -83,25 +90,40 @@ class CheckService:
         except (OSError, sqlite3.Error):
             raise ContractError('storage_unavailable', '检查结果保存失败。') from None
 
+    def _replayed(self, request_id, fingerprint):
+        with self._storage().transaction() as conn:
+            old = conn.execute('SELECT fingerprint,check_id FROM application_check_requests WHERE request_id=?', (request_id,)).fetchone()
+            if not old:
+                return None
+            require(old[0] == fingerprint, 'request_conflict')
+            return self._report(conn, old[1])
+
     def repair(self, *, check_id, issue_id, action_id, input, expected_revision, request_id):
         require(not self.read_only and revision(expected_revision) and identifier(request_id))
         fingerprint = digest({'check_id': check_id, 'issue_id': issue_id, 'action_id': action_id,
                               'input': input, 'expected_revision': expected_revision})
         try:
-            with _RDF_LOCK, self._storage().transaction(write=True) as conn:
+            with self._storage().transaction() as conn:
                 old = conn.execute('SELECT fingerprint,response FROM application_repair_requests WHERE request_id=?', (request_id,)).fetchone()
                 if old:
                     require(old[0] == fingerprint, 'request_conflict')
                     return {**json.loads(old[1]), 'replayed': True}
                 report = self._report(conn, check_id)
-                action = next((a for i in report['issues'] if i['issue_id'] == issue_id
-                               for a in i['repair_actions'] if a['action_id'] == action_id), None)
-                require(action is not None, 'unknown_action')
-                spec = self.registry.resolve(report['entrypoint'])
-                handler = spec['repair_handlers'].get(action_id)
-                require(action['availability'] == 'available' and handler is not None, 'repair_unavailable')
-                require(self._freshness(report) == 'current', 'stale_result')
-                target = action['target']
+            action = next((a for i in report['issues'] if i['issue_id'] == issue_id
+                           for a in i['repair_actions'] if a['action_id'] == action_id), None)
+            require(action is not None, 'unknown_action')
+            spec = self.registry.resolve(report['entrypoint'])
+            handler = spec['repair_handlers'].get(action_id)
+            require(action['availability'] == 'available' and handler is not None, 'repair_unavailable')
+            # 新鲜度回放要经解析器(可能取宿主写锁),在 RDF 锁与写事务之外核对。
+            require(self._freshness(report) == 'current', 'stale_result')
+            target = action['target']
+            with _RDF_LOCK, self._storage().transaction(write=True) as conn:
+                old = conn.execute('SELECT fingerprint,response FROM application_repair_requests WHERE request_id=?', (request_id,)).fetchone()
+                if old:
+                    require(old[0] == fingerprint, 'request_conflict')
+                    return {**json.loads(old[1]), 'replayed': True}
+                # 资源修订只读存储、不取宿主锁,留在事务内与处理器同一时刻核对。
                 require(expected_revision == target['expected_revision'] == self.resolver.resource_revision(target), 'stale_result')
                 command = {'check_id': check_id, 'issue_id': issue_id, 'action_id': action_id, 'input': deepcopy(input),
                     'request_id': request_id, 'target': deepcopy(target),

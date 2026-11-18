@@ -5540,10 +5540,13 @@ def _chat_impl():
     if _dq["route"]["type"] != "lookup" and _PLAN_VARIANT.get():
         return jsonify({"routed_skip": True})       # 多路候选:非查数类型只由默认一路求解(推演会调用动作,不能重复发起)
     _strict = bool(graph_keys and gate_keys != ["demo"] and not fallback)
-    with gate.reading():
-        _ans = _qa_decision_answer(question, ir_gate, _dq,
-                               lambda _s: _qa_validate_sql(_s, ir_gate, strict=_strict, focus_tables=focus_tables), _qa_operator(body),
-                               scope=lambda _t: _qa_scope_check(f'SELECT 1 FROM "{_t}"', ir_gate, strict=_strict, focus_tables=focus_tables))
+    try:
+        with gate.reading():
+            _ans = _qa_decision_answer(question, ir_gate, _dq,
+                                   lambda _s: _qa_validate_sql(_s, ir_gate, strict=_strict, focus_tables=focus_tables), _qa_operator(body),
+                                   scope=lambda _t: _qa_scope_check(f'SELECT 1 FROM "{_t}"', ir_gate, strict=_strict, focus_tables=focus_tables))
+    except QAContractError as exc:
+        return jsonify(gate.failure(exc)), 409
     if _dq.get("error") and not any(x["step"] == "decision_error" for x in steps):
         steps.append({"step": "decision_error", "ok": False, "info": "决策层出错,改按查数处理 · " + _dq["error"]})
     if _ans is not None:                            # 非查数类型:确定性求解的结果不进缓存(规则与数据随时会变)
@@ -5598,7 +5601,8 @@ def _chat_impl():
                     sql, ir_gate, strict=bool(graph_keys and gate_keys != ["demo"] and not fallback),
                     focus_tables=focus_tables)
         if not okv:
-            gate.validate_sql(sql)
+            if not results:          # 已有作答结果时,检查报告保持描述作答所用的 SQL
+                gate.validate_sql(sql)
             blocked.append(why)
             steps.append({"step": "ontology_gate", "ok": False, "info": "本体约束拦截:" + why}); continue
         # DR-026 双盲意图检测:本体约束校验管「SQL 合不合规」,这里管「答的是不是问的那件事」。
@@ -5756,10 +5760,13 @@ def chat_stream():
         for _st in _qa_decision_steps(_dq):
             yield push(*_st)
         _strict = bool(graph_keys and _gate_keys != ["demo"] and not _gate_fallback)
-        with gate.reading():
-            _ans = _qa_decision_answer(question, ir_gate, _dq,
-                                   lambda _s: _qa_validate_sql(_s, ir_gate, strict=_strict, focus_tables=focus_tables), _qa_operator(body),
-                                   scope=lambda _t: _qa_scope_check(f'SELECT 1 FROM "{_t}"', ir_gate, strict=_strict, focus_tables=focus_tables))
+        try:
+            with gate.reading():
+                _ans = _qa_decision_answer(question, ir_gate, _dq,
+                                       lambda _s: _qa_validate_sql(_s, ir_gate, strict=_strict, focus_tables=focus_tables), _qa_operator(body),
+                                       scope=lambda _t: _qa_scope_check(f'SELECT 1 FROM "{_t}"', ir_gate, strict=_strict, focus_tables=focus_tables))
+        except QAContractError as exc:
+            yield sse({"type": "error", **gate.failure(exc)}); return
         if _dq.get("error") and not any(x["step"] == "decision_error" for x in steps):
             yield push("decision_error", False, "决策层出错,改按查数处理 · " + _dq["error"])
         if _ans is not None:
@@ -5857,7 +5864,8 @@ def chat_stream():
                         strict=bool(graph_keys and _gate_keys != ["demo"] and not _gate_fallback),
                         focus_tables=focus_tables)
             if not okv:
-                gate.validate_sql(sql)
+                if not results:      # 已有作答结果时,检查报告保持描述作答所用的 SQL
+                    gate.validate_sql(sql)
                 blocked.append(why)
                 yield push("ontology_gate", False, f"[{idx}] 本体约束拦截:{why}"); continue
             yield push("ontology_gate", True, f"[{idx}] 本体校验通过 · 表与 JOIN 键均在本体边界内")
@@ -7893,6 +7901,10 @@ def build_history(key):
     k = re.sub(r"[^A-Za-z0-9_]", "", str(key or ""))[:40]
     if not k.startswith("built_"):
         return jsonify({"error": "仅支持自建本体(built_*)"}), 400
+    import asset_lifecycle
+    # 回收站中的本体只在显式请求删除视图(state=deleted)时可看构建历程。
+    if request.args.get("state") != "deleted" and asset_lifecycle.deleted(_QA_HOST, k):
+        raise asset_lifecycle.LifecycleError("ontology_deleted")
     ir = _load_json(_confined(WORK, k + ".json"))
     if not isinstance(ir, dict) or not ir.get("objects"):
         return jsonify({"error": "本体不存在"}), 404
@@ -11116,9 +11128,22 @@ def _atomic_json_lifecycle(path,value):
 
 _atomic_json = _atomic_json_lifecycle
 
+def _lifecycle_enabled():
+    """与机器人开关同一来源:app.config 优先,其次环境变量;未显式设置时跟随机器人开关。"""
+    def setting(key):
+        value = app.config[key] if key in app.config else os.environ.get(key)
+        if value is None or isinstance(value, bool):
+            return value
+        return str(value).strip().lower() not in ('0', 'false', 'no', 'off')
+    explicit = setting('DATAMIND_LIFECYCLE_ENABLED')
+    if explicit is not None:
+        return explicit
+    robotics = setting('DATAMIND_ROBOTICS_ENABLED')
+    return True if robotics is None else robotics
+
+
 # DR-157: migrate only at explicit startup, never from a catalog/check GET.
-_lifecycle_default = '0' if os.environ.get('DATAMIND_ROBOTICS_ENABLED','').lower() in ('0','false','off') else '1'
-if os.environ.get('DATAMIND_LIFECYCLE_ENABLED',_lifecycle_default).lower() not in ('0','false','off'):
+if _lifecycle_enabled():
     try:init_asset_lifecycle()
     except (QAContractError, ValueError, OSError):
         _LOG.error('本体生命周期迁移未完成，已登记的删除保护继续生效。')

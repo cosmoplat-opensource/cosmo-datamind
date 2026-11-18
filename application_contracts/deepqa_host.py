@@ -50,7 +50,11 @@ def _identities(host, keys, body):
     raw = body.get('graphs', []) if body else keys
     if raw is None:
         raw = []
-    if not isinstance(raw, list) or any(not isinstance(k, str) or host._bad_gkey(k.strip()) for k in raw):
+    if not isinstance(raw, list):
+        raise ContractError('invalid_scope', '问数图谱范围无效，请重新选择本体。')
+    # 与旧 _qa_scope 一致:空项与空白项直接忽略;其余必须是合法图谱键。
+    raw = [k for k in raw if k is not None and not (isinstance(k, str) and not k.strip())]
+    if any(not isinstance(k, str) or host._bad_gkey(k.strip()) for k in raw):
         raise ContractError('invalid_scope', '问数图谱范围无效，请重新选择本体。')
     state = _lifecycle(host)
     import asset_lifecycle
@@ -91,11 +95,17 @@ def _identities(host, keys, body):
     return {key: state['graphs'].get(key, {'deleted': False, 'revision': 0}) for key in keys}
 
 
+# 每个执行库最近一次看到的表结构摘要;只有摘要变化才清空进程内的表/列缓存。
+_SEEN_CATALOGS: dict = {}
+
+
 def _catalog(host):
-    """Read schema, never business rows; schema changes matter even if stat is preserved."""
+    """Read schema, never business rows; schema changes matter even if stat is preserved.
+
+    只绑定表结构,不绑定文件 mtime/大小:业务数据写入不应让进行中的问数失效(DR-158)。
+    """
     schemas = []
     database = host._qa_db() if hasattr(host, "_qa_db") else host.DB
-    files = (database, database + "-wal", host.UPLOAD_DB, host.UPLOAD_DB + "-wal")
     for filename in (database, host.UPLOAD_DB):
         path = Path(filename)
         if not path.exists():
@@ -110,7 +120,21 @@ def _catalog(host):
                 conn.close()
         except (OSError, sqlite3.Error):
             schemas.append({'unavailable': True})
-    return digest({'schema': schemas, 'files': [list(x) for x in host._stat_sig(*files)]})
+    return digest({'databases': [str(database), str(host.UPLOAD_DB)], 'schema': schemas})
+
+
+def _refresh(host):
+    """取当前表结构摘要;结构变化(即使 stat 未变)时才清空共享的表/列缓存。"""
+    catalog = _catalog(host)
+    database = host._qa_db() if hasattr(host, "_qa_db") else host.DB
+    key = (str(database), str(host.UPLOAD_DB))
+    if _SEEN_CATALOGS.get(key) != catalog:
+        host._INV_CACHE.clear()
+        host._COLS_CACHE.clear()
+        if len(_SEEN_CATALOGS) > 64:
+            _SEEN_CATALOGS.clear()
+        _SEEN_CATALOGS[key] = catalog
+    return catalog
 
 
 class HostAdapter(DataQAAdapter):
@@ -160,9 +184,7 @@ class RequestGate:
         host = self.host
         with host._WRITE_LOCK:
             state = _identities(host, self.graphs, self.body)
-            # Recompute inventory/columns rather than trusting process caches across connection changes.
-            host._INV_CACHE.clear()
-            host._COLS_CACHE.clear()
+            catalog = _refresh(host)
             ir, actual, fallback, profile = host._qa_anchor_ir(self.graphs)
             if not actual:
                 raise ContractError('ontology_not_queryable', '请先基于当前数据源构建本体，再进行问数。')
@@ -181,7 +203,7 @@ class RequestGate:
                              'content': {'question': self.question, 'plan': None}},
                     'context': {'mode': 'real', 'generation_policy': 'offline'},
                     'environment': {'adapter_revision': 'data-deep-qa-host-1', 'deep_qa': info,
-                                    'connections': _catalog(host), 'lifecycle': state,
+                                    'connections': catalog, 'lifecycle': state,
                                     'publication': {key: host._release_state(key) for key in actual},
                                     'edits_revision': digest([list(x) for x in host._stat_sig(
                                         *[host._edits_path(key) for key in actual])])}}
@@ -240,18 +262,22 @@ class RequestGate:
 
     @contextmanager
     def reading(self):
-        """DR-158: probes and deterministic decision reads share the lifecycle fence."""
-        with self.host._WRITE_LOCK:
-            self.fresh()
-            yield
+        """DR-158: probes and deterministic decision reads share the lifecycle fence.
+
+        读取前后各核对一次依据;期间本体被删除或改动则整段结果按过期丢弃,读取本身不持全局写锁。
+        """
+        self.fresh()
+        yield
+        self.fresh()
 
     @contextmanager
     def execution(self, sql):
-        # Legacy delete/edit operations use this same lock. Admission and this SQL are indivisible.
+        """准入在写锁内核验,执行期间释放锁;执行后再核对依据,变化则结果按过期丢弃。"""
         with self.host._WRITE_LOCK:
             if not self.validate_sql(sql):
                 raise ContractError('application_not_ready', '查询未通过当前本体检查，请重新生成计划。')
-            yield
+        yield
+        self.fresh()
 
 
 def failure(exc):
@@ -286,11 +312,11 @@ class DataCheckResolver:
         require(context.get('task_ref') is None)
         from ontology_assets import AssetStore
         with self.host._WRITE_LOCK:
-            self.host._INV_CACHE.clear()
+            catalog = _refresh(self.host)
             adapter = DataQAAdapter(self.host, assets=AssetStore(self.root, read_only=True),allow_deleted=_history)
             data = adapter.resolve(asset_refs=asset_refs)
             data['context']['mode'] = context['mode']
-            data['environment']['connections'] = _catalog(self.host)
+            data['environment']['connections'] = catalog
             return data
 
     def peek(self, report):
