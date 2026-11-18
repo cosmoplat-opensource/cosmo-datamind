@@ -1,6 +1,7 @@
 """Task, completion and optional OWL import HTTP composition — DR-145 / DR-148."""
 import io
 import sqlite3
+import threading
 
 from flask import Blueprint, jsonify, request, send_file
 from werkzeug.exceptions import BadRequest, RequestEntityTooLarge
@@ -9,6 +10,9 @@ from domain_runs.build_service import BuildRequestError
 from domain_runs.robotics_task_service import TaskError, TaskService
 from domain_runs.robotics_task_history import TaskHistory
 from domains.robotics.task_model import ModelClient, ModelError
+
+# 同步构建演示示例时，进程内同时只允许一次。
+_DEMO_SLOTS = threading.BoundedSemaphore(1)
 
 
 def init_app(app, runtime):
@@ -21,7 +25,9 @@ def init_app(app, runtime):
             runtime.writer()
         if not (runtime.root / 'domain.sqlite3').is_file():
             raise TaskError('not_found', '尚无任务记录。')
-        return TaskService(runtime.root, generation_policy='offline')
+        guards = getattr(runtime, 'guards', None) or {}
+        options = {'max_triples': guards['max_triples']} if 'max_triples' in guards else {}
+        return TaskService(runtime.root, generation_policy='offline', **options)
 
     def body(required, optional=()):
         data = request.get_json()
@@ -34,7 +40,8 @@ def init_app(app, runtime):
     def task_error(exc):
         status = {'not_found': 404, 'session_conflict': 409, 'request_conflict': 409, 'task_busy': 409,
             'stale_result': 409, 'no_candidate': 409, 'artifact_integrity': 409, 'save_failed': 503,
-            'invalid_answer': 422, 'invalid_ontology': 422,'ontology_deleted':409,'stale_lifecycle':409}.get(exc.code, 400)
+            'invalid_answer': 422, 'invalid_ontology': 422,'ontology_deleted':409,'stale_lifecycle':409,
+            'demo_busy': 409, 'ontology_too_large': 413}.get(exc.code, 400)
         return jsonify(error={'code': exc.code, 'message': str(exc)}), status
 
     @bp.errorhandler(BuildRequestError)
@@ -137,10 +144,8 @@ def init_app(app, runtime):
     def demo():
         store = service()
         args = body(('request_id',))
-        from domain_runs.robotics_task_demo import build_example
-        # This endpoint accepts no user asset to supplement: it always builds packaged examples.
-        version = build_example(runtime.root, mode='demo')
-        return jsonify(store.start(ontology_id=version['ontology_id'], version_id=version['version_id'],
-                                   mode='demo', request_id=args['request_id'])), 201
+        from domain_runs.robotics_task_demo import start_demo
+        # 不接受用户资产：先查重放，再复用或构建内容寻址的打包示例。
+        return jsonify(start_demo(store, request_id=args['request_id'], slots=_DEMO_SLOTS)), 201
 
     app.register_blueprint(bp)

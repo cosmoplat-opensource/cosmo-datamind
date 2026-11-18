@@ -8,8 +8,10 @@ from copy import deepcopy
 import json
 import uuid
 import xml.etree.ElementTree as ET
+from xml.sax import SAXException
 
-from rdflib import RDF, RDFS, URIRef
+from rdflib import RDF, RDFS, Graph, URIRef
+from rdflib.exceptions import Error as RDFError
 
 from domains.robotics import consumer, evidence, task_knowledge
 from domains.robotics.graph import S
@@ -17,7 +19,7 @@ from domains.robotics.task_completion import inspect_gaps
 from domains.robotics.task_dialogue import catalog_from_graph, grounded_mentions, ENTITY_FIELDS
 from domains.robotics.task_model import ModelClient, ModelError
 from ontology_assets import AssetStore
-from ontology_assets.governance import GovernanceService
+from ontology_assets.governance import MAX_TRIPLES, GovernanceService
 from ontology_assets.payloads import json_text
 from ontology_assets.storage import digest
 from ontology_assets.lifecycle import LifecycleError
@@ -57,14 +59,15 @@ def _clear(state):
 
 
 class TaskService:
-    def __init__(self, root, model_client=None, *, generation_policy='strict'):
+    def __init__(self, root, model_client=None, *, generation_policy='strict', max_triples=MAX_TRIPLES):
         if generation_policy not in ('strict', 'offline'):
             raise ValueError('未知的生成策略。')
         self.generation_policy = generation_policy
+        self.max_triples = max_triples
         self.assets = AssetStore(root)
         self.storage = self.assets.storage
         self.root = self.storage.root
-        self.governance = GovernanceService(root)
+        self.governance = GovernanceService(root, max_triples=max_triples)
         self.model = model_client if model_client is not None else ModelClient.from_datamind()
         # DR-146: additive application tables; the shared asset schema/version stays compatible.
         with self.storage.transaction(write=True) as conn:
@@ -437,8 +440,43 @@ class TaskService:
         except (ValueError, OSError, KeyError) as exc:
             raise TaskError('artifact_integrity', '登记的 XML 文件缺失或已损坏。') from exc
 
+    def _check_size(self, content):
+        """推理与 SHACL 之前先解析计数，超过三元组上限即拒绝。"""
+        try:
+            text = content.decode('utf-8-sig')
+            if '<!DOCTYPE' in text or '<!ENTITY' in text:
+                raise ValueError('RDF/XML 不允许 DTD 或实体声明。')
+            size = len(Graph().parse(data=text, format='xml'))
+        except (ValueError, TypeError, SAXException, RDFError) as exc:
+            raise TaskError('invalid_ontology', 'OWL 文件损坏、模式不匹配或不符合平台契约。') from exc
+        if size > self.max_triples:
+            raise TaskError('ontology_too_large', f'本体三元组超过上限 {self.max_triples}。')
+
+    def _imported(self, conn, *, name, mode, sha):
+        """同名、同模式、同字节的有效导入直接复用。"""
+        from ontology_assets.lifecycle import state_in
+        rows = conn.execute("""SELECT v.ontology_id, v.version_id FROM versions v JOIN assets a ON a.ontology_id=v.ontology_id
+            WHERE a.domain='robotics' AND a.name=? AND v.payload_sha256=? AND v.parent_version_id IS NULL
+            AND json_extract(v.metadata,'$.build_recipe')='owl_import' AND json_extract(v.metadata,'$.mode')=?
+            ORDER BY v.rowid""", (name, sha, mode)).fetchall()
+        for row in rows:
+            if state_in(conn, row['ontology_id'])['state'] == 'active':
+                return {'ontology_id': row['ontology_id'], 'version_id': row['version_id'], 'mode': mode}
+        return None
+
+    def _import_source(self, conn, content, sha):
+        for row in conn.execute("SELECT * FROM sources WHERE role='imported_ontology' AND sha256=? AND byte_size=? "
+                                'ORDER BY rowid', (sha, len(content))).fetchall():
+            try:
+                self.storage.read_bytes(row['path'], row['sha256'])
+                return dict(row)
+            except (ValueError, OSError):
+                continue
+        return self.assets._put_source(conn, content, role='imported_ontology', media_type='application/rdf+xml')
+
     def import_owl(self, *, content, name, mode, request_id):
         _text(name, '本体名称', 256)
+        self._check_size(content)
         try:
             consumer.load_ontology_bytes(content, mode=mode)
         except (ValueError, TypeError) as exc:
@@ -448,8 +486,12 @@ class TaskService:
                 {'name': name, 'mode': mode, 'sha256': digest(content)})
             if replay is not None:
                 return replay
+            sha = digest(content)
+            existing = self._imported(conn, name=name, mode=mode, sha=sha)
+            if existing is not None:
+                return self._reply(conn, 'import', request_id, existing)
             asset = self.assets._create_asset(conn, name, 'robotics')
-            source = self.assets._put_source(conn, content, role='imported_ontology', media_type='application/rdf+xml')
+            source = self._import_source(conn, content, sha)
             version = self.assets._add_version(conn, asset['ontology_id'], content, payload_kind='robotics_rdf',
                 source_asset_ids=[source['source_asset_id']], metadata={'mode': mode, 'profile_id': 'ur_pick_place',
                 'build_recipe': 'owl_import'})
