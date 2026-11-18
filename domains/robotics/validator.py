@@ -7,6 +7,7 @@ import xml.etree.ElementTree as ET
 from .xml_contract import (_trees, _registry, _ports, _reference, _config_locations,
                            _error, _baseline_root, _literal_problem)
 from .profiles.ur_pick_place import EXPECTED_STEPS
+from .xml_text import invalid_xml_text
 
 def _baseline_errors(root, baseline, config_paths):
     """Compare against the ontology template, allowing declared public value slots."""
@@ -24,7 +25,7 @@ def _baseline_errors(root, baseline, config_paths):
         for key in set(candidate.attrib) | set(original.attrib):
             if key in permitted and key in candidate.attrib and key in original.attrib:
                 value = candidate.get(key)
-                if not value.strip() or any(c in value for c in "{}\n\r\0"):
+                if not value.strip() or any(c in value for c in "{}\n\r") or invalid_xml_text(value):
                     errors.append(_error("configuration_literal", path + "@" + key,
                                          "Public configuration must remain a nonempty literal, not a runtime binding"))
                 continue

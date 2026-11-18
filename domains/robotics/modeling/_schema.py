@@ -6,11 +6,12 @@ from urllib.parse import urlsplit
 
 from jsonschema import Draft202012Validator, ValidationError
 
+from ..xml_text import INVALID_XML_TEXT
+
 
 ID = {'type': 'string', 'pattern': r'^[A-Za-z][A-Za-z0-9_]*$', 'maxLength': 160}
 TEXT = {'type': 'string', 'minLength': 1, 'maxLength': 2000}
 REFS = {'type': 'array', 'items': ID, 'uniqueItems': True, 'minItems': 1, 'maxItems': 256}
-INVALID_XML_TEXT = re.compile('[\x00-\x08\x0b\x0c\x0e-\x1f\ud800-\udfff\ufffe\uffff]')
 DATATYPES = {'xsd:string': str, 'xsd:integer': int, 'xsd:boolean': bool}
 
 

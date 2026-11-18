@@ -1,9 +1,21 @@
 """Located checks for the supported XML dialect before RDF extraction — DR-142 / DR-147."""
 from copy import deepcopy
+import re
 import xml.etree.ElementTree as ET
 
 from .profiles.ur_pick_place import COMPOSITES
 from .validator import _structure_errors
+from .xml_contract import VAR
+
+# 节点/端口/黑板键会成为 RDF IRI 片段，只接受此形式。
+IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
+# 内置 SetBlackboard 契约；节点模型若自行声明，须与之完全一致。
+SET_BLACKBOARD_MODEL = ('<Action ID="SetBlackboard"><input_port name="value" type="Any"/>'
+                        '<input_port name="output_key" type="std::string"/></Action>')
+
+
+def builtin_set_blackboard():
+    return ET.fromstring(SET_BLACKBOARD_MODEL)
 
 
 class SourceValidationError(ValueError):
@@ -44,9 +56,15 @@ def _catalog(root, role):
         name = node.get("ID")
         if not name or name in nodes or node.tag not in ("Action", "Condition", "SubTree"):
             _fail("unsupported_template", "Invalid or duplicate node model", role, model_id=name)
+        if not IDENTIFIER.match(name):
+            _fail("invalid_identifier", "Node model ID must match [A-Za-z_][A-Za-z0-9_]*", role,
+                  element="TreeNodesModel/" + node.tag, attribute="ID", model_id=name)
         ports = {}
         for port in node:
             key = port.get("name")
+            if key and not IDENTIFIER.match(key):
+                _fail("invalid_identifier", "Port name must match [A-Za-z_][A-Za-z0-9_]*", role,
+                      element=port.tag, attribute="name", model_id=name, port=key)
             if (not key or key in ports or (node.tag != "SubTree" and not port.get("type")) or len(port)
                     or port.tag not in ("input_port", "output_port")):
                 _fail("invalid_port", "Invalid or duplicate port", role, model_id=name, port=key)
@@ -64,6 +82,13 @@ def validate_sources(root, models):
     if any(c.tag != "TreeNodesModel" for c in models):
         _fail("unsupported_template", "Node-model source contains unsupported elements", "node_models")
     embedded, external = _catalog(root, "behavior_tree"), _catalog(models, "node_models")
+    if "SetBlackboard" in external:
+        declared, ports = external["SetBlackboard"]
+        builtin = builtin_set_blackboard()
+        if (declared.tag != builtin.tag or {k: (p.tag, p.get("type")) for k, p in ports.items()}
+                != {p.get("name"): (p.tag, p.get("type")) for p in builtin}):
+            _fail("model_conflict", "Declared SetBlackboard differs from the built-in contract", "node_models",
+                  model_id="SetBlackboard")
     for name in sorted(embedded.keys() & external.keys()):
         node, ports = embedded[name]
         declared, actual = external[name]
@@ -94,6 +119,7 @@ def validate_sources(root, models):
             _fail("unsupported_template", "Unsupported tree or sequence attributes", tree_id=tree_id)
         for index, node in enumerate(tree[0], 1):
             location = {"tree_id": tree_id, "node_tag": node.tag, "step_index": index}
+            outputs = set()
             if node.tag == "SetBlackboard":
                 allowed, required = {"value", "output_key", "name"}, {"value", "output_key"}
             elif node.tag == "SubTree":
@@ -109,9 +135,17 @@ def validate_sources(root, models):
                 allowed = set(ports) | {"name"}
                 required = {name for name, port in ports.items()
                             if port.tag == "input_port" and not port.get("default", "").strip()}
+                outputs = {name for name, port in ports.items() if port.tag == "output_port"}
             wrong = sorted((required - set(node.attrib)) | (set(node.attrib) - allowed))
             if wrong:
                 _fail("invalid_port", "Missing or unknown ports", **location, port=wrong[0])
+            for key in sorted(set(outputs) & set(node.attrib)):
+                if not VAR.fullmatch(node.get(key)):
+                    _fail("invalid_binding", "Output ports must bind a blackboard variable such as {name}",
+                          **location, attribute=key, port=key)
+            if node.tag == "SetBlackboard" and not IDENTIFIER.match(node.get("output_key")):
+                _fail("invalid_identifier", "SetBlackboard output_key must match [A-Za-z_][A-Za-z0-9_]*",
+                      **location, attribute="output_key", port="output_key")
     errors = _structure_errors(root)
     if errors:
         # Keep the validator's explicit path/code; do not infer line numbers from text.

@@ -224,6 +224,15 @@ def build_result(tbox, evidence, include_unused=False):
     for name in trees:
         infer_interface(name)
     made, role_counts, seen_objects, seen_values = {}, Counter(), {}, {}
+    origins, collided = {}, set()
+
+    def make_id(prefix, *parts):
+        # 拼接可能让不同原始名得到同一标识；记录原始组成以发现冲突，不静默合并。
+        value = _identifier(prefix, *parts)
+        raw = (prefix, *map(str, parts))
+        if origins.setdefault(value, raw) != raw:
+            collided.add(value)
+        return value
     data_terms = {row['id']: row for row in tbox['data_properties']}
 
     def refs(nodes):
@@ -239,6 +248,8 @@ def build_result(tbox, evidence, include_unused=False):
         return identifier if identifier in selected[kind] else None
 
     def add(identifier, role, label, *nodes):
+        if identifier in collided:
+            fail(f'XML 名称拼接后的实例标识 {identifier} 与其他对象冲突，请重命名节点或端口。', *nodes)
         cls = term('classes', role)
         if cls is None:
             report['skipped_instances'].append({'id': identifier, 'role': role, 'source_refs': refs(nodes)})
@@ -292,16 +303,16 @@ def build_result(tbox, evidence, include_unused=False):
         return mapping[kind].get(role) in selected[kind]
 
     def skill(name):
-        return _identifier('skill', name)
+        return make_id('skill', name)
 
     def owner(name):
-        return skill(name) if name in callers else _identifier('procedure', name)
+        return skill(name) if name in callers else make_id('procedure', name)
 
     def parameter(name, key):
-        return _identifier('parameter', skill(name), key)
+        return make_id('parameter', skill(name), key)
 
     def reference(name, key):
-        return _identifier('data', name, key)
+        return make_id('data', name, key)
 
     def add_ports(name, implementation, parameter_sources):
         for key, direction in directions[name].items():
@@ -312,7 +323,7 @@ def build_result(tbox, evidence, include_unused=False):
             literal(param, 'parameter_direction', direction, *nodes)
             if key in ports.get(name, {}):
                 port = ports[name][key][1]
-                contract = add(_identifier('port', name, key), 'port', name+'.'+key+' 端口', port)
+                contract = add(make_id('port', name, key), 'port', name+'.'+key+' 端口', port)
                 link(implementation, 'port_contract', contract, port)
                 link(param, 'parameter_port', contract, port)
                 literal(contract, 'parameter_name', key, port)
@@ -333,7 +344,7 @@ def build_result(tbox, evidence, include_unused=False):
     for name in sorted(atomic_names):
         nodes = [models[name]] if name in models else builtin_nodes
         add(skill(name), 'atomic_skill', name, *nodes)
-        implementation = _identifier('implementation', name)
+        implementation = make_id('implementation', name)
         if name in models:
             add(implementation, 'implementation', name+' 节点实现', models[name])
             link(skill(name), 'implementation', implementation, models[name])
@@ -343,7 +354,7 @@ def build_result(tbox, evidence, include_unused=False):
     for name, tree in trees.items():
         add(owner(name), 'composite_skill' if name in callers else 'procedure', name, tree)
         if name in callers:
-            implementation = add(_identifier('subtree_implementation', name), 'implementation', name+' 子树实现', tree)
+            implementation = add(make_id('subtree_implementation', name), 'implementation', name+' 子树实现', tree)
             link(owner(name), 'implementation', implementation, tree)
             optional_literal(implementation, 'node_kind', 'SubTree', *callers[name])
             if name in models and models[name].tag == 'SubTree':
@@ -374,7 +385,7 @@ def build_result(tbox, evidence, include_unused=False):
     sites, bindings = [], []
     for name, index, node in calls:
         tag = node.get('ID') if node.tag == 'SubTree' else node.tag
-        call = add(_identifier('call', name, index), 'invocation', f'{name}/{index} '+(node.get('name') or tag), node)
+        call = add(make_id('call', name, index), 'invocation', f'{name}/{index} '+(node.get('name') or tag), node)
         link(owner(name), 'contains_step', call, node)
         link(call, 'invokes_skill', skill(tag), node)
         literal(call, 'step_index', index, node)
@@ -385,11 +396,11 @@ def build_result(tbox, evidence, include_unused=False):
         if (node.tag == 'SubTree' and set(PERCEPTION_FIELDS) <= set(node.attrib)
                 and selected_role('classes', 'perception_profile')
                 and any(selected_role('data_properties', role) for role in PERCEPTION_FIELDS.values())):
-            profile = add(_identifier('perception_profile', name, index), 'perception_profile',
+            profile = add(make_id('perception_profile', name, index), 'perception_profile',
                           f'{name}/{index} '+tag+' 感知配置', node)
             object_name = node.get('object_name')
             if object_name and not VARIABLE.fullmatch(object_name) and selected_role('classes', 'part_type'):
-                part = add(_identifier('part_type', object_name), 'part_type', '识别对象类型 '+object_name, node)
+                part = add(make_id('part_type', object_name), 'part_type', '识别对象类型 '+object_name, node)
                 optional_literal(part, 'object_name', object_name, node)
                 if selected_role('object_properties', 'perception_profile'):
                     link(part, 'perception_profile', profile, node)
@@ -404,7 +415,7 @@ def build_result(tbox, evidence, include_unused=False):
             if key in ('ID', 'name'):
                 continue
             direction = directions[tag][key]
-            binding = add(_identifier('binding', name, index, key), 'binding', f'{name}/{index}.{key}', node)
+            binding = add(make_id('binding', name, index, key), 'binding', f'{name}/{index}.{key}', node)
             link(call, 'binding', binding, node)
             link(binding, 'parameter', parameter(tag, key), node)
             literal(binding, 'binding_direction', direction, node)
@@ -423,8 +434,8 @@ def build_result(tbox, evidence, include_unused=False):
             else:
                 literal(binding, 'literal_value', raw, node)
                 if name in callers:
-                    config = add(_identifier('fixed', name), 'fixed_configuration', name+' 固定实现配置', node)
-                    link(_identifier('subtree_implementation', name), 'fixed_configuration', config, node)
+                    config = add(make_id('fixed', name), 'fixed_configuration', name+' 固定实现配置', node)
+                    link(make_id('subtree_implementation', name), 'fixed_configuration', config, node)
                     link(config, 'fixed_binding', binding, node)
             bindings.append({'tree_id': name, 'step_index': index, 'parameter': key, 'direction': direction,
                              'raw_value': raw, 'source_ref': source[node], 'id': binding, 'emitted': binding in made})

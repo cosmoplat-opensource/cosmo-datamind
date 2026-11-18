@@ -74,6 +74,9 @@ def grounded_mentions(task, messages, catalog):
                     issue = {'code': 'ambiguous_entity', 'field': field,
                              'message': f'存在多个{label}候选，请明确选择一个。', 'candidates': candidates}
                 identity = found[0]['id'] if len(found) == 1 else unknown
+                if not issue and identity is None:
+                    # 只提到字段词而未解析到对象（如“工位就用刚才那个”）：保留先前选择，不清空下游。
+                    continue
                 events[field] = (None, issue) if issue else (identity, None)
             if not events:
                 intent = re.search(r'任务|生成|创建|搬运|抓移放', phrase)

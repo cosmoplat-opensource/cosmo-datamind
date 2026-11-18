@@ -4,11 +4,12 @@ import re
 
 from jsonschema import Draft202012Validator, ValidationError
 
+from ..xml_text import INVALID_XML_TEXT
+
 
 ID = {'type': 'string', 'pattern': r'^[A-Za-z][A-Za-z0-9_]*$', 'maxLength': 96}
 TEXT = {'type': 'string', 'minLength': 1, 'maxLength': 1000}
 REFS = {'type': 'array', 'items': ID, 'uniqueItems': True, 'minItems': 1, 'maxItems': 256}
-INVALID_XML_TEXT = re.compile('[\x00-\x08\x0b\x0c\x0e-\x1f\ud800-\udfff\ufffe\uffff]')
 
 
 def _object(fields):
@@ -63,7 +64,7 @@ def response_schema(terminology, stage='classes', classes=None):
             if key == 'object_properties':
                 fields['range_ids'] = {**fields['range_ids'], 'items': {'enum': endpoints}}
             else:
-                fields['domain_ids'] = {**fields['domain_ids'], 'items': {'enum': class_ids}}
+                # 与 validate_properties 一致：数据属性定义域同样允许 owl:Thing。
                 fields['class_ids'] = {**fields['class_ids'], 'items': {'enum': class_ids}}
                 fields['datatype'] = {'enum': sorted({row['datatype'] for row in candidates})}
         return schema

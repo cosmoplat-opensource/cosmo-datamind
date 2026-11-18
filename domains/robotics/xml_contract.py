@@ -4,6 +4,8 @@ import math
 import re
 import xml.etree.ElementTree as ET
 
+from .xml_text import invalid_xml_text
+
 VAR = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)\}\Z")
 
 
@@ -47,7 +49,8 @@ def _baseline_root(baseline):
 def _literal_problem(tag, port, value, port_type):
     if isinstance(value, str) and value.startswith("__UNRESOLVED_"):
         return "Unresolved ontology parameter: " + value
-    if not isinstance(value, str) or not value.strip() or any(c in value for c in "{}\n\r\0"):
+    if (not isinstance(value, str) or not value.strip() or any(c in value for c in "{}\n\r")
+            or invalid_xml_text(value)):
         return "Expected a nonempty literal without blackboard syntax or control characters"
     shape = None
     if "PoseQuat" in port_type:

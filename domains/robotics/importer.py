@@ -10,7 +10,7 @@ from rdflib import RDF
 from .graph import S, schema, individual, literal, parameter, reference, invocation
 from .profiles.ur_pick_place import COMPOSITES, ROLES, owner, semantic_type, add_domain, add_conditions
 from .xml_contract import VAR
-from .source_validation import parse_xml, validate_sources
+from .source_validation import builtin_set_blackboard, parse_xml, validate_sources
 
 def build_graph(source, models, *, profile="ur_pick_place"):
     if profile != "ur_pick_place":
@@ -32,8 +32,8 @@ def build_graph(source, models, *, profile="ur_pick_place"):
     trees = {tree.get("ID"): tree for tree in root.findall("BehaviorTree")}
     registry = {node.get("ID"): node for node in catalog.find("TreeNodesModel")}
     embedded = {node.get("ID"): node for node in root.find("TreeNodesModel")}
-    builtin = ET.fromstring('<Action ID="SetBlackboard"><input_port name="value" type="Any"/><input_port name="output_key" type="std::string"/></Action>')
-    registry["SetBlackboard"] = builtin
+    # 已校验：节点模型中声明的 SetBlackboard 与内置契约一致。
+    registry["SetBlackboard"] = builtin_set_blackboard()
     active = {n.tag for t in trees.values() for n in t[0] if n.tag != "SubTree"}
     for tag, model in registry.items():
         impl = individual(g, S[tag + "_BT_Impl"], "SkillImplementation", tag + " 节点实现")

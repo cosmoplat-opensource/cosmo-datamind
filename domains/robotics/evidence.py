@@ -195,6 +195,30 @@ def evaluate_evidence(graph, evidence_iri, *, now=None, revocations=(), required
     return {'valid': not issues, 'issues': issues}
 
 
+def legacy_evidence_valid(graph, subject, *, kind, implementation, part_type, slot, mode,
+                          revocations=(), now=None):
+    """未启用治理策略的旧式 OWL 适配确认；严格生成与缺口检查共用此规则。"""
+    if (subject, S.forImplementation, implementation) not in graph or (subject, S.forPartType, part_type) not in graph:
+        return False
+    if kind == 'placement_compatibility' and (subject, S.forSlot, slot) not in graph:
+        return False
+    source_hash = value(graph, S.BehaviorTree_Source, 'sha256')
+    if not re.fullmatch(r'[0-9a-f]{64}', source_hash):
+        return False
+    expected = 'simulated' if mode == 'demo' else 'confirmed'
+    if (value(graph, subject, 'evidenceKind') != kind or value(graph, subject, 'confirmationStatus') != expected
+            or value(graph, subject, 'evidenceReference').strip() in ('', 'None')
+            or value(graph, subject, 'sourceHash') != source_hash):
+        return False
+    if any(event.get('evidence_iri') == str(subject) and event.get('kind') in ('revoked', 'superseded')
+           for event in revocations):
+        return False
+    try:
+        return timestamp(value(graph, subject, 'validUntil')) > timestamp(utc_now() if now is None else now)
+    except ValueError:
+        return False
+
+
 def review_evidence(graph, evidence_iri, *, decision, actor, reason, now=None):
     now = utc_now() if now is None else now
     timestamp(now)

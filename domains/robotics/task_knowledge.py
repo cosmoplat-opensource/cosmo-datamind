@@ -14,6 +14,7 @@ from .graph import S
 from .semantics import xml_from_graph, node_models_from_graph, configuration_paths
 from .task_completion import inspect_gaps
 from .validator import validate_tree
+from .xml_text import invalid_xml_text
 
 ORIGIN = '本地会话提交；用户明确操作，不是已认证个人签名或现场执行记录'
 SH = Namespace('http://www.w3.org/ns/shacl#')
@@ -137,7 +138,8 @@ def apply_answers(graph, task, answers, *, mode, revocations=()):
         elif kind == 'parameter':
             if keys != {'value'} or not isinstance(answer['value'], str) or not answer['value'].strip():
                 raise ValueError('请填写实际参数，不能留空或提供控制字段。')
-            if any(c in answer['value'] for c in '{}\n\r\0') or answer['value'].startswith('__UNRESOLVED_'):
+            if (any(c in answer['value'] for c in '{}\n\r') or invalid_xml_text(answer['value'])
+                    or answer['value'].startswith('__UNRESOLVED_')):
                 raise ValueError('请填写实际参数，不能填写变量或占位符。')
             changed = authoring.apply_operations(changed, [{'op': 'set_field', 'iri': str(subject),
                 'field': field, 'value': answer['value'], 'basis': ORIGIN}])
