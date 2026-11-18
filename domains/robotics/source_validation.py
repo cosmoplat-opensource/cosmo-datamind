@@ -51,7 +51,7 @@ def _catalog(root, role):
     catalogs = root.findall("TreeNodesModel")
     if len(catalogs) != 1:
         _fail("unsupported_template", "Expected exactly one TreeNodesModel", role)
-    nodes = {}
+    nodes, joined = {}, {}                       # 端口 IRI 用「节点 ID__端口名」拼成,不同端口不能拼出同一个
     for node in catalogs[0]:
         name = node.get("ID")
         if not name or name in nodes or node.tag not in ("Action", "Condition", "SubTree"):
@@ -69,6 +69,11 @@ def _catalog(root, role):
                     or port.tag not in ("input_port", "output_port")):
                 _fail("invalid_port", "Invalid or duplicate port", role, model_id=name, port=key)
             ports[key] = port
+            iri = f"{name}__{key}"
+            if iri in joined and joined[iri] != (name, key):
+                _fail("identifier_collision", "Node model ID and port name join into an identifier already used by another port",
+                      role, element=port.tag, attribute="name", model_id=name, port=key)
+            joined[iri] = (name, key)
         nodes[name] = (node, ports)
     return nodes
 

@@ -224,3 +224,18 @@ def test_data_property_with_owl_thing_domain_is_consistent():
     checked = _tbox_validation.validate_properties(proposal, set(), {'M0001'}, terminology,
                                                     frozen['classes'], frozen['competency_questions'])
     assert checked['data_properties'][0]['domain_ids'] == ['owl:Thing']
+
+
+# 端口 IRI 由「节点 ID__端口名」拼成;ID 与端口名可以含下划线,两个不同的端口可能拼出同一个 IRI
+def test_port_identifiers_that_collide_after_joining_are_located_source_errors(tmp_path):
+    raw = MODELS.read_bytes()
+    extra = (b'<Action ID="Grip_"><input_port name="b" type="double"/></Action>'
+             b'<Action ID="Grip"><input_port name="_b" type="double"/></Action></TreeNodesModel>')
+    assert raw.count(b'</TreeNodesModel>') == 1
+    source, models = _sources(tmp_path, model_bytes=raw.replace(b'</TreeNodesModel>', extra))
+    from domains.robotics.importer import build_graph
+    with pytest.raises(SourceValidationError) as failure:
+        build_graph(source, models)
+    issue = failure.value.issues[0]
+    assert issue['code'] == 'identifier_collision' and issue['source_role'] == 'node_models'
+    assert {issue['location']['model_id'], issue['location']['port']} & {'Grip', '_b', 'Grip_', 'b'}
