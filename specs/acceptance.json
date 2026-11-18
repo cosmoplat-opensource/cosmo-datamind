@@ -3924,6 +3924,113 @@
         "tests/unit/test_merge_qa_regressions.py::test_model_probes_cannot_bypass_semantic_validation",
         "tests/unit/test_database_scope_ui.py::test_database_source_frontend_behavior"
       ]
+    },
+    {
+      "id": "PR1-PUBLIC-01",
+      "decision": "DR-159",
+      "status": "delivered",
+      "criterion": "公开仓库不含开发者本机路径、外部单位与个人名称、AI 编程工具工作区,文档链接不指向未提交的检查结果;词表只改元数据时按首版冻结的设计仍按同一词表处理",
+      "tests": [
+        "tests/meta/test_public_content.py::test_no_personal_home_directories",
+        "tests/meta/test_public_content.py::test_name_check_finds_names_inside_longer_words",
+        "tests/meta/test_public_content.py::test_no_external_party_names",
+        "tests/meta/test_public_content.py::test_no_ai_tool_workspaces_or_tool_authorship_notes",
+        "tests/meta/test_public_content.py::test_evidence_links_point_to_committed_files",
+        "tests/unit/test_robotics_modeling_evidence.py::test_designs_frozen_on_the_first_vocabulary_bytes_still_count_as_the_same_vocabulary"
+      ]
+    },
+    {
+      "id": "PR1-LIFECYCLE-01",
+      "decision": "DR-159",
+      "status": "delivered",
+      "criterion": "本体生命周期:工作目录经符号链接时编辑仍生效;迁移跳过坏图谱并完成;启动时对齐外部改写;基线按内容寻址只存一份;已删除本体只在历史视图可读;开关与机器人功能同一配置来源;问数闸门不与写锁/RDF 锁形成死锁,SQL 在锁外执行后复核,数据写入不使进行中的问答失效,空白图谱项被忽略;执行器不丢刚返回的结果,设计运行有总时限",
+      "tests": [
+        "tests/unit/test_deepqa_host_integration.py::test_legacy_delete_during_sql_is_not_blocked_and_discards_result",
+        "tests/unit/test_lifecycle_gate_review_fixes.py::test_symlinked_workdir_edit_and_rewrite_publish_new_versions",
+        "tests/unit/test_lifecycle_gate_review_fixes.py::test_lifecycle_lookups_complete_while_rdf_lock_is_held_elsewhere",
+        "tests/unit/test_lifecycle_gate_review_fixes.py::test_write_lock_then_lifecycle_does_not_deadlock_with_rdf_then_write",
+        "tests/unit/test_lifecycle_gate_review_fixes.py::test_check_service_calls_resolver_outside_rdf_lock",
+        "tests/unit/test_lifecycle_gate_review_fixes.py::test_sql_execution_releases_global_write_lock",
+        "tests/unit/test_lifecycle_gate_review_fixes.py::test_unchanged_basis_keeps_shared_schema_caches",
+        "tests/unit/test_lifecycle_gate_review_fixes.py::test_edit_during_execution_discards_result_as_stale",
+        "tests/unit/test_lifecycle_gate_review_fixes.py::test_business_row_write_during_planning_is_not_stale",
+        "tests/unit/test_lifecycle_gate_review_fixes.py::test_bad_legacy_graph_is_skipped_and_migration_finishes",
+        "tests/unit/test_lifecycle_gate_review_fixes.py::test_interrupted_migration_does_not_enable_versioned_delete",
+        "tests/unit/test_lifecycle_gate_review_fixes.py::test_startup_rebinds_graph_changed_outside_lifecycle_writer",
+        "tests/unit/test_lifecycle_gate_review_fixes.py::test_edit_versions_reference_one_content_addressed_baseline",
+        "tests/unit/test_lifecycle_gate_review_fixes.py::test_inline_baseline_from_older_versions_still_loads",
+        "tests/unit/test_lifecycle_gate_review_fixes.py::test_deleted_graph_history_and_payload_need_explicit_deleted_view",
+        "tests/unit/test_lifecycle_gate_review_fixes.py::test_lifecycle_default_uses_app_config_like_robotics",
+        "tests/unit/test_lifecycle_gate_review_fixes.py::test_result_sent_just_before_child_exit_is_not_dropped",
+        "tests/unit/test_lifecycle_gate_review_fixes.py::test_blocked_later_sql_does_not_replace_answer_report",
+        "tests/unit/test_lifecycle_gate_review_fixes.py::test_design_run_past_deadline_fails_before_commit",
+        "tests/unit/test_lifecycle_gate_review_fixes.py::test_blank_graph_entries_are_ignored",
+        "tests/unit/test_lifecycle_gate_review_fixes.py::test_invalid_graph_scope_still_rejected"
+      ]
+    },
+    {
+      "id": "PR1-ROBOTICS-DOMAIN-01",
+      "decision": "DR-159",
+      "status": "delivered",
+      "criterion": "机器人领域:控制字符在所有入口被拒绝且保存前再解析一次;撤销的旧证据不再放行严格生成;来源的绑定与标识符校验带位置,拼接后重复的端口标识被拒绝;追问不会清掉已选内容;抽取时不同实体不会合并为同一标识;错误类型统一;owl:Thing 定义域一致;自行声明的 SetBlackboard 与内置契约不一致时报冲突",
+      "tests": [
+        "tests/unit/test_robotics_review_fixes.py::test_authoring_rejects_xml_control_characters",
+        "tests/unit/test_robotics_review_fixes.py::test_task_knowledge_parameter_answer_rejects_control_characters",
+        "tests/unit/test_robotics_review_fixes.py::test_compiler_instantiate_rejects_control_characters",
+        "tests/unit/test_robotics_review_fixes.py::test_literal_problem_and_baseline_reject_control_characters",
+        "tests/unit/test_robotics_review_fixes.py::test_revoked_legacy_evidence_blocks_strict_generation",
+        "tests/unit/test_robotics_review_fixes.py::test_output_port_bound_to_literal_is_a_located_source_error",
+        "tests/unit/test_robotics_review_fixes.py::test_invalid_model_identifiers_are_located_source_errors",
+        "tests/unit/test_robotics_review_fixes.py::test_set_blackboard_output_key_must_be_an_identifier",
+        "tests/unit/test_robotics_review_fixes.py::test_declared_set_blackboard_conflict_is_reported",
+        "tests/unit/test_robotics_review_fixes.py::test_declared_set_blackboard_matching_builtin_is_accepted",
+        "tests/unit/test_robotics_review_fixes.py::test_follow_up_without_resolved_entity_keeps_earlier_choice",
+        "tests/unit/test_robotics_review_fixes.py::test_identifier_collision_is_rejected",
+        "tests/unit/test_robotics_review_fixes.py::test_semantic_rejection_in_revise_is_modeling_error",
+        "tests/unit/test_robotics_review_fixes.py::test_source_digests_structure_error_is_modeling_error",
+        "tests/unit/test_robotics_review_fixes.py::test_data_property_with_owl_thing_domain_is_consistent",
+        "tests/unit/test_robotics_review_fixes.py::test_port_identifiers_that_collide_after_joining_are_located_source_errors",
+        "tests/unit/test_robotics_review_fixes.py::test_saved_owl_bytes_are_parsed_back_before_a_version_is_written"
+      ]
+    },
+    {
+      "id": "PR1-ROBOTICS-HTTP-01",
+      "decision": "DR-159",
+      "status": "delivered",
+      "criterion": "机器人接口:演示先查重放并复用已打包的演示,构建不并发;上传按摘要去重并有每个本体的总量上限;导入与评审先数三元组再做推理校验;评审人不能是系统或模型身份,不能评审自己的版本,记录为客户端自报;已删除本体的版本详情只在历史视图返回;同一任务会话不能并发发消息;引擎任务都有中文名",
+      "tests": [
+        "tests/unit/test_robotics_http_review_fixes.py::test_task_demo_replay_and_new_request_reuse_packaged_demo_without_rebuilding",
+        "tests/unit/test_robotics_http_review_fixes.py::test_task_demo_rejects_concurrent_builds",
+        "tests/unit/test_robotics_http_review_fixes.py::test_evidence_upload_dedups_same_bytes_and_enforces_asset_quota",
+        "tests/unit/test_robotics_http_review_fixes.py::test_owl_import_with_new_request_id_reuses_same_content",
+        "tests/unit/test_robotics_http_review_fixes.py::test_owl_import_rejects_too_many_triples_before_validation",
+        "tests/unit/test_robotics_http_review_fixes.py::test_review_rejects_too_many_triples_before_shacl",
+        "tests/unit/test_robotics_http_review_fixes.py::test_review_rejects_system_or_model_identity",
+        "tests/unit/test_robotics_http_review_fixes.py::test_review_refuses_self_review_by_version_author",
+        "tests/unit/test_robotics_http_review_fixes.py::test_review_records_reviewer_as_client_declared_and_publish_rejects_system",
+        "tests/unit/test_robotics_http_review_fixes.py::test_publish_rejects_a_stored_self_review",
+        "tests/unit/test_robotics_http_review_fixes.py::test_second_message_on_running_session_is_rejected_without_model_call",
+        "tests/unit/test_robotics_http_review_fixes.py::test_every_engine_task_has_a_chinese_label",
+        "tests/unit/test_robotics_http_review_fixes.py::test_deleted_asset_version_detail_requires_explicit_history_view",
+        "tests/unit/test_robotics_http_review_fixes.py::test_history_view_download_links_carry_deleted_state_only_for_deleted_assets"
+      ]
+    },
+    {
+      "id": "PR1-UI-01",
+      "decision": "DR-159",
+      "status": "delivered",
+      "criterion": "界面:请求编号不依赖安全上下文;本体库读取失败时提示、删除只经一次确认;生命周期对话框支持 Esc 与焦点循环、切换页面时关闭;问数页签与菜单同名;图谱类别不只靠颜色区分;回收站经历史视图打开固定版本;浏览器测试统一找本机浏览器;已交付需求不挂不存在的计划测试",
+      "tests": [
+        "tests/meta/test_ui_safety.py::test_request_ids_do_not_require_a_secure_context",
+        "tests/meta/test_ui_safety.py::test_request_id_helper_falls_back_without_random_uuid",
+        "tests/meta/test_ui_safety.py::test_ontology_library_reports_failures_and_deletes_through_one_confirmation",
+        "tests/meta/test_ui_safety.py::test_lifecycle_dialog_is_keyboard_safe_and_closes_on_navigation",
+        "tests/meta/test_ui_safety.py::test_chat_tab_uses_the_menu_name",
+        "tests/meta/test_ui_safety.py::test_robotics_graph_kinds_are_not_told_apart_by_colour_alone",
+        "tests/meta/test_ui_safety.py::test_every_browser_test_finds_the_local_browser_the_same_way",
+        "tests/meta/test_ui_safety.py::test_recycle_bin_opens_fixed_versions_through_the_deleted_history_view",
+        "tests/meta/test_acceptance_traceability.py::test_delivered_requirements_do_not_list_missing_planned_tests"
+      ]
     }
   ],
   "planned_requirements": [
