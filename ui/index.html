@@ -193,7 +193,7 @@ a{color:var(--acc)}
 .sk-card.sel{border-color:var(--acc);background:#F7F9FF}
 .sk-card .nm{font-size:14px;font-weight:600;color:var(--txt)} .sk-card .badge{font-size:12px;background:#EEF2FF;color:var(--acc);border-radius:4px;padding:1px 6px;margin-left:6px}
 .sk-card .ds{font-size:12px;color:var(--sub);margin-top:4px}
-</style><link rel="stylesheet" href="/assets/styles/responsive.css?v=2"><link rel="stylesheet" href="/assets/styles/database-scope.css?v=2"><link rel="stylesheet" href="/assets/styles/review.css?v=2"><link rel="stylesheet" href="/assets/styles/qa-anchor.css?v=2"><link rel="stylesheet" href="/assets/styles/robotics.css?v=16"><link rel="stylesheet" href="/assets/styles/studio.css?v=1"></head><body>
+</style><link rel="stylesheet" href="/assets/styles/responsive.css?v=2"><link rel="stylesheet" href="/assets/styles/database-scope.css?v=2"><link rel="stylesheet" href="/assets/styles/review.css?v=2"><link rel="stylesheet" href="/assets/styles/qa-anchor.css?v=2"><link rel="stylesheet" href="/assets/styles/robotics.css?v=16"><link rel="stylesheet" href="/assets/styles/interactive-ontology-graph.css?v=1"></head><body>
 <header class="topbar">
  <div class="wm">◈ COSMO DataMind <small>数据智脑 · 治理 × 本体 × 问数</small></div>
  <div class="tools">
@@ -714,8 +714,8 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
 <script src="/assets/modules/robotics-task-app.js?v=3"></script>
 <script src="/assets/modules/robotics-assets.js?v=17"></script><script src="/assets/modules/ontology-lifecycle.js?v=2"></script>
 <script src="/assets/modules/ontology-detail.js?v=5"></script>
-<script src="/assets/modules/robotics-views.js?v=12"></script>
-<script src="/assets/modules/robotics-design.js?v=12"></script>
+<script src="/assets/modules/robotics-views.js?v=14"></script>
+<script src="/assets/modules/robotics-design.js?v=14"></script>
 <script src="/assets/modules/robotics-build.js?v=4"></script>
 <script src="/assets/modules/robotics-review.js?v=2"></script>
 <script src="/assets/modules/robotics-review-page.js?v=1"></script>
@@ -2430,7 +2430,7 @@ function routeHash(){if(window.RoboticsReview?.guardHash())return;const h=locati
  if(/^library\?/.test(h)){goPage('library');return;}
  if(/^review\?/.test(h)){goPage('review');return;}
  const mg=h.match(/^graph=(.+)$/);if(mg){loaded.graph=1;goPage('graph');graphs(mg[1]);return;}
- const mo=h.match(/^obj=([^:]+):(.+)$/);if(mo){loaded.graph=1;goPage('graph');graphs(mo[1]);return;}   // 仅定位到图谱；对象级高亮随 studio 页一并移除
+ const mo=h.match(/^obj=([^:]+):(.+)$/);if(mo){loaded.graph=1;goPage('graph');graphs(mo[1]);return;}   // 仅定位到图谱。
  const on=document.querySelector('.nav.on');if(h&&on&&on.dataset.p===h&&loaded[h]&&!['library','build','review','robotics-task','robotics-view'].includes(h))return;   // 菜单点击已打开该页,hashchange 不再重复进入(首屏 #home 仍要加载)
  if(h){if(!goPage(h)){goPage('home');history.replaceState(null,'','#home');}}else goPage('home');}  // 未知 hash 回首页并纠正 URL，避免地址与页面不一致
 addEventListener('hashchange',()=>{ROUTED_BY_HASH=true;routeHash();});

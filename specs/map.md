@@ -34,16 +34,14 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - **安全**:只读 SQL、全局 CSRF 校验、图谱键路径穿越校验、命令白名单、SPARQL 禁 SERVICE/FROM 外链,见 [[DR-006-security-model]]。
 - **寻址**:18 个子页经 `#<page>` hash 直接寻址 + 深链,见 [[DR-007-url-hash-routing]]。
 
-## Studio 图谱集成（2026-11-17）
+## 机器人交互式本体图谱
 
-集成采用“机器人连续可视化与共享组件 → 数据本体图谱及构建结果预览”两步范围。
-工作分支为 `feat/studio-ui-integration`，IR-031 已交付，IR-032 保持规约阶段。
+当前仅接入机器人本体的设计阶段可视化与固定版本浏览。数据本体主图、构建结果预览、问数高亮、证据状态、详情和评审维持现有实现，不安排后续自动接入。
 
-- [DR-161 · Studio 图谱组件与本体构建可视化](decisions/DR-161-studio-ontology-visualization.md)：accepted（2026-11-17）；T01 视图契约 已冻结，明确对 DR-150 的局部替代及现有主线兼容约束。
-- [IR-031 · 共享组件与机器人连续可视化](iterations/IR-031-studio-robotics-visualization.md)：delivered；T06 验收，全量 17 阶段退出 0，3803 单元通过、5 可选跳过，Studio 7 项浏览器通过；STV-R01～06 完成。
-- [DR-162 · 图谱更新、请求边界与公开材料](decisions/DR-162-studio-limits-and-publication-boundary.md)：超限更新保持上一修订、关系展开预算、请求时限及公开材料边界；STV-H01～H05；[验证复现方法](../docs/studio-validation.md)。
-- [IR-032 · 数据本体画布与业务交互](iterations/IR-032-studio-data-visualization.md)：in-progress（规约阶段，依赖 IR-031 交付）；STV-D01～06。
-- 验收计划登记于 `acceptance.json` 的 `planned_requirements`；IR-031 已落地用例与浏览器均在正式映射标记 delivered，IR-032 保留计划。
+- [DR-161 · 机器人交互式本体图谱与构建可视化](decisions/DR-161-interactive-ontology-graph-visualization.md)：方案已采纳；2026-11-19 范围和命名修订实现交付状态为 delivered，相关回归通过。
+- [IR-031 · 机器人交互式本体图谱与构建可视化](iterations/IR-031-robotics-interactive-ontology-graph-visualization.md)：delivered；当前修订相关回归通过；历史结果按各自快照保留。
+- [DR-162 · 交互式本体图谱边界与公开材料](decisions/DR-162-interactive-graph-limits-and-publication-boundary.md)：仅适用于机器人设计和版本浏览，保留预算、超时、只读及发布边界；STV-H01～H05 本次交付状态为 delivered。
+- 需求与测试登记于 `acceptance.json`；已移除数据本体接入的计划验收，不删除现有数据本体测试。
 
 ## 机器人双路径构建（2026-11-10，已确认方案）
 
@@ -196,7 +194,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - [IR-016 · 第一阶段：机器人包边界与构建消费契约贯通](iterations/IR-016-robotics-contract-integration.md) · **delivered（2026-11-03 用户确认）**：Proposal 步骤 0～1，89 项机器人测试与实际三场景演示通过，各回归检查段经补验通过，最终交付已确认。
 - [IR-017 · 第二阶段：本体资产、不可变版本与持久化运行基础](iterations/IR-017-ontology-assets-and-persistent-runs.md) · **delivered（2026-11-04 用户确认）**：资产/版本、运行/事件/工件、真实生成接入、离线三场景与独立进程核验已交付；109 项已审用例及全量九段通过，覆盖率 84.6%。后续构建 API/UI 与浏览器联动继续按 Proposal 步骤 3～7 实施。
 - [IR-018 · 第三阶段：机器人本体构建 API 与平台 UI](iterations/IR-018-robotics-build-api-and-ui.md) · **delivered（2026-11-04 用户确认整轮交付）**：Proposal 步骤 3，双 XML 上传、来源型运行、候选目录/详情/下载及真实浏览器联动；构建/存储、HTTP/执行器及 UI 已实现；40 项前端状态与 14 项真实浏览器通过，全量十段检查退出 0。
-- [IR-019 · 第四阶段：机器人知识维护、重建合并与评审发布](iterations/IR-019-robotics-knowledge-review-and-publication.md) · **delivered（2026-11-18 维护者确认，代码已经 PR #1 合入，见 DR-159）**：Proposal 步骤 4，受控业务编辑、参数/证据、并发版本、三方冲突合并与审核发布；122 项领域/存储测试及 83 项治理 HTTP 测试转绿，全量十段通过；知识维护、审核发布与版本下载已接入 HTTP/UI，离线 CLI 四场景可运行；T07 全量 11 段通过，待 T08 人审交付。
+- [IR-019 · 第四阶段：机器人知识维护、重建合并与评审发布](iterations/IR-019-robotics-knowledge-review-and-publication.md) · **delivered（2026-11-18 维护者确认，代码已经 PR #1 合入，见 DR-159）**：Proposal 步骤 4，受控业务编辑、参数/证据、并发版本、三方冲突合并与审核发布；122 项领域/存储测试及 83 项治理 HTTP 测试转绿，全量十段通过；知识维护、审核发布与版本下载已接入 HTTP/UI，离线 CLI 四场景可运行；T07 全量 11 段通过。
 - [IR-015 · 实际部署与前后端验收](iterations/IR-015-live-deployment-acceptance.md) · **delivered**
 - [IR-014 · 算法、安全、UI 与 SDD/TDD 综合验收](iterations/IR-014-evidence-security-ui-validation.md) · **delivered**
 - [IR-001 · DataMind 基座(目录/图谱/指标/质量/SQL)](iterations/IR-001-foundation.md) · **delivered**
@@ -360,6 +358,10 @@ IR-029 于 2026-11-17 按用户反馈精简删除／恢复弹窗及回收站卡�
 
 [DR-160 · 产品仓库与本地开发材料边界](decisions/DR-160-product-repository-material-boundary.md)：保留决策与迭代；指定开发中间材料及契约草案仅保留本地副本。
 
-## master 与 Studio 兼容集成
+## master 与交互式本体图谱兼容集成
 
-[DR-164 · master 修复与 Studio 功能兼容集成](decisions/DR-164-master-and-studio-compatibility-integration.md)：保留两边功能；master 编号保持，Studio 相关记录使用 DR-161、DR-162、DR-163，DR-160 保持不变；MERGE-STUDIO-01。
+[DR-164 · master 修复与交互式本体图谱功能兼容集成](decisions/DR-164-master-and-interactive-ontology-graph-integration.md)：保留两边功能；master 编号保持，交互式本体图谱相关记录使用 DR-161、DR-162、DR-163，DR-160 保持不变；MERGE-GRAPH-01 本次交付状态为 delivered。
+
+## 交互式本体图谱统一命名
+
+[DR-165 · 交互式本体图谱命名与视图契约](decisions/DR-165-interactive-ontology-graph-naming-and-view-contract.md)：模块、只读接口、页面参数及验收入口统一使用功能名称；GRAPH-NAME-01 本次交付状态为 delivered。

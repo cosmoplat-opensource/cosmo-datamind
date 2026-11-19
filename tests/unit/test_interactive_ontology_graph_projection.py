@@ -12,16 +12,16 @@ from domains.robotics.modeling.common import digest
 from tests.robotics_design_support import Harness
 from tests.build_pipeline_support import blob_bytes, db_rows
 
-NS = 'https://studio.test/robot#'
+NS = 'https://interactive-ontology-graph.test/robot#'
 RDF = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'
 RDFS = 'http://www.w3.org/2000/01/rdf-schema#'
 
 
 def api():
     # Absence of this new product capability is an assertion, not an import/collection error.
-    assert importlib.util.find_spec('ontology_assets.studio_view') is not None, (
-        'DR-161 requires a read-only Studio projection for saved designs and RDF versions')
-    return importlib.import_module('ontology_assets.studio_view')
+    assert importlib.util.find_spec('ontology_assets.interactive_ontology_graph_view') is not None, (
+        'DR-161 requires a read-only Ontology graph projection for saved designs and RDF versions')
+    return importlib.import_module('ontology_assets.interactive_ontology_graph_view')
 
 
 def session(stage='classes', revision=1):
@@ -46,7 +46,7 @@ def session(stage='classes', revision=1):
             'class_confirmation': confirmation, 'schema_confirmation': schema, 'output_asset_ref': None}
 
 
-TTL = '''@prefix s: <https://studio.test/robot#> .
+TTL = '''@prefix s: <https://interactive-ontology-graph.test/robot#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
@@ -75,7 +75,7 @@ def test_design_stages_project_only_valid_revision_content():
         row = session(stage)
         before = deepcopy(row)
         view = projector.project_design(row)
-        assert view['schema'] == 'datamind-studio/1'
+        assert view['schema'] == 'datamind-interactive-ontology-graph/1'
         assert view['context']['key'] == 'design_A' and view['context']['revision'] == 1
         assert view['context']['stage'] == stage
         assert view['metadata']['read_only'] is True

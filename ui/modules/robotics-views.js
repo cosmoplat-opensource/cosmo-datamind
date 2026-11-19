@@ -2,7 +2,7 @@
 (function (global) {
   'use strict';
   const escape = value => global.RoboticsAssets.escape(value);
-  const link = (oid, vid, view='studio') => '#robotics-view?asset=' + encodeURIComponent(oid) + '&version=' + encodeURIComponent(vid) + '&view=' + encodeURIComponent(view);
+  const link = (oid, vid, view='interactive-ontology-graph') => '#robotics-view?asset=' + encodeURIComponent(oid) + '&version=' + encodeURIComponent(vid) + '&view=' + encodeURIComponent(view);
   const colors = {business:'#4a5ff3',skills:'#7c3aed',other:'#0891b2'};
   let active = null, token = 0;
   function page(name) {
@@ -134,19 +134,19 @@
     }
     (async()=>{
       try {
-        if(!oid||!vid||!['studio','relations','behavior-tree'].includes(view))throw Error('缺少本体、版本或有效视图，请从本体库重新打开。');
+        if(!oid||!vid||!['interactive-ontology-graph','relations','behavior-tree'].includes(view))throw Error('缺少本体、版本或有效视图，请从本体库重新打开。');
         // DR-150 scope update: source workflows are not user-facing task results.
         if(view==='behavior-tree'){
           host.innerHTML=`<section class="card ra-overview"><h2>请在任务生成完成后查看行为树</h2><p class="rv-help" role="status">本体构建来源中的流程暂不展示。请进入本体详情，输入任务描述并生成行为树。</p><div class="ra-detail-actions"><a class="ra-button" href="${escape(global.RoboticsAssets.versionLink(oid,vid))}">返回本体详情</a><a class="ra-button" href="${escape(link(oid,vid))}">打开本体图谱</a></div></section>`;
           return;
         }
-        if(view==='studio'){
-          const module=await import('/assets/modules/studio/panel.js');if(current!==token)return;
-          const body=await global.RoboticsAssets.readJSON(global.fetch.bind(global),'/api/ontology-assets/'+encodeURIComponent(oid)+'/versions/'+encodeURIComponent(vid)+'/views/studio',{signal:abort.signal});
+        if(view==='interactive-ontology-graph'){
+          const module=await import('/assets/modules/interactive-ontology-graph/panel.js');if(current!==token)return;
+          const body=await global.RoboticsAssets.readJSON(global.fetch.bind(global),'/api/ontology-assets/'+encodeURIComponent(oid)+'/versions/'+encodeURIComponent(vid)+'/views/interactive-ontology-graph',{signal:abort.signal});
           if(current!==token)return;
           if(body.ontology_id!==oid||body.version_id!==vid)throw Error('返回的本体版本不匹配。');
-          host.innerHTML=`<a class="ra-back" href="${escape(global.RoboticsAssets.versionLink(oid,vid))}">← 返回本体详情</a><header class="rt-heading"><div><h2>${escape(body.name)}</h2><p>当前：版本 ${escape(body.version_number)} · 只读浏览</p></div><a class="ra-button" href="${escape(global.RoboticsTask.link(oid,vid)+'&assess=1')}">基于此本体生成行为树</a></header><div class="rv-studio"></div>`;
-          const panel=module.mountPanel(host.querySelector('.rv-studio'),{canvasId:'rv_canvas'});
+          host.innerHTML=`<a class="ra-back" href="${escape(global.RoboticsAssets.versionLink(oid,vid))}">← 返回本体详情</a><header class="rt-heading"><div><h2>${escape(body.name)}</h2><p>当前：版本 ${escape(body.version_number)} · 只读浏览</p></div><a class="ra-button" href="${escape(global.RoboticsTask.link(oid,vid)+'&assess=1')}">基于此本体生成行为树</a></header><div class="rv-interactive-ontology-graph"></div>`;
+          const panel=module.mountPanel(host.querySelector('.rv-interactive-ontology-graph'),{canvasId:'rv_canvas'});
           active={dispose:()=>{abort.abort();panel.destroy();}};
           const display=global.RoboticsTask.displayLabel;
           const document={...body,nodes:body.nodes.map(n=>({...n,labels:n.labels.map(l=>({...l,value:display(l.value)}))})),individuals:body.individuals.map(n=>({...n,labels:n.labels.map(l=>({...l,value:display(l.value)})),data:n.data.map(d=>d.predicate==='http://www.w3.org/2000/01/rdf-schema#label'?{...d,value:display(d.value)}:d)}))};

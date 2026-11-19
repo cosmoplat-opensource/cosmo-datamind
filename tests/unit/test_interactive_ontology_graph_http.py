@@ -1,0 +1,86 @@
+"""Fixed-version Ontology graph reads keep provenance, identity and write isolation — DR-161 T04."""
+from tests.build_runtime_support import BASE_URL, http_app
+from tests.build_pipeline_support import db_rows, blob_bytes
+from tests.robotics_task_support import fixture
+
+
+def test_design_and_history_expose_interactive_graph_view_without_persisting_presentation(tmp_path):
+    from tests.robotics_design_support import Harness
+    with http_app(tmp_path) as (_, client, _, root):
+        state = Harness(root).classes()
+        path = '/api/robotics/design-sessions/' + state['session_id']
+        before = db_rows(root), blob_bytes(root)
+        current = client.get(path, base_url=BASE_URL)
+        assert current.status_code == 200, current.json
+        view = current.json['interactive_graph_view']
+        assert view['schema'] == 'datamind-interactive-ontology-graph/1'
+        assert view['context']['key'] == state['session_id']
+        assert view['context']['revision'] == state['revision']
+        assert view['metadata']['read_only'] is True
+        historical = client.get(path + '/revisions/' + str(state['revision']), base_url=BASE_URL)
+        assert historical.status_code == 200, historical.json
+        assert historical.json['interactive_graph_view']['context']['status'] == 'historical'
+        assert (db_rows(root), blob_bytes(root)) == before
+
+
+def test_fixed_version_mismatch_and_deleted_asset_follow_existing_policy(tmp_path):
+    with http_app(tmp_path) as (_, client, _, root):
+        assets, version, _ = fixture(root)
+        path = f"/api/ontology-assets/{version['ontology_id']}/versions/{version['version_id']}/views/interactive-ontology-graph"
+        before = db_rows(root), blob_bytes(root)
+        result = client.get(path, base_url=BASE_URL)
+        assert result.status_code == 200, result.json
+        view = result.json
+        assert view['context']['revision'] == version['payload_sha256']
+        assert view['ontology_id'] == version['ontology_id'] and view['version_id'] == version['version_id']
+        assert view['schema'] == 'datamind-interactive-ontology-graph/1'
+        assert view['individuals'] and any(n['type'] == 'class' for n in view['nodes'])
+        assert (db_rows(root), blob_bytes(root)) == before
+        assert client.get(path.replace(version['version_id'], 'missing'), base_url=BASE_URL).status_code == 404
+        other = assets.create_asset(name='other', domain='robotics')
+        assert client.get(path.replace(version['ontology_id'], other['ontology_id']), base_url=BASE_URL).status_code == 404
+        (root / assets.get_version(version['ontology_id'], version['version_id'])['path']).write_bytes(b'bad')
+        assert client.get(path, base_url=BASE_URL).status_code == 409
+
+
+def test_interactive_ontology_graph_history_remains_readable_after_delete_without_reactivating_asset(tmp_path):
+    from ontology_assets.lifecycle import LifecycleService
+    with http_app(tmp_path) as (_, client, _, root):
+        _, version, _ = fixture(root)
+        lifecycle = LifecycleService(root)
+        oid = version['ontology_id']
+        preview = lifecycle.preview(oid)
+        lifecycle.delete(oid, expected_revision=preview['revision'], impact_sha256=preview['impact_sha256'],
+                         confirmed=True, request_id='interactive-ontology-graph-history')
+        before = db_rows(root), blob_bytes(root)
+        result = client.get(f"/api/ontology-assets/{oid}/versions/{version['version_id']}/views/interactive-ontology-graph", base_url=BASE_URL)
+        assert result.status_code == 200, result.json
+        assert result.json['context']['revision'] == version['payload_sha256']
+        assert lifecycle.get(oid)['state'] == 'deleted'
+        assert (db_rows(root), blob_bytes(root)) == before
+
+
+def test_interactive_ontology_graph_rejects_data_domain_and_corrupt_provenance(tmp_path):
+    with http_app(tmp_path) as (_, client, _, root):
+        assets, version, _ = fixture(root)
+        data = assets.create_asset(name='data', domain='data')
+        path = f"/api/ontology-assets/{version['ontology_id']}/versions/{version['version_id']}/views/interactive-ontology-graph"
+        assert client.get(path.replace(version['ontology_id'], data['ontology_id']), base_url=BASE_URL).status_code == 400
+        source = assets.get_source(version['source_asset_ids'][0])
+        (root / source['path']).write_bytes(b'corrupt')
+        assert client.get(path, base_url=BASE_URL).status_code == 409
+
+
+def test_interactive_graph_rejects_a_complete_data_version_without_mutating_it(tmp_path):
+    from tests.asset_support import add_data
+    from ontology_assets import AssetStore
+    with http_app(tmp_path) as (_, client, _, root):
+        assets = AssetStore(root)
+        asset, version = add_data(assets)
+        path = (f"/api/ontology-assets/{asset['ontology_id']}/versions/"
+                f"{version['version_id']}/views/interactive-ontology-graph")
+        before = db_rows(root), blob_bytes(root)
+        response = client.get(path, base_url=BASE_URL)
+        assert response.status_code == 400, response.json
+        assert (db_rows(root), blob_bytes(root)) == before
+        assert assets.get_version(asset['ontology_id'], version['version_id']) == version

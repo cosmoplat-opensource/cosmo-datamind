@@ -365,3 +365,52 @@ T10 工程工作完成；Deliverables／Acceptance 勾选及 delivered 仍待用
 D01–D08 和 RBD-01–12 已经人审确认，清单勾选，IR 状态为 delivered。
 以上各阶段的待人审描述保留为历史；最终以本节和当前状态为准。
 整体流程重设计另行讨论新 DR，不包含在本轮交付中。
+
+## 思考策略补充范围交付（2026-11-19）
+
+`ROB-LLM-01` 的实现交付状态为 delivered，已从计划需求移入正式需求，并显式关联 IR-024。
+思考策略及路由回归 42 项通过，骨架修订、组件及设计 HTTP 回归 105 项通过，机器人设计浏览器 29 项通过，共 176 项通过，无失败、无跳过。
+验证基于 `3aa11ecdc41f3b1b0f9689689fa9b3624c9cf8d3` 与本次暂存差异，Python 3.10.12、pytest 9.1.1、Playwright 1.62.0，Node 使用 Playwright 随包运行时，浏览器为 Chromium。
+使用隔离存储、合成 XML 及受控模型 HTTP 响应，未连接真实模型、修改用户资产或执行真实机器人；本次未执行全量回归，不更新全仓覆盖率结论。
+
+默认关闭、低强度与继承模式、未知模型参数保留、普通及流式调用隔离、非法配置联网前失败、类别和属性两阶段真实设计流程均已覆盖。RAC-UI-01～04 的交付见 [IR-026](IR-026-robotics-application-adaptation.md)。
+
+复现相关回归：
+
+```bash
+.venv/bin/python - <<'PY'
+from pathlib import Path
+import os
+import sys
+import tempfile
+import playwright
+from scripts.check import isolated_env, run_check
+
+reports = Path(".check-results/robotics-feature-regression").resolve()
+reports.mkdir(parents=True, exist_ok=True)
+py = sys.executable
+stages = [
+    ("thinking", [py, "-m", "pytest",
+        "tests/unit/test_robotics_design_thinking.py",
+        "tests/unit/test_robotics_dual_build_routing.py", "-ra"]),
+    ("schema-repair", [py, "-m", "pytest",
+        "tests/unit/test_robotics_schema_repair_guidance.py",
+        "tests/unit/test_robotics_schema_repair_ui.py",
+        "tests/unit/test_robotics_repair_stages.py",
+        "tests/unit/test_robotics_design_http.py",
+        "tests/unit/test_robotics_design_ui.py", "-ra"]),
+    ("design-browser", [py, "tests/frontend/robotics-design-browser.py",
+        "--output", str(reports / "design-browser")]),
+    ("metadata", [py, "-m", "pytest", "tests/meta/", "-ra"]),
+]
+with tempfile.TemporaryDirectory(prefix="datamind-robotics-delivery-") as raw:
+    env = isolated_env(Path(raw))
+    env["PATH"] = str(Path(playwright.__file__).parent / "driver") + os.pathsep + env.get("PATH", "")
+    results = []
+    for name, command in stages:
+        if not run_check(name, command, env, reports, results):
+            raise SystemExit(1)
+PY
+```
+
+交付映射更新后的规约回归 `tests/meta/` 82 项通过，无失败、无跳过；与本轮功能回归合计 258 项通过。当前 5 项补充需求均为 delivered，planned_requirements 为空。本次未执行提交或推送。

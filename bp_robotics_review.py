@@ -189,15 +189,15 @@ def init_app(app, runtime):
     @bp.get(prefix + '/versions/<version_id>/views/<view>')
     def visualization(ontology_id, version_id, view):
         # DR-150: GET only, fixed version, same read-only integrity boundary.
-        if request.args or view not in {'relations', 'behavior-tree', 'studio'}:
+        if request.args or view not in {'relations', 'behavior-tree', 'interactive-ontology-graph'}:
             raise invalid()
         service(ontology_id)  # DR-152: retain the original domain guard before resolving versions.
         from ontology_assets.robotics_design import DesignAssets
         from application_contracts.adapters import service as application_checks
         assets = runtime.assets()
-        if view == 'studio':
+        if view == 'interactive-ontology-graph':
             # DR-161: use the same provenance readers as fixed-version exports.
-            from ontology_assets.studio_view import project_version
+            from ontology_assets.interactive_ontology_graph_view import project_version
             from ontology_assets.robotics_application import ApplicationAssets, is_application
             from ontology_assets.robotics_offline import OfflineAssets
             version = assets.get_version(ontology_id, version_id)

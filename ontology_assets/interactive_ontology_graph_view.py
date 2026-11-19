@@ -1,4 +1,4 @@
-"""Read-only saved-design and canonical RDF graph projections — DR-161 §§3–6."""
+"""Read-only robot interactive ontology graph projections — DR-161 §§3–6."""
 from copy import deepcopy
 import hashlib
 import json
@@ -176,7 +176,7 @@ def _project(source, context, name):
     supported = {OWL.unionOf, OWL.disjointWith, OWL.equivalentClass}
     if any(str(p).startswith(str(OWL)) and p not in supported for _, p, _ in graph):
         warnings.add('部分 OWL 公理未在画布展开；完整语义保留于原始本体。')
-    return {'schema': 'datamind-studio/1', 'context': context, 'metadata': {'name': name, 'read_only': True},
+    return {'schema': 'datamind-interactive-ontology-graph/1', 'context': context, 'metadata': {'name': name, 'read_only': True},
             'nodes': [nodes[k] for k in sorted(nodes)], 'properties': [properties[k] for k in sorted(properties)],
             'individuals': [individuals[k] for k in sorted(individuals)], 'edges': [edges[k] for k in sorted(edges)],
             'relations': [relations[k] for k in sorted(relations)], 'warnings': sorted(warnings)}

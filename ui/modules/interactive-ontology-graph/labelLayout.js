@@ -1,4 +1,4 @@
-/* Studio graph migration — DR-161; provenance: specs/sources/IR-031-studio-sources.json. */
+/* Ontology graph layout — DR-161. */
 function rectangle(x, y, width, height, padding = 0) {
   return { left: x - width / 2 - padding, right: x + width / 2 + padding,
     top: y - height / 2 - padding, bottom: y + height / 2 + padding };

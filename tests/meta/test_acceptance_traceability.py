@@ -6,6 +6,33 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def test_acceptance_entries_keep_only_requirement_contract_fields():
+    spec = json.loads((ROOT / 'specs/acceptance.json').read_text())
+    fields = ['id', 'decision', 'iteration', 'status', 'criterion', 'tests']
+    for group in ('requirements', 'planned_requirements'):
+        for requirement in spec[group]:
+            assert not (set(requirement) - set(fields)), requirement['id']
+            assert list(requirement) == [key for key in fields if key in requirement], requirement['id']
+            assert {'id', 'criterion', 'tests'} <= set(requirement), requirement['id']
+            if 'status' in requirement:
+                assert requirement['status'] in {'planned', 'implemented', 'delivered'}, requirement['id']
+            if group == 'planned_requirements':
+                assert requirement['status'] == 'planned', requirement['id']
+
+
+def test_acceptance_iteration_mappings_are_explicit_and_resolve():
+    spec = json.loads((ROOT / 'specs/acceptance.json').read_text())
+    requirements = {r['id']: r for r in spec['requirements'] + spec['planned_requirements']}
+    assert requirements['RKG-06'].get('iteration') == 'IR-019'
+    assert requirements['STV-R01'].get('iteration') == 'IR-031'
+    for requirement in requirements.values():
+        if 'iteration' in requirement:
+            iteration = requirement['iteration']
+            assert isinstance(iteration, str) and iteration.startswith('IR-'), requirement['id']
+            matches = list((ROOT / 'specs/iterations').glob(iteration + '-*.md'))
+            assert len(matches) == 1, (requirement['id'], iteration)
+
+
 def test_decision_numbers_are_unique_and_titles_match_filenames():
     decisions = sorted((ROOT / 'specs/decisions').glob('DR-*.md'))
     numbers = [path.name.split('-', 2)[:2] for path in decisions]

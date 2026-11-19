@@ -2,7 +2,7 @@
 import {GraphView} from './graph.js';
 import {GraphState} from './model.js';
 const copy = value => JSON.parse(JSON.stringify(value));
-export class StudioController {
+export class InteractiveOntologyGraphController {
   constructor(svg, callbacks={}) {
     this.svg=svg;this.callbacks=callbacks;this.epoch=0;this.dead=false;this.context=null;
     this.expanded={};this.pages={};this.changes={added:[],modified:[],removed:[]};this.state=new GraphState();this.makeGraph();
@@ -17,7 +17,7 @@ export class StudioController {
     this.context=copy(context);this.expanded={};this.pages={};this.changes={added:[],modified:[],removed:[]};return ++this.epoch;
   }
   update(document,{epoch}={}){
-    if(this.dead||epoch!==this.epoch||document.schema!=='datamind-studio/1')return false;
+    if(this.dead||epoch!==this.epoch||document.schema!=='datamind-interactive-ontology-graph/1')return false;
     const incoming=document.context;
     if(!this.context||incoming.kind!==this.context.kind||incoming.key!==this.context.key)return false;
     if(typeof incoming.revision==='number'&&incoming.revision<this.context.revision)return false;

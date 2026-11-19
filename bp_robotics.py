@@ -307,8 +307,8 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True, data_host=Non
 
     def design_display(row):
         # DR-161: saved state projects read-only; confirmation remains explicit.
-        from ontology_assets.studio_view import project_design
-        return {**row, 'studio': design_read(lambda: project_design(row))}
+        from ontology_assets.interactive_ontology_graph_view import project_design
+        return {**row, 'interactive_graph_view': design_read(lambda: project_design(row))}
 
     @bp.get('/api/robotics/design-sessions/<sid>')
     def design_session(sid):
@@ -330,8 +330,8 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True, data_host=Non
         raw = design_read(lambda: service.export_revision(sid, int(revision), format=format or 'json'))
         if format is None:
             document = __import__('json').loads(raw)
-            from ontology_assets.studio_view import project_design
-            document['studio'] = design_read(lambda: project_design({**document['state'], 'session_id': sid,
+            from ontology_assets.interactive_ontology_graph_view import project_design
+            document['interactive_graph_view'] = design_read(lambda: project_design({**document['state'], 'session_id': sid,
                 'status': 'historical'}))
             return jsonify(runtime.public(document))
         return send_file(io.BytesIO(raw), mimetype='application/json' if format=='json' else 'application/rdf+xml',

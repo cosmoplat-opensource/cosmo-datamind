@@ -1,4 +1,4 @@
-/* Studio graph migration — DR-161; provenance: specs/sources/IR-031-studio-sources.json. */
+/* Ontology graph layout — DR-161. */
 import { label, shortIRI } from './model.js';
 import { placeLabels } from './labelLayout.js';
 import { routeEdges } from './edgeRouting.js';
@@ -37,7 +37,7 @@ function linesOf(text, width, limit = 4) {
 let instanceSequence = 0;
 export class GraphView {
   constructor(svg, callbacks = {}) {
-    this.svg = svg; this.callbacks = callbacks; this.instanceId = "studio-" + (++instanceSequence);
+    this.svg = svg; this.callbacks = callbacks; this.instanceId = "interactive-ontology-graph-" + (++instanceSequence);
     this.positions = new Map(); this.nodeElements = new Map(); this.edgeElements = new Map();
     this.edgeLabels = new Map(); this.routeBends = new Map(); this.links = []; this.degrees = new Map();
     this.data = { nodes: [], edges: [] }; this.selectedId = null; this.language = 'zh';

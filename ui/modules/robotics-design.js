@@ -74,7 +74,7 @@ function repairSuggestion(context,stage){
 }
 function mount(host,sid,options={}){const esc=g.RoboticsAssets.escape;let c,context=null,contextError='',dead=false,editorPhase=null;
  const contextual=!!(options.checkId||options.adaptationId),abort=new AbortController();
- let studio=null,latest=null,studioHistory=null;
+ let interactiveGraphPanel=null,latest=null,interactiveGraphHistory=null;
  const graphHost=document.createElement('section'),historyBox=document.createElement('label'),historySelect=document.createElement('select');
  historyBox.textContent='设计修订';historySelect.setAttribute('aria-label','设计修订');historyBox.append(historySelect);
  const input=document.createElement('textarea');input.setAttribute('aria-label','建模要求');input.maxLength=20000;
@@ -93,7 +93,7 @@ function mount(host,sid,options={}){const esc=g.RoboticsAssets.escape;let c,cont
  startProperties.onclick=()=>{if(!c.snapshot().messageText.trim())c.setMessage('请基于已确认的类别、建模要求和上传的 XML，设计对象关系与数据属性；只采用来源支持的信息，不明确的内容列为待明确项。');return c.sendMessage();};
  function render(s){latest=s;const row=s.session;if(!row){heading.textContent=s.error?.message||'正在读取设计…';body.replaceChildren();progress.hidden=true;actions.hidden=true;editor.hidden=true;return;}
  host.dataset.testid='robotics-design';host.dataset.sessionId=sid;host.dataset.stage=row.stage;host.dataset.revision=row.revision;host.dataset.status=row.status;
- syncStudio(s);
+ syncInteractiveGraphView(s);
  const needsProperties=row.stage==='properties'&&row.status==='awaiting_input';
  const selected=s.selectedRevision,result=selected?.state?.result||row.result,ref=row.output_asset_ref,waiting=active(row),failed=['failed','interrupted'].includes(row.status);
  const awaiting=row.status==='awaiting_confirmation',suggesting=context&&!awaiting&&row.stage!=='abox';
@@ -122,7 +122,7 @@ function mount(host,sid,options={}){const esc=g.RoboticsAssets.escape;let c,cont
  summary.hidden=!awaiting;summary.textContent='继续提修改意见';
  editor.hidden=!!selected||waiting||row.stage==='abox';startProperties.hidden=contextual||!needsProperties||!!s.messageText.trim();startProperties.disabled=s.busy;send.hidden=!contextual&&needsProperties&&!s.messageText.trim();send.disabled=s.busy||row.stage==='abox'||(contextual&&!s.messageText.trim());input.placeholder=awaiting?'可继续输入修改意见':suggesting?repairSuggestion(context,row.stage)+'（Tab 填入）':contextual&&!context&&!contextError?'正在读取修订建议…':needsProperties?'可选：填写希望补充的关系、参数或关注点；留空可按已有要求继续。':'填写本轮建模要求或修改意见'; if(input.value!==s.messageText)input.value=s.messageText;
  }
- function syncStudio(s){
+ function syncInteractiveGraphView(s){
   const row=s.session;if(!row)return;
   const choice=s.selectedRevision?String(s.selectedRevision.revision):'current';
   if(historySelect.dataset.revision!==String(row.revision)){
@@ -131,27 +131,27 @@ function mount(host,sid,options={}){const esc=g.RoboticsAssets.escape;let c,cont
     historySelect.dataset.revision=String(row.revision);
   }
   historySelect.value=choice;
-  if(!studio)return;
+  if(!interactiveGraphPanel)return;
   const selected=s.selectedRevision;
-  if(selected?.studio){studioHistory='history:'+selected.revision;studio.present(selected.studio,{scope:studioHistory});return;}
-  studioHistory='current';
-  if(row.status!=='completed'&&row.studio)studio.present(row.studio,{scope:'current:'+sid});
+  if(selected?.interactive_graph_view){interactiveGraphHistory='history:'+selected.revision;interactiveGraphPanel.present(selected.interactive_graph_view,{scope:interactiveGraphHistory});return;}
+  interactiveGraphHistory='current';
+  if(row.status!=='completed'&&row.interactive_graph_view)interactiveGraphPanel.present(row.interactive_graph_view,{scope:'current:'+sid});
   const ref=row.output_asset_ref;
   if(row.status==='completed'&&ref){
     const key=JSON.stringify(ref);
-    if(graphHost.dataset.result===key){if(graphHost.studioResult)studio.present(graphHost.studioResult,{scope:'output:'+key});return;}
+    if(graphHost.dataset.result===key){if(graphHost.interactiveGraphResult)interactiveGraphPanel.present(graphHost.interactiveGraphResult,{scope:'output:'+key});return;}
     graphHost.dataset.result=key;
-    read(g.fetch.bind(g),'/api/ontology-assets/'+encodeURIComponent(ref.ontology_id)+'/versions/'+encodeURIComponent(ref.version_id)+'/views/studio',{signal:abort.signal}).then(doc=>{
+    read(g.fetch.bind(g),'/api/ontology-assets/'+encodeURIComponent(ref.ontology_id)+'/versions/'+encodeURIComponent(ref.version_id)+'/views/interactive-ontology-graph',{signal:abort.signal}).then(doc=>{
       if(dead||JSON.stringify(latest?.session?.output_asset_ref)!==key)return;
-      graphHost.studioResult=doc;if(studioHistory==='current')studio.present(doc,{scope:'output:'+key});
-    }).catch(error=>{if(!dead&&error.name!=='AbortError'){delete graphHost.dataset.result;studio.error(error.message);}});
-  }else {delete graphHost.dataset.result;delete graphHost.studioResult;}
+      graphHost.interactiveGraphResult=doc;if(interactiveGraphHistory==='current')interactiveGraphPanel.present(doc,{scope:'output:'+key});
+    }).catch(error=>{if(!dead&&error.name!=='AbortError'){delete graphHost.dataset.result;interactiveGraphPanel.error(error.message);}});
+  }else {delete graphHost.dataset.result;delete graphHost.interactiveGraphResult;}
  }
  historySelect.onchange=()=>historySelect.value==='current'?c.showCurrent():c.openRevision(Number(historySelect.value));
- import('/assets/modules/studio/panel.js').then(module=>{if(dead)return;studio=module.mountPanel(graphHost);graphHost.querySelector('.studio-title').append(historyBox);if(latest)syncStudio(latest);}).catch(error=>{if(!dead)graphHost.textContent='图谱组件加载失败：'+error.message;});
+ import('/assets/modules/interactive-ontology-graph/panel.js').then(module=>{if(dead)return;interactiveGraphPanel=module.mountPanel(graphHost);graphHost.querySelector('.interactive-ontology-graph-title').append(historyBox);if(latest)syncInteractiveGraphView(latest);}).catch(error=>{if(!dead)graphHost.textContent='图谱组件加载失败：'+error.message;});
  c=createController({onChange:render});c.openSession(sid);
  if(contextual){const url=options.checkId?'/api/application-checks/'+encodeURIComponent(options.checkId):'/api/robotics/application-adaptations/'+encodeURIComponent(options.adaptationId);
   read(g.fetch.bind(g),url,{signal:abort.signal}).then(response=>{if(dead)return;context=repairContext(response,sid,!options.checkId);render(c.snapshot());}).catch(e=>{if(dead||e.name==='AbortError')return;contextError=e.message;render(c.snapshot());});}
- return {...c,dispose(){dead=true;abort.abort();studio?.destroy();delete graphHost.studioResult;c.dispose();}};
+ return {...c,dispose(){dead=true;abort.abort();interactiveGraphPanel?.destroy();delete graphHost.interactiveGraphResult;c.dispose();}};
 }
 g.RoboticsDesign={createController,mount,repairContext,repairSuggestion,beginRepair};})(window);
