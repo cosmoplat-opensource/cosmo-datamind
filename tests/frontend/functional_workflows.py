@@ -26,10 +26,19 @@ def test_missing_chart_value_stays_distinct_from_zero(page, site):
     page.get_by_role("button", name="运行取数").click()
     expect(page.locator("#vz_info")).to_contain_text("3 行")
     preview = page.locator("#vz_prev")
-    expect(preview.locator("canvas")).to_be_visible()
-    values = preview.evaluate("el => echarts.getInstanceByDom(el).getOption().series[0].data")
-    assert values[0] == 1 and values[2] == 0
-    assert values[1] in (None, "-"), f"缺失观测被画成了 {values[1]}"
+    missing = {}
+    for kind in ("line", "bar", "area", "pie"):
+        page.locator("#vz_type").select_option(kind)
+        expect(preview.locator("canvas")).to_be_visible()
+        values = preview.evaluate("el => echarts.getInstanceByDom(el).getOption().series[0].data")
+        if kind == "pie":
+            slices = {point["name"]: point["value"] for point in values}
+            assert slices["A"] == 1 and slices["C"] == 0
+            missing[kind] = slices.get("B")  # 饼图也可省略无观测的扇区。
+        else:
+            assert values[0] == 1 and values[2] == 0
+            missing[kind] = values[1]
+    assert all(value in (None, "-") for value in missing.values()), f"各图对缺失观测的取值为 {missing}"
 
 
 @pytest.mark.parametrize("edited", [False, True], ids=["unchanged", "edited"])
