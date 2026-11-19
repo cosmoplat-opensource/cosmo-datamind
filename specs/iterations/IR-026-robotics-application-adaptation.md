@@ -114,7 +114,7 @@ RAC 原 criterion 不变，只补实际测试引用；业务验收仍未勾选�
 复用原业务补全、消费者、编译器和校验器；移走源 XML 后的整条任务链、strict／offline 及 real／demo 边界通过。
 57 项已审集成／浏览器用例全部通过，70 项核心测试保持通过；测试和夹具哈希不变。
 全量 13 段通过：单测 2284 passed、5 skipped，覆盖率 86.0%；跳过均为原可选上游引擎。
-详见 T05 评审（本地材料）、结果记录（本地材料） 和 [使用与升级说明](../../docs/application-contracts-guide.md)。
+T05 评审、结果记录及历史使用指南仅保留本地；公开升级边界见[应用适配决策](../decisions/DR-154-robotics-application-adaptation.md)，测试入口见本记录 T05。
 增量 schema 8 保留旧字段和工件；用户运行库未迁移，现有宿主未重启。T06 再以真实本体副本和旧 UR 样例验收。
 没有修改已审测试或业务 criterion，没有调用付费模型，没有操作用户本体，未提交 Git。
 RAC-01～05 登记集成 created-green-partial，业务验收保持未勾选；本 IR 仍 in-progress。
@@ -144,7 +144,7 @@ RAC-01～05 登记集成 created-green-partial，业务验收保持未勾选；�
 规约追溯检查 21 passed，ruff 通过，mypy 328 个源文件通过，git diff --check 通过。
 上述为本次相关回归，不替代整项目全量检查或 T06 真实副本验收；历史 T05 全量结果保持原记录。
 `acceptance.json` 已登记 RAC-AUTO-01、RAC-AUTO-02 及实际测试引用，接口和兼容约定同步至规约第 12 节，使用文档已更新。
-详见 自动适配验证记录（本地材料） 和 [使用与升级说明](../../docs/application-contracts-guide.md)。
+自动适配验证记录及历史使用指南仅保留本地；公开升级边界见[应用适配决策](../decisions/DR-154-robotics-application-adaptation.md)，测试入口见本记录的自动适配清单。
 
 ### 现有本体与运行环境
 
@@ -172,7 +172,7 @@ RAC-AUTO-01／02 已移入正式 requirements，参与规约引用校验；原�
 通用 UI 走查 64 通过、实操 50 通过，3 项因隔离环境未配模型端点条件跳过；机器人构建／评审／任务／设计浏览器分别 18／16／12／29 项通过。
 既有行为测试与夹具摘要保持不变，规约引用 21 项通过；测试、覆盖率、lint 和类型门槛未放宽。
 技术验收完成时，交付物和整轮业务验收仍待用户按 SDD 第⑨步人审勾选，IR 当时保持 in-progress；最终状态见下方人审交付记录。
-详见 T06 交付评审（本地材料）、机器结果（本地材料） 和 [使用与升级说明](../../docs/application-contracts-guide.md)。
+T06 交付评审、机器结果及历史使用指南仅保留本地；公开升级边界见[应用适配决策](../decisions/DR-154-robotics-application-adaptation.md)，测试入口见本记录 T06。
 
 ## 人审交付（2026-11-13）
 

@@ -2,7 +2,7 @@
 
 状态：accepted。适用：仅机器人本体的交互式图谱及设计/版本浏览；数据本体可视化维持现有实现。
 
-当前范围与命名修订的实现交付状态：delivered（相关回归通过）。历史验证只描述各自快照，本次结果见验证说明。
+当前范围与命名修订的实现交付状态：delivered（相关回归通过）。历史验证只描述各自快照，本次结果见关联迭代记录。
 
 ## 问题与决策
 
@@ -14,4 +14,4 @@
 
 ## 验收与兼容
 
-保留机器人固定版本身份、只读语义和显式实例归属；展示接口的当前名称与字段以 DR-165 为准。需求与测试映射见 `specs/acceptance.json` 的 STV-H01～H05。复现方法见 `docs/interactive-ontology-graph-validation.md`。本决策不授权生产发布。
+保留机器人固定版本身份、只读语义和显式实例归属；展示接口的当前名称与字段以 DR-165 为准。需求与测试映射见 `specs/acceptance.json` 的 STV-H01～H05。当前检出版本的复现方法见[仓库验证说明](../../README.md#测试)，历史阶段结果见[关联迭代记录](../iterations/IR-031-robotics-interactive-ontology-graph-visualization.md)。本决策不授权生产发布。

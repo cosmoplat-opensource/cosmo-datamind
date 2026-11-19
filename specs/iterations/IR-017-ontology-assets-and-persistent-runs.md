@@ -70,7 +70,7 @@ AST-08 的旧 UI 回归只能证明旧能力未受破坏，不能作为新 UI �
 - [x] 数据领域只读适配器：登记有效 IR 快照；显式再次登记产生或复用对应快照，不将旧 JSON 目录静默迁移为新权威源。
 - [x] 机器人适配：存储指定版本的完整 OWL，并通过 IR-016 的加载与严格生成入口使用该版本。
 - [x] 行为测试：资产版本、身份隔离、重启恢复、失败原子性、并发事件、路径约束和旧存储保护，按批次先 RED 后 GREEN。
-- [x] `scripts/demo_domain_storage.py` 及 `docs/domain-storage-demo.md`：可直接执行的离线演示与跨进程检查说明。
+- [x] `scripts/demo_domain_storage.py` 及离线演示指南（现仅保留本地）：可直接执行的离线演示与跨进程检查；公开命令见[运行存储说明](../../domain_runs/README.md#验证)。
 - [x] `docs/audits/IR-017-storage-validation.md`：各批 RED/GREEN、人审记录、实际命令、失败与补验、产物路径及最终回归证据。
 - [x] 更新 acceptance 映射、Proposal 和 specs 索引，新增代码关联 DR，真实测试创建后替换计划入口。
 
@@ -127,7 +127,7 @@ T02 已将 AST-01～03、08 的首批真实测试入口登记到 `acceptance.jso
 ```
 
 演示在输出根目录下创建唯一子目录，包含数据库、来源与版本载荷、工件、summary.json 和 summary.md。
-具体用法见 [离线演示说明](../../docs/domain-storage-demo.md)；另可用 `--verify-storage <storage_root>` 在新的进程中只读核验。
+具体命令见[运行存储说明](../../domain_runs/README.md#验证)；另可用 `--verify-storage <storage_root>` 在新的进程中只读核验。
 至少展示同目录双领域资产、固定旧版本生成、真实缺证据无候选、运行中断与重启查询四种结果。
 跨进程检查必须由新的 Python 进程读取磁盘记录，不能仅在原进程重新创建一个对象冒充重启。
 summary 输出 storage_root、run_id、版本引用和独立检查结果，说明所有演示依据及执行未验证状态。
@@ -199,7 +199,7 @@ summary 输出 storage_root、run_id、版本引用和独立检查结果，说�
 
 - 实现指定已发布版本的严格生成接入、不可变候选/报告保存、三个离线场景、真实子进程中断/恢复以及只读核验 CLI。
 - 30 项已审测试全部通过；T02/T04/T06 的 11 个测试/辅助文件 SHA-256 不变。
-- 实际运行 all 演示与独立核验均退出 0，三场景分别为 generated、needs_information、interrupted；输出可按 [演示说明](../../docs/domain-storage-demo.md) 直接复查。
+- 本阶段实际运行 all 演示与独立核验均退出 0，三场景分别为 generated、needs_information、interrupted；当前复现命令见[运行存储说明](../../domain_runs/README.md#验证)。
 - 全量命令退出 0：1027 单元通过 / 5 可选上游跳过，覆盖率 84.6%（门槛 81%）；551 HTTP、10 轮变序、64 UI 走查、50 UI 实操及 10 构建页检查通过。
 - HTTP 可选上游跳过 8 项，未配置真实模型的 UI 检查跳过 3 项；未把这些能力算作已验证。
 - 新增实测 208.617 秒的接入/CLI 测试，check.py 单元段预算从 360 秒调整为 720 秒，其他段和所有断言/覆盖率门槛保持不变；全量单元段实际 525.403 秒。
@@ -214,7 +214,7 @@ summary 输出 storage_root、run_id、版本引用和独立检查结果，说�
 - T02/T04/T06 三批共 109 项已审用例全部通过，11 个测试/辅助文件摘要保持不变；AST-01～09 验收原文未改变，映射为 verified-awaiting-human-delivery。
 - 全量九段退出 0，统计与跳过原因见 T07 记录；最终文档及验收映射的 21 项元测试通过。
 - 最终审查入口见 验收对照表（本地材料） 与 机器记录（本地材料）。
-- [直接运行演示](../../docs/domain-storage-demo.md) 可查看三场景、旧版生成、报告、工件与跨进程核验，不依赖新 UI。
+- 通过[演示 CLI](../../scripts/demo_domain_storage.py) 可查看三场景、旧版生成、报告、工件与跨进程核验，不依赖新 UI；参数见 `--help`。
 - 按 SDD skill 第⑨步“人确认这一轮做完了”，本 IR 仍为 in-progress，Deliverables 和 Acceptance 的交付勾选保留为未确认；只有用户确认本轮交付后才标记 delivered。
 - 本轮交付仅为 Proposal 步骤 2；后续本体构建 API/UI、知识维护与发布 UI、任务解析与生成界面以及浏览器联动验收仍须独立 IR。
 

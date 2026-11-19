@@ -24,8 +24,9 @@
 
 compiler.instantiate 是结构性原语，不能直接作为面向用户的正式生成 API。
 allow_unresolved 默认为 false；只有 create_authoring_draft 显式使用宽松选项，不能据此绕过严格任务证据检查。
-离线演示命令见 [运行说明](../../docs/robotics-offline-demo.md)。
-平台 API、知识编辑和 IR-024 模型辅助构建已接入，当前范围见 [双路径指南](../../docs/robotics-dual-build.md)。
+在仓库根目录执行 `python scripts/demo_robotics.py --case all` 可运行三个合成场景，不需要服务或模型密钥。
+CLI 输出逐场景预期与实际状态以及汇总文件位置；全部符合预期时退出 0，否则退出 1，完整参数见 [CLI](../../scripts/demo_robotics.py) 的 `--help`。
+平台 API、知识编辑和 IR-024 模型辅助构建已接入，当前范围见 [双路径决策](../../specs/decisions/DR-152-robotics-dual-build.md)。
 `modeling` 包复用平台模型进行 TBox 设计，ABox 按确认骨架执行确定性规则；新设计候选单独验证，UR 行为树消费者保持独立准入。
 
 发布采用 `ur-pick-place-owl-v2`，原子参数的名称、方向和类型从 mapsToPort 指向的端口读取。

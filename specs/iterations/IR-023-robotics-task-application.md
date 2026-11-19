@@ -27,7 +27,7 @@
 
 任务提交：T01 `acf6290`；T02 `0714ecc`；T03 为本次验证与交付记录提交。
 
-使用说明：[行为树生成应用](../../docs/robotics-task-application.md)。
+历史使用说明现仅保留本地；公开应用范围见[行为树生成应用决策](../decisions/DR-151-robotics-task-application.md)。
 审计：本轮验证记录（本地材料）。
 
 ## 验收
