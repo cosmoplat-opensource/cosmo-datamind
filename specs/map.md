@@ -18,6 +18,10 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 > DataMind 是**下游产品化前端**,复用其 engine/技能,但采用**独立的本地执行、路由、安全与命名规则**——
 > 本 `specs/` 只记录 DataMind 自身的决定与迭代,与平台 specs 前缀独立、勿混用。
 
+## 机器人构建与应用交互
+
+[DR-166](decisions/DR-166-robotics-workflow-continuity.md) 与 [IR-032](iterations/IR-032-robotics-workflow-continuity.md)：任务检查入口、集中知识确认、紧凑设计画布、完成导航与自动执行适配。RUX-01～RUX-06。
+
 ## 测试执行与隔离
 
 [DR-163 · 独立测试数据与有界并行验证](decisions/DR-163-isolated-test-seeds-and-bounded-parallel-checks.md)：复用真实构建准备产物，保存和读取仍完整校验；独立资产与运行身份；有界进程及完整覆盖率汇总。PERF-T01～T04。

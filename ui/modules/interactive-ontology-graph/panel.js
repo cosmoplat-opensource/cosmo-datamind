@@ -1,9 +1,9 @@
 /* Interactive ontology graph workspace and read-only details — DR-161 / IR-031 T05. */
 import {InteractiveOntologyGraphController} from './controller.js';
 import {label} from './model.js';
-export function mountPanel(host,{canvasId=null}={}){
+export function mountPanel(host,{canvasId=null,embedded=false}={}){
   host.className='interactive-ontology-graph-panel';host.dataset.testid='interactive-ontology-graph-panel';
-  host.innerHTML=`<div class="interactive-ontology-graph-title"><strong>机器人交互式本体图谱</strong><span class="interactive-ontology-graph-context"></span></div>
+  host.innerHTML=`${embedded?'':'<div class="interactive-ontology-graph-title"><strong>机器人交互式本体图谱</strong><span class="interactive-ontology-graph-context"></span></div>'}
     <div class="interactive-ontology-graph-toolbar"><form><input aria-label="查找节点" placeholder="搜索类别、关系、实例"><button>查找</button></form>
     <button type="button" data-op="readable">可读视图</button><button type="button" data-op="fit">适应画布</button><button type="button" data-op="pause">暂停布局</button>
     <button type="button" data-op="in" aria-label="放大">＋</button><button type="button" data-op="out" aria-label="缩小">−</button>
@@ -37,8 +37,8 @@ export function mountPanel(host,{canvasId=null}={}){
     if(entity.predicate){const prop=controller.state.properties.get(entity.predicate);text(details,'p',`${label(controller.state.entity(entity.source))} → ${label(prop||entity.predicate)} → ${label(controller.state.entity(entity.target))}`);}
     const id=text(details,'details','');text(id,'summary','对象标识');text(id,'code',entity.iri||entity.id);
     if(entity.type==='class'){
-      button(details,'仅显示此类关联',()=>{controller.state.focusClass(entity.id);controller.draw();counts();});
-      if(controller.state.classFocusId)button(details,'显示完整图谱',()=>{controller.state.clearClassFocus();controller.draw();counts();});
+      button(details,'仅显示此类关联',()=>{controller.state.focusClass(entity.id);controller.draw();counts();show(entity);});
+      if(controller.state.classFocusId)button(details,'显示完整图谱',()=>{controller.state.clearClassFocus();controller.draw();counts();show(entity);});
       const total=entity.individuals?.length||0,offset=controller.pages[entity.id]||0,shown=Math.min(controller.expanded[entity.id]||0,total-offset);
       text(details,'p',`显式实例：已显示 ${shown} / ${total}${shown?` · 范围 ${offset+1}～${offset+shown}`:''}`);
       button(details,shown?'收起实例':'展开实例',()=>{controller.toggleClass(entity.id);show(entity);});
@@ -97,7 +97,8 @@ export function mountPanel(host,{canvasId=null}={}){
     if(controller.update(document,{epoch})){
       host.dataset.stage=document.context.stage;host.dataset.kind=document.context.kind;host.dataset.revision=String(document.context.revision);
       current=document;last=fingerprint;setOptions();counts();notice.textContent=document.nodes.length&&!controller.graph.data.nodes.length?'当前图谱超出同屏范围，请从节点详情选择类别查看局部关联。':document.warnings.join(' ');
-      q('.interactive-ontology-graph-context').textContent=document.context.status==='historical'?`历史修订 ${document.context.revision} · 只读`:`${document.context.kind==='design'?'设计修订 '+document.context.revision:'固定版本 · '+({candidate:'候选',draft:'草案',published:'已发布'}[document.context.status]||document.context.status)} · 只读浏览 · 执行未验证`;
+      const caption=q('.interactive-ontology-graph-context');
+      if(caption)caption.textContent=document.context.status==='historical'?`历史修订 ${document.context.revision} · 只读`:`${document.context.kind==='design'?'设计修订 '+document.context.revision:'固定版本 · '+({candidate:'候选',draft:'草案',published:'已发布'}[document.context.status]||document.context.status)} · 只读浏览 · 执行未验证`;
     }
   },error(message){notice.textContent=message;},destroy(){dead=true;controller.destroy();delete host.interactiveGraphController;host.replaceChildren();delete host.dataset.testid;}};
 }

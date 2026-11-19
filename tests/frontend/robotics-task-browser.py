@@ -107,8 +107,9 @@ def fill_gaps(panel, state):
     mappings = {'hasPerceptionProfile': str(S.Perception_Current), 'hasPlacementProfile': str(S.Placement_Current)}
     for item in state['gaps']:
         if item['kind'] == 'confirmation':
-            # One explicit confirmation of the shown scope, not seven repeated forms.
-            panel.get_by_role('checkbox', name='我已核对当前任务知识', exact=True).check()
+            # DR-166: confirm only after the remaining mappings/values are visible.
+            if not any(g['kind'] in ('mapping', 'parameter') for g in state['gaps']):
+                panel.get_by_role('checkbox', name='我已核对当前任务知识', exact=True).check()
             continue
         # data-gap-id is the stable binding; no IRI/hash is a user-entered field.
         card = panel.locator('[data-testid="task-gap"][data-gap-id="' + item['id'] + '"]')
@@ -158,6 +159,33 @@ def download(page, site, panel, current, *, values=None):
     assert raw == assert_generated(site.root, current, values=values)
     site.evidence['downloads'].append({'run_id': current['run_id'], 'bytes': len(raw)})
     return raw
+
+
+def test_task_knowledge_is_confirmed_once_after_all_mapping_and_parameter_edits(live):
+    """DR-166: never confirm unseen dependencies or ask twice for known edits."""
+    site, page, calls = live
+    ref = site.submit()['output_asset_ref']
+    original = AssetStore(site.root).read_payload(**ref)
+    panel = open_task(page, site, ref)
+    current = submit_task(page, panel)
+    confirmations = 0
+    for _ in range(8):
+        if current['status'] == 'generated':
+            break
+        assert current['status'] == 'needs_information' and current['gaps']
+        mutable = any(g['kind'] in ('mapping', 'parameter') for g in current['gaps'])
+        checkbox = panel.get_by_role('checkbox', name='我已核对当前任务知识', exact=True)
+        if mutable:
+            expect(checkbox).to_have_count(0)
+        elif any(g['kind'] == 'confirmation' for g in current['gaps']):
+            expect(checkbox).not_to_be_checked()
+            checkbox.check(); confirmations += 1
+        fill_gaps(panel, {**current, 'gaps': [g for g in current['gaps'] if g['kind'] != 'confirmation']})
+        current = save_gaps(page, panel)
+    assert current['status'] == 'generated' and confirmations == 1
+    assert len(calls) == 1 and AssetStore(site.root).read_payload(**ref) == original
+    download(page, site, panel, current)
+    done(site)
 
 
 def test_real_build_to_inline_completion_generation_download_and_restart(live):

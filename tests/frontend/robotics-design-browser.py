@@ -78,6 +78,16 @@ def wait_design(page, sid, stage, status):
     return panel
 
 
+def wait_completed_design(page, site, sid):
+    """DR-166: completion leaves the editor; reopening remains a read-only history entry."""
+    expect(page).to_have_url(re.compile(r'#robotics-view\?.*view=interactive-ontology-graph'), timeout=25000)
+    ref = session(site, sid)['output_asset_ref']
+    assert ref['ontology_id'] in page.url and ref['version_id'] in page.url
+    expect(page.get_by_test_id('interactive-ontology-graph-panel')).to_have_attribute('data-kind', 'version')
+    page.goto(site.url + '/#build?recipe=robotics&session=' + sid)
+    return wait_design(page, sid, 'abox', 'completed')
+
+
 def click_operation(page, name, suffix):
     with page.expect_response(lambda r: r.request.method == 'POST' and r.url.endswith(suffix)) as pending:
         page.get_by_role('button', name=name, exact=True).click()
@@ -173,7 +183,7 @@ def test_model_ui_stage_confirmations_final_downloads_and_history(live):
     schema = session(site, sid)
     old_json = DesignService(site.root, read_only=True).export_revision(sid, schema['revision'], format='json')
     click_operation(page, '确认骨架并构建实例', '/confirm-schema')
-    wait_design(page, sid, 'abox', 'completed')
+    wait_completed_design(page, site, sid)
     final = session(site, sid); ref = final['output_asset_ref']
     assert len(calls) == 2 and RunStore(site.root, read_only=True).get_run(final['run_id'])['operation'] == 'extract_abox'
     assert DesignService(site.root, read_only=True).export_revision(sid, schema['revision'], format='json') == old_json
@@ -294,6 +304,11 @@ def prepare_candidate(root):
     return Harness(root).candidate()
 
 
+def prepare_incomplete_tbox(root):
+    from tests.robotics_application_integration_support import candidate
+    return candidate(root, missing_role='ParameterBinding')[1]
+
+
 @pytest.mark.parametrize('live', [{'prepare': prepare_candidate}], indirect=True)
 def test_design_candidate_library_graph_and_application_filter(live):
     site, page, calls = live; ref = site.prepared['output_asset_ref']
@@ -319,7 +334,7 @@ def application_posts(site):
             and '/api/application-checks' in r['url']]
 
 
-@pytest.mark.parametrize('live', [{'prepare': prepare_candidate}], indirect=True)
+@pytest.mark.parametrize('live', [{'prepare': prepare_incomplete_tbox}], indirect=True)
 @pytest.mark.parametrize('entry', ['detail', 'graph'])
 def test_application_click_checks_once_and_reload_only_reads_history(live, entry):
     """DR-153: real HTTP/SQLite/browser; no route fulfillment or synthetic application response."""
@@ -445,7 +460,7 @@ def test_application_adaptation_build_enters_library_without_application_selecti
     click_operation(page, '发送建模要求', '/messages')
     wait_design(page, sid, 'properties', 'awaiting_confirmation')
     click_operation(page, '确认骨架并构建实例', '/confirm-schema')
-    wait_design(page, sid, 'abox', 'completed')
+    wait_completed_design(page, site, sid)
     ref = session(site, sid)['output_asset_ref']
     page.get_by_role('link', name='查看本体候选', exact=True).click()
     expect(page.get_by_test_id('robotics-version')).to_have_attribute('data-version-id', ref['version_id'])
@@ -481,12 +496,11 @@ def assess_candidate(page, site, ref, *, diagnosis=True):
 @pytest.mark.parametrize('live', [{'prepare': prepare_candidate}], indirect=True)
 def test_application_adaptation_auto_matches_and_reload_never_resubmits(live):
     site, page, calls = live; ref = site.prepared['output_asset_ref']
-    assess_candidate(page, site, ref)
-    response = application_repair(page, 'robotics.adapt_execution')
-    aid = response['target']['resource_id']
-    panel = page.get_by_test_id('robotics-application-adaptation')
-    expect(panel).to_have_attribute('data-adaptation-id', aid)
-    expect(panel).to_have_attribute('data-status', 'completed', timeout=40000)
+    assess_candidate(page, site, ref, diagnosis=False)
+    panel = page.get_by_test_id('robotics-task')
+    expect(panel).to_have_attribute('data-status', 'idle', timeout=40000)
+    rows = db_rows(site.root)['robotics_adaptations']; assert len(rows) == 1
+    aid = rows[0]['adaptation_id']
     saved = site.get('/api/robotics/application-adaptations/' + aid)
     assert saved['matching']['method'] == 'automatic' and saved['role_map']['confirmed']
     expect(panel.get_by_role('button', name='确认角色对应', exact=True)).to_have_count(0)
@@ -494,9 +508,10 @@ def test_application_adaptation_auto_matches_and_reload_never_resubmits(live):
     expect(panel.get_by_role('button', name='确认并生成应用版本', exact=True)).to_have_count(0)
     before, files = db_rows(site.root), blob_bytes(site.root)
     before_posts = len([r for r in site.evidence['requests'] if r['method'] == 'POST'])
-    page.reload(); expect(panel).to_have_attribute('data-status', 'completed')
-    site.restart(); page.reload(); expect(panel).to_have_attribute('data-adaptation-id', aid)
-    expect(panel).to_have_attribute('data-status', 'completed')
+    page.reload(); expect(panel).to_have_attribute('data-status', 'idle')
+    site.restart(); page.reload()
+    expect(panel).to_have_attribute('data-version-id', saved['output_asset_ref']['version_id'])
+    expect(panel).to_have_attribute('data-status', 'idle')
     assert db_rows(site.root) == before and blob_bytes(site.root) == files and calls == []
     assert len([r for r in site.evidence['requests'] if r['method'] == 'POST']) == before_posts
     done(site)
@@ -507,14 +522,14 @@ def test_application_adaptation_browser_worker_downloads_and_returns_to_existing
     from tests.robotics_application_integration_support import current_bundle
     site, page, calls = live; ref = site.prepared['output_asset_ref']
     old_json = DesignAssets(site.root).export_json(**ref)
-    assess_candidate(page, site, ref); response = application_repair(page, 'robotics.adapt_execution')
-    panel = page.get_by_test_id('robotics-application-adaptation')
-    expect(panel).to_have_attribute('data-status', 'completed', timeout=40000)
-    saved = site.get('/api/robotics/application-adaptations/' + response['target']['resource_id'])
+    assess_candidate(page, site, ref, diagnosis=False)
+    expect(page.get_by_test_id('robotics-task')).to_have_attribute('data-status', 'idle', timeout=40000)
+    rows = db_rows(site.root)['robotics_adaptations']; assert len(rows) == 1
+    saved = site.get('/api/robotics/application-adaptations/' + rows[0]['adaptation_id'])
     assert saved['run_id'] and saved['matching']['method'] == 'automatic'
     assert not any(r['method'] == 'POST' and (r['url'].endswith('/confirm-roles') or r['url'].endswith('/submit')) for r in site.evidence['requests'])
     new = saved['output_asset_ref']; raw, document = current_bundle(site.root, new)
-    panel.get_by_role('link', name='查看应用版本', exact=True).click()
+    page.goto(site.url + '/#library?asset=' + new['ontology_id'] + '&version=' + new['version_id'])
     version = page.get_by_test_id('robotics-version')
     expect(version).to_have_attribute('data-version-id', new['version_id'])
     for label, expected in [('下载完整 JSON', json.dumps(document, ensure_ascii=False)), ('下载 OWL', raw)]:
@@ -537,11 +552,6 @@ def test_application_adaptation_browser_worker_downloads_and_returns_to_existing
     expect(page.get_by_role('link', name='继续描述任务', exact=True)).to_have_count(0)
     assert calls == []
     done(site)
-
-
-def prepare_incomplete_tbox(root):
-    from tests.robotics_application_integration_support import candidate
-    return candidate(root, missing_role='ParameterBinding')[1]
 
 
 @pytest.mark.parametrize('live', [{'prepare': prepare_incomplete_tbox}], indirect=True)
@@ -621,7 +631,7 @@ def test_schema_gap_completion_requires_tab_then_explicit_send_and_preserves_sta
     click_operation(page, '开始关系与属性设计', '/messages')
     wait_design(page, initial['session_id'], 'properties', 'awaiting_confirmation')
     click_operation(page, '确认骨架并构建实例', '/confirm-schema')
-    wait_design(page, initial['session_id'], 'abox', 'completed')
+    wait_completed_design(page, site, initial['session_id'])
     original = session(site, initial['session_id']); ref = original['output_asset_ref']
     original_json = DesignAssets(site.root).export_json(**ref)
     initial_calls = len(calls)
@@ -729,7 +739,7 @@ def test_cpp_type_gap_opens_properties_without_reconfirming_classes_or_calling_m
     click_operation(page, '开始关系与属性设计', '/messages')
     wait_design(page, initial['session_id'], 'properties', 'awaiting_confirmation')
     click_operation(page, '确认骨架并构建实例', '/confirm-schema')
-    wait_design(page, initial['session_id'], 'abox', 'completed')
+    wait_completed_design(page, site, initial['session_id'])
     original = session(site, initial['session_id']); ref = original['output_asset_ref']
     old_json = DesignAssets(site.root).export_json(**ref)
     report = assess_candidate(page, site, ref)
@@ -875,12 +885,282 @@ def test_unresolved_role_allows_manual_selection_and_one_confirm_generate(live):
     expect(submit).to_be_enabled()
     queued = click_operation(page, '确认并生成应用版本', '/submit')
     assert queued['matching']['method'] == 'manual' and queued['status'] == 'queued'
-    expect(panel).to_have_attribute('data-status', 'completed', timeout=40000)
+    task = page.get_by_test_id('robotics-task')
+    expect(task).to_have_attribute('data-status', 'idle', timeout=40000)
     saved = site.get('/api/robotics/application-adaptations/' + reply['target']['resource_id'])
     assert saved['run_id'] == queued['run_id']
+    expect(task).to_have_attribute('data-version-id', saved['output_asset_ref']['version_id'])
     assert len(RunStore(site.root, read_only=True).list_runs()) == before_runs + 1
     assert DesignAssets(site.root).export_json(**ref) == old_json and calls == []
     assert not any(r['method'] == 'POST' and r['url'].endswith('/confirm-roles') for r in site.evidence['requests'])
+    done(site)
+
+
+# DR-166: user-visible workflow continuity, using actual persisted services.
+@pytest.mark.parametrize('live', [{'prepare': prepare_incomplete_tbox}], indirect=True)
+def test_application_home_checks_incompatible_candidate_and_opens_its_revision(live):
+    site, page, calls = live
+    original = site.prepared; ref = original['output_asset_ref']
+    page.goto(site.url + '/#robotics-task')
+    page.get_by_label('选择机器人本体', exact=True).select_option(ref['ontology_id'])
+    page.get_by_role('button', name='开始新任务', exact=True).click()
+    check = page.get_by_test_id('application-check')
+    expect(check).to_contain_text('ParameterBinding')
+    expect(page.get_by_role('button', name='重试准备任务', exact=True)).to_have_count(0)
+    before = len(application_posts(site))
+    page.reload(); expect(check).to_contain_text('ParameterBinding')
+    assert len(application_posts(site)) == before and calls == []
+    application_repair(page, 'robotics.revise_tbox')
+    panel = wait_design(page, original['session_id'], 'classes', 'awaiting_input')
+    expect(panel.get_by_label('建模要求', exact=True)).to_be_visible()
+    assert session(site, original['session_id'])['output_asset_ref'] is None
+    assert DesignAssets(site.root).payload(**ref)
+    done(site)
+
+
+def assert_compact_design_controls(page):
+    panel = page.get_by_test_id('robotics-design')
+    graph = panel.get_by_test_id('interactive-ontology-graph-panel')
+    expect(graph.locator('svg [data-node-id]').first).to_be_visible()
+    expect(graph.locator('.interactive-ontology-graph-title')).to_have_count(0)
+    expect(panel.locator('.rd-stage-guide')).to_be_visible()
+    expect(panel.locator('.rd-design-summary')).not_to_be_visible()
+    plot = graph.locator('.interactive-ontology-graph-plot').bounding_box()
+    assert panel.locator('.rd-stage-guide').bounding_box()['y'] < plot['y']
+    if panel.get_by_text('继续提修改意见', exact=True).is_visible():
+        assert panel.get_by_text('继续提修改意见', exact=True).bounding_box()['y'] < plot['y']
+        panel.get_by_text('继续提修改意见', exact=True).click()
+    editor = panel.get_by_label('建模要求', exact=True)
+    expect(editor).to_be_visible()
+    assert editor.bounding_box()['y'] + editor.bounding_box()['height'] <= graph.bounding_box()['y']
+    expect(panel.get_by_label('设计修订', exact=True)).to_be_visible()
+    assert page.evaluate('document.documentElement.scrollWidth <= innerWidth + 2')
+
+
+@pytest.mark.parametrize('width', [1440, 390])
+def test_design_steps_put_compact_controls_before_canvas_and_keep_definitions(live, width):
+    site, page, calls = live
+    page.set_viewport_size({'width': width, 'height': 1000})
+    sid = ui_admit(page, site)['session_id']
+    wait_design(page, sid, 'classes', 'awaiting_confirmation')
+    assert_compact_design_controls(page)
+    click_operation(page, '确认类别', '/confirm-classes')
+    wait_design(page, sid, 'properties', 'awaiting_input')
+    assert_compact_design_controls(page)
+    click_operation(page, '开始关系与属性设计', '/messages')
+    panel = wait_design(page, sid, 'properties', 'awaiting_confirmation')
+    assert_compact_design_controls(page)
+    panel.get_by_text('查看完整定义与说明', exact=True).click()
+    expect(panel.get_by_text('查看关系设计详情', exact=False)).to_be_visible()
+    assert len(calls) == 2
+    done(site)
+
+
+def test_new_build_completion_opens_exact_fixed_graph_without_application_side_effects(live):
+    site, page, calls = live
+    sid = ui_admit(page, site)['session_id']
+    wait_design(page, sid, 'classes', 'awaiting_confirmation')
+    click_operation(page, '确认类别', '/confirm-classes')
+    wait_design(page, sid, 'properties', 'awaiting_input')
+    click_operation(page, '开始关系与属性设计', '/messages')
+    wait_design(page, sid, 'properties', 'awaiting_confirmation')
+    click_operation(page, '确认骨架并构建实例', '/confirm-schema')
+    expect(page).to_have_url(re.compile(r'#robotics-view\?.*view=interactive-ontology-graph'), timeout=25000)
+    final = session(site, sid); ref = final['output_asset_ref']
+    assert ref['ontology_id'] in page.url and ref['version_id'] in page.url
+    expect(page.get_by_test_id('interactive-ontology-graph-panel')).to_have_attribute('data-kind', 'version')
+    assert db_rows(site.root)['application_checks'] == [] and len(calls) == 2
+    before = db_rows(site.root)
+    page.reload()
+    expect(page.get_by_test_id('interactive-ontology-graph-panel')).to_have_attribute('data-kind', 'version')
+    assert db_rows(site.root) == before and len(calls) == 2
+    done(site)
+
+
+@pytest.mark.parametrize('live', [{'responses': incomplete_repair_responses() + [model_reply(proposals()[1])]}], indirect=True)
+@pytest.mark.parametrize('origin', ['check', 'adaptation'])
+def test_schema_repair_completion_returns_to_application_flow_with_new_candidate(live, origin):
+    site, page, calls = live
+    sid = ui_admit(page, site)['session_id']
+    wait_design(page, sid, 'classes', 'awaiting_confirmation')
+    click_operation(page, '确认类别', '/confirm-classes')
+    wait_design(page, sid, 'properties', 'awaiting_input')
+    click_operation(page, '开始关系与属性设计', '/messages')
+    wait_design(page, sid, 'properties', 'awaiting_confirmation')
+    click_operation(page, '确认骨架并构建实例', '/confirm-schema')
+    expect(page).to_have_url(re.compile(r'#robotics-view\?'), timeout=25000)
+    original = session(site, sid); old = original['output_asset_ref']
+    before = DesignAssets(site.root).payload(**old)
+    if origin == 'check':
+        assess_candidate(page, site, old)
+        application_repair(page, 'robotics.revise_tbox')
+    else:
+        from domain_runs.robotics_application_service import ApplicationService
+        flow = ApplicationService(site.root).prepare(**old, mode='real', task_ref=None,
+            request_id='repair-return', automatic=True)
+        page.goto(site.url + '/#robotics-task?adaptation=' + flow['adaptation_id'])
+        page.get_by_role('link', name='修订本体骨架', exact=True).click()
+    wait_design(page, sid, 'classes', 'awaiting_input')
+    assert_compact_design_controls(page)
+    page.get_by_label('建模要求', exact=True).fill('补齐应用所需类别')
+    click_operation(page, '确认并发送建模要求', '/messages')
+    wait_design(page, sid, 'classes', 'awaiting_confirmation')
+    click_operation(page, '确认类别', '/confirm-classes')
+    wait_design(page, sid, 'properties', 'awaiting_input')
+    page.get_by_label('建模要求', exact=True).fill('补齐应用所需关系与属性')
+    click_operation(page, '确认并发送建模要求', '/messages')
+    wait_design(page, sid, 'properties', 'awaiting_confirmation')
+    click_operation(page, '确认骨架并构建实例', '/confirm-schema')
+    task = page.get_by_test_id('robotics-task')
+    expect(task).to_have_attribute('data-status', 'idle', timeout=40000)
+    final = session(site, sid); new = final['output_asset_ref']
+    assert new != old and '#robotics-task?' in page.url and len(calls) == 4
+    assert DesignAssets(site.root).payload(**old) == before
+    rows = db_rows(site.root)
+    assert len(rows['robotics_adaptations']) == 1
+    if origin == 'adaptation':
+        saved = site.get('/api/robotics/application-adaptations/' + flow['adaptation_id'])
+        assert saved['asset_ref'] == new and saved['status'] == 'completed'
+    done(site)
+
+
+@pytest.mark.parametrize('live', [{'prepare': prepare_candidate}], indirect=True)
+def test_new_task_automatically_adapts_once_then_enters_checked_task_and_reload_is_readonly(live):
+    site, page, calls = live; original = site.prepared['output_asset_ref']
+    old = DesignAssets(site.root).payload(**original)
+    page.goto(site.url + '/#robotics-task?asset=' + original['ontology_id'] + '&version=' + original['version_id'])
+    task = page.get_by_test_id('robotics-task')
+    expect(task).to_have_attribute('data-status', 'idle', timeout=40000)
+    expect(task.get_by_label('任务描述', exact=True)).to_be_visible()
+    expect(task).to_contain_text('可准备任务')
+    records = db_rows(site.root)
+    assert len(records['robotics_adaptations']) == 1
+    flow = json.loads(records['robotics_adaptations'][0]['record'])
+    assert flow['matching']['method'] == 'automatic' and flow['status'] == 'completed'
+    expect(task).to_have_attribute('data-version-id', flow['output_asset_ref']['version_id'])
+    assert DesignAssets(site.root).payload(**original) == old and calls == []
+    posts = [r for r in site.evidence['requests'] if r['method'] == 'POST']
+    assert not any(r['url'].endswith(('/submit', '/confirm-roles')) for r in posts)
+    page.reload(); expect(task).to_have_attribute('data-status', 'idle')
+    assert db_rows(site.root) == records
+    assert len([r for r in site.evidence['requests'] if r['method'] == 'POST']) == len(posts)
+    done(site)
+
+
+@pytest.mark.parametrize('live', [{'prepare': prepare_candidate}], indirect=True)
+def test_readonly_application_check_does_not_start_automatic_adaptation(live):
+    from tests.robotics_application_integration_support import check_body
+    site, page, calls = live; ref = site.prepared['output_asset_ref']
+    _, response = site.post_json('/api/application-checks', check_body(ref))
+    before = db_rows(site.root)
+    page.goto(site.url + '/#robotics-task?asset=' + ref['ontology_id'] + '&version=' + ref['version_id'] +
+              '&check=' + response['report']['check_id'] + '&readonly=1')
+    expect(page.get_by_test_id('application-check')).to_be_visible()
+    page.reload(); expect(page.get_by_test_id('application-check')).to_be_visible()
+    assert db_rows(site.root) == before and calls == []
+    done(site)
+
+
+@pytest.mark.parametrize('live', [{'prepare': prepare_candidate}], indirect=True)
+def test_failed_automatic_adaptation_stays_visible_and_explicit_retry_reuses_request(live):
+    site, page, calls = live; ref = site.prepared['output_asset_ref']
+    attempts = []
+    def unavailable(route):
+        attempts.append(route.request.post_data_json)
+        route.fulfill(status=503, content_type='application/json',
+            body=json.dumps({'error': {'code': 'storage_unavailable', 'message': '准备服务暂不可用'}}))
+    page.route('**/api/application-checks/*/repairs', unavailable)
+    page.goto(site.url + '/#robotics-task?asset=' + ref['ontology_id'] + '&version=' + ref['version_id'])
+    expect(page.get_by_role('alert')).to_contain_text('准备服务暂不可用')
+    retry = page.get_by_role('button', name='重试检查', exact=True)
+    expect(retry).to_be_visible()
+    page.wait_for_timeout(500)
+    assert len(attempts) == 1 and db_rows(site.root)['robotics_adaptations'] == []
+    page.unroute('**/api/application-checks/*/repairs', unavailable)
+    with page.expect_request('**/api/application-checks/*/repairs') as pending:
+        retry.click()
+    assert pending.value.post_data_json == attempts[0]
+    expect(page.get_by_test_id('robotics-task')).to_have_attribute('data-status', 'idle', timeout=40000)
+    assert len(db_rows(site.root)['robotics_adaptations']) == 1 and calls == []
+    done(site)
+
+
+@pytest.mark.parametrize('live', [{'prepare': prepare_candidate}], indirect=True)
+def test_stale_application_check_never_automatically_adapts_or_edits_design(live):
+    from tests.robotics_application_integration_support import check_body
+    site, page, calls = live; original = site.prepared; ref = original['output_asset_ref']
+    _, response = site.post_json('/api/application-checks', check_body(ref))
+    site.post_json('/api/robotics/design-sessions/' + original['session_id'] + '/edit-classes',
+        {'expected_revision': original['revision'], 'request_id': 'other-window-edit'})
+    before = db_rows(site.root)
+    page.goto(site.url + '/#robotics-task?asset=' + ref['ontology_id'] + '&version=' + ref['version_id'] +
+              '&check=' + response['report']['check_id'])
+    check = page.get_by_test_id('application-check')
+    expect(check).to_contain_text('检查已过期')
+    for button in check.locator('[data-action-id]').all():
+        expect(button).to_be_disabled()
+    assert db_rows(site.root) == before and calls == []
+    done(site)
+
+
+def prepare_completed_adaptation(root):
+    from tests.robotics_application_integration_support import adapted
+    return adapted(root)[2]
+
+
+@pytest.mark.parametrize('live', [{'prepare': prepare_completed_adaptation}], indirect=True)
+def test_completed_adaptation_history_is_readonly_until_explicit_continue_and_reuses_task(live):
+    site, page, calls = live; flow = site.prepared
+    before = db_rows(site.root)
+    href = site.url + '/#robotics-task?adaptation=' + flow['adaptation_id']
+    page.goto(href)
+    panel = page.get_by_test_id('robotics-application-adaptation')
+    expect(panel).to_have_attribute('data-status', 'completed')
+    expect(panel.get_by_role('button', name='继续准备任务', exact=True)).to_be_visible()
+    page.reload(); expect(panel).to_have_attribute('data-status', 'completed')
+    assert db_rows(site.root) == before and calls == []
+    panel.get_by_role('button', name='继续准备任务', exact=True).click()
+    task = page.get_by_test_id('robotics-task')
+    expect(task).to_have_attribute('data-status', 'idle', timeout=25000)
+    sid = task.get_attribute('data-session-id')
+    rows = db_rows(site.root)
+    page.goto(href)
+    panel.get_by_role('button', name='继续准备任务', exact=True).click()
+    expect(task).to_have_attribute('data-session-id', sid)
+    assert db_rows(site.root) == rows and calls == []
+    done(site)
+
+
+def prepare_adaptation_with_concurrently_changed_task(root):
+    from domain_runs.robotics_task_service import TaskService
+    from tests.robotics_application_integration_support import adapted, fill_task, service, finish
+    _, original, initial = adapted(root)
+    current, _ = fill_task(root, initial['output_asset_ref'])
+    flow = service(root).prepare(**original['output_asset_ref'], mode='real',
+        task_ref={'session_id': current['session_id']}, request_id='continue-existing-task', automatic=True)
+    completed = finish(root, flow)
+    newer = TaskService(root, generation_policy='offline').generate(current['session_id'],
+        expected_revision=current['revision'], request_id='other-window-generation')
+    return {'flow': completed, 'task': newer}
+
+
+@pytest.mark.parametrize('live', [{'prepare': prepare_adaptation_with_concurrently_changed_task}], indirect=True)
+def test_automatic_return_never_overwrites_a_concurrently_changed_task_and_offers_its_current_page(live):
+    site, page, calls = live; flow, task = site.prepared['flow'], site.prepared['task']
+    before = db_rows(site.root)
+    page.goto(site.url + '/#robotics-task?adaptation=' + flow['adaptation_id'] + '&continue=1')
+    panel = page.get_by_test_id('robotics-application-adaptation')
+    expect(panel.get_by_role('alert')).not_to_be_empty()
+    current = panel.get_by_role('link', name='查看当前任务', exact=True)
+    expect(current).to_be_visible()
+    page.wait_for_timeout(500)
+    requests = [r for r in site.evidence['requests'] if r['method'] == 'POST' and r['url'].endswith('/resume-task')]
+    assert len(requests) == 1 and db_rows(site.root) == before and calls == []
+    current.click()
+    restored = page.get_by_test_id('robotics-task')
+    expect(restored).to_have_attribute('data-session-id', task['session_id'])
+    expect(restored).to_have_attribute('data-version-id', task['version_id'])
+    assert db_rows(site.root) == before and calls == []
     done(site)
 
 

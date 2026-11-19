@@ -4,6 +4,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -49,8 +50,8 @@ def test_classes_properties_instances_update_one_canvas(live):
     expect(panel.locator('svg')).to_have_attribute('data-retained', 'yes')
     expect(panel.locator('svg [data-edge-id]').first).to_be_visible()
     support.click_operation(page, '确认骨架并构建实例', '/confirm-schema')
-    support.wait_design(page, sid, 'abox', 'completed')
-    expect(panel).to_have_attribute('data-kind', 'version', timeout=15000)
+    expect(page).to_have_url(re.compile(r'#robotics-view\?.*view=interactive-ontology-graph'), timeout=25000)
+    expect(interactive_graph_panel(page)).to_have_attribute('data-kind', 'version', timeout=15000)
     assert len(calls) == 2
     state = site.get('/api/robotics/design-sessions/' + sid)
     ref = state['output_asset_ref']
@@ -76,10 +77,10 @@ def test_revision_changes_preserve_view_and_history_is_read_only(live):
     support.wait_design(page, sid, 'properties', 'awaiting_input')
     expect(node).to_have_attribute('transform', before)
     before_calls = len(calls)
-    panel.get_by_label('设计修订', exact=True).select_option('1')
-    expect(panel.locator('.interactive-ontology-graph-context')).to_contain_text('历史修订 1')
+    page.get_by_label('设计修订', exact=True).select_option('1')
+    expect(page.locator('.rd-status')).to_contain_text('历史修订 1 · 只读')
     expect(page.get_by_role('button', name='确认类别', exact=True)).to_have_count(0)
-    panel.get_by_label('设计修订', exact=True).select_option('current')
+    page.get_by_label('设计修订', exact=True).select_option('current')
     assert len(calls) == before_calls
 
 
@@ -110,6 +111,22 @@ def probe(page, site, *, nodes=2, edges=1, instances=0):
       const panel=mountPanel(host);panel.present(doc);window.interactiveGraphProbe={panel,doc,mountPanel,host};
     }''', {'nodes': nodes, 'edges': edges, 'instances': instances})
     return page.locator('#interactive_ontology_graph_probe')
+
+
+def test_class_focus_immediately_offers_restore_without_selecting_another_node(live):
+    """DR-166: the current selection must re-render after a focus change."""
+    site, page, _ = live
+    panel = probe(page, site, nodes=3, edges=1)
+    panel.get_by_label('节点详情', exact=True).select_option('https://probe.test/#0')
+    panel.get_by_role('button', name='仅显示此类关联', exact=True).click()
+    expect(panel.locator('svg [data-node-id]')).to_have_count(2)
+    restore = panel.get_by_role('button', name='显示完整图谱', exact=True)
+    expect(restore).to_be_visible()
+    restore.click()
+    expect(panel.locator('svg [data-node-id]')).to_have_count(3)
+    expect(restore).to_have_count(0)
+    expect(panel.locator('.interactive-ontology-graph-entity h3')).to_have_text('类别 0')
+    assert not site.evidence['page_errors']
 
 
 def test_panel_rejects_oversized_revision_without_changing_caption(live):
@@ -248,21 +265,24 @@ def test_late_fixed_result_during_history_switch_is_cached_without_overwriting_h
     support.wait_design(page,sid,'properties','awaiting_input')
     page.get_by_role('button',name='开始关系与属性设计',exact=True).click()
     support.wait_design(page,sid,'properties','awaiting_confirmation')
+    support.click_operation(page,'确认骨架并构建实例','/confirm-schema')
+    expect(page).to_have_url(re.compile(r'#robotics-view\?'),timeout=25000)
+    expect(interactive_graph_panel(page)).to_have_attribute('data-kind','version')
     # Delay delivery of a genuine server response; never replace its bytes or status.
     page.evaluate('''()=>{const original=window.fetch;window.fetch=async(...args)=>{
       const response=await original(...args);
       if(String(args[0]).endsWith('/views/interactive-ontology-graph'))await new Promise(resolve=>{window.releaseInteractiveGraphResult=resolve;});
       return response;
     };}''')
-    support.click_operation(page,'确认骨架并构建实例','/confirm-schema')
+    page.goto(site.url+'/#build?recipe=robotics&session='+sid)
     support.wait_design(page,sid,'abox','completed')
     page.wait_for_function('typeof window.releaseInteractiveGraphResult === "function"')
-    panel.get_by_label('设计修订',exact=True).select_option('1')
-    expect(panel.locator('.interactive-ontology-graph-context')).to_contain_text('历史修订 1')
+    page.get_by_label('设计修订',exact=True).select_option('1')
+    expect(page.locator('.rd-status')).to_contain_text('历史修订 1 · 只读')
     page.evaluate('window.releaseInteractiveGraphResult()')
     page.wait_for_function('!!document.querySelector("[data-testid=interactive-ontology-graph-panel]").interactiveGraphResult')
-    expect(panel.locator('.interactive-ontology-graph-context')).to_contain_text('历史修订 1')
-    panel.get_by_label('设计修订',exact=True).select_option('current')
+    expect(page.locator('.rd-status')).to_contain_text('历史修订 1 · 只读')
+    page.get_by_label('设计修订',exact=True).select_option('current')
     expect(panel).to_have_attribute('data-kind','version')
     assert len(calls)==2
 

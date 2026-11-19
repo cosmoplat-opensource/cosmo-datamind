@@ -29,6 +29,15 @@ function fixture(){
   return f;
 }
 const cases={
+  async hidden_confirmation_draft_is_not_submitted_with_mapping_or_parameter_edits(){
+    const f=fixture(),confirmation={id:'gap_confirm',kind:'confirmation',entity_iri:'urn:profile',field:'confirmationStatus'};
+    f.handler=async()=>response(session({gaps:[...session().gaps,confirmation]}));
+    await f.ready();f.c.setAnswer('gap_confirm',{confirmed:true});
+    f.handler=async()=>response(session({revision:2,version_id:'ver_b',gaps:[confirmation]}));
+    await f.c.save();
+    assert.deepEqual(f.body().answers,[{gap_id:'gap_exposure',value:'155'}]);
+    assert.deepEqual(f.state().answers,{},'a previously hidden confirmation must require a fresh explicit review');
+  },
   async restore_get_only(){const f=fixture();await f.c.restore('task_a');assert.equal(f.calls.length,1);
     assert.equal(f.calls[0].url,'/api/robotics/tasks/task_a');assert.ok(!f.calls[0].options.method || f.calls[0].options.method==='GET');},
   async scoped_save(){const f=fixture();await f.ready();f.handler=async()=>response(session({revision:2,version_id:'ver_b',gaps:[]}));

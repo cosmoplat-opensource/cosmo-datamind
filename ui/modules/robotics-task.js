@@ -1,4 +1,4 @@
-/* Persistent task controller and minimal task-page composition — DR-145 / DR-146 / DR-148 / DR-155. */
+/* Persistent task controller and minimal task-page composition — DR-145 / DR-146 / DR-148 / DR-155 / DR-166. */
 (function(global){
   'use strict';
   const copy = value => JSON.parse(JSON.stringify(value));
@@ -10,6 +10,9 @@
     ['源文件当前放置目标；尚未绑定业务槽位', '源文件放置配置']
   ]);
   const displayLabel = value => legacyLabels.get(value) ?? value;
+  function knowledgeConfirmations(gaps){
+    return gaps.some(g=>['mapping','parameter'].includes(g.kind))?[]:gaps.filter(g=>g.kind==='confirmation');
+  }
   const prefix = '/api/robotics/tasks';
   async function json(fetcher,url,options){
     const response=await fetcher(url,options);let body;
@@ -85,7 +88,12 @@
     return {snapshot,open:(ref,admission)=>load(ref,null,admission),restore:(sid,ref)=>load(ref,sid),
       setAnswer(id,answer){if(answer==null)delete state.answers[id];else state.answers[id]=copy(answer);},
       send:text=>submit('messages',{text}),
-      save:()=>submit('completion',{answers:Object.entries(state.answers).map(([gap_id,answer])=>({gap_id,...answer}))}),
+      save:()=>{
+        const gaps=state.session?.gaps||[],visible=new Set(knowledgeConfirmations(gaps).map(g=>g.id));
+        return submit('completion',{answers:Object.entries(state.answers)
+          .filter(([id])=>!gaps.some(g=>g.id===id&&g.kind==='confirmation')||visible.has(id))
+          .map(([gap_id,answer])=>({gap_id,...answer}))});
+      },
       choose:choice=>submit('choices',choice),
       configure:choice=>submit('configurations',choice),
       generate:()=>submit('generate',{}),
@@ -116,6 +124,15 @@
     })).join('');
     return `<section class="${inline?'rt-preparation':'card ra-section'}" data-testid="application-check" data-check-id="${esc(r.check_id)}"><h${inline?'4':'2'}>行为树应用检查</h${inline?'4':'2'}><p role="status">${!current?'检查已过期':r.preparation_status==='available'?'可准备任务':'未满足应用要求'}</p>${r.issues.map(i=>global.RoboticsApplication.renderIssue(i)).join('')}${actions}${!inline?'<button type="button" class="ghost" data-recheck>重新检查</button>':''}<p>执行未验证</p>${seen.has('robotics.revise_tbox') || seen.has('robotics.adapt_execution')?'<p class="muted">修订本体骨架：补齐类别或关系定义。核对角色对应：检查已有术语能否对应应用角色；缺少定义时仍需修订骨架。</p>':''}</section>`;
   }
+  async function followRepair(view,response,issue,action,requestId){
+    const reply=await json(global.fetch.bind(global),'/api/application-checks/'+encodeURIComponent(response.report.check_id)+'/repairs',
+      {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({issue_id:issue.issue_id,action_id:action.action_id,input:{},expected_revision:action.target.expected_revision,request_id:requestId})});
+    if(active!==view)return;
+    if(reply.kind==='navigate'&&reply.href.startsWith('#')){
+      const href=await global.RoboticsDesign.beginRepair(reply,requestId);
+      if(active===view)global.location.hash=href+(reply.target?.resource_kind==='robotics_adaptation'?'&continue=1':'');
+    }
+  }
   function bindRepairs(host,view,response){
     const r=response.report;
     host.querySelectorAll('[data-action-id]').forEach(button=>button.onclick=async()=>{
@@ -123,10 +140,7 @@
       try{
         const issue=r.issues.find(i=>i.issue_id===button.dataset.issueId),action=issue.repair_actions.find(a=>a.action_id===button.dataset.actionId);
         const requestId=button.dataset.requestId||(button.dataset.requestId=global.dmRequestId());
-        const reply=await json(global.fetch.bind(global),'/api/application-checks/'+encodeURIComponent(r.check_id)+'/repairs',
-          {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({issue_id:issue.issue_id,action_id:action.action_id,input:{},expected_revision:action.target.expected_revision,request_id:requestId})});
-        if(active!==view)return;
-        if(reply.kind==='navigate'&&reply.href.startsWith('#')){const href=await global.RoboticsDesign.beginRepair(reply,requestId);if(active===view)global.location.hash=href;}
+        await followRepair(view,response,issue,action,requestId);
       }catch(e){if(active===view){button.disabled=false;const notice=global.document.createElement('p');notice.setAttribute('role','alert');notice.textContent=e.message;host.append(notice);}}
     });
   }
@@ -137,7 +151,7 @@
     const params=new URLSearchParams(global.location.hash.split('?')[1]||'');
     if(params.get('adaptation')){active={controller:global.RoboticsApplication.mount(host,params)};return;}
     if(params.get('history')||params.get('run')||!['session','asset','version'].some(key=>params.has(key)))return;
-    if(!params.get('session') && params.get('asset') && (params.get('assess') || params.get('check')) && !params.get('prepare')){
+    if(!params.get('session') && params.get('asset') && params.get('version') && !params.get('prepare')){
       const view={};active=view;
       // Persist admission before sending: refresh and lost responses replay the same operation.
       if(!params.get('entry'))params.set('entry',global.dmRequestId());
@@ -155,6 +169,13 @@
           if(response.freshness==='current' && r.preparation_status==='available' && !params.get('readonly')){
             if(params.get('task') || r.task_ref?.session_id)params.set('session',params.get('task') || r.task_ref.session_id);
             mountTask(host,params,response);return;
+          }
+          // DR-166: the server still owns matching/validation; never automate schema edits or stale checks.
+          if(response.freshness==='current'&&!params.get('readonly')&&!params.get('adapted')&&
+             r.issues.length&&r.issues.every(i=>i.layer==='execution')){
+            const issue=r.issues.find(i=>i.repair_actions?.some(a=>a.action_id==='robotics.adapt_execution'&&a.availability==='available'));
+            const action=issue?.repair_actions.find(a=>a.action_id==='robotics.adapt_execution'&&a.availability==='available');
+            if(action){host.innerHTML='<p role="status">正在匹配并校验执行结构，请稍候…</p>';await followRepair(view,response,issue,action,'auto-'+params.get('entry'));return;}
           }
           host.innerHTML=checkMarkup(response);bindRepairs(host,view,response);
           host.querySelector('[data-recheck]').onclick=()=>{
@@ -196,7 +217,9 @@
       const error=state.error || s.error, busy=state.busy || s.status==='running';
       if(view.configEdit && (view.configEdit.session!==s.session_id || view.configEdit.revision!==s.revision))view.configEdit=null;
       const editing=view.configEdit;
-      const gaps=editing?[]:s.gaps||[], confirmations=gaps.filter(g=>g.kind==='confirmation');
+      const gaps=editing?[]:s.gaps||[];
+      // DR-166: mappings can expose previously unseen profiles; confirm only the final visible scope.
+      const confirmations=knowledgeConfirmations(gaps);
       const offline=s.generation_policy==='offline', notesError=error?.operation==='notes';
       const noteValue=kind=>state.noteDrafts[kind]??(s.adaptation_notes||[]).filter(n=>n.kind===kind&&n.version_id===s.version_id&&JSON.stringify(n.task)===JSON.stringify(s.task)).at(-1)?.text??'';
       const saveError=error?.operation==='completion' && gaps.length;

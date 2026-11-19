@@ -1,4 +1,4 @@
-/* Persistent design interaction and immutable history — DR-152. */
+/* Persistent design interaction and immutable history — DR-152 / DR-166. */
 (function(g){'use strict';
 const clone=x=>JSON.parse(JSON.stringify(x)),prefix='/api/robotics/design-sessions/',active=s=>['queued','running'].includes(s?.status);
 const read=(fetch,url,options)=>g.RoboticsAssets.readJSON(fetch,url,options);
@@ -56,6 +56,7 @@ function repairContext(response,sid,adaptation=false){
  const items=adaptation?issues:issues.filter(i=>(i.repair_actions||[]).some(a=>a.action_id==='robotics.revise_tbox'&&a.target?.resource_id===sid));
  if(!items.length)throw Error('检查报告中没有当前设计的骨架缺项。');
  return {items,freshness:adaptation?'current':response.freshness,checkId:report.check_id,
+   taskRef:report.task_ref,mode:adaptation?report.mode:report.context?.mode,
    revision:adaptation?report.origin_session?.revision:items[0].repair_actions.find(a=>a.action_id==='robotics.revise_tbox'&&a.target?.resource_id===sid)?.target.expected_revision};
 }
 function repairSuggestion(context,stage){
@@ -72,16 +73,17 @@ function repairSuggestion(context,stage){
  const classes=parts(['classes','other']);
  return '根据此前应用检查，本轮仅修订类别'+(classes?'：请核对并补充'+classes:'，请核对现有类别')+'，保留其它类别及层次。关系与属性在类别确认后处理。'+basis;
 }
-function mount(host,sid,options={}){const esc=g.RoboticsAssets.escape;let c,context=null,contextError='',dead=false,editorPhase=null;
+function mount(host,sid,options={}){const esc=g.RoboticsAssets.escape;let c,context=null,contextError='',dead=false,editorPhase=null,completionPending=false;
  const contextual=!!(options.checkId||options.adaptationId),abort=new AbortController();
  let interactiveGraphPanel=null,latest=null,interactiveGraphHistory=null;
  const graphHost=document.createElement('section'),historyBox=document.createElement('label'),historySelect=document.createElement('select');
- historyBox.textContent='设计修订';historySelect.setAttribute('aria-label','设计修订');historyBox.append(historySelect);
+ historyBox.className='rd-history';historySelect.setAttribute('aria-label','设计修订');historyBox.append(historySelect);
  const input=document.createElement('textarea');input.setAttribute('aria-label','建模要求');input.maxLength=20000;
- const editor=document.createElement('details'),body=document.createElement('div'),hint=document.createElement('div'),heading=document.createElement('div'),progress=document.createElement('div'),actions=document.createElement('div');
+ const editor=document.createElement('details'),body=document.createElement('div'),hint=document.createElement('div'),heading=document.createElement('div'),progress=document.createElement('div'),actions=document.createElement('div'),secondary=document.createElement('div');
+ heading.className='rd-header';secondary.className='rd-secondary-actions';body.className='rd-reference';
  editor.className='rd-editor';progress.className='rd-progress';progress.hidden=true;progress.dataset.testid='design-progress';progress.setAttribute('role','status');progress.setAttribute('aria-live','polite');progress.setAttribute('aria-atomic','true');
  actions.className='rd-confirm-bar';actions.dataset.testid='design-confirmation';actions.hidden=true;
- host.replaceChildren(heading,progress,actions,hint,historyBox,graphHost,editor,body);editor.append(input);const summary=document.createElement('summary'),label=document.createElement('label');label.textContent='建模要求';label.htmlFor='rd_message';input.id='rd_message';editor.prepend(summary,label);const send=document.createElement('button');send.textContent=contextual?'确认并发送建模要求':'发送建模要求';editor.append(send);
+ host.replaceChildren(heading,progress,actions,editor,hint,secondary,graphHost,body);editor.append(input);const summary=document.createElement('summary'),label=document.createElement('label');label.textContent='建模要求';label.htmlFor='rd_message';input.id='rd_message';editor.prepend(summary,label);const send=document.createElement('button');send.textContent=contextual?'确认并发送建模要求':'发送建模要求';editor.append(send);
  const startProperties=document.createElement('button');startProperties.textContent='开始关系与属性设计';editor.append(startProperties);
  input.oninput=()=>c.setMessage(input.value);send.onclick=()=>c.sendMessage();
  function complete(){if(!context)return;c.setMessage(repairSuggestion(context,c.snapshot().session?.stage));input.focus();input.setSelectionRange(input.value.length,input.value.length);}
@@ -91,7 +93,13 @@ function mount(host,sid,options={}){const esc=g.RoboticsAssets.escape;let c,cont
   if(text.length<suggestion.length&&suggestion.startsWith(text)&&input.selectionStart===text.length&&input.selectionEnd===text.length){e.preventDefault();complete();}
  };
  startProperties.onclick=()=>{if(!c.snapshot().messageText.trim())c.setMessage('请基于已确认的类别、建模要求和上传的 XML，设计对象关系与数据属性；只采用来源支持的信息，不明确的内容列为待明确项。');return c.sendMessage();};
- function render(s){latest=s;const row=s.session;if(!row){heading.textContent=s.error?.message||'正在读取设计…';body.replaceChildren();progress.hidden=true;actions.hidden=true;editor.hidden=true;return;}
+ function completionLink(ref){
+  if(options.adaptationId)return '#robotics-task?adaptation='+encodeURIComponent(options.adaptationId)+'&revised='+encodeURIComponent(ref.version_id);
+  if(options.checkId)return g.RoboticsTask.link(ref.ontology_id,ref.version_id,context?.mode||'real')+'&assess=1'+(context?.taskRef?.session_id?'&task='+encodeURIComponent(context.taskRef.session_id):'');
+  return '#robotics-view?asset='+encodeURIComponent(ref.ontology_id)+'&version='+encodeURIComponent(ref.version_id)+'&view=interactive-ontology-graph';
+ }
+ function render(s){const previous=latest?.session;latest=s;const row=s.session;if(!row){heading.textContent=s.error?.message||'正在读取设计…';body.replaceChildren();progress.hidden=true;actions.hidden=true;editor.hidden=true;return;}
+ if(previous&&previous.status!=='completed'&&row.status==='completed'&&row.output_asset_ref)completionPending=true;
  host.dataset.testid='robotics-design';host.dataset.sessionId=sid;host.dataset.stage=row.stage;host.dataset.revision=row.revision;host.dataset.status=row.status;
  syncInteractiveGraphView(s);
  const needsProperties=row.stage==='properties'&&row.status==='awaiting_input';
@@ -105,22 +113,24 @@ function mount(host,sid,options={}){const esc=g.RoboticsAssets.escape;let c,cont
   if(progress.innerHTML!==content)progress.innerHTML=content;
  }
  const primary=awaiting&&!selected?(row.stage==='classes'?['confirmClasses','确认类别']:row.stage==='properties'?['confirmSchema','确认骨架并构建实例']:null):null;
- actions.hidden=!primary;
- actions.innerHTML=primary?`<span>设计已生成，请核对后确认</span><button class="rd-primary-confirm" data-op="${primary[0]}" ${s.busy?'disabled':''}>${primary[1]}</button>`:'';
+ actions.hidden=!primary&&(!ref||!!selected);
+ actions.innerHTML=primary?`<span>设计已生成，请核对后确认</span><button class="rd-primary-confirm" data-op="${primary[0]}" ${s.busy?'disabled':''}>${primary[1]}</button>`:ref&&!selected?`<span>本体实例已保存</span><a class="ra-button" href="${esc(completionLink(ref))}">${contextual?'返回应用检查':'打开图谱界面'}</a>`:'';
  hint.innerHTML=contextError?`<p role="alert" data-testid="schema-repair-context-error">${esc(contextError)}</p>`:'';
- heading.innerHTML=`<h3>模型辅助构建 · ${esc(row.model?.model||'')}</h3><p>${esc(({classes:'类别设计',properties:'关系与属性设计',abox:'实例构建'})[row.stage]||row.stage)} · 修订 ${row.revision} · ${esc(({queued:'排队中',running:'运行中',needs_description:'等待建模要求',awaiting_input:'等待输入',awaiting_confirmation:'等待确认',completed:'已完成',failed:'失败',interrupted:'已中断'})[row.status]||row.status)} · 执行未验证</p>${(s.error||row.error)?`<p role="alert">${esc(s.error?.message||row.error?.message||'设计失败')}</p>`:''}`;
+ const stage=selected?.state?.stage||row.stage;
+ heading.innerHTML=`<div><h3 class="rd-stage-guide">${esc(({classes:'第 1 步：类别设计',properties:'第 2 步：关系与属性设计',abox:'第 3 步：实例构建'})[stage]||stage)}</h3><p class="rd-status">${selected?'历史修订 '+selected.revision+' · 只读':'修订 '+row.revision+' · '+esc(({queued:'排队中',running:'运行中',needs_description:'等待建模要求',awaiting_input:'等待输入',awaiting_confirmation:'等待确认',completed:'已完成',failed:'失败',interrupted:'已中断'})[row.status]||row.status)} · 执行未验证</p></div>${(s.error||row.error)?`<p role="alert">${esc(s.error?.message||row.error?.message||'设计失败')}</p>`:''}`;
+ heading.append(historyBox);
  const reviewOptions={classes:row.class_confirmation?.classes||[]};
- const guidance=({classes:'第 1 步：确定要描述哪些对象。核对名称和范围，缺少或不合适的内容可用日常语言提出修改。',properties:'第 2 步：确定对象之间的联系，以及需要记录的信息。核对是否符合你的业务，再确认并从文件构建实例。',abox:'第 3 步：从上传文件整理具体对象和信息。构建完成后可打开本体查看结果。'})[selected?.state?.stage||row.stage]||'';
- body.innerHTML=`<p class="rd-stage-guide">${esc(guidance)}</p>
- ${needsProperties&&!selected?`${context?'':'<section role="status" class="rd-next-step"><h4>类别已确认，下一步设计关系与属性</h4><p>确认类别只固定类别范围。请在下方补充关系与属性设计要求，或直接点击“开始关系与属性设计”，按已确认类别和 XML 继续。</p></section>'}<details><summary>查看已确认的类别</summary>${presentation({classes:row.class_confirmation?.classes||result?.classes||[]},esc)}</details>`:result?`${result.reply?`<details class="rd-design-details"><summary>查看模型设计说明</summary><p>${esc(result.reply)}</p></details>`:''}${presentation(result,esc,reviewOptions)}`:''}
+ body.innerHTML=`<details><summary>查看完整定义与说明</summary>
+ ${needsProperties&&!selected?presentation({classes:row.class_confirmation?.classes||result?.classes||[]},esc):result?`${result.reply?`<details class="rd-design-details"><summary>查看模型设计说明</summary><p>${esc(result.reply)}</p></details>`:''}${presentation(result,esc,reviewOptions)}`:''}</details>
  ${selected?`<section data-testid="robotics-design-diff"><h4>与当前设计的差异</h4><details open><summary>历史设计</summary>${presentation(selected.state.result,esc)}</details><details open><summary>当前设计</summary>${presentation(row.result,esc)}</details></section>`:''}
- <div>${!selected&&!waiting&&row.revision?'<button data-op="editClasses">返回类别修改</button>':''}${failed?'<button data-op="retry">重试设计</button>':''}</div>
  ${ref?`<p>设计候选已保存 · 执行未验证</p><a href="${esc(g.RoboticsAssets.versionLink(ref.ontology_id,ref.version_id))}">查看本体候选</a>`:''}`;
- [...actions.querySelectorAll('[data-op]'),...body.querySelectorAll('[data-op]')].forEach(b=>{b.disabled=s.busy;b.onclick=()=>c[b.dataset.op]();});
+ secondary.innerHTML=`${!selected&&!waiting&&row.revision?'<button data-op="editClasses">返回类别修改</button>':''}${failed?'<button data-op="retry">重试设计</button>':''}`;
+ [...actions.querySelectorAll('[data-op]'),...secondary.querySelectorAll('[data-op]')].forEach(b=>{b.disabled=s.busy;b.onclick=()=>c[b.dataset.op]();});
  const phase=[row.stage,row.status,row.revision].join(':');
  if(phase!==editorPhase){editor.open=!awaiting||!!s.messageText.trim();editorPhase=phase;}
  summary.hidden=!awaiting;summary.textContent='继续提修改意见';
  editor.hidden=!!selected||waiting||row.stage==='abox';startProperties.hidden=contextual||!needsProperties||!!s.messageText.trim();startProperties.disabled=s.busy;send.hidden=!contextual&&needsProperties&&!s.messageText.trim();send.disabled=s.busy||row.stage==='abox'||(contextual&&!s.messageText.trim());input.placeholder=awaiting?'可继续输入修改意见':suggesting?repairSuggestion(context,row.stage)+'（Tab 填入）':contextual&&!context&&!contextError?'正在读取修订建议…':needsProperties?'可选：填写希望补充的关系、参数或关注点；留空可按已有要求继续。':'填写本轮建模要求或修改意见'; if(input.value!==s.messageText)input.value=s.messageText;
+ if(completionPending&&!selected&&(!contextual||context)){completionPending=false;g.location.hash=completionLink(ref);}
  }
  function syncInteractiveGraphView(s){
   const row=s.session;if(!row)return;
@@ -148,7 +158,7 @@ function mount(host,sid,options={}){const esc=g.RoboticsAssets.escape;let c,cont
   }else {delete graphHost.dataset.result;delete graphHost.interactiveGraphResult;}
  }
  historySelect.onchange=()=>historySelect.value==='current'?c.showCurrent():c.openRevision(Number(historySelect.value));
- import('/assets/modules/interactive-ontology-graph/panel.js').then(module=>{if(dead)return;interactiveGraphPanel=module.mountPanel(graphHost);graphHost.querySelector('.interactive-ontology-graph-title').append(historyBox);if(latest)syncInteractiveGraphView(latest);}).catch(error=>{if(!dead)graphHost.textContent='图谱组件加载失败：'+error.message;});
+ import('/assets/modules/interactive-ontology-graph/panel.js').then(module=>{if(dead)return;interactiveGraphPanel=module.mountPanel(graphHost,{embedded:true});if(latest)syncInteractiveGraphView(latest);}).catch(error=>{if(!dead)graphHost.textContent='图谱组件加载失败：'+error.message;});
  c=createController({onChange:render});c.openSession(sid);
  if(contextual){const url=options.checkId?'/api/application-checks/'+encodeURIComponent(options.checkId):'/api/robotics/application-adaptations/'+encodeURIComponent(options.adaptationId);
   read(g.fetch.bind(g),url,{signal:abort.signal}).then(response=>{if(dead)return;context=repairContext(response,sid,!options.checkId);render(c.snapshot());}).catch(e=>{if(dead||e.name==='AbortError')return;contextError=e.message;render(c.snapshot());});}

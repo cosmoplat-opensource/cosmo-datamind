@@ -1,5 +1,5 @@
 {
-  "iteration": "IR-014–IR-031",
+  "iteration": "IR-014–IR-032",
   "requirements": [
     {
       "id": "ALG-01",
@@ -3780,6 +3780,77 @@
       "tests": [
         "tests/frontend/robotics-design-browser.py::test_model_running_shows_animation_and_completion_promotes_confirmation",
         "tests/frontend/robotics-design-browser.py::test_cpp_type_gap_opens_properties_without_reconfirming_classes_or_calling_model"
+      ]
+    },
+    {
+      "id": "RUX-01",
+      "decision": "DR-166",
+      "iteration": "IR-032",
+      "status": "delivered",
+      "criterion": "行为树新任务入口先检查固定版本，骨架不兼容时进入对应设计修订；刷新不重建任务或重复检查。",
+      "tests": [
+        "tests/frontend/robotics-design-browser.py::test_application_home_checks_incompatible_candidate_and_opens_its_revision"
+      ]
+    },
+    {
+      "id": "RUX-02",
+      "decision": "DR-166",
+      "iteration": "IR-032",
+      "status": "delivered",
+      "criterion": "对象关联与参数补齐后只集中核对当前任务知识一次，不默认勾选、确认未展示内容或放宽消费者与适配依据检查。",
+      "tests": [
+        "tests/frontend/robotics-task-browser.py::test_task_knowledge_is_confirmed_once_after_all_mapping_and_parameter_edits",
+        "tests/unit/test_robotics_task_ui.py::test_task_controller_state_contract"
+      ]
+    },
+    {
+      "id": "RUX-03",
+      "decision": "DR-166",
+      "iteration": "IR-032",
+      "status": "delivered",
+      "criterion": "类别、关系属性及应用修订使用统一紧凑布局，步骤、确认、继续修改与输入位于画布上方；不重复展示标题框与摘要，完整定义和只读历史仍可查看。",
+      "tests": [
+        "tests/frontend/robotics-design-browser.py::test_design_steps_put_compact_controls_before_canvas_and_keep_definitions",
+        "tests/frontend/robotics-design-browser.py::test_schema_repair_completion_returns_to_application_flow_with_new_candidate",
+        "tests/frontend/robotics-interactive-ontology-graph-browser.py::test_revision_changes_preserve_view_and_history_is_read_only"
+      ]
+    },
+    {
+      "id": "RUX-04",
+      "decision": "DR-166",
+      "iteration": "IR-032",
+      "status": "delivered",
+      "criterion": "普通实例化完成自动打开该固定版本图谱；应用骨架修订完成按来源返回检查或适配并使用新候选，保留旧候选和原任务上下文。",
+      "tests": [
+        "tests/frontend/robotics-design-browser.py::test_new_build_completion_opens_exact_fixed_graph_without_application_side_effects",
+        "tests/frontend/robotics-design-browser.py::test_schema_repair_completion_returns_to_application_flow_with_new_candidate"
+      ]
+    },
+    {
+      "id": "RUX-05",
+      "decision": "DR-166",
+      "iteration": "IR-032",
+      "status": "delivered",
+      "criterion": "类别局部关联首次点击后立即提供恢复完整图谱按钮，无需重新选择节点，恢复后节点与选择正确。",
+      "tests": [
+        "tests/frontend/robotics-interactive-ontology-graph-browser.py::test_class_focus_immediately_offers_restore_without_selecting_another_node"
+      ]
+    },
+    {
+      "id": "RUX-06",
+      "decision": "DR-166",
+      "iteration": "IR-032",
+      "status": "delivered",
+      "criterion": "应用允许的自动执行结构适配成功后直接进入已检查的任务页；人工角色核对、只读检查、失败恢复及并发修订约束保留，刷新不重复适配。",
+      "tests": [
+        "tests/frontend/robotics-design-browser.py::test_new_task_automatically_adapts_once_then_enters_checked_task_and_reload_is_readonly",
+        "tests/frontend/robotics-design-browser.py::test_readonly_application_check_does_not_start_automatic_adaptation",
+        "tests/frontend/robotics-design-browser.py::test_unresolved_role_allows_manual_selection_and_one_confirm_generate",
+        "tests/unit/test_robotics_application_workflow.py::test_original_task_revision_change_blocks_late_return",
+        "tests/frontend/robotics-design-browser.py::test_failed_automatic_adaptation_stays_visible_and_explicit_retry_reuses_request",
+        "tests/frontend/robotics-design-browser.py::test_stale_application_check_never_automatically_adapts_or_edits_design",
+        "tests/frontend/robotics-design-browser.py::test_completed_adaptation_history_is_readonly_until_explicit_continue_and_reuses_task",
+        "tests/frontend/robotics-design-browser.py::test_automatic_return_never_overwrites_a_concurrently_changed_task_and_offers_its_current_page"
       ]
     }
   ],

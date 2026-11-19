@@ -1,4 +1,4 @@
-/* Explicit application role review and immutable adaptation — DR-154. */
+/* Explicit application role review and immutable adaptation — DR-154 / DR-166. */
 (function(global){
   'use strict';
   const esc=value=>global.RoboticsAssets.escape(value),prefix='/api/robotics/application-adaptations';
@@ -22,24 +22,47 @@
     return `<article class="rc-issue"><p>${esc(issueText(issue))}</p>${details?`<small>${esc(details)}</small>`:''}</article>`;
   }
   async function request(url,body,signal){
-    const response=await global.fetch(url,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal}:{signal});
-    const data=await response.json();if(!response.ok)throw Error(data.error?.issues?.map(i=>i.message).join('；')||data.error?.message||'请求未完成');return data;
+    const controller=new AbortController(),cancel=()=>controller.abort();let timedOut=false;
+    signal?.addEventListener('abort',cancel,{once:true});if(signal?.aborted)cancel();
+    const timer=global.setTimeout(()=>{timedOut=true;cancel();},30000);
+    try{
+      const response=await global.fetch(url,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:controller.signal}:{signal:controller.signal});
+      let data;try{data=await response.json();}catch(_){throw Error('无法读取服务响应，请稍后重试。');}
+      if(!response.ok)throw Object.assign(Error(data.error?.issues?.map(i=>i.message).join('；')||data.error?.message||'请求未完成'),{code:data.error?.code});return data;
+    }catch(e){if(timedOut)throw Error('准备请求超时，请稍后重试。');throw e;}
+    finally{global.clearTimeout(timer);signal?.removeEventListener('abort',cancel);}
   }
   function mount(host,params){
-    const abort=new AbortController();let dead=false,timer=null,state=null,draft=null,dirty=false,busy=false;
+    const abort=new AbortController();let dead=false,timer=null,state=null,draft=null,dirty=false,busy=false,advancing=false,advanceFailed=false,failure='',failureCode='';
+    const identities=new Map();
+    let continueRequested=params.get('continue')==='1'||!!params.get('revised');
     const endpoint=prefix+'/'+encodeURIComponent(params.get('adaptation'));
     const names={awaiting_role_confirmation:'核对角色对应',roles_confirmed:'角色已确认',needs_tbox_revision:'请补充角色对应',queued:'正在准备应用版本',running:'正在提取执行结构',completed:'应用版本已保存',failed:'适配未完成',interrupted:'适配已中断'};
     const dispose=()=>{dead=true;abort.abort();clearTimeout(timer);};
-    function error(e){if(!dead&&e.name!=='AbortError'){const notice=host.querySelector('[data-adaptation-error]');if(notice)notice.textContent=e.message;else host.textContent=e.message;}}
+    function error(e){if(!dead&&e.name!=='AbortError'){failureCode=e.code||'';failure=failureCode==='session_conflict'?'原任务已更新，请查看当前任务后重新检查。':e.message;const notice=host.querySelector('[data-adaptation-error]');if(notice)notice.textContent=failure;else host.textContent=failure;}}
     async function operation(name,extra={}){
-      if(busy)return;busy=true;
+      if(busy||dead)return false;busy=true;failure='';failureCode='';
       const controls=[...host.querySelectorAll('button,select')].map(el=>[el,el.disabled]);controls.forEach(([el])=>{el.disabled=true;});
       try{
-        const reply=await request(endpoint+'/'+name,{expected_revision:state.revision,request_id:global.dmRequestId(),...extra},abort.signal);
-        if(dead)return;
-        if(name==='resume-task'){global.location.hash=global.RoboticsTask.link(reply.ontology_id,reply.version_id,reply.mode)+'&session='+encodeURIComponent(reply.session_id);return;}
+        const payload={expected_revision:state.revision,...extra},key=JSON.stringify([name,payload]);
+        if(!identities.has(key))identities.set(key,name==='resume-task'?'resume-'+state.adaptation_id+'-'+state.task_revision:global.dmRequestId());
+        const reply=await request(endpoint+'/'+name,{...payload,request_id:identities.get(key)},abort.signal);
+        if(dead)return false;
+        if(name==='resume-task'){global.location.replace(global.RoboticsTask.link(reply.ontology_id,reply.version_id,reply.mode)+'&session='+encodeURIComponent(reply.session_id));return true;}
+        if(name==='submit')continueRequested=true;
         state=reply;draft=null;dirty=false;render();
-      }catch(e){error(e);}finally{busy=false;controls.forEach(([el,disabled])=>{if(el.isConnected)el.disabled=disabled;});}
+        return true;
+      }catch(e){error(e);return false;}finally{busy=false;controls.forEach(([el,disabled])=>{if(el.isConnected)el.disabled=disabled;});}
+    }
+    async function continueTask(){
+      if(dead||busy||advancing||advanceFailed||!continueRequested||state?.status!=='completed'||state.write_frozen||!state.output_asset_ref)return;
+      advancing=true;
+      if(state.task_ref){
+        if(!await operation('resume-task',{expected_task_revision:state.task_revision})){advanceFailed=true;advancing=false;if(!dead)render();}
+      }else{
+        const ref=state.output_asset_ref;
+        global.location.replace(global.RoboticsTask.link(ref.ontology_id,ref.version_id,state.mode)+'&assess=1&adapted='+encodeURIComponent(state.adaptation_id)+'&entry='+encodeURIComponent('adapted-'+state.adaptation_id));
+      }
     }
     function complete(){return Object.entries(state.role_proposal.required_roles||{}).every(([kind,roles])=>roles.every(role=>draft.some(b=>b.kind===kind&&b.role===role&&b.iri)));}
     function later(){clearTimeout(timer);if(!dead&&['queued','running'].includes(state?.status))timer=global.setTimeout(load,300);}
@@ -56,11 +79,13 @@
       const work=active?`<div class="rd-progress" role="status"><span class="rd-progress-spinner" aria-hidden="true"></span><span>${state.matching?.method==='automatic'?'自动匹配已通过，正在生成应用版本，请稍候…':'正在生成应用版本，请稍候…'}</span></div>`:retry?'<button type="button" data-submit>重试生成</button>':
         (missing?`<a class="ra-button" href="#build?recipe=robotics&session=${encodeURIComponent(state.origin_session.id)}&adaptation=${encodeURIComponent(state.adaptation_id)}">修订本体骨架</a><div data-rebase></div>`:'')+
         `<p>${state.matching?.reason==='vocabulary_review_required'?'该设计的词表版本需要人工核对。':'请为无法确定的应用角色选择对应的已有本体术语。'}</p>${rows}<div class="rb-actions"><button type="button" data-confirm-generate ${!complete()?'disabled':''}>确认并生成应用版本</button></div>`;
-      host.innerHTML=`<section class="card ra-section" data-testid="robotics-application-adaptation" data-adaptation-id="${esc(state.adaptation_id)}" data-status="${esc(state.status)}"><header class="rt-heading"><div><span class="rt-eyebrow">行为树应用准备</span><h2>${esc(names[state.status]||state.status)}</h2><p>按应用要求匹配并校验角色，适配结果保存为独立的应用版本。</p></div></header><p class="rt-safety">执行未验证</p><div role="alert" data-adaptation-error></div>${state.issues.map(renderIssue).join('')}
-      ${done?`<p>${state.matching?.method==='automatic'?'已自动匹配并完成执行结构适配。':'执行结构已适配。'}继续准备任务时，可补齐零件、载具、槽位与配置关联。</p><a class="ra-button" href="${esc(global.RoboticsAssets.versionLink(state.output_asset_ref.ontology_id,state.output_asset_ref.version_id))}">查看应用版本</a>${state.task_ref?'<button type="button" data-resume>切换并返回原任务</button>':''}`:work}</section>`;
+      const conflict=failureCode==='session_conflict';
+      host.innerHTML=`<section class="card ra-section" data-testid="robotics-application-adaptation" data-adaptation-id="${esc(state.adaptation_id)}" data-status="${esc(state.status)}"><header class="rt-heading"><div><span class="rt-eyebrow">行为树应用准备</span><h2>${esc(names[state.status]||state.status)}</h2><p>按应用要求匹配并校验角色，适配结果保存为独立的应用版本。</p></div></header><p class="rt-safety">执行未验证</p><div role="alert" data-adaptation-error>${esc(failure)}</div>${conflict&&state.task_ref?`<a class="ra-button" href="#robotics-task?session=${encodeURIComponent(state.task_ref.session_id)}">查看当前任务</a>`:failure?'<button type="button" data-retry-adaptation>重新读取准备状态</button>':''}${state.issues.map(renderIssue).join('')}
+      ${done?`<p>${continueRequested&&!advanceFailed?'执行结构已适配，正在继续准备任务…':'执行结构已适配，可继续准备任务。'}</p><a class="ra-button" href="${esc(global.RoboticsAssets.versionLink(state.output_asset_ref.ontology_id,state.output_asset_ref.version_id))}">查看应用版本</a>${!conflict&&(advanceFailed||!continueRequested)?'<button type="button" data-continue>继续准备任务</button>':''}`:work}</section>`;
       host.querySelector('[data-confirm-generate]')?.addEventListener('click',()=>operation('submit',{bindings:draft.filter(b=>b.iri)}));
       host.querySelector('[data-submit]')?.addEventListener('click',()=>operation('submit'));
-      host.querySelector('[data-resume]')?.addEventListener('click',()=>operation('resume-task',{expected_task_revision:state.task_revision}));
+      host.querySelector('[data-continue]')?.addEventListener('click',()=>{continueRequested=true;advanceFailed=false;continueTask();});
+      host.querySelector('[data-retry-adaptation]')?.addEventListener('click',load);
       if(missing)host.querySelector('a[href^="#build?"]')?.addEventListener('click',async event=>{
         event.preventDefault();if(busy)return;busy=true;
         const destination=event.currentTarget.getAttribute('href');
@@ -86,8 +111,20 @@
         box.querySelector('button').onclick=()=>{const vid=box.querySelector('select').value;if(vid)operation('rebase',{asset_ref:{ontology_id:state.asset_ref.ontology_id,version_id:vid}});};
       }).catch(error);
       later();
+      if(done&&!failure)Promise.resolve().then(continueTask);
     }
-    async function load(){try{const saved=await request(endpoint,null,abort.signal);if(dead||dirty)return;if(state&&JSON.stringify(saved)===JSON.stringify(state)){later();return;}state=saved;render();}catch(e){error(e);}}
+    async function load(){try{
+      const saved=await request(endpoint,null,abort.signal);if(dead||dirty)return;
+      const revised=params.get('revised');
+      const consumed=()=>{params.delete('revised');params.set('continue','1');global.history.replaceState(null,'','#robotics-task?'+params.toString());};
+      if(revised&&saved.asset_ref.version_id!==revised){
+        state=saved;const accepted=await operation('rebase',{asset_ref:{ontology_id:state.asset_ref.ontology_id,version_id:revised}});
+        if(!dead){if(accepted)consumed();render();}return;
+      }
+      if(revised)consumed();
+      if(state&&JSON.stringify(saved)===JSON.stringify(state)&&!failure){later();return;}
+      state=saved;failure='';failureCode='';render();
+    }catch(e){error(e);}}
     host.innerHTML='<p role="status">正在读取应用准备记录…</p>';load();return {dispose};
   }
   global.RoboticsApplication={mount,issueText,requirementText,renderIssue};
