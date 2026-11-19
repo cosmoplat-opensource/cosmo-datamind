@@ -1,6 +1,6 @@
 # 安装部署
 
-面向自行部署和运维的读者。只想先试用,请看 [QUICKSTART.md](QUICKSTART.md)。
+本文介绍安装、后台运行和反向代理配置。试用随仓数据库或生成六表示例，请从[项目首页](README.md)或[快速入门](QUICKSTART.md)开始。
 
 ## 环境要求
 
@@ -17,7 +17,8 @@
 ## 安装
 
 ```bash
-git clone <repo-url> && cd cosmo-datamind
+git clone https://github.com/cosmoplat-opensource/cosmo-datamind.git
+cd cosmo-datamind
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
@@ -148,7 +149,7 @@ export DATAMIND_ENGINE_DIR=/path/to/ontology-engine
 
 接入后可以使用会话式本体构建、上游引擎自带的构建技能,以及 `hermes`、`claude-code`、`openclaw` 等运行时。
 
-未配置时,相关接口返回"无可用运行时",对应功能改用不依赖模型的方式运行,并在界面上标明。
+不配置上游引擎时，仍可用仓库内置的 OpenAI 兼容驱动调用模型，也可在本地从数据构建本体。可在 `/api/ont/runtimes` 查看运行时状态。
 
 ### 关于 OpenClaw
 

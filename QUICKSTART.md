@@ -1,6 +1,6 @@
 # 快速入门
 
-从安装到问出第一个数,约 15 分钟。只需要一个 OpenAI 兼容的 API Key,不需要上游本体引擎。
+本例从六张 SQLite 表生成本体，再用中文查询月度毛利率。建库、建本体和 SQL 复算可在本机离线完成。自然语言问数需要 OpenAI 兼容的模型端点，可使用仓库自带的驱动。
 
 示例库是合成数据,其中的业务现象是预先构造的,可以稳定复现。文中的命令输出和截图取自 2026 年 11 月的版本;
 模型生成的分析文字每次会有出入,数值以示例库为准。
@@ -23,16 +23,15 @@ export CLAW_DRIVER=openai       # 指定优先使用这个驱动
 
 不设 `CLAW_DRIVER=openai` 时,系统按默认顺序查找其他驱动,表现为配了 Key 却没有调用模型。
 
-**构建流程。** 模型提出候选关系 → 用数据验证 → 人工确认。关系要标为已验证(`verified`),
-必须同时满足取值重叠不低于 60%、父键唯一、键名词根一致三项;证据不足的标为候选(`candidate`)。
-不配模型时只走数据验证,没有模型提出候选这一步。
+**构建流程。** 接入模型时，模型可以提议候选关系。系统根据声明外键或连接键的取值、父键唯一性和命名等证据验证关系，分别记录已验证（`verified`）和待复核（`candidate`）状态。人工确认的关系单独标记为 `asserted`。本例使用本地程序 `quick_build.py`，直接从数据库取证。
 
 ---
 
 ## 1. 安装
 
 ```bash
-git clone <repo-url> && cd cosmo-datamind
+git clone https://github.com/cosmoplat-opensource/cosmo-datamind.git
+cd cosmo-datamind
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
@@ -59,9 +58,9 @@ sqlite3 demo.db < examples/sample_db.sql
 以智谱 GLM 为例(换成 DeepSeek、Qwen、OpenAI 或自建的 vLLM 服务,只改前三个变量):
 
 ```bash
-export DATAMIND_DB=$PWD/demo.db
+export DATAMIND_DB="$PWD/demo.db"
 export DATAMIND_LLM_BASE=https://open.bigmodel.cn/api/coding/paas/v4
-export DATAMIND_LLM_KEY=<你的-key>
+export DATAMIND_LLM_KEY='替换为模型服务的 API Key'
 export DATAMIND_LLM_MODEL=glm-4.5
 export CLAW_DRIVER=openai
 python3 server.py
@@ -129,6 +128,16 @@ python3 quick_build.py demo.db workdir/built_myfirst.json 我的第一张本体
 | **2026-05** | **14.71** |
 
 ![问数结果:分析文字、依据卡和各条查询的结果编号](docs/img/03-qa-result.png)
+
+可在这个六表库的 SQL 工作台复算各月毛利率。先汇总订单金额和成本，再计算比率。
+
+```sql
+SELECT substr(order_date, 1, 7) AS month,
+       round(100.0 * (sum(amount) - sum(cost)) / nullif(sum(amount), 0), 2) AS gross_margin_pct
+FROM fact_sales_order
+GROUP BY substr(order_date, 1, 7)
+ORDER BY month;
+```
 
 4 月起毛利率大幅下降,就是第 2 步预置的成本上升。答案由三部分组成:
 
@@ -214,4 +223,4 @@ export DATAMIND_ENGINE_DIR=/path/to/ontology-engine
 
 ---
 
-下一步:`README.md` 有完整的能力清单,`specs/` 下是各项设计决策的记录。
+[返回项目首页](README.md) · [功能与接入文档](docs/README.md) · [设计决策与验收记录](specs/map.md)

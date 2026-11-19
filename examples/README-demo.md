@@ -25,7 +25,7 @@
 DATAMIND_DB=$PWD/examples/demo_metrics.db ./start.sh
 ```
 
-不设 `DATAMIND_DB` 时程序找仓库根的 `demo_metrics.db`(默认不存在,相关端点会标注"数据库不可用")。
+全新检出时，`./start.sh` 默认使用本目录的 `demo_metrics.db`。`python server.py` 默认查找仓库上一级目录的同名文件，前台试用时可显式指定数据库。自定义 `.env` 会影响后台启动配置。[项目首页的启动命令](../README.md#在本机运行) · [安装部署](../INSTALL.md)
 
 ## 二、已构建的本体
 
