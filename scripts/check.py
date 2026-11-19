@@ -64,10 +64,8 @@ def unit_command(py, reports, workers):
 
 def run_check(name, args, env, reports, results):
     start = time.monotonic()
-    # DR-154: T03's 2232 cases took 2017s under coverage. T05 adds 52 service/task
-    # cases, including repeated immutable JSON/RDF validation and complete task flows.
-    # Budget one bounded hour; preserve test selection, coverage gates and other budgets.
-    timeout = 3600 if name == "unit" else 360
+    # Hosted runners also verify the complete RDF build and validation paths under coverage.
+    timeout = {"unit": 7200, "unit-shard": 3300}.get(name, 360)
     with (reports / f"{name}.log").open("w", encoding="utf-8") as log:
         process = subprocess.Popen(args, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT,
                                    start_new_session=True)
@@ -100,7 +98,14 @@ def main():
     ap.add_argument("--workers", type=int, choices=range(1, 5), default=min(4, os.cpu_count() or 1),
                     help="Bounded unit workers; use 1 for the serial comparison")
     ap.add_argument("--report-dir", type=Path, default=ROOT / ".check-results")
+    mode = ap.add_mutually_exclusive_group()
+    mode.add_argument("--unit-shard", nargs=2, type=int, metavar=("INDEX", "COUNT"),
+                      help="Run a partition of the unit suite and save its branch coverage for CI.")
+    mode.add_argument("--combine-unit", nargs="+", type=Path, metavar="COVERAGE_FILE",
+                      help="Check lint, types and coverage using all successful unit partitions.")
     args = ap.parse_args()
+    if (args.unit_shard or args.combine_unit) and args.suite != "unit":
+        ap.error("partition options require --suite unit")
     reports = args.report_dir.resolve()
     reports.mkdir(parents=True, exist_ok=True)
     results = []
@@ -112,11 +117,21 @@ def main():
         # Do not reuse their incremental type cache for the full regression gate.
         env["MYPY_CACHE_DIR"] = str(reports / ".mypy_cache")
         py = sys.executable
+        pytest_command = [py, "-m", "coverage", "run", "-m", "pytest", "tests/", "-ra"]
+        if args.unit_shard:
+            env["COVERAGE_FILE"] = str(reports / "coverage-data")
+            command = [*pytest_command, "--ci-shard", *map(str, args.unit_shard),
+                       "--junitxml", str(reports / "unit.xml")]
+            return int(not run_check("unit-shard", command, env, reports, results))
         if args.suite in ("unit", "all"):
+            unit_stage = ("unit", pytest_command)
+            if args.combine_unit:
+                unit_stage = ("coverage-combine", [py, "-m", "coverage", "combine", "--keep",
+                                                  *map(str, args.combine_unit)])
             for name, command in (
                 ("lint", [py, "-m", "ruff", "check", "."]),
                 ("types", [py, "-m", "mypy", ".", "--no-error-summary"]),
-                ("unit", unit_command(py, reports, args.workers)),
+                unit_stage,
                 ("coverage", [py, "-m", "coverage", "report"]),
                 # 分层下限(DR-106):确定性模块与路由层各自不得低于基线,避免高覆盖的小模块掩盖 server.py
                 ("coverage-core", [py, "-m", "coverage", "report", "--omit=" + ROUTE_LAYER + ",tests/*,ath_adapter/e2e/*",
@@ -124,6 +139,12 @@ def main():
                 ("coverage-routes", [py, "-m", "coverage", "report", "--include=" + ROUTE_LAYER, "--fail-under=61"]),
             ):
                 run_check(name, command, env, reports, results)
+                # pytest exit 1 means test failures. Collection errors and interruptions
+                # produce partial coverage and must be reported as the unit failure itself.
+                if name == "coverage-combine" and results[-1]["exit_code"]:
+                    break
+                if name == "unit" and results[-1]["exit_code"] not in (0, 1):
+                    break
         if args.suite in ("integration", "ui", "all", "serve"):
             with socket.socket() as sock:
                 sock.bind(("127.0.0.1", 0))
