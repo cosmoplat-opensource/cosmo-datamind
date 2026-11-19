@@ -1,10 +1,17 @@
-"""Bounded workers retain test discovery, failure status and merged branch coverage."""
+"""Bounded workers and CI partitions retain dependencies and coverage gates — DR-163."""
 from importlib import import_module
 import os
 import subprocess
 import sys
 
 import pytest
+import yaml
+
+
+@pytest.fixture
+def ci_jobs():
+    module = import_module('scripts.check')
+    return yaml.safe_load((module.ROOT / '.github/workflows/ci.yml').read_text())['jobs']
 
 
 def test_unit_command_keeps_all_tests_and_explicit_parallel_coverage(tmp_path):
@@ -58,10 +65,95 @@ def test_parallel_workers_merge_coverage_and_propagate_failures(tmp_path, failur
     assert (reports / 'unit.xml').is_file()
 
 
-def test_ci_unit_job_installs_dependencies_required_by_all_collected_tests():
-    import yaml
+def test_ci_unit_job_installs_dependencies_required_by_all_collected_tests(ci_jobs):
+    job = ci_jobs['unit_tests']
+    steps = job['steps']
+    commands = [step.get('run', '') for step in steps]
+    assert any('-r requirements-dev.txt' in command and '-r requirements-ui.txt' in command
+               for command in commands)
+    assert any('playwright install --with-deps chromium' in command for command in commands)
+    assert any(step.get('uses', '').startswith('actions/setup-node@') for step in steps)
+    checks = next(step for step in steps if step.get('id') == 'checks')
+    assert '--suite unit --unit-shard' in checks['run']
+    assert checks['env']['SHARD'] == '${{ matrix.shard }}'
+    assert checks['env']['COUNT'] == '${{ strategy.job-total }}'
+    assert job['strategy']['matrix']['shard'] == list(range(1, 9))
+    assert job['strategy']['fail-fast'] is False
+    upload = next(step for step in steps if step.get('uses', '').startswith('actions/upload-artifact@'))
+    assert 'always()' in upload['if']
+    assert upload['with']['name'] == 'unit-shard-${{ matrix.shard }}'
+    assert upload['with']['if-no-files-found'] == 'error'
+
+
+def test_ci_aggregate_requires_successful_partitions_and_all_coverage_inputs(ci_jobs):
+    job = ci_jobs['unit']
+    assert job['needs'] == 'unit_tests'
+    assert '!cancelled()' in job['if']
+    guard = job['steps'][0]
+    assert guard['if'] == "needs.unit_tests.result != 'success'"
+    assert guard['run'].strip() == 'exit 1'
+    commands = [step.get('run', '') for step in job['steps']]
+    assert any('-r requirements-dev.txt' in command and '-r requirements-ui.txt' in command
+               for command in commands)
+    download = next(step for step in job['steps']
+                    if step.get('uses', '').startswith('actions/download-artifact@'))
+    assert download['with']['pattern'] == 'unit-shard-*'
+    checks = next(step for step in job['steps'] if step.get('id') == 'checks')
+    assert checks['env']['COUNT'] == '${{ needs.unit_tests.outputs.count }}'
+    assert 'i<=COUNT' in checks['run']
+    assert 'unit-shard-$i/coverage-data' in checks['run']
+    assert '--suite unit --combine-unit "${inputs[@]}"' in checks['run']
+
+
+@pytest.fixture
+def check_stage_calls(monkeypatch):
     module = import_module('scripts.check')
-    workflow = yaml.safe_load((module.ROOT / '.github/workflows/ci.yml').read_text())
-    steps = [step.get('run', '') for step in workflow['jobs']['unit']['steps']]
-    assert any('-r requirements-dev.txt' in step and '-r requirements-ui.txt' in step for step in steps)
-    assert any('playwright install --with-deps chromium' in step for step in steps)
+    calls = []
+    exit_codes = {}
+    monkeypatch.setattr(module, 'isolated_env', lambda directory: {})
+
+    def record(name, command, env, reports, results):
+        calls.append((name, command, dict(env)))
+        code = exit_codes.get(name, 0)
+        results.append({'name': name, 'exit_code': code})
+        return code == 0
+
+    monkeypatch.setattr(module, 'run_check', record)
+    return module, calls, exit_codes
+
+
+@pytest.mark.parametrize('exit_code', [0, 1])
+def test_ci_partition_entry_runs_only_its_tests_and_propagates_failure(
+        tmp_path, monkeypatch, check_stage_calls, exit_code):
+    module, calls, exit_codes = check_stage_calls
+    reports = tmp_path / 'reports'
+    exit_codes['unit-shard'] = exit_code
+    monkeypatch.setattr(sys, 'argv', ['check.py', '--suite', 'unit', '--unit-shard', '2', '8',
+                                    '--report-dir', str(reports)])
+    assert module.main() == exit_code
+    assert len(calls) == 1
+    name, command, env = calls[0]
+    assert name == 'unit-shard'
+    assert command[:8] == [sys.executable, '-m', 'coverage', 'run', '-m', 'pytest', 'tests/', '-ra']
+    assert command[8:11] == ['--ci-shard', '2', '8']
+    assert command[11:] == ['--junitxml', str(reports / 'unit.xml')]
+    assert env['COVERAGE_FILE'] == str(reports / 'coverage-data')
+
+
+@pytest.mark.parametrize('exit_code', [0, 1])
+def test_ci_aggregate_merges_coverage_without_rerunning_tests_and_keeps_gates(
+        tmp_path, monkeypatch, check_stage_calls, exit_code):
+    module, calls, exit_codes = check_stage_calls
+    inputs = [tmp_path / f'shard-{i}' / 'coverage-data' for i in (1, 2)]
+    exit_codes['coverage-combine'] = exit_code
+    monkeypatch.setattr(sys, 'argv', ['check.py', '--suite', 'unit', '--report-dir', str(tmp_path / 'reports'),
+                                    '--combine-unit', *map(str, inputs)])
+    assert module.main() == exit_code
+    expected = ['lint', 'types', 'coverage-combine']
+    if not exit_code:
+        expected += ['coverage', 'coverage-core', 'coverage-routes']
+    assert [name for name, _, _ in calls] == expected
+    assert calls[2][1] == [sys.executable, '-m', 'coverage', 'combine', '--keep', *map(str, inputs)]
+    if not exit_code:
+        assert '--fail-under=87' in calls[4][1]
+        assert '--fail-under=61' in calls[5][1]
