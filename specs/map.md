@@ -63,7 +63,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 
 ### 决定 / Decisions
 - [DR-159 · PR #1 合入后的审查与修复](decisions/DR-159-pr1-review-fixes.md)：已实现；公开内容清理、生命周期与问数闸门、机器人领域与接口、界面与测试。
-- [DR-158 · master 与机器人开发分支兼容集成](decisions/DR-158-master-development-integration.md) ／ [IR-030](iterations/IR-030-master-development-integration.md)：in-progress；编号迁移表。
+- [DR-158 · master 与机器人本体功能的兼容集成](decisions/DR-158-master-development-integration.md) ／ [IR-030](iterations/IR-030-master-development-integration.md)：in-progress；编号迁移表。
 - [DR-141 · 统一本体资产、版本与领域权威载荷](decisions/DR-141-unified-domain-semantic-graph.md) · **accepted**（2026-11-18 维护者确认，见 DR-159）
 - [DR-142 · 机器人本体自动构建、增量编辑与发布契约](decisions/DR-142-robotics-source-recipes-and-reverse-build.md) · **accepted**（2026-11-18 维护者确认，见 DR-159）
 - [DR-143 · 参数依据、适配证据与分层准入](decisions/DR-143-parameter-contracts-calibration-and-readiness.md) · **accepted**（2026-11-18 维护者确认，见 DR-159）
