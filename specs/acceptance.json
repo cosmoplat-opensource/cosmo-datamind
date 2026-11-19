@@ -100,10 +100,56 @@
       ]
     },
     {
+      "id": "BUILD-WEBKIT-01",
+      "criterion": "本体构建页的数据源和参照选择器加载完成后，在 WebKit 的 390 和 768 像素视口内可正常浏览，无整页横向滚动。",
+      "tests": [
+        "tests/frontend/build_viewport_browser.py::test_build_reference_controls_fit_the_viewport"
+      ]
+    },
+    {
+      "id": "ONT-RENAME-01",
+      "criterion": "图谱展示的对象可按页面返回的标识改中文名、重读并撤销，兼容 id 和 name 两种对象格式，保留原始构建文件。",
+      "tests": [
+        "tests/unit/test_ontology_rename_roundtrip.py::test_displayed_object_can_be_renamed_reloaded_and_restored"
+      ]
+    },
+    {
+      "id": "QUERY-COLUMNS-01",
+      "criterion": "SQL 工作台与可视化取数须按列保留原值。列名相同或只差大小写时可明确拒绝有歧义的结果。",
+      "tests": [
+        "tests/unit/test_query_and_board_fidelity.py::test_query_columns_preserve_both_values_or_explain_ambiguity"
+      ]
+    },
+    {
+      "id": "VIZ-ROUNDTRIP-01",
+      "criterion": "看板保存成功后可完整重开每张图，超限时可明确拒绝并保留旧看板。图表区分空值与零；编辑 SQL 后添加的卡片保持查询、指标绑定和值一致。",
+      "tests": [
+        "tests/unit/test_query_and_board_fidelity.py::test_board_update_preserves_all_charts_or_rejects_without_overwrite",
+        "tests/frontend/functional_workflows.py::test_missing_chart_value_stays_distinct_from_zero",
+        "tests/frontend/functional_workflows.py::test_adding_an_edited_query_uses_a_verified_chart_binding"
+      ]
+    },
+    {
+      "id": "ONT-CHAT-ACCESS-01",
+      "criterion": "本体对话的文本附件可以完整送达问答接口，覆盖 256 字节和 256 KiB；历史会话能用键盘选中并回放。",
+      "tests": [
+        "tests/frontend/functional_workflows.py::test_ontology_chat_attachment_reaches_the_stream_intact",
+        "tests/frontend/functional_workflows.py::test_ontology_chat_history_can_be_opened_with_keyboard"
+      ]
+    },
+    {
+      "id": "NAV-MOBILE-STATE-01",
+      "criterion": "窄屏菜单可通过键盘展开并进入目标页，展开与自动收起状态可由辅助技术读取。",
+      "tests": [
+        "tests/frontend/functional_workflows.py::test_mobile_menu_exposes_expanded_and_collapsed_state"
+      ]
+    },
+    {
       "id": "QA-HISTORY-01",
-      "criterion": "在同一浏览器和数据源完成深度问数后，切到其他页面再返回应能从历史栏打开该会话。刷新后可按原顺序回放各轮问题和答案，并看到原依据卡的结果编号。指标接口暂时不可用时仍可打开历史。浏览器存储已满时，旧会话仍可回放，新会话须可恢复或在用户离开前明确提示保存失败。",
+      "criterion": "在同一浏览器和数据源完成深度问数后，切到其他页面再返回应能从历史栏打开该会话。刷新后可用键盘打开历史并按原顺序回放各轮问题和答案，并看到原依据卡的结果编号。指标接口暂时不可用时仍可打开历史。浏览器存储已满时，旧会话仍可回放，新会话须可恢复或在用户离开前明确提示保存失败。",
       "tests": [
         "tests/frontend/qa_history_browser.py::test_completed_turns_replay_after_reload",
+        "tests/frontend/qa_history_browser.py::test_history_replays_with_tab_and_enter",
         "tests/frontend/qa_history_browser.py::test_replay_preserves_the_original_result_reference",
         "tests/frontend/qa_history_browser.py::test_completed_chat_is_listed_when_returning_from_another_page",
         "tests/frontend/qa_history_browser.py::test_saved_chat_replays_when_metrics_are_unavailable",

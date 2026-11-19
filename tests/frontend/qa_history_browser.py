@@ -1,44 +1,19 @@
 """IR-002 深度问数历史。单独运行 python -m pytest tests/frontend/qa_history_browser.py。"""
 import re
-from threading import Thread
 
 import pytest
 from playwright.sync_api import TimeoutError as PlaywrightTimeout
-from playwright.sync_api import expect, sync_playwright
-from werkzeug.serving import make_server
-
-from tests.browser_runtime import browser_executable
+from playwright.sync_api import expect
 
 CUSTOMERS = "dim_customer有多少条记录？"
 PRODUCTS = "dim_product有多少条记录？"
-
-
-@pytest.fixture(scope="module")
-def site():
-    # tests/conftest.py 在导入应用前准备临时工作目录、示例库与离线引擎。
-    from server import app
-
-    with make_server("127.0.0.1", 0, app, threaded=True) as http:
-        thread = Thread(target=http.serve_forever, daemon=True)
-        thread.start()
-        try:
-            yield f"http://127.0.0.1:{http.server_port}/#chat"
-        finally:
-            http.shutdown()
-            thread.join()
-
-
-@pytest.fixture(scope="module")
-def browser():
-    with sync_playwright() as pw, pw.chromium.launch(executable_path=browser_executable()) as chromium:
-        yield chromium
 
 
 @pytest.fixture
 def page(browser, site):
     with browser.new_context() as context:
         tab = context.new_page()
-        tab.goto(site)
+        tab.goto(site + "/#chat")
         expect(tab.locator("#chat_q")).to_be_visible()
         yield tab
 
@@ -64,6 +39,19 @@ def test_completed_turns_replay_after_reload(page):
     expect(page.locator("#dq_stream .dq-usermsg")).to_have_text([CUSTOMERS, PRODUCTS])
     expect(page.locator("#dq_stream .dq-insight")).to_have_text(answers)
     expect(page.locator("#dq_stream").get_by_text("历史回放", exact=True)).to_have_count(2)
+
+
+def test_history_replays_with_tab_and_enter(page):
+    answer = ask(page, CUSTOMERS)
+    page.reload()
+    entry = history_entry(page, CUSTOMERS)
+    expect(entry).to_be_visible()
+    page.locator(".dq-hist-hd a").focus()
+    page.keyboard.press("Tab")
+    assert entry.evaluate("el => el.contains(document.activeElement)"), "Tab 应进入刚保存的会话"
+    page.keyboard.press("Enter")
+    expect(page.locator("#dq_stream .dq-insight")).to_have_text(answer)
+    expect(page.locator("#dq_stream").get_by_text("历史回放", exact=True)).to_be_visible()
 
 
 def test_replay_preserves_the_original_result_reference(page):

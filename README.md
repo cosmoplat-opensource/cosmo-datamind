@@ -105,7 +105,7 @@ python3 test_all.py                          # 系统级回归(源码定义 548 
 ```bash
 python -m pip install --upgrade pip==26.2
 pip install -r requirements-dev.txt -r requirements-ui.txt
-python -m playwright install chromium
+python -m playwright install chromium webkit
 python scripts/check.py --suite all
 ```
 

@@ -165,6 +165,10 @@ def main():
                                   "--graph", "built_2d74f0", "--report", str(reports / "strict10.json")],
                                   env, reports, results)
                     if args.suite in ("ui", "all"):
+                        run_check("functional-browser", [py, "-m", "pytest", "tests/frontend/functional_workflows.py"],
+                                  env, reports, results)
+                        run_check("build-webkit-browser", [py, "-m", "pytest", "tests/frontend/build_viewport_browser.py"],
+                                  env, reports, results)
                         run_check("qa-history-browser", [py, "-m", "pytest", "tests/frontend/qa_history_browser.py"],
                                   env, reports, results)
                         for name in ("test_ui", "test_ui_ops"):
