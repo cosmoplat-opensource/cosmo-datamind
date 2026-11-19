@@ -301,10 +301,26 @@ class Acceptance:
                    and history.get("name", "").startswith(self.args.prefix), required=True)
         response = await context.request.post(self.args.url + "/api/build/delete", data={"key": key}, timeout=30000)
         result = await response.json()
+        error = result.get("error")
+        if response.status == 400 and isinstance(error, dict) and error.get("code") == "confirmation_required":
+            catalog = await self.get(context, "/api/ontology-assets?state=all")
+            matches = [item for item in catalog["items"] if item.get("legacy_key") == key]
+            self.check("cleanup identifies the exact owned asset", len(matches) == 1
+                       and matches[0].get("name") == history["name"], required=True)
+            oid = matches[0]["ontology_id"]
+            preview_response = await context.request.post(
+                self.args.url + "/api/ontology-assets/" + quote(oid, safe="") + "/deletion-preview", data={})
+            preview = await preview_response.json()
+            self.check("cleanup preview allows this asset revision", preview_response.ok
+                       and preview.get("ontology_id") == oid and preview.get("can_apply") is True, required=True)
+            response = await context.request.post(self.args.url + "/api/build/delete", data={
+                "key": key, "confirmed": True, "request_id": uuid.uuid4().hex,
+                "expected_revision": preview["revision"], "impact_sha256": preview["impact_sha256"]}, timeout=30000)
+            result = await response.json()
         remaining = await self.get(context, "/api/build/built")
-        self.check("own graph artifact removed", response.ok and result.get("ok")
+        self.check("own graph removed from active builds", response.ok and result.get("ok")
                    and all(graph["key"] != key for graph in remaining), required=True)
-        self.report["cleanup_note"] = "Graph JSON removed; service audit/usage records may intentionally remain."
+        self.report["cleanup_note"] = "The owned graph left the active build list. Its lifecycle and audit history may be retained."
 
     async def run(self):
         async with managed_playwright() as pw:

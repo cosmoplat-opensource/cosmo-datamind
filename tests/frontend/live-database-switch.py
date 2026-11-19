@@ -32,6 +32,9 @@ async def test_database_switch(args):
             else: r=await context.request.post(args.url+path,headers=headers,data=body)
             return r.status,await r.json()
         async def go(name):
+            toggle = page.locator('.nav-toggle')
+            if await toggle.is_visible() and not await page.locator('aside').evaluate("el => el.classList.contains('open')"):
+                await toggle.click()
             await page.locator('.nav[data-p="'+name+'"]').click()
             await page.locator('#p_'+name+'.on').wait_for()
             await page.wait_for_timeout(250)
@@ -110,7 +113,10 @@ async def test_database_switch(args):
             await go('chat')
             check('natural-language question scope follows the current ontology',await page.evaluate('key => DQ_DS.graphs.includes(key)',scope['default_graph']))
             # Browse all modules under each source; no submit, engine test, build or model request.
-            pages=['home','graph','metrics','catalog','quality','glossary','sqldev','sparql','chat','review','build','library','actioncenter','qaeval','assistant','enginecfg','conn','viz','apis','jobs','sysadmin','rules','layers','ontquality','skills','agents','claw']
+            pages = await page.locator('aside .nav[data-p]:not([hidden])').evaluate_all(
+                'rows => rows.map(row => row.dataset.p)')
+            check('expected cross-source entry points exist', {'catalog', 'graph', 'build', 'chat',
+                  'robotics-task', 'sqldev', 'viz'} <= set(pages))
             for source in [source_b,'demo']:
                 if await page.evaluate('APP_DATA.id')!=source: await switch(source)
                 for name in pages:
