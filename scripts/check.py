@@ -165,6 +165,8 @@ def main():
                                   "--graph", "built_2d74f0", "--report", str(reports / "strict10.json")],
                                   env, reports, results)
                     if args.suite in ("ui", "all"):
+                        run_check("qa-history-browser", [py, "-m", "pytest", "tests/frontend/qa_history_browser.py"],
+                                  env, reports, results)
                         for name in ("test_ui", "test_ui_ops"):
                             run_check(name, [py, name + ".py"], env, reports, results)
                         run_check("build-browser", [py, "tests/frontend/build-browser.py",

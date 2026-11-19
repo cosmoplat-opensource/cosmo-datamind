@@ -100,6 +100,17 @@
       ]
     },
     {
+      "id": "QA-HISTORY-01",
+      "criterion": "在同一浏览器和数据源完成深度问数后，切到其他页面再返回应能从历史栏打开该会话。刷新后可按原顺序回放各轮问题和答案，并看到原依据卡的结果编号。指标接口暂时不可用时仍可打开历史。浏览器存储已满时，旧会话仍可回放，新会话须可恢复或在用户离开前明确提示保存失败。",
+      "tests": [
+        "tests/frontend/qa_history_browser.py::test_completed_turns_replay_after_reload",
+        "tests/frontend/qa_history_browser.py::test_replay_preserves_the_original_result_reference",
+        "tests/frontend/qa_history_browser.py::test_completed_chat_is_listed_when_returning_from_another_page",
+        "tests/frontend/qa_history_browser.py::test_saved_chat_replays_when_metrics_are_unavailable",
+        "tests/frontend/qa_history_browser.py::test_storage_quota_cannot_silently_drop_a_completed_chat"
+      ]
+    },
+    {
       "id": "QA-01",
       "criterion": "离线计数遵守选中本体与表，未知意图不得落入无关模板",
       "tests": [
