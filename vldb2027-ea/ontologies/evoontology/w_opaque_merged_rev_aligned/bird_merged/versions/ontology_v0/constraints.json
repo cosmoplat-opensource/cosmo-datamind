@@ -1,0 +1,1072 @@
+[
+  {
+    "id": "constraint_f1_column_context",
+    "target": "map_f1_race_tb027_cl0241",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "cl0241",
+      "race name",
+      "circuit name",
+      "constructor name",
+      "name column"
+    ],
+    "severity": "block",
+    "scope": "Any question that names a race, circuit or constructor",
+    "confidence": "high",
+    "description": "cl0241 is a reused 'name' column: race name in tb027, circuit name in tb023, constructor name in tb024. Always resolve the name together with its table; 'Chinese Grand Prix' belongs to tb027, 'Silverstone Circuit' to tb023, 'McLaren' to tb024.",
+    "evidence": [
+      "ev_f1_core",
+      "ev_column_reuse"
+    ]
+  },
+  {
+    "id": "constraint_f1_finish_time",
+    "target": "map_f1_race_result_tb035_cl0262",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "finish time",
+      "time",
+      "champion",
+      "last driver",
+      "gap",
+      "retired"
+    ],
+    "severity": "block",
+    "scope": "Interpreting or comparing race finish times",
+    "confidence": "high",
+    "description": "The winner's finish time is a full clock time ('H:MM:SS.mmm'); other classified drivers carry a gap ('+S.mmm'); entries that did not finish may have NULL time. Use cl0272 milliseconds for arithmetic and cl0262 only for display. 'Finished the race' means a non-null finish time.",
+    "evidence": [
+      "ev_f1_results"
+    ]
+  },
+  {
+    "id": "constraint_f1_race_id",
+    "target": "map_f1_race_tb027_cl0259",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "race number",
+      "race No.",
+      "race 291",
+      "race id"
+    ],
+    "severity": "block",
+    "scope": "Resolving a numeric race reference in a question",
+    "confidence": "high",
+    "description": "Numbers such as 'race 291' refer to race id cl0259, not the round number cl0260.",
+    "evidence": [
+      "ev_f1_core"
+    ]
+  },
+  {
+    "id": "constraint_f1_full_name",
+    "target": "map_f1_driver_full_name_tb025_cl0255",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "full name",
+      "driver name",
+      "Lewis Hamilton",
+      "Bruno Senna",
+      "Alex Yoong"
+    ],
+    "severity": "block",
+    "scope": "Matching a driver named in a question",
+    "confidence": "high",
+    "description": "A driver's full name is forename cl0255 followed by surname cl0256. Names in questions must be matched against the concatenation, not against either part alone.",
+    "evidence": [
+      "ev_f1_core"
+    ]
+  },
+  {
+    "id": "constraint_f1_age",
+    "target": "map_f1_driver_tb025_cl0257",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "age",
+      "oldest",
+      "youngest",
+      "date of birth"
+    ],
+    "severity": "block",
+    "scope": "Comparing driver ages",
+    "confidence": "high",
+    "description": "Driver age is computed from date of birth cl0257 against a reference date (current date for present-tense questions). An earlier date of birth means an older driver; a later date of birth means a younger driver.",
+    "evidence": [
+      "ev_f1_core"
+    ]
+  },
+  {
+    "id": "constraint_f1_pit_duration",
+    "target": "map_f1_pit_stop_tb032_cl0274",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "pit stop",
+      "pitstop",
+      "duration",
+      "shortest average"
+    ],
+    "severity": "block",
+    "scope": "Averaging pit stop durations",
+    "confidence": "high",
+    "description": "Pit stop duration cl0274 is decimal text; an average duration is the sum of durations divided by the number of stops. Group by driver before averaging when the question asks for a driver's average.",
+    "evidence": [
+      "ev_f1_pit"
+    ]
+  },
+  {
+    "id": "constraint_f1_qualifying",
+    "target": "map_f1_qualifying_result_tb033_cl0276",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "qualifying",
+      "Q1",
+      "Q2",
+      "Q3",
+      "first period",
+      "eliminated"
+    ],
+    "severity": "block",
+    "scope": "Qualifying session questions",
+    "confidence": "high",
+    "description": "Q1, Q2 and Q3 times are separate text columns cl0276/cl0277/cl0278. For a driver's Q1 result use cl0276; elimination in the first qualifying period is evaluated within that period's ordering across drivers in the race.",
+    "evidence": [
+      "ev_f1_qual"
+    ]
+  },
+  {
+    "id": "constraint_f1_position",
+    "target": "map_f1_race_result_tb035_cl0267",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "position",
+      "rank",
+      "track number",
+      "grid",
+      "finish position"
+    ],
+    "severity": "block",
+    "scope": "Comparing finishing position with starting position",
+    "confidence": "high",
+    "description": "cl0267 is the classified finish position; cl0281 is the starting grid slot. A question about finishing order/ranking uses cl0267; a question about starting in a given track/grid slot uses cl0281.",
+    "evidence": [
+      "ev_f1_results"
+    ]
+  },
+  {
+    "id": "constraint_card_name_context",
+    "target": "map_card_tb004_cl0137",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "cl0137",
+      "card name",
+      "set name",
+      "Coldsnap",
+      "Eighth Edition"
+    ],
+    "severity": "block",
+    "scope": "Resolving card names versus set names",
+    "confidence": "high",
+    "description": "cl0137 is a reused 'name' column: card name in tb004, localized card name in tb005, set name in tb007. A set name such as 'Coldsnap' or 'Eighth Edition' must be resolved in tb007; a card name such as 'Ancestor's Chosen' in tb004. A card links to its set via set code (tb004.cl0151 = tb007.cl0169).",
+    "evidence": [
+      "ev_card_base",
+      "ev_card_sets",
+      "ev_card_languages",
+      "ev_column_reuse"
+    ]
+  },
+  {
+    "id": "constraint_card_language",
+    "target": "map_card_language_printing_tb005_cl0163",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "language",
+      "German",
+      "Italian",
+      "Chinese Simplified",
+      "translation",
+      "available in"
+    ],
+    "severity": "block",
+    "scope": "Card language availability",
+    "confidence": "high",
+    "description": "Card printings in a language are recorded in tb005 (cl0163 language). Set-name translations live in tb008; a set translation does not by itself establish that a card printing exists in that language. Card availability in a language is a count over tb005 printings, not over tb008.",
+    "evidence": [
+      "ev_card_languages"
+    ]
+  },
+  {
+    "id": "constraint_card_power",
+    "target": "map_card_tb004_cl0143",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "power",
+      "unknown power",
+      "infinite power",
+      "*"
+    ],
+    "severity": "block",
+    "scope": "Interpreting the power attribute",
+    "confidence": "high",
+    "description": "Power cl0143 is numeric for normal creatures, '*' for variable/infinite power, and NULL for cards without power. 'Infinite power' or 'unknown power' corresponds to '*' or NULL.",
+    "evidence": [
+      "ev_card_base"
+    ]
+  },
+  {
+    "id": "constraint_card_border_color",
+    "target": "map_card_tb004_cl0093",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "border color",
+      "borderless",
+      "black",
+      "white",
+      "gold",
+      "silver"
+    ],
+    "severity": "block",
+    "scope": "Border color questions",
+    "confidence": "high",
+    "description": "Border color values are black, white, gold, silver and borderless. A borderless card is cl0093='borderless'.",
+    "evidence": [
+      "ev_card_base"
+    ]
+  },
+  {
+    "id": "constraint_card_colors",
+    "target": "map_card_tb004_cl0098",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "color",
+      "black card",
+      "color identity",
+      "mono-color"
+    ],
+    "severity": "block",
+    "scope": "Card color questions",
+    "confidence": "high",
+    "description": "Color identity uses the letters W, U, B, R, G and comma-separated combinations (e.g. 'G,W'); NULL means colorless. A 'black card' is a card whose color identity contains B.",
+    "evidence": [
+      "ev_card_base"
+    ]
+  },
+  {
+    "id": "constraint_card_legality",
+    "target": "map_card_legality_tb006_cl0165",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "legal",
+      "banned",
+      "restricted",
+      "commander",
+      "format legality"
+    ],
+    "severity": "block",
+    "scope": "Format legality questions",
+    "confidence": "high",
+    "description": "Legality status cl0165 is Legal, Banned or Restricted. 'Legal for format X' requires the row for format X (cl0164) with status Legal.",
+    "evidence": [
+      "ev_card_legality"
+    ]
+  },
+  {
+    "id": "constraint_card_multivalue",
+    "target": "map_card_tb004_cl0153",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "subtypes",
+      "supertypes",
+      "creature types",
+      "card types"
+    ],
+    "severity": "warning",
+    "scope": "Filtering or listing card types",
+    "confidence": "high",
+    "description": "Subtype cl0153 and supertype cl0154 are comma-separated multi-valued lists (e.g. 'Human,Cleric'). Membership tests must account for token boundaries rather than whole-string equality.",
+    "evidence": [
+      "ev_card_base"
+    ]
+  },
+  {
+    "id": "constraint_card_set_size",
+    "target": "map_card_set_tb007_cl0166",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "base set size",
+      "set size",
+      "base set number",
+      "cards in set"
+    ],
+    "severity": "block",
+    "scope": "Comparing set sizes",
+    "confidence": "high",
+    "description": "cl0166 is the base set size and cl0181 the total set size of a set. A question about a 'base set number/size under N' refers to cl0166.",
+    "evidence": [
+      "ev_card_sets"
+    ]
+  },
+  {
+    "id": "constraint_card_outside_us",
+    "target": "map_card_set_tb007_cl0171",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "only available outside the United States",
+      "outside US",
+      "availability"
+    ],
+    "severity": "block",
+    "scope": "Set availability-region questions",
+    "confidence": "high",
+    "description": "cl0171=1 means the set was available only outside the United States; 0 means it was not restricted to outside the US.",
+    "evidence": [
+      "ev_card_sets"
+    ]
+  },
+  {
+    "id": "constraint_card_foil_ids",
+    "target": "map_card_tb004_cl0089",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "foil",
+      "powerful foil",
+      "incredibly powerful"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting foil / 'powerful foil' conditions",
+    "confidence": "medium",
+    "description": "cl0094 and cl0095 are sparse print identifiers present on subsets of cards (both present 25,061; only one present 21,990; neither 9,771). In the supplied workload the 'foil / incredibly powerful' condition corresponds to both identifiers being present. They are identifiers, not counts.",
+    "evidence": [
+      "ev_card_foil_ids"
+    ]
+  },
+  {
+    "id": "constraint_card_text_search",
+    "target": "map_card_tb004_cl0156",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "triggered ability",
+      "text contains",
+      "oracle text"
+    ],
+    "severity": "info",
+    "scope": "Searching ability text",
+    "confidence": "high",
+    "description": "Oracle text cl0156 contains ability wording. Phrase searches should be case-insensitive and may match localized variants in tb005.cl0156.",
+    "evidence": [
+      "ev_card_base"
+    ]
+  },
+  {
+    "id": "constraint_molecule_bond_type",
+    "target": "map_bond_type_tb058_cl0418",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "single bond",
+      "double bond",
+      "triple bond",
+      "bond type"
+    ],
+    "severity": "block",
+    "scope": "Bond type questions",
+    "confidence": "high",
+    "description": "Bond type symbols are '-' single, '=' double, '#' triple.",
+    "evidence": [
+      "ev_molecule_core"
+    ]
+  },
+  {
+    "id": "constraint_molecule_carcinogenic",
+    "target": "map_carcinogenicity_status_tb060_cl0420",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "carcinogenic",
+      "non-carcinogenic",
+      "cancer"
+    ],
+    "severity": "block",
+    "scope": "Carcinogenicity filtering",
+    "confidence": "high",
+    "description": "cl0420 is '+' for carcinogenic and '-' for non-carcinogenic molecules.",
+    "evidence": [
+      "ev_molecule_core"
+    ]
+  },
+  {
+    "id": "constraint_molecule_atom_id",
+    "target": "map_atom_tb057_cl0414",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "atom id",
+      "atom 12",
+      "4th atom",
+      "TR004_8_9"
+    ],
+    "severity": "block",
+    "scope": "Resolving an atom within a molecule",
+    "confidence": "high",
+    "description": "Atom ids have the form <moleculeId>_<atomIndex> (e.g. TR009_12). The molecule is the prefix before the underscore and the atom index follows it. A bond id has the form <moleculeId>_<atomA>_<atomB>.",
+    "evidence": [
+      "ev_atom_id_format"
+    ]
+  },
+  {
+    "id": "constraint_molecule_connections",
+    "target": "map_atom_bond_connection_tb059_cl0414",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "connections",
+      "bonded atoms",
+      "bonds involving atom",
+      "cannot bond"
+    ],
+    "severity": "block",
+    "scope": "Counting an atom's connections",
+    "confidence": "high",
+    "description": "An atom's connections appear in tb059 with the atom in either endpoint column (cl0414 or cl0419). An atom with no row in either endpoint cannot bond with any other atom.",
+    "evidence": [
+      "ev_molecule_core"
+    ]
+  },
+  {
+    "id": "constraint_thrombosis_event_streams",
+    "target": "map_medical_examination_tb054_cl0354",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "examination",
+      "examined",
+      "laboratory",
+      "lab test",
+      "hospital visit"
+    ],
+    "severity": "block",
+    "scope": "Mixing examination and laboratory evidence",
+    "confidence": "high",
+    "description": "Clinical examinations (tb054) and laboratory panels (tb056) are separate event streams, both keyed by patient cl0353 and a date. Laboratory measurements exist only in tb056; symptoms and thrombosis degree exist only in tb054.",
+    "evidence": [
+      "ev_thrombosis_exam",
+      "ev_thrombosis_lab"
+    ]
+  },
+  {
+    "id": "constraint_thrombosis_severity",
+    "target": "map_thrombosis_severity_tb054_cl0365",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "thrombosis",
+      "severe",
+      "most serious",
+      "degree"
+    ],
+    "severity": "block",
+    "scope": "Interpreting thrombosis degree",
+    "confidence": "high",
+    "description": "cl0365 degree 0 means no thrombosis; 1-3 are increasing severity. 'Severe' and 'most serious' refer to the highest non-zero degrees present.",
+    "evidence": [
+      "ev_thrombosis_exam"
+    ]
+  },
+  {
+    "id": "constraint_thrombosis_sex",
+    "target": "map_patient_sex_tb055_cl0366",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "female",
+      "male",
+      "women",
+      "sex"
+    ],
+    "severity": "block",
+    "scope": "Sex filtering",
+    "confidence": "high",
+    "description": "Patient sex cl0366 is 'F' for female and 'M' for male; a small number of rows have an empty value.",
+    "evidence": [
+      "ev_thrombosis_patient"
+    ]
+  },
+  {
+    "id": "constraint_anti_sm_encoding",
+    "target": "map_anti_sm_antibody_tb056_cl0407",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "anti-SM",
+      "normal anti-SM",
+      "positive anti-SM"
+    ],
+    "severity": "block",
+    "scope": "Interpreting anti-SM results",
+    "confidence": "medium",
+    "description": "Anti-SM cl0407 mixes textual and numeric tokens: 'negative' is negative, '0' is equivocal (+-), and numeric values >=1 are positive; NULL means not tested. Do not treat it as a continuous numeric measurement.",
+    "evidence": [
+      "ev_autoantibody_encoding"
+    ]
+  },
+  {
+    "id": "constraint_uric_acid_threshold",
+    "target": "map_uric_acid_level_tb056_cl0378",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "uric acid",
+      "abnormal uric acid",
+      "normal uric acid"
+    ],
+    "severity": "block",
+    "scope": "Classifying uric acid as normal/abnormal",
+    "confidence": "high",
+    "description": "Uric acid normality is sex-specific: values up to 8.0 are treated as normal for males and up to 6.5 for females; higher values are abnormal. Join patient sex when applying the threshold.",
+    "evidence": [
+      "ev_thrombosis_lab"
+    ]
+  },
+  {
+    "id": "constraint_lab_thresholds",
+    "target": "map_ldh_level_tb056_cl0374",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "LDH",
+      "red blood cell",
+      "anemia",
+      "hematocrit",
+      "hematoclit",
+      "prothrombin time",
+      "PT",
+      "beyond normal range",
+      "exceeded normal range"
+    ],
+    "severity": "block",
+    "scope": "Applying laboratory normal-range thresholds",
+    "confidence": "high",
+    "description": "Widely used thresholds in this workload: LDH above 500 is beyond normal; red blood cell count below 3.5 is low; hematocrit >= 52 is above normal; prothrombin time >= 14 is abnormal. Apply these as stated in the question when different cutoffs are given.",
+    "evidence": [
+      "ev_thrombosis_lab"
+    ]
+  },
+  {
+    "id": "constraint_iga_threshold",
+    "target": "map_immunoglobulin_a_level_tb056_cl0399",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "IgA",
+      "normal Ig A",
+      "immunoglobulin A"
+    ],
+    "severity": "block",
+    "scope": "Classifying IgA as normal",
+    "confidence": "high",
+    "description": "Normal IgA is defined as values between 80 and 500 inclusive; lower or higher values are outside the normal range.",
+    "evidence": [
+      "ev_thrombosis_lab"
+    ]
+  },
+  {
+    "id": "constraint_patient_age",
+    "target": "map_patient_age_tb055_cl0367",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "age",
+      "underage",
+      "older than 55",
+      "born in"
+    ],
+    "severity": "block",
+    "scope": "Computing patient age",
+    "confidence": "high",
+    "description": "Patient age is computed from birthday cl0367 against a reference date (current date for present-tense questions). Age at an examination date uses that examination date as reference.",
+    "evidence": [
+      "ev_thrombosis_patient"
+    ]
+  },
+  {
+    "id": "constraint_diagnosis_text",
+    "target": "map_diagnosis_tb055_cl0360",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "diagnosis",
+      "disease",
+      "SLE",
+      "RA",
+      "APS",
+      "SJS",
+      "BEHCET"
+    ],
+    "severity": "block",
+    "scope": "Matching a diagnosis value",
+    "confidence": "high",
+    "description": "Diagnosis text may contain multiple comma-separated diseases and a 'susp' qualifier (e.g. 'SLE, SJS', 'RA susp.'). Match disease tokens, not the whole string.",
+    "evidence": [
+      "ev_thrombosis_patient"
+    ]
+  },
+  {
+    "id": "constraint_school_district_type",
+    "target": "map_school_tb003_cl0065",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "district type",
+      "unified school district",
+      "elementary school district",
+      "high school district"
+    ],
+    "severity": "block",
+    "scope": "Filtering schools by district type",
+    "confidence": "high",
+    "description": "District type code cl0065 and text cl0066 are paired: 52 Elementary School District, 54 Unified School District, 60 High School District, 00 County Office of Education, 56 Regional Occupation Center/Program, 98 State Board of Education, and others. Use cl0065 for codes and cl0066 for human-readable labels.",
+    "evidence": [
+      "ev_school_schools"
+    ]
+  },
+  {
+    "id": "constraint_school_flags",
+    "target": "map_school_tb003_cl0062",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "charter",
+      "chartered",
+      "non-chartered",
+      "virtual",
+      "physical building",
+      "closed",
+      "merged",
+      "active"
+    ],
+    "severity": "block",
+    "scope": "Charter, virtual and operating-status filtering",
+    "confidence": "high",
+    "description": "cl0062 charter flag: 1 chartered, 0 non-chartered, NULL unknown. cl0075 virtual flag: N not virtual, P partially virtual, F exclusively virtual (so no physical building). cl0043 status: Active, Closed, Merged, Pending.",
+    "evidence": [
+      "ev_school_schools"
+    ]
+  },
+  {
+    "id": "constraint_school_frpm_rate",
+    "target": "map_frpm_rate_tb001_cl0021",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "free meal rate",
+      "FRPM rate",
+      "eligible free",
+      "percent eligible",
+      "K-12"
+    ],
+    "severity": "block",
+    "scope": "Computing free/reduced-price meal rates",
+    "confidence": "high",
+    "description": "Free-meal rate = free meal count / K-12 enrollment; FRPM rate = FRPM count / K-12 enrollment. The stored cl0021 and cl0023 columns are fractions (0-1), while questions often state a percentage; convert consistently.",
+    "evidence": [
+      "ev_school_frpm"
+    ]
+  },
+  {
+    "id": "constraint_school_sat_average",
+    "target": "map_sat_score_record_tb002_cl0038",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "average math",
+      "average reading",
+      "average writing",
+      "average of average"
+    ],
+    "severity": "block",
+    "scope": "Aggregating SAT scores",
+    "confidence": "high",
+    "description": "SAT average columns are school-level or district-level averages. An 'average of average math score' is the sum of the school-level averages divided by the number of schools unless a weighted average is explicitly requested. Do not mix record types S and D in one average.",
+    "evidence": [
+      "ev_school_sat"
+    ]
+  },
+  {
+    "id": "constraint_school_cds",
+    "target": "map_school_tb003_cl0001",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "CDS code",
+      "school code",
+      "join school"
+    ],
+    "severity": "block",
+    "scope": "Joining school, FRPM and SAT records",
+    "confidence": "high",
+    "description": "The CDS code (tb003.cl0001, tb001.cl0001, tb002.cl0030) is the school identifier. Codes are fixed-width text and compare directly; join on the code rather than on school name.",
+    "evidence": [
+      "ev_school_cds_join"
+    ]
+  },
+  {
+    "id": "constraint_club_status",
+    "target": "map_event_status_tb036_cl0294",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "open event",
+      "closed event",
+      "planning",
+      "event status"
+    ],
+    "severity": "block",
+    "scope": "Filtering events by status",
+    "confidence": "high",
+    "description": "Event status cl0294 and budget status tb040.cl0311 both use Open, Closed and Planning.",
+    "evidence": [
+      "ev_club_core",
+      "ev_club_finance"
+    ]
+  },
+  {
+    "id": "constraint_club_budget_columns",
+    "target": "map_event_budget_tb040_cl0308",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "budget",
+      "spend",
+      "spent",
+      "spend-to-budget ratio",
+      "remaining"
+    ],
+    "severity": "block",
+    "scope": "Budget and spending arithmetic",
+    "confidence": "high",
+    "description": "In tb040, cl0310 is the budgeted amount, cl0308 the spent amount and cl0309 the remaining amount. Spend-to-budget ratio = cl0308 / cl0310. The budget amount is not cl0308.",
+    "evidence": [
+      "ev_club_finance"
+    ]
+  },
+  {
+    "id": "constraint_club_expense_approved",
+    "target": "map_expense_tb041_cl0316",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "approved",
+      "expense approved"
+    ],
+    "severity": "block",
+    "scope": "Filtering approved expenses",
+    "confidence": "high",
+    "description": "Expense approval cl0316 is the text 'true' when approved and NULL otherwise.",
+    "evidence": [
+      "ev_club_finance"
+    ]
+  },
+  {
+    "id": "constraint_club_attendance",
+    "target": "map_event_member_tb039_cl0304",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "attendance",
+      "attended",
+      "members attended"
+    ],
+    "severity": "block",
+    "scope": "Counting event attendance",
+    "confidence": "high",
+    "description": "Attendance per event is the number of event-member rows in tb039 for that event (cl0304). An event with no rows has attendance zero.",
+    "evidence": [
+      "ev_club_core"
+    ]
+  },
+  {
+    "id": "constraint_member_fullname",
+    "target": "map_member_full_name_tb043_cl0322",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "full name",
+      "member name"
+    ],
+    "severity": "block",
+    "scope": "Matching a member named in a question",
+    "confidence": "high",
+    "description": "Member full name is first name cl0322 followed by last name cl0323. Match names against the concatenation.",
+    "evidence": [
+      "ev_club_member"
+    ]
+  },
+  {
+    "id": "constraint_superhero_identity",
+    "target": "map_superhero_gender_tb047_cl0334",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "female superhero",
+      "male superhero",
+      "villain",
+      "bad",
+      "good",
+      "alignment"
+    ],
+    "severity": "block",
+    "scope": "Gender and alignment filtering",
+    "confidence": "high",
+    "description": "Gender values are Male/Female; alignment values are Good, Bad, Neutral and N/A. Villains are alignment 'Bad'.",
+    "evidence": [
+      "ev_superhero_lookup"
+    ]
+  },
+  {
+    "id": "constraint_superhero_colour_usage",
+    "target": "map_superhero_colour_tb046_cl0333",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "green-skinned",
+      "skin color",
+      "eye color",
+      "hair color",
+      "colour"
+    ],
+    "severity": "block",
+    "scope": "Colour attribute questions",
+    "confidence": "high",
+    "description": "The single colour lookup (tb046.cl0333) serves three different hero attributes: eye colour via tb050.cl0340, hair colour via tb050.cl0341 and skin colour via tb050.cl0342. Join through the intended attribute; 'green-skinned' uses the skin link, while 'no eye colour' uses the eye link.",
+    "evidence": [
+      "ev_superhero_lookup"
+    ]
+  },
+  {
+    "id": "constraint_superhero_scale",
+    "target": "map_superhero_attribute_value_tb051_cl0350",
+    "constraint_type": "unit",
+    "trigger_keywords": [
+      "attribute value",
+      "strength value",
+      "durability",
+      "height",
+      "weight"
+    ],
+    "severity": "block",
+    "scope": "Interpreting attribute and body measurements",
+    "confidence": "high",
+    "description": "Superhero attribute values range from 5 to 100. Height cl0346 is in centimetres and weight cl0347 in kilograms.",
+    "evidence": [
+      "ev_superhero_core"
+    ]
+  },
+  {
+    "id": "constraint_publisher",
+    "target": "map_publisher_tb048_cl0335",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "publisher",
+      "Marvel Comics",
+      "DC Comics",
+      "Dark Horse Comics",
+      "Star Trek"
+    ],
+    "severity": "info",
+    "scope": "Publisher filtering",
+    "confidence": "high",
+    "description": "Publisher names are stored verbatim (25 distinct values), including 'Marvel Comics', 'DC Comics', 'Dark Horse Comics' and 'Star Trek'. Publisher id is tb048.cl0330.",
+    "evidence": [
+      "ev_superhero_lookup"
+    ]
+  },
+  {
+    "id": "constraint_gas_country_currency",
+    "target": "map_gas_station_tb011_cl0189",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "Czech Republic",
+      "Slovakia",
+      "CZE",
+      "SVK",
+      "CZK",
+      "EUR"
+    ],
+    "severity": "block",
+    "scope": "Country and currency filtering",
+    "confidence": "high",
+    "description": "Station country cl0189 uses CZE for the Czech Republic and SVK for Slovakia. Customer payment currency cl0186 uses CZK or EUR.",
+    "evidence": [
+      "ev_gas_core"
+    ]
+  },
+  {
+    "id": "constraint_gas_segment_domains",
+    "target": "map_customer_segment_tb010_cl0185",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "segment",
+      "SME",
+      "LAM",
+      "KAM",
+      "discount",
+      "premium",
+      "value for money"
+    ],
+    "severity": "block",
+    "scope": "Segment filtering across customers and stations",
+    "confidence": "high",
+    "description": "cl0185 holds two different vocabularies: customer segments SME/LAM/KAM in tb010 and station segments Discount/Noname/Other/Premium/Value for money in tb011. Resolve the segment together with the table.",
+    "evidence": [
+      "ev_gas_core",
+      "ev_column_reuse"
+    ]
+  },
+  {
+    "id": "constraint_gas_yearmonth",
+    "target": "map_monthly_consumption_tb014_cl0193",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "yearmonth",
+      "February 2012",
+      "June 2013",
+      "monthly consumption"
+    ],
+    "severity": "block",
+    "scope": "Filtering consumption by month",
+    "confidence": "high",
+    "description": "Year-month cl0193 is text 'YYYYMM' (e.g. 201202). For a whole year, filter the four-character year prefix; for a month, filter the exact six-character value.",
+    "evidence": [
+      "ev_gas_yearmonth"
+    ]
+  },
+  {
+    "id": "constraint_gas_measures",
+    "target": "map_gas_transaction_tb013_cl0196",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "amount",
+      "quantity",
+      "price",
+      "average price per item",
+      "spending"
+    ],
+    "severity": "block",
+    "scope": "Choosing between quantity and price",
+    "confidence": "high",
+    "description": "In tb013, cl0196 is the quantity/amount of product and cl0197 is the total price paid. Spending sums cl0197; volume sums cl0196; unit price is cl0197 divided by cl0196. Time is cl0194 (HH:MM:SS) and date cl0193 (YYYY-MM-DD).",
+    "evidence": [
+      "ev_gas_transactions"
+    ]
+  },
+  {
+    "id": "constraint_bank_loan_status",
+    "target": "map_loan_status_tb020_cl0229",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "loan status",
+      "running contract",
+      "in debt",
+      "contract status"
+    ],
+    "severity": "block",
+    "scope": "Interpreting loan status",
+    "confidence": "high",
+    "description": "Loan status A/B/C/D: C and D are still-running contracts, and D means the client is in debt; A and B are finished contracts.",
+    "evidence": [
+      "ev_bank_loan"
+    ]
+  },
+  {
+    "id": "constraint_bank_type_context",
+    "target": "map_bank_card_tb016_cl0205",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "cl0205",
+      "card type",
+      "disposition type",
+      "transaction type",
+      "gold card",
+      "owner"
+    ],
+    "severity": "block",
+    "scope": "Resolving type columns",
+    "confidence": "high",
+    "description": "cl0205 is a reused 'type' column: card type classic/junior/gold in tb016, disposition type OWNER/DISPONENT in tb018, and transaction type PRIJEM/VYDAJ/VYBER in tb022. 'High-level credit card' means card type gold; 'eligible for loans' corresponds to disposition type OWNER. Always qualify by table.",
+    "evidence": [
+      "ev_bank_core",
+      "ev_column_reuse"
+    ]
+  },
+  {
+    "id": "constraint_bank_frequency",
+    "target": "map_account_frequency_tb015_cl0201",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "statement frequency",
+      "after transaction",
+      "monthly statement",
+      "POPLATEK"
+    ],
+    "severity": "block",
+    "scope": "Statement issuance frequency",
+    "confidence": "high",
+    "description": "Frequency codes: POPLATEK MESICNE = monthly statement, POPLATEK TYDNE = weekly statement, POPLATEK PO OBRATU = issuance after each transaction.",
+    "evidence": [
+      "ev_bank_core"
+    ]
+  },
+  {
+    "id": "constraint_bank_tx_type",
+    "target": "map_bank_transaction_tb022_cl0205",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "transaction type",
+      "credit card withdrawal",
+      "deposit",
+      "withdrawal",
+      "PRIJEM",
+      "VYDAJ",
+      "VYBER"
+    ],
+    "severity": "block",
+    "scope": "Interpreting transaction types and operations",
+    "confidence": "high",
+    "description": "cl0205 transaction type: PRIJEM credit, VYDAJ debit, VYBER withdrawal. Operation cl0235 'VYBER KARTOU' means credit-card withdrawal; other operations include VKLAD (deposit), PREVOD NA UCET and PREVOD Z UCTU (transfers).",
+    "evidence": [
+      "ev_bank_transactions"
+    ]
+  },
+  {
+    "id": "constraint_bank_district_measures",
+    "target": "map_bank_district_tb019_cl0220",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "unemployment",
+      "crimes",
+      "average salary",
+      "inhabitants",
+      "region",
+      "south Bohemia"
+    ],
+    "severity": "block",
+    "scope": "Using district social/economic indicators",
+    "confidence": "high",
+    "description": "District measures: cl0212 inhabitants, cl0219 average salary, cl0220 unemployment rate 1995 and cl0221 unemployment rate 1996, cl0223 crimes 1995 and cl0224 crimes 1996. Unemployment increment percentage = (cl0221 - cl0220) / cl0220 * 100. Region names live in cl0211 and district names in cl0210.",
+    "evidence": [
+      "ev_bank_district"
+    ]
+  },
+  {
+    "id": "constraint_bank_branch_location",
+    "target": "map_bank_account_tb015_cl0200",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "branch",
+      "branch location",
+      "district id",
+      "location 1"
+    ],
+    "severity": "info",
+    "scope": "Resolving a branch/location reference",
+    "confidence": "high",
+    "description": "Branch/location references the district id cl0200 on the account; district 1 is Hl.m. Praha (Prague).",
+    "evidence": [
+      "ev_bank_district"
+    ]
+  },
+  {
+    "id": "constraint_column_context_general",
+    "target": "map_bank_transaction_tb022_cl0226",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "cl0205",
+      "cl0137",
+      "cl0241",
+      "cl0226",
+      "cl0185",
+      "opaque column",
+      "column reuse"
+    ],
+    "severity": "block",
+    "scope": "Any time an opaque cl column is resolved",
+    "confidence": "high",
+    "description": "Opaque cl identifiers are not globally unique in meaning. Examples: cl0205 = card type / disposition type / transaction type; cl0137 = card name / localized card name / set name; cl0241 = circuit / constructor / race name; cl0226 = loan / order / transaction amount; cl0185 = customer / station segment. Resolve a column only together with its table and verify its value domain.",
+    "evidence": [
+      "ev_column_reuse"
+    ]
+  }
+]

@@ -1,0 +1,644 @@
+[
+  {
+    "id": "rel_f1_season_races",
+    "source": "f1_season",
+    "relation_type": "composition",
+    "target": "f1_race",
+    "connection_condition": "tb027.cl0258 references tb026.cl0258",
+    "description": "A season is composed of its races; each race belongs to exactly one season year.",
+    "evidence": [
+      "ev_f1_core"
+    ]
+  },
+  {
+    "id": "rel_f1_circuit_races",
+    "source": "f1_circuit",
+    "relation_type": "association",
+    "target": "f1_race",
+    "connection_condition": "tb027.cl0239 references tb023.cl0239",
+    "description": "Race events are held at a circuit; the circuit supplies venue location and coordinates.",
+    "evidence": [
+      "ev_f1_core"
+    ]
+  },
+  {
+    "id": "rel_f1_race_results",
+    "source": "f1_race",
+    "relation_type": "composition",
+    "target": "f1_race_result",
+    "connection_condition": "tb035.cl0259 references tb027.cl0259",
+    "description": "A race is composed of driver classification entries.",
+    "evidence": [
+      "ev_f1_results"
+    ]
+  },
+  {
+    "id": "rel_f1_race_laps",
+    "source": "f1_race",
+    "relation_type": "composition",
+    "target": "f1_lap_time",
+    "connection_condition": "tb031.cl0259 references tb027.cl0259",
+    "description": "A race contains per-driver lap records.",
+    "evidence": [
+      "ev_f1_lap"
+    ]
+  },
+  {
+    "id": "rel_f1_race_pitstops",
+    "source": "f1_race",
+    "relation_type": "composition",
+    "target": "f1_pit_stop",
+    "connection_condition": "tb032.cl0259 references tb027.cl0259",
+    "description": "A race contains pit stop records.",
+    "evidence": [
+      "ev_f1_pit"
+    ]
+  },
+  {
+    "id": "rel_f1_race_qualifying",
+    "source": "f1_race",
+    "relation_type": "composition",
+    "target": "f1_qualifying_result",
+    "connection_condition": "tb033.cl0259 references tb027.cl0259",
+    "description": "A race has a qualifying session with per-driver Q1/Q2/Q3 results.",
+    "evidence": [
+      "ev_f1_qual"
+    ]
+  },
+  {
+    "id": "rel_f1_race_constructor_results",
+    "source": "f1_race",
+    "relation_type": "composition",
+    "target": "f1_constructor_result",
+    "connection_condition": "tb028.cl0259 references tb027.cl0259",
+    "description": "A race awards constructor points recorded per constructor.",
+    "evidence": [
+      "ev_f1_standings"
+    ]
+  },
+  {
+    "id": "rel_f1_driver_results",
+    "source": "f1_driver",
+    "relation_type": "association",
+    "target": "f1_race_result",
+    "connection_condition": "tb035.cl0251 references tb025.cl0251",
+    "description": "A driver participates in many race results over a career.",
+    "evidence": [
+      "ev_f1_results"
+    ]
+  },
+  {
+    "id": "rel_f1_constructor_results",
+    "source": "f1_constructor",
+    "relation_type": "association",
+    "target": "f1_race_result",
+    "connection_condition": "tb035.cl0248 references tb024.cl0248",
+    "description": "A constructor is credited on each driver's race entry.",
+    "evidence": [
+      "ev_f1_results"
+    ]
+  },
+  {
+    "id": "rel_f1_status_results",
+    "source": "f1_status",
+    "relation_type": "association",
+    "target": "f1_race_result",
+    "connection_condition": "tb035.cl0279 references tb034.cl0279",
+    "description": "Each race entry carries a classification status that explains retirement or disqualification.",
+    "evidence": [
+      "ev_f1_status"
+    ]
+  },
+  {
+    "id": "rel_f1_driver_fullname",
+    "source": "f1_driver",
+    "relation_type": "derivation",
+    "target": "f1_driver_full_name",
+    "connection_condition": "tb025.cl0255 and tb025.cl0256 belong to the same driver row",
+    "description": "The driver full name is derived by concatenating forename and surname.",
+    "evidence": [
+      "ev_f1_core"
+    ]
+  },
+  {
+    "id": "rel_f1_driver_age",
+    "source": "f1_driver",
+    "relation_type": "derivation",
+    "target": "f1_driver_age",
+    "connection_condition": "tb025.cl0257",
+    "description": "Driver age is derived from the date of birth and a reference date.",
+    "evidence": [
+      "ev_f1_core"
+    ]
+  },
+  {
+    "id": "rel_card_set_cards",
+    "source": "card_set",
+    "relation_type": "composition",
+    "target": "card",
+    "connection_condition": "tb004.cl0151 matches tb007.cl0169",
+    "description": "A set is composed of its card printings.",
+    "evidence": [
+      "ev_card_base",
+      "ev_card_sets"
+    ]
+  },
+  {
+    "id": "rel_card_localized",
+    "source": "card",
+    "relation_type": "equivalence",
+    "target": "card_language_printing",
+    "connection_condition": "tb005.cl0160 references the card uuid in tb004.cl0160",
+    "description": "A localized printing expresses the same card in another language.",
+    "evidence": [
+      "ev_card_languages"
+    ]
+  },
+  {
+    "id": "rel_card_set_translations",
+    "source": "card_set",
+    "relation_type": "composition",
+    "target": "card_set_translation",
+    "connection_condition": "tb008.cl0151 matches tb007.cl0169",
+    "description": "A set has translated set names in multiple languages.",
+    "evidence": [
+      "ev_card_languages"
+    ]
+  },
+  {
+    "id": "rel_card_legality",
+    "source": "card",
+    "relation_type": "association",
+    "target": "card_legality",
+    "connection_condition": "tb006.cl0160 references tb004.cl0160",
+    "description": "A card has one legality record per play format.",
+    "evidence": [
+      "ev_card_legality"
+    ]
+  },
+  {
+    "id": "rel_card_rulings",
+    "source": "card",
+    "relation_type": "association",
+    "target": "card_ruling",
+    "connection_condition": "tb009.cl0160 references tb004.cl0160",
+    "description": "A card may have multiple official rulings.",
+    "evidence": [
+      "ev_card_rulings"
+    ]
+  },
+  {
+    "id": "rel_card_format",
+    "source": "card_legality",
+    "relation_type": "association",
+    "target": "card_format",
+    "connection_condition": "tb006.cl0164",
+    "description": "Each legality record names a play format.",
+    "evidence": [
+      "ev_card_legality"
+    ]
+  },
+  {
+    "id": "rel_molecule_atoms",
+    "source": "molecule",
+    "relation_type": "composition",
+    "target": "atom",
+    "connection_condition": "tb057.cl0415 references tb060.cl0415",
+    "description": "A molecule is composed of its atoms.",
+    "evidence": [
+      "ev_molecule_core"
+    ]
+  },
+  {
+    "id": "rel_molecule_bonds",
+    "source": "molecule",
+    "relation_type": "composition",
+    "target": "chemical_bond",
+    "connection_condition": "tb058.cl0415 references tb060.cl0415",
+    "description": "A molecule is composed of its bonds.",
+    "evidence": [
+      "ev_molecule_core"
+    ]
+  },
+  {
+    "id": "rel_atom_connections",
+    "source": "atom",
+    "relation_type": "association",
+    "target": "atom_bond_connection",
+    "connection_condition": "tb059.cl0414 or tb059.cl0419 references tb057.cl0414",
+    "description": "An atom participates in connections to other atoms; the atom appears as either endpoint.",
+    "evidence": [
+      "ev_molecule_core"
+    ]
+  },
+  {
+    "id": "rel_bond_connections",
+    "source": "chemical_bond",
+    "relation_type": "association",
+    "target": "atom_bond_connection",
+    "connection_condition": "tb059.cl0417 references tb058.cl0417",
+    "description": "A bond is realized by one atom-atom connection record.",
+    "evidence": [
+      "ev_molecule_core"
+    ]
+  },
+  {
+    "id": "rel_patient_exams",
+    "source": "patient",
+    "relation_type": "composition",
+    "target": "medical_examination",
+    "connection_condition": "tb054.cl0353 references tb055.cl0353",
+    "description": "A patient has multiple dated examinations.",
+    "evidence": [
+      "ev_thrombosis_exam"
+    ]
+  },
+  {
+    "id": "rel_patient_labs",
+    "source": "patient",
+    "relation_type": "composition",
+    "target": "laboratory_test",
+    "connection_condition": "tb056.cl0353 references tb055.cl0353",
+    "description": "A patient has multiple dated laboratory panels.",
+    "evidence": [
+      "ev_thrombosis_lab"
+    ]
+  },
+  {
+    "id": "rel_patient_age",
+    "source": "patient",
+    "relation_type": "derivation",
+    "target": "patient_age",
+    "connection_condition": "tb055.cl0367",
+    "description": "Patient age is derived from the birthday and a reference date.",
+    "evidence": [
+      "ev_thrombosis_patient"
+    ]
+  },
+  {
+    "id": "rel_school_frpm",
+    "source": "school",
+    "relation_type": "composition",
+    "target": "frpm_record",
+    "connection_condition": "tb001.cl0001 matches tb003.cl0001",
+    "description": "A school is associated with a free/reduced-price-meal record keyed by CDS code.",
+    "evidence": [
+      "ev_school_frpm",
+      "ev_school_cds_join"
+    ]
+  },
+  {
+    "id": "rel_school_sat",
+    "source": "school",
+    "relation_type": "composition",
+    "target": "sat_score_record",
+    "connection_condition": "tb002.cl0030 matches tb003.cl0001",
+    "description": "A school is associated with SAT aggregate records keyed by CDS code.",
+    "evidence": [
+      "ev_school_sat",
+      "ev_school_cds_join"
+    ]
+  },
+  {
+    "id": "rel_frpm_rate",
+    "source": "frpm_record",
+    "relation_type": "derivation",
+    "target": "frpm_rate",
+    "connection_condition": "tb001.cl0020 or tb001.cl0022 divided by tb001.cl0019; stored fractions in cl0021/cl0023",
+    "description": "The FRPM/free-meal rate is derived from meal counts divided by enrollment.",
+    "evidence": [
+      "ev_school_frpm"
+    ]
+  },
+  {
+    "id": "rel_event_attendance",
+    "source": "club_event",
+    "relation_type": "composition",
+    "target": "event_member",
+    "connection_condition": "tb039.cl0304 references tb036.cl0288",
+    "description": "An event's attendance is composed of event-member links.",
+    "evidence": [
+      "ev_club_core"
+    ]
+  },
+  {
+    "id": "rel_event_budgets",
+    "source": "club_event",
+    "relation_type": "composition",
+    "target": "event_budget",
+    "connection_condition": "tb040.cl0304 references tb036.cl0288",
+    "description": "An event is composed of budget lines by category.",
+    "evidence": [
+      "ev_club_finance"
+    ]
+  },
+  {
+    "id": "rel_member_attendance",
+    "source": "club_member",
+    "relation_type": "association",
+    "target": "event_member",
+    "connection_condition": "tb039.cl0305 references tb043.cl0321",
+    "description": "A member attends events through event-member links.",
+    "evidence": [
+      "ev_club_core"
+    ]
+  },
+  {
+    "id": "rel_member_major",
+    "source": "club_member",
+    "relation_type": "association",
+    "target": "member_major",
+    "connection_condition": "tb043.cl0329 references tb037.cl0295",
+    "description": "A member declares an academic major that belongs to a department and college.",
+    "evidence": [
+      "ev_club_member"
+    ]
+  },
+  {
+    "id": "rel_member_zip",
+    "source": "club_member",
+    "relation_type": "association",
+    "target": "zip_code",
+    "connection_condition": "tb043.cl0328 matches tb038.cl0299",
+    "description": "A member's zip code locates their city, county and state.",
+    "evidence": [
+      "ev_club_member",
+      "ev_zip_code"
+    ]
+  },
+  {
+    "id": "rel_member_fullname",
+    "source": "club_member",
+    "relation_type": "derivation",
+    "target": "member_full_name",
+    "connection_condition": "tb043.cl0322 and tb043.cl0323 belong to the same member",
+    "description": "The member full name is derived by concatenating first and last name.",
+    "evidence": [
+      "ev_club_member"
+    ]
+  },
+  {
+    "id": "rel_hero_attributes",
+    "source": "superhero",
+    "relation_type": "composition",
+    "target": "superhero_attribute_value",
+    "connection_condition": "tb051.cl0348 references tb050.cl0330",
+    "description": "A superhero is composed of attribute values on the six attributes.",
+    "evidence": [
+      "ev_superhero_core"
+    ]
+  },
+  {
+    "id": "rel_hero_powers",
+    "source": "superhero",
+    "relation_type": "composition",
+    "target": "superhero_power",
+    "connection_condition": "tb053.cl0348 references tb050.cl0330",
+    "description": "A superhero has a set of superpowers.",
+    "evidence": [
+      "ev_superhero_core"
+    ]
+  },
+  {
+    "id": "rel_attribute_values",
+    "source": "superhero_attribute",
+    "relation_type": "association",
+    "target": "superhero_attribute_value",
+    "connection_condition": "tb051.cl0349 references tb045.cl0330",
+    "description": "Each attribute value is scored on one attribute definition.",
+    "evidence": [
+      "ev_superhero_core"
+    ]
+  },
+  {
+    "id": "rel_superpower_links",
+    "source": "superpower",
+    "relation_type": "association",
+    "target": "superhero_power",
+    "connection_condition": "tb053.cl0352 references tb052.cl0330",
+    "description": "A superpower is assigned to heroes through hero-power links.",
+    "evidence": [
+      "ev_superhero_core"
+    ]
+  },
+  {
+    "id": "rel_hero_publisher",
+    "source": "superhero",
+    "relation_type": "association",
+    "target": "publisher",
+    "connection_condition": "tb050.cl0344 references tb048.cl0330",
+    "description": "A superhero is published by a comic publisher.",
+    "evidence": [
+      "ev_superhero_lookup"
+    ]
+  },
+  {
+    "id": "rel_hero_alignment",
+    "source": "superhero",
+    "relation_type": "association",
+    "target": "alignment",
+    "connection_condition": "tb050.cl0343 references tb044.cl0330",
+    "description": "A superhero has a moral alignment (hero or villain).",
+    "evidence": [
+      "ev_superhero_lookup"
+    ]
+  },
+  {
+    "id": "rel_hero_colour",
+    "source": "superhero",
+    "relation_type": "association",
+    "target": "superhero_colour",
+    "connection_condition": "tb050.cl0340, cl0341 and cl0342 reference tb046.cl0330",
+    "description": "A superhero has eye, hair and skin colours drawn from the shared colour lookup.",
+    "evidence": [
+      "ev_superhero_lookup"
+    ]
+  },
+  {
+    "id": "rel_hero_gender",
+    "source": "superhero",
+    "relation_type": "association",
+    "target": "superhero_gender",
+    "connection_condition": "tb050.cl0339 references tb047.cl0330",
+    "description": "A superhero has a gender.",
+    "evidence": [
+      "ev_superhero_lookup"
+    ]
+  },
+  {
+    "id": "rel_hero_race",
+    "source": "superhero",
+    "relation_type": "association",
+    "target": "superhero_race",
+    "connection_condition": "tb050.cl0345 references tb049.cl0330",
+    "description": "A superhero has a race/species.",
+    "evidence": [
+      "ev_superhero_lookup"
+    ]
+  },
+  {
+    "id": "rel_customer_consumption",
+    "source": "gas_customer",
+    "relation_type": "composition",
+    "target": "monthly_consumption",
+    "connection_condition": "tb014.cl0184 references tb010.cl0184",
+    "description": "A customer has monthly consumption records.",
+    "evidence": [
+      "ev_gas_yearmonth"
+    ]
+  },
+  {
+    "id": "rel_customer_transactions",
+    "source": "gas_customer",
+    "relation_type": "association",
+    "target": "gas_transaction",
+    "connection_condition": "tb013.cl0184 references tb010.cl0184",
+    "description": "A customer makes station transactions.",
+    "evidence": [
+      "ev_gas_transactions"
+    ]
+  },
+  {
+    "id": "rel_station_transactions",
+    "source": "gas_station",
+    "relation_type": "association",
+    "target": "gas_transaction",
+    "connection_condition": "tb013.cl0187 references tb011.cl0187",
+    "description": "A gas station hosts transactions.",
+    "evidence": [
+      "ev_gas_transactions"
+    ]
+  },
+  {
+    "id": "rel_product_transactions",
+    "source": "gas_product",
+    "relation_type": "association",
+    "target": "gas_transaction",
+    "connection_condition": "tb013.cl0190 references tb012.cl0190",
+    "description": "A transaction purchases a product.",
+    "evidence": [
+      "ev_gas_transactions"
+    ]
+  },
+  {
+    "id": "rel_client_dispositions",
+    "source": "bank_client",
+    "relation_type": "composition",
+    "target": "account_disposition",
+    "connection_condition": "tb018.cl0207 references tb017.cl0207",
+    "description": "A client has one or more account dispositions.",
+    "evidence": [
+      "ev_bank_core"
+    ]
+  },
+  {
+    "id": "rel_account_dispositions",
+    "source": "bank_account",
+    "relation_type": "composition",
+    "target": "account_disposition",
+    "connection_condition": "tb018.cl0199 references tb015.cl0199",
+    "description": "An account is linked to its owners/disponents through dispositions.",
+    "evidence": [
+      "ev_bank_core"
+    ]
+  },
+  {
+    "id": "rel_account_loans",
+    "source": "bank_account",
+    "relation_type": "composition",
+    "target": "bank_loan",
+    "connection_condition": "tb020.cl0199 references tb015.cl0199",
+    "description": "An account may hold loans.",
+    "evidence": [
+      "ev_bank_loan"
+    ]
+  },
+  {
+    "id": "rel_account_transactions",
+    "source": "bank_account",
+    "relation_type": "composition",
+    "target": "bank_transaction",
+    "connection_condition": "tb022.cl0199 references tb015.cl0199",
+    "description": "An account is composed of its transactions.",
+    "evidence": [
+      "ev_bank_transactions"
+    ]
+  },
+  {
+    "id": "rel_account_orders",
+    "source": "bank_account",
+    "relation_type": "composition",
+    "target": "bank_order",
+    "connection_condition": "tb021.cl0199 references tb015.cl0199",
+    "description": "An account may have standing orders.",
+    "evidence": [
+      "ev_bank_transactions"
+    ]
+  },
+  {
+    "id": "rel_district_accounts",
+    "source": "bank_district",
+    "relation_type": "association",
+    "target": "bank_account",
+    "connection_condition": "tb015.cl0200 references tb019.cl0200",
+    "description": "A district contains the accounts opened at that branch.",
+    "evidence": [
+      "ev_bank_core"
+    ]
+  },
+  {
+    "id": "rel_district_clients",
+    "source": "bank_district",
+    "relation_type": "association",
+    "target": "bank_client",
+    "connection_condition": "tb017.cl0200 references tb019.cl0200",
+    "description": "A district is associated with the clients who live there.",
+    "evidence": [
+      "ev_bank_core"
+    ]
+  },
+  {
+    "id": "rel_card_disposition",
+    "source": "bank_card",
+    "relation_type": "association",
+    "target": "account_disposition",
+    "connection_condition": "tb016.cl0204 references tb018.cl0204",
+    "description": "A card belongs to a disposition, which links a client to an account.",
+    "evidence": [
+      "ev_bank_core"
+    ]
+  },
+  {
+    "id": "rel_loan_status",
+    "source": "bank_loan",
+    "relation_type": "association",
+    "target": "loan_status",
+    "connection_condition": "tb020.cl0229",
+    "description": "A loan carries a contract status.",
+    "evidence": [
+      "ev_bank_loan"
+    ]
+  },
+  {
+    "id": "rel_disposition_type",
+    "source": "account_disposition",
+    "relation_type": "association",
+    "target": "disposition_type",
+    "connection_condition": "tb018.cl0205",
+    "description": "A disposition carries an ownership role.",
+    "evidence": [
+      "ev_bank_core"
+    ]
+  },
+  {
+    "id": "rel_account_frequency",
+    "source": "bank_account",
+    "relation_type": "association",
+    "target": "account_frequency",
+    "connection_condition": "tb015.cl0201",
+    "description": "An account carries a statement-issuance frequency.",
+    "evidence": [
+      "ev_bank_core"
+    ]
+  }
+]

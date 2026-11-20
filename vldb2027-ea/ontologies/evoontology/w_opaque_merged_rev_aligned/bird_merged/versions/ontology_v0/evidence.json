@@ -1,0 +1,306 @@
+[
+  {
+    "id": "ev_schema_inventory",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'tb%' ORDER BY name; SELECT COUNT(*) for each table.",
+    "result": "60 tables tb001..tb060 with opaque table names and opaque column names cl0001..cl0420. Row counts span 32 (tb041) to 1,056,320 (tb022). Nine independent source domains coexist in one SQLite file.",
+    "validation_method": "schema metadata inspection and row counts",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_school_schools",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT cl0043, cl0062, cl0065, cl0066, cl0075, COUNT(*) FROM tb003 GROUP BY 1,2,3,4,5; SELECT * FROM tb003 LIMIT 2;",
+    "result": "tb003 has 17,686 schools. cl0043 status: Active 11,708 / Closed 4,518 / Merged 1,448 / Pending 12. cl0062 charter flag: 0=14,588, 1=1,729, NULL=1,369. cl0065/cl0066 district type code/text: 54 Unified School District 10,190; 52 Elementary School District 4,378; 00 County Office of Education 1,703; 60 High School District 1,079. cl0075 virtual flag: N=9,703, P=1,046, F=69, NULL=6,868. Columns include cl0001 CDS code, cl0046 school name, cl0044 county, cl0045 district name, cl0047 street address, cl0050 city, cl0059 phone, cl0060 open date, cl0061 close date, cl0064 charter funding type, cl0067 ownership/school type code.",
+    "validation_method": "distinct-value and representative-row inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_school_sat",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT cl0031, COUNT(*) FROM tb002 GROUP BY cl0031; SELECT * FROM tb002 LIMIT 3;",
+    "result": "tb002 has 2,269 SAT records: cl0031 record type S=1,749 (school) and D=520 (district). Sample school row: enroll12=62, test takers=17, average reading=503, average math=546, average writing=505, number scoring >=1500=9. cl0030 is the CDS code, cl0032 school name, cl0033 district name, cl0034 county.",
+    "validation_method": "distinct-value and representative-row inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_school_frpm",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb001 LIMIT 2; SELECT cl0019, cl0020, cl0021, cl0022, cl0023, cl0024, cl0026, cl0028 FROM tb001 LIMIT 3;",
+    "result": "tb001 has 9,986 FRPM rows. cl0019 Enrollment (K-12), cl0020 Free Meal Count (K-12), cl0021 Percent Eligible Free (K-12) as a fraction (e.g. 0.5198), cl0022 FRPM Count (K-12), cl0023 Percent Eligible FRPM (K-12) (e.g. 0.6578), cl0024 Enrollment Ages 5-17, cl0026 Free Meal Count Ages 5-17, cl0028 FRPM Count Ages 5-17. cl0001 is the CDS code and cl0002 the academic year.",
+    "validation_method": "column-value inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_card_base",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb004 WHERE cl0089=1; SELECT cl0093, COUNT(*) FROM tb004 GROUP BY cl0093; SELECT cl0098, COUNT(*) FROM tb004 GROUP BY cl0098 ORDER BY 2 DESC LIMIT 8;",
+    "result": "tb004 has 56,822 card printings. Row 1: cl0090 artist 'Pete Venters', cl0093 border 'black', cl0098 color identity 'W', cl0107 frame version '2003', cl0117 promo flag 0, cl0137 card name 'Ancestor's Chosen', cl0141 type line 'Creature - Human Cleric', cl0143 power '4', cl0157 toughness '4', cl0153 subtypes 'Human,Cleric', cl0154 supertypes NULL, cl0156 oracle text, cl0151 set code '10E'. Border values black 49,729 / white 5,017 / gold 1,244 / silver 591 / borderless 241. Color identity values include G/B/R/W/U and comma combinations. Power includes numeric values, '*' and NULL.",
+    "validation_method": "distinct-value and representative-row inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_card_sets",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb007 LIMIT 2; SELECT cl0171, COUNT(*) FROM tb007 GROUP BY cl0171;",
+    "result": "tb007 has 551 sets. Set 'Tenth Edition': cl0169 code '10E', cl0166 base set size 383, cl0181 total set size 508, cl0137 set name, cl0179 release date 2007-07-13, cl0158 set type 'core'. cl0171 outside-US-only flag: 0=535, 1=16.",
+    "validation_method": "distinct-value and representative-row inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_card_languages",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT cl0163, COUNT(*) FROM tb005 GROUP BY cl0163; SELECT * FROM tb005 LIMIT 2; SELECT * FROM tb008 LIMIT 3;",
+    "result": "tb005 has 229,186 localized card printings. Row 1: language 'German', localized name 'Ausgewählter der Ahnfrau', localized text and type, card uuid 5f8287b1-.... tb008 has 1,210 set translations over 10 languages x 121 sets; a 10E Chinese Simplified row stores '核心系列第十版'.",
+    "validation_method": "distinct-value and representative-row inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_card_legality",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT cl0164, COUNT(*) FROM tb006 GROUP BY cl0164; SELECT cl0165, COUNT(*) FROM tb006 GROUP BY cl0165;",
+    "result": "tb006 has 427,907 legality rows. Formats include vintage, legacy, commander, duel, modern, penny, pauper, pioneer, premodern, historic, gladiator, standard, future, brawl, oldschool. Status values: Legal 424,958 / Banned 2,313 / Restricted 636.",
+    "validation_method": "distinct-value inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_card_rulings",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb009 LIMIT 3; SELECT COUNT(*) FROM tb009;",
+    "result": "tb009 has 87,769 rulings. cl0183 ruling date (e.g. 2007-07-15), cl0156 ruling text, cl0160 card uuid.",
+    "validation_method": "representative-row inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_card_foil_ids",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT (cl0094 IS NOT NULL) AS has94, (cl0095 IS NOT NULL) AS has95, COUNT(*) FROM tb004 GROUP BY 1,2;",
+    "result": "Sparse print-identifier columns: neither 9,771; only cl0095 18,139; only cl0094 3,851; both 25,061. Values are unique numeric-like strings. They are not counts and not present on every card.",
+    "validation_method": "non-null co-occurrence analysis",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_molecule_core",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM tb057/tb058/tb059/tb060; SELECT * FROM tb057 LIMIT 3; SELECT * FROM tb058 LIMIT 3; SELECT * FROM tb060 LIMIT 3;",
+    "result": "tb057 atoms 12,333; tb058 bonds 12,379; tb059 atom-bond connections 24,758; tb060 molecules 343. Atom ids are like 'TR000_1'; molecule ids 'TR000'; elements 'cl','c'. Bond type symbols '-' (single), '=' (double), '#' (triple). Carcinogenicity label '+' or '-'.",
+    "validation_method": "schema and representative-value inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_atom_id_format",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT cl0414, cl0415, cl0416 FROM tb057 LIMIT 5; SELECT substr(cl0414,7,1), COUNT(*) FROM tb057 GROUP BY 1 ORDER BY 2 DESC LIMIT 5;",
+    "result": "Atom id is '<moleculeId>_<atomIndex>', e.g. TR000_1, TR000_2. The molecule id sits in cl0415 and repeats the prefix before the underscore. The atom index follows the underscore (character position 7 for TR### ids).",
+    "validation_method": "pattern inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_superhero_core",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb050 LIMIT 3; SELECT cl0349, COUNT(*), MIN(cl0350), MAX(cl0350) FROM tb051 GROUP BY cl0349; SELECT * FROM tb045;",
+    "result": "tb050 has 750 superheroes with cl0337 name, cl0338 full name, FKs cl0339 gender, cl0340 eye colour, cl0341 hair colour, cl0342 skin colour, cl0343 alignment, cl0344 publisher, cl0345 race, cl0346 height (cm), cl0347 weight (kg). tb045 lists 6 attributes: Intelligence, Strength, Speed, Durability, Power, Combat. tb051 has 3,738 attribute values, 623 per attribute, range 5-100. tb052 has 167 superpowers; tb053 has 5,825 hero-power links.",
+    "validation_method": "distinct-value and representative-row inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_superhero_lookup",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb044; SELECT cl0333, COUNT(*) FROM tb046 GROUP BY cl0333 ORDER BY 2 DESC LIMIT 10; SELECT cl0334, COUNT(*) FROM tb047 GROUP BY cl0334; SELECT cl0335, COUNT(*) FROM tb048 GROUP BY cl0335; SELECT COUNT(DISTINCT cl0336) FROM tb049;",
+    "result": "Alignment: Good, Bad, Neutral, N/A. Colour lookup has 35 values including 'No Colour', 'Green', 'Amber'; it is shared by eye, hair and skin colour FKs. Gender: Male, Female (plus empty). Publisher: 25 values including Marvel Comics, DC Comics, Dark Horse Comics, Star Trek. Race: 61 distinct values.",
+    "validation_method": "distinct-value inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_thrombosis_patient",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb055 LIMIT 5; SELECT cl0366, COUNT(*) FROM tb055 GROUP BY cl0366; SELECT cl0360, COUNT(*) FROM tb055 GROUP BY cl0360 ORDER BY 2 DESC LIMIT 12;",
+    "result": "tb055 has 1,238 patients: cl0353 id, cl0366 sex (F 1,023 / M 202 / empty 13), cl0367 birthday, cl0368 diagnosis date, cl0369 admission (first visit) date, cl0360 diagnosis text. Diagnosis values include SLE, SJS, RA, BEHCET, PSS, MCTD, APS and combined strings such as 'SLE, SJS'; some carry a 'susp' qualifier.",
+    "validation_method": "distinct-value and representative-row inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_thrombosis_exam",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb054 LIMIT 5; SELECT cl0365, COUNT(*) FROM tb054 GROUP BY cl0365; SELECT cl0364, COUNT(*) FROM tb054 GROUP BY cl0364 ORDER BY 2 DESC LIMIT 12;",
+    "result": "tb054 has 806 examinations: cl0353 patient, cl0354 examination date, cl0360 diagnosis at examination, cl0364 observed symptoms (e.g. 'CNS lupus', 'brain infarction', 'thrombophlebitis', 'AMI'), cl0365 thrombosis degree 0=726, 1=57, 2=18, 3=5.",
+    "validation_method": "distinct-value and representative-row inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_thrombosis_lab",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT MIN/MAX/COUNT(DISTINCT) for cl0372..cl0413 FROM tb056; SELECT * FROM tb056 LIMIT 3;",
+    "result": "tb056 has 13,908 laboratory panels keyed by cl0353 patient and cl0371 date. Value ranges: cl0374 25-67,080 (LDH); cl0378 0.4-17.3 (uric acid); cl0382 37-568 (total cholesterol); cl0387 0.4-6.6 (red blood cells); cl0389 3.0-56.0 (hematocrit); cl0391 10.1-27.0 (prothrombin time); cl0399 1-1,765 (IgA); cl0400 0-1,573 (anti-cardiolipin); cl0407 qualitative anti-SM with values 'negative','0','1','2','8'.",
+    "validation_method": "per-column range and distinct-value inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_autoantibody_encoding",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT cl0407, COUNT(*) FROM tb056 GROUP BY cl0407 ORDER BY 2 DESC;",
+    "result": "cl0407 anti-SM: NULL 13,780, '0' 102, 'negative' 20, '1' 4, '8' 1, '2' 1. Values mix textual negativity with numeric positivity tokens; they are not a continuous measurement.",
+    "validation_method": "distinct-value inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_f1_core",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb025 LIMIT 2; SELECT * FROM tb024 LIMIT 2; SELECT * FROM tb027 LIMIT 2; SELECT * FROM tb023 LIMIT 3; SELECT COUNT(*) per table;",
+    "result": "tb023 circuits 72 (cl0239 id, cl0240 ref, cl0241 name, cl0242 city, cl0243 country, cl0244 lat, cl0245 lng); tb024 constructors 208 (cl0248 id, cl0249 ref, cl0241 name, cl0250 nationality, cl0247 url); tb025 drivers 840 (cl0251 id, cl0252 ref, cl0253 number, cl0255 forename, cl0256 surname, cl0257 dob, cl0250 nationality, cl0247 url); tb026 seasons 68 (cl0258 year); tb027 races 976 (cl0259 id, cl0258 year, cl0260 round, cl0239 circuit, cl0241 name, cl0261 date, cl0262 start time).",
+    "validation_method": "schema and representative-row inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_f1_results",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb035 LIMIT 3; SELECT cl0259, cl0251, cl0267, cl0262, cl0272 FROM tb035 LIMIT 5;",
+    "result": "tb035 results has 23,657 rows. cl0259 race, cl0251 driver, cl0248 constructor, cl0281 grid, cl0267 finish position, cl0282 position order, cl0264 points, cl0283 laps, cl0262 finish time, cl0272 milliseconds, cl0284 fastest lap number, cl0285 rank, cl0286 fastest lap time, cl0287 fastest lap speed, cl0279 status. Winner time has form '1:34:50.616'; other drivers have gaps like '+5.478'; retired entries may have NULL time.",
+    "validation_method": "representative-row inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_f1_pit",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb032 LIMIT 3;",
+    "result": "tb032 pit stops 6,070 rows: cl0259 race, cl0251 driver, cl0273 stop number, cl0271 lap, cl0262 clock time, cl0274 duration stored as decimal text (e.g. '23.227'), cl0272 duration in milliseconds.",
+    "validation_method": "representative-row inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_f1_qual",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb033 LIMIT 3;",
+    "result": "tb033 qualifying 7,397 rows: cl0275 id, cl0259 race, cl0251 driver, cl0248 constructor, cl0267 position, cl0276 Q1 time, cl0277 Q2 time, cl0278 Q3 time. Times are text like '1:26.572'.",
+    "validation_method": "representative-row inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_f1_lap",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb031 LIMIT 5; SELECT MIN(cl0271), MAX(cl0271) FROM tb031;",
+    "result": "tb031 lap times 420,369 rows: cl0259 race, cl0251 driver, cl0271 lap number (1-78), cl0267 running position, cl0262 lap time ('1:49.088'), cl0272 milliseconds.",
+    "validation_method": "representative-row inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_f1_standings",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb028 LIMIT 2; SELECT * FROM tb029 LIMIT 2; SELECT * FROM tb030 LIMIT 2;",
+    "result": "tb028 constructor results 11,082 rows (cl0263 id, cl0259 race, cl0248 constructor, cl0264 points). tb029 constructor standings 11,836 rows (points cl0264, position cl0267, position text cl0268, wins cl0269). tb030 driver standings 31,578 rows (cl0251 driver, points cl0264, position cl0267, wins cl0269).",
+    "validation_method": "representative-row inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_f1_status",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb034 ORDER BY cl0279 LIMIT 20; SELECT COUNT(*) FROM tb034;",
+    "result": "tb034 has 134 statuses: 1 Finished, 2 Disqualified, 3 Accident, 4 Collision, 5 Engine, ... plus '+1 Lap' .. 'Spun off'. Status id cl0279 is referenced from tb035.",
+    "validation_method": "distinct-value inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_club_core",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb036 LIMIT 3; SELECT cl0294, COUNT(*) FROM tb036 GROUP BY cl0294; SELECT COUNT(*) FROM tb039;",
+    "result": "tb036 events 42 rows: cl0288 id, cl0289 event name, cl0290 date, cl0291 type (Meeting, Guest Speaker, Game, Social, Community Service, Election, Budget, Registration), cl0292 notes, cl0294 status (Closed 18 / Open 13 / Planning 11). tb039 event membership has 326 rows linking cl0304 event to cl0305 member.",
+    "validation_method": "distinct-value inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_club_member",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb043 LIMIT 3; SELECT cl0325, COUNT(*) FROM tb043 GROUP BY cl0325; SELECT cl0326, COUNT(*) FROM tb043 GROUP BY cl0326;",
+    "result": "tb043 members 33 rows: cl0321 id, cl0322 first name, cl0323 last name, cl0324 email, cl0325 position (President, Member, ...), cl0326 t-shirt size (Large 13 / Medium 10 / X-Large 8 / Small 2), cl0327 phone, cl0328 zip, cl0329 major id. tb037 majors 113 rows: cl0295 id, cl0296 name, cl0297 department, cl0298 college.",
+    "validation_method": "distinct-value inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_club_finance",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb040 LIMIT 3; SELECT * FROM tb041 LIMIT 3; SELECT * FROM tb042 LIMIT 3; SELECT cl0316, COUNT(*) FROM tb041 GROUP BY cl0316;",
+    "result": "tb040 budgets 52 rows: cl0306 id, cl0307 category (Food 22 / Advertisement 15 / Speaker Gifts 7 / Parking 7 / Club T-Shirts 1), cl0308 spent (e.g. 67.81), cl0309 remaining (7.19), cl0310 budgeted amount (75), cl0311 status, cl0304 event. tb041 expenses 32 rows: cl0312 id, cl0313 description, cl0314 date, cl0315 cost, cl0316 approved ('true' 31 / NULL 1), cl0305 member, cl0317 budget. tb042 income 36 rows: cl0318 id, cl0319 date, cl0310 amount, cl0320 source ('Dues', ...), cl0305 member.",
+    "validation_method": "distinct-value and representative-row inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_zip_code",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb038 LIMIT 3; SELECT COUNT(*) FROM tb038;",
+    "result": "tb038 zip codes 41,877 rows: cl0299 zip, cl0291 type, cl0300 city, cl0301 county, cl0302 state, cl0303 state abbreviation.",
+    "validation_method": "representative-row inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_gas_core",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb010 LIMIT 3; SELECT cl0185, cl0186, COUNT(*) FROM tb010 GROUP BY 1,2; SELECT cl0189, cl0185, COUNT(*) FROM tb011 GROUP BY 1,2;",
+    "result": "tb010 customers 32,461 rows: cl0184 id, cl0185 segment (SME 26,763 / LAM 3,658 / KAM 2,040), cl0186 currency (CZK 30,459 / EUR 2,002). tb011 gas stations 5,716 rows: cl0187 id, cl0188 chain, cl0189 country (CZE 4,836 / SVK 880), cl0185 segment (Other 2,392 / Premium 1,428 / Noname 1,005 / Value for money 597 / Discount 294). tb012 products 630 rows: cl0190 id, cl0191 description.",
+    "validation_method": "distinct-value inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_gas_transactions",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb013 LIMIT 3; SELECT t.cl0187,s.cl0189,t.cl0190,p.cl0191 FROM tb013 t JOIN tb011 s ON s.cl0187=t.cl0187 JOIN tb012 p ON p.cl0190=t.cl0190 LIMIT 5;",
+    "result": "tb013 has 1,000 transactions: cl0192 id, cl0193 date (2012-08-23..2012-08-26), cl0194 time (00:07:00..23:20:00), cl0184 customer, cl0187 gas station, cl0190 product, cl0196 quantity (0-264), cl0197 total price (1.76-5,762.49). Joins resolve station country and product description.",
+    "validation_method": "join verification",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_gas_yearmonth",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb014 LIMIT 5; SELECT COUNT(*), MIN(cl0193), MAX(cl0193), MIN(cl0198), MAX(cl0198) FROM tb014;",
+    "result": "tb014 has 383,282 customer-month rows: cl0184 customer, cl0193 year-month text 'YYYYMM' (201112..201311), cl0198 consumption (e.g. 528.3; range -582,092.86..2,052,187.11).",
+    "validation_method": "range and representative-row inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_bank_core",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb015 LIMIT 3; SELECT cl0201, COUNT(*) FROM tb015 GROUP BY cl0201; SELECT * FROM tb016 LIMIT 3; SELECT cl0205, COUNT(*) FROM tb016 GROUP BY cl0205; SELECT * FROM tb017 LIMIT 3; SELECT * FROM tb018 LIMIT 3;",
+    "result": "tb015 accounts 4,500 rows: cl0199 id, cl0200 district, cl0201 frequency (POPLATEK MESICNE 4,167 / POPLATEK TYDNE 240 / POPLATEK PO OBRATU 93), cl0202 open date. tb016 cards 892 rows: cl0203 id, cl0204 disposition id, cl0205 type (classic 659 / junior 145 / gold 88), cl0206 issue date. tb017 clients 5,369 rows: cl0207 id, cl0208 gender (M 2,724 / F 2,645), cl0209 birth date, cl0200 district. tb018 dispositions 5,369 rows: cl0204 id, cl0207 client, cl0199 account, cl0205 type (OWNER 4,500 / DISPONENT 869).",
+    "validation_method": "distinct-value inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_bank_district",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb019 LIMIT 3; SELECT cl0211, COUNT(*) FROM tb019 GROUP BY cl0211; SELECT COUNT(*) FROM tb019;",
+    "result": "tb019 districts 77 rows: cl0200 id, cl0210 district name, cl0211 region (Prague, central Bohemia, south Bohemia, north Bohemia, east Bohemia, west Bohemia, south Moravia, north Moravia), cl0212 inhabitants (text), cl0218 urban ratio, cl0219 average salary, cl0220 unemployment 1995, cl0221 unemployment 1996, cl0222 entrepreneurs, cl0223 crimes 1995, cl0224 crimes 1996.",
+    "validation_method": "distinct-value and representative-row inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_bank_loan",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb020 LIMIT 3; SELECT cl0229, COUNT(*) FROM tb020 GROUP BY cl0229;",
+    "result": "tb020 loans 682 rows: cl0225 id, cl0199 account, cl0202 date, cl0226 amount, cl0227 duration months, cl0228 monthly payment, cl0229 status (C 403 / A 203 / D 45 / B 31).",
+    "validation_method": "distinct-value inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_bank_transactions",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb021 LIMIT 3; SELECT * FROM tb022 LIMIT 3; SELECT cl0205, COUNT(*) FROM tb022 GROUP BY cl0205; SELECT cl0235, COUNT(*) FROM tb022 GROUP BY cl0235 ORDER BY 2 DESC LIMIT 8;",
+    "result": "tb021 orders 6,471 rows: cl0230 id, cl0199 account, cl0231 target bank, cl0232 target account, cl0226 amount, cl0233 k_symbol (SIPO, UVER, POJISTNE, LEASING, empty). tb022 transactions 1,056,320 rows: cl0234 id, cl0199 account, cl0202 date, cl0205 type (VYDAJ 634,571 / PRIJEM 405,083 / VYBER 16,666), cl0235 operation (VYBER 434,918 / PREVOD NA UCET / VKLAD / PREVOD Z UCTU / VYBER KARTOU 8,036), cl0226 amount, cl0236 balance, cl0233 k_symbol, cl0237 bank, cl0238 counterparty account.",
+    "validation_method": "distinct-value inspection",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_column_reuse",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "Inspect each cl identifier across tables: SELECT DISTINCT cl0205 FROM tb016; tb018; tb022; SELECT DISTINCT cl0241/name FROM tb023, tb024, tb027; SELECT DISTINCT cl0137 FROM tb004, tb005, tb007;",
+    "result": "Opaque cl identifiers are reused across tables with different meanings. cl0205 holds card type in tb016, disposition type in tb018 and transaction type in tb022. cl0241 holds circuit name (tb023), constructor name (tb024) and race name (tb027). cl0137 holds card name (tb004), localized card name (tb005) and set name (tb007). cl0226 holds loan/order/transaction amounts. cl0185 holds customer segment (tb010) and station segment (tb011) with different value vocabularies.",
+    "validation_method": "cross-table column-context comparison",
+    "timestamp": "2026-11-20"
+  },
+  {
+    "id": "ev_school_cds_join",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT COUNT(*) FROM tb002 s JOIN tb003 c ON c.cl0001 = s.cl0030; SELECT COUNT(*) FROM tb001 f JOIN tb003 c ON c.cl0001 = f.cl0001;",
+    "result": "SAT records join to schools on the CDS code in 2,058 cases; FRPM records join on CDS as well. CDS codes are stored as fixed-width text and compare directly.",
+    "validation_method": "join verification",
+    "timestamp": "2026-11-20"
+  }
+]

@@ -60,7 +60,9 @@ def tolerant_match(pred, gold):
     if set(pred) == gset:
         return True
     gw, pw = width(gold), width(pred)
-    if gw is None or pw is None or pw <= gw or pw > MAX_PRED_COLS:
+    # 2026-11-20: equal width is allowed too (same columns in another order), as the definition above says;
+    # before this fix only wider predictions were permuted.
+    if gw is None or pw is None or pw < gw or pw > MAX_PRED_COLS:
         return False
     for cols in itertools.permutations(range(pw), gw):
         if {tuple(r[c] for c in cols) for r in pred} == gset:

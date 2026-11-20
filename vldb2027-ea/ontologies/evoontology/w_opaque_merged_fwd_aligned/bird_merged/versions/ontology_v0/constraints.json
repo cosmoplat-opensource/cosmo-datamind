@@ -1,0 +1,640 @@
+[
+  {
+    "id": "c_district_type_code",
+    "target": "district_type_code",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "elementary school district",
+      "unified school district",
+      "district type",
+      "district code"
+    ],
+    "severity": "warning",
+    "scope": "School district filtering",
+    "confidence": "high",
+    "description": "52 means Elementary School District, 54 Unified School District, 00 County Office of Education; other codes occur as well.",
+    "evidence": [
+      "ev04_school_codes"
+    ]
+  },
+  {
+    "id": "c_school_type_code",
+    "target": "school_type_code",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "intermediate school",
+      "middle school",
+      "unified school",
+      "K-12 school",
+      "school type"
+    ],
+    "severity": "warning",
+    "scope": "School type filtering",
+    "confidence": "high",
+    "description": "62 means Intermediate/Middle Schools (Public); 65 means K-12 Schools (Public).",
+    "evidence": [
+      "ev04_school_codes"
+    ]
+  },
+  {
+    "id": "c_special_school_code",
+    "target": "special_school_code",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "state special school",
+      "SSS",
+      "special school",
+      "traditional school"
+    ],
+    "severity": "warning",
+    "scope": "Special school filtering",
+    "confidence": "high",
+    "description": "SSS identifies State Special School records; TRAD is the ordinary traditional-school value.",
+    "evidence": [
+      "ev04_school_codes"
+    ]
+  },
+  {
+    "id": "c_virtual_status",
+    "target": "virtual_school_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "exclusively virtual",
+      "virtual school",
+      "virtual status"
+    ],
+    "severity": "warning",
+    "scope": "Virtual school filtering",
+    "confidence": "medium",
+    "description": "cl0075 takes F, N and P; workload evidence treats F as exclusively virtual. Confirm the code before filtering.",
+    "evidence": [
+      "ev04_school_codes"
+    ]
+  },
+  {
+    "id": "c_magnet_flag",
+    "target": "magnet_program_flag",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "magnet program",
+      "offers a magnet",
+      "magnet school"
+    ],
+    "severity": "warning",
+    "scope": "Magnet program filtering",
+    "confidence": "high",
+    "description": "cl0076 = 1 means the school offers a magnet program; 0 means it does not.",
+    "evidence": [
+      "ev04_school_codes"
+    ]
+  },
+  {
+    "id": "c_school_score_row_level",
+    "target": "school_test_score",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "count of schools",
+      "school with average score",
+      "SAT",
+      "test score"
+    ],
+    "severity": "block",
+    "scope": "Aggregating school test scores",
+    "confidence": "high",
+    "description": "tb002 mixes district aggregate rows (cl0031='D') with school rows (cl0031='S'); counting schools requires filtering to S rows, otherwise district rows are double counted.",
+    "evidence": [
+      "ev02_school_sample"
+    ]
+  },
+  {
+    "id": "c_magic_power_missing",
+    "target": "card_power",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "cards without power",
+      "power",
+      "no power",
+      "creature power"
+    ],
+    "severity": "block",
+    "scope": "Filtering or comparing card power",
+    "confidence": "high",
+    "description": "Power cl0143 is text; NULL (30624 cards) and '*' (429 cards) both mean the card has no power. Only the remaining rows hold a numeric power string.",
+    "evidence": [
+      "ev08_magic_power_missing"
+    ]
+  },
+  {
+    "id": "c_magic_language_grain",
+    "target": "card_language",
+    "constraint_type": "scope",
+    "trigger_keywords": [
+      "language",
+      "French",
+      "Italian",
+      "Korean",
+      "Portuguese",
+      "translated"
+    ],
+    "severity": "warning",
+    "scope": "Joining card language",
+    "confidence": "high",
+    "description": "Language appears in two grains: tb005 is one row per card printing in a language, while tb008 is one row per set and language. Joining both at once multiplies card counts.",
+    "evidence": [
+      "ev09_magic_language_values"
+    ]
+  },
+  {
+    "id": "c_magic_legality_status",
+    "target": "legality_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "banned",
+      "legal",
+      "restricted",
+      "play format",
+      "format"
+    ],
+    "severity": "block",
+    "scope": "Filtering card legality",
+    "confidence": "high",
+    "description": "Legality values are Legal, Banned and Restricted; 'banned card' requires cl0165='Banned' and a specific format in cl0164.",
+    "evidence": [
+      "ev07_magic_enums"
+    ]
+  },
+  {
+    "id": "c_magic_online",
+    "target": "card_flag",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "magic the gathering online",
+      "MTGO",
+      "online version"
+    ],
+    "severity": "warning",
+    "scope": "Checking online availability",
+    "confidence": "high",
+    "description": "A non-null set online code cl0177 means the set is available on Magic: The Gathering Online; NULL means no online set code is recorded.",
+    "evidence": [
+      "ev34_magic_set_identity"
+    ]
+  },
+  {
+    "id": "c_magic_border",
+    "target": "magic_card",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "white border",
+      "black border",
+      "borderless",
+      "border color"
+    ],
+    "severity": "warning",
+    "scope": "Filtering card border",
+    "confidence": "high",
+    "description": "Border values are black, white, silver, gold and borderless.",
+    "evidence": [
+      "ev07_magic_enums"
+    ]
+  },
+  {
+    "id": "c_segment_collision",
+    "target": "customer_segment",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "SME",
+      "LAM",
+      "KAM",
+      "segment",
+      "customer segment",
+      "station category"
+    ],
+    "severity": "block",
+    "scope": "Any segment analysis",
+    "confidence": "high",
+    "description": "cl0185 means SME/LAM/KAM customer segment in tb010 but gas-station category (Premium, Discount, Noname, Other, Value for money) in tb011. Always qualify the table.",
+    "evidence": [
+      "ev10_energy_customers",
+      "ev33_column_collisions"
+    ]
+  },
+  {
+    "id": "c_yearmonth_format",
+    "target": "year_month",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "yearmonth",
+      "year-month",
+      "2013",
+      "month",
+      "same month"
+    ],
+    "severity": "block",
+    "scope": "Filtering consumption by period",
+    "confidence": "high",
+    "description": "cl0193 in tb014 is a 6-character YYYYMM text key (e.g. 201309), not an ISO date. cl0193 in tb013 is an ISO date. A same-named column has different formats in different tables.",
+    "evidence": [
+      "ev11_energy_yearmonth",
+      "ev33_column_collisions"
+    ]
+  },
+  {
+    "id": "c_statement_frequency",
+    "target": "statement_frequency",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "monthly statement",
+      "weekly statement",
+      "issuance after transaction",
+      "statement frequency"
+    ],
+    "severity": "warning",
+    "scope": "Filtering accounts by statement frequency",
+    "confidence": "high",
+    "description": "POPLATEK MESICNE = monthly issuance, POPLATEK TYDNE = weekly issuance, POPLATEK PO OBRATU = issuance after transaction.",
+    "evidence": [
+      "ev12_bank_frequency"
+    ]
+  },
+  {
+    "id": "c_loan_status",
+    "target": "loan_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "loan status",
+      "running contract",
+      "still running",
+      "no issue"
+    ],
+    "severity": "warning",
+    "scope": "Filtering loans by status",
+    "confidence": "high",
+    "description": "Status codes are A, B, C and D; C means a running contract with no issue so far.",
+    "evidence": [
+      "ev14_bank_loans"
+    ]
+  },
+  {
+    "id": "c_transaction_codes",
+    "target": "transaction_operation",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "withdrawal",
+      "cash withdrawal",
+      "deposit",
+      "credit",
+      "debit",
+      "transfer"
+    ],
+    "severity": "block",
+    "scope": "Classifying bank transactions",
+    "confidence": "high",
+    "description": "Transaction direction cl0205 is PRIJEM (credit) or VYDAJ (debit); operation cl0235 distinguishes VYBER (cash withdrawal), VKLAD (deposit), PREVOD NA UCET and PREVOD Z UCTU (transfers) and VYBER KARTOU (card withdrawal).",
+    "evidence": [
+      "ev13_bank_transactions"
+    ]
+  },
+  {
+    "id": "c_f1_result_time",
+    "target": "race_result",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "finished the race",
+      "race completion",
+      "did not finish",
+      "time has value"
+    ],
+    "severity": "block",
+    "scope": "Determining whether a driver finished",
+    "confidence": "high",
+    "description": "A non-null result time cl0262 means the driver is classified with a time (finished or lapped); 17696 of 23657 rows are NULL. Status cl0279 gives a more precise reason.",
+    "evidence": [
+      "ev17_f1_result_time_null",
+      "ev18_f1_status"
+    ]
+  },
+  {
+    "id": "c_f1_nationality_text",
+    "target": "nationality",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "French driver",
+      "Japanese constructor",
+      "Netherlandic",
+      "Dutch",
+      "nationality"
+    ],
+    "severity": "warning",
+    "scope": "Filtering drivers or constructors by nationality",
+    "confidence": "medium",
+    "description": "Nationality is free text on both drivers and constructors and uses the same vocabulary; synonyms such as Netherlandic and Dutch both refer to the Netherlands.",
+    "evidence": [
+      "ev35_f1_nationality"
+    ]
+  },
+  {
+    "id": "c_f1_q3_format",
+    "target": "qualifying_result",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "Q3 time",
+      "qualifying",
+      "0:01:33",
+      "ranked 1st in qualifying"
+    ],
+    "severity": "warning",
+    "scope": "Filtering qualifying times",
+    "confidence": "medium",
+    "description": "Q1/Q2/Q3 times are text in m:ss.mmm form (e.g. 1:26.714); a value that looks like 0:01:33 must be matched as text, not as a numeric time.",
+    "evidence": [
+      "ev19_f1_qualifying"
+    ]
+  },
+  {
+    "id": "c_club_amount_columns",
+    "target": "club_measure",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "amount budgeted",
+      "amount spent",
+      "expense",
+      "funds received",
+      "income amount"
+    ],
+    "severity": "block",
+    "scope": "Summing club money",
+    "confidence": "high",
+    "description": "cl0310 is the budgeted amount in tb040 but the income amount in tb042; spent amounts are cl0308 in tb040 and cl0315 in tb041. Summing cl0310 without a table qualifier mixes budgeted and received money.",
+    "evidence": [
+      "ev21_club_amounts",
+      "ev33_column_collisions"
+    ]
+  },
+  {
+    "id": "c_club_event_datetime",
+    "target": "club_event",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "event date",
+      "closed from",
+      "held at",
+      "event"
+    ],
+    "severity": "warning",
+    "scope": "Filtering events by date",
+    "confidence": "high",
+    "description": "Event date cl0290 is an ISO date-time string with a T separator (e.g. 2020-03-10T12:00:00); date-range filters must handle the time component.",
+    "evidence": [
+      "ev20_club_sample"
+    ]
+  },
+  {
+    "id": "c_hero_colour_ids",
+    "target": "colour",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "blue eyes",
+      "blond hair",
+      "black eyes",
+      "no eye color",
+      "hair colour",
+      "skin colour"
+    ],
+    "severity": "block",
+    "scope": "Filtering heroes by colour",
+    "confidence": "high",
+    "description": "Eye, hair and skin colour are ids into tb046; 1 = No Colour, 2 = Amber, 7 = Blue, 13 = Grey. A hero with NULL colour id has no recorded colour, distinct from id 1 (No Colour).",
+    "evidence": [
+      "ev23_hero_lookups",
+      "ev24_hero_columns"
+    ]
+  },
+  {
+    "id": "c_hero_weight_missing",
+    "target": "superhero",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "missing weight",
+      "weight data",
+      "height",
+      "weight"
+    ],
+    "severity": "warning",
+    "scope": "Filtering heroes by physical measures",
+    "confidence": "high",
+    "description": "Weight cl0347 uses 0 or NULL for missing weight (172 and 64 heroes respectively); height cl0346 is NULL for 58 heroes. Treating 0 as a real weight is incorrect.",
+    "evidence": [
+      "ev25_hero_weight_missing"
+    ]
+  },
+  {
+    "id": "c_patient_lab_key",
+    "target": "laboratory_record",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "laboratory test",
+      "lab test",
+      "laboratory record",
+      "examination",
+      "patient laboratory"
+    ],
+    "severity": "block",
+    "scope": "Joining laboratory records to patients",
+    "confidence": "high",
+    "description": "tb054 cl0353 is declared as a patient foreign key, but only 70 of 806 laboratory rows match a tb055 patient id; tb056 examination rows match on all 13908 rows. Patient-level joins that include tb054 are unreliable.",
+    "evidence": [
+      "ev29_lab_patient_key"
+    ]
+  },
+  {
+    "id": "c_patient_lab_value_types",
+    "target": "c_reactive_protein",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "C-reactive protein",
+      "CRP",
+      "abnormal CRP",
+      "test value"
+    ],
+    "severity": "warning",
+    "scope": "Filtering numeric laboratory values",
+    "confidence": "high",
+    "description": "Lab columns mix numeric values, qualitative text ('+','-','2+','+-','negative','0') and NULL. CRP cl0401 is text, not numeric; anti-scl70/anti-SSB/anti-centromere accept 'negative' and '0' as normal.",
+    "evidence": [
+      "ev28_lab_ranges"
+    ]
+  },
+  {
+    "id": "c_lab_reference_ranges",
+    "target": "examination_record",
+    "constraint_type": "business_rule",
+    "trigger_keywords": [
+      "normal range",
+      "abnormal",
+      "high cholesterol",
+      "blood glucose",
+      "creatinine",
+      "CPK",
+      "IgG",
+      "IgM",
+      "urea nitrogen",
+      "GPT",
+      "albumin"
+    ],
+    "severity": "warning",
+    "scope": "Interpreting laboratory normality",
+    "confidence": "medium",
+    "description": "Workload evidence defines reference thresholds: GLU abnormal at >=180 (normal below); T-CHO normal <250 and high at >=250; CPK normal <250; creatinine abnormal at >=1.5; UN borderline 29; GPT normal <=30 and exceeding at >=60; ALB low <4; IgG normal >900 and <2000; IgM abnormal <=40 or >=400.",
+    "evidence": [
+      "ev28_lab_ranges"
+    ]
+  },
+  {
+    "id": "c_patient_type",
+    "target": "patient_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "in-patient",
+      "outpatient",
+      "male patient",
+      "patient"
+    ],
+    "severity": "warning",
+    "scope": "Filtering by patient type",
+    "confidence": "high",
+    "description": "cl0370 is '+' for in-patient and '-' for out-patient; some rows are empty strings.",
+    "evidence": [
+      "ev27_patient_dates"
+    ]
+  },
+  {
+    "id": "c_ana_representation",
+    "target": "ana_pattern",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "ANA pattern",
+      "ANA",
+      "pattern of only S",
+      "anti-nuclear"
+    ],
+    "severity": "warning",
+    "scope": "Filtering ANA patterns",
+    "confidence": "medium",
+    "description": "ANA pattern is recorded as text in tb054.cl0358 (values S, P, P,S, p); tb054.cl0357 is an integer code (0,4,16,64,256,1024,4096) and is not the pattern string. Workload evidence for Q99 cites cl0357='S', which conflicts with the observed integer domain.",
+    "evidence": [
+      "ev26_patient_sample"
+    ]
+  },
+  {
+    "id": "c_coagulation_positive",
+    "target": "coagulation_degree",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "positive degree of coagulation",
+      "degree of coagulation",
+      "coagulation"
+    ],
+    "severity": "warning",
+    "scope": "Determining positive coagulation",
+    "confidence": "high",
+    "description": "Three separate coagulation measures cl0361, cl0362 and cl0363 each use '+' or '-'; a positive result is any one of them equal to '+'.",
+    "evidence": [
+      "ev26_patient_sample"
+    ]
+  },
+  {
+    "id": "c_diagnosis_text",
+    "target": "disease_diagnosis",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "diagnosed with",
+      "most common disease",
+      "disease",
+      "SLE",
+      "diagnosis"
+    ],
+    "severity": "warning",
+    "scope": "Matching diagnoses",
+    "confidence": "medium",
+    "description": "Diagnosis text may list several comma-separated diseases and may include qualifiers such as 'susp'. Exact string matching misses combined diagnoses; substring matching is usually required.",
+    "evidence": [
+      "ev26_patient_sample"
+    ]
+  },
+  {
+    "id": "c_carcinogenic_flag",
+    "target": "carcinogenicity_status",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "carcinogenic",
+      "non-carcinogenic",
+      "molecule",
+      "cancer"
+    ],
+    "severity": "block",
+    "scope": "Filtering molecules by carcinogenicity",
+    "confidence": "high",
+    "description": "cl0420 = '+' means carcinogenic (152 molecules) and '-' means non-carcinogenic (191 molecules).",
+    "evidence": [
+      "ev31_molecule_carcinogenic"
+    ]
+  },
+  {
+    "id": "c_bond_type_symbol",
+    "target": "bond_type",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "single bond",
+      "double bond",
+      "triple bond",
+      "bond type"
+    ],
+    "severity": "block",
+    "scope": "Filtering by bond type",
+    "confidence": "high",
+    "description": "cl0418 uses '-' for single (10528 rows), '=' for double (1844) and '#' for triple (6).",
+    "evidence": [
+      "ev30_molecule_bonds"
+    ]
+  },
+  {
+    "id": "c_molecule_id_format",
+    "target": "molecule",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "molecule ID",
+      "bond ID",
+      "atom",
+      "TR001"
+    ],
+    "severity": "warning",
+    "scope": "Identifying molecules, atoms and bonds",
+    "confidence": "high",
+    "description": "Ids are text: molecule 'TR001', atom 'TR001_10', bond 'TR001_10_11'. The first token is the molecule id.",
+    "evidence": [
+      "ev32_molecule_ids"
+    ]
+  },
+  {
+    "id": "c_column_name_collisions",
+    "target": "school",
+    "constraint_type": "data_quality",
+    "trigger_keywords": [
+      "same column",
+      "column meaning",
+      "ambiguous column",
+      "cl0250",
+      "cl0262",
+      "cl0353",
+      "cl0330"
+    ],
+    "severity": "block",
+    "scope": "Any cross-domain query",
+    "confidence": "high",
+    "description": "Opaque column names are reused across unrelated merged domains (cl0185, cl0193, cl0241, cl0250, cl0262, cl0310, cl0330, cl0353, cl0360). A column name alone does not identify one business concept; always qualify by table and confirm with the domain term.",
+    "evidence": [
+      "ev33_column_collisions"
+    ]
+  }
+]

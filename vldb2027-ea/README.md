@@ -15,10 +15,20 @@ released predictions, and to rerun the experiments from scratch.
 | `results/v5/` | Post-hoc runs (Figure 7; Sections 4.2, 5, 6.1, 6.5): component ablation and 60-turn budget on BIRD-opaque-merged, and BIRD-readable-merged; same layout as `results/v4/predictions/`, plus `stats_v5.json`. |
 | `results/v4/` | Main matrix (Table 2, Figures 5, 6, 10, 11): `predictions/<setting>_<fold>/<condition>_r<repeat>/all_results.json.gz` (predicted SQL, turns, ontology tool calls) and `rescore.json` (per question: [strict, column-tolerant]); statistics and audits; `dr093_frozen_code/` (code behind Figure 9); `discarded_infra/` (the eight units discarded by the infrastructure audit of Section 3.2 and rerun; kept for inspection, used in no statistic). |
 | `results/v2/`, `results/v3/` | Per-question scores of the matched comparison (Table 1, Figure 3) and of the DataMind-chain runs (Figure 12); each system's own-scorer statistics in `results/v2/completion/`; raw outputs of the DataMind chain in `*_datamind_chain_outputs.tar.xz`. |
+| `external/arcwise_plat_sql/` | Corrected gold SQL of Arcwise-Plat-SQL (Jin et al., CC BY-SA 4.0; source in `SOURCE.txt`), used only for the annotation-sensitivity check of Section 7. |
 | `results/v3_validation/` | Validation runs used during development (numbers marked "validation" in Sections 6.1–6.2); their counts in `val_mg_summary.json`; the ontology tool responses of the converted Section 6.2 ontology in `mg_reactdm94_fwd_val_traces.tar.xz`. |
 
 Setting names: `R` readable BIRD Mini-Dev, `O` BIRD-opaque, `MG` BIRD-opaque-merged. Conditions: `none`, `doc`
-(documentation), `evo`, `evodoc`, `dm`, `dmdoc`, `M` (compiled DataMind ontology with check), `dm93` / `M93` (Section 6.2).
+(documentation), `evo`, `evodoc`, `dm`, `dmdoc`, `M` (compiled DataMind ontology with check), `dm93` / `M93` (Section 6.2),
+`evoA` / `dmA` (ontologies rebuilt from the input-aligned workload, Section 3.1), `evo_flat` (flat term dictionary,
+Section 6.1; under `results/v5/`).
+
+**Scorer correction (2026-11-20).** The first version of `rescore_v2.match_tolerant` tried column reorderings only when
+the prediction had more columns than the gold result, so an answer with the gold columns in another order was judged
+wrong. The released `rescore_v2.py` also permutes equal-width predictions; this changed 481 of 172,752 question-run
+judgments, all from wrong to correct, and every released score and statistic uses the corrected rule. Question 1031 of
+fold B→A (european_football_2) has a gold query that uses `DATETIME()`, so its result, and the judgments on it, depend
+on the day of scoring.
 
 ## Where each number comes from
 
@@ -40,6 +50,11 @@ Setting names: `R` readable BIRD Mini-Dev, `O` BIRD-opaque, `MG` BIRD-opaque-mer
 | Sections 6.3–6.5, Figures 10–11 | `analysis_sec6.py` | `results/v4/analysis_sec6.json` |
 | Section 6.6, Figure 12 | `rescore_v3.py`, `analysis_ablation_v3.py` | `results/v4/analysis_ablation_v3.json` |
 | Section 7 (prior-knowledge check) | `audit_prior_knowledge.py` | `results/v4/prior_knowledge_audit.json` |
+| Section 3.1 (input-aligned rebuild) | `benchmarks/opaque_merged/workload_aligned/`, `chain_aligned.sh` (`EVO_WORKLOAD_DIR`, `DM_WORKLOAD_DIR`, `*_ROOT_SUFFIX=_aligned`), `analysis_aligned_20261120.py` | `results/v4/aligned_rebuild_20261120.json` |
+| Table 3; Section 6.1 (final-query table recall, join matching by table and column); Section 6.2 (without the 61 validation questions); Figure 10 by source database; Figure 11 caption (turn limit) | `analysis_review_20261120.py` | `results/v4/analysis_review_20261120.json` |
+| Section 6.1 (flat term dictionary; Figure 7a, last row) | `make_flat_dictionary.py`, `chain_flat.sh`, `analysis_flat_dictionary_20261120.py` | `results/v5/flat_dictionary_stats_20261120.json` |
+| Section 6.1 (column codes in the store without mappings) | `analysis_nomap_columns_20261120.py` | `results/v5/nomap_columns_20261120.json` |
+| Section 7 (corrected gold queries) | `analysis_annotation_sensitivity.py` (expects the file of `external/arcwise_plat_sql/` under `ext/arcwise_plat_20261120/`) | `results/v4/annotation_sensitivity_20261120.json` |
 
 All intervals: 95% bootstrap, 10,000 resamples, fixed seeds in the scripts; database-cluster resampling for BIRD and
 BIRD-opaque, question-level resampling stratified by source database for the merged schema and the industrial databases.
@@ -110,7 +125,8 @@ and the databases. They are available from the authors on request.
 
 ## Licences
 
-Code: Apache-2.0, as the rest of this repository. Files derived from BIRD (splits, rewritten questions and gold SQL,
+Code: Apache-2.0, as the rest of this repository. `external/arcwise_plat_sql/` is redistributed under CC BY-SA 4.0
+with attribution to Jin et al. (https://github.com/uiuc-kang-lab/text_to_sql_benchmarks). Files derived from BIRD (splits, rewritten questions and gold SQL,
 re-keyed documentation) are distributed under BIRD's licence, CC BY-SA 4.0, with attribution to Li et al., "Can LLM
 Already Serve as a Database Interface? A BIg Bench for Large-Scale Database Grounded Text-to-SQLs", NeurIPS 2023.
 The EvoOntology patch applies to EvoOntology (MIT licence), https://github.com/ruc-datalab/EvoOntology.

@@ -71,7 +71,7 @@ def main():
             gq[f"{fold}:{i}"] = q["SQL"]
     for k, sql in gq.items():
         gold[k] = {"tables": C.mg_tables(sql), "cols": C.mg_columns(sql), "join_kw": C.has_join_kw(sql),
-                   "joins": C.mg_join_pairs(sql)}
+                   "joins": C.mg_join_pairs(sql), "joins_q": C.mg_join_pairs_qualified(sql)[0], "joins_unresolved": C.mg_join_pairs_qualified(sql)[1]}
     keys = list(db)
     assert all(k in gold for k in keys)
     res = {"n_questions": len(keys), "overall": pair_stats(acc, db, keys)}
@@ -129,8 +129,11 @@ def main():
                         cnt["join_runs"] += 1
                         cnt["join_runs_unparsable_response"] += unparsable
                         rel_ok = all(any(a in e and b in e for e in rels) for a, b in g["joins"])
+                        # 2026-11-20: both ends as table.column (a relation between other tables no longer counts)
+                        rel_ok_q = bool(g["joins_q"]) and not g["joins_unresolved"] and all(any(a in e and b in e for e in rels) for a, b in g["joins_q"])
                         any_ok = all(a in codes_c and b in codes_c for a, b in g["joins"])
                         groups += ["join_relation_covered" if rel_ok else "join_relation_not_covered",
+                                   "join_relation_covered_tablecol" if rel_ok_q else "join_relation_not_covered_tablecol",
                                    "join_cols_anywhere" if any_ok else "join_cols_not_anywhere"]
                     if not resp:
                         groups.append("no_ontology_response")
@@ -161,6 +164,8 @@ def main():
         "surfaced": "all gold codes occur in the concatenated texts of the question-run's ontology tool responses",
         "join_relation_covered": "every gold join equality has a relation element (results[*].relations[*] or a mapping "
                                  "join_path) of some response whose JSON text contains both column codes",
+        "join_relation_covered_tablecol": "(2026-11-20) as join_relation_covered, but both ends must appear as table.column "
+                                          "(aliases of the gold SQL resolved); gold joins with an unresolved end are not covered",
         "gain_vs_none": "question-run correctness minus the same question's mean no-ontology correctness (3 runs)",
         "ci": "95% bootstrap, questions resampled within source database (stats_v4.boot seed 20261107), ratio of sums"}
     OUT.write_text(json.dumps(res, ensure_ascii=False, indent=1))

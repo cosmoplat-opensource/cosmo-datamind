@@ -92,6 +92,8 @@ def make_workload(direction, dbs, path, S="full"):
         f = (EXP / "variants" / "opaque" / "questions" / sr / "construction" / f"{db}.json") if S == "opaque" \
             else (EXP / "variants" / S / "workload" / sr / f"{db}.json") if S in ("opaque_merged", "readable_merged") \
             else DATA / sr / "construction" / f"{db}.json"
+        if os.environ.get("DM_WORKLOAD_DIR"):     # 2026-11-20 输入对齐的重建:另指工作负载目录(<dir>/<splitroot>/<db>.json)
+            f = Path(os.environ["DM_WORKLOAD_DIR"]) / sr / f"{db}.json"
         qs = json.loads(f.read_text())["questions"]
         # 与 EvoOntology 的 construction_workload 信息对等:问题 + evidence(有则附),不含 SQL、答案
         wl[db] = [q["question"] + (f"\nEvidence: {q['evidence']}" if q.get("evidence") else "") for q in qs]

@@ -22,7 +22,7 @@ OUT.mkdir(parents=True, exist_ok=True)
 INK, INK2, MUTED, GRID, AXIS, SURF = "#0b0b0b", "#52514e", "#898781", "#e1e0d9", "#c3c2b7", "#ffffff"
 C = {"none": "#898781", "doc": "#2a78d6", "evo": "#eb6834", "dm": "#1baf7a", "M": "#eda100"}
 NAME = {"none": "No ontology", "doc": "Documentation", "evo": "EvoOntology", "dm": "DataMind", "M": "Compiled + check"}
-SET = {"R": "Readable", "O": "Opaque", "MG": "Merged (60 tables)"}
+SET = {"R": "Readable", "O": "Opaque", "MG": "Opaque merged"}
 COL, TXT = 3.33, 7.0            # column and text width in inches (acmart sigconf)
 
 plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 8, "axes.labelsize": 8.5, "axes.titlesize": 9,
@@ -139,7 +139,7 @@ def pitfalls():
         ax.plot([d], [y], "o", ms=5.5, color=C["doc"], mec="white", mew=1.0, zorder=4)
         ax.text(hi + 0.5, y, f"{d:+.1f}".replace("-", "−"), va="center", ha="left", fontsize=7, color=INK)
     ax.axvline(0, color=AXIS, lw=0.9, zorder=1)
-    ax.set_yticks(ys); ax.set_yticklabels([r[0] for r in rows])
+    ax.set_yticks(ys); ax.set_yticklabels([r[0] for r in rows]); ax.set_ylim(-0.6, len(rows) - 0.4)
     ax.set_xlim(-8, 16); ax.set_xticks([-5, 0, 5, 10, 15]); ax.set_xlabel("DataMind − EvoOntology (points)")
     clean(ax, grid="x")
     ax.spines["left"].set_visible(False); ax.tick_params(axis="y", length=0)
@@ -168,7 +168,7 @@ def benchmarks():
     card(4.95, 2.05, "tab01", opq, mono=True)
     card(8.2, 2.05, "tb001", mrg, mono=True)
     arrow(a, (4.08, 1.75), (4.9, 1.75), color=INK2); arrow(a, (7.08, 1.75), (8.15, 1.75), color=INK2)
-    for x, w, lab in ((0.05, 3.95, "original"), (4.95, 2.05, "BIRD-opaque"), (8.2, 2.05, "BIRD-opaque-merged")):
+    for x, w, lab in ((0.05, 3.95, "BIRD (original names)"), (4.95, 2.05, "BIRD-opaque"), (8.2, 2.05, "BIRD-opaque-merged")):
         a.text(x + w / 2, 3.72, lab, ha="center", va="bottom", fontsize=7, color=INK2)
     # right: 9 databases into one 60-table schema
     mm = json.loads((EXP / "variants/opaque_merged/mapping.json").read_text())
@@ -288,7 +288,7 @@ def coverage():
     a.barh(ys, vals, height=0.58, color=C["M"], zorder=3)
     for y, v in zip(ys, vals):
         a.text(v + 3, y, f"{v:.0f}%", ha="left", va="center", fontsize=7, color=INK)
-    a.set_xlim(0, 125); a.set_xticks([0, 50, 100]); a.set_xlabel("Excerpt has all\ngold tables (%)")
+    a.set_xlim(0, 125); a.set_xticks([0, 50, 100]); a.set_xlabel("Excerpt expands all\ngold tables (%)")
     a.set_yticks(ys); a.set_yticklabels(labs)
     h = 0.34
     for y, S in zip(ys, ("R", "O", "MG")):
@@ -335,7 +335,7 @@ def rebuilt():
 def ablations():
     ab = load("analysis_ablation_v3.json")
     comps = [("noex", "exemplars"), ("nodict", "column documentation"), ("noexdict", "exemplars and documentation"),
-             ("norel", "relations"), ("nosem", "concepts and caveats"), ("nolex", "Chinese names"),
+             ("norel", "relations"), ("nosem", "concepts and caveats"), ("nolex", "Chinese labels"),
              ("nomet", "metrics and value catalogues"), ("gaterel", "relation checks on the SQL"),
              ("intent", "intent cross-check")]
     fig, axs = plt.subplots(1, 2, figsize=(TXT, 1.95), sharey=True)
@@ -353,7 +353,7 @@ def ablations():
         ax.set_title(title.format(d["full_chain"]["tolerant"]), color=INK, pad=3)
         ax.set_xlim(-11, 5.5); ax.set_xticks([-10, -5, 0, 5])
         clean(ax, grid="x"); ax.spines["left"].set_visible(False); ax.tick_params(axis="y", length=0)
-    axs[0].set_yticks(ys); axs[0].set_yticklabels(["– " + c[1] for c in comps])
+    axs[0].set_yticks(ys); axs[0].set_yticklabels(["without " + c[1] for c in comps])
     fig.subplots_adjust(wspace=0.08)
     fig.supxlabel("Change when removed (points); filled: interval excludes 0", fontsize=8, color=INK2,
                   x=(axs[0].get_position().x0 + axs[1].get_position().x1) / 2, y=-0.06)
@@ -436,11 +436,15 @@ def perdb():
 def v5():
     st = json.loads((EXP / "runs/v5/stats_v5.json").read_text())
     cd = st["conditions"]
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(TXT, 2.05), gridspec_kw={"width_ratios": [1.15, 1]})
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(TXT, 2.3), gridspec_kw={"width_ratios": [1.15, 1]})
     # (a) merged schema with opaque names: which part of EvoOntology's ontology matters, and the turn budget
     rows = [("MG:none", "No ontology", C["none"]), ("MG:none_t60", "No ontology, 60 turns", C["none"]),
             ("MG:evo", "EvoOntology", C["evo"]), ("MG:evo_t60", "EvoOntology, 60 turns", C["evo"]),
-            ("MG:evo_norel", "EvoOntology w/o relations", C["evo"]), ("MG:evo_nomap", "EvoOntology w/o mappings", C["evo"])]
+            ("MG:evo_norel", "EvoOntology w/o relations", C["evo"]), ("MG:evo_nomap", "EvoOntology w/o mappings", C["evo"]),
+            ("MG:evo_flat", "Flat term dictionary", C["evo"])]
+    fl = json.loads((EXP / "runs/v5/flat_dictionary_stats_20261120.json").read_text())
+    cd = dict(cd, **{"MG:evo_flat": {"tolerant": fl["acc"]["flat"], "tolerant_ci": fl["acc_ci"]["flat"],
+                                     "tolerant_by_fold": fl["acc_by_fold"]["flat"]}})
     ys = list(range(len(rows)))[::-1]
     for y, (k, lab, col) in zip(ys, rows):
         v = cd[k]; lo, hi = v["tolerant_ci"]
@@ -451,7 +455,12 @@ def v5():
     ax1.axvline(cd["MG:doc"]["tolerant"], color=C["doc"], lw=1.0, ls=(0, (3, 2)), zorder=1)
     ax1.text(cd["MG:doc"]["tolerant"] + 0.6, len(rows) - 0.35, "Documentation", rotation=90, ha="left", va="top", fontsize=7.0, color=C["doc"])
     ax1.set_yticks(ys); ax1.set_yticklabels([r[1] for r in rows]); ax1.tick_params(axis="y", length=0)
-    ax1.set_ylim(-0.6, len(rows) - 0.3); ax1.set_xlim(15, 60)
+    ax1.set_ylim(-0.6, len(rows) - 0.3); ax1.set_xlim(2, 60); ax1.set_xticks([10, 20, 30, 40, 50, 60])
+    from matplotlib.lines import Line2D
+    ax1.legend(handles=[Line2D([], [], ls="", marker="o", ms=4.5, color=MUTED, mec="white", label="both folds"),
+                        Line2D([], [], ls="", marker="^", ms=3.6, color="white", mec=MUTED, label="fold A→B"),
+                        Line2D([], [], ls="", marker="s", ms=3.4, color="white", mec=MUTED, label="fold B→A")],
+               loc="upper left", fontsize=6.3, frameon=False, handletextpad=0.1, columnspacing=0.8, borderaxespad=0.1)
     ax1.set_xlabel("Test accuracy, merged schema, opaque names (%)")
     ax1.set_title("a  Ablation and turn budget", loc="left", fontsize=8, fontweight="bold")
     clean(ax1, grid=None); ax1.spines["left"].set_visible(False); ax1.tick_params(axis="y", length=0)

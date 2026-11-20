@@ -1,0 +1,212 @@
+[
+  {
+    "id": "ev01_table_inventory",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT count(*) FROM tb001..tb060",
+    "result": "60 physical tables tb001-tb060; row counts range 3 (tb047) to 1,056,320 (tb022). The file merges nine independent analytical domains into one opaque schema."
+  },
+  {
+    "id": "ev02_school_sample",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb003 LIMIT 2; SELECT * FROM tb001 LIMIT 2; SELECT * FROM tb002 LIMIT 2",
+    "result": "tb003 holds California school directory records (status, county, district, street/city/zip/state, grade span, virtual and magnet flags, latitude/longitude). tb001 holds school-academic-year enrollment (cl0019) and free/reduced-price meal counts (cl0020). tb002 holds SAT summary rows (cl0031='D' district aggregate or 'S' school row)."
+  },
+  {
+    "id": "ev03_school_join_rates",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT count(*) FROM tb001 a JOIN tb003 s ON a.cl0001=s.cl0001; SELECT count(*) FROM tb002 t JOIN tb003 s ON t.cl0030=s.cl0001",
+    "result": "tb001.cl0001 joins tb003.cl0001 on all 9986 rows; tb002.cl0030 joins tb003.cl0001 on 2058 of 2269 rows (district-level rows do not join). tb001 has 9986 rows and tb003 17686 rows."
+  },
+  {
+    "id": "ev04_school_codes",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT cl0065,cl0066,count(*) FROM tb003 GROUP BY 1,2; SELECT cl0067,cl0068,count(*) FROM tb003 GROUP BY 1,2; SELECT cl0069,count(*) FROM tb003 GROUP BY 1; SELECT cl0075,count(*) FROM tb003 GROUP BY 1; SELECT cl0076,count(*) FROM tb003 GROUP BY 1",
+    "result": "cl0065: '52'=Elementary School District (4378), '54'=Unified School District (10190), '00'=County Office of Education. cl0067: '62'=Intermediate/Middle Schools (Public) (1652), '65'=K-12 Schools (Public) (438). cl0069: TRAD 10103, SSS 3. cl0075: N 9703, P 1046, F 69. cl0076: 0 10091, 1 519."
+  },
+  {
+    "id": "ev05_magic_card_sample",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb004 LIMIT 1; SELECT * FROM tb005 LIMIT 1; SELECT * FROM tb006 LIMIT 1; SELECT * FROM tb007 LIMIT 1; SELECT * FROM tb008 LIMIT 1; SELECT * FROM tb009 LIMIT 1",
+    "result": "tb004 is the English card record (artist cl0090, border cl0093, converted mana cost cl0099, EDHRec rank cl0101, content-warning flag cl0110, story spotlight cl0121, name cl0137, power cl0143, rarity cl0147, subtype cl0153, oracle text cl0156, set code cl0151). tb005 holds per-language printings (language cl0163, localized name cl0137, text cl0156, flavor cl0105). tb006 holds per-format legality (format cl0164, status cl0165). tb007 is the set record. tb008 holds localized set names. tb009 holds card rulings."
+  },
+  {
+    "id": "ev06_magic_join_rates",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT count(*) FROM tb005 f JOIN tb004 c ON f.cl0160=c.cl0160; ... tb006, tb009, tb008-tb007, tb004-tb007",
+    "result": "tb005 229170/229186, tb006 427835/427907 and tb009 87769/87769 link to tb004 via cl0160; tb008 1210/1210 links to tb007 via cl0151=tb007.cl0169; tb004.cl0151 joins tb007.cl0169 on all 56822 rows."
+  },
+  {
+    "id": "ev07_magic_enums",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT cl0164,count(*) FROM tb006 GROUP BY 1; SELECT cl0165,count(*) FROM tb006 GROUP BY 1; SELECT cl0147,count(*) FROM tb004 GROUP BY 1; SELECT cl0093,count(*) FROM tb004 GROUP BY 1",
+    "result": "Formats include vintage/legacy/commander/duel/modern/pauper/pioneer/gladiator. Legality status: Legal 424958, Banned 2313, Restricted 636. Rarity: common 20745, rare 17626, uncommon 15251, mythic 3200. Border: black 49729, borderless 241, gold 1244, silver 591, white 5017."
+  },
+  {
+    "id": "ev08_magic_power_missing",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT count(*) FROM tb004 WHERE cl0143 IS NULL; SELECT count(*) FROM tb004 WHERE cl0143='*'",
+    "result": "30624 cards have NULL power and 429 have power '*', 25043 have a numeric string. NULL and '*' both denote a card without power/toughness."
+  },
+  {
+    "id": "ev09_magic_language_values",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT cl0163,count(*) FROM tb005 GROUP BY 1 ORDER BY 2 DESC; SELECT cl0163,count(*) FROM tb008 GROUP BY 1",
+    "result": "tb005 languages: Japanese 31226, French 29301, German 28891, Italian 28698, Spanish 28639, Portuguese (Brazil) 25641, Chinese Simplified 20106, Russian 15878, Chinese Traditional 11106, Korean 9692. tb008 carries the same language names for localized set titles (121 each)."
+  },
+  {
+    "id": "ev10_energy_customers",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT cl0185,count(*) FROM tb010 GROUP BY 1; SELECT cl0186,count(*) FROM tb010 GROUP BY 1; SELECT cl0185,count(*) FROM tb011 GROUP BY 1",
+    "result": "tb010.cl0185 (customer segment): SME 26763, LAM 3658, KAM 2040. tb010.cl0186 (payment currency): CZK 30459, EUR 2002. tb011.cl0185 is a different concept (gas-station category: Noname 1005, Other 2392, Premium 1428, Discount 294)."
+  },
+  {
+    "id": "ev11_energy_yearmonth",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT cl0193,count(*) FROM tb014 GROUP BY 1 ORDER BY 1 LIMIT 3; SELECT min(cl0193),max(cl0193) FROM tb013",
+    "result": "tb014.cl0193 is a TEXT year-month key such as '201201', '201202', range 201112-201311; tb013.cl0193 (different table) is an ISO date such as '2012-08-24' with a separate time column cl0194."
+  },
+  {
+    "id": "ev12_bank_frequency",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT cl0201,count(*) FROM tb015 GROUP BY 1; SELECT cl0208,count(*) FROM tb017 GROUP BY 1",
+    "result": "tb015.cl0201 statement frequency: POPLATEK MESICNE 4167 (monthly), POPLATEK TYDNE 240 (weekly), POPLATEK PO OBRATU 93 (after transaction). tb017.cl0208 client sex: F 1023, M 202, '' 13."
+  },
+  {
+    "id": "ev13_bank_transactions",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT cl0205,count(*) FROM tb022 GROUP BY 1; SELECT cl0235,count(*) FROM tb022 GROUP BY 1 ORDER BY 2 DESC LIMIT 8; SELECT cl0205,count(*) FROM tb018 GROUP BY 1",
+    "result": "tb022.cl0205: PRIJEM 405083 (credit), VYDAJ 634571 (debit), VYBER 16666. tb022.cl0235 operation: VYBER 434918 (cash withdrawal), PREVOD NA UCET 208283, VKLAD 156743 (deposit), PREVOD Z UCTU 65226, VYBER KARTOU 8036. tb018.cl0205 disposition: OWNER 4500, DISPONENT 869."
+  },
+  {
+    "id": "ev14_bank_loans",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT cl0229,count(*) FROM tb020 GROUP BY 1; SELECT cl0210,cl0211 FROM tb019 LIMIT 2",
+    "result": "tb020.cl0229 loan status: A 203, B 31, C 403, D 45 (C = running contract, ok so far). tb019 district holds cl0210 district name and cl0211 region, e.g. 'Hl.m. Praha'/'Prague', 'Benesov'/'central Bohemia'."
+  },
+  {
+    "id": "ev15_bank_salary",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT min(cl0219),max(cl0219),avg(cl0219) FROM tb019",
+    "result": "District average salary cl0219 ranges 8110-12541 with mean 9031.7 across 77 districts."
+  },
+  {
+    "id": "ev16_f1_sample",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb023 LIMIT 1; SELECT * FROM tb025 LIMIT 1; SELECT * FROM tb027 LIMIT 1; SELECT * FROM tb035 LIMIT 1; SELECT * FROM tb033 LIMIT 1",
+    "result": "tb023 circuit (cl0239 id, cl0240 ref, cl0241 name, cl0242 location, cl0243 country, cl0244 lng, cl0245 lat). tb024 constructor (cl0248 id, cl0249 ref, cl0241 name, cl0250 nationality). tb025 driver (cl0251 id, cl0252 ref, cl0253 number, cl0254 code, cl0255 forename, cl0256 surname, cl0257 dob, cl0250 nationality). tb027 race (cl0259 id, cl0258 year, cl0260 round, cl0239 circuit, cl0241 name, cl0261 date). tb035 results (cl0280 id, cl0259 race, cl0251 driver, cl0248 constructor, cl0264 points, cl0262 time, cl0272 ms, cl0284 fastest lap, cl0286 fastest lap time, cl0279 status)."
+  },
+  {
+    "id": "ev17_f1_result_time_null",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT count(*) FROM tb035 WHERE cl0262 IS NULL",
+    "result": "17696 of 23657 result rows have NULL race time (not classified with a finishing time); 5961 have a time value."
+  },
+  {
+    "id": "ev18_f1_status",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT cl0279,cl0265 FROM tb034 ORDER BY cl0279 LIMIT 12; SELECT cl0279,count(*) FROM tb035 GROUP BY 1 ORDER BY 2 DESC LIMIT 6",
+    "result": "tb034 maps status ids to text: 1 Finished, 2 Disqualified, 3 Accident, 5 Engine, 11 '+1 Lap', 12 '+2 Laps'. tb035 status frequencies: 1=5966, 11=3265, 5=1971, 12=1486."
+  },
+  {
+    "id": "ev19_f1_qualifying",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT cl0278 FROM tb033 WHERE cl0278 IS NOT NULL LIMIT 5; SELECT cl0258,count(*) FROM tb027 GROUP BY 1 ORDER BY 1 DESC LIMIT 3",
+    "result": "tb033 qualifying has cl0276=q1, cl0277=q2, cl0278=q3 in 'm:ss.mmm' text, e.g. '1:26.714'. Race year cl0258 is an integer on tb027 (latest 2017)."
+  },
+  {
+    "id": "ev20_club_sample",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb036 LIMIT 2; SELECT * FROM tb043 LIMIT 1; SELECT * FROM tb037 LIMIT 1",
+    "result": "tb036 events (cl0288 id, cl0289 name, cl0290 ISO datetime, cl0291 type, cl0293 location, cl0294 status). tb043 members (cl0321 id, cl0322 first name, cl0323 last name, cl0324 email, cl0325 member type, cl0326 t-shirt size, cl0329 major id). tb037 majors (cl0295 id, cl0296 major, cl0297 department, cl0298 college)."
+  },
+  {
+    "id": "ev21_club_amounts",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb040 LIMIT 2; SELECT * FROM tb041 LIMIT 2; SELECT * FROM tb042 LIMIT 2",
+    "result": "tb040 budget rows carry cl0307 category, cl0308 spent amount, cl0310 budgeted amount. tb041 expense rows carry cl0313 description, cl0314 date, cl0315 amount. tb042 income rows carry cl0319 date, cl0310 amount and cl0320 source (Dues, Fundraising, School Appropration, Sponsorship)."
+  },
+  {
+    "id": "ev22_club_joins",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT count(*) FROM tb040 b JOIN tb036 e ON b.cl0304=e.cl0288; ...",
+    "result": "tb040 52/52 join tb036 via cl0304; tb039 326/326 joins both tb036 (cl0304) and tb043 (cl0305); tb041 32/32 joins tb040 via cl0317 and tb043 via cl0305; tb043.cl0329 joins tb037 on 32/33 members."
+  },
+  {
+    "id": "ev23_hero_lookups",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT cl0330,cl0331 FROM tb044; SELECT cl0330,cl0332 FROM tb045; SELECT cl0330,cl0333 FROM tb046 WHERE cl0330 IN (1,7,13); SELECT cl0330,cl0334 FROM tb047; SELECT cl0330,cl0335 FROM tb048 WHERE cl0330 IN (3,13)",
+    "result": "tb044 alignment: 1 Good, 2 Bad, 3 Neutral, 4 N/A. tb045 attribute: 1 Intelligence, 2 Strength, 3 Speed, 4 Durability, 5 Power, 6 Combat. tb046 colour: 1='No Colour', 2='Amber', 7='Blue', 13='Grey'. tb047 gender: 1 Male, 2 Female, 3 N/A. tb048 publisher: 3='Dark Horse Comics', 13='Marvel Comics'."
+  },
+  {
+    "id": "ev24_hero_columns",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb050 LIMIT 3; SELECT cl0349,count(*) FROM tb051 GROUP BY 1",
+    "result": "tb050 hero: cl0330 id, cl0337 name, cl0338 full name, cl0339 gender, cl0340 eye colour, cl0341 hair colour, cl0342 skin colour, cl0343 race, cl0344 publisher, cl0345 alignment, cl0346 height, cl0347 weight. All three colour columns and publisher/gender/race/alignment are lookup ids. tb051 hero_attribute has cl0348 hero, cl0349 attribute, cl0350 value, 623 rows per attribute."
+  },
+  {
+    "id": "ev25_hero_weight_missing",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT count(*) FROM tb050 WHERE cl0347=0; SELECT count(*) FROM tb050 WHERE cl0347 IS NULL; SELECT count(*) FROM tb050 WHERE cl0346 IS NULL",
+    "result": "172 heroes have weight 0 and 64 have NULL weight (missing weight); 58 heroes have NULL height. 159 heroes share identical eye/hair/skin colour ids."
+  },
+  {
+    "id": "ev26_patient_sample",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT * FROM tb055 LIMIT 5; SELECT * FROM tb054 LIMIT 2; SELECT * FROM tb056 LIMIT 2",
+    "result": "tb055 patient: cl0353 id, cl0366 sex, cl0367 birthday, cl0368 date, cl0369 date, cl0370 in/out-patient flag, cl0360 diagnosis. tb054 laboratory record: cl0353 id, cl0354 date, cl0355/cl0356 numeric antibody measures, cl0357 integer ANA code, cl0358 ANA pattern text, cl0360 diagnosis, cl0361-cl0363 coagulation degrees, cl0364 symptoms, cl0365 thrombosis level. tb056 examination: cl0353 patient, cl0371 exam date, numeric lab columns cl0372-cl0413."
+  },
+  {
+    "id": "ev27_patient_dates",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT count(*) FROM tb055 WHERE cl0368 IS NULL; SELECT count(*) FROM tb055 WHERE cl0369 IS NULL; SELECT count(*) FROM tb055 WHERE cl0366='M'",
+    "result": "tb055 has 1238 patients; cl0368 NULL for 216, cl0369 NULL for 251. Both dates are mostly >= birthday. Sex: F 1023, M 202, '' 13. In/out-patient cl0370: '+' 488, '-' 713, '' 34."
+  },
+  {
+    "id": "ev28_lab_ranges",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT count(*),min(c),max(c) FROM tb056 WHERE c IS NOT NULL (per column)",
+    "result": "tb056 non-null ranges: GPT cl0373 1-4780; albumin cl0377 1.0-5.8; urea nitrogen cl0379 0-152; creatinine cl0380 0.1-17.1; total cholesterol cl0382 37-568; CPK cl0384 0-10835; glucose cl0385 62-499; platelets cl0390 5-5844; IgG cl0398 3-6510; IgA cl0399 1-1765; IgM cl0400 0-1573; CRP cl0401 is text ('+','-','2+','+-', numeric strings, NULL)."
+  },
+  {
+    "id": "ev29_lab_patient_key",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT count(*) FROM tb054 l JOIN tb055 p ON l.cl0353=p.cl0353; SELECT count(*) FROM tb054",
+    "result": "Only 70 of 806 tb054 rows match a tb055 patient id, although the schema declares cl0353 as a foreign key. tb056 joins tb055 on all 13908 rows. Patient-level joins between tb054 and tb055/tb056 are therefore unreliable."
+  },
+  {
+    "id": "ev30_molecule_bonds",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT cl0418,count(*) FROM tb058 GROUP BY 1; SELECT * FROM tb059 LIMIT 3",
+    "result": "tb058 bond type cl0418: '-' 10528 (single), '=' 1844 (double), '#' 6 (triple), NULL 1. tb059 links a bond (cl0417) to two atoms (cl0414, cl0419), two rows per bond."
+  },
+  {
+    "id": "ev31_molecule_carcinogenic",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT cl0420,count(*) FROM tb060 GROUP BY 1; SELECT cl0416,count(*) FROM tb057 GROUP BY 1 ORDER BY 2 DESC",
+    "result": "tb060 cl0420: '+' 152 (carcinogenic), '-' 191 (non-carcinogenic). Element symbols in tb057.cl0416: h 5518, c 4605, o 1043, n 480, cl 429, s 113, br 47, na 35, p 31, f 11, i 6, si 4."
+  },
+  {
+    "id": "ev32_molecule_ids",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT cl0415 FROM tb060 LIMIT 3; SELECT cl0417 FROM tb058 LIMIT 3; SELECT cl0414 FROM tb057 LIMIT 3",
+    "result": "Molecule ids are text such as 'TR000','TR001','TR006'; atom ids are 'TR001_10'; bond ids are 'TR001_10_11' (molecule, atom index, atom index)."
+  },
+  {
+    "id": "ev33_column_collisions",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "Compare distinct values of same-named columns across tables",
+    "result": "Opaque column names are reused across unrelated merged domains: cl0185 is customer segment in tb010 but station category in tb011; cl0193 is a date in tb013 but a yyyymm key in tb014; cl0250 is driver nationality in tb025 and constructor nationality in tb024; cl0241 is circuit/constructor/race name in tb023/tb024/tb027; cl0262 is race start time in tb027, lap time in tb031, pit time in tb032 and result time in tb035; cl0310 is budgeted amount in tb040 and income amount in tb042; cl0360 is diagnosis in both tb054/tb055; cl0353 keys unrelated id spaces in tb054 vs tb055; cl0330 is the shared key of several small lookup tables."
+  },
+  {
+    "id": "ev34_magic_set_identity",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT cl0169,cl0176,cl0167,cl0177 FROM tb007 WHERE cl0169 IN ('ARC','10E','C20'); SELECT * FROM tb008 WHERE cl0151='10E' LIMIT 3",
+    "result": "tb007 set code cl0169, set name cl0176, block cl0167 (e.g. 'Commander', 'Core Set'), online/MTGO code cl0177, release date cl0179. tb008 maps set code cl0151 and language cl0163 to localized set name cl0182; e.g. 10E in Chinese Simplified = '核心系列第十版'."
+  },
+  {
+    "id": "ev35_f1_nationality",
+    "source": "bird_merged.sqlite (read-only)",
+    "query": "SELECT cl0250,count(*) FROM tb025 GROUP BY 1 ORDER BY 2 DESC LIMIT 8; SELECT cl0250,count(*) FROM tb024 GROUP BY 1",
+    "result": "Driver nationality cl0250 is free text: British 162, American 157, Italian 99, French 72, German 49, Brazilian 31, Argentine 24, Swiss 23. Constructor nationality uses the same text vocabulary (British 85, American 39, Italian 29, Japanese 5)."
+  }
+]

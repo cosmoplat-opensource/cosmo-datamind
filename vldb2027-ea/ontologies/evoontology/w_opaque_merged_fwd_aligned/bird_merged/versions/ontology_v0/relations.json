@@ -1,0 +1,382 @@
+[
+  {
+    "id": "rel_race_result_race",
+    "source": "race",
+    "relation_type": "composition",
+    "target": "race_result",
+    "description": "A race is composed of its driver results; a result cannot exist without a race.",
+    "evidence": [
+      "ev16_f1_sample"
+    ]
+  },
+  {
+    "id": "rel_qualifying_race",
+    "source": "race",
+    "relation_type": "composition",
+    "target": "qualifying_result",
+    "description": "A race is composed of its qualifying results.",
+    "evidence": [
+      "ev19_f1_qualifying"
+    ]
+  },
+  {
+    "id": "rel_lap_time_race",
+    "source": "race",
+    "relation_type": "composition",
+    "target": "lap_time",
+    "description": "Lap times belong to a race.",
+    "evidence": [
+      "ev16_f1_sample"
+    ]
+  },
+  {
+    "id": "rel_race_circuit",
+    "source": "race",
+    "relation_type": "association",
+    "target": "circuit",
+    "description": "A race is hosted at one circuit; circuit data exists independently of the race.",
+    "evidence": [
+      "ev16_f1_sample"
+    ]
+  },
+  {
+    "id": "rel_driver_result",
+    "source": "driver",
+    "relation_type": "composition",
+    "target": "race_result",
+    "description": "A driver's competitive record is composed of race results.",
+    "evidence": [
+      "ev16_f1_sample"
+    ]
+  },
+  {
+    "id": "rel_constructor_result",
+    "source": "constructor",
+    "relation_type": "composition",
+    "target": "race_result",
+    "description": "A constructor's competitive record is composed of race results.",
+    "evidence": [
+      "ev16_f1_sample"
+    ]
+  },
+  {
+    "id": "rel_driver_name_derivation",
+    "source": "driver",
+    "relation_type": "derivation",
+    "target": "driver_full_name",
+    "description": "Full driver name is derived from forename and surname.",
+    "evidence": [
+      "ev16_f1_sample"
+    ]
+  },
+  {
+    "id": "rel_points_derivation",
+    "source": "race_result",
+    "relation_type": "derivation",
+    "target": "race_points",
+    "description": "Race points are a per-result measure awarded to drivers and constructors.",
+    "evidence": [
+      "ev16_f1_sample"
+    ]
+  },
+  {
+    "id": "rel_driver_nationality",
+    "source": "driver",
+    "relation_type": "association",
+    "target": "nationality",
+    "description": "Driver nationality is recorded as free text rather than a country reference.",
+    "evidence": [
+      "ev35_f1_nationality"
+    ]
+  },
+  {
+    "id": "rel_card_set_composition",
+    "source": "card_set",
+    "relation_type": "composition",
+    "target": "magic_card",
+    "description": "A set is composed of card printings; a card printing belongs to a set.",
+    "evidence": [
+      "ev06_magic_join_rates"
+    ]
+  },
+  {
+    "id": "rel_card_printing_composition",
+    "source": "magic_card",
+    "relation_type": "composition",
+    "target": "card_printing",
+    "description": "A card is composed of its per-language printings.",
+    "evidence": [
+      "ev06_magic_join_rates"
+    ]
+  },
+  {
+    "id": "rel_card_legality_composition",
+    "source": "magic_card",
+    "relation_type": "composition",
+    "target": "card_format_legality",
+    "description": "A card's legality is composed of one row per play format.",
+    "evidence": [
+      "ev06_magic_join_rates"
+    ]
+  },
+  {
+    "id": "rel_set_localization",
+    "source": "card_set",
+    "relation_type": "composition",
+    "target": "set_localization",
+    "description": "A set is composed of localized set names per language.",
+    "evidence": [
+      "ev06_magic_join_rates"
+    ]
+  },
+  {
+    "id": "rel_school_enrollment",
+    "source": "school",
+    "relation_type": "composition",
+    "target": "school_enrollment",
+    "description": "A school is composed of school-year enrollment records.",
+    "evidence": [
+      "ev03_school_join_rates"
+    ]
+  },
+  {
+    "id": "rel_school_test_score",
+    "source": "school",
+    "relation_type": "composition",
+    "target": "school_test_score",
+    "description": "A school's test-score summary belongs to the school.",
+    "evidence": [
+      "ev03_school_join_rates"
+    ]
+  },
+  {
+    "id": "rel_free_rate_derivation",
+    "source": "school_enrollment",
+    "relation_type": "derivation",
+    "target": "eligible_free_rate",
+    "description": "The eligible free meal rate is derived from meal-eligible and enrollment counts.",
+    "evidence": [
+      "ev02_school_sample"
+    ]
+  },
+  {
+    "id": "rel_excellence_derivation",
+    "source": "school_test_score",
+    "relation_type": "derivation",
+    "target": "excellence_rate",
+    "description": "The excellence rate is derived from benchmark and tested counts.",
+    "evidence": [
+      "ev02_school_sample"
+    ]
+  },
+  {
+    "id": "rel_consumption_customer",
+    "source": "energy_customer",
+    "relation_type": "composition",
+    "target": "monthly_consumption",
+    "description": "A customer's consumption history is composed of monthly consumption records.",
+    "evidence": [
+      "ev11_energy_yearmonth"
+    ]
+  },
+  {
+    "id": "rel_fuel_tx_customer",
+    "source": "energy_customer",
+    "relation_type": "composition",
+    "target": "fuel_transaction",
+    "description": "A customer's transactions are composed of fuel purchase transactions.",
+    "evidence": [
+      "ev11_energy_yearmonth"
+    ]
+  },
+  {
+    "id": "rel_fuel_tx_station",
+    "source": "fuel_transaction",
+    "relation_type": "association",
+    "target": "gas_station",
+    "description": "A fuel transaction occurs at a gas station.",
+    "evidence": [
+      "ev11_energy_yearmonth"
+    ]
+  },
+  {
+    "id": "rel_disposition_account",
+    "source": "bank_account",
+    "relation_type": "composition",
+    "target": "account_disposition",
+    "description": "An account is composed of client dispositions (owner or dispositor).",
+    "evidence": [
+      "ev13_bank_transactions"
+    ]
+  },
+  {
+    "id": "rel_transaction_account",
+    "source": "bank_account",
+    "relation_type": "composition",
+    "target": "account_transaction",
+    "description": "An account is composed of its transactions.",
+    "evidence": [
+      "ev13_bank_transactions"
+    ]
+  },
+  {
+    "id": "rel_loan_account",
+    "source": "bank_account",
+    "relation_type": "composition",
+    "target": "loan",
+    "description": "A loan is granted on one account.",
+    "evidence": [
+      "ev14_bank_loans"
+    ]
+  },
+  {
+    "id": "rel_account_district",
+    "source": "bank_account",
+    "relation_type": "association",
+    "target": "bank_district",
+    "description": "An account is opened in a district, which carries region and salary information.",
+    "evidence": [
+      "ev14_bank_loans"
+    ]
+  },
+  {
+    "id": "rel_budget_event",
+    "source": "club_event",
+    "relation_type": "composition",
+    "target": "event_budget",
+    "description": "An event is composed of budget lines by category.",
+    "evidence": [
+      "ev22_club_joins"
+    ]
+  },
+  {
+    "id": "rel_attendance_event",
+    "source": "club_event",
+    "relation_type": "composition",
+    "target": "event_attendance",
+    "description": "An event is composed of attendance links to members.",
+    "evidence": [
+      "ev22_club_joins"
+    ]
+  },
+  {
+    "id": "rel_member_name_derivation",
+    "source": "club_member",
+    "relation_type": "derivation",
+    "target": "member_full_name",
+    "description": "Full member name is derived from first name and last name.",
+    "evidence": [
+      "ev20_club_sample"
+    ]
+  },
+  {
+    "id": "rel_member_major",
+    "source": "club_member",
+    "relation_type": "association",
+    "target": "academic_major",
+    "description": "A member declares one academic major with department and college.",
+    "evidence": [
+      "ev22_club_joins"
+    ]
+  },
+  {
+    "id": "rel_hero_power",
+    "source": "superhero",
+    "relation_type": "composition",
+    "target": "hero_power",
+    "description": "A superhero is composed of superpower links.",
+    "evidence": [
+      "ev23_hero_lookups"
+    ]
+  },
+  {
+    "id": "rel_hero_attribute",
+    "source": "superhero",
+    "relation_type": "composition",
+    "target": "hero_attribute",
+    "description": "A superhero is composed of attribute scores.",
+    "evidence": [
+      "ev24_hero_columns"
+    ]
+  },
+  {
+    "id": "rel_power_lookup",
+    "source": "superpower",
+    "relation_type": "composition",
+    "target": "hero_power",
+    "description": "A superpower definition is referenced by hero-power links.",
+    "evidence": [
+      "ev23_hero_lookups"
+    ]
+  },
+  {
+    "id": "rel_hero_publisher",
+    "source": "superhero",
+    "relation_type": "association",
+    "target": "publisher",
+    "description": "A superhero is published by a comic publisher.",
+    "evidence": [
+      "ev23_hero_lookups"
+    ]
+  },
+  {
+    "id": "rel_hero_colour",
+    "source": "superhero",
+    "relation_type": "association",
+    "target": "colour",
+    "description": "Eye, hair and skin colour all reference the shared colour lookup.",
+    "evidence": [
+      "ev24_hero_columns"
+    ]
+  },
+  {
+    "id": "rel_patient_lab",
+    "source": "patient",
+    "relation_type": "association",
+    "target": "laboratory_record",
+    "description": "Laboratory records are nominally patient-level, but the key populations only partially overlap; treat the link as unreliable.",
+    "evidence": [
+      "ev29_lab_patient_key"
+    ]
+  },
+  {
+    "id": "rel_patient_exam",
+    "source": "patient",
+    "relation_type": "composition",
+    "target": "examination_record",
+    "description": "A patient is composed of examination records.",
+    "evidence": [
+      "ev29_lab_patient_key"
+    ]
+  },
+  {
+    "id": "rel_atom_molecule",
+    "source": "molecule",
+    "relation_type": "composition",
+    "target": "atom",
+    "description": "A molecule is composed of atoms.",
+    "evidence": [
+      "ev32_molecule_ids"
+    ]
+  },
+  {
+    "id": "rel_bond_molecule",
+    "source": "molecule",
+    "relation_type": "composition",
+    "target": "chemical_bond",
+    "description": "A molecule is composed of chemical bonds.",
+    "evidence": [
+      "ev30_molecule_bonds"
+    ]
+  },
+  {
+    "id": "rel_bond_atom_link",
+    "source": "chemical_bond",
+    "relation_type": "composition",
+    "target": "bond_atom",
+    "description": "A bond is composed of its two atom links.",
+    "evidence": [
+      "ev30_molecule_bonds"
+    ]
+  }
+]

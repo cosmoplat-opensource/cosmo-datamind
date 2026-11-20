@@ -114,6 +114,8 @@ def prompt_for(db, track, S, direction, ws, dbpath):
         wl = (EXP / "variants" / "opaque_workload" / sr / f"{db}.json") if S == "opaque" \
             else (EXP / "variants" / S / "workload" / sr / f"{db}.json") if S in ("opaque_merged", "readable_merged") \
             else BIRD / "data" / sr / "construction_workload" / f"{db}.json"
+        if os.environ.get("EVO_WORKLOAD_DIR"):    # 2026-11-20 输入对齐的重建:另指工作负载目录(<dir>/<splitroot>/<db>.json)
+            wl = Path(os.environ["EVO_WORKLOAD_DIR"]) / sr / f"{db}.json"
         return wl, f"""使用 evoontology 插件的 build-ontology skill,为数据库 {db} 构建初始本体层 ontology_v0。
 - 项目模式:Fixed-Split Mode;划分已冻结,不要重新划分。
 - 数据源:只读 SQLite 文件 {dbpath}(可用 sqlite3 命令行只读查询;不得修改数据库)。
@@ -135,9 +137,10 @@ workspace:{ws}。数据名用 {db};表名和列名沿用 SQLite 实际拼写。
 def run(db, track, S, direction, force=False, max_turns=180, timeout=3 * 3600):
     if track == "w" and direction not in SPLITROOT:
         raise SystemExit("track w 需要 --dir fwd|rev|ind_fwd|ind_rev")
-    name = root_name(track, S, direction)
+    sfx = os.environ.get("EVO_ROOT_SUFFIX", "")   # 另存一套构建(如输入对齐的重建),不覆盖原构建
+    name = root_name(track, S, direction) + sfx
     ws = EXP / "runs" / "v2" / "evo" / name / db
-    logs = EXP / "runs" / "v2" / "build_logs" / (f"evo-{track}__{S}" + (f"_{direction}" if track == "w" else ""))
+    logs = EXP / "runs" / "v2" / "build_logs" / (f"evo-{track}__{S}" + (f"_{direction}" if track == "w" else "") + sfx)
     logs.mkdir(parents=True, exist_ok=True)
     meta_f = logs / f"{db}.meta.json"
     dbpath = db_dir(S) / db / f"{db}.sqlite"

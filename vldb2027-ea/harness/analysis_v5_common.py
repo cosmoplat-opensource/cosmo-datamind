@@ -174,6 +174,33 @@ def mg_join_pairs(sql):
     return pairs
 
 
+def mg_join_pairs_qualified(sql):
+    """Column-equality join conditions with both ends resolved to table.column (aliases from FROM/JOIN ... [AS] x).
+    Returns (pairs, unresolved): pairs of sorted ("tbNNN.clNNNN", "tbNNN.clNNNN"); unresolved counts equalities whose
+    ends could not be tied to a table. Added 2026-11-20: matching on the column code alone counts a relation to another
+    table as covering the join, because joined key columns in the merged schema often share one code."""
+    s = strip_literals(sql)
+    alias = {}
+    for m in re.finditer(r"\b(tb\d{3})\b(?:\s+AS)?\s+(?!ON\b|WHERE\b|INNER\b|LEFT\b|JOIN\b|GROUP\b|ORDER\b|LIMIT\b|AND\b|ON\b)(\w+)", s, re.I):
+        alias[m.group(2).lower()] = m.group(1)
+    tables = set(re.findall(r"\b(tb\d{3})\b", s))
+    pairs, unresolved = set(), 0
+    for m in re.finditer(r"(?:\b(\w+)\.)?(cl\d{4})\s*=\s*(?:\b(\w+)\.)?(cl\d{4})\b", s):
+        ends = []
+        for q, c in ((m.group(1), m.group(2)), (m.group(3), m.group(4))):
+            t = None
+            if q:
+                t = q if re.fullmatch(r"tb\d{3}", q) else alias.get(q.lower())
+            elif len(tables) == 1:
+                t = next(iter(tables))
+            ends.append(f"{t}.{c}" if t else None)
+        if None in ends:
+            unresolved += 1
+        else:
+            pairs.add(tuple(sorted(ends)))
+    return pairs, unresolved
+
+
 def has_join_kw(sql):
     return bool(re.search(r"\bjoin\b", strip_literals(sql), re.I))
 
