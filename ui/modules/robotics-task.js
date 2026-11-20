@@ -45,25 +45,42 @@
     return missing.length?missing.join('；')+'。':null;
   }
   const prefix = '/api/robotics/tasks';
-  async function json(fetcher,url,options){
-    const response=await fetcher(url,options);let body;
-    try {body=await response.json();} catch(_){throw new Error(`请求失败（HTTP ${response.status}），请稍后重试。`);}
-    if(!response.ok) throw Object.assign(new Error(body.error?.message || `请求失败（HTTP ${response.status}）`),{code:body.error?.code});
-    return body;
+  async function json(fetcher,url,options={}){
+    const abort=new AbortController();let rejectPending;
+    const canceled=new Promise((_,reject)=>{rejectPending=reject;});
+    const cancel=error=>{rejectPending(error);abort.abort();};
+    const onAbort=()=>cancel(Object.assign(Error('请求已取消。'),{name:'AbortError'}));
+    options.signal?.addEventListener('abort',onAbort,{once:true});
+    if(options.signal?.aborted)onAbort();
+    // Cover both headers and body; a late response must not revive an expired operation.
+    const timer=global.setTimeout(()=>cancel(Object.assign(Error('请求超时，请重试以核对本次操作结果。'),{code:'request_timeout'})),30000);
+    try{
+      return await Promise.race([canceled,(async()=>{
+        const response=await fetcher(url,{...options,signal:abort.signal});let body;
+        try {body=await response.json();} catch(_){throw new Error(`请求失败（HTTP ${response.status}），请稍后重试。`);}
+        if(!response.ok)throw Object.assign(new Error(body.error?.message || `请求失败（HTTP ${response.status}）`),{code:body.error?.code});
+        return body;
+      })()]);
+    }finally{global.clearTimeout(timer);options.signal?.removeEventListener('abort',onAbort);}
   }
   function createController(options={}){
     const fetcher=options.fetch || global.fetch.bind(global), emit=options.onChange || (()=>{}),
       requestId=options.requestId || (()=>global.dmRequestId());
-    let state={session:null,answers:{},noteDrafts:{},notice:null,error:null,busy:false}, generation=0,dead=false,lastRequest=null;
+    let state={session:null,answers:{},noteDrafts:{},notice:null,error:null,busy:false}, generation=0,dead=false,lastRequest=null,pending=null;
     const snapshot=()=>copy(state), notify=()=>{if(!dead)emit(snapshot());};
+    async function request(url,options={}){
+      const abort=new AbortController();pending=abort;
+      try{return await json(fetcher,url,{...options,signal:abort.signal});}
+      finally{if(pending===abort)pending=null;}
+    }
     function savedAnswers(){for(const gap of state.session?.gaps||[])
       if(gap.saved_answer && !state.answers[gap.id])state.answers[gap.id]=copy(gap.saved_answer);}
     function identity(payload){const key=JSON.stringify(payload);if(lastRequest?.key!==key)lastRequest={key,id:requestId()};return lastRequest.id;}
     async function load(ref,sid,admission){
-      const token=++generation;state={session:null,answers:{},noteDrafts:{},notice:null,error:null,busy:true};notify();
+      const token=++generation;pending?.abort();state={session:null,answers:{},noteDrafts:{},notice:null,error:null,busy:true};notify();
       try{
-        const result=sid?await json(fetcher,prefix+'/'+encodeURIComponent(sid)):
-          await json(fetcher,prefix,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...ref,request_id:admission || requestId()})});
+        const result=sid?await request(prefix+'/'+encodeURIComponent(sid)):
+          await request(prefix,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...ref,request_id:admission || requestId()})});
         if(dead || token!==generation)return;
         if(sid&&result.session_id===sid&&ref&&result.ontology_id===ref.ontology_id&&result.mode===ref.mode&&result.version_id!==ref.version_id)
           throw Object.assign(new Error('该任务已使用其它本体版本，请查看当前任务后继续。'),{code:'task_scope_changed'});
@@ -85,7 +102,7 @@
       if(operation==='messages'){state.session.candidate=null;state.session.tree=null;state.answers={};state.noteDrafts={};}
       notify();
       try{
-        const result=await json(fetcher,prefix+'/'+encodeURIComponent(original.session_id)+'/'+operation,
+        const result=await request(prefix+'/'+encodeURIComponent(original.session_id)+'/'+operation,
           {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
         if(dead || token!==generation)return;
         if(result.session_id!==original.session_id || result.ontology_id!==original.ontology_id)throw new Error('返回的任务身份不匹配。');
@@ -124,7 +141,7 @@
       setNote(kind,text){state.noteDrafts[kind]=text;},
       saveNotes:()=>submit('notes',{notes:Object.entries(state.noteDrafts).filter(([,text])=>text.trim()).map(([kind,text])=>({kind,text}))}),
       dismissError(){state.error=null;notify();},
-      dispose(){dead=true;generation++;}
+      dispose(){dead=true;generation++;pending?.abort();}
     };
   }
   let active=null;
@@ -286,7 +303,10 @@
       const noteValue=kind=>state.noteDrafts[kind]??(s.adaptation_notes||[]).filter(n=>n.kind===kind&&n.version_id===s.version_id&&JSON.stringify(n.task)===JSON.stringify(s.task)).at(-1)?.text??'';
       const saveError=error?.operation==='completion' && gaps.length;
       const configError=error?.operation==='configurations' && editing;
-      const alert=error?`<p class="rt-error" role="alert" tabindex="-1">${saveError?'保存未成功：':''}${esc(error.message)}</p>${error.code==='application_not_ready'?`<a class="ra-button" href="${esc(link(s.ontology_id,s.version_id,s.mode)+'&assess=1&task='+encodeURIComponent(s.session_id))}">检查当前任务的应用要求</a>`:''}${!state.error&&s.status==='error'&&s.task&&['ontology_validation_failed','generation_error'].includes(error.code)?`<button type="button" class="ra-button" data-retry-generation ${busy?'disabled':''}>按当前配置重试生成</button>`:''}`:'';
+      const savePrefix=saveError?(error.code==='request_timeout'?'保存结果待确认：':'保存未成功：'):'';
+      const retryGeneration=(state.error?.code==='request_timeout'&&state.error.operation==='generate')||
+        (!state.error&&s.status==='error'&&s.task&&['ontology_validation_failed','generation_error'].includes(error?.code));
+      const alert=error?`<p class="rt-error" role="alert" tabindex="-1">${savePrefix}${esc(error.message)}</p>${error.code==='application_not_ready'?`<a class="ra-button" href="${esc(link(s.ontology_id,s.version_id,s.mode)+'&assess=1&task='+encodeURIComponent(s.session_id))}">检查当前任务的应用要求</a>`:''}${retryGeneration?`<button type="button" class="ra-button" data-retry-generation ${busy?'disabled':''}>按当前配置重试生成</button>`:''}`:'';
       const stillCurrent=()=>{const current=view.controller.snapshot().session;return active===view && current?.session_id===s.session_id && current?.revision===s.revision;};
       host.innerHTML=`<header class="rt-heading"><div><span class="rt-eyebrow">机器人任务 · ${s.mode==='demo'?'独立演示':'行为树生成'}</span><h3>${esc(s.asset_name||'行为树生成')}</h3><p data-testid="task-current-version">当前：<strong>${Number.isInteger(s.version_number)?'版本 '+s.version_number:'编号加载中'}</strong></p></div><button type="button" class="ghost" data-new>新任务</button></header>
         ${matching?checkMarkup(displayCheck,{inline:true}):''}

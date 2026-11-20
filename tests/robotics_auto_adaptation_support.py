@@ -5,7 +5,7 @@ from domains.robotics.modeling import vocabulary
 from tests.robotics_design_support import Harness, proposals, reply
 
 
-def custom_candidate(root, monkeypatch, *, rename=True):
+def custom_candidate(root, monkeypatch, *, rename=True, request_id='submit'):
     frozen = vocabulary.load_vocabulary()
     frozen['sha256'] = 'a' * 64
     frozen['version'] = 'synthetic-custom-vocabulary'
@@ -28,7 +28,7 @@ def custom_candidate(root, monkeypatch, *, rename=True):
     with monkeypatch.context() as patch:
         patch.setattr(vocabulary, 'load_vocabulary', lambda: deepcopy(frozen))
         h.runtime.responses.append(reply(classes))
-        state = h.submit(description='合成自定义术语：调用点用于表达技能调用')
+        state = h.submit(description='合成自定义术语：调用点用于表达技能调用', request_id=request_id)
         h.run(); state = h.get(state)
         state = h.service.confirm_classes(state['session_id'], request_id='confirm-classes',
             expected_revision=state['revision'], snapshot_sha256=state['snapshot_sha256'])

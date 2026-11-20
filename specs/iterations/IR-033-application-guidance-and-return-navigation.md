@@ -8,6 +8,7 @@
 - [x] AGN-02：默认一个“完善本体”入口，可信定义缺项与自定义术语分别进入合适流程，保留其它处理能力。
 - [x] AGN-03：修复后退时重新检查并恢复有效操作，禁止自动修复循环、重复任务和绕过过期保护。
 - [x] AGN-04：覆盖任务内嵌检查及其它导航入口，记录同类问题的实际排查范围与结果。
+- [x] TASK-NET-01：任务读取、保存和生成超时后恢复操作，离开取消请求；保留输入、请求编号与修订号，显式重试不重复保存或生成。
 
 ## 任务
 
@@ -62,3 +63,31 @@ python scripts/scenario_bench.py
 浏览器套件分别启动独立进程，避免同步 Playwright 运行时相互嵌套。
 未改变构建语义、SSE 步骤或数据查询规则；本轮机器人场景由上述浏览器和契约用例覆盖，不向数据查询合成库添加无关场景。
 逐次日志与截图仅保留本地或 CI；公开复现使用上述版本、差异和命令。
+
+## 本轮回归补充
+
+验证基于 `3f0056da8d3441f1d4ce7b2a355c67525e42dc05` 与本次差异；复现前记录版本并保存 `git diff --cached`，Python 3.10.12，依赖采用仓库固定版本。
+任务请求期限覆盖响应头及响应体，离开或切换时取消等待，迟到响应不覆盖新状态；保存超时显示“保存结果待确认”，不推断服务端保存失败。
+真实浏览器在服务端已保存、前端响应丢失后推进时钟，验证按钮恢复、原请求编号重放、版本和修订号不重复递增；生成响应丢失后同样保留入口，重放不创建第二条生成记录，也不再次调用任务解析模型。
+详情用例同步 DR-169 的单一完善入口和提示规则，保留原始执行状态、任务身份、幂等、版本及草稿断言。
+设计浏览器准备和并行调整遵循 DR-163；所有 50 项仍执行，原 360 秒限制及三层覆盖率门槛不变。
+
+- 相关单元、组件与规约 203 项通过（49.75 秒），无失败、错误或跳过。
+- 设计浏览器 50 项通过，两个独立进程，检查进程耗时 214.555 秒。
+- 详情浏览器 29 项通过（158.00 秒）。
+- 任务浏览器 23 项通过，检查进程耗时 303.575 秒；保存提示收尾后，保存超时及两类生成重试 3 项复跑通过（42.19 秒，与完整任务组有重叠）。
+- 全仓 lint、类型检查及场景基准 55/55 通过；未重新运行全量回归、全仓覆盖率门禁或远端 CI。
+
+以上使用隔离的合成数据、脚本模型响应和真实浏览器／服务；不声明实际模型连通或物理机器人执行通过。
+逐次产物不进入产品仓库，复现入口如下；Node 需在 PATH，可使用 Playwright 随包运行时。
+
+```bash
+python -m pytest tests/meta tests/unit/test_check_parallel.py tests/unit/test_check_isolation.py tests/unit/test_robotics_seed_support.py tests/unit/test_robotics_task_ui.py tests/unit/test_robotics_task_configuration_ui.py tests/unit/test_robotics_task_completion_feedback.py tests/unit/test_robotics_task_save_feedback.py tests/unit/test_robotics_schema_repair_ui.py tests/unit/test_robotics_schema_repair_guidance.py tests/unit/test_ontology_detail_ui.py -ra
+python tests/frontend/robotics-design-browser.py --workers 2
+python tests/frontend/ontology-detail-browser.py
+python tests/frontend/robotics-task-browser.py
+python -m pytest tests/frontend/robotics-task-browser.py -k 'timed_out_saved_completion or unused_profile' -ra
+python -m ruff check .
+python -m mypy . --no-error-summary
+python scripts/scenario_bench.py
+```

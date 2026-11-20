@@ -12,11 +12,11 @@ const session = (extra={}) => ({...ref,session_id:'task_a',revision:1,status:'ne
   task:{operation:'pick_place',part:'part',station:'station',carrier:'carrier',slot:'slot',unsupported_requests:[]},
   gaps:[{id:'gap_exposure',kind:'parameter',entity_iri:'urn:profile',field:'exposureTime',label:'曝光时间',reason:'缺失'}],
   candidate:null,tree:null,run_id:null,...extra});
-function fixture(){
+function fixture(timing={}){
   const source=path.resolve(__dirname,'../../ui/modules/robotics-task.js');
   assert.ok(fs.existsSync(source),'T05 must implement the task controller');
   const context=vm.createContext({console,URL,URLSearchParams,Response,AbortController,setTimeout,clearTimeout,
-    crypto:require('node:crypto').webcrypto});context.window=context;
+    crypto:require('node:crypto').webcrypto,...timing});context.window=context;
   vm.runInContext(fs.readFileSync(source,'utf8'),context,{filename:source});
   assert.equal(typeof context.RoboticsTask?.createController,'function');
   const f={calls:[],emissions:[],handler:async()=>response(session())};let id=0;
@@ -29,6 +29,45 @@ function fixture(){
   return f;
 }
 const cases={
+  async request_deadlines_and_idempotent_retry(){
+    const operation=process.argv[3],timers=new Map();let next=0;
+    const f=fixture({setTimeout:(fn,ms)=>{timers.set(++next,{fn,ms});return next;},clearTimeout:id=>timers.delete(id)});
+    await f.ready();assert.equal(timers.size,0,'successful reads release deadlines');
+    const pending=defer();let options;
+    f.handler=async(_url,opts)=>{options=opts;return pending.promise;};
+    const invoke=()=>operation==='load'?f.c.restore('task_a'):operation==='save'?f.c.save():f.c.generate();
+    const request=invoke();await Promise.resolve();
+    assert.equal(timers.size,1,'every request must register a finite deadline');
+    assert.equal([...timers.values()][0].ms,30000);
+    assert.equal(options.signal.aborted,false);
+    const first=operation==='load'?null:f.body();
+    [...timers.values()][0].fn();await request;
+    assert.equal(options.signal.aborted,true);assert.equal(timers.size,0);
+    assert.equal(f.state().busy,false);assert.equal(f.state().error.code,'request_timeout');
+    assert.match(f.state().error.message,/超时.*重试/);
+    if(operation==='save')assert.deepEqual(f.state().answers,{gap_exposure:{value:'155'}});
+    const count=f.calls.length;await Promise.resolve();assert.equal(f.calls.length,count,'never retry automatically');
+    f.handler=async()=>response(session({revision:2}));await invoke();
+    assert.equal(f.state().error,null);
+    if(first)assert.deepEqual(f.body(),first,'an explicit retry must keep revision and idempotency identity');
+    pending.resolve(response(session({revision:99})));await Promise.resolve();await Promise.resolve();
+    assert.equal(f.state().session.revision,2,'a late response cannot overwrite a completed retry');
+    assert.equal(timers.size,0);f.c.dispose();
+  },
+  async body_deadline_and_dispose_abort(){
+    const timers=new Map();let next=0;
+    const f=fixture({setTimeout:(fn,ms)=>{timers.set(++next,{fn,ms});return next;},clearTimeout:id=>timers.delete(id)});
+    await f.ready();const body=defer();let signal;
+    f.handler=async(_url,opts)=>{signal=opts.signal;return {ok:true,status:200,json:()=>body.promise};};
+    const saving=f.c.save();await Promise.resolve();await Promise.resolve();
+    assert.equal(timers.size,1,'deadline also covers response body');[...timers.values()][0].fn();await saving;
+    assert.equal(f.state().error.code,'request_timeout');assert.equal(f.state().busy,false);
+    f.handler=async(_url,opts)=>{signal=opts.signal;return new Promise(()=>{});};
+    const retry=f.c.save();await Promise.resolve();const emissions=f.emissions.length;
+    f.c.dispose();await retry;
+    assert.equal(signal.aborted,true);assert.equal(timers.size,0);assert.equal(f.emissions.length,emissions);
+    body.reject(Error('late body failure'));await Promise.resolve();
+  },
   async specific_completion_feedback(){
     const f=fixture(),kind=process.argv[3];
     const mapping={id:'map',kind:'mapping',label:'感知配置'},parameter={id:'param',kind:'parameter',label:'曝光时间'},

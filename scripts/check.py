@@ -124,7 +124,7 @@ def main():
                        "--junitxml", str(reports / "unit.xml")]
             return int(not run_check("unit-shard", command, env, reports, results))
         if args.suite in ("unit", "all"):
-            unit_stage = ("unit", pytest_command)
+            unit_stage = ("unit", unit_command(py, reports, args.workers))
             if args.combine_unit:
                 unit_stage = ("coverage-combine", [py, "-m", "coverage", "combine", "--keep",
                                                   *map(str, args.combine_unit)])

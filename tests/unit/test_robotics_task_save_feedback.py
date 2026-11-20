@@ -16,7 +16,7 @@ def test_completion_feedback_preserves_answers_and_save_contract(case):
     script = r"""
 const assert = require('node:assert/strict');
 const fs = require('node:fs'), vm = require('node:vm');
-const context = vm.createContext({console}); context.window = context;
+const context = vm.createContext({console,AbortController,setTimeout,clearTimeout}); context.window = context;
 vm.runInContext(fs.readFileSync('ui/modules/robotics-task.js', 'utf8'), context);
 const session = {session_id:'task_test', ontology_id:'ont_test', version_id:'ver_test', revision:2,
   gaps:[{id:'grasp',kind:'applicability',label:'抓取适配依据'},

@@ -23,6 +23,7 @@ from tests.robotics_browser_support import choose_robotics, fill_robotics, submi
 from tests.robotics_design_browser_support import DesignSite, model_reply
 from tests.robotics_design_support import Harness, proposals
 from tests.robotics_task_support import model_server
+from tests.robotics_seed_support import SeedCache
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -39,14 +40,15 @@ def browser():
 
 
 @pytest.fixture
-def live(tmp_path, request, browser):
+def live(tmp_path, request, browser, prepared_seeds):
     options = dict(getattr(request, 'param', {}))
     responses = options.pop('responses', [model_reply(p) for p in proposals()])
     offline = options.pop('offline', False)
     output = Path(os.environ.get('DATAMIND_ROBOTICS_DESIGN_TEST_OUTPUT',
         str(ROOT / '.check-results/robotics-design-browser'))) / re.sub(r'[^a-zA-Z0-9_-]', '_', request.node.name)
     with model_server(*responses) as (url, calls):
-        site = DesignSite(tmp_path / 'site', output, model_url=None if offline else url, **options)
+        site = DesignSite(tmp_path / 'site', output, model_url=None if offline else url,
+                          prepare_cache=prepared_seeds, **options)
         context = browser.new_context(viewport={'width': 1440, 'height': 1000}, accept_downloads=True)
         page = context.new_page(); page.set_default_timeout(3500); page.set_default_navigation_timeout(15000)
         site.observe(page)
@@ -59,6 +61,12 @@ def live(tmp_path, request, browser):
                 site.evidence['screenshot_error'] = str(exc)
             site.evidence['model_requests'] = [{'path': c['path'], 'payload': c['payload']} for c in calls]
             context.close(); site.close()
+
+
+@pytest.fixture(scope='module')
+def prepared_seeds():
+    # Only preconditions are cloned; all UI actions, HTTP calls and validations stay real.
+    return SeedCache()
 
 
 def done(site):
@@ -1320,6 +1328,10 @@ def test_repair_request_timeout_unlocks_controls_without_automatic_retry(live):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(); parser.add_argument('--output', type=Path,
         default=ROOT / '.check-results/robotics-design-browser')
+    parser.add_argument('--workers', type=int, choices=(1, 2), default=2)
     args = parser.parse_args(); args.output.mkdir(parents=True, exist_ok=True)
     os.environ['DATAMIND_ROBOTICS_DESIGN_TEST_OUTPUT'] = str(args.output.resolve())
-    raise SystemExit(pytest.main([__file__, '-q', '--tb=short', '--junitxml=' + str(args.output / 'results.xml')]))
+    command = [__file__, '-q', '--tb=short', '--durations=20', '--junitxml=' + str(args.output / 'results.xml')]
+    if args.workers > 1:
+        command.extend(['-n', str(args.workers), '--dist', 'worksteal'])
+    raise SystemExit(pytest.main(command))

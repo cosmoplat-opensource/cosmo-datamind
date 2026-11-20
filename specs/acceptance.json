@@ -3523,12 +3523,14 @@
     {
       "id": "PERF-T01",
       "decision": "DR-163",
-      "criterion": "准备数据复用保持数据库、文件、资产和运行身份独立；已有目录不被覆盖，生成失败不缓存",
+      "status": "delivered",
+      "criterion": "任务准备保持资产和运行身份独立；设计浏览器预置状态保持数据库与文件副本隔离；已有目录不覆盖、失败不缓存，操作中的真实校验保留",
       "tests": [
         "tests/unit/test_robotics_seed_support.py::test_seed_clones_database_files_and_detaches_return_values",
         "tests/unit/test_robotics_seed_support.py::test_seed_failure_is_not_cached_and_existing_directory_is_not_overwritten",
         "tests/unit/test_robotics_seed_support.py::test_task_fixture_reuses_real_build_only_for_preconditions",
-        "tests/unit/test_robotics_seed_support.py::test_ready_mutations_are_isolated_and_existing_roots_keep_real_build"
+        "tests/unit/test_robotics_seed_support.py::test_ready_mutations_are_isolated_and_existing_roots_keep_real_build",
+        "tests/unit/test_robotics_seed_support.py::test_design_browser_seed_reuses_preconditions_without_sharing_mutations"
       ]
     },
     {
@@ -3542,10 +3544,13 @@
     {
       "id": "PERF-T03",
       "decision": "DR-163",
+      "status": "delivered",
       "criterion": "有界并行保留完整测试发现、单进程对照、逐用例耗时及分支覆盖率汇总",
       "tests": [
         "tests/unit/test_check_parallel.py::test_unit_command_keeps_all_tests_and_explicit_parallel_coverage",
-        "tests/unit/test_check_parallel.py::test_parallel_workers_merge_coverage_and_propagate_failures"
+        "tests/unit/test_check_parallel.py::test_parallel_workers_merge_coverage_and_propagate_failures",
+        "tests/unit/test_check_parallel.py::test_normal_unit_entry_honors_workers_and_keeps_failure_and_coverage_gates",
+        "tests/unit/test_check_parallel.py::test_design_browser_entry_keeps_full_suite_and_bounded_isolated_workers"
       ]
     },
     {
@@ -3913,7 +3918,9 @@
       "status": "delivered",
       "criterion": "应用检查仅提供完善本体入口，按既有推荐进入修订或人工对应流程，移除其它完善方式且保留服务端校验。",
       "tests": [
-        "tests/frontend/robotics-design-browser.py::test_application_guidance_explains_business_gap_and_has_one_primary_action"
+        "tests/frontend/robotics-design-browser.py::test_application_guidance_explains_business_gap_and_has_one_primary_action",
+        "tests/frontend/ontology-detail-browser.py::test_missing_schema_stays_in_diagnosis_and_revision_targets_original_design",
+        "tests/frontend/ontology-detail-browser.py::test_mapping_repair_prepares_correspondence_for_same_version_without_revising_schema"
       ]
     },
     {
@@ -3955,6 +3962,19 @@
         "tests/unit/test_robotics_task_scope.py::test_task_scope_preserves_full_snapshot_hash_and_rejects_another_task",
         "tests/frontend/robotics-task-browser.py::test_switch_back_from_unfinished_configuration_generates_from_final_selection",
         "tests/unit/test_robotics_application_workflow.py::test_application_task_switch_back_keeps_unfinished_draft_and_synchronized_bundle"
+      ]
+    },
+    {
+      "id": "TASK-NET-01",
+      "decision": "DR-167",
+      "iteration": "IR-033",
+      "status": "delivered",
+      "criterion": "任务读取、保存与生成在30秒后超时并恢复操作；保留输入及原请求编号、不自动重试，离开取消等待且迟到响应不覆盖状态，已保存请求重试不重复创建版本",
+      "tests": [
+        "tests/unit/test_robotics_task_ui.py::test_task_request_timeout_unlocks_and_explicit_retry_preserves_identity",
+        "tests/unit/test_robotics_task_ui.py::test_task_body_timeout_and_disposal_cancel_pending_requests",
+        "tests/frontend/robotics-task-browser.py::test_timed_out_saved_completion_retries_same_identity_without_duplicate_version",
+        "tests/frontend/robotics-task-browser.py::test_unused_profile_is_preserved_and_task_errors_retry_current_selection"
       ]
     }
   ],

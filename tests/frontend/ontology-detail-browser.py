@@ -88,7 +88,7 @@ def assert_dialog(page, record):
     expect(panel).to_have_attribute('data-version-id', record['version_id'], timeout=5000)
     expect(panel.get_by_label('任务描述', exact=True)).to_be_visible()
     expect(panel).to_contain_text('可准备任务')
-    expect(panel).to_contain_text('执行未验证')
+    expect(panel).not_to_contain_text('执行未验证')
     expect(page.get_by_role('link', name='继续描述任务', exact=True)).to_have_count(0)
     return panel
 
@@ -130,6 +130,8 @@ def test_successful_fresh_check_enters_task_dialog_without_a_success_hop(live, k
     sessions = task_records(site.root); reports = check_records(site.root)
     open_detail(site, page, record); response = start_check(site, page)
     assert response['freshness'] == 'current' and response['report']['preparation_status'] == 'available'
+    assert response['report']['execution_status'] == 'not_evaluated'
+    assert response['report']['execution_readiness'] == 'not_verified'
     panel = assert_dialog(page, record)
     new = set(task_records(site.root)) - set(sessions)
     assert new == {panel.get_attribute('data-session-id')}
@@ -202,7 +204,9 @@ def test_missing_schema_stays_in_diagnosis_and_revision_targets_original_design(
     report = page.get_by_test_id('application-check')
     expect(report).to_contain_text('ParameterBinding')
     expect(report.locator('[data-action-id="robotics.revise_tbox"]')).to_be_enabled()
-    expect(report.locator('[data-action-id="robotics.adapt_execution"]')).to_be_enabled()
+    expect(report.get_by_role('button', name='完善本体', exact=True)).to_have_count(1)
+    expect(report.locator('[data-action-id]')).to_have_count(1)
+    expect(report.locator('[data-action-id="robotics.adapt_execution"]')).to_have_count(0)
     assert response['report']['preparation_status'] == 'blocked' and not posts(site, '/api/robotics/tasks')
     with page.expect_response(lambda r: r.request.method == 'POST' and r.url.endswith('/repairs')) as repair:
         report.locator('[data-action-id="robotics.revise_tbox"]').click()
@@ -214,20 +218,28 @@ def test_missing_schema_stays_in_diagnosis_and_revision_targets_original_design(
     done(site)
 
 
-def test_mapping_repair_prepares_correspondence_for_same_version_without_revising_schema(live):
-    site, page, info = live; record = info['blocked']
+def test_mapping_repair_prepares_correspondence_for_same_version_without_revising_schema(live, monkeypatch):
+    from tests.robotics_auto_adaptation_support import custom_candidate
+    site, page, info = live
+    # A custom vocabulary needs explicit correspondence; trusted missing terms now use schema repair.
+    _, original_design, record = custom_candidate(site.root, monkeypatch, request_id='detail-custom-vocabulary')
     original = AssetStore(site.root).read_payload(**record)
     versions = AssetStore(site.root).list_versions(record['ontology_id'])
     open_detail(site, page, record); response = start_check(site, page)
+    panel = page.get_by_test_id('application-check')
+    expect(panel.locator('[data-action-id]')).to_have_count(1)
+    expect(panel.locator('[data-action-id="robotics.adapt_execution"]')).to_be_enabled()
     with page.expect_response(lambda r: r.request.method == 'POST' and r.url.endswith('/repairs')) as repair:
-        page.locator('[data-action-id="robotics.adapt_execution"]').click()
+        panel.get_by_role('button', name='完善本体', exact=True).click()
     body = repair.value.json(); assert repair.value.status == 200
     expect(page.get_by_test_id('robotics-application-adaptation')).to_have_attribute('data-adaptation-id', body['target']['resource_id'])
     state = ApplicationService(site.root).get(body['target']['resource_id'])
     assert state['asset_ref'] == record and state['status'] == 'needs_tbox_revision' and state['run_id'] is None
+    assert state['matching']['method'] != 'automatic'
     assert body['return_context']['asset_refs'] == response['report']['asset_refs']
     assert AssetStore(site.root).read_payload(**record) == original
     assert AssetStore(site.root).list_versions(record['ontology_id']) == versions
+    assert not posts(site, '/api/robotics/design-sessions/' + original_design['session_id'] + '/edit-classes')
     done(site)
 
 

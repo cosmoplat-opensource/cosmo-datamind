@@ -30,6 +30,15 @@ def test_task_save_error_preserves_editable_answers(status):
     run('failed_save_keeps_input', str(status))
 
 
+@pytest.mark.parametrize('operation', ['load', 'save', 'generate'])
+def test_task_request_timeout_unlocks_and_explicit_retry_preserves_identity(operation):
+    run('request_deadlines_and_idempotent_retry', operation)
+
+
+def test_task_body_timeout_and_disposal_cancel_pending_requests():
+    run('body_deadline_and_dispose_abort')
+
+
 def test_actual_task_browser_suite_is_wired_into_all_checks():
     source = ast.parse((ROOT / 'scripts/check.py').read_text())
     calls = [node for node in ast.walk(source) if isinstance(node, ast.Call)

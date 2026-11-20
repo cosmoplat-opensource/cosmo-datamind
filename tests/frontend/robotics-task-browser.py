@@ -84,6 +84,50 @@ def done(site):
     site.evidence['assertions_completed'] = True
 
 
+def test_timed_out_saved_completion_retries_same_identity_without_duplicate_version(live):
+    site, page, calls = live
+    ref = site.submit()['output_asset_ref']; panel = open_task(page, site, ref)
+    current = submit_task(page, panel)
+    fill_gaps(panel, current)
+    held, payloads = [], []
+    page.on('request', lambda r: payloads.append(r.post_data_json)
+            if r.method == 'POST' and r.url.endswith('/completion') else None)
+
+    def lose_reply(route):
+        response = route.fetch()
+        assert response.status == 200
+        held.append((route.request.post_data_json, response.json()))
+
+    page.clock.install()
+    page.route('**/api/robotics/tasks/*/completion', lose_reply)
+    with page.expect_request('**/api/robotics/tasks/*/completion'):
+        panel.get_by_role('button', name='保存并继续', exact=True).click()
+    for _ in range(100):
+        if held:
+            break
+        page.wait_for_timeout(25)
+    assert len(held) == 1
+    saved = held[0][1]
+    versions = AssetStore(site.root).list_versions(ref['ontology_id'])
+    assert saved['version_id'] != current['version_id']
+    page.clock.fast_forward(30001)
+    expect(panel.get_by_role('alert')).to_contain_text('请求超时')
+    expect(panel.get_by_role('alert')).to_contain_text('保存结果待确认')
+    expect(panel.get_by_role('alert')).not_to_contain_text('保存未成功')
+    expect(panel.get_by_role('button', name='保存并继续', exact=True)).to_be_enabled()
+    assert len(held) == 1 and len(calls) == 1
+    page.unroute('**/api/robotics/tasks/*/completion', lose_reply)
+    retried = save_gaps(page, panel)
+    expect(panel).to_have_attribute('data-version-id', saved['version_id'])
+    posts = [r for r in site.evidence['requests'] if r['method'] == 'POST' and r['url'].endswith('/completion')]
+    assert len(posts) == 2
+    assert retried['revision'] == saved['revision'] and retried['version_id'] == saved['version_id']
+    assert AssetStore(site.root).list_versions(ref['ontology_id']) == versions
+    assert len(calls) == 1
+    assert payloads == [held[0][0], held[0][0]]
+    done(site)
+
+
 def open_task(page, site, ref, *, enable_model=True):
     if enable_model:
         site.enable_task_model()
@@ -414,10 +458,11 @@ def test_unknown_configuration_can_be_created_inline_without_user_iri(live):
     done(site)
 
 
-def test_unused_profile_is_preserved_and_task_errors_retry_current_selection(live):
+@pytest.mark.parametrize('timeout_retry', [False, True])
+def test_unused_profile_is_preserved_and_task_errors_retry_current_selection(live, timeout_retry):
     """DR-170: ignored drafts stay intact; old errors retry without a modelling detour."""
     from rdflib import RDFS, Literal
-    site, page, _ = live
+    site, page, calls = live
     ref = site.submit()['output_asset_ref']; assets = AssetStore(site.root)
     original = assets.read_payload(**ref)
     graph = Graph().parse(data=original, format='xml')
@@ -457,11 +502,34 @@ def test_unused_profile_is_preserved_and_task_errors_retry_current_selection(liv
     assert '严格生成校验' not in panel.get_by_role('alert').inner_text()
     assert site.get('/api/robotics/tasks/' + current['session_id'])['error'] == legacy['error']
     expect(panel.get_by_role('link', name='完善本体', exact=True)).to_have_count(0)
+    held = []
+    if timeout_retry:
+        def lose_generation_reply(route):
+            response = route.fetch()
+            assert response.status == 200
+            held.append((route.request.post_data_json, response.json()))
+        page.clock.install()
+        page.route('**/api/robotics/tasks/*/generate', lose_generation_reply)
+        with page.expect_request('**/api/robotics/tasks/*/generate'):
+            panel.get_by_role('button', name='按当前配置重试生成', exact=True).click()
+        for _ in range(1200):
+            if held:
+                break
+            page.wait_for_timeout(25)
+        assert len(held) == 1
+        page.clock.fast_forward(30001)
+        expect(panel.get_by_role('alert')).to_contain_text('请求超时')
+        expect(panel.get_by_role('button', name='按当前配置重试生成', exact=True)).to_be_enabled()
+        page.unroute('**/api/robotics/tasks/*/generate', lose_generation_reply)
     with page.expect_response(lambda r: r.request.method == 'POST' and r.url.endswith('/generate')) as retry:
         panel.get_by_role('button', name='按当前配置重试生成', exact=True).click()
     assert retry.value.status == 200
     restored = retry.value.json()
     assert restored['status'] == 'generated' and restored['version_id'] == current['version_id']
+    if timeout_retry:
+        assert retry.value.request.post_data_json == held[0][0]
+        assert restored['run_id'] == held[0][1]['run_id']
+        assert restored['revision'] == held[0][1]['revision'] and len(calls) == 1
     download(page, site, panel, restored, values=values)
     assert assets.read_payload(**ref) == original
     done(site)

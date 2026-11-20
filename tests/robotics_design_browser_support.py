@@ -13,8 +13,9 @@ def model_reply(proposal):
 
 
 class DesignSite(LiveSite):
-    def __init__(self, directory, output, *, model_url=None, incomplete=False, prepare=None):
+    def __init__(self, directory, output, *, model_url=None, incomplete=False, prepare=None, prepare_cache=None):
         self.model_url, self.incomplete, self.prepare = model_url, incomplete, prepare
+        self.prepare_cache = prepare_cache
         self.prepared = None
         super().__init__(directory, output)
 
@@ -26,7 +27,8 @@ class DesignSite(LiveSite):
                 self.env.pop('DATAMIND_LLM_KEY', None)
         if self.prepare is not None:
             callback, self.prepare = self.prepare, None
-            self.prepared = callback(self.root)
+            self.prepared = (self.prepare_cache.restore(callback, self.root, callback)
+                             if self.prepare_cache is not None else callback(self.root))
         super().start()
 
     def post_json(self, path, body):

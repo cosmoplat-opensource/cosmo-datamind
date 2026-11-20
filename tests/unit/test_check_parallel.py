@@ -1,6 +1,7 @@
 """Bounded workers and CI partitions retain dependencies and coverage gates — DR-163."""
 from importlib import import_module
 import os
+import runpy
 import subprocess
 import sys
 
@@ -29,6 +30,28 @@ def test_unit_command_keeps_all_tests_and_explicit_parallel_coverage(tmp_path):
     for workers in (0, 5, -1):
         with pytest.raises(ValueError):
             module.unit_command(sys.executable, tmp_path, workers)
+
+
+@pytest.mark.parametrize('workers', [1, 2])
+def test_design_browser_entry_keeps_full_suite_and_bounded_isolated_workers(tmp_path, monkeypatch, workers):
+    module = import_module('scripts.check')
+    source = module.ROOT / 'tests/frontend/robotics-design-browser.py'
+    calls = []
+    monkeypatch.setenv('DATAMIND_ROBOTICS_DESIGN_TEST_OUTPUT', 'synthetic-test-output')
+    monkeypatch.setattr(pytest, 'main', lambda args: calls.append(args) or 1)
+    monkeypatch.setattr(sys, 'argv', [str(source), '--output', str(tmp_path), '--workers', str(workers)])
+    with pytest.raises(SystemExit) as caught:
+        runpy.run_path(str(source), run_name='__main__')
+    assert caught.value.code == 1, 'browser failures must propagate'
+    args = calls[0]
+    assert args[0] == str(source) and '-k' not in args and '-m' not in args
+    assert '--junitxml=' + str(tmp_path / 'results.xml') in args
+    assert '--durations=20' in args
+    if workers == 2:
+        assert args[args.index('-n') + 1] == '2'
+        assert args[args.index('--dist') + 1] == 'worksteal'
+    else:
+        assert '-n' not in args
 
 
 @pytest.mark.parametrize('failure', [False, True])
@@ -120,6 +143,27 @@ def check_stage_calls(monkeypatch):
 
     monkeypatch.setattr(module, 'run_check', record)
     return module, calls, exit_codes
+
+
+@pytest.mark.parametrize('workers', [1, 4])
+@pytest.mark.parametrize('exit_code', [0, 1, 2])
+def test_normal_unit_entry_honors_workers_and_keeps_failure_and_coverage_gates(
+        tmp_path, monkeypatch, check_stage_calls, workers, exit_code):
+    module, calls, exit_codes = check_stage_calls
+    reports = tmp_path / 'reports'
+    exit_codes['unit'] = exit_code
+    monkeypatch.setattr(sys, 'argv', ['check.py', '--suite', 'unit', '--workers', str(workers),
+                                    '--report-dir', str(reports)])
+    assert module.main() == int(bool(exit_code))
+    assert calls[2][0] == 'unit'
+    assert calls[2][1] == module.unit_command(sys.executable, reports.resolve(), workers)
+    expected = ['lint', 'types', 'unit']
+    if exit_code != 2:
+        expected += ['coverage', 'coverage-core', 'coverage-routes']
+    assert [name for name, _, _ in calls] == expected
+    if exit_code != 2:
+        assert '--fail-under=87' in calls[4][1]
+        assert '--fail-under=61' in calls[5][1]
 
 
 @pytest.mark.parametrize('exit_code', [0, 1])

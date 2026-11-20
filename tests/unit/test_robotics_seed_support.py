@@ -13,6 +13,53 @@ def support():
     return import_module('tests.robotics_seed_support')
 
 
+def test_design_browser_seed_reuses_preconditions_without_sharing_mutations(tmp_path):
+    from tests.robotics_design_browser_support import DesignSite
+    from tests.robotics_design_support import Harness
+    cache = support().SeedCache()
+    builds = []
+    snapshots = []
+
+    def prepare(root):
+        builds.append(1)
+        state = Harness(root).candidate()
+        snapshots.append((db_rows(root), blob_bytes(root)))
+        return state
+
+    first = DesignSite(tmp_path / 'first', tmp_path / 'first-output', prepare=prepare, prepare_cache=cache)
+    try:
+        original = first.prepared
+        changed = first.post_json('/api/robotics/design-sessions/' + original['session_id'] + '/edit-classes',
+            {'expected_revision': original['revision'], 'request_id': 'isolated-edit'})[1]
+        assert changed['revision'] > original['revision'] and changed['stage'] == 'classes'
+        first.prepared['result'] = {'changed': True}
+    finally:
+        first.close()
+    second = DesignSite(tmp_path / 'second', tmp_path / 'second-output', prepare=prepare, prepare_cache=cache)
+    try:
+        assert builds == [1]
+        # Server startup also imports its own demo assets; compare every original seed row/file.
+        rows, files = snapshots[0]
+        restored_rows, restored_files = db_rows(second.root), blob_bytes(second.root)
+        for table, entries in rows.items():
+            assert all(row in restored_rows[table] for row in entries), table
+        assert all(restored_files[name] == raw for name, raw in files.items())
+        assert second.prepared['result'] != {'changed': True}
+        original = second.prepared
+        assert second.get('/api/robotics/design-sessions/' + original['session_id'])['revision'] == original['revision']
+        # Real operations still run in each restored storage; stale revisions must fail.
+        changed = second.post_json('/api/robotics/design-sessions/' + original['session_id'] + '/edit-classes',
+            {'expected_revision': original['revision'], 'request_id': 'another-isolated-edit'})[1]
+        assert changed['stage'] == 'classes' and changed['revision'] > original['revision']
+        from urllib.error import HTTPError
+        with pytest.raises(HTTPError) as caught:
+            second.post_json('/api/robotics/design-sessions/' + original['session_id'] + '/edit-classes',
+                {'expected_revision': original['revision'], 'request_id': 'stale-edit'})
+        assert caught.value.code == 409
+    finally:
+        second.close()
+
+
 def test_seed_clones_database_files_and_detaches_return_values(tmp_path):
     cache = support().SeedCache()
     calls = []

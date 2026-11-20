@@ -12,7 +12,7 @@ def test_configuration_replacement_controller_scope_and_draft_retention(case):
     assert node, 'Node is required'
     script = r"""
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
-const context=vm.createContext({console});context.window=context;
+const context=vm.createContext({console,AbortController,setTimeout,clearTimeout});context.window=context;
 vm.runInContext(fs.readFileSync('ui/modules/robotics-task.js','utf8'),context);
 const session={session_id:'one',ontology_id:'ont',version_id:'old',revision:4,gaps:[]};
 let resolve, calls=[];
