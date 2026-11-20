@@ -1,0 +1,483 @@
+[
+  {
+    "id": "term_account",
+    "name": "account",
+    "type": "entity",
+    "definition": "由金融机构开立、用于记录资金收付与余额变动的账户，具有开户日期、对账单频率等属性，并归属于某一地区。 Counterexample: 与银行卡（card）不同：账户是资金记账主体，卡是账户的取用凭证，一个账户可对应多张卡。 Maturity: Provisional",
+    "scope": "Records of table account; provenance: direct source account",
+    "aliases": [
+      "银行账户"
+    ],
+    "evidence": [
+      "ev_schema_account"
+    ]
+  },
+  {
+    "id": "term_district",
+    "name": "district",
+    "type": "entity",
+    "definition": "具有行政区划编码与人口、就业等统计属性的地理区域，是账户与客户归属的行政单元。 Counterexample: 与网点（branch）不同：地区是行政统计单元，网点是办理业务的物理场所。 Maturity: Provisional",
+    "scope": "Records of table district; provenance: direct source district",
+    "aliases": [
+      "地区"
+    ],
+    "evidence": [
+      "ev_schema_district"
+    ]
+  },
+  {
+    "id": "term_client",
+    "name": "client",
+    "type": "entity",
+    "definition": "在金融机构登记注册、具有性别与出生日期等身份属性并归属某一地区的个人，可持有账户。 Counterexample: 与账户（account）不同：客户是自然人主体，账户是资金载体，二者通过处置关系（disp）多对多关联。 Maturity: Provisional",
+    "scope": "Records of table client; provenance: direct source client",
+    "aliases": [
+      "客户"
+    ],
+    "evidence": [
+      "ev_schema_client"
+    ]
+  },
+  {
+    "id": "term_disp",
+    "name": "disp",
+    "type": "entity",
+    "definition": "记录客户对账户所拥有处置权限的关联实体，具有权限类型属性，连接客户与账户。 Counterexample: 与账户（account）不同：处置权是客户与账户之间的授权关系记录，不是资金账户本身。 Maturity: Provisional",
+    "scope": "Records of table disp; provenance: direct source disp",
+    "aliases": [
+      "账户处置权"
+    ],
+    "evidence": [
+      "ev_schema_disp"
+    ]
+  },
+  {
+    "id": "term_card",
+    "name": "card",
+    "type": "entity",
+    "definition": "由金融机构发行、绑定到某一账户处置权、具有卡类型与发卡日期属性的支付凭证。 Counterexample: 与账户（account）不同：卡是账户的取用凭证，通过处置权（disp）间接关联账户。 Maturity: Provisional",
+    "scope": "Records of table card; provenance: direct source card",
+    "aliases": [
+      "银行卡"
+    ],
+    "evidence": [
+      "ev_schema_card"
+    ]
+  },
+  {
+    "id": "term_loan",
+    "name": "loan",
+    "type": "entity",
+    "definition": "金融机构向账户发放的、具有金额、期限、还款额与状态属性的信贷资金安排。 Counterexample: 与交易（trans）不同：贷款是信贷合同安排，交易是账户资金的实际收付记录。 Maturity: Provisional",
+    "scope": "Records of table loan; provenance: direct source loan",
+    "aliases": [
+      "贷款"
+    ],
+    "evidence": [
+      "ev_schema_loan"
+    ]
+  },
+  {
+    "id": "term_order",
+    "name": "order",
+    "type": "entity",
+    "definition": "由账户发起、指定收款银行与收款账号及金额的转账支付指令。 Counterexample: 与交易（trans）不同：汇款指令是发起的支付请求，交易是账户上实际发生的资金变动记录。 Maturity: Provisional",
+    "scope": "Records of table order; provenance: direct source order",
+    "aliases": [
+      "汇款指令"
+    ],
+    "evidence": [
+      "ev_schema_order"
+    ]
+  },
+  {
+    "id": "term_trans",
+    "name": "trans",
+    "type": "concept",
+    "definition": "在某一账户上发生的、具有日期、类型、操作方式、金额与余额属性的资金收付事件。 Counterexample: 与贷款（loan）不同：交易是账户资金的实际变动事件，贷款是信贷合同安排。 Maturity: Provisional",
+    "scope": "Records of table trans; provenance: direct source trans",
+    "aliases": [
+      "交易"
+    ],
+    "evidence": [
+      "ev_schema_trans"
+    ]
+  },
+  {
+    "id": "concept_weeklystatement",
+    "name": "WeeklyStatement",
+    "type": "concept",
+    "definition": "账户选择每周出账的频率",
+    "scope": "account where frequency IN ('POPLATEK TYDNE')",
+    "aliases": [
+      "weekly issuance",
+      "weekly statement",
+      "POPLATEK TYDNE",
+      "weekly statements"
+    ],
+    "evidence": [
+      "ev_concept_weeklystatement"
+    ]
+  },
+  {
+    "id": "concept_monthlystatement",
+    "name": "MonthlyStatement",
+    "type": "concept",
+    "definition": "账户选择每月出账的频率",
+    "scope": "account where frequency IN ('POPLATEK MESICNE')",
+    "aliases": [
+      "monthly statement",
+      "monthly issuance",
+      "POPLATEK MESICNE"
+    ],
+    "evidence": [
+      "ev_concept_monthlystatement"
+    ]
+  },
+  {
+    "id": "concept_aftertransactionstatement",
+    "name": "AfterTransactionStatement",
+    "type": "concept",
+    "definition": "账户选择交易后出账的频率",
+    "scope": "account where frequency IN ('POPLATEK PO OBRATU')",
+    "aliases": [
+      "issuance after transaction",
+      "statement issued after transaction",
+      "POPLATEK PO OBRATU",
+      "after transaction statement"
+    ],
+    "evidence": [
+      "ev_concept_aftertransactionstatement"
+    ]
+  },
+  {
+    "id": "concept_region",
+    "name": "Region",
+    "type": "concept",
+    "definition": "账户所在地区域",
+    "scope": "district",
+    "aliases": [
+      "East Bohemia",
+      "North Bohemia"
+    ],
+    "evidence": [
+      "ev_concept_region"
+    ]
+  },
+  {
+    "id": "concept_districtname",
+    "name": "DistrictName",
+    "type": "concept",
+    "definition": "账户所在区名称",
+    "scope": "district",
+    "aliases": [
+      "district name",
+      "district"
+    ],
+    "evidence": [
+      "ev_concept_districtname"
+    ]
+  },
+  {
+    "id": "concept_averagesalary",
+    "name": "AverageSalary",
+    "type": "concept",
+    "definition": "区平均工资",
+    "scope": "district",
+    "aliases": [
+      "average salary",
+      "salary"
+    ],
+    "evidence": [
+      "ev_concept_averagesalary"
+    ]
+  },
+  {
+    "id": "concept_gender",
+    "name": "Gender",
+    "type": "concept",
+    "definition": "客户性别",
+    "scope": "client",
+    "aliases": [
+      "male",
+      "female",
+      "women"
+    ],
+    "evidence": [
+      "ev_concept_gender"
+    ]
+  },
+  {
+    "id": "concept_birthdate",
+    "name": "BirthDate",
+    "type": "concept",
+    "definition": "客户出生日期",
+    "scope": "client",
+    "aliases": [
+      "born",
+      "birth date"
+    ],
+    "evidence": [
+      "ev_concept_birthdate"
+    ]
+  },
+  {
+    "id": "concept_loanamount",
+    "name": "LoanAmount",
+    "type": "concept",
+    "definition": "贷款金额",
+    "scope": "loan",
+    "aliases": [
+      "loan amount",
+      "approved amount",
+      "amount"
+    ],
+    "evidence": [
+      "ev_concept_loanamount"
+    ]
+  },
+  {
+    "id": "concept_loandate",
+    "name": "LoanDate",
+    "type": "concept",
+    "definition": "贷款批准日期",
+    "scope": "loan",
+    "aliases": [
+      "loan date",
+      "approved date"
+    ],
+    "evidence": [
+      "ev_concept_loandate"
+    ]
+  },
+  {
+    "id": "concept_loanduration",
+    "name": "LoanDuration",
+    "type": "concept",
+    "definition": "贷款期限（月）",
+    "scope": "loan",
+    "aliases": [
+      "loan validity",
+      "duration",
+      "loan duration"
+    ],
+    "evidence": [
+      "ev_concept_loanduration"
+    ]
+  },
+  {
+    "id": "concept_loanstatus",
+    "name": "LoanStatus",
+    "type": "concept",
+    "definition": "贷款状态",
+    "scope": "loan",
+    "aliases": [
+      "status",
+      "running contract",
+      "no issue",
+      "loan status"
+    ],
+    "evidence": [
+      "ev_concept_loanstatus"
+    ]
+  },
+  {
+    "id": "concept_accountopeningdate",
+    "name": "AccountOpeningDate",
+    "type": "concept",
+    "definition": "账户开户日期",
+    "scope": "account",
+    "aliases": [
+      "account opening date",
+      "account date"
+    ],
+    "evidence": [
+      "ev_concept_accountopeningdate"
+    ]
+  },
+  {
+    "id": "concept_withdrawalincash",
+    "name": "WithdrawalInCash",
+    "type": "concept",
+    "definition": "现金取款交易",
+    "scope": "trans where operation IN ('VYBER')",
+    "aliases": [
+      "withdrawals in cash",
+      "withdrawal",
+      "withdrawal in cash"
+    ],
+    "evidence": [
+      "ev_concept_withdrawalincash"
+    ]
+  },
+  {
+    "id": "derived_percentageofrunningloans",
+    "name": "PercentageOfRunningLoans",
+    "type": "metric",
+    "definition": "贷款状态为C的贷款金额占总贷款金额的百分比 Formula: (SUM(CASE WHEN LoanStatus = 'C' THEN LoanAmount ELSE 0 END) / SUM(LoanAmount)) * 100. Inputs: LoanStatus = loan.status; LoanAmount = loan.amount",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of accounts still running",
+      "percentage of running contracts",
+      "percentage of running loans"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_percentageofmaleclientswithweeklystatement",
+    "name": "PercentageOfMaleClientsWithWeeklyStatement",
+    "type": "metric",
+    "definition": "男性客户中请求每周出账的百分比 Formula: (COUNT(DISTINCT CASE WHEN Gender = 'M' AND WeeklyStatement THEN client_id END) / COUNT(DISTINCT CASE WHEN WeeklyStatement THEN client_id END)) * 100. Inputs: Gender = client.gender; WeeklyStatement = account.frequency WHERE frequency IN ('POPLATEK TYDNE')",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of male clients requesting weekly statements",
+      "percentage of male clients with weekly statement"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_percentageoffemaleclientsinhighsalarydistrict",
+    "name": "PercentageOfFemaleClientsInHighSalaryDistrict",
+    "type": "metric",
+    "definition": "在平均工资超过10000的区开户的女性客户百分比 Formula: (COUNT(DISTINCT CASE WHEN Gender = 'F' AND AverageSalary > 10000 THEN client_id END) / COUNT(DISTINCT CASE WHEN AverageSalary > 10000 THEN client_id END)) * 100. Inputs: Gender = client.gender; AverageSalary = district.A11",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of women in high salary district",
+      "percentage of female clients in high salary district"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_averageloanamount",
+    "name": "AverageLoanAmount",
+    "type": "metric",
+    "definition": "平均贷款金额 Formula: AVG(LoanAmount). Inputs: LoanAmount = loan.amount",
+    "scope": "derived metric",
+    "aliases": [
+      "average loan amount"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_totalloanamount",
+    "name": "TotalLoanAmount",
+    "type": "metric",
+    "definition": "总贷款金额 Formula: SUM(LoanAmount). Inputs: LoanAmount = loan.amount",
+    "scope": "derived metric",
+    "aliases": [
+      "total loan amount"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_percentageofaccountswithcondition",
+    "name": "PercentageOfAccountsWithCondition",
+    "type": "metric",
+    "definition": "满足条件的账户金额占总金额的百分比 Formula: (SUM(CASE WHEN condition THEN LoanAmount ELSE 0 END) / SUM(LoanAmount)) * 100. Inputs: LoanAmount = loan.amount",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of accounts by condition",
+      "percentage of accounts with condition"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_statementfrequency",
+    "name": "StatementFrequency",
+    "type": "concept",
+    "definition": "账户出账频率类型",
+    "scope": "account.frequency codes",
+    "aliases": [
+      "statement issuance",
+      "frequency",
+      "statement frequency"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_loanstatus",
+    "name": "LoanStatus",
+    "type": "concept",
+    "definition": "贷款状态类型",
+    "scope": "loan.status codes",
+    "aliases": [
+      "loan status",
+      "status"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_transactionoperation",
+    "name": "TransactionOperation",
+    "type": "concept",
+    "definition": "交易操作类型",
+    "scope": "trans.operation codes",
+    "aliases": [
+      "operation",
+      "transaction type",
+      "transaction operation"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_transactiontype",
+    "name": "TransactionType",
+    "type": "concept",
+    "definition": "交易类型",
+    "scope": "trans.type codes",
+    "aliases": [
+      "trans type",
+      "transaction type"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_cardtype",
+    "name": "CardType",
+    "type": "concept",
+    "definition": "卡类型",
+    "scope": "card.type codes",
+    "aliases": [
+      "card type"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_disptype",
+    "name": "DispType",
+    "type": "concept",
+    "definition": "处置类型",
+    "scope": "disp.type codes",
+    "aliases": [
+      "disposition type",
+      "disp type"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_orderksymbol",
+    "name": "OrderKSymbol",
+    "type": "concept",
+    "definition": "订单类型",
+    "scope": "order.k_symbol codes",
+    "aliases": [
+      "order k_symbol",
+      "k_symbol",
+      "order k symbol"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_transksymbol",
+    "name": "TransKSymbol",
+    "type": "concept",
+    "definition": "交易类型",
+    "scope": "trans.k_symbol codes",
+    "aliases": [
+      "trans k_symbol",
+      "k_symbol",
+      "trans k symbol"
+    ],
+    "evidence": []
+  }
+]

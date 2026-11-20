@@ -168,7 +168,7 @@ def fig10_by_source(meta):
             cov = bool(gold) and gold <= {t.lower() for t in mt}
             src = meta[f"{fold}:{qid}"]["source_db"]
             per[src][0] += cov; per[src][1] += 1; tot[0] += cov; tot[1] += 1
-            listed_all = "库中其他表" in sysmsg
+            listed_all = len(set(re.findall(r"\btb\d{3}\b", sysmsg))) == 60     # every table code of the merged schema
             per["_prompt_lists_other_tables_by_name"][0] += listed_all; per["_prompt_lists_other_tables_by_name"][1] += 1
     res = {k: {"runs": v[1], "all_gold_tables_expanded_pct": round(100 * v[0] / v[1], 1)} for k, v in sorted(per.items())}
     res["_all"] = {"runs": tot[1], "all_gold_tables_expanded_pct": round(100 * tot[0] / max(1, tot[1]), 1)}

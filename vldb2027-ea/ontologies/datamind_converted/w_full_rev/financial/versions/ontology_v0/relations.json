@@ -1,0 +1,252 @@
+[
+  {
+    "id": "rel_derived_averagesalarygap__from__concept_averagesalary",
+    "source": "concept_averagesalary",
+    "relation_type": "derivation",
+    "target": "derived_averagesalarygap",
+    "connection_condition": "same entity and period",
+    "description": "AverageSalaryGap is computed from AverageSalary: MAX(AverageSalary) - MIN(AverageSalary)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_unemploymentrateincrement1995to1996__from__concept_unemploymentrate1995",
+    "source": "concept_unemploymentrate1995",
+    "relation_type": "derivation",
+    "target": "derived_unemploymentrateincrement1995to1996",
+    "connection_condition": "same entity and period",
+    "description": "UnemploymentRateIncrement1995To1996 is computed from UnemploymentRate1995: (UnemploymentRate1996 - UnemploymentRate1995) / UnemploymentRate1995 * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_unemploymentrateincrement1995to1996__from__concept_unemploymentrate1996",
+    "source": "concept_unemploymentrate1996",
+    "relation_type": "derivation",
+    "target": "derived_unemploymentrateincrement1995to1996",
+    "connection_condition": "same entity and period",
+    "description": "UnemploymentRateIncrement1995To1996 is computed from UnemploymentRate1996: (UnemploymentRate1996 - UnemploymentRate1995) / UnemploymentRate1995 * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_maleclientpercentage__from__concept_maleclient",
+    "source": "concept_maleclient",
+    "relation_type": "derivation",
+    "target": "derived_maleclientpercentage",
+    "connection_condition": "same entity and period",
+    "description": "MaleClientPercentage is computed from MaleClient: COUNT(MaleClient) / COUNT(Client) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_femaleaccountholdercount__from__concept_femaleclient",
+    "source": "concept_femaleclient",
+    "relation_type": "derivation",
+    "target": "derived_femaleaccountholdercount",
+    "connection_condition": "same entity and period",
+    "description": "FemaleAccountHolderCount is computed from FemaleClient: COUNT(DISTINCT FemaleClient.client_id)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_averageloanamountrunning__from__concept_loanamount",
+    "source": "concept_loanamount",
+    "relation_type": "derivation",
+    "target": "derived_averageloanamountrunning",
+    "connection_condition": "same entity and period",
+    "description": "AverageLoanAmountRunning is computed from LoanAmount: AVG(LoanAmount) WHERE RunningLoan",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_averageloanamountrunning__from__concept_runningloan",
+    "source": "concept_runningloan",
+    "relation_type": "derivation",
+    "target": "derived_averageloanamountrunning",
+    "connection_condition": "same entity and period",
+    "description": "AverageLoanAmountRunning is computed from RunningLoan: AVG(LoanAmount) WHERE RunningLoan",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_crimesperregion1995__from__concept_crimes1995",
+    "source": "concept_crimes1995",
+    "relation_type": "derivation",
+    "target": "derived_crimesperregion1995",
+    "connection_condition": "same entity and period",
+    "description": "CrimesPerRegion1995 is computed from Crimes1995: SUM(Crimes1995) GROUP BY Region",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_crimesperregion1995__from__concept_region",
+    "source": "concept_region",
+    "relation_type": "derivation",
+    "target": "derived_crimesperregion1995",
+    "connection_condition": "same entity and period",
+    "description": "CrimesPerRegion1995 is computed from Region: SUM(Crimes1995) GROUP BY Region",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_clientage__from__concept_birthbefore1950",
+    "source": "concept_birthbefore1950",
+    "relation_type": "derivation",
+    "target": "derived_clientage",
+    "connection_condition": "same entity and period",
+    "description": "ClientAge is computed from BirthBefore1950: YEAR(CURRENT_DATE) - YEAR(birth_date)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_accountcountperdistrict__from__concept_district",
+    "source": "concept_district",
+    "relation_type": "derivation",
+    "target": "derived_accountcountperdistrict",
+    "connection_condition": "same entity and period",
+    "description": "AccountCountPerDistrict is computed from District: COUNT(account_id) GROUP BY District",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_loancountrunning__from__concept_runningloan",
+    "source": "concept_runningloan",
+    "relation_type": "derivation",
+    "target": "derived_loancountrunning",
+    "connection_condition": "same entity and period",
+    "description": "LoanCountRunning is computed from RunningLoan: COUNT(loan_id) WHERE RunningLoan",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_creditcardwithdrawalcount__from__concept_creditcardwithdrawal",
+    "source": "concept_creditcardwithdrawal",
+    "relation_type": "derivation",
+    "target": "derived_creditcardwithdrawalcount",
+    "connection_condition": "same entity and period",
+    "description": "CreditCardWithdrawalCount is computed from CreditCardWithdrawal: COUNT(trans_id) WHERE CreditCardWithdrawal",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_goldcardclientcount__from__concept_goldcard",
+    "source": "concept_goldcard",
+    "relation_type": "derivation",
+    "target": "derived_goldcardclientcount",
+    "connection_condition": "same entity and period",
+    "description": "GoldCardClientCount is computed from GoldCard: COUNT(DISTINCT client_id) WHERE GoldCard",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_loaneligibleclientcount__from__concept_loaneligibleowner",
+    "source": "concept_loaneligibleowner",
+    "relation_type": "derivation",
+    "target": "derived_loaneligibleclientcount",
+    "connection_condition": "same entity and period",
+    "description": "LoanEligibleClientCount is computed from LoanEligibleOwner: COUNT(DISTINCT client_id) WHERE LoanEligibleOwner",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_accountopenedfrom1997count__from__concept_accountopenedfrom1997",
+    "source": "concept_accountopenedfrom1997",
+    "relation_type": "derivation",
+    "target": "derived_accountopenedfrom1997count",
+    "connection_condition": "same entity and period",
+    "description": "AccountOpenedFrom1997Count is computed from AccountOpenedFrom1997: COUNT(account_id) WHERE AccountOpenedFrom1997",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_transactionin1998count__from__concept_transactionin1998",
+    "source": "concept_transactionin1998",
+    "relation_type": "derivation",
+    "target": "derived_transactionin1998count",
+    "connection_condition": "same entity and period",
+    "description": "TransactionIn1998Count is computed from TransactionIn1998: COUNT(trans_id) WHERE TransactionIn1998",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_branchlocation1accountcount__from__concept_branchlocation1",
+    "source": "concept_branchlocation1",
+    "relation_type": "derivation",
+    "target": "derived_branchlocation1accountcount",
+    "connection_condition": "same entity and period",
+    "description": "BranchLocation1AccountCount is computed from BranchLocation1: COUNT(account_id) WHERE BranchLocation1",
+    "evidence": []
+  },
+  {
+    "id": "rel_district__account__district_id",
+    "source": "term_district",
+    "relation_type": "composition",
+    "target": "term_account",
+    "connection_condition": "account.district_id corresponds to district.district_id",
+    "description": "归属; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_district__account__district_id"
+    ]
+  },
+  {
+    "id": "rel_district__client__district_id",
+    "source": "term_district",
+    "relation_type": "composition",
+    "target": "term_client",
+    "connection_condition": "client.district_id corresponds to district.district_id",
+    "description": "归属; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_district__client__district_id"
+    ]
+  },
+  {
+    "id": "rel_client__disp__client_id",
+    "source": "term_client",
+    "relation_type": "composition",
+    "target": "term_disp",
+    "connection_condition": "disp.client_id corresponds to client.client_id",
+    "description": "关联; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_client__disp__client_id"
+    ]
+  },
+  {
+    "id": "rel_account__disp__account_id",
+    "source": "term_account",
+    "relation_type": "composition",
+    "target": "term_disp",
+    "connection_condition": "disp.account_id corresponds to account.account_id",
+    "description": "关联; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_account__disp__account_id"
+    ]
+  },
+  {
+    "id": "rel_disp__card__disp_id",
+    "source": "term_disp",
+    "relation_type": "composition",
+    "target": "term_card",
+    "connection_condition": "card.disp_id corresponds to disp.disp_id",
+    "description": "绑定; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_disp__card__disp_id"
+    ]
+  },
+  {
+    "id": "rel_account__loan__account_id",
+    "source": "term_account",
+    "relation_type": "composition",
+    "target": "term_loan",
+    "connection_condition": "loan.account_id corresponds to account.account_id",
+    "description": "发放至; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_account__loan__account_id"
+    ]
+  },
+  {
+    "id": "rel_account__order__account_id",
+    "source": "term_account",
+    "relation_type": "composition",
+    "target": "term_order",
+    "connection_condition": "order.account_id corresponds to account.account_id",
+    "description": "发起自; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_account__order__account_id"
+    ]
+  },
+  {
+    "id": "rel_account__trans__account_id",
+    "source": "term_account",
+    "relation_type": "composition",
+    "target": "term_trans",
+    "connection_condition": "trans.account_id corresponds to account.account_id",
+    "description": "发生于; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_account__trans__account_id"
+    ]
+  }
+]

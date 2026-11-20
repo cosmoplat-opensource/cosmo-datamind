@@ -1,0 +1,426 @@
+[
+  {
+    "id": "ev_schema_attendance",
+    "source": "student_club.sqlite",
+    "query": "PRAGMA table_info(attendance)",
+    "result": "Table attendance(link_to_event, link_to_member)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_budget",
+    "source": "student_club.sqlite",
+    "query": "PRAGMA table_info(budget)",
+    "result": "Table budget(budget_id, category, spent, remaining, amount, event_status, link_to_event)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_budget__category",
+    "source": "student_club.sqlite",
+    "query": "SELECT DISTINCT category FROM budget",
+    "result": "Advertisement / Club T-Shirts / Food / Parking / Speaker Gifts",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_budget__amount",
+    "source": "student_club.sqlite",
+    "query": "SELECT DISTINCT amount FROM budget",
+    "result": "10 / 150 / 155 / 20 / 25 / 300 / 350 / 55 / 75",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_budget__event_status",
+    "source": "student_club.sqlite",
+    "query": "SELECT DISTINCT event_status FROM budget",
+    "result": "Closed / Open / Planning",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_event",
+    "source": "student_club.sqlite",
+    "query": "PRAGMA table_info(event)",
+    "result": "Table event(event_id, event_name, event_date, type, notes, location, status)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_event__type",
+    "source": "student_club.sqlite",
+    "query": "SELECT DISTINCT type FROM event",
+    "result": "Budget / Community Service / Election / Game / Guest Speaker / Meeting / Registration / Social",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_event__status",
+    "source": "student_club.sqlite",
+    "query": "SELECT DISTINCT status FROM event",
+    "result": "Closed / Open / Planning",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_expense",
+    "source": "student_club.sqlite",
+    "query": "PRAGMA table_info(expense)",
+    "result": "Table expense(expense_id, expense_description, expense_date, cost, approved, link_to_member, link_to_budget)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_expense__approved",
+    "source": "student_club.sqlite",
+    "query": "SELECT DISTINCT approved FROM expense",
+    "result": "true",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_expense__link_to_member",
+    "source": "student_club.sqlite",
+    "query": "SELECT DISTINCT link_to_member FROM expense",
+    "result": "rec4BLdZHS2Blfp4v / recD078PnS3x2doBe / recro8T1MPMwRadVH",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_income",
+    "source": "student_club.sqlite",
+    "query": "PRAGMA table_info(income)",
+    "result": "Table income(income_id, date_received, amount, source, notes, link_to_member)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_income__amount",
+    "source": "student_club.sqlite",
+    "query": "SELECT DISTINCT amount FROM income",
+    "result": "1000 / 200 / 3000 / 50",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_income__source",
+    "source": "student_club.sqlite",
+    "query": "SELECT DISTINCT source FROM income",
+    "result": "Dues / Fundraising / School Appropration / Sponsorship",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_major",
+    "source": "student_club.sqlite",
+    "query": "PRAGMA table_info(major)",
+    "result": "Table major(major_id, major_name, department, college)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_member",
+    "source": "student_club.sqlite",
+    "query": "PRAGMA table_info(member)",
+    "result": "Table member(member_id, first_name, last_name, email, position, t_shirt_size, phone, zip, link_to_major)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_member__position",
+    "source": "student_club.sqlite",
+    "query": "SELECT DISTINCT position FROM member",
+    "result": "Inactive / Member / President / Secretary / Treasurer / Vice President",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_member__t_shirt_size",
+    "source": "student_club.sqlite",
+    "query": "SELECT DISTINCT t_shirt_size FROM member",
+    "result": "Large / Medium / Small / X-Large",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_zip_code",
+    "source": "student_club.sqlite",
+    "query": "PRAGMA table_info(zip_code)",
+    "result": "Table zip_code(zip_code, type, city, county, state, short_state)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_zip_code__type",
+    "source": "student_club.sqlite",
+    "query": "SELECT DISTINCT type FROM zip_code",
+    "result": "PO Box / Standard / Unique",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_membermajor",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM major",
+    "result": "113 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_memberdepartment",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM major",
+    "result": "113 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_membercollege",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM major",
+    "result": "113 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_membertshirtsize",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM member",
+    "result": "33 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_memberposition",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM member",
+    "result": "33 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_eventname",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM event",
+    "result": "42 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_eventtype",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM event",
+    "result": "42 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_eventstatus",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM event",
+    "result": "42 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_eventlocation",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM event",
+    "result": "42 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_eventdate",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM event",
+    "result": "42 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_budgetcategory",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM budget",
+    "result": "52 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_budgetamount",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM budget",
+    "result": "52 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_budgetspent",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM budget",
+    "result": "52 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_expensecost",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM expense",
+    "result": "32 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_expensedescription",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM expense",
+    "result": "32 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_expensedate",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM expense",
+    "result": "32 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_incomeamount",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM income",
+    "result": "36 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_incomesource",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM income",
+    "result": "36 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_incomedatereceived",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM income",
+    "result": "36 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_incomenotes",
+    "source": "student_club.sqlite",
+    "query": "SELECT COUNT(*) FROM income",
+    "result": "36 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_0",
+    "source": "student_club.sqlite",
+    "query": "SELECT event_date FROM event LIMIT 5;",
+    "result": "[[\"2020-03-10T12:00:00\"], [\"2020-01-14T09:30:00\"], [\"2019-11-24T09:00:00\"]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_1",
+    "source": "student_club.sqlite",
+    "query": "SELECT DISTINCT source FROM income;",
+    "result": "[[\"Dues\"], [\"Fundraising\"], [\"School Appropration\"]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_2",
+    "source": "student_club.sqlite",
+    "query": "SELECT DISTINCT category FROM budget;",
+    "result": "[[\"Advertisement\"], [\"Food\"], [\"Speaker Gifts\"]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_3",
+    "source": "student_club.sqlite",
+    "query": "SELECT expense_description FROM expense WHERE expense_description LIKE '%,%' LIMIT 5;",
+    "result": "[[\"Post Cards, Posters\"], [\"Water, Cookies\"], [\"Water, Cookies\"]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_4",
+    "source": "student_club.sqlite",
+    "query": "SELECT DISTINCT status FROM event;",
+    "result": "[[\"Open\"], [\"Planning\"], [\"Closed\"]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_event__attendance__link_to_event",
+    "source": "student_club.sqlite",
+    "query": "distinct values of attendance.link_to_event contained in event.event_id",
+    "result": "overlap 100.0% (17/17 distinct child values); parent key unique: True; child rows 326, parent rows 42",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_member__attendance__link_to_member",
+    "source": "student_club.sqlite",
+    "query": "distinct values of attendance.link_to_member contained in member.member_id",
+    "result": "overlap 100.0% (30/30 distinct child values); parent key unique: True; child rows 326, parent rows 33",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_event__budget__link_to_event",
+    "source": "student_club.sqlite",
+    "query": "distinct values of budget.link_to_event contained in event.event_id",
+    "result": "overlap 100.0% (23/23 distinct child values); parent key unique: True; child rows 52, parent rows 42",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_member__expense__link_to_member",
+    "source": "student_club.sqlite",
+    "query": "distinct values of expense.link_to_member contained in member.member_id",
+    "result": "overlap 100.0% (3/3 distinct child values); parent key unique: True; child rows 32, parent rows 33",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_budget__expense__link_to_budget",
+    "source": "student_club.sqlite",
+    "query": "distinct values of expense.link_to_budget contained in budget.budget_id",
+    "result": "overlap 100.0% (24/24 distinct child values); parent key unique: True; child rows 32, parent rows 52",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_member__income__link_to_member",
+    "source": "student_club.sqlite",
+    "query": "distinct values of income.link_to_member contained in member.member_id",
+    "result": "overlap 100.0% (31/31 distinct child values); parent key unique: True; child rows 36, parent rows 33",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_major__member__link_to_major",
+    "source": "student_club.sqlite",
+    "query": "distinct values of member.link_to_major contained in major.major_id",
+    "result": "overlap 100.0% (26/26 distinct child values); parent key unique: True; child rows 33, parent rows 113",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_zip_code__member__zip",
+    "source": "student_club.sqlite",
+    "query": "distinct values of member.zip contained in zip_code.zip_code",
+    "result": "overlap 100.0% (33/33 distinct child values); parent key unique: True; child rows 33, parent rows 41877",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  }
+]

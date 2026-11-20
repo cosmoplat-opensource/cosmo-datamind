@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
-"""File-access audit of the input-aligned EvoOntology builds (Section 3.1), with the rules of audit_evo_builds.py plus
-reads of the original workloads (which carry BIRD ids, difficulty and source database) or of EvoOntology's own
-construction_workload files. Glob/Grep/LS calls that only list such paths are reported separately (listing exposes file
-names, not contents). Output: runs/v4/evo_build_audit_aligned_20261120.json"""
-import glob
+"""File-access audit of the two input-aligned EvoOntology builds (Section 3.1).
+Flags, for every tool call of a builder session:
+  - the rules of audit_evo_builds.py (mapping, rewritten questions, dictionaries, split directories, gold SQL);
+  - any path under runs/ other than the session's own workspace runs/v2/evo/w_opaque_merged_<fold>_aligned (that rule
+    in audit_evo_builds.py lets through every runs/v2/evo/w_opaque* workspace);
+  - any mention of the original workloads (variants/opaque_merged/workload/, which carry BIRD ids, difficulty and
+    source database) or of EvoOntology's construction_workload files;
+  - Glob/Grep/LS calls whose pattern contains "workload" other than workload_aligned, reported with their result, since
+    a listing can expose file names.
+Only the final log of each session is read (bird_merged.jsonl; the .attempt1 logs are earlier copies).
+Output: runs/v4/evo_build_audit_aligned_20261120.json"""
 import json
 import re
 from pathlib import Path
@@ -11,27 +17,43 @@ from pathlib import Path
 import audit_evo_builds as A
 
 EXP = Path(__file__).resolve().parent
-EXTRA = re.compile(r"opaque_merged/workload/|construction_workload")
+ORIG = re.compile(r"opaque_merged/workload/|construction_workload")
 out = {}
-for f in sorted(glob.glob(str(EXP / "runs/v2/build_logs/evo-w__opaque_merged_*_aligned/*.jsonl"))):
-    calls, hits = A.audit(f)
-    reads, lists = [], []
-    for line in open(f, errors="replace"):
+for fold in ("fwd", "rev"):
+    log = EXP / f"runs/v2/build_logs/evo-w__opaque_merged_{fold}_aligned/bird_merged.jsonl"
+    own = f"runs/v2/evo/w_opaque_merged_{fold}_aligned"
+    calls, hits = A.audit(log)
+    other_runs, orig, listings, pending = [], [], [], {}
+    for line in open(log, errors="replace"):
         try:
             ev = json.loads(line)
         except ValueError:
             continue
-        if ev.get("type") != "assistant":
+        m = ev.get("message")
+        if not isinstance(m, dict) or not isinstance(m.get("content"), list):
             continue
-        for c in (ev.get("message") or {}).get("content") or []:
-            if isinstance(c, dict) and c.get("type") == "tool_use":
+        for c in m["content"]:
+            if not isinstance(c, dict):
+                continue
+            if c.get("type") == "tool_use":
                 s = json.dumps(c.get("input"), ensure_ascii=False)
-                if EXTRA.search(s):
-                    (lists if c.get("name") in ("Glob", "Grep", "LS") else reads).append({"tool": c.get("name"), "input": s[:300]})
-    out[str(Path(f).relative_to(EXP))] = {"tool_calls": calls, "flagged_by_v4_rules": hits,
-                                           "reads_of_original_workloads": reads, "listings_matching_workload_names": lists}
+                for p in re.findall(r"runs/[^\s\"']*", s):
+                    if not p.startswith(own):
+                        other_runs.append({"tool": c.get("name"), "path": p[:200]})
+                if ORIG.search(s):
+                    orig.append({"tool": c.get("name"), "input": s[:300]})
+                if c.get("name") in ("Glob", "Grep", "LS") and re.search(r"workload(?!_aligned)", s, re.I):
+                    pending[c.get("id")] = {"tool": c.get("name"), "input": s[:300]}
+            elif c.get("type") == "tool_result" and c.get("tool_use_id") in pending:
+                x = pending.pop(c["tool_use_id"])
+                x["result"] = json.dumps(c.get("content"), ensure_ascii=False)[:1500]
+                listings.append(x)
+    out[fold] = {"log": str(log.relative_to(EXP)), "tool_calls": calls, "flagged_by_v4_rules": hits,
+                 "paths_under_runs_outside_own_workspace": other_runs, "original_workload_mentions": orig,
+                 "listings_with_workload_pattern": listings + list(pending.values())}
 (EXP / "runs/v4/evo_build_audit_aligned_20261120.json").write_text(json.dumps(out, ensure_ascii=False, indent=1))
-for k, v in out.items():
-    print(k, v["tool_calls"], len(v["flagged_by_v4_rules"]), len(v["reads_of_original_workloads"]), len(v["listings_matching_workload_names"]))
-    for x in v["flagged_by_v4_rules"] + v["reads_of_original_workloads"] + v["listings_matching_workload_names"]:
-        print("   ", x.get("tool"), (x.get("excerpt") or x.get("input"))[:200])
+for f, v in out.items():
+    print(f, v["tool_calls"], len(v["flagged_by_v4_rules"]), len(v["paths_under_runs_outside_own_workspace"]),
+          len(v["original_workload_mentions"]), len(v["listings_with_workload_pattern"]))
+    for x in v["paths_under_runs_outside_own_workspace"][:5] + v["listings_with_workload_pattern"]:
+        print("   ", x)

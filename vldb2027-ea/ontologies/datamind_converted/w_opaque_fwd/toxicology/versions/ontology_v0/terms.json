@@ -1,0 +1,187 @@
+[
+  {
+    "id": "term_tab03",
+    "name": "tab03",
+    "type": "entity",
+    "definition": "业务记录表 Counterexample: 与 tab04 等表族成员的区别:它们是同一业务概念在不同厂区/层级/站点的副本,不构成独立概念;与物理实体类对象的区别:本对象是信息记录,不是实物。 Maturity: Provisional",
+    "scope": "Records of table tab03; provenance: direct source tab03",
+    "aliases": [
+      "业务记录表"
+    ],
+    "evidence": [
+      "ev_schema_tab03"
+    ]
+  },
+  {
+    "id": "term_tab04",
+    "name": "tab04",
+    "type": "entity",
+    "definition": "tab04 Maturity: Provisional",
+    "scope": "Records of table tab04; provenance: direct source tab04",
+    "aliases": [],
+    "evidence": [
+      "ev_schema_tab04"
+    ]
+  },
+  {
+    "id": "concept_atom",
+    "name": "Atom",
+    "type": "concept",
+    "definition": "A single atom record within a molecule, identified by its atom id.",
+    "scope": "tab03",
+    "aliases": [
+      "atoms",
+      "element occurrence",
+      "atom record"
+    ],
+    "evidence": [
+      "ev_concept_atom"
+    ]
+  },
+  {
+    "id": "concept_bond",
+    "name": "Bond",
+    "type": "concept",
+    "definition": "A bond record connecting two atoms, identified by a bond id.",
+    "scope": "tab03",
+    "aliases": [
+      "bonds",
+      "bond record",
+      "bond id"
+    ],
+    "evidence": [
+      "ev_concept_bond"
+    ]
+  },
+  {
+    "id": "concept_molecule",
+    "name": "Molecule",
+    "type": "concept",
+    "definition": "A molecule record identified by its molecule id.",
+    "scope": "tab04",
+    "aliases": [
+      "molecules",
+      "molecule id",
+      "compound"
+    ],
+    "evidence": [
+      "ev_concept_molecule"
+    ]
+  },
+  {
+    "id": "concept_carcinogenic",
+    "name": "Carcinogenic",
+    "type": "concept",
+    "definition": "Molecules flagged as carcinogenic by the '+' label.",
+    "scope": "tab04 where fld007 = '+'",
+    "aliases": [
+      "carcinogenic molecules",
+      "carcinogenic-type",
+      "+ label"
+    ],
+    "evidence": [
+      "ev_concept_carcinogenic"
+    ]
+  },
+  {
+    "id": "concept_noncarcinogenic",
+    "name": "NonCarcinogenic",
+    "type": "concept",
+    "definition": "Molecules flagged as non-carcinogenic by the '-' label.",
+    "scope": "tab04 where fld007 = '-'",
+    "aliases": [
+      "non-carcinogenic",
+      "not carcinogenic",
+      "non carcinogenic",
+      "- label"
+    ],
+    "evidence": [
+      "ev_concept_noncarcinogenic"
+    ]
+  },
+  {
+    "id": "concept_bondatom2",
+    "name": "BondAtom2",
+    "type": "concept",
+    "definition": "The second atom id participating in a bond.",
+    "scope": "tab03",
+    "aliases": [
+      "second atom",
+      "atom 2",
+      "other atom of the bond",
+      "bond atom 2"
+    ],
+    "evidence": [
+      "ev_concept_bondatom2"
+    ]
+  },
+  {
+    "id": "derived_carcinogenicmoleculepercentage",
+    "name": "CarcinogenicMoleculePercentage",
+    "type": "metric",
+    "definition": "Share of all molecules that are carcinogenic. Formula: Carcinogenic / Molecule. Inputs: Carcinogenic = tab04.fld007 WHERE fld007 = '+'; Molecule = tab04.fld002",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of molecules that are carcinogenic",
+      "carcinogenic percentage",
+      "share carcinogenic",
+      "carcinogenic molecule percentage"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_noncarcinogenicmoleculepercentage",
+    "name": "NonCarcinogenicMoleculePercentage",
+    "type": "metric",
+    "definition": "Share of all molecules that are non-carcinogenic. Formula: NonCarcinogenic / Molecule. Inputs: NonCarcinogenic = tab04.fld007 WHERE fld007 = '-'; Molecule = tab04.fld002",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage non-carcinogenic",
+      "share not carcinogenic",
+      "non carcinogenic molecule percentage"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_averagebondsperatom",
+    "name": "AverageBondsPerAtom",
+    "type": "metric",
+    "definition": "Average number of bond records per atom for a given element. Formula: Bond / Atom. Inputs: Bond = tab03.fld004; Atom = tab03.fld001",
+    "scope": "derived metric",
+    "aliases": [
+      "average number of bonds per atom",
+      "bonds per atom",
+      "avg bonds",
+      "average bonds per atom"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_distinctatomcount",
+    "name": "DistinctAtomCount",
+    "type": "metric",
+    "definition": "Count of unique atom ids matching a condition. Formula: COUNT(DISTINCT Atom). Inputs: Atom = tab03.fld001",
+    "scope": "derived metric",
+    "aliases": [
+      "distinct atoms",
+      "unique atoms",
+      "count distinct atoms",
+      "distinct atom count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_carcinogenicity",
+    "name": "Carcinogenicity",
+    "type": "concept",
+    "definition": "Which molecules are carcinogenic vs non-carcinogenic and what share they represent.",
+    "scope": "tab04.fld007 codes",
+    "aliases": [
+      "carcinogenic",
+      "risk",
+      "toxicity label",
+      "carcinogenicity"
+    ],
+    "evidence": []
+  }
+]

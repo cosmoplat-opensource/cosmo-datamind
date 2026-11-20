@@ -1,0 +1,207 @@
+[
+  {
+    "id": "rel_derived_totalgoals__from__concept_hometeamgoals",
+    "source": "concept_hometeamgoals",
+    "relation_type": "derivation",
+    "target": "derived_totalgoals",
+    "connection_condition": "same entity and period",
+    "description": "TotalGoals is computed from HomeTeamGoals: HomeTeamGoals + AwayTeamGoals",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_totalgoals__from__concept_awayteamgoals",
+    "source": "concept_awayteamgoals",
+    "relation_type": "derivation",
+    "target": "derived_totalgoals",
+    "connection_condition": "same entity and period",
+    "description": "TotalGoals is computed from AwayTeamGoals: HomeTeamGoals + AwayTeamGoals",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_averageoverallrating__from__concept_overallrating",
+    "source": "concept_overallrating",
+    "relation_type": "derivation",
+    "target": "derived_averageoverallrating",
+    "connection_condition": "same entity and period",
+    "description": "AverageOverallRating is computed from OverallRating: AVG(OverallRating)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_ratingpercentagedifference__from__concept_overallrating",
+    "source": "concept_overallrating",
+    "relation_type": "derivation",
+    "target": "derived_ratingpercentagedifference",
+    "connection_condition": "same entity and period",
+    "description": "RatingPercentageDifference is computed from OverallRating: (OverallRating_player1 - OverallRating_player2) / OverallRating_player2 * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_averagebuildupplaypassing__from__concept_buildupplaypassing",
+    "source": "concept_buildupplaypassing",
+    "relation_type": "derivation",
+    "target": "derived_averagebuildupplaypassing",
+    "connection_condition": "same entity and period",
+    "description": "AverageBuildUpPlayPassing is computed from BuildUpPlayPassing: AVG(BuildUpPlayPassing)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_averagefinishing__from__concept_finishing",
+    "source": "concept_finishing",
+    "relation_type": "derivation",
+    "target": "derived_averagefinishing",
+    "connection_condition": "same entity and period",
+    "description": "AverageFinishing is computed from Finishing: AVG(Finishing)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_maxheight__from__concept_height",
+    "source": "concept_height",
+    "relation_type": "derivation",
+    "target": "derived_maxheight",
+    "connection_condition": "same entity and period",
+    "description": "MaxHeight is computed from Height: MAX(Height)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_minheight__from__concept_height",
+    "source": "concept_height",
+    "relation_type": "derivation",
+    "target": "derived_minheight",
+    "connection_condition": "same entity and period",
+    "description": "MinHeight is computed from Height: MIN(Height)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_countplayers__from__concept_playername",
+    "source": "concept_playername",
+    "relation_type": "derivation",
+    "target": "derived_countplayers",
+    "connection_condition": "same entity and period",
+    "description": "CountPlayers is computed from PlayerName: COUNT(PlayerName)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_countmatches__from__concept_season",
+    "source": "concept_season",
+    "relation_type": "derivation",
+    "target": "derived_countmatches",
+    "connection_condition": "same entity and period",
+    "description": "CountMatches is computed from Season: COUNT(Match.id)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_countmatches__from__concept_leaguename",
+    "source": "concept_leaguename",
+    "relation_type": "derivation",
+    "target": "derived_countmatches",
+    "connection_condition": "same entity and period",
+    "description": "CountMatches is computed from LeagueName: COUNT(Match.id)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_countwins__from__concept_hometeamgoals",
+    "source": "concept_hometeamgoals",
+    "relation_type": "derivation",
+    "target": "derived_countwins",
+    "connection_condition": "same entity and period",
+    "description": "CountWins is computed from HomeTeamGoals: COUNT(CASE WHEN HomeTeamGoals > AwayTeamGoals THEN 1 END) + COUNT(CASE WHEN AwayTeamGoals > HomeTeamGoals THEN 1 END)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_countwins__from__concept_awayteamgoals",
+    "source": "concept_awayteamgoals",
+    "relation_type": "derivation",
+    "target": "derived_countwins",
+    "connection_condition": "same entity and period",
+    "description": "CountWins is computed from AwayTeamGoals: COUNT(CASE WHEN HomeTeamGoals > AwayTeamGoals THEN 1 END) + COUNT(CASE WHEN AwayTeamGoals > HomeTeamGoals THEN 1 END)",
+    "evidence": []
+  },
+  {
+    "id": "rel_country__league__country_id",
+    "source": "term_country",
+    "relation_type": "composition",
+    "target": "term_league",
+    "connection_condition": "League.country_id corresponds to Country.id",
+    "description": "归属; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_country__league__country_id"
+    ]
+  },
+  {
+    "id": "rel_country__league__country_id__id",
+    "source": "term_country",
+    "relation_type": "composition",
+    "target": "term_league",
+    "connection_condition": "League.id corresponds to Country.id",
+    "description": "role key of the same relation (id)",
+    "evidence": [
+      "ev_rel_country__league__country_id__id"
+    ]
+  },
+  {
+    "id": "rel_league__match__league_id",
+    "source": "term_league",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.league_id corresponds to League.id",
+    "description": "归属; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_league__match__league_id"
+    ]
+  },
+  {
+    "id": "rel_country__match__country_id",
+    "source": "term_country",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.country_id corresponds to Country.id",
+    "description": "归属; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_country__match__country_id"
+    ]
+  },
+  {
+    "id": "rel_team__match__home_team_api_id",
+    "source": "term_team",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.home_team_api_id corresponds to Team.team_api_id",
+    "description": "包含主队; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_team__match__home_team_api_id"
+    ]
+  },
+  {
+    "id": "rel_team__match__home_team_api_id__away_team_api_id",
+    "source": "term_team",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.away_team_api_id corresponds to Team.team_api_id",
+    "description": "role key of the same relation (away_team_api_id)",
+    "evidence": [
+      "ev_rel_team__match__home_team_api_id__away_team_api_id"
+    ]
+  },
+  {
+    "id": "rel_player__player_attributes__player_api_id",
+    "source": "term_player",
+    "relation_type": "composition",
+    "target": "term_player_attributes",
+    "connection_condition": "Player_Attributes.player_api_id corresponds to Player.player_api_id",
+    "description": "描述; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_player__player_attributes__player_api_id"
+    ]
+  },
+  {
+    "id": "rel_team__team_attributes__team_api_id",
+    "source": "term_team",
+    "relation_type": "composition",
+    "target": "term_team_attributes",
+    "connection_condition": "Team_Attributes.team_api_id corresponds to Team.team_api_id",
+    "description": "描述; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_team__team_attributes__team_api_id"
+    ]
+  }
+]

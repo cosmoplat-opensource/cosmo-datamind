@@ -1,0 +1,178 @@
+[
+  {
+    "id": "c_values_molecule__label",
+    "target": "term_molecule",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "label",
+      "molecule",
+      "+",
+      "-"
+    ],
+    "severity": "warning",
+    "scope": "Filters on molecule.label",
+    "confidence": "high",
+    "description": "molecule.label only takes these stored values: + / -. Filter with the stored spelling.",
+    "evidence": [
+      "ev_values_molecule__label"
+    ]
+  },
+  {
+    "id": "c_values_bond__bond_type",
+    "target": "term_bond",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "bond_type",
+      "bond",
+      "#",
+      "-",
+      "="
+    ],
+    "severity": "warning",
+    "scope": "Filters on bond.bond_type",
+    "confidence": "high",
+    "description": "bond.bond_type only takes these stored values: # / - / =. Filter with the stored spelling.",
+    "evidence": [
+      "ev_values_bond__bond_type"
+    ]
+  },
+  {
+    "id": "c_caveat_0",
+    "target": "term_molecule",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Bond",
+      "type",
+      "values",
+      "include",
+      "spaces",
+      "causing",
+      "equality",
+      "filters",
+      "miss",
+      "rows"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Bond type values may include spaces (e.g. ' = ' vs '='), causing equality filters to miss rows.",
+    "evidence": [
+      "ev_caveat_0"
+    ]
+  },
+  {
+    "id": "c_caveat_1",
+    "target": "term_molecule",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Some",
+      "atoms",
+      "present",
+      "connected",
+      "table",
+      "joins",
+      "atom_id",
+      "drop",
+      "them"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Some atoms are not present in the connected table, so joins on atom_id may drop them.",
+    "evidence": [
+      "ev_caveat_1"
+    ]
+  },
+  {
+    "id": "c_caveat_2",
+    "target": "term_molecule",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Molecule",
+      "labels",
+      "have",
+      "values",
+      "other",
+      "than",
+      "filtering",
+      "only",
+      "miss",
+      "molecules"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Molecule labels may have values other than '+' and '-', so filtering only on '+' or '-' may miss molecules.",
+    "evidence": [
+      "ev_caveat_2"
+    ]
+  },
+  {
+    "id": "c_caveat_3",
+    "target": "term_molecule",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Atom_id",
+      "format",
+      "vary",
+      "substr",
+      "atom_id",
+      "reliably",
+      "extract",
+      "atom",
+      "position",
+      "molecules"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Atom_id format may vary, so substr(atom_id,7,1) may not reliably extract the atom position for all molecules.",
+    "evidence": [
+      "ev_caveat_3"
+    ]
+  },
+  {
+    "id": "c_caveat_4",
+    "target": "term_molecule",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Bond_id",
+      "unique",
+      "molecule",
+      "counting",
+      "bond_id",
+      "without",
+      "grouping",
+      "overcount"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Bond_id may not be unique per molecule, so counting bond_id without grouping by molecule can overcount.",
+    "evidence": [
+      "ev_caveat_4"
+    ]
+  },
+  {
+    "id": "c_caveat_5",
+    "target": "term_molecule",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Element",
+      "values",
+      "uppercase",
+      "lowercase",
+      "filters",
+      "like",
+      "element",
+      "miss"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Element values may be uppercase or lowercase, so filters like element = 'c' may miss 'C'.",
+    "evidence": [
+      "ev_caveat_5"
+    ]
+  }
+]

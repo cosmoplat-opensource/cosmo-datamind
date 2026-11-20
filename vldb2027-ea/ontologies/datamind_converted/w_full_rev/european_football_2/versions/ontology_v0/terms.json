@@ -1,0 +1,547 @@
+[
+  {
+    "id": "term_country",
+    "name": "Country",
+    "type": "entity",
+    "definition": "具有明确地理边界与主权管辖范围的政治实体，是联赛等体育组织活动的所属地域单元 Counterexample: 与'地区/城市'混淆：地区或城市是主权国家内部的次级行政单元，不具备主权属性 Maturity: Provisional",
+    "scope": "Records of table Country; provenance: direct source Country",
+    "aliases": [
+      "国家"
+    ],
+    "evidence": [
+      "ev_schema_country"
+    ]
+  },
+  {
+    "id": "term_league",
+    "name": "League",
+    "type": "entity",
+    "definition": "由若干球队按既定赛制在特定赛季内进行周期性对抗比赛的体育竞赛组织，隶属于某一国家 Counterexample: 与'杯赛/锦标赛'混淆：杯赛通常为淘汰制短期赛事，而联赛为跨时段循环积分赛制 Maturity: Provisional",
+    "scope": "Records of table League; provenance: direct source League",
+    "aliases": [
+      "联赛"
+    ],
+    "evidence": [
+      "ev_schema_league"
+    ]
+  },
+  {
+    "id": "term_match",
+    "name": "Match",
+    "type": "concept",
+    "definition": "在特定日期于某一联赛赛季阶段中，由主队与客队两支球队之间进行的、以进球数决定胜负的体育对抗事件 Counterexample: 与'赛季/阶段'混淆：赛季或阶段是比赛的时间分组容器，本身不是对抗事件 Maturity: Provisional",
+    "scope": "Records of table Match; provenance: direct source Match",
+    "aliases": [
+      "比赛"
+    ],
+    "evidence": [
+      "ev_schema_match"
+    ]
+  },
+  {
+    "id": "term_player",
+    "name": "Player",
+    "type": "entity",
+    "definition": "以参加足球比赛为职业或半职业活动、具备可测量身体属性并隶属于球队的自然人 Counterexample: 与'教练/裁判'混淆：教练与裁判虽参与比赛但不作为参赛球员上场竞技 Maturity: Provisional",
+    "scope": "Records of table Player; provenance: direct source Player",
+    "aliases": [
+      "球员"
+    ],
+    "evidence": [
+      "ev_schema_player"
+    ]
+  },
+  {
+    "id": "term_team",
+    "name": "Team",
+    "type": "entity",
+    "definition": "由多名球员组成、以参加联赛比赛为目的的体育竞技组织，具有正式名称与唯一标识 Counterexample: 与'球员'混淆：球员是自然人个体，球队是由球员组成的组织集体 Maturity: Provisional",
+    "scope": "Records of table Team; provenance: direct source Team",
+    "aliases": [
+      "球队"
+    ],
+    "evidence": [
+      "ev_schema_team"
+    ]
+  },
+  {
+    "id": "term_player_attributes",
+    "name": "Player_Attributes",
+    "type": "entity",
+    "definition": "在某一日期对某名球员的能力评分与身体技术指标进行采集所形成的结构化信息记录，用于描述该球员在彼时的竞技水平 Counterexample: 与'球员'混淆：球员是自然人实体，属性记录是对该实体在特定时点的量化描述信息 Maturity: Provisional",
+    "scope": "Records of table Player_Attributes; provenance: direct source Player_Attributes",
+    "aliases": [
+      "球员属性记录"
+    ],
+    "evidence": [
+      "ev_schema_player_attributes"
+    ]
+  },
+  {
+    "id": "term_team_attributes",
+    "name": "Team_Attributes",
+    "type": "entity",
+    "definition": "在某一日期对某支球队的战术风格与攻防能力进行采集所形成的结构化信息记录，用于描述该球队在彼时的战术特征 Counterexample: 与'球队'混淆：球队是竞技组织实体，属性记录是对该组织在特定时点的战术量化描述信息 Maturity: Provisional",
+    "scope": "Records of table Team_Attributes; provenance: direct source Team_Attributes",
+    "aliases": [
+      "球队属性记录"
+    ],
+    "evidence": [
+      "ev_schema_team_attributes"
+    ]
+  },
+  {
+    "id": "concept_buildupplayspeed",
+    "name": "BuildUpPlaySpeed",
+    "type": "concept",
+    "definition": "Team's build-up play speed attribute value.",
+    "scope": "Team_Attributes",
+    "aliases": [
+      "build-up play speed",
+      "build up play speed"
+    ],
+    "evidence": [
+      "ev_concept_buildupplayspeed"
+    ]
+  },
+  {
+    "id": "concept_buildupplaypassing",
+    "name": "BuildUpPlayPassing",
+    "type": "concept",
+    "definition": "Team's build-up play passing attribute value.",
+    "scope": "Team_Attributes",
+    "aliases": [
+      "build-up play passing",
+      "build up play passing"
+    ],
+    "evidence": [
+      "ev_concept_buildupplaypassing"
+    ]
+  },
+  {
+    "id": "concept_chancecreationpassingclass",
+    "name": "ChanceCreationPassingClass",
+    "type": "concept",
+    "definition": "Classification of team's chance creation passing style.",
+    "scope": "Team_Attributes where chanceCreationPassingClass = 'Safe'",
+    "aliases": [
+      "played safe while creating chance of passing",
+      "chance creation passing class",
+      "safe chance creation passing"
+    ],
+    "evidence": [
+      "ev_concept_chancecreationpassingclass"
+    ]
+  },
+  {
+    "id": "concept_overallrating",
+    "name": "OverallRating",
+    "type": "concept",
+    "definition": "Player's overall rating value.",
+    "scope": "Player_Attributes",
+    "aliases": [
+      "overall rating",
+      "overall_rating",
+      "rating"
+    ],
+    "evidence": [
+      "ev_concept_overallrating"
+    ]
+  },
+  {
+    "id": "concept_attackingworkrate",
+    "name": "AttackingWorkRate",
+    "type": "concept",
+    "definition": "Player's attacking work rate classification.",
+    "scope": "Player_Attributes where attacking_work_rate = 'high'",
+    "aliases": [
+      "attacking work rate",
+      "attacking_work_rate",
+      "tend to be attacking"
+    ],
+    "evidence": [
+      "ev_concept_attackingworkrate"
+    ]
+  },
+  {
+    "id": "concept_defensiveworkrate",
+    "name": "DefensiveWorkRate",
+    "type": "concept",
+    "definition": "Player's defensive work rate classification.",
+    "scope": "Player_Attributes where defensive_work_rate = 'high'",
+    "aliases": [
+      "defensive work rate",
+      "defensive_work_rate",
+      "remain in position and defense"
+    ],
+    "evidence": [
+      "ev_concept_defensiveworkrate"
+    ]
+  },
+  {
+    "id": "concept_height",
+    "name": "Height",
+    "type": "concept",
+    "definition": "Player's height in centimeters.",
+    "scope": "Player",
+    "aliases": [
+      "tallest",
+      "shortest"
+    ],
+    "evidence": [
+      "ev_concept_height"
+    ]
+  },
+  {
+    "id": "concept_volleys",
+    "name": "Volleys",
+    "type": "concept",
+    "definition": "Player's volleys attribute value.",
+    "scope": "Player_Attributes where volleys > 70",
+    "aliases": [
+      "volley score"
+    ],
+    "evidence": [
+      "ev_concept_volleys"
+    ]
+  },
+  {
+    "id": "concept_dribbling",
+    "name": "Dribbling",
+    "type": "concept",
+    "definition": "Player's dribbling attribute value.",
+    "scope": "Player_Attributes where dribbling > 70",
+    "aliases": [
+      "dribbling score"
+    ],
+    "evidence": [
+      "ev_concept_dribbling"
+    ]
+  },
+  {
+    "id": "concept_finishing",
+    "name": "Finishing",
+    "type": "concept",
+    "definition": "Player's finishing attribute value.",
+    "scope": "Player_Attributes",
+    "aliases": [
+      "finishing rate"
+    ],
+    "evidence": [
+      "ev_concept_finishing"
+    ]
+  },
+  {
+    "id": "concept_hometeamgoals",
+    "name": "HomeTeamGoals",
+    "type": "concept",
+    "definition": "Number of goals scored by the home team in a match.",
+    "scope": "Match",
+    "aliases": [
+      "home team goal",
+      "home_team_goal",
+      "home goals",
+      "home team goals"
+    ],
+    "evidence": [
+      "ev_concept_hometeamgoals"
+    ]
+  },
+  {
+    "id": "concept_awayteamgoals",
+    "name": "AwayTeamGoals",
+    "type": "concept",
+    "definition": "Number of goals scored by the away team in a match.",
+    "scope": "Match",
+    "aliases": [
+      "away team goal",
+      "away_team_goal",
+      "away goals",
+      "away team goals"
+    ],
+    "evidence": [
+      "ev_concept_awayteamgoals"
+    ]
+  },
+  {
+    "id": "concept_season",
+    "name": "Season",
+    "type": "concept",
+    "definition": "Season identifier for matches.",
+    "scope": "Match where season = '2015/2016'",
+    "aliases": [
+      "2016 season",
+      "2008/2009 season"
+    ],
+    "evidence": [
+      "ev_concept_season"
+    ]
+  },
+  {
+    "id": "concept_leaguename",
+    "name": "LeagueName",
+    "type": "concept",
+    "definition": "Name of the league.",
+    "scope": "League where name = 'Scotland Premier League'",
+    "aliases": [
+      "league name",
+      "league"
+    ],
+    "evidence": [
+      "ev_concept_leaguename"
+    ]
+  },
+  {
+    "id": "concept_teamlongname",
+    "name": "TeamLongName",
+    "type": "concept",
+    "definition": "Full name of the team.",
+    "scope": "Team",
+    "aliases": [
+      "team long name",
+      "long name of teams",
+      "team name"
+    ],
+    "evidence": [
+      "ev_concept_teamlongname"
+    ]
+  },
+  {
+    "id": "concept_teamshortname",
+    "name": "TeamShortName",
+    "type": "concept",
+    "definition": "Short name of the team.",
+    "scope": "Team",
+    "aliases": [
+      "team short name",
+      "short name of team"
+    ],
+    "evidence": [
+      "ev_concept_teamshortname"
+    ]
+  },
+  {
+    "id": "concept_teamfifaapiid",
+    "name": "TeamFifaApiId",
+    "type": "concept",
+    "definition": "FIFA API identifier for the team.",
+    "scope": "Team",
+    "aliases": [
+      "team_fifa_api_id",
+      "fifa api id",
+      "team fifa api id"
+    ],
+    "evidence": [
+      "ev_concept_teamfifaapiid"
+    ]
+  },
+  {
+    "id": "concept_playername",
+    "name": "PlayerName",
+    "type": "concept",
+    "definition": "Full name of the player.",
+    "scope": "Player",
+    "aliases": [
+      "player name",
+      "name of player",
+      "player_name"
+    ],
+    "evidence": [
+      "ev_concept_playername"
+    ]
+  },
+  {
+    "id": "concept_birthday",
+    "name": "Birthday",
+    "type": "concept",
+    "definition": "Player's date of birth.",
+    "scope": "Player where birthday > '1990-01-01'",
+    "aliases": [
+      "born after",
+      "born before"
+    ],
+    "evidence": [
+      "ev_concept_birthday"
+    ]
+  },
+  {
+    "id": "concept_date",
+    "name": "Date",
+    "type": "concept",
+    "definition": "Date of the attribute record.",
+    "scope": "Player_Attributes where date LIKE '2015-05-01%'",
+    "aliases": [
+      "on date",
+      "from date to date"
+    ],
+    "evidence": [
+      "ev_concept_date"
+    ]
+  },
+  {
+    "id": "derived_totalgoals",
+    "name": "TotalGoals",
+    "type": "metric",
+    "definition": "Total number of goals scored in a match. Formula: HomeTeamGoals + AwayTeamGoals. Inputs: HomeTeamGoals = Match.home_team_goal; AwayTeamGoals = Match.away_team_goal",
+    "scope": "derived metric",
+    "aliases": [
+      "total goals",
+      "sum of goals",
+      "goals"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_averageoverallrating",
+    "name": "AverageOverallRating",
+    "type": "metric",
+    "definition": "Average of player's overall ratings over time. Formula: AVG(OverallRating). Inputs: OverallRating = Player_Attributes.overall_rating",
+    "scope": "derived metric",
+    "aliases": [
+      "average overall rating",
+      "avg overall rating"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_percentagedifferenceoverallrating",
+    "name": "PercentageDifferenceOverallRating",
+    "type": "metric",
+    "definition": "Percentage difference between two players' overall ratings. Formula: (OverallRating1 - OverallRating2) / OverallRating2 * 100. Inputs: OverallRating = Player_Attributes.overall_rating",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage higher",
+      "percentage difference",
+      "percentage difference overall rating"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_averagebuildupplaypassing",
+    "name": "AverageBuildUpPlayPassing",
+    "type": "metric",
+    "definition": "Average build-up play passing across all teams. Formula: AVG(BuildUpPlayPassing). Inputs: BuildUpPlayPassing = Team_Attributes.buildUpPlayPassing",
+    "scope": "derived metric",
+    "aliases": [
+      "average build-up play passing",
+      "avg buildUpPlayPassing",
+      "average build up play passing"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_averagefinishing",
+    "name": "AverageFinishing",
+    "type": "metric",
+    "definition": "Average finishing attribute for a player. Formula: AVG(Finishing). Inputs: Finishing = Player_Attributes.finishing",
+    "scope": "derived metric",
+    "aliases": [
+      "average finishing rate",
+      "avg finishing",
+      "average finishing"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_maxheight",
+    "name": "MaxHeight",
+    "type": "metric",
+    "definition": "Maximum height among players. Formula: MAX(Height). Inputs: Height = Player.height",
+    "scope": "derived metric",
+    "aliases": [
+      "tallest",
+      "maximum height",
+      "max height"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_minheight",
+    "name": "MinHeight",
+    "type": "metric",
+    "definition": "Minimum height among players. Formula: MIN(Height). Inputs: Height = Player.height",
+    "scope": "derived metric",
+    "aliases": [
+      "shortest",
+      "minimum height",
+      "min height"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_countplayers",
+    "name": "CountPlayers",
+    "type": "metric",
+    "definition": "Count of players matching criteria. Formula: COUNT(PlayerName). Inputs: PlayerName = Player.player_name",
+    "scope": "derived metric",
+    "aliases": [
+      "number of players",
+      "count of players",
+      "count players"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_totalmatches",
+    "name": "TotalMatches",
+    "type": "metric",
+    "definition": "Count of matches in a season or league. Formula: COUNT(Match.id). Inputs: Season = Match.season WHERE season = '2015/2016'; LeagueName = League.name WHERE name = 'Scotland Premier League'",
+    "scope": "derived metric",
+    "aliases": [
+      "total matches",
+      "number of matches"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_totalwins",
+    "name": "TotalWins",
+    "type": "metric",
+    "definition": "Count of wins for a team. Formula: COUNT(CASE WHEN HomeTeamGoals > AwayTeamGoals THEN 1 END) + COUNT(CASE WHEN AwayTeamGoals > HomeTeamGoals THEN 1 END). Inputs: HomeTeamGoals = Match.home_team_goal; AwayTeamGoals = Match.away_team_goal",
+    "scope": "derived metric",
+    "aliases": [
+      "total wins",
+      "most wins"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_teamplayingstyle",
+    "name": "TeamPlayingStyle",
+    "type": "concept",
+    "definition": "Analysis of team playing style attributes such as build-up play, chance creation, and defence.",
+    "scope": "Team_Attributes.buildUpPlaySpeedClass codes",
+    "aliases": [
+      "team attributes",
+      "playing style",
+      "team playing style"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_playerworkrate",
+    "name": "PlayerWorkRate",
+    "type": "concept",
+    "definition": "Analysis of player work rates, including attacking and defensive tendencies.",
+    "scope": "Player_Attributes.attacking_work_rate codes",
+    "aliases": [
+      "work rate",
+      "attacking and defensive work rate",
+      "player work rate"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_playerpreferredfoot",
+    "name": "PlayerPreferredFoot",
+    "type": "concept",
+    "definition": "Analysis of player's preferred foot.",
+    "scope": "Player_Attributes.preferred_foot codes",
+    "aliases": [
+      "preferred foot",
+      "foot",
+      "player preferred foot"
+    ],
+    "evidence": []
+  }
+]

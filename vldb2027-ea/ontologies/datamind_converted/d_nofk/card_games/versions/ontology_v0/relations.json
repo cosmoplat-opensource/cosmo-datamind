@@ -1,0 +1,46 @@
+[
+  {
+    "id": "rel_sets__set_translations__setcode",
+    "source": "term_sets",
+    "relation_type": "composition",
+    "target": "term_set_translations",
+    "connection_condition": "set_translations.setCode corresponds to sets.code",
+    "description": "翻译; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_sets__set_translations__setcode"
+    ]
+  },
+  {
+    "id": "rel_sets__cards__setcode",
+    "source": "term_sets",
+    "relation_type": "composition",
+    "target": "term_cards",
+    "connection_condition": "cards.setCode corresponds to sets.code",
+    "description": "引用; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_sets__cards__setcode"
+    ]
+  },
+  {
+    "id": "rel_cand_cards__foreign_data__uuid",
+    "source": "term_cards",
+    "relation_type": "association",
+    "target": "term_foreign_data",
+    "connection_condition": "foreign_data.uuid corresponds to cards.uuid",
+    "description": "candidate (data overlap below threshold or unresolved): 描述; foreign_data 通过 uuid 关联 cards 的 uuid，为卡牌提供特定语言下的名称与文本；uuid 为跨表共享的卡牌标识",
+    "evidence": [
+      "ev_rel_cand_cards__foreign_data__uuid"
+    ]
+  },
+  {
+    "id": "rel_cand_cards__legalities__uuid",
+    "source": "term_cards",
+    "relation_type": "association",
+    "target": "term_legalities",
+    "connection_condition": "legalities.uuid corresponds to cards.uuid",
+    "description": "candidate (data overlap below threshold or unresolved): 描述; legalities 通过 uuid 关联 cards 的 uuid，记录该卡牌在各赛制下的合法性状态",
+    "evidence": [
+      "ev_rel_cand_cards__legalities__uuid"
+    ]
+  }
+]

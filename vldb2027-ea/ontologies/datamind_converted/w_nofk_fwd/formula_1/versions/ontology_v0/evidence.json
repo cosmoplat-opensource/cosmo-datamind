@@ -1,0 +1,490 @@
+[
+  {
+    "id": "ev_schema_circuits",
+    "source": "formula_1.sqlite",
+    "query": "PRAGMA table_info(circuits)",
+    "result": "Table circuits(circuitId, circuitRef, name, location, country, lat, lng, alt, url)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_constructors",
+    "source": "formula_1.sqlite",
+    "query": "PRAGMA table_info(constructors)",
+    "result": "Table constructors(constructorId, constructorRef, name, nationality, url)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_constructorresults",
+    "source": "formula_1.sqlite",
+    "query": "PRAGMA table_info(constructorResults)",
+    "result": "Table constructorResults(constructorResultsId, raceId, constructorId, points, status)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_constructorresults__status",
+    "source": "formula_1.sqlite",
+    "query": "SELECT DISTINCT status FROM constructorResults",
+    "result": "D",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_constructorstandings",
+    "source": "formula_1.sqlite",
+    "query": "PRAGMA table_info(constructorStandings)",
+    "result": "Table constructorStandings(constructorStandingsId, raceId, constructorId, points, position, positionText, wins)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_races",
+    "source": "formula_1.sqlite",
+    "query": "PRAGMA table_info(races)",
+    "result": "Table races(raceId, year, round, circuitId, name, date, time, url)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_drivers",
+    "source": "formula_1.sqlite",
+    "query": "PRAGMA table_info(drivers)",
+    "result": "Table drivers(driverId, driverRef, number, code, forename, surname, dob, nationality, url)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_results",
+    "source": "formula_1.sqlite",
+    "query": "PRAGMA table_info(results)",
+    "result": "Table results(resultId, raceId, driverId, constructorId, number, grid, position, positionText, positionOrder, points, laps, time, milliseconds, fastestLap, rank, fastestLapTime, fastestLapSpeed, statusId)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_driverstandings",
+    "source": "formula_1.sqlite",
+    "query": "PRAGMA table_info(driverStandings)",
+    "result": "Table driverStandings(driverStandingsId, raceId, driverId, points, position, positionText, wins)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_status",
+    "source": "formula_1.sqlite",
+    "query": "PRAGMA table_info(status)",
+    "result": "Table status(statusId, status)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_seasons",
+    "source": "formula_1.sqlite",
+    "query": "PRAGMA table_info(seasons)",
+    "result": "Table seasons(year, url)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_laptimes",
+    "source": "formula_1.sqlite",
+    "query": "PRAGMA table_info(lapTimes)",
+    "result": "Table lapTimes(raceId, driverId, lap, position, time, milliseconds)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_pitstops",
+    "source": "formula_1.sqlite",
+    "query": "PRAGMA table_info(pitStops)",
+    "result": "Table pitStops(raceId, driverId, stop, lap, time, duration, milliseconds)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_pitstops__stop",
+    "source": "formula_1.sqlite",
+    "query": "SELECT DISTINCT stop FROM pitStops",
+    "result": "1 / 2 / 3 / 4 / 5 / 6",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_qualifying",
+    "source": "formula_1.sqlite",
+    "query": "PRAGMA table_info(qualifying)",
+    "result": "Table qualifying(qualifyId, raceId, driverId, constructorId, number, position, q1, q2, q3)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_driver",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(*) FROM drivers",
+    "result": "840 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_drivernationality",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(*) FROM drivers",
+    "result": "840 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_driverdateofbirth",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(*) FROM drivers",
+    "result": "840 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_constructor",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(*) FROM constructors",
+    "result": "208 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_constructornationality",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(*) FROM constructors",
+    "result": "208 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_race",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(*) FROM races",
+    "result": "976 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_racename",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(*) FROM races",
+    "result": "976 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_raceyear",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(*) FROM races",
+    "result": "976 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_racedate",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(*) FROM races",
+    "result": "976 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_circuit",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(*) FROM circuits",
+    "result": "72 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_circuitcountry",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(*) FROM circuits",
+    "result": "72 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_circuitcoordinates",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(*) FROM circuits",
+    "result": "72 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_raceresult",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(*) FROM results",
+    "result": "23657 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_racecompletion",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(*) FROM results WHERE time IS NOT NULL",
+    "result": "5961 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_points",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(*) FROM results",
+    "result": "23657 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_wins",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(*) FROM driverStandings",
+    "result": "31578 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_fastestlap",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(*) FROM results WHERE fastestLapTime IS NOT NULL",
+    "result": "5268 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_laptime",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(*) FROM lapTimes",
+    "result": "420369 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_lapnumber",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(*) FROM lapTimes",
+    "result": "420369 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_qualifying",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(*) FROM qualifying",
+    "result": "7397 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_pitstop",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(*) FROM pitStops",
+    "result": "6070 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_status",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(*) FROM status",
+    "result": "134 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_0",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(*) FROM drivers WHERE code IS NULL;",
+    "result": "[[757]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_1",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(*) FROM races WHERE time IS NULL;",
+    "result": "[[731]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_2",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(*) FROM results WHERE time IS NULL;",
+    "result": "[[17696]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_3",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(*) FROM qualifying WHERE q3 IS NULL;",
+    "result": "[[5251]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_4",
+    "source": "formula_1.sqlite",
+    "query": "SELECT COUNT(*) FROM drivers WHERE dob IS NULL;",
+    "result": "[[1]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_circuits__races__circuitid",
+    "source": "formula_1.sqlite",
+    "query": "distinct values of races.circuitId contained in circuits.circuitId",
+    "result": "overlap 98.6% (71/72 distinct child values); parent key unique: True; child rows 976, parent rows 72",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_seasons__races__year",
+    "source": "formula_1.sqlite",
+    "query": "distinct values of races.year contained in seasons.year",
+    "result": "overlap 100.0% (68/68 distinct child values); parent key unique: True; child rows 976, parent rows 68",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_races__constructorresults__raceid",
+    "source": "formula_1.sqlite",
+    "query": "distinct values of constructorResults.raceId contained in races.raceId",
+    "result": "overlap 100.0% (907/907 distinct child values); parent key unique: True; child rows 11082, parent rows 976",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_constructors__constructorresults__constructorid",
+    "source": "formula_1.sqlite",
+    "query": "distinct values of constructorResults.constructorId contained in constructors.constructorId",
+    "result": "overlap 100.0% (172/172 distinct child values); parent key unique: True; child rows 11082, parent rows 208",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_races__constructorstandings__raceid",
+    "source": "formula_1.sqlite",
+    "query": "distinct values of constructorStandings.raceId contained in races.raceId",
+    "result": "overlap 100.0% (906/906 distinct child values); parent key unique: True; child rows 11836, parent rows 976",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_constructors__constructorstandings__constructorid",
+    "source": "formula_1.sqlite",
+    "query": "distinct values of constructorStandings.constructorId contained in constructors.constructorId",
+    "result": "overlap 100.0% (156/156 distinct child values); parent key unique: True; child rows 11836, parent rows 208",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_races__results__raceid",
+    "source": "formula_1.sqlite",
+    "query": "distinct values of results.raceId contained in races.raceId",
+    "result": "overlap 100.0% (970/970 distinct child values); parent key unique: True; child rows 23657, parent rows 976",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_drivers__results__driverid",
+    "source": "formula_1.sqlite",
+    "query": "distinct values of results.driverId contained in drivers.driverId",
+    "result": "overlap 100.0% (840/840 distinct child values); parent key unique: True; child rows 23657, parent rows 840",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_constructors__results__constructorid",
+    "source": "formula_1.sqlite",
+    "query": "distinct values of results.constructorId contained in constructors.constructorId",
+    "result": "overlap 100.0% (207/207 distinct child values); parent key unique: True; child rows 23657, parent rows 208",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_status__results__statusid",
+    "source": "formula_1.sqlite",
+    "query": "distinct values of results.statusId contained in status.statusId",
+    "result": "overlap 100.0% (132/132 distinct child values); parent key unique: True; child rows 23657, parent rows 134",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_races__driverstandings__raceid",
+    "source": "formula_1.sqlite",
+    "query": "distinct values of driverStandings.raceId contained in races.raceId",
+    "result": "overlap 100.0% (970/970 distinct child values); parent key unique: True; child rows 31578, parent rows 976",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_drivers__driverstandings__driverid",
+    "source": "formula_1.sqlite",
+    "query": "distinct values of driverStandings.driverId contained in drivers.driverId",
+    "result": "overlap 100.0% (833/833 distinct child values); parent key unique: True; child rows 31578, parent rows 840",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_races__laptimes__raceid",
+    "source": "formula_1.sqlite",
+    "query": "distinct values of lapTimes.raceId contained in races.raceId",
+    "result": "overlap 100.0% (389/389 distinct child values); parent key unique: True; child rows 420369, parent rows 976",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_drivers__laptimes__driverid",
+    "source": "formula_1.sqlite",
+    "query": "distinct values of lapTimes.driverId contained in drivers.driverId",
+    "result": "overlap 100.0% (121/121 distinct child values); parent key unique: True; child rows 420369, parent rows 840",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_races__pitstops__raceid",
+    "source": "formula_1.sqlite",
+    "query": "distinct values of pitStops.raceId contained in races.raceId",
+    "result": "overlap 100.0% (131/131 distinct child values); parent key unique: True; child rows 6070, parent rows 976",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_drivers__pitstops__driverid",
+    "source": "formula_1.sqlite",
+    "query": "distinct values of pitStops.driverId contained in drivers.driverId",
+    "result": "overlap 100.0% (54/54 distinct child values); parent key unique: True; child rows 6070, parent rows 840",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_races__qualifying__raceid",
+    "source": "formula_1.sqlite",
+    "query": "distinct values of qualifying.raceId contained in races.raceId",
+    "result": "overlap 100.0% (339/339 distinct child values); parent key unique: True; child rows 7397, parent rows 976",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_drivers__qualifying__driverid",
+    "source": "formula_1.sqlite",
+    "query": "distinct values of qualifying.driverId contained in drivers.driverId",
+    "result": "overlap 100.0% (151/151 distinct child values); parent key unique: True; child rows 7397, parent rows 840",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_constructors__qualifying__constructorid",
+    "source": "formula_1.sqlite",
+    "query": "distinct values of qualifying.constructorId contained in constructors.constructorId",
+    "result": "overlap 100.0% (41/41 distinct child values); parent key unique: True; child rows 7397, parent rows 208",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  }
+]

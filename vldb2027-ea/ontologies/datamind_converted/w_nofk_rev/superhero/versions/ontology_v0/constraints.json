@@ -1,0 +1,172 @@
+[
+  {
+    "id": "c_values_gender__gender",
+    "target": "term_gender",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "gender",
+      "Female",
+      "Male",
+      "N/A"
+    ],
+    "severity": "warning",
+    "scope": "Filters on gender.gender",
+    "confidence": "high",
+    "description": "gender.gender only takes these stored values: Female / Male / N/A. Filter with the stored spelling.",
+    "evidence": [
+      "ev_values_gender__gender"
+    ]
+  },
+  {
+    "id": "c_values_alignment__alignment",
+    "target": "term_alignment",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "alignment",
+      "Bad",
+      "Good",
+      "N/A",
+      "Neutral"
+    ],
+    "severity": "warning",
+    "scope": "Filters on alignment.alignment",
+    "confidence": "high",
+    "description": "alignment.alignment only takes these stored values: Bad / Good / N/A / Neutral. Filter with the stored spelling.",
+    "evidence": [
+      "ev_values_alignment__alignment"
+    ]
+  },
+  {
+    "id": "c_values_attribute__attribute_name",
+    "target": "term_attribute",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "attribute_name",
+      "attribute",
+      "Combat",
+      "Durability",
+      "Intelligence",
+      "Power",
+      "Speed",
+      "Strength"
+    ],
+    "severity": "warning",
+    "scope": "Filters on attribute.attribute_name",
+    "confidence": "high",
+    "description": "attribute.attribute_name only takes these stored values: Combat / Durability / Intelligence / Power / Speed / Strength. Filter with the stored spelling.",
+    "evidence": [
+      "ev_values_attribute__attribute_name"
+    ]
+  },
+  {
+    "id": "c_caveat_0",
+    "target": "term_superhero",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "gender"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "性别代码在gender表中可能以不同大小写或缩写出现,直接等值匹配可能漏掉部分英雄",
+    "evidence": [
+      "ev_caveat_0"
+    ]
+  },
+  {
+    "id": "c_caveat_1",
+    "target": "term_superhero",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "attribute",
+      "durability",
+      "Durability"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "属性名称在attribute表中大小写不一致(如'durability'与'Durability'),直接匹配会漏数据",
+    "evidence": [
+      "ev_caveat_1"
+    ]
+  },
+  {
+    "id": "c_caveat_2",
+    "target": "term_superhero",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Colour",
+      "NULL"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "颜色值'No Colour'表示无眼睛颜色,与NULL不同,需用等值匹配而非IS NULL",
+    "evidence": [
+      "ev_caveat_2"
+    ]
+  },
+  {
+    "id": "c_caveat_3",
+    "target": "term_superhero",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "hero_attribute"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "部分英雄可能没有对应的hero_attribute记录,计算属性极值时会遗漏这些英雄",
+    "evidence": [
+      "ev_caveat_3"
+    ]
+  },
+  {
+    "id": "c_caveat_4",
+    "target": "term_superhero",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "hero_power"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "部分英雄可能没有对应的hero_power记录,统计超能力时会遗漏这些英雄",
+    "evidence": [
+      "ev_caveat_4"
+    ]
+  },
+  {
+    "id": "c_caveat_5",
+    "target": "term_superhero",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "height_cm",
+      "weight_kg",
+      "NULL"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "height_cm或weight_kg可能为NULL,计算平均值或差值时会影响结果",
+    "evidence": [
+      "ev_caveat_5"
+    ]
+  },
+  {
+    "id": "c_caveat_6",
+    "target": "term_superhero",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "alignment",
+      "Neutral"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "alignment表中可能包含'Neutral'等中间阵营,仅用'Bad'筛选反派会漏掉部分非正派英雄",
+    "evidence": [
+      "ev_caveat_6"
+    ]
+  }
+]

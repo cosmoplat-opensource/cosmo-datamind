@@ -1,0 +1,661 @@
+[
+  {
+    "id": "term_cards",
+    "name": "cards",
+    "type": "entity",
+    "definition": "集换式卡牌游戏中的一张可被收集与使用的卡牌实体，具有名称、画家、颜色标识、法术力费用等属性。 Counterexample: 与「卡牌印刷版本」区分：卡牌是抽象的游戏牌面概念，印刷版本是某套牌在特定语言与套系下的具体发行物。 Maturity: Provisional",
+    "scope": "Records of table cards; provenance: direct source cards",
+    "aliases": [
+      "卡牌"
+    ],
+    "evidence": [
+      "ev_schema_cards"
+    ]
+  },
+  {
+    "id": "term_foreign_data",
+    "name": "foreign_data",
+    "type": "entity",
+    "definition": "记录某张卡牌在非英文语言下的名称、文本与风味文本等本地化信息的信息记录。 Counterexample: 与「卡牌」区分：外文卡牌数据是卡牌的本地化描述信息，不是卡牌实体本身。 Maturity: Provisional",
+    "scope": "Records of table foreign_data; provenance: direct source foreign_data",
+    "aliases": [
+      "外文卡牌数据"
+    ],
+    "evidence": [
+      "ev_schema_foreign_data"
+    ]
+  },
+  {
+    "id": "term_legalities",
+    "name": "legalities",
+    "type": "entity",
+    "definition": "记录某张卡牌在特定比赛赛制下是否被允许使用的判定信息。 Counterexample: 与「卡牌」区分：赛制合法性是卡牌在规则层面的可用状态记录，不是卡牌实体。 Maturity: Provisional",
+    "scope": "Records of table legalities; provenance: direct source legalities",
+    "aliases": [
+      "赛制合法性"
+    ],
+    "evidence": [
+      "ev_schema_legalities"
+    ]
+  },
+  {
+    "id": "term_rulings",
+    "name": "rulings",
+    "type": "entity",
+    "definition": "官方针对某张卡牌规则疑问发布的解释性裁定记录，包含发布日期与裁定文本。 Counterexample: 与「赛制合法性」区分：裁定解释卡牌规则如何适用，赛制合法性说明卡牌能否在某赛制中使用。 Maturity: Provisional",
+    "scope": "Records of table rulings; provenance: direct source rulings",
+    "aliases": [
+      "卡牌裁定"
+    ],
+    "evidence": [
+      "ev_schema_rulings"
+    ]
+  },
+  {
+    "id": "term_set_translations",
+    "name": "set_translations",
+    "type": "entity",
+    "definition": "记录某套系代码在特定语言下对应名称的本地化翻译信息。 Counterexample: 与「套系」区分：套系翻译是套系名称的语言映射记录，不是套系本身。 Maturity: Provisional",
+    "scope": "Records of table set_translations; provenance: direct source set_translations",
+    "aliases": [
+      "套系翻译"
+    ],
+    "evidence": [
+      "ev_schema_set_translations"
+    ]
+  },
+  {
+    "id": "term_sets",
+    "name": "sets",
+    "type": "entity",
+    "definition": "卡牌游戏按发行批次组织的一组卡牌的集合，具有代码、名称、发行日期与规模等属性。 Counterexample: 与「卡牌」区分：套系是卡牌的发行分组，卡牌是可被单独收集与使用的游戏牌面。 Maturity: Provisional",
+    "scope": "Records of table sets; provenance: direct source sets",
+    "aliases": [
+      "套系"
+    ],
+    "evidence": [
+      "ev_schema_sets"
+    ]
+  },
+  {
+    "id": "concept_cardname",
+    "name": "CardName",
+    "type": "concept",
+    "definition": "The printed name of a Magic card.",
+    "scope": "cards",
+    "aliases": [
+      "card name",
+      "name of card",
+      "cards.name",
+      "name"
+    ],
+    "evidence": [
+      "ev_concept_cardname"
+    ]
+  },
+  {
+    "id": "concept_artist",
+    "name": "Artist",
+    "type": "concept",
+    "definition": "The illustrator credited on a card.",
+    "scope": "cards",
+    "aliases": [
+      "illustrator",
+      "designed by",
+      "worked on"
+    ],
+    "evidence": [
+      "ev_concept_artist"
+    ]
+  },
+  {
+    "id": "concept_bordercolor",
+    "name": "BorderColor",
+    "type": "concept",
+    "definition": "The border color/style of a card (e.g. black, white, borderless).",
+    "scope": "cards",
+    "aliases": [
+      "border color",
+      "borderless",
+      "border style"
+    ],
+    "evidence": [
+      "ev_concept_bordercolor"
+    ]
+  },
+  {
+    "id": "concept_power",
+    "name": "Power",
+    "type": "concept",
+    "definition": "The power value of a creature card; '*' or NULL denotes unknown/infinite.",
+    "scope": "cards where power = '*' OR power IS NULL",
+    "aliases": [
+      "unknown power",
+      "infinite power"
+    ],
+    "evidence": [
+      "ev_concept_power"
+    ]
+  },
+  {
+    "id": "concept_ispromo",
+    "name": "IsPromo",
+    "type": "concept",
+    "definition": "Flag indicating the card is a promotional printing.",
+    "scope": "cards where isPromo = 1",
+    "aliases": [
+      "promotional printing",
+      "promo",
+      "is promo"
+    ],
+    "evidence": [
+      "ev_concept_ispromo"
+    ]
+  },
+  {
+    "id": "concept_istextless",
+    "name": "IsTextless",
+    "type": "concept",
+    "definition": "Flag indicating the card has no text box.",
+    "scope": "cards where isTextless = 1",
+    "aliases": [
+      "textless",
+      "no text box",
+      "without text box",
+      "is textless"
+    ],
+    "evidence": [
+      "ev_concept_istextless"
+    ]
+  },
+  {
+    "id": "concept_isstoryspotlight",
+    "name": "IsStorySpotlight",
+    "type": "concept",
+    "definition": "Flag indicating the card is a Story Spotlight card.",
+    "scope": "cards where isStorySpotlight = 1",
+    "aliases": [
+      "story spotlight",
+      "Story Spotlight cards",
+      "is story spotlight"
+    ],
+    "evidence": [
+      "ev_concept_isstoryspotlight"
+    ]
+  },
+  {
+    "id": "concept_frameversion",
+    "name": "FrameVersion",
+    "type": "concept",
+    "definition": "The frame style/version of a card.",
+    "scope": "cards",
+    "aliases": [
+      "frame style",
+      "frame styles",
+      "frame version"
+    ],
+    "evidence": [
+      "ev_concept_frameversion"
+    ]
+  },
+  {
+    "id": "concept_cardkingdomfoilid",
+    "name": "CardKingdomFoilId",
+    "type": "concept",
+    "definition": "Card Kingdom foil product id; non-null paired with cardKingdomId indicates a powerful foil.",
+    "scope": "cards where cardKingdomFoilId IS NOT NULL AND cardKingdomId IS NOT NULL",
+    "aliases": [
+      "powerful foils",
+      "incredibly powerful",
+      "foil id",
+      "card kingdom foil id"
+    ],
+    "evidence": [
+      "ev_concept_cardkingdomfoilid"
+    ]
+  },
+  {
+    "id": "concept_cardkingdomid",
+    "name": "CardKingdomId",
+    "type": "concept",
+    "definition": "Card Kingdom product id.",
+    "scope": "cards where cardKingdomId IS NOT NULL",
+    "aliases": [
+      "card kingdom id"
+    ],
+    "evidence": [
+      "ev_concept_cardkingdomid"
+    ]
+  },
+  {
+    "id": "concept_cardtext",
+    "name": "CardText",
+    "type": "concept",
+    "definition": "The rules text of a card.",
+    "scope": "cards where text LIKE '%triggered ability%'",
+    "aliases": [
+      "text",
+      "card text",
+      "triggered ability info"
+    ],
+    "evidence": [
+      "ev_concept_cardtext"
+    ]
+  },
+  {
+    "id": "concept_colors",
+    "name": "Colors",
+    "type": "concept",
+    "definition": "The color(s) of a card (e.g. 'B' for black).",
+    "scope": "cards where colors = 'B'",
+    "aliases": [
+      "color",
+      "black color"
+    ],
+    "evidence": [
+      "ev_concept_colors"
+    ]
+  },
+  {
+    "id": "concept_setname",
+    "name": "SetName",
+    "type": "concept",
+    "definition": "The name of the card set.",
+    "scope": "sets",
+    "aliases": [
+      "set name",
+      "card set",
+      "set"
+    ],
+    "evidence": [
+      "ev_concept_setname"
+    ]
+  },
+  {
+    "id": "concept_setcode",
+    "name": "SetCode",
+    "type": "concept",
+    "definition": "The short code identifying a set.",
+    "scope": "sets",
+    "aliases": [
+      "set code",
+      "code"
+    ],
+    "evidence": [
+      "ev_concept_setcode"
+    ]
+  },
+  {
+    "id": "concept_basesetsize",
+    "name": "BaseSetSize",
+    "type": "concept",
+    "definition": "The number of cards in the base set.",
+    "scope": "sets where baseSetSize < 100",
+    "aliases": [
+      "base set number",
+      "base set size"
+    ],
+    "evidence": [
+      "ev_concept_basesetsize"
+    ]
+  },
+  {
+    "id": "concept_isforeignonly",
+    "name": "IsForeignOnly",
+    "type": "concept",
+    "definition": "Flag indicating the set is only available outside the United States.",
+    "scope": "sets where isForeignOnly = 1",
+    "aliases": [
+      "only available outside the United States",
+      "foreign only",
+      "is foreign only"
+    ],
+    "evidence": [
+      "ev_concept_isforeignonly"
+    ]
+  },
+  {
+    "id": "concept_settranslation",
+    "name": "SetTranslation",
+    "type": "concept",
+    "definition": "The localized translation of a set name.",
+    "scope": "set_translations where translation IS NOT NULL",
+    "aliases": [
+      "translation of the name",
+      "set translation",
+      "translation"
+    ],
+    "evidence": [
+      "ev_concept_settranslation"
+    ]
+  },
+  {
+    "id": "concept_language",
+    "name": "Language",
+    "type": "concept",
+    "definition": "The language of a card translation or set translation.",
+    "scope": "foreign_data where language IN ('Italian','Chinese Simplified','German')",
+    "aliases": [
+      "Italian",
+      "Chinese Simplified",
+      "German",
+      "foreign language"
+    ],
+    "evidence": [
+      "ev_concept_language"
+    ]
+  },
+  {
+    "id": "concept_foreignname",
+    "name": "ForeignName",
+    "type": "concept",
+    "definition": "The localized name of a card in a foreign language.",
+    "scope": "foreign_data",
+    "aliases": [
+      "name in foreign language",
+      "translated name",
+      "foreign name"
+    ],
+    "evidence": [
+      "ev_concept_foreignname"
+    ]
+  },
+  {
+    "id": "concept_foreigntype",
+    "name": "ForeignType",
+    "type": "concept",
+    "definition": "The localized type line of a card in a foreign language.",
+    "scope": "foreign_data where type IS NOT NULL",
+    "aliases": [
+      "types of cards",
+      "subtypes",
+      "supertypes",
+      "type",
+      "foreign type"
+    ],
+    "evidence": [
+      "ev_concept_foreigntype"
+    ]
+  },
+  {
+    "id": "concept_format",
+    "name": "Format",
+    "type": "concept",
+    "definition": "The game format a legality record refers to.",
+    "scope": "legalities where format = 'commander'",
+    "aliases": [
+      "commander play format",
+      "play format"
+    ],
+    "evidence": [
+      "ev_concept_format"
+    ]
+  },
+  {
+    "id": "concept_legalitystatus",
+    "name": "LegalityStatus",
+    "type": "concept",
+    "definition": "The legality status of a card in a format.",
+    "scope": "legalities where status IN ('Legal','Banned')",
+    "aliases": [
+      "legal",
+      "banned",
+      "status",
+      "legality status"
+    ],
+    "evidence": [
+      "ev_concept_legalitystatus"
+    ]
+  },
+  {
+    "id": "concept_rulingcount",
+    "name": "RulingCount",
+    "type": "concept",
+    "definition": "The number of rulings associated with a card.",
+    "scope": "rulings",
+    "aliases": [
+      "ruling information",
+      "most ruling information",
+      "number of rulings",
+      "ruling count"
+    ],
+    "evidence": [
+      "ev_concept_rulingcount"
+    ]
+  },
+  {
+    "id": "derived_percentchinesesimplified",
+    "name": "PercentChineseSimplified",
+    "type": "metric",
+    "definition": "Share of cards available in Chinese Simplified. Formula: COUNT(CardName WHERE Language = 'Chinese Simplified') / COUNT(CardName) * 100. Inputs: CardName = cards.name; Language = foreign_data.language WHERE language IN ('Italian','Chinese Simplified','German')",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of cards available in Chinese Simplified",
+      "Chinese Simplified percentage",
+      "percent chinese simplified"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_percentborderless",
+    "name": "PercentBorderless",
+    "type": "metric",
+    "definition": "Share of cards with borderless border color. Formula: COUNT(CardName WHERE BorderColor = 'borderless') / COUNT(CardName) * 100. Inputs: CardName = cards.name; BorderColor = cards.borderColor",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of borderless cards",
+      "borderless share",
+      "percent borderless"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_percentstoryspotlighttextless",
+    "name": "PercentStorySpotlightTextless",
+    "type": "metric",
+    "definition": "Share of Story Spotlight cards that are textless. Formula: COUNT(CardName WHERE IsStorySpotlight = 1 AND IsTextless = 1) / COUNT(CardName WHERE IsStorySpotlight = 1) * 100. Inputs: CardName = cards.name; IsStorySpotlight = cards.isStorySpotlight WHERE isStorySpotlight = 1; IsTextless = cards.isTextless WHERE isTextless = 1",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of Story Spotlight cards without text box",
+      "percent story spotlight textless"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_percentpowerfulfoilsinset",
+    "name": "PercentPowerfulFoilsInSet",
+    "type": "metric",
+    "definition": "Share of cards in a set that have both Card Kingdom foil and non-foil ids. Formula: COUNT(CardName WHERE CardKingdomFoilId IS NOT NULL AND CardKingdomId IS NOT NULL) / COUNT(CardName) * 100. Inputs: CardName = cards.name; CardKingdomFoilId = cards.cardKingdomFoilId WHERE cardKingdomFoilId IS NOT NULL AND cardKingdomId IS NOT NULL; CardKingdomId = cards.cardKingdomId WHERE cardKingdomId IS NOT NULL",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of incredibly powerful cards in the set",
+      "percent powerful foils in set"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_maxrulingcount",
+    "name": "MaxRulingCount",
+    "type": "metric",
+    "definition": "Maximum number of rulings for any single card. Formula: MAX(RulingCount). Inputs: RulingCount = rulings.uuid",
+    "scope": "derived metric",
+    "aliases": [
+      "most ruling information",
+      "max rulings",
+      "max ruling count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_countunknownpower",
+    "name": "CountUnknownPower",
+    "type": "metric",
+    "definition": "Number of cards with unknown or infinite power. Formula: COUNT(CardName WHERE Power = '*' OR Power IS NULL). Inputs: CardName = cards.name; Power = cards.power WHERE power = '*' OR power IS NULL",
+    "scope": "derived metric",
+    "aliases": [
+      "how many cards have infinite power",
+      "unknown power count",
+      "count unknown power"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_countunknownpowertriggered",
+    "name": "CountUnknownPowerTriggered",
+    "type": "metric",
+    "definition": "Number of unknown-power cards whose text mentions triggered ability. Formula: COUNT(CardName WHERE (Power = '*' OR Power IS NULL) AND CardText LIKE '%triggered ability%'). Inputs: CardName = cards.name; Power = cards.power WHERE power = '*' OR power IS NULL; CardText = cards.text WHERE text LIKE '%triggered ability%'",
+    "scope": "derived metric",
+    "aliases": [
+      "unknown power cards with triggered ability info",
+      "count unknown power triggered"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_countitaliansmallsets",
+    "name": "CountItalianSmallSets",
+    "type": "metric",
+    "definition": "Number of sets with Italian translation and base set size under 100. Formula: COUNT(SetName WHERE Language = 'Italian' AND BaseSetSize < 100). Inputs: SetName = sets.name; Language = foreign_data.language WHERE language IN ('Italian','Chinese Simplified','German'); BaseSetSize = sets.baseSetSize WHERE baseSetSize < 100",
+    "scope": "derived metric",
+    "aliases": [
+      "sets with Italian translation under 100 base size",
+      "count italian small sets"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_countforeignonlysets",
+    "name": "CountForeignOnlySets",
+    "type": "metric",
+    "definition": "Number of sets flagged as foreign-only. Formula: COUNT(SetName WHERE IsForeignOnly = 1). Inputs: SetName = sets.name; IsForeignOnly = sets.isForeignOnly WHERE isForeignOnly = 1",
+    "scope": "derived metric",
+    "aliases": [
+      "sets only available outside US",
+      "count foreign only sets"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_countlegalcommander",
+    "name": "CountLegalCommander",
+    "type": "metric",
+    "definition": "Number of cards legal in the commander format. Formula: COUNT(CardName WHERE Format = 'commander' AND LegalityStatus = 'Legal'). Inputs: CardName = cards.name; Format = legalities.format WHERE format = 'commander'; LegalityStatus = legalities.status WHERE status IN ('Legal','Banned')",
+    "scope": "derived metric",
+    "aliases": [
+      "cards legal for commander",
+      "count legal commander"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_countbannedcards",
+    "name": "CountBannedCards",
+    "type": "metric",
+    "definition": "Number of cards with banned status. Formula: COUNT(CardName WHERE LegalityStatus = 'Banned'). Inputs: CardName = cards.name; LegalityStatus = legalities.status WHERE status IN ('Legal','Banned')",
+    "scope": "derived metric",
+    "aliases": [
+      "banned cards count",
+      "count banned cards"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_countblackartifactsforeign",
+    "name": "CountBlackArtifactsForeign",
+    "type": "metric",
+    "definition": "Number of black artifact cards that have a foreign language translation. Formula: COUNT(CardName WHERE Colors = 'B' AND ForeignType IS NOT NULL). Inputs: CardName = cards.name; Colors = cards.colors WHERE colors = 'B'; ForeignType = foreign_data.type WHERE type IS NOT NULL",
+    "scope": "derived metric",
+    "aliases": [
+      "black artifact cards with foreign translation",
+      "count black artifacts foreign"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_cardlegality",
+    "name": "CardLegality",
+    "type": "concept",
+    "definition": "Which formats a card is legal or banned in.",
+    "scope": "legalities.format codes",
+    "aliases": [
+      "legality",
+      "legal formats",
+      "banned cards",
+      "card legality"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_cardlanguage",
+    "name": "CardLanguage",
+    "type": "concept",
+    "definition": "Languages in which cards and sets are translated.",
+    "scope": "foreign_data.language codes",
+    "aliases": [
+      "language",
+      "foreign language",
+      "translation",
+      "card language"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_settype",
+    "name": "SetType",
+    "type": "concept",
+    "definition": "The category of a card set.",
+    "scope": "sets.type codes",
+    "aliases": [
+      "set type",
+      "type of set"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_cardlayout",
+    "name": "CardLayout",
+    "type": "concept",
+    "definition": "The physical layout style of a card.",
+    "scope": "cards.layout codes",
+    "aliases": [
+      "layout",
+      "card layout"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_frameversion",
+    "name": "FrameVersion",
+    "type": "concept",
+    "definition": "The frame style version of a card.",
+    "scope": "cards.frameVersion codes",
+    "aliases": [
+      "frame style",
+      "frame version"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_bordercolor",
+    "name": "BorderColor",
+    "type": "concept",
+    "definition": "The border color of a card.",
+    "scope": "cards.borderColor codes",
+    "aliases": [
+      "border color",
+      "border style"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_rarity",
+    "name": "Rarity",
+    "type": "concept",
+    "definition": "The rarity of a card.",
+    "scope": "cards.rarity codes",
+    "aliases": [
+      "rarity"
+    ],
+    "evidence": []
+  }
+]

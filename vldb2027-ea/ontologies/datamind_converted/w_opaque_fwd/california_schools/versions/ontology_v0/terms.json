@@ -1,0 +1,150 @@
+[
+  {
+    "id": "term_tab01",
+    "name": "tab01",
+    "type": "entity",
+    "definition": "主业务记录表 Counterexample: 与tab03易混淆：两者共享fld001列，但tab03字段数不同（22列），需按实际列集合与业务用途区分，不能仅凭共享列判定为同一实体 Maturity: Provisional",
+    "scope": "Records of table tab01; provenance: direct source tab01",
+    "aliases": [
+      "主业务记录表"
+    ],
+    "evidence": [
+      "ev_schema_tab01"
+    ]
+  },
+  {
+    "id": "term_tab02",
+    "name": "tab02",
+    "type": "entity",
+    "definition": "辅助业务记录表 Counterexample: 与tab01/tab03无共享列，字段编码区间（fld030-fld040）独立，易被误判为同一表族成员，实际无列级证据支持 Maturity: Provisional",
+    "scope": "Records of table tab02; provenance: direct source tab02",
+    "aliases": [
+      "辅助业务记录表"
+    ],
+    "evidence": [
+      "ev_schema_tab02"
+    ]
+  },
+  {
+    "id": "term_tab03",
+    "name": "tab03",
+    "type": "entity",
+    "definition": "明细业务记录表 Counterexample: 与tab01共享fld001，易被误判为tab01的子表或同族表；但共享列是否为外键、父键是否唯一均无证据，仅能作为候选关系 Maturity: Provisional",
+    "scope": "Records of table tab03; provenance: direct source tab03",
+    "aliases": [
+      "明细业务记录表"
+    ],
+    "evidence": [
+      "ev_schema_tab03"
+    ]
+  },
+  {
+    "id": "concept_school",
+    "name": "School",
+    "type": "concept",
+    "definition": "A school record in the school directory",
+    "scope": "tab01",
+    "aliases": [
+      "schools",
+      "campus",
+      "institution"
+    ],
+    "evidence": [
+      "ev_concept_school"
+    ]
+  },
+  {
+    "id": "concept_enrollment",
+    "name": "Enrollment",
+    "type": "concept",
+    "definition": "Number of students enrolled",
+    "scope": "tab01",
+    "aliases": [
+      "enrolment",
+      "students enrolled",
+      "highest enrolment"
+    ],
+    "evidence": [
+      "ev_concept_enrollment"
+    ]
+  },
+  {
+    "id": "concept_eligiblefreecount",
+    "name": "EligibleFreeCount",
+    "type": "concept",
+    "definition": "Number of students eligible for free or reduced price meals",
+    "scope": "tab01",
+    "aliases": [
+      "eligible free",
+      "free or reduced price meals",
+      "eligible free count"
+    ],
+    "evidence": [
+      "ev_concept_eligiblefreecount"
+    ]
+  },
+  {
+    "id": "derived_eligiblefreerate",
+    "name": "EligibleFreeRate",
+    "type": "metric",
+    "definition": "Share of enrolled students eligible for free or reduced price meals Formula: EligibleFreeCount / Enrollment. Inputs: EligibleFreeCount = tab01.fld020; Enrollment = tab01.fld019",
+    "scope": "derived metric",
+    "aliases": [
+      "eligible free rate",
+      "free or reduced price meal rate",
+      "free meal rate"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_totalenrollment",
+    "name": "TotalEnrollment",
+    "type": "metric",
+    "definition": "Sum of enrolled students Formula: SUM(Enrollment). Inputs: Enrollment = tab01.fld019",
+    "scope": "derived metric",
+    "aliases": [
+      "total enrolment",
+      "total enrollment",
+      "students enrolled"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_totaleligiblefree",
+    "name": "TotalEligibleFree",
+    "type": "metric",
+    "definition": "Sum of students eligible for free or reduced price meals Formula: SUM(EligibleFreeCount). Inputs: EligibleFreeCount = tab01.fld020",
+    "scope": "derived metric",
+    "aliases": [
+      "total free or reduced price meals",
+      "total eligible free"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_schoolcount",
+    "name": "SchoolCount",
+    "type": "metric",
+    "definition": "Count of school records Formula: COUNT(School). Inputs: School = tab01.fld001",
+    "scope": "derived metric",
+    "aliases": [
+      "number of schools",
+      "how many schools",
+      "count of schools",
+      "school count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_highenrollmenteligiblefreerate",
+    "name": "HighEnrollmentEligibleFreeRate",
+    "type": "metric",
+    "definition": "Eligible free rate for schools ranked by enrollment Formula: EligibleFreeCount / Enrollment ORDER BY Enrollment DESC. Inputs: EligibleFreeCount = tab01.fld020; Enrollment = tab01.fld019",
+    "scope": "derived metric",
+    "aliases": [
+      "eligible free rate of highest enrolment schools",
+      "high enrollment eligible free rate"
+    ],
+    "evidence": []
+  }
+]

@@ -1,0 +1,109 @@
+[
+  {
+    "id": "rel_derived_annualconsumption__from__concept_monthlyconsumption",
+    "source": "concept_monthlyconsumption",
+    "relation_type": "derivation",
+    "target": "derived_annualconsumption",
+    "connection_condition": "same entity and period",
+    "description": "AnnualConsumption is computed from MonthlyConsumption: SUM(MonthlyConsumption) WHERE YearMonth BETWEEN 201301 AND 201312",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_annualconsumption__from__concept_yearmonth",
+    "source": "concept_yearmonth",
+    "relation_type": "derivation",
+    "target": "derived_annualconsumption",
+    "connection_condition": "same entity and period",
+    "description": "AnnualConsumption is computed from YearMonth: SUM(MonthlyConsumption) WHERE YearMonth BETWEEN 201301 AND 201312",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_peakmonth__from__concept_monthlyconsumption",
+    "source": "concept_monthlyconsumption",
+    "relation_type": "derivation",
+    "target": "derived_peakmonth",
+    "connection_condition": "same entity and period",
+    "description": "PeakMonth is computed from MonthlyConsumption: MAX(MonthlyConsumption) per YearMonth",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_peakmonth__from__concept_yearmonth",
+    "source": "concept_yearmonth",
+    "relation_type": "derivation",
+    "target": "derived_peakmonth",
+    "connection_condition": "same entity and period",
+    "description": "PeakMonth is computed from YearMonth: MAX(MonthlyConsumption) per YearMonth",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_highconsumptioncustomercount__from__concept_monthlyconsumption",
+    "source": "concept_monthlyconsumption",
+    "relation_type": "derivation",
+    "target": "derived_highconsumptioncustomercount",
+    "connection_condition": "same entity and period",
+    "description": "HighConsumptionCustomerCount is computed from MonthlyConsumption: COUNT(DISTINCT CustomerID) WHERE MonthlyConsumption > 1000",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_transactioncount__from__concept_transactiondate",
+    "source": "concept_transactiondate",
+    "relation_type": "derivation",
+    "target": "derived_transactioncount",
+    "connection_condition": "same entity and period",
+    "description": "TransactionCount is computed from TransactionDate: COUNT(TransactionID)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_transactioncount__from__concept_gasstationcountry",
+    "source": "concept_gasstationcountry",
+    "relation_type": "derivation",
+    "target": "derived_transactioncount",
+    "connection_condition": "same entity and period",
+    "description": "TransactionCount is computed from GasStationCountry: COUNT(TransactionID)",
+    "evidence": []
+  },
+  {
+    "id": "rel_customers__transactions__customerid",
+    "source": "term_customers",
+    "relation_type": "composition",
+    "target": "term_transactions",
+    "connection_condition": "transactions_1k.CustomerID corresponds to customers.CustomerID",
+    "description": "由客户发生; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_customers__transactions__customerid"
+    ]
+  },
+  {
+    "id": "rel_gasstations__transactions__gasstationid",
+    "source": "term_gasstations",
+    "relation_type": "composition",
+    "target": "term_transactions",
+    "connection_condition": "transactions_1k.GasStationID corresponds to gasstations.GasStationID",
+    "description": "发生于加油站; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_gasstations__transactions__gasstationid"
+    ]
+  },
+  {
+    "id": "rel_products__transactions__productid",
+    "source": "term_products",
+    "relation_type": "composition",
+    "target": "term_transactions",
+    "connection_condition": "transactions_1k.ProductID corresponds to products.ProductID",
+    "description": "购买产品; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_products__transactions__productid"
+    ]
+  },
+  {
+    "id": "rel_customers__yearmonth__customerid",
+    "source": "term_customers",
+    "relation_type": "composition",
+    "target": "term_yearmonth",
+    "connection_condition": "yearmonth.CustomerID corresponds to customers.CustomerID",
+    "description": "归属客户; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_customers__yearmonth__customerid"
+    ]
+  }
+]

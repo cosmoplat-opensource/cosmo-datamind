@@ -1,0 +1,1044 @@
+[
+  {
+    "id": "term_users",
+    "name": "users",
+    "type": "entity",
+    "definition": "在问答社区中注册并拥有账户的自然人，以唯一标识、显示名称和声誉值等属性区别于其他注册者。 Counterexample: 与「账户」辨析：账户是登录凭据载体，用户是社区中的行为主体；同一自然人可能对应多个账户。 Maturity: Provisional",
+    "scope": "Records of table users; provenance: direct source users",
+    "aliases": [
+      "用户"
+    ],
+    "evidence": [
+      "ev_schema_users"
+    ]
+  },
+  {
+    "id": "term_badges",
+    "name": "badges",
+    "type": "entity",
+    "definition": "记录某用户在某时点获得某名称徽章的信息条目，以用户标识、徽章名称和授予日期为特征。 Counterexample: 与「徽章类型」辨析：徽章类型是可复用的定义（如“优秀回答者”），徽章授予记录是某用户获得该类型的一次具体事实。 Maturity: Provisional",
+    "scope": "Records of table badges; provenance: direct source badges",
+    "aliases": [
+      "徽章授予记录"
+    ],
+    "evidence": [
+      "ev_schema_badges"
+    ]
+  },
+  {
+    "id": "term_comments",
+    "name": "comments",
+    "type": "entity",
+    "definition": "用户针对某篇帖子发表的文字性反馈信息条目，以所属帖子、作者、正文和创建时间为特征。 Counterexample: 与「帖子」辨析：帖子是独立发布的内容主体，评论是依附于帖子存在的反馈内容。 Maturity: Provisional",
+    "scope": "Records of table comments; provenance: direct source comments",
+    "aliases": [
+      "评论"
+    ],
+    "evidence": [
+      "ev_schema_comments"
+    ]
+  },
+  {
+    "id": "term_posthistory",
+    "name": "postHistory",
+    "type": "entity",
+    "definition": "记录某篇帖子在某一时点发生某类变更的信息条目，以帖子标识、变更类型、修订标识和发生时间为特征。 Counterexample: 与「帖子」辨析：帖子是当前内容状态，修订历史是按时间累积的历次变更记录。 Maturity: Provisional",
+    "scope": "Records of table postHistory; provenance: direct source postHistory",
+    "aliases": [
+      "帖子修订历史"
+    ],
+    "evidence": [
+      "ev_schema_posthistory"
+    ]
+  },
+  {
+    "id": "term_postlinks",
+    "name": "postLinks",
+    "type": "entity",
+    "definition": "记录两篇帖子之间存在某种关联关系的信息条目，以源帖子、目标帖子、关联类型和建立时间为特征。 Counterexample: 与「帖子」辨析：帖子是内容主体，帖子关联是描述两篇帖子之间关系的独立记录。 Maturity: Provisional",
+    "scope": "Records of table postLinks; provenance: direct source postLinks",
+    "aliases": [
+      "帖子关联"
+    ],
+    "evidence": [
+      "ev_schema_postlinks"
+    ]
+  },
+  {
+    "id": "term_posts",
+    "name": "posts",
+    "type": "entity",
+    "definition": "用户在问答社区中发布的、具有标题与正文并可被评论和投票的内容条目，以发布者、类型、得分和创建时间为特征。 Counterexample: 与「评论」辨析：帖子是可独立检索和投票的内容主体，评论是依附于帖子的简短反馈。 Maturity: Provisional",
+    "scope": "Records of table posts; provenance: direct source posts",
+    "aliases": [
+      "帖子"
+    ],
+    "evidence": [
+      "ev_schema_posts"
+    ]
+  },
+  {
+    "id": "term_tags",
+    "name": "tags",
+    "type": "entity",
+    "definition": "用于对帖子主题进行分类的受控词汇条目，以标签名称和使用计数为特征。 Counterexample: 与「帖子」辨析：标签是分类词汇，帖子是被分类的内容；标签本身不承载正文。 Maturity: Provisional",
+    "scope": "Records of table tags; provenance: direct source tags",
+    "aliases": [
+      "标签"
+    ],
+    "evidence": [
+      "ev_schema_tags"
+    ]
+  },
+  {
+    "id": "term_votes",
+    "name": "votes",
+    "type": "entity",
+    "definition": "用户针对某篇帖子表达赞成或反对态度的信息条目，以帖子、投票者、投票类型和时间为特征。 Counterexample: 与「帖子得分」辨析：帖子得分是聚合结果，投票是构成该结果的单次行为记录。 Maturity: Provisional",
+    "scope": "Records of table votes; provenance: direct source votes",
+    "aliases": [
+      "投票"
+    ],
+    "evidence": [
+      "ev_schema_votes"
+    ]
+  },
+  {
+    "id": "concept_user",
+    "name": "User",
+    "type": "concept",
+    "definition": "注册用户实体,由 users 表记录",
+    "scope": "users",
+    "aliases": [
+      "users",
+      "account",
+      "member",
+      "display name"
+    ],
+    "evidence": [
+      "ev_concept_user"
+    ]
+  },
+  {
+    "id": "concept_userdisplayname",
+    "name": "UserDisplayName",
+    "type": "concept",
+    "definition": "用户的显示名称",
+    "scope": "users",
+    "aliases": [
+      "display name",
+      "name of user",
+      "user name",
+      "user display name"
+    ],
+    "evidence": [
+      "ev_concept_userdisplayname"
+    ]
+  },
+  {
+    "id": "concept_userreputation",
+    "name": "UserReputation",
+    "type": "concept",
+    "definition": "用户声望值",
+    "scope": "users",
+    "aliases": [
+      "reputation",
+      "up votes",
+      "user score",
+      "user reputation"
+    ],
+    "evidence": [
+      "ev_concept_userreputation"
+    ]
+  },
+  {
+    "id": "concept_userupvotes",
+    "name": "UserUpVotes",
+    "type": "concept",
+    "definition": "用户获得的赞成票数",
+    "scope": "users",
+    "aliases": [
+      "up votes",
+      "upvotes",
+      "user up votes"
+    ],
+    "evidence": [
+      "ev_concept_userupvotes"
+    ]
+  },
+  {
+    "id": "concept_userdownvotes",
+    "name": "UserDownVotes",
+    "type": "concept",
+    "definition": "用户获得的反对票数",
+    "scope": "users",
+    "aliases": [
+      "down votes",
+      "downvotes",
+      "user down votes"
+    ],
+    "evidence": [
+      "ev_concept_userdownvotes"
+    ]
+  },
+  {
+    "id": "concept_userage",
+    "name": "UserAge",
+    "type": "concept",
+    "definition": "用户年龄",
+    "scope": "users",
+    "aliases": [
+      "age",
+      "user age"
+    ],
+    "evidence": [
+      "ev_concept_userage"
+    ]
+  },
+  {
+    "id": "concept_usercreationdate",
+    "name": "UserCreationDate",
+    "type": "concept",
+    "definition": "用户账号创建时间",
+    "scope": "users",
+    "aliases": [
+      "account created",
+      "creation date",
+      "registered",
+      "user creation date"
+    ],
+    "evidence": [
+      "ev_concept_usercreationdate"
+    ]
+  },
+  {
+    "id": "concept_userlastaccessdate",
+    "name": "UserLastAccessDate",
+    "type": "concept",
+    "definition": "用户最近访问网站时间",
+    "scope": "users",
+    "aliases": [
+      "last accessed",
+      "last access",
+      "last login",
+      "user last access date"
+    ],
+    "evidence": [
+      "ev_concept_userlastaccessdate"
+    ]
+  },
+  {
+    "id": "concept_userviews",
+    "name": "UserViews",
+    "type": "concept",
+    "definition": "用户主页浏览量",
+    "scope": "users",
+    "aliases": [
+      "profile views",
+      "user views"
+    ],
+    "evidence": [
+      "ev_concept_userviews"
+    ]
+  },
+  {
+    "id": "concept_post",
+    "name": "Post",
+    "type": "concept",
+    "definition": "帖子实体(问题或回答)",
+    "scope": "posts",
+    "aliases": [
+      "posts",
+      "question",
+      "answer"
+    ],
+    "evidence": [
+      "ev_concept_post"
+    ]
+  },
+  {
+    "id": "concept_posttitle",
+    "name": "PostTitle",
+    "type": "concept",
+    "definition": "帖子标题",
+    "scope": "posts",
+    "aliases": [
+      "title",
+      "post title"
+    ],
+    "evidence": [
+      "ev_concept_posttitle"
+    ]
+  },
+  {
+    "id": "concept_postbody",
+    "name": "PostBody",
+    "type": "concept",
+    "definition": "帖子正文",
+    "scope": "posts",
+    "aliases": [
+      "body",
+      "content",
+      "post content",
+      "post body"
+    ],
+    "evidence": [
+      "ev_concept_postbody"
+    ]
+  },
+  {
+    "id": "concept_postscore",
+    "name": "PostScore",
+    "type": "concept",
+    "definition": "帖子得分",
+    "scope": "posts",
+    "aliases": [
+      "score",
+      "post score",
+      "votes"
+    ],
+    "evidence": [
+      "ev_concept_postscore"
+    ]
+  },
+  {
+    "id": "concept_postviewcount",
+    "name": "PostViewCount",
+    "type": "concept",
+    "definition": "帖子浏览次数",
+    "scope": "posts",
+    "aliases": [
+      "views",
+      "view count",
+      "most views",
+      "post view count"
+    ],
+    "evidence": [
+      "ev_concept_postviewcount"
+    ]
+  },
+  {
+    "id": "concept_postfavoritecount",
+    "name": "PostFavoriteCount",
+    "type": "concept",
+    "definition": "帖子收藏数",
+    "scope": "posts",
+    "aliases": [
+      "favorite count",
+      "most valuable",
+      "favorites",
+      "post favorite count"
+    ],
+    "evidence": [
+      "ev_concept_postfavoritecount"
+    ]
+  },
+  {
+    "id": "concept_postanswercount",
+    "name": "PostAnswerCount",
+    "type": "concept",
+    "definition": "帖子回答数",
+    "scope": "posts",
+    "aliases": [
+      "answers",
+      "answer count",
+      "post answer count"
+    ],
+    "evidence": [
+      "ev_concept_postanswercount"
+    ]
+  },
+  {
+    "id": "concept_postcommentcount",
+    "name": "PostCommentCount",
+    "type": "concept",
+    "definition": "帖子评论数",
+    "scope": "posts",
+    "aliases": [
+      "comments",
+      "comment count",
+      "has comments",
+      "post comment count"
+    ],
+    "evidence": [
+      "ev_concept_postcommentcount"
+    ]
+  },
+  {
+    "id": "concept_postcreationdate",
+    "name": "PostCreationDate",
+    "type": "concept",
+    "definition": "帖子创建时间",
+    "scope": "posts",
+    "aliases": [
+      "creation date",
+      "created",
+      "posted date",
+      "post creation date"
+    ],
+    "evidence": [
+      "ev_concept_postcreationdate"
+    ]
+  },
+  {
+    "id": "concept_postowneruserid",
+    "name": "PostOwnerUserId",
+    "type": "concept",
+    "definition": "帖子所属用户 Id",
+    "scope": "posts",
+    "aliases": [
+      "owner",
+      "post owner",
+      "user who posted",
+      "post owner user id"
+    ],
+    "evidence": [
+      "ev_concept_postowneruserid"
+    ]
+  },
+  {
+    "id": "concept_postlasteditoruserid",
+    "name": "PostLastEditorUserId",
+    "type": "concept",
+    "definition": "最后编辑帖子的用户 Id",
+    "scope": "posts",
+    "aliases": [
+      "last editor",
+      "user who last edited",
+      "post last editor user id"
+    ],
+    "evidence": [
+      "ev_concept_postlasteditoruserid"
+    ]
+  },
+  {
+    "id": "concept_posttags",
+    "name": "PostTags",
+    "type": "concept",
+    "definition": "帖子标签字符串",
+    "scope": "posts where Tags LIKE '%<humor>%'",
+    "aliases": [
+      "tags",
+      "tagged as",
+      "tag",
+      "post tags"
+    ],
+    "evidence": [
+      "ev_concept_posttags"
+    ]
+  },
+  {
+    "id": "concept_posttypeid",
+    "name": "PostTypeId",
+    "type": "concept",
+    "definition": "帖子类型(1=Question,2=Answer)",
+    "scope": "posts",
+    "aliases": [
+      "post type",
+      "question",
+      "answer",
+      "post type id"
+    ],
+    "evidence": [
+      "ev_concept_posttypeid"
+    ]
+  },
+  {
+    "id": "concept_comment",
+    "name": "Comment",
+    "type": "concept",
+    "definition": "评论实体",
+    "scope": "comments",
+    "aliases": [
+      "comments",
+      "contents of comments"
+    ],
+    "evidence": [
+      "ev_concept_comment"
+    ]
+  },
+  {
+    "id": "concept_commenttext",
+    "name": "CommentText",
+    "type": "concept",
+    "definition": "评论内容",
+    "scope": "comments",
+    "aliases": [
+      "comment text",
+      "contents of comments",
+      "comment"
+    ],
+    "evidence": [
+      "ev_concept_commenttext"
+    ]
+  },
+  {
+    "id": "concept_commentscore",
+    "name": "CommentScore",
+    "type": "concept",
+    "definition": "评论得分",
+    "scope": "comments",
+    "aliases": [
+      "comment score",
+      "score of comment"
+    ],
+    "evidence": [
+      "ev_concept_commentscore"
+    ]
+  },
+  {
+    "id": "concept_commentcreationdate",
+    "name": "CommentCreationDate",
+    "type": "concept",
+    "definition": "评论创建时间",
+    "scope": "comments",
+    "aliases": [
+      "comment date",
+      "comment created",
+      "comment creation date"
+    ],
+    "evidence": [
+      "ev_concept_commentcreationdate"
+    ]
+  },
+  {
+    "id": "concept_commentuserid",
+    "name": "CommentUserId",
+    "type": "concept",
+    "definition": "评论者用户 Id",
+    "scope": "comments",
+    "aliases": [
+      "commenter",
+      "user who commented",
+      "comment user id"
+    ],
+    "evidence": [
+      "ev_concept_commentuserid"
+    ]
+  },
+  {
+    "id": "concept_badge",
+    "name": "Badge",
+    "type": "concept",
+    "definition": "徽章实体",
+    "scope": "badges",
+    "aliases": [
+      "badges",
+      "awarded badge"
+    ],
+    "evidence": [
+      "ev_concept_badge"
+    ]
+  },
+  {
+    "id": "concept_badgename",
+    "name": "BadgeName",
+    "type": "concept",
+    "definition": "徽章名称",
+    "scope": "badges where Name IN ('Student')",
+    "aliases": [
+      "badge name",
+      "student badge",
+      "badge type"
+    ],
+    "evidence": [
+      "ev_concept_badgename"
+    ]
+  },
+  {
+    "id": "concept_badgedate",
+    "name": "BadgeDate",
+    "type": "concept",
+    "definition": "徽章授予时间",
+    "scope": "badges",
+    "aliases": [
+      "badge date",
+      "badge awarded date"
+    ],
+    "evidence": [
+      "ev_concept_badgedate"
+    ]
+  },
+  {
+    "id": "concept_badgeuserid",
+    "name": "BadgeUserId",
+    "type": "concept",
+    "definition": "获得徽章的用户 Id",
+    "scope": "badges",
+    "aliases": [
+      "badge owner",
+      "user awarded badge",
+      "badge user id"
+    ],
+    "evidence": [
+      "ev_concept_badgeuserid"
+    ]
+  },
+  {
+    "id": "concept_vote",
+    "name": "Vote",
+    "type": "concept",
+    "definition": "投票实体",
+    "scope": "votes",
+    "aliases": [
+      "votes",
+      "voting"
+    ],
+    "evidence": [
+      "ev_concept_vote"
+    ]
+  },
+  {
+    "id": "concept_votetypeid",
+    "name": "VoteTypeId",
+    "type": "concept",
+    "definition": "投票类型 Id",
+    "scope": "votes",
+    "aliases": [
+      "vote type",
+      "upvote",
+      "downvote",
+      "vote type id"
+    ],
+    "evidence": [
+      "ev_concept_votetypeid"
+    ]
+  },
+  {
+    "id": "concept_votebountyamount",
+    "name": "VoteBountyAmount",
+    "type": "concept",
+    "definition": "投票悬赏金额",
+    "scope": "votes",
+    "aliases": [
+      "bounty",
+      "bounty amount",
+      "vote bounty amount"
+    ],
+    "evidence": [
+      "ev_concept_votebountyamount"
+    ]
+  },
+  {
+    "id": "concept_votecreationdate",
+    "name": "VoteCreationDate",
+    "type": "concept",
+    "definition": "投票创建时间",
+    "scope": "votes",
+    "aliases": [
+      "vote date",
+      "voted on",
+      "vote creation date"
+    ],
+    "evidence": [
+      "ev_concept_votecreationdate"
+    ]
+  },
+  {
+    "id": "concept_voteuserid",
+    "name": "VoteUserId",
+    "type": "concept",
+    "definition": "投票用户 Id",
+    "scope": "votes",
+    "aliases": [
+      "voter",
+      "user who voted",
+      "vote user id"
+    ],
+    "evidence": [
+      "ev_concept_voteuserid"
+    ]
+  },
+  {
+    "id": "concept_postlink",
+    "name": "PostLink",
+    "type": "concept",
+    "definition": "帖子链接实体",
+    "scope": "postLinks",
+    "aliases": [
+      "link",
+      "links",
+      "post link"
+    ],
+    "evidence": [
+      "ev_concept_postlink"
+    ]
+  },
+  {
+    "id": "concept_postlinktypeid",
+    "name": "PostLinkTypeId",
+    "type": "concept",
+    "definition": "帖子链接类型 Id",
+    "scope": "postLinks",
+    "aliases": [
+      "link type",
+      "linked",
+      "duplicate",
+      "post link type id"
+    ],
+    "evidence": [
+      "ev_concept_postlinktypeid"
+    ]
+  },
+  {
+    "id": "concept_postlinkcreationdate",
+    "name": "PostLinkCreationDate",
+    "type": "concept",
+    "definition": "帖子链接创建时间",
+    "scope": "postLinks",
+    "aliases": [
+      "link created",
+      "link date",
+      "post link creation date"
+    ],
+    "evidence": [
+      "ev_concept_postlinkcreationdate"
+    ]
+  },
+  {
+    "id": "concept_tag",
+    "name": "Tag",
+    "type": "concept",
+    "definition": "标签实体",
+    "scope": "tags",
+    "aliases": [
+      "tags",
+      "tag name"
+    ],
+    "evidence": [
+      "ev_concept_tag"
+    ]
+  },
+  {
+    "id": "concept_tagname",
+    "name": "TagName",
+    "type": "concept",
+    "definition": "标签名称",
+    "scope": "tags where TagName IN ('bayesian','humor')",
+    "aliases": [
+      "tag name",
+      "bayesian",
+      "humor"
+    ],
+    "evidence": [
+      "ev_concept_tagname"
+    ]
+  },
+  {
+    "id": "concept_tagexcerptpostid",
+    "name": "TagExcerptPostId",
+    "type": "concept",
+    "definition": "标签摘录来源帖子 Id",
+    "scope": "tags",
+    "aliases": [
+      "excerpt post",
+      "excerpted from",
+      "tag excerpt post id"
+    ],
+    "evidence": [
+      "ev_concept_tagexcerptpostid"
+    ]
+  },
+  {
+    "id": "concept_tagwikipostid",
+    "name": "TagWikiPostId",
+    "type": "concept",
+    "definition": "标签 wiki 帖子 Id",
+    "scope": "tags",
+    "aliases": [
+      "wiki post",
+      "tag wiki",
+      "tag wiki post id"
+    ],
+    "evidence": [
+      "ev_concept_tagwikipostid"
+    ]
+  },
+  {
+    "id": "concept_posthistory",
+    "name": "PostHistory",
+    "type": "concept",
+    "definition": "帖子历史记录实体",
+    "scope": "postHistory",
+    "aliases": [
+      "post history",
+      "revision",
+      "edit history"
+    ],
+    "evidence": [
+      "ev_concept_posthistory"
+    ]
+  },
+  {
+    "id": "concept_posthistorytypeid",
+    "name": "PostHistoryTypeId",
+    "type": "concept",
+    "definition": "帖子历史类型 Id",
+    "scope": "postHistory",
+    "aliases": [
+      "history type",
+      "edit type",
+      "post history type id"
+    ],
+    "evidence": [
+      "ev_concept_posthistorytypeid"
+    ]
+  },
+  {
+    "id": "concept_posthistorycreationdate",
+    "name": "PostHistoryCreationDate",
+    "type": "concept",
+    "definition": "帖子历史记录创建时间",
+    "scope": "postHistory",
+    "aliases": [
+      "history date",
+      "edit date",
+      "post history creation date"
+    ],
+    "evidence": [
+      "ev_concept_posthistorycreationdate"
+    ]
+  },
+  {
+    "id": "derived_postspervoteratio",
+    "name": "PostsPerVoteRatio",
+    "type": "metric",
+    "definition": "用户帖子数与投票数之比 Formula: PostCount / VoteCount. Inputs: Post = posts.Id; Vote = votes.Id",
+    "scope": "derived metric",
+    "aliases": [
+      "times of posts than votes",
+      "posts compared to votes",
+      "posts per vote ratio"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_averageupvotes",
+    "name": "AverageUpVotes",
+    "type": "metric",
+    "definition": "用户平均赞成票数 Formula: SUM(UserUpVotes) / COUNT(User). Inputs: UserUpVotes = users.UpVotes; User = users.Id",
+    "scope": "derived metric",
+    "aliases": [
+      "average of the up votes",
+      "avg upvotes",
+      "average up votes"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_averageuserage",
+    "name": "AverageUserAge",
+    "type": "metric",
+    "definition": "用户平均年龄 Formula: SUM(UserAge) / COUNT(User). Inputs: UserAge = users.Age; User = users.Id",
+    "scope": "derived metric",
+    "aliases": [
+      "average user age",
+      "avg age"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_averageviewcount",
+    "name": "AverageViewCount",
+    "type": "metric",
+    "definition": "帖子平均浏览次数 Formula: SUM(PostViewCount) / COUNT(Post). Inputs: PostViewCount = posts.ViewCount; Post = posts.Id",
+    "scope": "derived metric",
+    "aliases": [
+      "average view count",
+      "avg views"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_monthlylinkcount",
+    "name": "MonthlyLinkCount",
+    "type": "metric",
+    "definition": "每月平均链接创建数 Formula: COUNT(PostLink) / 12. Inputs: PostLink = postLinks.Id",
+    "scope": "derived metric",
+    "aliases": [
+      "average monthly number of links",
+      "monthly links",
+      "monthly link count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_badgepercentagedifference",
+    "name": "BadgePercentageDifference",
+    "type": "metric",
+    "definition": "两年间徽章授予数量的百分比差异 Formula: (BadgeCount2011 - BadgeCount2010) / BadgeCount2010. Inputs: Badge = badges.Id; BadgeDate = badges.Date",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage difference of badges",
+      "badge growth",
+      "badge percentage difference"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_postcount",
+    "name": "PostCount",
+    "type": "metric",
+    "definition": "用户拥有的帖子数 Formula: COUNT(Post). Inputs: Post = posts.Id; PostOwnerUserId = posts.OwnerUserId",
+    "scope": "derived metric",
+    "aliases": [
+      "number of posts",
+      "posts owned",
+      "how many posts",
+      "post count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_votecount",
+    "name": "VoteCount",
+    "type": "metric",
+    "definition": "用户投票数 Formula: COUNT(Vote). Inputs: Vote = votes.Id; VoteUserId = votes.UserId",
+    "scope": "derived metric",
+    "aliases": [
+      "number of votes",
+      "votes cast",
+      "vote count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_commentcount",
+    "name": "CommentCount",
+    "type": "metric",
+    "definition": "评论数量 Formula: COUNT(Comment). Inputs: Comment = comments.Id",
+    "scope": "derived metric",
+    "aliases": [
+      "number of comments",
+      "comments",
+      "comment count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_badgecount",
+    "name": "BadgeCount",
+    "type": "metric",
+    "definition": "徽章授予数量 Formula: COUNT(Badge). Inputs: Badge = badges.Id",
+    "scope": "derived metric",
+    "aliases": [
+      "number of badges",
+      "badges awarded",
+      "badge count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_linkcount",
+    "name": "LinkCount",
+    "type": "metric",
+    "definition": "帖子链接数量 Formula: COUNT(PostLink). Inputs: PostLink = postLinks.Id",
+    "scope": "derived metric",
+    "aliases": [
+      "number of links",
+      "links created",
+      "link count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_maxfavoritecount",
+    "name": "MaxFavoriteCount",
+    "type": "metric",
+    "definition": "帖子最大收藏数 Formula: MAX(PostFavoriteCount). Inputs: PostFavoriteCount = posts.FavoriteCount",
+    "scope": "derived metric",
+    "aliases": [
+      "most valuable post",
+      "max favorites",
+      "max favorite count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_maxviewcount",
+    "name": "MaxViewCount",
+    "type": "metric",
+    "definition": "帖子最大浏览次数 Formula: MAX(PostViewCount). Inputs: PostViewCount = posts.ViewCount",
+    "scope": "derived metric",
+    "aliases": [
+      "most views",
+      "max views",
+      "max view count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_maxcommentscore",
+    "name": "MaxCommentScore",
+    "type": "metric",
+    "definition": "评论最高得分 Formula: MAX(CommentScore). Inputs: CommentScore = comments.Score",
+    "scope": "derived metric",
+    "aliases": [
+      "highest score comment",
+      "max comment score"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_posttype",
+    "name": "PostType",
+    "type": "concept",
+    "definition": "区分问题与回答的帖子类型",
+    "scope": "posts.PostTypeId codes",
+    "aliases": [
+      "post type",
+      "question or answer"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_votetype",
+    "name": "VoteType",
+    "type": "concept",
+    "definition": "投票类型分类",
+    "scope": "votes.VoteTypeId codes",
+    "aliases": [
+      "vote type",
+      "upvote downvote"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_posthistorytype",
+    "name": "PostHistoryType",
+    "type": "concept",
+    "definition": "帖子历史记录类型",
+    "scope": "postHistory.PostHistoryTypeId codes",
+    "aliases": [
+      "history type",
+      "edit type",
+      "post history type"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_postlinktype",
+    "name": "PostLinkType",
+    "type": "concept",
+    "definition": "帖子链接类型",
+    "scope": "postLinks.LinkTypeId codes",
+    "aliases": [
+      "link type",
+      "linked duplicate",
+      "post link type"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_badgename",
+    "name": "BadgeName",
+    "type": "concept",
+    "definition": "徽章名称分类",
+    "scope": "badges.Name codes",
+    "aliases": [
+      "badge name",
+      "badge type"
+    ],
+    "evidence": []
+  }
+]

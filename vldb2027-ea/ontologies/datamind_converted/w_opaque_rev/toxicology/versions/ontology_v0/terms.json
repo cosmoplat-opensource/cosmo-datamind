@@ -1,0 +1,187 @@
+[
+  {
+    "id": "term_tab03",
+    "name": "tab03",
+    "type": "entity",
+    "definition": "业务记录主表 Counterexample: 与 tab04 等表族成员的区别:它们是同一业务概念在不同厂区/层级/站点的副本,不另建对象 Maturity: Provisional",
+    "scope": "Records of table tab03; provenance: direct source tab03",
+    "aliases": [
+      "业务记录主表"
+    ],
+    "evidence": [
+      "ev_schema_tab03"
+    ]
+  },
+  {
+    "id": "term_tab04",
+    "name": "tab04",
+    "type": "entity",
+    "definition": "业务记录从表 Counterexample: 与 tab03 的区别:同族副本而非独立业务概念 Maturity: Provisional",
+    "scope": "Records of table tab04; provenance: direct source tab04",
+    "aliases": [
+      "业务记录从表"
+    ],
+    "evidence": [
+      "ev_schema_tab04"
+    ]
+  },
+  {
+    "id": "concept_molecule",
+    "name": "Molecule",
+    "type": "concept",
+    "definition": "A molecule entity identified by its molecule id.",
+    "scope": "tab04",
+    "aliases": [
+      "molecule id",
+      "compound",
+      "TR molecule"
+    ],
+    "evidence": [
+      "ev_concept_molecule"
+    ]
+  },
+  {
+    "id": "concept_atom",
+    "name": "Atom",
+    "type": "concept",
+    "definition": "An atom entity identified by an atom id of the form molecule_atomnumber.",
+    "scope": "tab03",
+    "aliases": [
+      "atoms",
+      "bond atom",
+      "atom id"
+    ],
+    "evidence": [
+      "ev_concept_atom"
+    ]
+  },
+  {
+    "id": "concept_bond",
+    "name": "Bond",
+    "type": "concept",
+    "definition": "A bond/connection between atoms, recorded in the bond table.",
+    "scope": "tab03",
+    "aliases": [
+      "bonds",
+      "connection",
+      "connections"
+    ],
+    "evidence": [
+      "ev_concept_bond"
+    ]
+  },
+  {
+    "id": "concept_carcinogenicity",
+    "name": "Carcinogenicity",
+    "type": "concept",
+    "definition": "Whether a molecule is carcinogenic ('+') or non-carcinogenic ('-').",
+    "scope": "tab04",
+    "aliases": [
+      "carcinogenic",
+      "non-carcinogenic",
+      "carcinogen",
+      "toxicology"
+    ],
+    "evidence": [
+      "ev_concept_carcinogenicity"
+    ]
+  },
+  {
+    "id": "concept_connectedatom",
+    "name": "ConnectedAtom",
+    "type": "concept",
+    "definition": "An atom that participates in a bond, referenced from either side of the bond.",
+    "scope": "tab03",
+    "aliases": [
+      "atom involved in bond",
+      "bonded atom",
+      "connected atom",
+      "atom in connection"
+    ],
+    "evidence": [
+      "ev_concept_connectedatom"
+    ]
+  },
+  {
+    "id": "derived_bondcountpermolecule",
+    "name": "BondCountPerMolecule",
+    "type": "metric",
+    "definition": "Number of bonds belonging to a molecule. Formula: COUNT(Bond) grouped by Molecule. Inputs: Bond = tab03.fld004; Molecule = tab04.fld002",
+    "scope": "derived metric",
+    "aliases": [
+      "number of bonds",
+      "how many bonds",
+      "connections of molecule",
+      "bond count per molecule"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_atomcountpermolecule",
+    "name": "AtomCountPerMolecule",
+    "type": "metric",
+    "definition": "Number of atoms in a molecule. Formula: COUNT(Atom) grouped by Molecule. Inputs: Atom = tab03.fld001; Molecule = tab04.fld002",
+    "scope": "derived metric",
+    "aliases": [
+      "number of atoms",
+      "how many atoms",
+      "molecule size",
+      "atom count per molecule"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_carcinogenicmoleculecount",
+    "name": "CarcinogenicMoleculeCount",
+    "type": "metric",
+    "definition": "Count of molecules flagged carcinogenic. Formula: COUNT(Carcinogenicity = '+'). Inputs: Carcinogenicity = tab04.fld007; Molecule = tab04.fld002",
+    "scope": "derived metric",
+    "aliases": [
+      "number of carcinogenic molecules",
+      "carcinogenic count",
+      "carcinogenic molecule count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_noncarcinogenicmoleculecount",
+    "name": "NonCarcinogenicMoleculeCount",
+    "type": "metric",
+    "definition": "Count of molecules flagged non-carcinogenic. Formula: COUNT(Carcinogenicity = '-'). Inputs: Carcinogenicity = tab04.fld007; Molecule = tab04.fld002",
+    "scope": "derived metric",
+    "aliases": [
+      "number of non-carcinogenic molecules",
+      "non-carcinogenic count",
+      "non carcinogenic molecule count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_unbondedatomcount",
+    "name": "UnbondedAtomCount",
+    "type": "metric",
+    "definition": "Atoms that do not appear in any bond. Formula: COUNT(Atom NOT IN ConnectedAtom). Inputs: Atom = tab03.fld001; ConnectedAtom = tab03.fld006",
+    "scope": "derived metric",
+    "aliases": [
+      "atoms that cannot bond",
+      "unconnected atoms",
+      "isolated atoms",
+      "unbonded atom count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_carcinogenicity",
+    "name": "Carcinogenicity",
+    "type": "concept",
+    "definition": "Classifies molecules by carcinogenic status.",
+    "scope": "tab04.fld007 codes",
+    "aliases": [
+      "carcinogenic status",
+      "toxicology label",
+      "cancer risk",
+      "carcinogenicity"
+    ],
+    "evidence": []
+  }
+]

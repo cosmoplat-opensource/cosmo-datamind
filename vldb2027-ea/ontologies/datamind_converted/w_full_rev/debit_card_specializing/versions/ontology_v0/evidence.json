@@ -1,0 +1,274 @@
+[
+  {
+    "id": "ev_schema_customers",
+    "source": "debit_card_specializing.sqlite",
+    "query": "PRAGMA table_info(customers)",
+    "result": "Table customers(CustomerID, Segment, Currency)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_customers__segment",
+    "source": "debit_card_specializing.sqlite",
+    "query": "SELECT DISTINCT Segment FROM customers",
+    "result": "KAM / LAM / SME",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_customers__currency",
+    "source": "debit_card_specializing.sqlite",
+    "query": "SELECT DISTINCT Currency FROM customers",
+    "result": "CZK / EUR",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_gasstations",
+    "source": "debit_card_specializing.sqlite",
+    "query": "PRAGMA table_info(gasstations)",
+    "result": "Table gasstations(GasStationID, ChainID, Country, Segment)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_gasstations__country",
+    "source": "debit_card_specializing.sqlite",
+    "query": "SELECT DISTINCT Country FROM gasstations",
+    "result": "CZE / SVK",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_gasstations__segment",
+    "source": "debit_card_specializing.sqlite",
+    "query": "SELECT DISTINCT Segment FROM gasstations",
+    "result": "Discount / Noname / Other / Premium / Value for money",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_products",
+    "source": "debit_card_specializing.sqlite",
+    "query": "PRAGMA table_info(products)",
+    "result": "Table products(ProductID, Description)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_transactions_1k",
+    "source": "debit_card_specializing.sqlite",
+    "query": "PRAGMA table_info(transactions_1k)",
+    "result": "Table transactions_1k(TransactionID, Date, Time, CustomerID, CardID, GasStationID, ProductID, Amount, Price)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_yearmonth",
+    "source": "debit_card_specializing.sqlite",
+    "query": "PRAGMA table_info(yearmonth)",
+    "result": "Table yearmonth(CustomerID, Date, Consumption)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_czechrepublicgasstation",
+    "source": "debit_card_specializing.sqlite",
+    "query": "SELECT COUNT(*) FROM gasstations WHERE Country = 'CZE'",
+    "result": "4836 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_slovakiagasstation",
+    "source": "debit_card_specializing.sqlite",
+    "query": "SELECT COUNT(*) FROM gasstations WHERE Country = 'SVK'",
+    "result": "880 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_premiumgasstation",
+    "source": "debit_card_specializing.sqlite",
+    "query": "SELECT COUNT(*) FROM gasstations WHERE Segment = 'Premium'",
+    "result": "1428 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_discountgasstation",
+    "source": "debit_card_specializing.sqlite",
+    "query": "SELECT COUNT(*) FROM gasstations WHERE Segment = 'Discount'",
+    "result": "294 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_smecustomer",
+    "source": "debit_card_specializing.sqlite",
+    "query": "SELECT COUNT(*) FROM customers WHERE Segment = 'SME'",
+    "result": "26763 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_eurcustomer",
+    "source": "debit_card_specializing.sqlite",
+    "query": "SELECT COUNT(*) FROM customers WHERE Currency = 'EUR'",
+    "result": "2002 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_czkcustomer",
+    "source": "debit_card_specializing.sqlite",
+    "query": "SELECT COUNT(*) FROM customers WHERE Currency = 'CZK'",
+    "result": "30459 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_transactionamount",
+    "source": "debit_card_specializing.sqlite",
+    "query": "SELECT COUNT(*) FROM transactions_1k",
+    "result": "1000 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_transactionprice",
+    "source": "debit_card_specializing.sqlite",
+    "query": "SELECT COUNT(*) FROM transactions_1k",
+    "result": "1000 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_transactiondate",
+    "source": "debit_card_specializing.sqlite",
+    "query": "SELECT COUNT(*) FROM transactions_1k",
+    "result": "1000 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_transactiontime",
+    "source": "debit_card_specializing.sqlite",
+    "query": "SELECT COUNT(*) FROM transactions_1k",
+    "result": "1000 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_yearmonthconsumption",
+    "source": "debit_card_specializing.sqlite",
+    "query": "SELECT COUNT(*) FROM yearmonth",
+    "result": "383282 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_yearmonthdate",
+    "source": "debit_card_specializing.sqlite",
+    "query": "SELECT COUNT(*) FROM yearmonth",
+    "result": "383282 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_productdescription",
+    "source": "debit_card_specializing.sqlite",
+    "query": "SELECT COUNT(*) FROM products",
+    "result": "591 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_0",
+    "source": "debit_card_specializing.sqlite",
+    "query": "SELECT Date FROM yearmonth LIMIT 5;",
+    "result": "[[\"201112\"], [\"201112\"], [\"201112\"]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_1",
+    "source": "debit_card_specializing.sqlite",
+    "query": "SELECT Date FROM transactions_1k LIMIT 5;",
+    "result": "[[\"2012-08-24\"], [\"2012-08-24\"], [\"2012-08-24\"]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_2",
+    "source": "debit_card_specializing.sqlite",
+    "query": "SELECT Time FROM transactions_1k LIMIT 5;",
+    "result": "[[\"09:41:00\"], [\"10:03:00\"], [\"10:03:00\"]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_3",
+    "source": "debit_card_specializing.sqlite",
+    "query": "SELECT DISTINCT Currency FROM customers;",
+    "result": "[[\"EUR\"], [\"CZK\"]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_4",
+    "source": "debit_card_specializing.sqlite",
+    "query": "SELECT DISTINCT Country FROM gasstations;",
+    "result": "[[\"CZE\"], [\"SVK\"]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_5",
+    "source": "debit_card_specializing.sqlite",
+    "query": "SELECT DISTINCT Segment FROM gasstations;",
+    "result": "[[\"Value for money\"], [\"Premium\"], [\"Other\"]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_6",
+    "source": "debit_card_specializing.sqlite",
+    "query": "SELECT DISTINCT Segment FROM customers;",
+    "result": "[[\"SME\"], [\"LAM\"], [\"KAM\"]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_customers__transactions__customerid",
+    "source": "debit_card_specializing.sqlite",
+    "query": "distinct values of transactions_1k.CustomerID contained in customers.CustomerID",
+    "result": "overlap 100.0% (517/517 distinct child values); parent key unique: True; child rows 1000, parent rows 32461",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_gasstations__transactions__gasstationid",
+    "source": "debit_card_specializing.sqlite",
+    "query": "distinct values of transactions_1k.GasStationID contained in gasstations.GasStationID",
+    "result": "overlap 100.0% (437/437 distinct child values); parent key unique: True; child rows 1000, parent rows 5716",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_products__transactions__productid",
+    "source": "debit_card_specializing.sqlite",
+    "query": "distinct values of transactions_1k.ProductID contained in products.ProductID",
+    "result": "overlap 100.0% (28/28 distinct child values); parent key unique: True; child rows 1000, parent rows 591",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_customers__yearmonth__customerid",
+    "source": "debit_card_specializing.sqlite",
+    "query": "distinct values of yearmonth.CustomerID contained in customers.CustomerID",
+    "result": "overlap 100.0% (30566/30566 distinct child values); parent key unique: True; child rows 383282, parent rows 32461",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  }
+]

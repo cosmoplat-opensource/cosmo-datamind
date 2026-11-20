@@ -1,0 +1,145 @@
+[
+  {
+    "id": "rel_derived_annualconsumption__from__concept_monthlyconsumption",
+    "source": "concept_monthlyconsumption",
+    "relation_type": "derivation",
+    "target": "derived_annualconsumption",
+    "connection_condition": "same entity and period",
+    "description": "AnnualConsumption is computed from MonthlyConsumption: SUM(MonthlyConsumption) filtered to YearMonth year",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_annualconsumption__from__concept_yearmonth",
+    "source": "concept_yearmonth",
+    "relation_type": "derivation",
+    "target": "derived_annualconsumption",
+    "connection_condition": "same entity and period",
+    "description": "AnnualConsumption is computed from YearMonth: SUM(MonthlyConsumption) filtered to YearMonth year",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_eurocustomercount__from__concept_customer",
+    "source": "concept_customer",
+    "relation_type": "derivation",
+    "target": "derived_eurocustomercount",
+    "connection_condition": "same entity and period",
+    "description": "EuroCustomerCount is computed from Customer: COUNT DISTINCT(Customer) WHERE PaymentCurrency = 'EUR'",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_eurocustomercount__from__concept_paymentcurrency",
+    "source": "concept_paymentcurrency",
+    "relation_type": "derivation",
+    "target": "derived_eurocustomercount",
+    "connection_condition": "same entity and period",
+    "description": "EuroCustomerCount is computed from PaymentCurrency: COUNT DISTINCT(Customer) WHERE PaymentCurrency = 'EUR'",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_highvalueeurocustomers__from__concept_customer",
+    "source": "concept_customer",
+    "relation_type": "derivation",
+    "target": "derived_highvalueeurocustomers",
+    "connection_condition": "same entity and period",
+    "description": "HighValueEuroCustomers is computed from Customer: COUNT DISTINCT(Customer) WHERE PaymentCurrency='EUR' AND MonthlyConsumption > 1000",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_highvalueeurocustomers__from__concept_paymentcurrency",
+    "source": "concept_paymentcurrency",
+    "relation_type": "derivation",
+    "target": "derived_highvalueeurocustomers",
+    "connection_condition": "same entity and period",
+    "description": "HighValueEuroCustomers is computed from PaymentCurrency: COUNT DISTINCT(Customer) WHERE PaymentCurrency='EUR' AND MonthlyConsumption > 1000",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_highvalueeurocustomers__from__concept_monthlyconsumption",
+    "source": "concept_monthlyconsumption",
+    "relation_type": "derivation",
+    "target": "derived_highvalueeurocustomers",
+    "connection_condition": "same entity and period",
+    "description": "HighValueEuroCustomers is computed from MonthlyConsumption: COUNT DISTINCT(Customer) WHERE PaymentCurrency='EUR' AND MonthlyConsumption > 1000",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_peakconsumptionmonth__from__concept_monthlyconsumption",
+    "source": "concept_monthlyconsumption",
+    "relation_type": "derivation",
+    "target": "derived_peakconsumptionmonth",
+    "connection_condition": "same entity and period",
+    "description": "PeakConsumptionMonth is computed from MonthlyConsumption: ARGMAX(SUM(MonthlyConsumption)) BY YearMonth",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_peakconsumptionmonth__from__concept_yearmonth",
+    "source": "concept_yearmonth",
+    "relation_type": "derivation",
+    "target": "derived_peakconsumptionmonth",
+    "connection_condition": "same entity and period",
+    "description": "PeakConsumptionMonth is computed from YearMonth: ARGMAX(SUM(MonthlyConsumption)) BY YearMonth",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_transactionsafterdate__from__concept_transaction",
+    "source": "concept_transaction",
+    "relation_type": "derivation",
+    "target": "derived_transactionsafterdate",
+    "connection_condition": "same entity and period",
+    "description": "TransactionsAfterDate is computed from Transaction: COUNT(Transaction) WHERE TransactionTime > '2012-01-01'",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_transactionsafterdate__from__concept_transactiontime",
+    "source": "concept_transactiontime",
+    "relation_type": "derivation",
+    "target": "derived_transactionsafterdate",
+    "connection_condition": "same entity and period",
+    "description": "TransactionsAfterDate is computed from TransactionTime: COUNT(Transaction) WHERE TransactionTime > '2012-01-01'",
+    "evidence": []
+  },
+  {
+    "id": "rel_tab01__tab04__fld001",
+    "source": "term_tab01",
+    "relation_type": "composition",
+    "target": "term_tab04",
+    "connection_condition": "tab04.fld001 corresponds to tab01.fld001",
+    "description": "归属; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_tab01__tab04__fld001"
+    ]
+  },
+  {
+    "id": "rel_tab02__tab04__fld004",
+    "source": "term_tab02",
+    "relation_type": "composition",
+    "target": "term_tab04",
+    "connection_condition": "tab04.fld004 corresponds to tab02.fld004",
+    "description": "归属; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_tab02__tab04__fld004"
+    ]
+  },
+  {
+    "id": "rel_tab03__tab04__fld007",
+    "source": "term_tab03",
+    "relation_type": "composition",
+    "target": "term_tab04",
+    "connection_condition": "tab04.fld007 corresponds to tab03.fld007",
+    "description": "归属; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_tab03__tab04__fld007"
+    ]
+  },
+  {
+    "id": "rel_tab01__tab05__fld001",
+    "source": "term_tab01",
+    "relation_type": "composition",
+    "target": "term_tab05",
+    "connection_condition": "tab05.fld001 corresponds to tab01.fld001",
+    "description": "归属; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_tab01__tab05__fld001"
+    ]
+  }
+]

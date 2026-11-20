@@ -1,0 +1,171 @@
+[
+  {
+    "id": "rel_derived_percentageofrunningloans__from__concept_loanstatus",
+    "source": "concept_loanstatus",
+    "relation_type": "derivation",
+    "target": "derived_percentageofrunningloans",
+    "connection_condition": "same entity and period",
+    "description": "PercentageOfRunningLoans is computed from LoanStatus: (SUM(CASE WHEN LoanStatus = 'C' THEN LoanAmount ELSE 0 END) / SUM(LoanAmount)) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_percentageofrunningloans__from__concept_loanamount",
+    "source": "concept_loanamount",
+    "relation_type": "derivation",
+    "target": "derived_percentageofrunningloans",
+    "connection_condition": "same entity and period",
+    "description": "PercentageOfRunningLoans is computed from LoanAmount: (SUM(CASE WHEN LoanStatus = 'C' THEN LoanAmount ELSE 0 END) / SUM(LoanAmount)) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_percentageofmaleclientswithweeklystatement__from__concept_gender",
+    "source": "concept_gender",
+    "relation_type": "derivation",
+    "target": "derived_percentageofmaleclientswithweeklystatement",
+    "connection_condition": "same entity and period",
+    "description": "PercentageOfMaleClientsWithWeeklyStatement is computed from Gender: (COUNT(DISTINCT CASE WHEN Gender = 'M' AND WeeklyStatement THEN client_id END) / COUNT(DISTINCT CASE WHEN WeeklyStatement THEN client_id END)) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_percentageofmaleclientswithweeklystatement__from__concept_weeklystatement",
+    "source": "concept_weeklystatement",
+    "relation_type": "derivation",
+    "target": "derived_percentageofmaleclientswithweeklystatement",
+    "connection_condition": "same entity and period",
+    "description": "PercentageOfMaleClientsWithWeeklyStatement is computed from WeeklyStatement: (COUNT(DISTINCT CASE WHEN Gender = 'M' AND WeeklyStatement THEN client_id END) / COUNT(DISTINCT CASE WHEN WeeklyStatement THEN client_id END)) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_percentageoffemaleclientsinhighsalarydistrict__from__concept_gender",
+    "source": "concept_gender",
+    "relation_type": "derivation",
+    "target": "derived_percentageoffemaleclientsinhighsalarydistrict",
+    "connection_condition": "same entity and period",
+    "description": "PercentageOfFemaleClientsInHighSalaryDistrict is computed from Gender: (COUNT(DISTINCT CASE WHEN Gender = 'F' AND AverageSalary > 10000 THEN client_id END) / COUNT(DISTINCT CASE WHEN AverageSalary > 10000 THEN client_id END)) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_percentageoffemaleclientsinhighsalarydistrict__from__concept_averagesalary",
+    "source": "concept_averagesalary",
+    "relation_type": "derivation",
+    "target": "derived_percentageoffemaleclientsinhighsalarydistrict",
+    "connection_condition": "same entity and period",
+    "description": "PercentageOfFemaleClientsInHighSalaryDistrict is computed from AverageSalary: (COUNT(DISTINCT CASE WHEN Gender = 'F' AND AverageSalary > 10000 THEN client_id END) / COUNT(DISTINCT CASE WHEN AverageSalary > 10000 THEN client_id END)) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_averageloanamount__from__concept_loanamount",
+    "source": "concept_loanamount",
+    "relation_type": "derivation",
+    "target": "derived_averageloanamount",
+    "connection_condition": "same entity and period",
+    "description": "AverageLoanAmount is computed from LoanAmount: AVG(LoanAmount)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_totalloanamount__from__concept_loanamount",
+    "source": "concept_loanamount",
+    "relation_type": "derivation",
+    "target": "derived_totalloanamount",
+    "connection_condition": "same entity and period",
+    "description": "TotalLoanAmount is computed from LoanAmount: SUM(LoanAmount)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_percentageofaccountswithcondition__from__concept_loanamount",
+    "source": "concept_loanamount",
+    "relation_type": "derivation",
+    "target": "derived_percentageofaccountswithcondition",
+    "connection_condition": "same entity and period",
+    "description": "PercentageOfAccountsWithCondition is computed from LoanAmount: (SUM(CASE WHEN condition THEN LoanAmount ELSE 0 END) / SUM(LoanAmount)) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_district__account__district_id",
+    "source": "term_district",
+    "relation_type": "composition",
+    "target": "term_account",
+    "connection_condition": "account.district_id corresponds to district.district_id",
+    "description": "归属; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_district__account__district_id"
+    ]
+  },
+  {
+    "id": "rel_district__client__district_id",
+    "source": "term_district",
+    "relation_type": "composition",
+    "target": "term_client",
+    "connection_condition": "client.district_id corresponds to district.district_id",
+    "description": "归属; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_district__client__district_id"
+    ]
+  },
+  {
+    "id": "rel_client__disp__client_id",
+    "source": "term_client",
+    "relation_type": "composition",
+    "target": "term_disp",
+    "connection_condition": "disp.client_id corresponds to client.client_id",
+    "description": "关联; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_client__disp__client_id"
+    ]
+  },
+  {
+    "id": "rel_account__disp__account_id",
+    "source": "term_account",
+    "relation_type": "composition",
+    "target": "term_disp",
+    "connection_condition": "disp.account_id corresponds to account.account_id",
+    "description": "关联; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_account__disp__account_id"
+    ]
+  },
+  {
+    "id": "rel_disp__card__disp_id",
+    "source": "term_disp",
+    "relation_type": "composition",
+    "target": "term_card",
+    "connection_condition": "card.disp_id corresponds to disp.disp_id",
+    "description": "关联; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_disp__card__disp_id"
+    ]
+  },
+  {
+    "id": "rel_account__loan__account_id",
+    "source": "term_account",
+    "relation_type": "composition",
+    "target": "term_loan",
+    "connection_condition": "loan.account_id corresponds to account.account_id",
+    "description": "关联; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_account__loan__account_id"
+    ]
+  },
+  {
+    "id": "rel_account__order__account_id",
+    "source": "term_account",
+    "relation_type": "composition",
+    "target": "term_order",
+    "connection_condition": "order.account_id corresponds to account.account_id",
+    "description": "关联; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_account__order__account_id"
+    ]
+  },
+  {
+    "id": "rel_account__trans__account_id",
+    "source": "term_account",
+    "relation_type": "composition",
+    "target": "term_trans",
+    "connection_condition": "trans.account_id corresponds to account.account_id",
+    "description": "关联; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_account__trans__account_id"
+    ]
+  }
+]

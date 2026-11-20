@@ -1,0 +1,82 @@
+[
+  {
+    "id": "ev_schema_molecule",
+    "source": "toxicology.sqlite",
+    "query": "PRAGMA table_info(molecule)",
+    "result": "Table molecule(molecule_id, label)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_molecule__label",
+    "source": "toxicology.sqlite",
+    "query": "SELECT DISTINCT label FROM molecule",
+    "result": "+ / -",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_atom",
+    "source": "toxicology.sqlite",
+    "query": "PRAGMA table_info(atom)",
+    "result": "Table atom(atom_id, molecule_id, element)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_bond",
+    "source": "toxicology.sqlite",
+    "query": "PRAGMA table_info(bond)",
+    "result": "Table bond(bond_id, molecule_id, bond_type)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_bond__bond_type",
+    "source": "toxicology.sqlite",
+    "query": "SELECT DISTINCT bond_type FROM bond",
+    "result": "# / - / =",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_connected",
+    "source": "toxicology.sqlite",
+    "query": "PRAGMA table_info(connected)",
+    "result": "Table connected(atom_id, atom_id2, bond_id)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_molecule__atom__molecule_id",
+    "source": "toxicology.sqlite",
+    "query": "distinct values of atom.molecule_id contained in molecule.molecule_id",
+    "result": "overlap 77.3% (343/444 distinct child values); parent key unique: True; child rows 12333, parent rows 343",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_molecule__bond__molecule_id",
+    "source": "toxicology.sqlite",
+    "query": "distinct values of bond.molecule_id contained in molecule.molecule_id",
+    "result": "overlap 77.3% (343/444 distinct child values); parent key unique: True; child rows 12379, parent rows 343",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_atom__connected__atom_id",
+    "source": "toxicology.sqlite",
+    "query": "distinct values of connected.atom_id contained in atom.atom_id",
+    "result": "overlap 100.0% (12284/12284 distinct child values); parent key unique: True; child rows 24758, parent rows 12333",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_bond__connected__bond_id",
+    "source": "toxicology.sqlite",
+    "query": "distinct values of connected.bond_id contained in bond.bond_id",
+    "result": "overlap 100.0% (12379/12379 distinct child values); parent key unique: True; child rows 24758, parent rows 12379",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  }
+]

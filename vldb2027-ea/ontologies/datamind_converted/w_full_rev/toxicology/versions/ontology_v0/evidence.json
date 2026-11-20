@@ -1,0 +1,250 @@
+[
+  {
+    "id": "ev_schema_molecule",
+    "source": "toxicology.sqlite",
+    "query": "PRAGMA table_info(molecule)",
+    "result": "Table molecule(molecule_id, label)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_molecule__label",
+    "source": "toxicology.sqlite",
+    "query": "SELECT DISTINCT label FROM molecule",
+    "result": "+ / -",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_atom",
+    "source": "toxicology.sqlite",
+    "query": "PRAGMA table_info(atom)",
+    "result": "Table atom(atom_id, molecule_id, element)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_bond",
+    "source": "toxicology.sqlite",
+    "query": "PRAGMA table_info(bond)",
+    "result": "Table bond(bond_id, molecule_id, bond_type)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_bond__bond_type",
+    "source": "toxicology.sqlite",
+    "query": "SELECT DISTINCT bond_type FROM bond",
+    "result": "# / - / =",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_connected",
+    "source": "toxicology.sqlite",
+    "query": "PRAGMA table_info(connected)",
+    "result": "Table connected(atom_id, atom_id2, bond_id)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_molecule",
+    "source": "toxicology.sqlite",
+    "query": "SELECT COUNT(*) FROM molecule",
+    "result": "343 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_atom",
+    "source": "toxicology.sqlite",
+    "query": "SELECT COUNT(*) FROM atom",
+    "result": "12333 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_element",
+    "source": "toxicology.sqlite",
+    "query": "SELECT COUNT(*) FROM atom",
+    "result": "12333 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_carbonatom",
+    "source": "toxicology.sqlite",
+    "query": "SELECT COUNT(*) FROM atom WHERE element = 'c'",
+    "result": "4605 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_bond",
+    "source": "toxicology.sqlite",
+    "query": "SELECT COUNT(*) FROM bond",
+    "result": "12379 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_bondtype",
+    "source": "toxicology.sqlite",
+    "query": "SELECT COUNT(*) FROM bond",
+    "result": "12379 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_singlebond",
+    "source": "toxicology.sqlite",
+    "query": "SELECT COUNT(*) FROM bond WHERE bond_type = '-'",
+    "result": "10528 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_doublebond",
+    "source": "toxicology.sqlite",
+    "query": "SELECT COUNT(*) FROM bond WHERE bond_type = '='",
+    "result": "1844 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_triplebond",
+    "source": "toxicology.sqlite",
+    "query": "SELECT COUNT(*) FROM bond WHERE bond_type = '#'",
+    "result": "6 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_carcinogeniclabel",
+    "source": "toxicology.sqlite",
+    "query": "SELECT COUNT(*) FROM molecule WHERE label = '+'",
+    "result": "152 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_noncarcinogeniclabel",
+    "source": "toxicology.sqlite",
+    "query": "SELECT COUNT(*) FROM molecule WHERE label = '-'",
+    "result": "191 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_connectedatom",
+    "source": "toxicology.sqlite",
+    "query": "SELECT COUNT(*) FROM connected",
+    "result": "24758 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_unconnectedatom",
+    "source": "toxicology.sqlite",
+    "query": "SELECT COUNT(*) FROM atom WHERE atom_id NOT IN (SELECT atom_id FROM connected UNION SELECT atom_id2 FROM connected)",
+    "result": "49 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_atomposition",
+    "source": "toxicology.sqlite",
+    "query": "SELECT COUNT(*) FROM atom WHERE substr(atom_id, 7, 1) = '4'",
+    "result": "1061 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_0",
+    "source": "toxicology.sqlite",
+    "query": "SELECT bond_type, COUNT(*) FROM bond GROUP BY bond_type;",
+    "result": "[[null, 1], [\"#\", 6], [\"-\", 10528]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_1",
+    "source": "toxicology.sqlite",
+    "query": "SELECT COUNT(*) FROM atom WHERE atom_id NOT IN (SELECT atom_id FROM connected UNION SELECT atom_id2 FROM connected);",
+    "result": "[[49]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_2",
+    "source": "toxicology.sqlite",
+    "query": "SELECT label, COUNT(*) FROM molecule GROUP BY label;",
+    "result": "[[\"+\", 152], [\"-\", 191]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_3",
+    "source": "toxicology.sqlite",
+    "query": "SELECT atom_id, substr(atom_id,7,1) FROM atom LIMIT 20;",
+    "result": "[[\"TR000_1\", \"1\"], [\"TR000_2\", \"2\"], [\"TR000_3\", \"3\"]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_4",
+    "source": "toxicology.sqlite",
+    "query": "SELECT molecule_id, COUNT(DISTINCT bond_id) FROM bond GROUP BY molecule_id LIMIT 10;",
+    "result": "[[\"TR000\", 4], [\"TR001\", 25], [\"TR002\", 5]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_5",
+    "source": "toxicology.sqlite",
+    "query": "SELECT DISTINCT element FROM atom;",
+    "result": "[[\"cl\"], [\"c\"], [\"h\"]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_molecule__atom__molecule_id",
+    "source": "toxicology.sqlite",
+    "query": "distinct values of atom.molecule_id contained in molecule.molecule_id",
+    "result": "overlap 77.3% (343/444 distinct child values); parent key unique: True; child rows 12333, parent rows 343",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_molecule__bond__molecule_id",
+    "source": "toxicology.sqlite",
+    "query": "distinct values of bond.molecule_id contained in molecule.molecule_id",
+    "result": "overlap 77.3% (343/444 distinct child values); parent key unique: True; child rows 12379, parent rows 343",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_atom__connected__atom_id2",
+    "source": "toxicology.sqlite",
+    "query": "distinct values of connected.atom_id2 contained in atom.atom_id",
+    "result": "overlap 100.0% (12284/12284 distinct child values); parent key unique: True; child rows 24758, parent rows 12333",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_atom__connected__atom_id2__atom_id",
+    "source": "toxicology.sqlite",
+    "query": "distinct values of connected.atom_id contained in atom.atom_id",
+    "result": "overlap 100.0%; parent key unique: True",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_bond__connected__bond_id",
+    "source": "toxicology.sqlite",
+    "query": "distinct values of connected.bond_id contained in bond.bond_id",
+    "result": "overlap 100.0% (12379/12379 distinct child values); parent key unique: True; child rows 24758, parent rows 12379",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  }
+]

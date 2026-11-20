@@ -1,0 +1,664 @@
+[
+  {
+    "id": "term_country",
+    "name": "Country",
+    "type": "entity",
+    "definition": "具有明确地理边界与主权管辖范围的政治实体，是联赛与比赛举办地的上位地域单元。 Counterexample: 与'地区/城市'混淆：后者是主权国家内部的次级行政单元，不具备主权属性。 Maturity: Provisional",
+    "scope": "Records of table Country; provenance: direct source Country",
+    "aliases": [
+      "国家"
+    ],
+    "evidence": [
+      "ev_schema_country"
+    ]
+  },
+  {
+    "id": "term_league",
+    "name": "League",
+    "type": "entity",
+    "definition": "由特定国家或地区组织、按赛季周期性举办并由多支球队参加的竞技赛事组织单元。 Counterexample: 与'杯赛/锦标赛'混淆：后者多为淘汰制短期赛事，而非按赛季循环的联赛组织。 Maturity: Provisional",
+    "scope": "Records of table League; provenance: direct source League",
+    "aliases": [
+      "联赛"
+    ],
+    "evidence": [
+      "ev_schema_league"
+    ]
+  },
+  {
+    "id": "term_match",
+    "name": "Match",
+    "type": "concept",
+    "definition": "在特定日期于某一联赛赛季阶段中，由两支球队对阵并产生比分结果的竞技事件。 Counterexample: 与'赛季/阶段'混淆：后者是比赛所属的时间组织单元，本身不产生对阵与比分。 Maturity: Provisional",
+    "scope": "Records of table Match; provenance: direct source Match",
+    "aliases": [
+      "比赛"
+    ],
+    "evidence": [
+      "ev_schema_match"
+    ]
+  },
+  {
+    "id": "term_player",
+    "name": "Player",
+    "type": "entity",
+    "definition": "以个人身份注册并参加足球比赛的运动员，具有姓名、出生日期、身高、体重等自然属性。 Counterexample: 与'球队'混淆：后者是由多名运动员组成的组织实体，而非自然人。 Maturity: Provisional",
+    "scope": "Records of table Player; provenance: direct source Player",
+    "aliases": [
+      "球员"
+    ],
+    "evidence": [
+      "ev_schema_player"
+    ]
+  },
+  {
+    "id": "term_player_attributes",
+    "name": "Player_Attributes",
+    "type": "entity",
+    "definition": "在某一日期对某名运动员各项竞技能力进行量化评估后形成的信息记录，包含综合评分、潜力与多项技术指标。 Counterexample: 与'球员'混淆：后者是自然人实体，本对象是对其能力在特定时点的评估信息，而非球员本身。 Maturity: Provisional",
+    "scope": "Records of table Player_Attributes; provenance: direct source Player_Attributes",
+    "aliases": [
+      "球员能力属性记录"
+    ],
+    "evidence": [
+      "ev_schema_player_attributes"
+    ]
+  },
+  {
+    "id": "term_team",
+    "name": "Team",
+    "type": "entity",
+    "definition": "由多名运动员组成、以集体身份参加联赛与比赛的竞技组织，具有全称与简称。 Counterexample: 与'球员'混淆：后者是自然人个体，球队是由个体组成的组织实体。 Maturity: Provisional",
+    "scope": "Records of table Team; provenance: direct source Team",
+    "aliases": [
+      "球队"
+    ],
+    "evidence": [
+      "ev_schema_team"
+    ]
+  },
+  {
+    "id": "term_team_attributes",
+    "name": "Team_Attributes",
+    "type": "entity",
+    "definition": "在某一日期对某支球队进攻组织与防守风格进行量化评估后形成的信息记录，包含速度、传球、射门、压迫等战术指标及其分级。 Counterexample: 与'球队'混淆：后者是组织实体，本对象是对其战术风格在特定时点的评估信息。 Maturity: Provisional",
+    "scope": "Records of table Team_Attributes; provenance: direct source Team_Attributes",
+    "aliases": [
+      "球队战术属性记录"
+    ],
+    "evidence": [
+      "ev_schema_team_attributes"
+    ]
+  },
+  {
+    "id": "concept_hometeamgoals",
+    "name": "HomeTeamGoals",
+    "type": "concept",
+    "definition": "主队在一场比赛中的进球数",
+    "scope": "Match",
+    "aliases": [
+      "home team goal",
+      "home goals",
+      "goals scored at home",
+      "home score",
+      "home team goals"
+    ],
+    "evidence": [
+      "ev_concept_hometeamgoals"
+    ]
+  },
+  {
+    "id": "concept_awayteamgoals",
+    "name": "AwayTeamGoals",
+    "type": "concept",
+    "definition": "客队在一场比赛中的进球数",
+    "scope": "Match",
+    "aliases": [
+      "away team goal",
+      "away goals",
+      "goals scored away",
+      "away score",
+      "away team goals"
+    ],
+    "evidence": [
+      "ev_concept_awayteamgoals"
+    ]
+  },
+  {
+    "id": "concept_season",
+    "name": "Season",
+    "type": "concept",
+    "definition": "比赛所属的赛季标识",
+    "scope": "Match",
+    "aliases": [
+      "2010/2011 season",
+      "2016 season",
+      "2015/2016"
+    ],
+    "evidence": [
+      "ev_concept_season"
+    ]
+  },
+  {
+    "id": "concept_countryname",
+    "name": "CountryName",
+    "type": "concept",
+    "definition": "联赛所属国家名称",
+    "scope": "Country",
+    "aliases": [
+      "country",
+      "Poland",
+      "country of Poland",
+      "country name"
+    ],
+    "evidence": [
+      "ev_concept_countryname"
+    ]
+  },
+  {
+    "id": "concept_leaguename",
+    "name": "LeagueName",
+    "type": "concept",
+    "definition": "联赛名称",
+    "scope": "League",
+    "aliases": [
+      "league",
+      "Belgium Jupiler League",
+      "league name"
+    ],
+    "evidence": [
+      "ev_concept_leaguename"
+    ]
+  },
+  {
+    "id": "concept_matchdate",
+    "name": "MatchDate",
+    "type": "concept",
+    "definition": "比赛或属性记录的日期",
+    "scope": "Match",
+    "aliases": [
+      "date",
+      "in April, 2009",
+      "on 2016/6/23",
+      "year 2011",
+      "match date"
+    ],
+    "evidence": [
+      "ev_concept_matchdate"
+    ]
+  },
+  {
+    "id": "concept_buildupplayspeed",
+    "name": "BuildUpPlaySpeed",
+    "type": "concept",
+    "definition": "球队由后场组织进攻的速度评分",
+    "scope": "Team_Attributes",
+    "aliases": [
+      "speed in which attacks are put together",
+      "build up play speed",
+      "highest build up play speed"
+    ],
+    "evidence": [
+      "ev_concept_buildupplayspeed"
+    ]
+  },
+  {
+    "id": "concept_chancecreationpassing",
+    "name": "ChanceCreationPassing",
+    "type": "concept",
+    "definition": "球队创造机会时的传球评分",
+    "scope": "Team_Attributes",
+    "aliases": [
+      "chance creation passing score",
+      "chance creation passing"
+    ],
+    "evidence": [
+      "ev_concept_chancecreationpassing"
+    ]
+  },
+  {
+    "id": "concept_chancecreationpassingclass",
+    "name": "ChanceCreationPassingClass",
+    "type": "concept",
+    "definition": "球队创造机会传球评分的等级分类",
+    "scope": "Team_Attributes",
+    "aliases": [
+      "classified",
+      "chance creation passing class"
+    ],
+    "evidence": [
+      "ev_concept_chancecreationpassingclass"
+    ]
+  },
+  {
+    "id": "concept_overallrating",
+    "name": "OverallRating",
+    "type": "concept",
+    "definition": "球员的综合能力评分",
+    "scope": "Player_Attributes",
+    "aliases": [
+      "overall strength",
+      "overall rating",
+      "77 points overall rating"
+    ],
+    "evidence": [
+      "ev_concept_overallrating"
+    ]
+  },
+  {
+    "id": "concept_potential",
+    "name": "Potential",
+    "type": "concept",
+    "definition": "球员的潜力评分",
+    "scope": "Player_Attributes",
+    "aliases": [
+      "lowest potential players",
+      "highest potential score"
+    ],
+    "evidence": [
+      "ev_concept_potential"
+    ]
+  },
+  {
+    "id": "concept_preferredfoot",
+    "name": "PreferredFoot",
+    "type": "concept",
+    "definition": "球员惯用脚",
+    "scope": "Player_Attributes",
+    "aliases": [
+      "preferred foot",
+      "prefer to use the right foot",
+      "prefer left foot",
+      "preferred to use their left foots"
+    ],
+    "evidence": [
+      "ev_concept_preferredfoot"
+    ]
+  },
+  {
+    "id": "concept_playerheight",
+    "name": "PlayerHeight",
+    "type": "concept",
+    "definition": "球员身高(厘米)",
+    "scope": "Player",
+    "aliases": [
+      "height",
+      "heights above 180",
+      "under 180 cm",
+      "player height"
+    ],
+    "evidence": [
+      "ev_concept_playerheight"
+    ]
+  },
+  {
+    "id": "concept_playerweight",
+    "name": "PlayerWeight",
+    "type": "concept",
+    "definition": "球员体重",
+    "scope": "Player",
+    "aliases": [
+      "weight",
+      "heaviest weight",
+      "player weight"
+    ],
+    "evidence": [
+      "ev_concept_playerweight"
+    ]
+  },
+  {
+    "id": "concept_playerbirthday",
+    "name": "PlayerBirthday",
+    "type": "concept",
+    "definition": "球员出生日期",
+    "scope": "Player",
+    "aliases": [
+      "birthday",
+      "birthyear",
+      "birthmonth",
+      "born between 1987 and 1992",
+      "player birthday"
+    ],
+    "evidence": [
+      "ev_concept_playerbirthday"
+    ]
+  },
+  {
+    "id": "concept_headingaccuracy",
+    "name": "HeadingAccuracy",
+    "type": "concept",
+    "definition": "球员头球准确度评分",
+    "scope": "Player_Attributes",
+    "aliases": [
+      "heading accuracy",
+      "average heading accuracy"
+    ],
+    "evidence": [
+      "ev_concept_headingaccuracy"
+    ]
+  },
+  {
+    "id": "concept_longshots",
+    "name": "LongShots",
+    "type": "concept",
+    "definition": "球员远射能力评分",
+    "scope": "Player_Attributes",
+    "aliases": [
+      "long-shot",
+      "long shot",
+      "average number of long-shot",
+      "long shots"
+    ],
+    "evidence": [
+      "ev_concept_longshots"
+    ]
+  },
+  {
+    "id": "concept_jumping",
+    "name": "Jumping",
+    "type": "concept",
+    "definition": "球员弹跳能力评分",
+    "scope": "Player_Attributes",
+    "aliases": [
+      "jumping scores"
+    ],
+    "evidence": [
+      "ev_concept_jumping"
+    ]
+  },
+  {
+    "id": "concept_finishing",
+    "name": "Finishing",
+    "type": "concept",
+    "definition": "球员射门终结能力评分",
+    "scope": "Player_Attributes",
+    "aliases": [
+      "finishing rate"
+    ],
+    "evidence": [
+      "ev_concept_finishing"
+    ]
+  },
+  {
+    "id": "concept_curve",
+    "name": "Curve",
+    "type": "concept",
+    "definition": "球员弧线球能力评分",
+    "scope": "Player_Attributes",
+    "aliases": [
+      "curve score"
+    ],
+    "evidence": [
+      "ev_concept_curve"
+    ]
+  },
+  {
+    "id": "concept_crossing",
+    "name": "Crossing",
+    "type": "concept",
+    "definition": "球员传中能力评分",
+    "scope": "Player_Attributes",
+    "aliases": [
+      "highest potential score for crossing"
+    ],
+    "evidence": [
+      "ev_concept_crossing"
+    ]
+  },
+  {
+    "id": "concept_sprintspeed",
+    "name": "SprintSpeed",
+    "type": "concept",
+    "definition": "球员冲刺速度评分",
+    "scope": "Player_Attributes",
+    "aliases": [
+      "sprint speed",
+      "sprint speed of no less than 97"
+    ],
+    "evidence": [
+      "ev_concept_sprintspeed"
+    ]
+  },
+  {
+    "id": "concept_playername",
+    "name": "PlayerName",
+    "type": "concept",
+    "definition": "球员姓名",
+    "scope": "Player",
+    "aliases": [
+      "player name",
+      "players' names",
+      "Gabriel Tamas",
+      "Ahmed Samir Farag"
+    ],
+    "evidence": [
+      "ev_concept_playername"
+    ]
+  },
+  {
+    "id": "concept_teamlongname",
+    "name": "TeamLongName",
+    "type": "concept",
+    "definition": "球队全称",
+    "scope": "Team",
+    "aliases": [
+      "team",
+      "Ajax",
+      "top 4 teams",
+      "team long name"
+    ],
+    "evidence": [
+      "ev_concept_teamlongname"
+    ]
+  },
+  {
+    "id": "derived_averagehomegoals",
+    "name": "AverageHomeGoals",
+    "type": "metric",
+    "definition": "场均主队进球数 Formula: SUM(HomeTeamGoals) / COUNT(DISTINCT Match.id). Inputs: HomeTeamGoals = Match.home_team_goal",
+    "scope": "derived metric",
+    "aliases": [
+      "average home team goal",
+      "avg home goals",
+      "average home goals"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_drawmatchcount",
+    "name": "DrawMatchCount",
+    "type": "metric",
+    "definition": "以平局结束的比赛数 Formula: SUM(CASE WHEN HomeTeamGoals = AwayTeamGoals THEN 1 ELSE 0 END). Inputs: HomeTeamGoals = Match.home_team_goal; AwayTeamGoals = Match.away_team_goal",
+    "scope": "derived metric",
+    "aliases": [
+      "matches end as draw",
+      "draw matches",
+      "draw match count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_averageheadingaccuracy",
+    "name": "AverageHeadingAccuracy",
+    "type": "metric",
+    "definition": "球员平均头球准确度 Formula: SUM(HeadingAccuracy) / COUNT(Player_Attributes.player_fifa_api_id). Inputs: HeadingAccuracy = Player_Attributes.heading_accuracy",
+    "scope": "derived metric",
+    "aliases": [
+      "average heading accuracy"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_averagelongshots",
+    "name": "AverageLongShots",
+    "type": "metric",
+    "definition": "球员平均远射评分 Formula: SUM(LongShots) / COUNT(Player_Attributes.player_fifa_api_id). Inputs: LongShots = Player_Attributes.long_shots",
+    "scope": "derived metric",
+    "aliases": [
+      "average number of long-shot",
+      "avg long shots",
+      "average long shots"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_jumpingdifference",
+    "name": "JumpingDifference",
+    "type": "metric",
+    "definition": "两名球员弹跳评分之差 Formula: Jumping(player1) - Jumping(player2). Inputs: Jumping = Player_Attributes.jumping",
+    "scope": "derived metric",
+    "aliases": [
+      "difference between jumping scores",
+      "jumping difference"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_underweightheightpercentage",
+    "name": "UnderweightHeightPercentage",
+    "type": "metric",
+    "definition": "身高低于180且综合评分高于70的球员占比 Formula: COUNT(PlayerHeight < 180 AND OverallRating > 70) / COUNT(Player.id) * 100. Inputs: PlayerHeight = Player.height; OverallRating = Player_Attributes.overall_rating",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of players under 180 cm with overall strength > 7",
+      "underweight height percentage"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_leftfootpercentage",
+    "name": "LeftFootPercentage",
+    "type": "metric",
+    "definition": "惯用左脚球员占比 Formula: SUM(CASE WHEN PreferredFoot = 'left' THEN 1 ELSE 0 END) * 100 / COUNT(Player_Attributes.player_fifa_api_id). Inputs: PreferredFoot = Player_Attributes.preferred_foot",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of players who prefer left foot",
+      "left foot percentage"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_playerage",
+    "name": "PlayerAge",
+    "type": "metric",
+    "definition": "球员当前年龄 Formula: DATETIME() - PlayerBirthday. Inputs: PlayerBirthday = Player.birthday",
+    "scope": "derived metric",
+    "aliases": [
+      "player's age",
+      "age at present",
+      "player age"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_highestbuildupplayspeed",
+    "name": "HighestBuildUpPlaySpeed",
+    "type": "metric",
+    "definition": "球队最高组织进攻速度评分 Formula: MAX(BuildUpPlaySpeed). Inputs: BuildUpPlaySpeed = Team_Attributes.buildUpPlaySpeed",
+    "scope": "derived metric",
+    "aliases": [
+      "highest build up play speed",
+      "top build up play speed"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_highestchancecreationpassing",
+    "name": "HighestChanceCreationPassing",
+    "type": "metric",
+    "definition": "球队最高创造机会传球评分 Formula: MAX(ChanceCreationPassing). Inputs: ChanceCreationPassing = Team_Attributes.chanceCreationPassing",
+    "scope": "derived metric",
+    "aliases": [
+      "highest chance creation passing score",
+      "highest chance creation passing"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_highestoverallrating",
+    "name": "HighestOverallRating",
+    "type": "metric",
+    "definition": "球员最高综合评分 Formula: MAX(OverallRating). Inputs: OverallRating = Player_Attributes.overall_rating",
+    "scope": "derived metric",
+    "aliases": [
+      "greatest overall strength",
+      "highest overall rating"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_lowestpotential",
+    "name": "LowestPotential",
+    "type": "metric",
+    "definition": "球员最低潜力评分 Formula: MIN(Potential). Inputs: Potential = Player_Attributes.potential",
+    "scope": "derived metric",
+    "aliases": [
+      "lowest potential players",
+      "lowest potential"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_highestcrossing",
+    "name": "HighestCrossing",
+    "type": "metric",
+    "definition": "球员最高传中评分 Formula: MAX(Crossing). Inputs: Crossing = Player_Attributes.crossing",
+    "scope": "derived metric",
+    "aliases": [
+      "highest potential score for crossing",
+      "highest crossing"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_heaviestweight",
+    "name": "HeaviestWeight",
+    "type": "metric",
+    "definition": "球员最大体重 Formula: MAX(PlayerWeight). Inputs: PlayerWeight = Player.weight",
+    "scope": "derived metric",
+    "aliases": [
+      "heaviest weight"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_playerfootpreference",
+    "name": "PlayerFootPreference",
+    "type": "concept",
+    "definition": "球员惯用脚分布与相关分析",
+    "scope": "Player_Attributes.preferred_foot codes",
+    "aliases": [
+      "preferred foot",
+      "left foot",
+      "right foot",
+      "player foot preference"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_teamplaystyleclass",
+    "name": "TeamPlayStyleClass",
+    "type": "concept",
+    "definition": "球队战术风格等级分类",
+    "scope": "Team_Attributes.buildUpPlaySpeedClass codes",
+    "aliases": [
+      "build up play speed class",
+      "chance creation passing class",
+      "defence pressure class",
+      "team play style class"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_matchstage",
+    "name": "MatchStage",
+    "type": "concept",
+    "definition": "比赛阶段",
+    "scope": "Match.stage codes",
+    "aliases": [
+      "stage",
+      "match stage"
+    ],
+    "evidence": []
+  }
+]

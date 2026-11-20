@@ -1,0 +1,190 @@
+[
+  {
+    "id": "c_values_votes__bountyamount",
+    "target": "term_votes",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "BountyAmount",
+      "bountyamount",
+      "votes",
+      "0",
+      "100",
+      "150",
+      "200",
+      "25",
+      "50"
+    ],
+    "severity": "warning",
+    "scope": "Filters on votes.BountyAmount",
+    "confidence": "high",
+    "description": "votes.BountyAmount only takes these stored values: 0 / 100 / 150 / 200 / 25 / 50. Filter with the stored spelling.",
+    "evidence": [
+      "ev_values_votes__bountyamount"
+    ]
+  },
+  {
+    "id": "c_caveat_0",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "posts",
+      "CreaionDate",
+      "CreationDate"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "posts 表的创建时间列名拼写为 CreaionDate 而非 CreationDate,直接写 CreationDate 会报错",
+    "evidence": [
+      "ev_caveat_0"
+    ]
+  },
+  {
+    "id": "c_caveat_1",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "posts",
+      "Tags",
+      "LIKE"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "posts.Tags 是形如 '<tag1><tag2>' 的字符串,需用 LIKE '%<tag>%' 匹配,不能直接等值比较",
+    "evidence": [
+      "ev_caveat_1"
+    ]
+  },
+  {
+    "id": "c_caveat_2",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "OwnerUserId",
+      "wiki"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "部分帖子 OwnerUserId 为空(社区 wiki 或已删除用户),按用户聚合时会丢失这些帖子",
+    "evidence": [
+      "ev_caveat_2"
+    ]
+  },
+  {
+    "id": "c_caveat_3",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "users",
+      "NULL"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "users.Age 存在 NULL 值,计算平均年龄时会被忽略或导致偏差",
+    "evidence": [
+      "ev_caveat_3"
+    ]
+  },
+  {
+    "id": "c_caveat_4",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "posts",
+      "FavoriteCount",
+      "NULL"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "posts.FavoriteCount 存在 NULL 值,求最大值或平均时需注意",
+    "evidence": [
+      "ev_caveat_4"
+    ]
+  },
+  {
+    "id": "c_caveat_5",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "votes",
+      "BountyAmount",
+      "NULL"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "votes.BountyAmount 多数为 NULL,仅悬赏类投票有值",
+    "evidence": [
+      "ev_caveat_5"
+    ]
+  },
+  {
+    "id": "c_caveat_6",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "tags",
+      "ExcerptPostId",
+      "WikiPostId",
+      "NULL"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "tags.ExcerptPostId 与 WikiPostId 可能为 NULL,关联帖子时需过滤",
+    "evidence": [
+      "ev_caveat_6"
+    ]
+  },
+  {
+    "id": "c_caveat_7",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "comments",
+      "UserId",
+      "NULL"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "comments.UserId 可能为 NULL,按评论者聚合时会丢失记录",
+    "evidence": [
+      "ev_caveat_7"
+    ]
+  },
+  {
+    "id": "c_caveat_8",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "posts",
+      "ClosedDate",
+      "NULL"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "posts.ClosedDate 仅对已关闭帖子有值,统计关闭率时需注意 NULL",
+    "evidence": [
+      "ev_caveat_8"
+    ]
+  },
+  {
+    "id": "c_caveat_9",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "同一业务概念在名称列中可能有多种写法(如徽章、标签),需用 IN 覆盖全部代码",
+    "evidence": [
+      "ev_caveat_9"
+    ]
+  }
+]

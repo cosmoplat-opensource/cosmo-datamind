@@ -1,0 +1,132 @@
+[
+  {
+    "id": "rel_derived_age__from__concept_birthday",
+    "source": "concept_birthday",
+    "relation_type": "derivation",
+    "target": "derived_age",
+    "connection_condition": "same entity and period",
+    "description": "Age is computed from Birthday: YEAR(CURRENT_TIMESTAMP) - YEAR(Birthday)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_abnormal_uric_acid__from__concept_uric_acid",
+    "source": "concept_uric_acid",
+    "relation_type": "derivation",
+    "target": "derived_abnormal_uric_acid",
+    "connection_condition": "same entity and period",
+    "description": "Abnormal_Uric_Acid is computed from Uric_Acid: CASE WHEN (Sex = 'M' AND Uric_Acid > 8.0) OR (Sex = 'F' AND Uric_Acid > 6.5) THEN 1 ELSE 0 END",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_abnormal_uric_acid__from__concept_sex",
+    "source": "concept_sex",
+    "relation_type": "derivation",
+    "target": "derived_abnormal_uric_acid",
+    "connection_condition": "same entity and period",
+    "description": "Abnormal_Uric_Acid is computed from Sex: CASE WHEN (Sex = 'M' AND Uric_Acid > 8.0) OR (Sex = 'F' AND Uric_Acid > 6.5) THEN 1 ELSE 0 END",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_abnormal_hematocrit__from__concept_hematocrit",
+    "source": "concept_hematocrit",
+    "relation_type": "derivation",
+    "target": "derived_abnormal_hematocrit",
+    "connection_condition": "same entity and period",
+    "description": "Abnormal_Hematocrit is computed from Hematocrit: CASE WHEN Hematocrit > 52 OR Hematocrit < 37 THEN 1 ELSE 0 END",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_abnormal_pt__from__concept_prothrombin_time",
+    "source": "concept_prothrombin_time",
+    "relation_type": "derivation",
+    "target": "derived_abnormal_pt",
+    "connection_condition": "same entity and period",
+    "description": "Abnormal_PT is computed from Prothrombin_Time: CASE WHEN Prothrombin_Time >= 14 THEN 1 ELSE 0 END",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_normal_anti_sm__from__concept_anti_sm",
+    "source": "concept_anti_sm",
+    "relation_type": "derivation",
+    "target": "derived_normal_anti_sm",
+    "connection_condition": "same entity and period",
+    "description": "Normal_Anti_SM is computed from Anti_SM: CASE WHEN Anti_SM IN ('-', '+-') THEN 1 ELSE 0 END",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_normal_iga__from__concept_iga",
+    "source": "concept_iga",
+    "relation_type": "derivation",
+    "target": "derived_normal_iga",
+    "connection_condition": "same entity and period",
+    "description": "Normal_IgA is computed from IgA: CASE WHEN IgA > 80 AND IgA < 500 THEN 1 ELSE 0 END",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_cholesterol_decrease_rate__from__concept_total_cholesterol",
+    "source": "concept_total_cholesterol",
+    "relation_type": "derivation",
+    "target": "derived_cholesterol_decrease_rate",
+    "connection_condition": "same entity and period",
+    "description": "Cholesterol_Decrease_Rate is computed from Total_Cholesterol: (Total_Cholesterol_Nov - Total_Cholesterol_Dec) / Total_Cholesterol_Nov",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_female_percentage__from__concept_sex",
+    "source": "concept_sex",
+    "relation_type": "derivation",
+    "target": "derived_female_percentage",
+    "connection_condition": "same entity and period",
+    "description": "Female_Percentage is computed from Sex: SUM(CASE WHEN Sex = 'F' THEN 1 ELSE 0 END) / COUNT(*) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_male_female_ratio__from__concept_sex",
+    "source": "concept_sex",
+    "relation_type": "derivation",
+    "target": "derived_male_female_ratio",
+    "connection_condition": "same entity and period",
+    "description": "Male_Female_Ratio is computed from Sex: SUM(CASE WHEN Sex = 'M' THEN 1 ELSE 0 END) / SUM(CASE WHEN Sex = 'F' THEN 1 ELSE 0 END)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_abnormal_ldh__from__concept_ldh",
+    "source": "concept_ldh",
+    "relation_type": "derivation",
+    "target": "derived_abnormal_ldh",
+    "connection_condition": "same entity and period",
+    "description": "Abnormal_LDH is computed from LDH: CASE WHEN LDH > 500 THEN 1 ELSE 0 END",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_abnormal_rbc__from__concept_red_blood_cell",
+    "source": "concept_red_blood_cell",
+    "relation_type": "derivation",
+    "target": "derived_abnormal_rbc",
+    "connection_condition": "same entity and period",
+    "description": "Abnormal_RBC is computed from Red_Blood_Cell: CASE WHEN Red_Blood_Cell < 3.5 THEN 1 ELSE 0 END",
+    "evidence": []
+  },
+  {
+    "id": "rel_patient__examination__id",
+    "source": "term_patient",
+    "relation_type": "composition",
+    "target": "term_examination",
+    "connection_condition": "Examination.ID corresponds to Patient.ID",
+    "description": "归属; DDL 声明外键·父键唯一·重叠 9%,其余 91% 为孤儿记录·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_patient__examination__id"
+    ]
+  },
+  {
+    "id": "rel_patient__laboratory__id",
+    "source": "term_patient",
+    "relation_type": "composition",
+    "target": "term_laboratory",
+    "connection_condition": "Laboratory.ID corresponds to Patient.ID",
+    "description": "归属; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_patient__laboratory__id"
+    ]
+  }
+]

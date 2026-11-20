@@ -1,0 +1,370 @@
+[
+  {
+    "id": "ev_schema_account",
+    "source": "financial.sqlite",
+    "query": "PRAGMA table_info(account)",
+    "result": "Table account(account_id, district_id, frequency, date)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_account__frequency",
+    "source": "financial.sqlite",
+    "query": "SELECT DISTINCT frequency FROM account",
+    "result": "POPLATEK MESICNE / POPLATEK PO OBRATU / POPLATEK TYDNE",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_district",
+    "source": "financial.sqlite",
+    "query": "PRAGMA table_info(district)",
+    "result": "Table district(district_id, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, A16)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_district__a3",
+    "source": "financial.sqlite",
+    "query": "SELECT DISTINCT A3 FROM district",
+    "result": "Prague / central Bohemia / east Bohemia / north Bohemia / north Moravia / south Bohemia / south Moravia / west Bohemia",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_district__a8",
+    "source": "financial.sqlite",
+    "query": "SELECT DISTINCT A8 FROM district",
+    "result": "0 / 1 / 2 / 3 / 4 / 5",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_client",
+    "source": "financial.sqlite",
+    "query": "PRAGMA table_info(client)",
+    "result": "Table client(client_id, gender, birth_date, district_id)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_client__gender",
+    "source": "financial.sqlite",
+    "query": "SELECT DISTINCT gender FROM client",
+    "result": "F / M",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_disp",
+    "source": "financial.sqlite",
+    "query": "PRAGMA table_info(disp)",
+    "result": "Table disp(disp_id, client_id, account_id, type)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_disp__type",
+    "source": "financial.sqlite",
+    "query": "SELECT DISTINCT type FROM disp",
+    "result": "DISPONENT / OWNER",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_card",
+    "source": "financial.sqlite",
+    "query": "PRAGMA table_info(card)",
+    "result": "Table card(card_id, disp_id, type, issued)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_card__type",
+    "source": "financial.sqlite",
+    "query": "SELECT DISTINCT type FROM card",
+    "result": "classic / gold / junior",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_loan",
+    "source": "financial.sqlite",
+    "query": "PRAGMA table_info(loan)",
+    "result": "Table loan(loan_id, account_id, date, amount, duration, payments, status)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_loan__duration",
+    "source": "financial.sqlite",
+    "query": "SELECT DISTINCT duration FROM loan",
+    "result": "12 / 24 / 36 / 48 / 60",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_loan__status",
+    "source": "financial.sqlite",
+    "query": "SELECT DISTINCT status FROM loan",
+    "result": "A / B / C / D",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_order",
+    "source": "financial.sqlite",
+    "query": "PRAGMA table_info(order)",
+    "result": "Table order(order_id, account_id, bank_to, account_to, amount, k_symbol)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_trans",
+    "source": "financial.sqlite",
+    "query": "PRAGMA table_info(trans)",
+    "result": "Table trans(trans_id, account_id, date, type, operation, amount, balance, k_symbol, bank, account)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_trans__type",
+    "source": "financial.sqlite",
+    "query": "SELECT DISTINCT type FROM trans",
+    "result": "PRIJEM / VYBER / VYDAJ",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_trans__operation",
+    "source": "financial.sqlite",
+    "query": "SELECT DISTINCT operation FROM trans",
+    "result": "PREVOD NA UCET / PREVOD Z UCTU / VKLAD / VYBER / VYBER KARTOU",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_weeklystatement",
+    "source": "financial.sqlite",
+    "query": "SELECT COUNT(*) FROM account WHERE frequency IN ('POPLATEK TYDNE')",
+    "result": "240 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_monthlystatement",
+    "source": "financial.sqlite",
+    "query": "SELECT COUNT(*) FROM account WHERE frequency IN ('POPLATEK MESICNE')",
+    "result": "4167 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_aftertransactionstatement",
+    "source": "financial.sqlite",
+    "query": "SELECT COUNT(*) FROM account WHERE frequency IN ('POPLATEK PO OBRATU')",
+    "result": "93 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_accountopeningdate",
+    "source": "financial.sqlite",
+    "query": "SELECT COUNT(*) FROM account",
+    "result": "4500 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_districtname",
+    "source": "financial.sqlite",
+    "query": "SELECT COUNT(*) FROM district",
+    "result": "77 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_region",
+    "source": "financial.sqlite",
+    "query": "SELECT COUNT(*) FROM district",
+    "result": "77 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_averagesalary",
+    "source": "financial.sqlite",
+    "query": "SELECT COUNT(*) FROM district",
+    "result": "77 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_clientgender",
+    "source": "financial.sqlite",
+    "query": "SELECT COUNT(*) FROM client",
+    "result": "5369 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_clientbirthdate",
+    "source": "financial.sqlite",
+    "query": "SELECT COUNT(*) FROM client",
+    "result": "5369 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_loanapprovedamount",
+    "source": "financial.sqlite",
+    "query": "SELECT COUNT(*) FROM loan",
+    "result": "682 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_loanapproveddate",
+    "source": "financial.sqlite",
+    "query": "SELECT COUNT(*) FROM loan",
+    "result": "682 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_loanduration",
+    "source": "financial.sqlite",
+    "query": "SELECT COUNT(*) FROM loan",
+    "result": "682 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_loanstatus",
+    "source": "financial.sqlite",
+    "query": "SELECT COUNT(*) FROM loan",
+    "result": "682 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_cashwithdrawal",
+    "source": "financial.sqlite",
+    "query": "SELECT COUNT(*) FROM trans WHERE operation IN ('VYBER')",
+    "result": "434918 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_clientid",
+    "source": "financial.sqlite",
+    "query": "SELECT COUNT(*) FROM client",
+    "result": "5369 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_0",
+    "source": "financial.sqlite",
+    "query": "SELECT status, COUNT(*) FROM loan GROUP BY status;",
+    "result": "[[\"A\", 203], [\"B\", 31], [\"C\", 403]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_1",
+    "source": "financial.sqlite",
+    "query": "SELECT gender, COUNT(*) FROM client GROUP BY gender;",
+    "result": "[[\"F\", 2645], [\"M\", 2724]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_2",
+    "source": "financial.sqlite",
+    "query": "SELECT operation, COUNT(*) FROM trans GROUP BY operation;",
+    "result": "[[null, 183114], [\"PREVOD NA UCET\", 208283], [\"PREVOD Z UCTU\", 65226]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_3",
+    "source": "financial.sqlite",
+    "query": "SELECT frequency, COUNT(*) FROM account GROUP BY frequency;",
+    "result": "[[\"POPLATEK MESICNE\", 4167], [\"POPLATEK PO OBRATU\", 93], [\"POPLATEK TYDNE\", 240]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_4",
+    "source": "financial.sqlite",
+    "query": "SELECT A3, COUNT(*) FROM district GROUP BY A3;",
+    "result": "[[\"Prague\", 1], [\"central Bohemia\", 12], [\"east Bohemia\", 11]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_district__account__district_id",
+    "source": "financial.sqlite",
+    "query": "distinct values of account.district_id contained in district.district_id",
+    "result": "overlap 100.0% (77/77 distinct child values); parent key unique: True; child rows 4500, parent rows 77",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_district__client__district_id",
+    "source": "financial.sqlite",
+    "query": "distinct values of client.district_id contained in district.district_id",
+    "result": "overlap 100.0% (77/77 distinct child values); parent key unique: True; child rows 5369, parent rows 77",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_client__disp__client_id",
+    "source": "financial.sqlite",
+    "query": "distinct values of disp.client_id contained in client.client_id",
+    "result": "overlap 100.0% (5369/5369 distinct child values); parent key unique: True; child rows 5369, parent rows 5369",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_account__disp__account_id",
+    "source": "financial.sqlite",
+    "query": "distinct values of disp.account_id contained in account.account_id",
+    "result": "overlap 100.0% (4500/4500 distinct child values); parent key unique: True; child rows 5369, parent rows 4500",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_disp__card__disp_id",
+    "source": "financial.sqlite",
+    "query": "distinct values of card.disp_id contained in disp.disp_id",
+    "result": "overlap 100.0% (892/892 distinct child values); parent key unique: True; child rows 892, parent rows 5369",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_account__loan__account_id",
+    "source": "financial.sqlite",
+    "query": "distinct values of loan.account_id contained in account.account_id",
+    "result": "overlap 100.0% (682/682 distinct child values); parent key unique: True; child rows 682, parent rows 4500",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_account__order__account_id",
+    "source": "financial.sqlite",
+    "query": "distinct values of order.account_id contained in account.account_id",
+    "result": "overlap 100.0% (3758/3758 distinct child values); parent key unique: True; child rows 6471, parent rows 4500",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_account__trans__account_id",
+    "source": "financial.sqlite",
+    "query": "distinct values of trans.account_id contained in account.account_id",
+    "result": "overlap 100.0% (4500/4500 distinct child values); parent key unique: True; child rows 1056320, parent rows 4500",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  }
+]

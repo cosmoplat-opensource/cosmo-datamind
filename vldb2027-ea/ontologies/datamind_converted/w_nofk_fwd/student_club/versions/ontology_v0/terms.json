@@ -1,0 +1,563 @@
+[
+  {
+    "id": "term_attendance",
+    "name": "attendance",
+    "type": "entity",
+    "definition": "记录某一成员在某一活动中出勤情况的信息条目,以成员与活动的关联为区别特征 Counterexample: 易与成员(member)混淆:成员是参与活动的人,出勤记录只是描述参与情况的信息条目 Maturity: Provisional",
+    "scope": "Records of table attendance; provenance: direct source attendance",
+    "aliases": [
+      "活动出勤记录"
+    ],
+    "evidence": [
+      "ev_schema_attendance"
+    ]
+  },
+  {
+    "id": "term_budget",
+    "name": "budget",
+    "type": "concept",
+    "definition": "为某一活动按类别核定并跟踪已用与剩余金额的财务信息条目,以所属活动与预算类别为区别特征 Counterexample: 易与支出(expense)混淆:预算是事先核定的额度,支出是实际发生的费用 Maturity: Provisional",
+    "scope": "Records of table budget; provenance: direct source budget",
+    "aliases": [
+      "活动预算"
+    ],
+    "evidence": [
+      "ev_schema_budget"
+    ]
+  },
+  {
+    "id": "term_event",
+    "name": "event",
+    "type": "concept",
+    "definition": "在特定日期与地点发生、具有名称、类型与状态的业务事件,以发生时间与地点为区别特征 Counterexample: 易与预算(budget)混淆:活动是实际发生的事项,预算是围绕该事项的财务安排 Maturity: Provisional",
+    "scope": "Records of table event; provenance: direct source event",
+    "aliases": [
+      "活动"
+    ],
+    "evidence": [
+      "ev_schema_event"
+    ]
+  },
+  {
+    "id": "term_expense",
+    "name": "expense",
+    "type": "entity",
+    "definition": "由某一成员发生、计入某一预算并记录金额与审批状态的费用信息条目,以发生成员与所属预算为区别特征 Counterexample: 易与收入(income)混淆:支出是资金流出,收入是资金流入 Maturity: Provisional",
+    "scope": "Records of table expense; provenance: direct source expense",
+    "aliases": [
+      "支出"
+    ],
+    "evidence": [
+      "ev_schema_expense"
+    ]
+  },
+  {
+    "id": "term_income",
+    "name": "income",
+    "type": "entity",
+    "definition": "由某一成员经手、记录到账日期、金额与来源的资金流入信息条目,以经手成员与来源为区别特征 Counterexample: 易与支出(expense)混淆:收入是资金流入,支出是资金流出 Maturity: Provisional",
+    "scope": "Records of table income; provenance: direct source income",
+    "aliases": [
+      "收入"
+    ],
+    "evidence": [
+      "ev_schema_income"
+    ]
+  },
+  {
+    "id": "term_major",
+    "name": "major",
+    "type": "entity",
+    "definition": "隶属于某一院系与学院、具有名称的学科专业目录条目,以所属院系与学院为区别特征 Counterexample: 易与成员(member)混淆:专业是学科目录条目,成员是就读或任职于该专业的人 Maturity: Provisional",
+    "scope": "Records of table major; provenance: direct source major",
+    "aliases": [
+      "专业"
+    ],
+    "evidence": [
+      "ev_schema_major"
+    ]
+  },
+  {
+    "id": "term_member",
+    "name": "member",
+    "type": "entity",
+    "definition": "隶属于某一专业、具有姓名、职务与联系方式等属性的组织参与者,以所属专业为区别特征 Counterexample: 易与专业(major)混淆:成员是具体的人,专业是其所属的学科目录条目 Maturity: Provisional",
+    "scope": "Records of table member; provenance: direct source member",
+    "aliases": [
+      "成员"
+    ],
+    "evidence": [
+      "ev_schema_member"
+    ]
+  },
+  {
+    "id": "term_zip_code",
+    "name": "zip_code",
+    "type": "entity",
+    "definition": "标识城市、县、州等行政区划的邮政编码目录条目,以编码对应的行政区划为区别特征 Counterexample: 易与成员(member)混淆:邮政编码是地址目录条目,成员是持有该编码地址的人 Maturity: Provisional",
+    "scope": "Records of table zip_code; provenance: direct source zip_code",
+    "aliases": [
+      "邮政编码"
+    ],
+    "evidence": [
+      "ev_schema_zip_code"
+    ]
+  },
+  {
+    "id": "concept_membertshirtsize",
+    "name": "MemberTShirtSize",
+    "type": "concept",
+    "definition": "The t-shirt size of a member.",
+    "scope": "member",
+    "aliases": [
+      "t-shirt size",
+      "shirt size",
+      "tshirt size",
+      "member t shirt size"
+    ],
+    "evidence": [
+      "ev_concept_membertshirtsize"
+    ]
+  },
+  {
+    "id": "concept_memberposition",
+    "name": "MemberPosition",
+    "type": "concept",
+    "definition": "The role/position a member holds in the organization.",
+    "scope": "member",
+    "aliases": [
+      "position",
+      "role",
+      "member status",
+      "member position"
+    ],
+    "evidence": [
+      "ev_concept_memberposition"
+    ]
+  },
+  {
+    "id": "concept_eventname",
+    "name": "EventName",
+    "type": "concept",
+    "definition": "The name of an event.",
+    "scope": "event",
+    "aliases": [
+      "event name",
+      "name of event",
+      "event"
+    ],
+    "evidence": [
+      "ev_concept_eventname"
+    ]
+  },
+  {
+    "id": "concept_eventtype",
+    "name": "EventType",
+    "type": "concept",
+    "definition": "The type/category of an event (e.g., Game, Fundraiser, Meeting).",
+    "scope": "event",
+    "aliases": [
+      "type of event",
+      "event type",
+      "game",
+      "category of event"
+    ],
+    "evidence": [
+      "ev_concept_eventtype"
+    ]
+  },
+  {
+    "id": "concept_eventstatus",
+    "name": "EventStatus",
+    "type": "concept",
+    "definition": "The current status of an event (e.g., Closed, Open).",
+    "scope": "event",
+    "aliases": [
+      "status",
+      "closed",
+      "open",
+      "event status"
+    ],
+    "evidence": [
+      "ev_concept_eventstatus"
+    ]
+  },
+  {
+    "id": "concept_eventlocation",
+    "name": "EventLocation",
+    "type": "concept",
+    "definition": "The location where an event was held.",
+    "scope": "event",
+    "aliases": [
+      "location",
+      "venue",
+      "where held",
+      "place",
+      "event location"
+    ],
+    "evidence": [
+      "ev_concept_eventlocation"
+    ]
+  },
+  {
+    "id": "concept_eventdate",
+    "name": "EventDate",
+    "type": "concept",
+    "definition": "The date an event occurred.",
+    "scope": "event",
+    "aliases": [
+      "event date",
+      "date of event",
+      "when held"
+    ],
+    "evidence": [
+      "ev_concept_eventdate"
+    ]
+  },
+  {
+    "id": "concept_budgetcategory",
+    "name": "BudgetCategory",
+    "type": "concept",
+    "definition": "The category of a budget line item.",
+    "scope": "budget",
+    "aliases": [
+      "budget category",
+      "budgeted category",
+      "category"
+    ],
+    "evidence": [
+      "ev_concept_budgetcategory"
+    ]
+  },
+  {
+    "id": "concept_budgetamount",
+    "name": "BudgetAmount",
+    "type": "concept",
+    "definition": "The amount budgeted for a budget line item.",
+    "scope": "budget",
+    "aliases": [
+      "amount budgeted",
+      "budgeted amount",
+      "budget amount"
+    ],
+    "evidence": [
+      "ev_concept_budgetamount"
+    ]
+  },
+  {
+    "id": "concept_budgetspent",
+    "name": "BudgetSpent",
+    "type": "concept",
+    "definition": "The amount actually spent against a budget.",
+    "scope": "budget",
+    "aliases": [
+      "spent",
+      "amount spent",
+      "total spent",
+      "money spent",
+      "budget spent"
+    ],
+    "evidence": [
+      "ev_concept_budgetspent"
+    ]
+  },
+  {
+    "id": "concept_budgetremaining",
+    "name": "BudgetRemaining",
+    "type": "concept",
+    "definition": "The remaining budget after spending.",
+    "scope": "budget",
+    "aliases": [
+      "remaining",
+      "remaining budget",
+      "leftover",
+      "budget remaining"
+    ],
+    "evidence": [
+      "ev_concept_budgetremaining"
+    ]
+  },
+  {
+    "id": "concept_expensecost",
+    "name": "ExpenseCost",
+    "type": "concept",
+    "definition": "The cost of an expense line item.",
+    "scope": "expense",
+    "aliases": [
+      "cost",
+      "expense",
+      "total expense",
+      "amount spent",
+      "expense cost"
+    ],
+    "evidence": [
+      "ev_concept_expensecost"
+    ]
+  },
+  {
+    "id": "concept_expensedescription",
+    "name": "ExpenseDescription",
+    "type": "concept",
+    "definition": "The description of what an expense was for.",
+    "scope": "expense",
+    "aliases": [
+      "expense description",
+      "spent money for",
+      "purpose of expense"
+    ],
+    "evidence": [
+      "ev_concept_expensedescription"
+    ]
+  },
+  {
+    "id": "concept_expensedate",
+    "name": "ExpenseDate",
+    "type": "concept",
+    "definition": "The date an expense was incurred.",
+    "scope": "expense",
+    "aliases": [
+      "expense date",
+      "date of expense",
+      "when spent"
+    ],
+    "evidence": [
+      "ev_concept_expensedate"
+    ]
+  },
+  {
+    "id": "concept_expenseapproved",
+    "name": "ExpenseApproved",
+    "type": "concept",
+    "definition": "Whether an expense was approved.",
+    "scope": "expense",
+    "aliases": [
+      "approved",
+      "approval status",
+      "expense approved"
+    ],
+    "evidence": [
+      "ev_concept_expenseapproved"
+    ]
+  },
+  {
+    "id": "concept_incomeamount",
+    "name": "IncomeAmount",
+    "type": "concept",
+    "definition": "The amount of income received.",
+    "scope": "income",
+    "aliases": [
+      "amount received",
+      "funds received",
+      "income amount",
+      "amount of funds"
+    ],
+    "evidence": [
+      "ev_concept_incomeamount"
+    ]
+  },
+  {
+    "id": "concept_incomesource",
+    "name": "IncomeSource",
+    "type": "concept",
+    "definition": "The source of an income record (e.g., Fundraising, Dues).",
+    "scope": "income",
+    "aliases": [
+      "source",
+      "source of income",
+      "fundraising",
+      "dues",
+      "income source"
+    ],
+    "evidence": [
+      "ev_concept_incomesource"
+    ]
+  },
+  {
+    "id": "concept_incomedatereceived",
+    "name": "IncomeDateReceived",
+    "type": "concept",
+    "definition": "The date income was received.",
+    "scope": "income",
+    "aliases": [
+      "date received",
+      "received on",
+      "date of funds",
+      "paid date",
+      "income date received"
+    ],
+    "evidence": [
+      "ev_concept_incomedatereceived"
+    ]
+  },
+  {
+    "id": "concept_incomenotes",
+    "name": "IncomeNotes",
+    "type": "concept",
+    "definition": "Notes attached to an income record.",
+    "scope": "income",
+    "aliases": [
+      "notes",
+      "income notes",
+      "remarks"
+    ],
+    "evidence": [
+      "ev_concept_incomenotes"
+    ]
+  },
+  {
+    "id": "derived_totalbudgetamount",
+    "name": "TotalBudgetAmount",
+    "type": "metric",
+    "definition": "Sum of all budgeted amounts. Formula: SUM(BudgetAmount). Inputs: BudgetAmount = budget.amount",
+    "scope": "derived metric",
+    "aliases": [
+      "total amount budgeted",
+      "total budget",
+      "total budget amount"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_totalbudgetspent",
+    "name": "TotalBudgetSpent",
+    "type": "metric",
+    "definition": "Sum of all spent amounts in budgets. Formula: SUM(BudgetSpent). Inputs: BudgetSpent = budget.spent",
+    "scope": "derived metric",
+    "aliases": [
+      "total spent",
+      "total amount spent",
+      "total budget spent"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_totalexpensecost",
+    "name": "TotalExpenseCost",
+    "type": "metric",
+    "definition": "Sum of all expense costs. Formula: SUM(ExpenseCost). Inputs: ExpenseCost = expense.cost",
+    "scope": "derived metric",
+    "aliases": [
+      "total expense",
+      "total cost",
+      "total expense cost"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_totalincomeamount",
+    "name": "TotalIncomeAmount",
+    "type": "metric",
+    "definition": "Sum of all income amounts. Formula: SUM(IncomeAmount). Inputs: IncomeAmount = income.amount",
+    "scope": "derived metric",
+    "aliases": [
+      "total income",
+      "total funds received",
+      "total income amount"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_budgetutilizationrate",
+    "name": "BudgetUtilizationRate",
+    "type": "metric",
+    "definition": "Ratio of spent to budgeted amount. Formula: SUM(BudgetSpent) / SUM(BudgetAmount). Inputs: BudgetSpent = budget.spent; BudgetAmount = budget.amount",
+    "scope": "derived metric",
+    "aliases": [
+      "utilization rate",
+      "spent ratio",
+      "budget utilization rate"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_yearoveryearspentdifference",
+    "name": "YearOverYearSpentDifference",
+    "type": "metric",
+    "definition": "Difference in total spent between two years. Formula: SUM(BudgetSpent for year1) - SUM(BudgetSpent for year2). Inputs: BudgetSpent = budget.spent; EventDate = event.event_date",
+    "scope": "derived metric",
+    "aliases": [
+      "difference of total spent",
+      "year over year difference",
+      "year over year spent difference"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_incomecountbyamount",
+    "name": "IncomeCountByAmount",
+    "type": "metric",
+    "definition": "Count of income records for a specific amount. Formula: COUNT(IncomeAmount) WHERE IncomeAmount = value. Inputs: IncomeAmount = income.amount",
+    "scope": "derived metric",
+    "aliases": [
+      "count of income by amount",
+      "number of funds received",
+      "income count by amount"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_eventtype",
+    "name": "EventType",
+    "type": "concept",
+    "definition": "Categorizes events by their type.",
+    "scope": "event.type codes",
+    "aliases": [
+      "type of event",
+      "event category",
+      "event type"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_eventstatus",
+    "name": "EventStatus",
+    "type": "concept",
+    "definition": "Categorizes events by their status.",
+    "scope": "event.status codes",
+    "aliases": [
+      "status of event",
+      "event state",
+      "event status"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_incomesource",
+    "name": "IncomeSource",
+    "type": "concept",
+    "definition": "Categorizes income by its source.",
+    "scope": "income.source codes",
+    "aliases": [
+      "source of income",
+      "income type",
+      "income source"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_memberposition",
+    "name": "MemberPosition",
+    "type": "concept",
+    "definition": "Categorizes members by their position.",
+    "scope": "member.position codes",
+    "aliases": [
+      "position",
+      "role",
+      "member position"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_tshirtsize",
+    "name": "TShirtSize",
+    "type": "concept",
+    "definition": "Categorizes members by t-shirt size.",
+    "scope": "member.t_shirt_size codes",
+    "aliases": [
+      "t-shirt size",
+      "shirt size",
+      "t shirt size"
+    ],
+    "evidence": []
+  }
+]

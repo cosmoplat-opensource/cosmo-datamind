@@ -1,0 +1,506 @@
+[
+  {
+    "id": "term_molecule",
+    "name": "molecule",
+    "type": "entity",
+    "definition": "由两个或更多原子通过化学键结合而成的电中性粒子集合，以唯一标识与标签加以区分。 Counterexample: 易与「原子」混淆：原子是单一元素的最小单元，而分子由多个原子经化学键连接构成。 Maturity: Provisional",
+    "scope": "Records of table molecule; provenance: direct source molecule",
+    "aliases": [
+      "分子"
+    ],
+    "evidence": [
+      "ev_schema_molecule"
+    ]
+  },
+  {
+    "id": "term_atom",
+    "name": "atom",
+    "type": "entity",
+    "definition": "构成分子的基本粒子单元，具有元素种类属性并归属于某一分子。 Counterexample: 易与「分子」混淆：分子是多个原子的集合体，原子是其中不可再分的组成单元。 Maturity: Provisional",
+    "scope": "Records of table atom; provenance: direct source atom",
+    "aliases": [
+      "原子"
+    ],
+    "evidence": [
+      "ev_schema_atom"
+    ]
+  },
+  {
+    "id": "term_bond",
+    "name": "bond",
+    "type": "entity",
+    "definition": "分子内两个原子之间按特定键型建立的连接关系实体，以唯一标识区分。 Counterexample: 易与「连接记录」混淆：化学键是键型与所属分子的载体，连接记录仅记录两端原子与所引用键。 Maturity: Provisional",
+    "scope": "Records of table bond; provenance: direct source bond",
+    "aliases": [
+      "化学键"
+    ],
+    "evidence": [
+      "ev_schema_bond"
+    ]
+  },
+  {
+    "id": "term_connected",
+    "name": "connected",
+    "type": "entity",
+    "definition": "记录两个原子由某一化学键相连的信息性条目，包含两端原子标识与所引用键标识。 Counterexample: 易与「化学键」混淆：化学键是键本身的实体，连接记录是描述该键连接哪两个原子的信息条目。 Maturity: Provisional",
+    "scope": "Records of table connected; provenance: direct source connected",
+    "aliases": [
+      "原子连接记录"
+    ],
+    "evidence": [
+      "ev_schema_connected"
+    ]
+  },
+  {
+    "id": "concept_molecule",
+    "name": "Molecule",
+    "type": "concept",
+    "definition": "A molecule entity identified by molecule_id in the molecule table.",
+    "scope": "molecule",
+    "aliases": [
+      "molecule id",
+      "TR molecule",
+      "compound"
+    ],
+    "evidence": [
+      "ev_concept_molecule"
+    ]
+  },
+  {
+    "id": "concept_atom",
+    "name": "Atom",
+    "type": "concept",
+    "definition": "An atom entity belonging to a molecule, identified by atom_id.",
+    "scope": "atom",
+    "aliases": [
+      "atom id",
+      "atoms",
+      "TR atom"
+    ],
+    "evidence": [
+      "ev_concept_atom"
+    ]
+  },
+  {
+    "id": "concept_element",
+    "name": "Element",
+    "type": "concept",
+    "definition": "The chemical element symbol of an atom, stored in atom.element.",
+    "scope": "atom",
+    "aliases": [
+      "elements",
+      "atom element",
+      "chemical element"
+    ],
+    "evidence": [
+      "ev_concept_element"
+    ]
+  },
+  {
+    "id": "concept_carbonatom",
+    "name": "CarbonAtom",
+    "type": "concept",
+    "definition": "Atoms whose element is carbon ('c').",
+    "scope": "atom where element = 'c'",
+    "aliases": [
+      "carbon",
+      "carbon atom",
+      "element c",
+      "C element"
+    ],
+    "evidence": [
+      "ev_concept_carbonatom"
+    ]
+  },
+  {
+    "id": "concept_bond",
+    "name": "Bond",
+    "type": "concept",
+    "definition": "A bond entity identified by bond_id in the bond table.",
+    "scope": "bond",
+    "aliases": [
+      "bond id",
+      "bonds",
+      "connection",
+      "connections"
+    ],
+    "evidence": [
+      "ev_concept_bond"
+    ]
+  },
+  {
+    "id": "concept_bondtype",
+    "name": "BondType",
+    "type": "concept",
+    "definition": "The type of a bond, stored in bond.bond_type.",
+    "scope": "bond",
+    "aliases": [
+      "bond type",
+      "type of bond",
+      "bond_type"
+    ],
+    "evidence": [
+      "ev_concept_bondtype"
+    ]
+  },
+  {
+    "id": "concept_singlebond",
+    "name": "SingleBond",
+    "type": "concept",
+    "definition": "Bonds whose bond_type is single ('-').",
+    "scope": "bond where bond_type = '-'",
+    "aliases": [
+      "single bond",
+      "single-bonded",
+      "single bonded",
+      "single type bond"
+    ],
+    "evidence": [
+      "ev_concept_singlebond"
+    ]
+  },
+  {
+    "id": "concept_doublebond",
+    "name": "DoubleBond",
+    "type": "concept",
+    "definition": "Bonds whose bond_type is double ('=').",
+    "scope": "bond where bond_type = '='",
+    "aliases": [
+      "double bond",
+      "double-bond",
+      "double bonded",
+      "double type bond",
+      "double-bonded"
+    ],
+    "evidence": [
+      "ev_concept_doublebond"
+    ]
+  },
+  {
+    "id": "concept_triplebond",
+    "name": "TripleBond",
+    "type": "concept",
+    "definition": "Bonds whose bond_type is triple ('#').",
+    "scope": "bond where bond_type = '#'",
+    "aliases": [
+      "triple bond",
+      "triple-bonded",
+      "triple bonded",
+      "triple type bond"
+    ],
+    "evidence": [
+      "ev_concept_triplebond"
+    ]
+  },
+  {
+    "id": "concept_carcinogeniclabel",
+    "name": "CarcinogenicLabel",
+    "type": "concept",
+    "definition": "Molecules whose label is '+' indicating carcinogenic.",
+    "scope": "molecule where label = '+'",
+    "aliases": [
+      "carcinogenic",
+      "carcinogenic molecule",
+      "label +",
+      "toxicology label +",
+      "carcinogenic label"
+    ],
+    "evidence": [
+      "ev_concept_carcinogeniclabel"
+    ]
+  },
+  {
+    "id": "concept_noncarcinogeniclabel",
+    "name": "NonCarcinogenicLabel",
+    "type": "concept",
+    "definition": "Molecules whose label is '-' indicating non-carcinogenic.",
+    "scope": "molecule where label = '-'",
+    "aliases": [
+      "non-carcinogenic",
+      "non carcinogenic",
+      "label -",
+      "not carcinogenic",
+      "non carcinogenic label"
+    ],
+    "evidence": [
+      "ev_concept_noncarcinogeniclabel"
+    ]
+  },
+  {
+    "id": "concept_connectedatom",
+    "name": "ConnectedAtom",
+    "type": "concept",
+    "definition": "Atoms that appear in the connected table as atom_id or atom_id2.",
+    "scope": "connected",
+    "aliases": [
+      "connected atom",
+      "bonded atom",
+      "atom in connected",
+      "atom involved in bond"
+    ],
+    "evidence": [
+      "ev_concept_connectedatom"
+    ]
+  },
+  {
+    "id": "concept_unconnectedatom",
+    "name": "UnconnectedAtom",
+    "type": "concept",
+    "definition": "Atoms that do not appear in the connected table.",
+    "scope": "atom where atom_id NOT IN (SELECT atom_id FROM connected UNION SELECT atom_id2 FROM connected)",
+    "aliases": [
+      "atom cannot bond",
+      "atom not bonded",
+      "isolated atom",
+      "atom not in connected",
+      "unconnected atom"
+    ],
+    "evidence": [
+      "ev_concept_unconnectedatom"
+    ]
+  },
+  {
+    "id": "concept_atomposition",
+    "name": "AtomPosition",
+    "type": "concept",
+    "definition": "The positional digit within an atom_id, e.g. substr(atom_id,7,1).",
+    "scope": "atom where substr(atom_id, 7, 1) = '4'",
+    "aliases": [
+      "4th atom",
+      "atom position",
+      "position in molecule",
+      "substr atom id"
+    ],
+    "evidence": [
+      "ev_concept_atomposition"
+    ]
+  },
+  {
+    "id": "derived_carbonpercentage",
+    "name": "CarbonPercentage",
+    "type": "metric",
+    "definition": "Share of atoms that are carbon among a set of atoms. Formula: CarbonAtom / Atom. Inputs: CarbonAtom = atom.element WHERE element = 'c'; Atom = atom.atom_id",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of carbon",
+      "carbon percent",
+      "carbon ratio",
+      "carbon percentage"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_doublebondpercentage",
+    "name": "DoubleBondPercentage",
+    "type": "metric",
+    "definition": "Share of bonds that are double bonds among a set of bonds. Formula: DoubleBond / Bond. Inputs: DoubleBond = bond.bond_type WHERE bond_type = '='; Bond = bond.bond_id",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of double bonds",
+      "double bond percent",
+      "double bond ratio",
+      "double bond percentage"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_singlebondpercentage",
+    "name": "SingleBondPercentage",
+    "type": "metric",
+    "definition": "Share of bonds that are single bonds among a set of bonds. Formula: SingleBond / Bond. Inputs: SingleBond = bond.bond_type WHERE bond_type = '-'; Bond = bond.bond_id",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of single bonds",
+      "single bond percent",
+      "single bond ratio",
+      "single bond percentage"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_triplebondpercentage",
+    "name": "TripleBondPercentage",
+    "type": "metric",
+    "definition": "Share of bonds that are triple bonds among a set of bonds. Formula: TripleBond / Bond. Inputs: TripleBond = bond.bond_type WHERE bond_type = '#'; Bond = bond.bond_id",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of triple bonds",
+      "triple bond percent",
+      "triple bond ratio",
+      "triple bond percentage"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_averagecarcinogenicsinglebonded",
+    "name": "AverageCarcinogenicSingleBonded",
+    "type": "metric",
+    "definition": "Average number of single bonds per carcinogenic molecule. Formula: SingleBond / CarcinogenicLabel. Inputs: SingleBond = bond.bond_type WHERE bond_type = '-'; CarcinogenicLabel = molecule.label WHERE label = '+'",
+    "scope": "derived metric",
+    "aliases": [
+      "average carcinogenic single bonded",
+      "avg single bonded carcinogenic"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_averagecarcinogenicdoublebonded",
+    "name": "AverageCarcinogenicDoubleBonded",
+    "type": "metric",
+    "definition": "Average number of double bonds per carcinogenic molecule. Formula: DoubleBond / CarcinogenicLabel. Inputs: DoubleBond = bond.bond_type WHERE bond_type = '='; CarcinogenicLabel = molecule.label WHERE label = '+'",
+    "scope": "derived metric",
+    "aliases": [
+      "average carcinogenic double bonded",
+      "avg double bonded carcinogenic"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_averagecarcinogenictriplebonded",
+    "name": "AverageCarcinogenicTripleBonded",
+    "type": "metric",
+    "definition": "Average number of triple bonds per carcinogenic molecule. Formula: TripleBond / CarcinogenicLabel. Inputs: TripleBond = bond.bond_type WHERE bond_type = '#'; CarcinogenicLabel = molecule.label WHERE label = '+'",
+    "scope": "derived metric",
+    "aliases": [
+      "average carcinogenic triple bonded",
+      "avg triple bonded carcinogenic"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_bondspermolecule",
+    "name": "BondsPerMolecule",
+    "type": "metric",
+    "definition": "Number of bonds associated with a molecule. Formula: Bond / Molecule. Inputs: Bond = bond.bond_id; Molecule = molecule.molecule_id",
+    "scope": "derived metric",
+    "aliases": [
+      "bonds per molecule",
+      "bond count per molecule",
+      "number of bonds"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_atomspermolecule",
+    "name": "AtomsPerMolecule",
+    "type": "metric",
+    "definition": "Number of atoms associated with a molecule. Formula: Atom / Molecule. Inputs: Atom = atom.atom_id; Molecule = molecule.molecule_id",
+    "scope": "derived metric",
+    "aliases": [
+      "atoms per molecule",
+      "atom count per molecule",
+      "number of atoms"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_connectionsperatom",
+    "name": "ConnectionsPerAtom",
+    "type": "metric",
+    "definition": "Number of bonds connected to an atom. Formula: Bond / Atom. Inputs: Bond = bond.bond_id; Atom = atom.atom_id",
+    "scope": "derived metric",
+    "aliases": [
+      "connections per atom",
+      "bond count per atom",
+      "atom connections"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_carcinogenicmoleculeshare",
+    "name": "CarcinogenicMoleculeShare",
+    "type": "metric",
+    "definition": "Share of molecules that are carcinogenic. Formula: CarcinogenicLabel / Molecule. Inputs: CarcinogenicLabel = molecule.label WHERE label = '+'; Molecule = molecule.molecule_id",
+    "scope": "derived metric",
+    "aliases": [
+      "carcinogenic share",
+      "carcinogenic ratio",
+      "percent carcinogenic",
+      "carcinogenic molecule share"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_noncarcinogenicmoleculeshare",
+    "name": "NonCarcinogenicMoleculeShare",
+    "type": "metric",
+    "definition": "Share of molecules that are non-carcinogenic. Formula: NonCarcinogenicLabel / Molecule. Inputs: NonCarcinogenicLabel = molecule.label WHERE label = '-'; Molecule = molecule.molecule_id",
+    "scope": "derived metric",
+    "aliases": [
+      "non-carcinogenic share",
+      "non carcinogenic ratio",
+      "percent non carcinogenic",
+      "non carcinogenic molecule share"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_majoritybondtype",
+    "name": "MajorityBondType",
+    "type": "metric",
+    "definition": "The bond type with the highest count within a molecule. Formula: MAX(COUNT(BondType)). Inputs: BondType = bond.bond_type; Bond = bond.bond_id",
+    "scope": "derived metric",
+    "aliases": [
+      "majority bond type",
+      "most common bond type",
+      "dominant bond type"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_unconnectedatomshare",
+    "name": "UnconnectedAtomShare",
+    "type": "metric",
+    "definition": "Share of atoms that are not connected to any bond. Formula: UnconnectedAtom / Atom. Inputs: UnconnectedAtom = atom.atom_id WHERE atom_id NOT IN (SELECT atom_id FROM connected UNION SELECT atom_id2 FROM connected); Atom = atom.atom_id",
+    "scope": "derived metric",
+    "aliases": [
+      "unconnected atom share",
+      "isolated atom ratio",
+      "percent unconnected"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_carcinogenicity",
+    "name": "Carcinogenicity",
+    "type": "concept",
+    "definition": "Answers whether molecules are carcinogenic based on label, and counts by label.",
+    "scope": "molecule.label codes",
+    "aliases": [
+      "carcinogenic",
+      "toxicology",
+      "label",
+      "cancer risk",
+      "carcinogenicity"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_bondtype",
+    "name": "BondType",
+    "type": "concept",
+    "definition": "Answers questions about bond types and their distribution.",
+    "scope": "bond.bond_type codes",
+    "aliases": [
+      "bond type",
+      "single bond",
+      "double bond",
+      "triple bond"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_elementtype",
+    "name": "ElementType",
+    "type": "concept",
+    "definition": "Answers questions about elements present in atoms and molecules.",
+    "scope": "atom.element codes",
+    "aliases": [
+      "element",
+      "chemical element",
+      "atom element",
+      "element type"
+    ],
+    "evidence": []
+  }
+]

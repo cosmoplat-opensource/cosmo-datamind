@@ -1,0 +1,432 @@
+[
+  {
+    "id": "term_customers",
+    "name": "customers",
+    "type": "entity",
+    "definition": "购买或使用企业产品与服务、并在交易系统中以唯一客户编号标识的个人或组织。 Counterexample: 与加油站区分：加油站是提供加油服务的场所实体，客户是消费主体；与交易区分：交易是客户在某一时点发生的购买事件。 Maturity: Provisional",
+    "scope": "Records of table customers; provenance: direct source customers",
+    "aliases": [
+      "客户"
+    ],
+    "evidence": [
+      "ev_schema_customers"
+    ]
+  },
+  {
+    "id": "term_gasstations",
+    "name": "gasstations",
+    "type": "entity",
+    "definition": "隶属于某一连锁品牌、位于特定国家并面向客户提供燃油及相关服务的固定经营场所。 Counterexample: 与客户区分：加油站是服务提供场所而非消费主体；与产品区分：产品是可售卖标的物，加油站是销售发生地。 Maturity: Provisional",
+    "scope": "Records of table gasstations; provenance: direct source gasstations",
+    "aliases": [
+      "加油站"
+    ],
+    "evidence": [
+      "ev_schema_gasstations"
+    ]
+  },
+  {
+    "id": "term_products",
+    "name": "products",
+    "type": "entity",
+    "definition": "由企业提供、以唯一产品编号标识并可在交易中被购买的商品或服务项目。 Counterexample: 与交易区分：产品是被购买对象，交易是购买行为本身；与加油站区分：产品是标的物，加油站是销售场所。 Maturity: Provisional",
+    "scope": "Records of table products; provenance: direct source products",
+    "aliases": [
+      "产品"
+    ],
+    "evidence": [
+      "ev_schema_products"
+    ]
+  },
+  {
+    "id": "term_transactions",
+    "name": "transactions",
+    "type": "concept",
+    "definition": "客户在某一时点于某加油站购买某产品并记录金额与单价的销售事件。 Counterexample: 与客户区分：交易是时点上发生的事件，客户是持续存在的消费主体；与产品区分：交易是购买行为，产品是被购买标的物。 Maturity: Provisional",
+    "scope": "Records of table transactions_1k; provenance: direct source transactions_1k",
+    "aliases": [
+      "交易",
+      "transactions_1k"
+    ],
+    "evidence": [
+      "ev_schema_transactions_1k"
+    ]
+  },
+  {
+    "id": "term_yearmonth",
+    "name": "yearmonth",
+    "type": "entity",
+    "definition": "按客户与月份汇总其消费金额形成的信息记录，用于反映客户在特定月份的消费总量。 Counterexample: 与交易区分：交易是逐笔发生的销售事件，月度消费汇总是对多笔交易聚合后的信息记录，不表示单次购买行为。 Maturity: Provisional",
+    "scope": "Records of table yearmonth; provenance: direct source yearmonth",
+    "aliases": [
+      "客户月度消费汇总"
+    ],
+    "evidence": [
+      "ev_schema_yearmonth"
+    ]
+  },
+  {
+    "id": "concept_czechrepublicgasstation",
+    "name": "CzechRepublicGasStation",
+    "type": "concept",
+    "definition": "Gas stations located in the Czech Republic.",
+    "scope": "gasstations where Country = 'CZE'",
+    "aliases": [
+      "gas stations in the Czech Republic",
+      "CZE gas stations",
+      "Czech gas stations",
+      "stations in CZE",
+      "czech republic gas station"
+    ],
+    "evidence": [
+      "ev_concept_czechrepublicgasstation"
+    ]
+  },
+  {
+    "id": "concept_slovakiagasstation",
+    "name": "SlovakiaGasStation",
+    "type": "concept",
+    "definition": "Gas stations located in Slovakia.",
+    "scope": "gasstations where Country = 'SVK'",
+    "aliases": [
+      "gas stations in Slovakia",
+      "SVK gas stations",
+      "Slovak gas stations",
+      "stations in SVK",
+      "slovakia gas station"
+    ],
+    "evidence": [
+      "ev_concept_slovakiagasstation"
+    ]
+  },
+  {
+    "id": "concept_discountgasstation",
+    "name": "DiscountGasStation",
+    "type": "concept",
+    "definition": "Gas stations whose segment is 'Discount'.",
+    "scope": "gasstations where Segment = 'Discount'",
+    "aliases": [
+      "discount gas stations",
+      "discount stations",
+      "stations with discount segment",
+      "discount gas station"
+    ],
+    "evidence": [
+      "ev_concept_discountgasstation"
+    ]
+  },
+  {
+    "id": "concept_premiumgasstation",
+    "name": "PremiumGasStation",
+    "type": "concept",
+    "definition": "Gas stations whose segment is 'Premium'.",
+    "scope": "gasstations where Segment = 'Premium'",
+    "aliases": [
+      "premium gas stations",
+      "premium stations",
+      "stations with premium segment",
+      "premium gas station"
+    ],
+    "evidence": [
+      "ev_concept_premiumgasstation"
+    ]
+  },
+  {
+    "id": "concept_eurcustomer",
+    "name": "EURCustomer",
+    "type": "concept",
+    "definition": "Customers whose currency is EUR.",
+    "scope": "customers where Currency = 'EUR'",
+    "aliases": [
+      "customers who pay in EUR",
+      "EUR-paying customers",
+      "customers using EUR",
+      "EUR customers",
+      "eur customer"
+    ],
+    "evidence": [
+      "ev_concept_eurcustomer"
+    ]
+  },
+  {
+    "id": "concept_czkcustomer",
+    "name": "CZKCustomer",
+    "type": "concept",
+    "definition": "Customers whose currency is CZK.",
+    "scope": "customers where Currency = 'CZK'",
+    "aliases": [
+      "customers who pay in CZK",
+      "CZK-paying customers",
+      "customers using CZK",
+      "Czech koruna customers",
+      "czk customer"
+    ],
+    "evidence": [
+      "ev_concept_czkcustomer"
+    ]
+  },
+  {
+    "id": "concept_smecustomer",
+    "name": "SMECustomer",
+    "type": "concept",
+    "definition": "Customers belonging to the SME segment.",
+    "scope": "customers where Segment = 'SME'",
+    "aliases": [
+      "SMEs",
+      "SME customers",
+      "small and medium enterprises",
+      "sme customer"
+    ],
+    "evidence": [
+      "ev_concept_smecustomer"
+    ]
+  },
+  {
+    "id": "concept_transactionamount",
+    "name": "TransactionAmount",
+    "type": "concept",
+    "definition": "Number of items in a transaction.",
+    "scope": "transactions_1k",
+    "aliases": [
+      "amount",
+      "number of items",
+      "items purchased",
+      "quantity",
+      "transaction amount"
+    ],
+    "evidence": [
+      "ev_concept_transactionamount"
+    ]
+  },
+  {
+    "id": "concept_transactionprice",
+    "name": "TransactionPrice",
+    "type": "concept",
+    "definition": "Price of a single item in a transaction.",
+    "scope": "transactions_1k",
+    "aliases": [
+      "price",
+      "price per item",
+      "unit price",
+      "item price",
+      "transaction price"
+    ],
+    "evidence": [
+      "ev_concept_transactionprice"
+    ]
+  },
+  {
+    "id": "concept_transactiondate",
+    "name": "TransactionDate",
+    "type": "concept",
+    "definition": "Date on which a transaction occurred.",
+    "scope": "transactions_1k",
+    "aliases": [
+      "date",
+      "transaction date",
+      "day of transaction"
+    ],
+    "evidence": [
+      "ev_concept_transactiondate"
+    ]
+  },
+  {
+    "id": "concept_transactiontime",
+    "name": "TransactionTime",
+    "type": "concept",
+    "definition": "Time at which a transaction occurred.",
+    "scope": "transactions_1k",
+    "aliases": [
+      "time",
+      "transaction time",
+      "hour of transaction"
+    ],
+    "evidence": [
+      "ev_concept_transactiontime"
+    ]
+  },
+  {
+    "id": "concept_yearmonthconsumption",
+    "name": "YearMonthConsumption",
+    "type": "concept",
+    "definition": "Monthly gas consumption per customer.",
+    "scope": "yearmonth",
+    "aliases": [
+      "consumption",
+      "gas consumption",
+      "monthly consumption",
+      "fuel consumption",
+      "year month consumption"
+    ],
+    "evidence": [
+      "ev_concept_yearmonthconsumption"
+    ]
+  },
+  {
+    "id": "concept_yearmonthdate",
+    "name": "YearMonthDate",
+    "type": "concept",
+    "definition": "Year-month identifier in the yearmonth table.",
+    "scope": "yearmonth",
+    "aliases": [
+      "yearmonth date",
+      "month",
+      "year-month",
+      "date in yearmonth",
+      "year month date"
+    ],
+    "evidence": [
+      "ev_concept_yearmonthdate"
+    ]
+  },
+  {
+    "id": "derived_eurtoczkcustomerratio",
+    "name": "EURtoCZKCustomerRatio",
+    "type": "metric",
+    "definition": "Ratio of customers paying in EUR to customers paying in CZK. Formula: EURCustomer / CZKCustomer. Inputs: EURCustomer = customers.CustomerID WHERE Currency = 'EUR'; CZKCustomer = customers.CustomerID WHERE Currency = 'CZK'",
+    "scope": "derived metric",
+    "aliases": [
+      "ratio of EUR to CZK customers",
+      "EUR vs CZK customer ratio",
+      "eu rto czk customer ratio"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_smeczkminuseur",
+    "name": "SMECZKminusEUR",
+    "type": "metric",
+    "definition": "Difference between SMEs paying in CZK and SMEs paying in EUR. Formula: SMECustomer (CZK) - SMECustomer (EUR). Inputs: SMECustomer = customers.CustomerID WHERE Segment = 'SME'; CZKCustomer = customers.CustomerID WHERE Currency = 'CZK'; EURCustomer = customers.CustomerID WHERE Currency = 'EUR'",
+    "scope": "derived metric",
+    "aliases": [
+      "more SMEs pay in CZK than EUR",
+      "difference in SMEs paying CZK vs EUR",
+      "smecz kminus eur"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_consumptiondifferenceczkvseur2012",
+    "name": "ConsumptionDifferenceCZKvsEUR2012",
+    "type": "metric",
+    "definition": "Difference in total gas consumption in 2012 between CZK-paying and EUR-paying customers. Formula: SUM(YearMonthConsumption for CZK customers in 2012) - SUM(YearMonthConsumption for EUR customers in 2012). Inputs: YearMonthConsumption = yearmonth.Consumption; CZKCustomer = customers.CustomerID WHERE Currency = 'CZK'; EURCustomer = customers.CustomerID WHERE Currency = 'EUR'; YearMonthDate = yearmonth.Date",
+    "scope": "derived metric",
+    "aliases": [
+      "difference in gas consumption between CZK and EUR customers ",
+      "consumption difference cz kvs eur 2012"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_premiumpercentagesvk",
+    "name": "PremiumPercentageSVK",
+    "type": "metric",
+    "definition": "Percentage of premium gas stations among all gas stations in Slovakia. Formula: PremiumGasStation (SVK) / COUNT(GasStationID) (SVK) * 100. Inputs: PremiumGasStation = gasstations.GasStationID WHERE Segment = 'Premium'; SlovakiaGasStation = gasstations.GasStationID WHERE Country = 'SVK'",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of premium in SVK",
+      "premium share in Slovakia",
+      "premium percentage svk"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_discountstationdifferenceczeminussvk",
+    "name": "DiscountStationDifferenceCZEminusSVK",
+    "type": "metric",
+    "definition": "Difference in number of discount gas stations between Czech Republic and Slovakia. Formula: DiscountGasStation (CZE) - DiscountGasStation (SVK). Inputs: DiscountGasStation = gasstations.GasStationID WHERE Segment = 'Discount'; CzechRepublicGasStation = gasstations.GasStationID WHERE Country = 'CZE'; SlovakiaGasStation = gasstations.GasStationID WHERE Country = 'SVK'",
+    "scope": "derived metric",
+    "aliases": [
+      "more discount stations in CZE than SVK",
+      "difference in discount stations CZE vs SVK",
+      "discount station difference cz eminus svk"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_transactionscze20120826_8to9",
+    "name": "TransactionsCZE20120826_8to9",
+    "type": "metric",
+    "definition": "Number of transactions in Czech Republic on 2012-08-26 between 8:00 and 9:00. Formula: COUNT(TransactionID) WHERE Country='CZE' AND Date='2012-08-26' AND Time BETWEEN '08:00:00' AND '09:00:00'. Inputs: CzechRepublicGasStation = gasstations.GasStationID WHERE Country = 'CZE'; TransactionDate = transactions_1k.Date; TransactionTime = transactions_1k.Time",
+    "scope": "derived metric",
+    "aliases": [
+      "transactions in CZE during 8-9 on 2012-08-26",
+      "transactions cze 20120826 8 to 9"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_topspendingcustomer",
+    "name": "TopSpendingCustomer",
+    "type": "metric",
+    "definition": "Customer with the highest total spending. Formula: CustomerID with MAX(SUM(TransactionPrice * TransactionAmount)). Inputs: TransactionPrice = transactions_1k.Price; TransactionAmount = transactions_1k.Amount",
+    "scope": "derived metric",
+    "aliases": [
+      "top spending customer",
+      "customer with highest spending"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_countriesofgasstationsjune2013",
+    "name": "CountriesOfGasStationsJune2013",
+    "type": "metric",
+    "definition": "List of countries where gas stations had transactions in June 2013. Formula: DISTINCT Country FROM gasstations JOIN transactions_1k WHERE Date LIKE '201306%'. Inputs: TransactionDate = transactions_1k.Date; CzechRepublicGasStation = gasstations.GasStationID WHERE Country = 'CZE'; SlovakiaGasStation = gasstations.GasStationID WHERE Country = 'SVK'",
+    "scope": "derived metric",
+    "aliases": [
+      "countries of gas stations with transactions in June 2013",
+      "countries of gas stations june 2013"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_percentagecustomersconsumedmorethan528_3_feb2012",
+    "name": "PercentageCustomersConsumedMoreThan528_3_Feb2012",
+    "type": "metric",
+    "definition": "Percentage of customers with consumption > 528.3 in February 2012. Formula: COUNT(CustomerID WHERE Consumption > 528.3 AND Date='201202') / COUNT(CustomerID WHERE Date='201202') * 100. Inputs: YearMonthConsumption = yearmonth.Consumption; YearMonthDate = yearmonth.Date",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of customers consumed more than 528.3 in Feb 2012",
+      "percentage customers consumed more than 528 3 feb 2012"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_country",
+    "name": "Country",
+    "type": "concept",
+    "definition": "Countries where gas stations are located.",
+    "scope": "gasstations.Country codes",
+    "aliases": [
+      "country",
+      "nation",
+      "location"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_segment",
+    "name": "Segment",
+    "type": "concept",
+    "definition": "Segments of gas stations or customers.",
+    "scope": "gasstations.Segment codes",
+    "aliases": [
+      "segment",
+      "type",
+      "category"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_currency",
+    "name": "Currency",
+    "type": "concept",
+    "definition": "Currencies used by customers.",
+    "scope": "customers.Currency codes",
+    "aliases": [
+      "currency",
+      "payment currency"
+    ],
+    "evidence": []
+  }
+]

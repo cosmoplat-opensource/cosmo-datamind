@@ -1,0 +1,391 @@
+[
+  {
+    "id": "rel_derived_accidentcount__from__concept_raceresult",
+    "source": "concept_raceresult",
+    "relation_type": "derivation",
+    "target": "derived_accidentcount",
+    "connection_condition": "same entity and period",
+    "description": "AccidentCount is computed from RaceResult: COUNT(RaceResult) WHERE Status.statusId = 3",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_accidentcount__from__concept_status",
+    "source": "concept_status",
+    "relation_type": "derivation",
+    "target": "derived_accidentcount",
+    "connection_condition": "same entity and period",
+    "description": "AccidentCount is computed from Status: COUNT(RaceResult) WHERE Status.statusId = 3",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_firstraceyear__from__concept_driver",
+    "source": "concept_driver",
+    "relation_type": "derivation",
+    "target": "derived_firstraceyear",
+    "connection_condition": "same entity and period",
+    "description": "FirstRaceYear is computed from Driver: MIN(Season.year) per Driver",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_firstraceyear__from__concept_season",
+    "source": "concept_season",
+    "relation_type": "derivation",
+    "target": "derived_firstraceyear",
+    "connection_condition": "same entity and period",
+    "description": "FirstRaceYear is computed from Season: MIN(Season.year) per Driver",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_firstraceyear__from__concept_raceresult",
+    "source": "concept_raceresult",
+    "relation_type": "derivation",
+    "target": "derived_firstraceyear",
+    "connection_condition": "same entity and period",
+    "description": "FirstRaceYear is computed from RaceResult: MIN(Season.year) per Driver",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_averagepitstopduration__from__concept_pitstop",
+    "source": "concept_pitstop",
+    "relation_type": "derivation",
+    "target": "derived_averagepitstopduration",
+    "connection_condition": "same entity and period",
+    "description": "AveragePitStopDuration is computed from PitStop: AVG(PitStop.duration) per Driver",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_averagepitstopduration__from__concept_driver",
+    "source": "concept_driver",
+    "relation_type": "derivation",
+    "target": "derived_averagepitstopduration",
+    "connection_condition": "same entity and period",
+    "description": "AveragePitStopDuration is computed from Driver: AVG(PitStop.duration) per Driver",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_fastestlapspeed__from__concept_raceresult",
+    "source": "concept_raceresult",
+    "relation_type": "derivation",
+    "target": "derived_fastestlapspeed",
+    "connection_condition": "same entity and period",
+    "description": "FastestLapSpeed is computed from RaceResult: MAX(RaceResult.fastestLapSpeed)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_championfinishtime__from__concept_raceresult",
+    "source": "concept_raceresult",
+    "relation_type": "derivation",
+    "target": "derived_championfinishtime",
+    "connection_condition": "same entity and period",
+    "description": "ChampionFinishTime is computed from RaceResult: MIN(RaceResult.time) WHERE RaceResult.position = 1",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_lastdriverfinishtime__from__concept_raceresult",
+    "source": "concept_raceresult",
+    "relation_type": "derivation",
+    "target": "derived_lastdriverfinishtime",
+    "connection_condition": "same entity and period",
+    "description": "LastDriverFinishTime is computed from RaceResult: MAX(RaceResult.time) WHERE RaceResult.time IS NOT NULL",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_nonfirstplacepercentage__from__concept_raceresult",
+    "source": "concept_raceresult",
+    "relation_type": "derivation",
+    "target": "derived_nonfirstplacepercentage",
+    "connection_condition": "same entity and period",
+    "description": "NonFirstPlacePercentage is computed from RaceResult: COUNT(RaceResult WHERE position > 1) / COUNT(RaceResult) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_nonfirstplacepercentage__from__concept_driver",
+    "source": "concept_driver",
+    "relation_type": "derivation",
+    "target": "derived_nonfirstplacepercentage",
+    "connection_condition": "same entity and period",
+    "description": "NonFirstPlacePercentage is computed from Driver: COUNT(RaceResult WHERE position > 1) / COUNT(RaceResult) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_circuitheldcount__from__concept_race",
+    "source": "concept_race",
+    "relation_type": "derivation",
+    "target": "derived_circuitheldcount",
+    "connection_condition": "same entity and period",
+    "description": "CircuitHeldCount is computed from Race: COUNT(Race) WHERE Circuit.country = 'Austria'",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_circuitheldcount__from__concept_circuit",
+    "source": "concept_circuit",
+    "relation_type": "derivation",
+    "target": "derived_circuitheldcount",
+    "connection_condition": "same entity and period",
+    "description": "CircuitHeldCount is computed from Circuit: COUNT(Race) WHERE Circuit.country = 'Austria'",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_maxconstructorpoints__from__concept_constructorresult",
+    "source": "concept_constructorresult",
+    "relation_type": "derivation",
+    "target": "derived_maxconstructorpoints",
+    "connection_condition": "same entity and period",
+    "description": "MaxConstructorPoints is computed from ConstructorResult: MAX(ConstructorResult.points)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_driverage__from__concept_driver",
+    "source": "concept_driver",
+    "relation_type": "derivation",
+    "target": "derived_driverage",
+    "connection_condition": "same entity and period",
+    "description": "DriverAge is computed from Driver: DATEDIFF(CURRENT_DATE, Driver.dob)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_qualifyingeliminatedfirstperiod__from__concept_qualifying",
+    "source": "concept_qualifying",
+    "relation_type": "derivation",
+    "target": "derived_qualifyingeliminatedfirstperiod",
+    "connection_condition": "same entity and period",
+    "description": "QualifyingEliminatedFirstPeriod is computed from Qualifying: MAX(Qualifying.q1) per race",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_finishedracecount__from__concept_raceresult",
+    "source": "concept_raceresult",
+    "relation_type": "derivation",
+    "target": "derived_finishedracecount",
+    "connection_condition": "same entity and period",
+    "description": "FinishedRaceCount is computed from RaceResult: COUNT(RaceResult) WHERE RaceResult.time IS NOT NULL",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_participationcount__from__concept_raceresult",
+    "source": "concept_raceresult",
+    "relation_type": "derivation",
+    "target": "derived_participationcount",
+    "connection_condition": "same entity and period",
+    "description": "ParticipationCount is computed from RaceResult: COUNT(RaceResult.raceId) per Driver",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_participationcount__from__concept_driver",
+    "source": "concept_driver",
+    "relation_type": "derivation",
+    "target": "derived_participationcount",
+    "connection_condition": "same entity and period",
+    "description": "ParticipationCount is computed from Driver: COUNT(RaceResult.raceId) per Driver",
+    "evidence": []
+  },
+  {
+    "id": "rel_circuits__races__circuitid",
+    "source": "term_circuits",
+    "relation_type": "composition",
+    "target": "term_races",
+    "connection_condition": "races.circuitId corresponds to circuits.circuitId",
+    "description": "举办于; 重叠 99%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_circuits__races__circuitid"
+    ]
+  },
+  {
+    "id": "rel_seasons__races__year",
+    "source": "term_seasons",
+    "relation_type": "composition",
+    "target": "term_races",
+    "connection_condition": "races.year corresponds to seasons.year",
+    "description": "属于; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_seasons__races__year"
+    ]
+  },
+  {
+    "id": "rel_races__constructorresults__raceid",
+    "source": "term_races",
+    "relation_type": "composition",
+    "target": "term_constructorresults",
+    "connection_condition": "constructorResults.raceId corresponds to races.raceId",
+    "description": "记录于; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_races__constructorresults__raceid"
+    ]
+  },
+  {
+    "id": "rel_constructors__constructorresults__constructorid",
+    "source": "term_constructors",
+    "relation_type": "composition",
+    "target": "term_constructorresults",
+    "connection_condition": "constructorResults.constructorId corresponds to constructors.constructorId",
+    "description": "归属; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_constructors__constructorresults__constructorid"
+    ]
+  },
+  {
+    "id": "rel_races__constructorstandings__raceid",
+    "source": "term_races",
+    "relation_type": "composition",
+    "target": "term_constructorstandings",
+    "connection_condition": "constructorStandings.raceId corresponds to races.raceId",
+    "description": "记录于; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_races__constructorstandings__raceid"
+    ]
+  },
+  {
+    "id": "rel_constructors__constructorstandings__constructorid",
+    "source": "term_constructors",
+    "relation_type": "composition",
+    "target": "term_constructorstandings",
+    "connection_condition": "constructorStandings.constructorId corresponds to constructors.constructorId",
+    "description": "归属; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_constructors__constructorstandings__constructorid"
+    ]
+  },
+  {
+    "id": "rel_races__driverstandings__raceid",
+    "source": "term_races",
+    "relation_type": "composition",
+    "target": "term_driverstandings",
+    "connection_condition": "driverStandings.raceId corresponds to races.raceId",
+    "description": "记录于; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_races__driverstandings__raceid"
+    ]
+  },
+  {
+    "id": "rel_drivers__driverstandings__driverid",
+    "source": "term_drivers",
+    "relation_type": "composition",
+    "target": "term_driverstandings",
+    "connection_condition": "driverStandings.driverId corresponds to drivers.driverId",
+    "description": "归属; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_drivers__driverstandings__driverid"
+    ]
+  },
+  {
+    "id": "rel_races__results__raceid",
+    "source": "term_races",
+    "relation_type": "composition",
+    "target": "term_results",
+    "connection_condition": "results.raceId corresponds to races.raceId",
+    "description": "记录于; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_races__results__raceid"
+    ]
+  },
+  {
+    "id": "rel_drivers__results__driverid",
+    "source": "term_drivers",
+    "relation_type": "composition",
+    "target": "term_results",
+    "connection_condition": "results.driverId corresponds to drivers.driverId",
+    "description": "归属; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_drivers__results__driverid"
+    ]
+  },
+  {
+    "id": "rel_constructors__results__constructorid",
+    "source": "term_constructors",
+    "relation_type": "composition",
+    "target": "term_results",
+    "connection_condition": "results.constructorId corresponds to constructors.constructorId",
+    "description": "归属; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_constructors__results__constructorid"
+    ]
+  },
+  {
+    "id": "rel_status__results__statusid",
+    "source": "term_status",
+    "relation_type": "composition",
+    "target": "term_results",
+    "connection_condition": "results.statusId corresponds to status.statusId",
+    "description": "具有; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_status__results__statusid"
+    ]
+  },
+  {
+    "id": "rel_races__laptimes__raceid",
+    "source": "term_races",
+    "relation_type": "composition",
+    "target": "term_laptimes",
+    "connection_condition": "lapTimes.raceId corresponds to races.raceId",
+    "description": "记录于; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_races__laptimes__raceid"
+    ]
+  },
+  {
+    "id": "rel_drivers__laptimes__driverid",
+    "source": "term_drivers",
+    "relation_type": "composition",
+    "target": "term_laptimes",
+    "connection_condition": "lapTimes.driverId corresponds to drivers.driverId",
+    "description": "归属; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_drivers__laptimes__driverid"
+    ]
+  },
+  {
+    "id": "rel_races__pitstops__raceid",
+    "source": "term_races",
+    "relation_type": "composition",
+    "target": "term_pitstops",
+    "connection_condition": "pitStops.raceId corresponds to races.raceId",
+    "description": "记录于; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_races__pitstops__raceid"
+    ]
+  },
+  {
+    "id": "rel_drivers__pitstops__driverid",
+    "source": "term_drivers",
+    "relation_type": "composition",
+    "target": "term_pitstops",
+    "connection_condition": "pitStops.driverId corresponds to drivers.driverId",
+    "description": "归属; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_drivers__pitstops__driverid"
+    ]
+  },
+  {
+    "id": "rel_races__qualifying__raceid",
+    "source": "term_races",
+    "relation_type": "composition",
+    "target": "term_qualifying",
+    "connection_condition": "qualifying.raceId corresponds to races.raceId",
+    "description": "记录于; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_races__qualifying__raceid"
+    ]
+  },
+  {
+    "id": "rel_drivers__qualifying__driverid",
+    "source": "term_drivers",
+    "relation_type": "composition",
+    "target": "term_qualifying",
+    "connection_condition": "qualifying.driverId corresponds to drivers.driverId",
+    "description": "归属; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_drivers__qualifying__driverid"
+    ]
+  },
+  {
+    "id": "rel_constructors__qualifying__constructorid",
+    "source": "term_constructors",
+    "relation_type": "composition",
+    "target": "term_qualifying",
+    "connection_condition": "qualifying.constructorId corresponds to constructors.constructorId",
+    "description": "归属; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_constructors__qualifying__constructorid"
+    ]
+  }
+]

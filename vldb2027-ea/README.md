@@ -1,7 +1,9 @@
 # Reproducibility package: "What Does an Ontology Layer Add to a Data Agent? Evaluation Pitfalls and When It Helps" [Experiment, Analysis & Benchmark]
 
-PVLDB Volume 20 submission. This directory holds everything needed to recompute every number in the paper from the
-released predictions, and to rerun the experiments from scratch.
+PVLDB Volume 20 submission. This directory holds the code, inputs, ontologies, predictions and per-question scores
+behind the paper. Every accuracy, difference and interval can be recomputed from the released predictions and scores;
+the analyses that read the agents' tool responses or prompts need the traces, which are not included (see the end of
+this file).
 
 ## Contents
 
@@ -23,7 +25,7 @@ Setting names: `R` readable BIRD Mini-Dev, `O` BIRD-opaque, `MG` BIRD-opaque-mer
 `evoA` / `dmA` (ontologies rebuilt from the input-aligned workload, Section 3.1), `evo_flat` (flat term dictionary,
 Section 6.1; under `results/v5/`).
 
-**Scorer correction (2026-11-20).** The first version of `rescore_v2.match_tolerant` tried column reorderings only when
+**Scorer correction (2026-11-20).** The first version of `rescore_v2.tolerant_match` tried column reorderings only when
 the prediction had more columns than the gold result, so an answer with the gold columns in another order was judged
 wrong. The released `rescore_v2.py` also permutes equal-width predictions; this changed 481 of 172,752 question-run
 judgments, all from wrong to correct, and every released score and statistic uses the corrected rule. Question 1031 of
@@ -36,7 +38,7 @@ on the day of scoring.
 |---|---|---|
 | Table 1, column 1; Figure 3, first bar | each system's own scorer | `results/v2/completion/最终统计与恢复披露.md` (Chinese headings) |
 | Table 1, rows 1–2, columns 2–3; Section 3.3; Figure 3 | `rescore_v2.py`, `stats_v3.py` | `results/v2/rescore/统计_v3.md` ("strict"/"tolerant" sections), `results/v2/rescore/check.json` |
-| Table 1, row 3 and note (+7.5, +1.6); Section 3.4; Figure 3, last bar | `rescore_v3.py`, `analysis_sec3.py` | `results/v4/analysis_sec3.json` |
+| Table 1, row 3 and note (+7.5, +0.5); Section 3.4; Figure 3, last bar | `rescore_v3.py`, `analysis_sec3.py` | `results/v4/analysis_sec3.json` |
 | Figure 2 | — | schematic with illustrative values |
 | Section 3.2 (reruns after the infrastructure audit) | `audit_infra_v4.py` | `results/v4/discarded_infra/` |
 | Section 4, Figure 4 (benchmark checks, leakage audit) | `make_opaque.py`, `make_opaque_merged.py`, `audit_evo_builds.py` | `benchmarks/*/verify.json`, `benchmarks/opaque_merged/mapping.json`, `results/v4/evo_build_audit.json` |
@@ -54,6 +56,7 @@ on the day of scoring.
 | Table 3; Section 6.1 (final-query table recall, join matching by table and column); Section 6.2 (without the 61 validation questions); Figure 10 by source database; Figure 11 caption (turn limit) | `analysis_review_20261120.py` | `results/v4/analysis_review_20261120.json` |
 | Section 6.1 (flat term dictionary; Figure 7a, last row) | `make_flat_dictionary.py`, `chain_flat.sh`, `analysis_flat_dictionary_20261120.py` | `results/v5/flat_dictionary_stats_20261120.json` |
 | Section 6.1 (column codes in the store without mappings) | `analysis_nomap_columns_20261120.py` | `results/v5/nomap_columns_20261120.json` |
+| Sections 4.2, 5, 6.1 (tool responses naming a column code in the ablation without mappings; relations naming table.column; DataMind IR counts of BIRD-readable-merged) | `analysis_counts_20261120.py` | `results/v5/counts_20261120.json` |
 | Section 7 (corrected gold queries) | `analysis_annotation_sensitivity.py` (expects the file of `external/arcwise_plat_sql/` under `ext/arcwise_plat_20261120/`) | `results/v4/annotation_sensitivity_20261120.json` |
 
 All intervals: 95% bootstrap, 10,000 resamples, fixed seeds in the scripts; database-cluster resampling for BIRD and
@@ -70,8 +73,15 @@ The scripts expect one experiment root with this layout (paths are relative to t
     benchmarks/bird/data/mini_dev_data/dev_databases/<db>/<db>.sqlite   <- BIRD Mini-Dev (download separately)
     benchmarks/bird/data/{minidev,minidev_rev,ind_fwd,ind_rev}/         <- splits/
   variants/{opaque,opaque_merged}/                                       <- benchmarks/ plus databases built by make_opaque*.py
+  variants/readable_merged/                                              <- benchmarks/readable_merged/ plus its database
   runs/v4/qa/...                  <- results/v4/predictions/ (gunzip all_results.json.gz)
+  runs/v5/qa/...                  <- results/v5/predictions/
+  runs/v4/*.json, runs/v5/*.json  <- results/v4/*.json, results/v5/*.json
   runs/v2/rescore/, runs/v3/rescore_v3.json                              <- results/v2, results/v3
+  runs/v3/dev/<run>/rescore.json  <- results/v3_validation/<run>/
+  runs/v2/evo/, runs/v2/dm/, runs/v2/dm2evo/                             <- ontologies/evoontology, datamind, datamind_converted
+  runs/v5/onto/                   <- ontologies/evoontology_ablated/
+  ext/arcwise_plat_20261120/      <- external/arcwise_plat_sql/
 ```
 
 Re-scoring needs the databases, because predicted and gold SQL are executed. With the per-question scores already
@@ -113,15 +123,19 @@ released (`rescore.json`), `stats_v4.py`, `stats_dr093.py` and `analysis_ablatio
    then `queue_v5.py plan` and `queue_v5.py run`, `score_v5_all.sh`, `stats_v5.py`.
    The DataMind ontologies of BIRD-readable-merged used in the paper (conditions `dm_b9`, `dmdoc_b9`) were built with
    the code of the opaque-merged builds: a worktree of this branch at commit `b9fa576` passed as `DM_CODE_ROOT`, with
-   `DM_ROOT_SUFFIX=_b9fa576` and no `DATAMIND_ABLATE`; the conditions `dm`, `dmdoc` keep the earlier build with later code. The 60-turn runs select the
+   `DM_ROOT_SUFFIX=_b9fa576` and no `DATAMIND_ABLATE` (`harness/runs/v5/b9_pipeline.sh`); the conditions `dm`, `dmdoc` keep the earlier build with later code. The 60-turn runs select the
    configurations `deepseek_*_t60.yaml` through `EVO_CFG_SUFFIX=_t60` in `run_method.sh`.
 
 Model outputs vary between runs; the paper reports three repeats per configuration and the released predictions are the
 ones behind every number.
 
 Not included: the per-question agent traces of the runs (about 1.9 GB compressed; the traces needed for the 28-of-61
-count of Section 6.2 are included), the ontology builders' session logs,
-and the databases. They are available from the authors on request.
+count of Section 6.2 are included), the ontology builders' session logs, and the databases. They are available from
+the authors on request. Without the traces, the following cannot be recomputed from this package: the splits of
+Section 6.1 by what the tool responses named (`analysis_v5_strat.py`, part c) and the share of tool responses naming a
+column code (`analysis_counts_20261120.py`); the accuracy with and without a tool call (Section 6.3); the excerpt
+coverage of Section 6.4 and Figure 10 (`analysis_sec6.py`, `analysis_review_20261120.py`); the file-access audits
+(`audit_evo_builds.py`, `audit_aligned_builds_20261120.py`, which read the builder logs; their outputs are included).
 
 ## Licences
 

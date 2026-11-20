@@ -1,0 +1,338 @@
+[
+  {
+    "id": "term_frpm",
+    "name": "frpm",
+    "type": "entity",
+    "definition": "按学年记录某所学校学生规模与免费/减价餐资格人数的统计信息条目。 Counterexample: 与学校主数据（schools）区分：本对象是逐年统计记录，学校主数据是相对稳定的机构档案；同一学校可有多个学年记录。 Maturity: Provisional",
+    "scope": "Records of table frpm; provenance: direct source frpm",
+    "aliases": [
+      "免费及减价餐统计记录"
+    ],
+    "evidence": [
+      "ev_schema_frpm"
+    ]
+  },
+  {
+    "id": "term_satscores",
+    "name": "satscores",
+    "type": "entity",
+    "definition": "按学校（cds）汇总的 SAT 参考人数与各科平均分及达标人数的考试成绩统计信息条目。 Counterexample: 与 frpm 区分：本对象度量考试表现，frpm 度量餐费资格与经济指标；两者均以学校为粒度但指标不同。 Maturity: Provisional",
+    "scope": "Records of table satscores; provenance: direct source satscores",
+    "aliases": [
+      "SAT考试成绩统计记录"
+    ],
+    "evidence": [
+      "ev_schema_satscores"
+    ]
+  },
+  {
+    "id": "term_schools",
+    "name": "schools",
+    "type": "entity",
+    "definition": "以 CDSCode 唯一标识的、具有名称、地址、联系方式与开办/关闭日期的教育机构。 Counterexample: 与 frpm、satscores 区分：本对象是机构实体，后两者是关于该机构的统计信息记录；与学区（District）区分：学区是学校的上级管理单位，本对象是具体办学点。 Maturity: Provisional",
+    "scope": "Records of table schools; provenance: direct source schools",
+    "aliases": [
+      "学校"
+    ],
+    "evidence": [
+      "ev_schema_schools"
+    ]
+  },
+  {
+    "id": "concept_eligiblefreerate",
+    "name": "EligibleFreeRate",
+    "type": "concept",
+    "definition": "Percentage of students eligible for free meals.",
+    "scope": "frpm",
+    "aliases": [
+      "percent (%) of eligible free meals",
+      "eligible free rate",
+      "free meal rate"
+    ],
+    "evidence": [
+      "ev_concept_eligiblefreerate"
+    ]
+  },
+  {
+    "id": "concept_frpmcount",
+    "name": "FRPMCount",
+    "type": "concept",
+    "definition": "Number of students eligible for free or reduced price meals.",
+    "scope": "frpm",
+    "aliases": [
+      "free or reduced price meal count",
+      "FRPM count",
+      "free/reduced meal count",
+      "frpm count"
+    ],
+    "evidence": [
+      "ev_concept_frpmcount"
+    ]
+  },
+  {
+    "id": "concept_frpmrate",
+    "name": "FRPMRate",
+    "type": "concept",
+    "definition": "Proportion of students eligible for free or reduced price meals.",
+    "scope": "frpm",
+    "aliases": [
+      "eligible free or reduced price meal rate",
+      "FRPM rate",
+      "free or reduced price meal rate",
+      "frpm rate"
+    ],
+    "evidence": [
+      "ev_concept_frpmrate"
+    ]
+  },
+  {
+    "id": "concept_virtualschool",
+    "name": "VirtualSchool",
+    "type": "concept",
+    "definition": "A school that does not offer a physical building (virtual).",
+    "scope": "schools where Virtual = 'F'",
+    "aliases": [
+      "does not offer physical building",
+      "virtual school",
+      "exclusively virtual"
+    ],
+    "evidence": [
+      "ev_concept_virtualschool"
+    ]
+  },
+  {
+    "id": "concept_elementaryschooldistrict",
+    "name": "ElementarySchoolDistrict",
+    "type": "concept",
+    "definition": "A school district that is an elementary school district.",
+    "scope": "schools where DOC = '52'",
+    "aliases": [
+      "Elementary School District",
+      "elementary district",
+      "elementary school district"
+    ],
+    "evidence": [
+      "ev_concept_elementaryschooldistrict"
+    ]
+  },
+  {
+    "id": "concept_unifiedschooldistrict",
+    "name": "UnifiedSchoolDistrict",
+    "type": "concept",
+    "definition": "A school district that is a unified school district.",
+    "scope": "schools where DOC = '54'",
+    "aliases": [
+      "Unified School District",
+      "unified district",
+      "unified school district"
+    ],
+    "evidence": [
+      "ev_concept_unifiedschooldistrict"
+    ]
+  },
+  {
+    "id": "concept_readingscore",
+    "name": "ReadingScore",
+    "type": "concept",
+    "definition": "Average SAT reading score.",
+    "scope": "satscores",
+    "aliases": [
+      "average score in reading",
+      "reading average",
+      "average reading score",
+      "reading score"
+    ],
+    "evidence": [
+      "ev_concept_readingscore"
+    ]
+  },
+  {
+    "id": "concept_mathscore",
+    "name": "MathScore",
+    "type": "concept",
+    "definition": "Average SAT math score.",
+    "scope": "satscores",
+    "aliases": [
+      "average score in math",
+      "math average",
+      "average math score",
+      "math score"
+    ],
+    "evidence": [
+      "ev_concept_mathscore"
+    ]
+  },
+  {
+    "id": "concept_writingscore",
+    "name": "WritingScore",
+    "type": "concept",
+    "definition": "Average SAT writing score.",
+    "scope": "satscores",
+    "aliases": [
+      "average score in writing",
+      "writing average",
+      "average writing score",
+      "writing score"
+    ],
+    "evidence": [
+      "ev_concept_writingscore"
+    ]
+  },
+  {
+    "id": "concept_enrollmentk12",
+    "name": "EnrollmentK12",
+    "type": "concept",
+    "definition": "Enrollment count for grades K-12.",
+    "scope": "frpm",
+    "aliases": [
+      "enrollment K-12",
+      "K-12 enrollment",
+      "enrollment for grades 1-12",
+      "enrollment k 12"
+    ],
+    "evidence": [
+      "ev_concept_enrollmentk12"
+    ]
+  },
+  {
+    "id": "concept_enrollmentages5to17",
+    "name": "EnrollmentAges5To17",
+    "type": "concept",
+    "definition": "Enrollment count for ages 5-17.",
+    "scope": "frpm",
+    "aliases": [
+      "enrollment ages 5-17",
+      "enrollment for ages 5-17",
+      "enrollment ages 5 to 17"
+    ],
+    "evidence": [
+      "ev_concept_enrollmentages5to17"
+    ]
+  },
+  {
+    "id": "concept_phonenumber",
+    "name": "PhoneNumber",
+    "type": "concept",
+    "definition": "School's phone number.",
+    "scope": "schools",
+    "aliases": [
+      "telephone number",
+      "communication number",
+      "phone number"
+    ],
+    "evidence": [
+      "ev_concept_phonenumber"
+    ]
+  },
+  {
+    "id": "concept_streetaddress",
+    "name": "StreetAddress",
+    "type": "concept",
+    "definition": "School's street address.",
+    "scope": "schools",
+    "aliases": [
+      "full street address",
+      "postal street address",
+      "mailing street",
+      "street address"
+    ],
+    "evidence": [
+      "ev_concept_streetaddress"
+    ]
+  },
+  {
+    "id": "concept_fundingtype",
+    "name": "FundingType",
+    "type": "concept",
+    "definition": "Type of funding for the school.",
+    "scope": "schools",
+    "aliases": [
+      "funding type",
+      "charter funding type"
+    ],
+    "evidence": [
+      "ev_concept_fundingtype"
+    ]
+  },
+  {
+    "id": "concept_opendate",
+    "name": "OpenDate",
+    "type": "concept",
+    "definition": "Date the school opened.",
+    "scope": "schools",
+    "aliases": [
+      "opened after",
+      "open date"
+    ],
+    "evidence": [
+      "ev_concept_opendate"
+    ]
+  },
+  {
+    "id": "concept_closeddate",
+    "name": "ClosedDate",
+    "type": "concept",
+    "definition": "Date the school closed.",
+    "scope": "schools",
+    "aliases": [
+      "closed before",
+      "close date",
+      "closed date"
+    ],
+    "evidence": [
+      "ev_concept_closeddate"
+    ]
+  },
+  {
+    "id": "derived_averagemathscore",
+    "name": "AverageMathScore",
+    "type": "metric",
+    "definition": "Average of SAT math scores across schools. Formula: AVG(AvgScrMath). Inputs: MathScore = satscores.AvgScrMath",
+    "scope": "derived metric",
+    "aliases": [
+      "average of average math score",
+      "mean math score",
+      "average math score"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_averagereadingscore",
+    "name": "AverageReadingScore",
+    "type": "metric",
+    "definition": "Average of SAT reading scores across schools. Formula: AVG(AvgScrRead). Inputs: ReadingScore = satscores.AvgScrRead",
+    "scope": "derived metric",
+    "aliases": [
+      "average of average reading score",
+      "mean reading score",
+      "average reading score"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_averagewritingscore",
+    "name": "AverageWritingScore",
+    "type": "metric",
+    "definition": "Average of SAT writing scores across schools. Formula: AVG(AvgScrWrite). Inputs: WritingScore = satscores.AvgScrWrite",
+    "scope": "derived metric",
+    "aliases": [
+      "average of average writing score",
+      "mean writing score",
+      "average writing score"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_ratiounifiedtoelementary",
+    "name": "RatioUnifiedToElementary",
+    "type": "metric",
+    "definition": "Ratio of the number of unified school districts to elementary school districts. Formula: COUNT(UnifiedSchoolDistrict) / COUNT(ElementarySchoolDistrict). Inputs: UnifiedSchoolDistrict = schools.DOC WHERE DOC = '54'; ElementarySchoolDistrict = schools.DOC WHERE DOC = '52'",
+    "scope": "derived metric",
+    "aliases": [
+      "ratio of unified to elementary",
+      "unified/elementary ratio",
+      "ratio unified to elementary"
+    ],
+    "evidence": []
+  }
+]

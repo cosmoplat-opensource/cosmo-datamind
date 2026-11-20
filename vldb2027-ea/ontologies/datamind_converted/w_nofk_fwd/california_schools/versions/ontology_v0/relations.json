@@ -1,0 +1,60 @@
+[
+  {
+    "id": "rel_derived_eligiblefreerate__from__concept_freemealcountk12",
+    "source": "concept_freemealcountk12",
+    "relation_type": "derivation",
+    "target": "derived_eligiblefreerate",
+    "connection_condition": "same entity and period",
+    "description": "EligibleFreeRate is computed from FreeMealCountK12: FreeMealCountK12 / EnrollmentK12",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_eligiblefreerate__from__concept_enrollmentk12",
+    "source": "concept_enrollmentk12",
+    "relation_type": "derivation",
+    "target": "derived_eligiblefreerate",
+    "connection_condition": "same entity and period",
+    "description": "EligibleFreeRate is computed from EnrollmentK12: FreeMealCountK12 / EnrollmentK12",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_monthlyaverageschoolsopened__from__concept_opendate",
+    "source": "concept_opendate",
+    "relation_type": "derivation",
+    "target": "derived_monthlyaverageschoolsopened",
+    "connection_condition": "same entity and period",
+    "description": "MonthlyAverageSchoolsOpened is computed from OpenDate: COUNT(OpenDate in year) / 12",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_averagewritingscoreperschool__from__concept_averagewritingscore",
+    "source": "concept_averagewritingscore",
+    "relation_type": "derivation",
+    "target": "derived_averagewritingscoreperschool",
+    "connection_condition": "same entity and period",
+    "description": "AverageWritingScorePerSchool is computed from AverageWritingScore: AVG(AvgScrWrite)",
+    "evidence": []
+  },
+  {
+    "id": "rel_schools__frpm__cdscode",
+    "source": "term_schools",
+    "relation_type": "composition",
+    "target": "term_frpm",
+    "connection_condition": "frpm.CDSCode corresponds to schools.CDSCode",
+    "description": "描述; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_schools__frpm__cdscode"
+    ]
+  },
+  {
+    "id": "rel_schools__satscores__cds",
+    "source": "term_schools",
+    "relation_type": "composition",
+    "target": "term_satscores",
+    "connection_condition": "satscores.cds corresponds to schools.CDSCode",
+    "description": "描述; 重叠 91%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_schools__satscores__cds"
+    ]
+  }
+]

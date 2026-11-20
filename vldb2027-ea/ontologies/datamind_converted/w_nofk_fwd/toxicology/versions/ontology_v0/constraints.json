@@ -1,0 +1,161 @@
+[
+  {
+    "id": "c_values_molecule__label",
+    "target": "term_molecule",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "label",
+      "molecule",
+      "+",
+      "-"
+    ],
+    "severity": "warning",
+    "scope": "Filters on molecule.label",
+    "confidence": "high",
+    "description": "molecule.label only takes these stored values: + / -. Filter with the stored spelling.",
+    "evidence": [
+      "ev_values_molecule__label"
+    ]
+  },
+  {
+    "id": "c_values_bond__bond_type",
+    "target": "term_bond",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "bond_type",
+      "bond",
+      "#",
+      "-",
+      "="
+    ],
+    "severity": "warning",
+    "scope": "Filters on bond.bond_type",
+    "confidence": "high",
+    "description": "bond.bond_type only takes these stored values: # / - / =. Filter with the stored spelling.",
+    "evidence": [
+      "ev_values_bond__bond_type"
+    ]
+  },
+  {
+    "id": "c_caveat_0",
+    "target": "term_molecule",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Counting",
+      "atoms",
+      "without",
+      "DISTINCT",
+      "overcount",
+      "when",
+      "atom",
+      "connected",
+      "multiple",
+      "bonds",
+      "appears",
+      "contexts"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Counting atoms without DISTINCT may overcount when an atom is connected to multiple bonds or appears in multiple contexts.",
+    "evidence": [
+      "ev_caveat_0"
+    ]
+  },
+  {
+    "id": "c_caveat_1",
+    "target": "term_molecule",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Molecule",
+      "labels",
+      "have",
+      "values",
+      "other",
+      "than",
+      "which",
+      "affect",
+      "percentage",
+      "calculations",
+      "filtered"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Molecule labels may have values other than '+' and '-', which can affect percentage calculations if not filtered.",
+    "evidence": [
+      "ev_caveat_1"
+    ]
+  },
+  {
+    "id": "c_caveat_2",
+    "target": "term_molecule",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Bond",
+      "types",
+      "have",
+      "values",
+      "other",
+      "than",
+      "which",
+      "affect",
+      "counts",
+      "proportions",
+      "filtered"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Bond types may have values other than '-' and '#', which can affect counts and proportions if not filtered.",
+    "evidence": [
+      "ev_caveat_2"
+    ]
+  },
+  {
+    "id": "c_caveat_3",
+    "target": "term_molecule",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Element",
+      "values",
+      "case",
+      "sensitive",
+      "have",
+      "variants",
+      "leading",
+      "missed",
+      "matches"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Element values may be case-sensitive or have variants (e.g., 'H' vs 'h'), leading to missed matches.",
+    "evidence": [
+      "ev_caveat_3"
+    ]
+  },
+  {
+    "id": "c_caveat_4",
+    "target": "term_molecule",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Bond",
+      "unique",
+      "have",
+      "duplicates",
+      "connected",
+      "table",
+      "causing",
+      "incorrect",
+      "joins"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Bond IDs may not be unique or may have duplicates in the connected table, causing incorrect joins.",
+    "evidence": [
+      "ev_caveat_4"
+    ]
+  }
+]

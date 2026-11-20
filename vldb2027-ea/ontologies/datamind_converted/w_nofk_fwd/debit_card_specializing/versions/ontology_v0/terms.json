@@ -1,0 +1,310 @@
+[
+  {
+    "id": "term_customers",
+    "name": "customers",
+    "type": "entity",
+    "definition": "购买或使用企业产品与服务的交易主体，按客户细分与结算币种区分。 Counterexample: 易与加油站混淆：加油站是交易发生的地点资产，客户是交易主体。 Maturity: Provisional",
+    "scope": "Records of table customers; provenance: direct source customers",
+    "aliases": [
+      "客户"
+    ],
+    "evidence": [
+      "ev_schema_customers"
+    ]
+  },
+  {
+    "id": "term_gasstations",
+    "name": "gasstations",
+    "type": "entity",
+    "definition": "隶属于某连锁品牌、位于特定国家并服务特定细分市场的燃油零售站点。 Counterexample: 易与客户混淆：加油站是零售地点，客户是购买方。 Maturity: Provisional",
+    "scope": "Records of table gasstations; provenance: direct source gasstations",
+    "aliases": [
+      "加油站"
+    ],
+    "evidence": [
+      "ev_schema_gasstations"
+    ]
+  },
+  {
+    "id": "term_products",
+    "name": "products",
+    "type": "entity",
+    "definition": "可供销售或消耗的燃油及相关商品品类，以描述文本区分。 Counterexample: 易与交易混淆：产品是可售品类，交易是一次购买行为。 Maturity: Provisional",
+    "scope": "Records of table products; provenance: direct source products",
+    "aliases": [
+      "产品"
+    ],
+    "evidence": [
+      "ev_schema_products"
+    ]
+  },
+  {
+    "id": "term_transactions",
+    "name": "transactions",
+    "type": "concept",
+    "definition": "在某一时点于某加油站由某客户使用某支付卡购买某产品并产生金额与单价的销售事件。 Counterexample: 易与产品混淆：交易是发生的事件，产品是被购买的对象。 Maturity: Provisional",
+    "scope": "Records of table transactions_1k; provenance: direct source transactions_1k",
+    "aliases": [
+      "交易",
+      "transactions_1k"
+    ],
+    "evidence": [
+      "ev_schema_transactions_1k"
+    ]
+  },
+  {
+    "id": "term_yearmonth",
+    "name": "yearmonth",
+    "type": "entity",
+    "definition": "按客户与月份汇总的消费金额信息记录，用于反映客户在某月的消费总量。 Counterexample: 易与交易混淆：月度消费记录是汇总信息，交易是逐笔明细事件。 Maturity: Provisional",
+    "scope": "Records of table yearmonth; provenance: direct source yearmonth",
+    "aliases": [
+      "客户月度消费记录"
+    ],
+    "evidence": [
+      "ev_schema_yearmonth"
+    ]
+  },
+  {
+    "id": "concept_customersegment",
+    "name": "CustomerSegment",
+    "type": "concept",
+    "definition": "The business segment a customer belongs to (SME, LAM, KAM).",
+    "scope": "customers",
+    "aliases": [
+      "segment",
+      "customer segment",
+      "SME",
+      "LAM",
+      "KAM"
+    ],
+    "evidence": [
+      "ev_concept_customersegment"
+    ]
+  },
+  {
+    "id": "concept_currency",
+    "name": "Currency",
+    "type": "concept",
+    "definition": "The currency in which a customer's consumption is paid.",
+    "scope": "customers",
+    "aliases": [
+      "paid in CZK",
+      "paid in EUR",
+      "pays in euro"
+    ],
+    "evidence": [
+      "ev_concept_currency"
+    ]
+  },
+  {
+    "id": "concept_monthlyconsumption",
+    "name": "MonthlyConsumption",
+    "type": "concept",
+    "definition": "The gas consumption recorded per customer per month.",
+    "scope": "yearmonth",
+    "aliases": [
+      "monthly consumption",
+      "consumption",
+      "gas consumption"
+    ],
+    "evidence": [
+      "ev_concept_monthlyconsumption"
+    ]
+  },
+  {
+    "id": "concept_yearmonth",
+    "name": "YearMonth",
+    "type": "concept",
+    "definition": "The year-month period encoded in the Date column of yearmonth (YYYYMM).",
+    "scope": "yearmonth where Date BETWEEN 201301 AND 201312",
+    "aliases": [
+      "year",
+      "month",
+      "2013",
+      "2012",
+      "September 2013",
+      "201309",
+      "year month"
+    ],
+    "evidence": [
+      "ev_concept_yearmonth"
+    ]
+  },
+  {
+    "id": "concept_transactiondate",
+    "name": "TransactionDate",
+    "type": "concept",
+    "definition": "The date and time a transaction took place.",
+    "scope": "transactions_1k",
+    "aliases": [
+      "date",
+      "time",
+      "2012/8/23 21:20:00",
+      "after 2012/1/1",
+      "transaction date"
+    ],
+    "evidence": [
+      "ev_concept_transactiondate"
+    ]
+  },
+  {
+    "id": "concept_transactiontime",
+    "name": "TransactionTime",
+    "type": "concept",
+    "definition": "The time of day a transaction took place.",
+    "scope": "transactions_1k",
+    "aliases": [
+      "time",
+      "disparate time",
+      "time of transaction",
+      "transaction time"
+    ],
+    "evidence": [
+      "ev_concept_transactiontime"
+    ]
+  },
+  {
+    "id": "concept_gasstationchain",
+    "name": "GasStationChain",
+    "type": "concept",
+    "definition": "The chain a gas station belongs to.",
+    "scope": "gasstations where ChainID = 11",
+    "aliases": [
+      "chain",
+      "chain no. 11",
+      "ChainID",
+      "gas station chain"
+    ],
+    "evidence": [
+      "ev_concept_gasstationchain"
+    ]
+  },
+  {
+    "id": "concept_gasstationcountry",
+    "name": "GasStationCountry",
+    "type": "concept",
+    "definition": "The country where a gas station is located.",
+    "scope": "gasstations where Country = 'CZE'",
+    "aliases": [
+      "country",
+      "Czech Republic",
+      "CZE",
+      "gas station country"
+    ],
+    "evidence": [
+      "ev_concept_gasstationcountry"
+    ]
+  },
+  {
+    "id": "concept_productdescription",
+    "name": "ProductDescription",
+    "type": "concept",
+    "definition": "The description of a product sold at gas stations.",
+    "scope": "products",
+    "aliases": [
+      "product description",
+      "product",
+      "products consumed"
+    ],
+    "evidence": [
+      "ev_concept_productdescription"
+    ]
+  },
+  {
+    "id": "concept_transactionamount",
+    "name": "TransactionAmount",
+    "type": "concept",
+    "definition": "The monetary amount of a transaction.",
+    "scope": "transactions_1k",
+    "aliases": [
+      "amount",
+      "transaction amount",
+      "paid amount"
+    ],
+    "evidence": [
+      "ev_concept_transactionamount"
+    ]
+  },
+  {
+    "id": "derived_annualconsumption",
+    "name": "AnnualConsumption",
+    "type": "metric",
+    "definition": "Total gas consumption of a customer in a given year. Formula: SUM(MonthlyConsumption) WHERE YearMonth BETWEEN 201301 AND 201312. Inputs: MonthlyConsumption = yearmonth.Consumption; YearMonth = yearmonth.Date WHERE Date BETWEEN 201301 AND 201312",
+    "scope": "derived metric",
+    "aliases": [
+      "annual consumption",
+      "total consumption per year",
+      "yearly consumption"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_peakmonth",
+    "name": "PeakMonth",
+    "type": "metric",
+    "definition": "The month with the highest consumption for a customer or segment. Formula: MAX(MonthlyConsumption) per YearMonth. Inputs: MonthlyConsumption = yearmonth.Consumption; YearMonth = yearmonth.Date WHERE Date BETWEEN 201301 AND 201312",
+    "scope": "derived metric",
+    "aliases": [
+      "peak month",
+      "highest monthly consumption",
+      "max month"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_highconsumptioncustomercount",
+    "name": "HighConsumptionCustomerCount",
+    "type": "metric",
+    "definition": "Number of customers whose monthly consumption exceeds 1000. Formula: COUNT(DISTINCT CustomerID) WHERE MonthlyConsumption > 1000. Inputs: MonthlyConsumption = yearmonth.Consumption",
+    "scope": "derived metric",
+    "aliases": [
+      "customers with monthly consumption over 1000",
+      "high consumption customers",
+      "high consumption customer count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_transactioncount",
+    "name": "TransactionCount",
+    "type": "metric",
+    "definition": "Number of transactions matching a condition. Formula: COUNT(TransactionID). Inputs: TransactionDate = transactions_1k.Date; GasStationCountry = gasstations.Country WHERE Country = 'CZE'",
+    "scope": "derived metric",
+    "aliases": [
+      "number of transactions",
+      "how many transactions",
+      "count of transactions",
+      "transaction count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_customersegment",
+    "name": "CustomerSegment",
+    "type": "concept",
+    "definition": "Analysis by customer business segment.",
+    "scope": "customers.Segment codes",
+    "aliases": [
+      "segment",
+      "SME",
+      "LAM",
+      "KAM",
+      "customer segment"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_currency",
+    "name": "Currency",
+    "type": "concept",
+    "definition": "Analysis by payment currency.",
+    "scope": "customers.Currency codes",
+    "aliases": [
+      "currency",
+      "CZK",
+      "EUR"
+    ],
+    "evidence": []
+  }
+]

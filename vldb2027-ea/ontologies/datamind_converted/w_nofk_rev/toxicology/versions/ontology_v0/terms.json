@@ -1,0 +1,498 @@
+[
+  {
+    "id": "term_molecule",
+    "name": "molecule",
+    "type": "entity",
+    "definition": "由两个或多个原子通过化学键结合而成的电中性粒子，是化合物保持化学性质的最小单位。 Counterexample: 易与「原子」混淆：原子是元素的最小单位，不再由化学键拆分；分子由多个原子经化学键结合而成。 Maturity: Provisional",
+    "scope": "Records of table molecule; provenance: direct source molecule",
+    "aliases": [
+      "分子"
+    ],
+    "evidence": [
+      "ev_schema_molecule"
+    ]
+  },
+  {
+    "id": "term_atom",
+    "name": "atom",
+    "type": "entity",
+    "definition": "构成分子的最小粒子单元，具有确定的元素种类，并通过化学键与其他原子相连。 Counterexample: 易与「分子」混淆：分子由多个原子经化学键结合而成，原子是其中的组成单元。 Maturity: Provisional",
+    "scope": "Records of table atom; provenance: direct source atom",
+    "aliases": [
+      "原子"
+    ],
+    "evidence": [
+      "ev_schema_atom"
+    ]
+  },
+  {
+    "id": "term_bond",
+    "name": "bond",
+    "type": "entity",
+    "definition": "分子内两个原子之间形成的连接，具有确定的键类型，是分子结构的组成部分。 Counterexample: 易与「连接记录」混淆：化学键是分子内原子间的化学连接本身，连接记录是记录某化学键所连接的两个原子的信息条目。 Maturity: Provisional",
+    "scope": "Records of table bond; provenance: direct source bond",
+    "aliases": [
+      "化学键"
+    ],
+    "evidence": [
+      "ev_schema_bond"
+    ]
+  },
+  {
+    "id": "term_connected",
+    "name": "connected",
+    "type": "entity",
+    "definition": "记录某化学键所连接的两个原子的信息条目，用于表达原子间的连接关系。 Counterexample: 易与「化学键」混淆：化学键是分子内原子间的化学连接本身，连接记录是描述该连接涉及哪两个原子的信息条目。 Maturity: Provisional",
+    "scope": "Records of table connected; provenance: direct source connected",
+    "aliases": [
+      "原子连接记录"
+    ],
+    "evidence": [
+      "ev_schema_connected"
+    ]
+  },
+  {
+    "id": "concept_molecule",
+    "name": "Molecule",
+    "type": "concept",
+    "definition": "A distinct chemical molecule identified by molecule_id.",
+    "scope": "molecule",
+    "aliases": [
+      "molecule id",
+      "TR molecule",
+      "compound",
+      "entity"
+    ],
+    "evidence": [
+      "ev_concept_molecule"
+    ]
+  },
+  {
+    "id": "concept_atom",
+    "name": "Atom",
+    "type": "concept",
+    "definition": "An individual atom belonging to a molecule, identified by atom_id.",
+    "scope": "atom",
+    "aliases": [
+      "atom id",
+      "atom number",
+      "atom of molecule",
+      "bond atom"
+    ],
+    "evidence": [
+      "ev_concept_atom"
+    ]
+  },
+  {
+    "id": "concept_element",
+    "name": "Element",
+    "type": "concept",
+    "definition": "The chemical element symbol of an atom.",
+    "scope": "atom",
+    "aliases": [
+      "elements",
+      "atom element",
+      "chemical element",
+      "carbon"
+    ],
+    "evidence": [
+      "ev_concept_element"
+    ]
+  },
+  {
+    "id": "concept_carbonatom",
+    "name": "CarbonAtom",
+    "type": "concept",
+    "definition": "Atoms whose element is carbon.",
+    "scope": "atom where element = 'c'",
+    "aliases": [
+      "carbon",
+      "carbon atom",
+      "element c",
+      "C element"
+    ],
+    "evidence": [
+      "ev_concept_carbonatom"
+    ]
+  },
+  {
+    "id": "concept_bond",
+    "name": "Bond",
+    "type": "concept",
+    "definition": "A chemical bond between two atoms, identified by bond_id.",
+    "scope": "bond",
+    "aliases": [
+      "bond id",
+      "connection",
+      "connections",
+      "bonded"
+    ],
+    "evidence": [
+      "ev_concept_bond"
+    ]
+  },
+  {
+    "id": "concept_bondtype",
+    "name": "BondType",
+    "type": "concept",
+    "definition": "The type of a bond, such as single, double, or triple.",
+    "scope": "bond",
+    "aliases": [
+      "bond type",
+      "type of bond",
+      "bond kind"
+    ],
+    "evidence": [
+      "ev_concept_bondtype"
+    ]
+  },
+  {
+    "id": "concept_singlebond",
+    "name": "SingleBond",
+    "type": "concept",
+    "definition": "Bonds of single type.",
+    "scope": "bond where bond_type = '-'",
+    "aliases": [
+      "single bond",
+      "single-bonded",
+      "single bonded",
+      "bond type -"
+    ],
+    "evidence": [
+      "ev_concept_singlebond"
+    ]
+  },
+  {
+    "id": "concept_doublebond",
+    "name": "DoubleBond",
+    "type": "concept",
+    "definition": "Bonds of double type.",
+    "scope": "bond where bond_type = '='",
+    "aliases": [
+      "double bond",
+      "double-bonded",
+      "double bonded",
+      "bond type ="
+    ],
+    "evidence": [
+      "ev_concept_doublebond"
+    ]
+  },
+  {
+    "id": "concept_triplebond",
+    "name": "TripleBond",
+    "type": "concept",
+    "definition": "Bonds of triple type.",
+    "scope": "bond where bond_type = '#'",
+    "aliases": [
+      "triple bond",
+      "triple-bonded",
+      "triple bonded",
+      "bond type #"
+    ],
+    "evidence": [
+      "ev_concept_triplebond"
+    ]
+  },
+  {
+    "id": "concept_connectedatom",
+    "name": "ConnectedAtom",
+    "type": "concept",
+    "definition": "Atoms that participate in a bond, recorded in the connected table.",
+    "scope": "connected",
+    "aliases": [
+      "connected",
+      "bonded atom",
+      "atom connection",
+      "involved atom",
+      "atom in bond",
+      "connected atom"
+    ],
+    "evidence": [
+      "ev_concept_connectedatom"
+    ]
+  },
+  {
+    "id": "concept_carcinogeniclabel",
+    "name": "CarcinogenicLabel",
+    "type": "concept",
+    "definition": "Molecules labeled as carcinogenic.",
+    "scope": "molecule where label = '+'",
+    "aliases": [
+      "carcinogenic",
+      "carcinogenic molecule",
+      "label +",
+      "toxicology label",
+      "carcinogenic label"
+    ],
+    "evidence": [
+      "ev_concept_carcinogeniclabel"
+    ]
+  },
+  {
+    "id": "concept_noncarcinogeniclabel",
+    "name": "NonCarcinogenicLabel",
+    "type": "concept",
+    "definition": "Molecules labeled as non-carcinogenic.",
+    "scope": "molecule where label = '-'",
+    "aliases": [
+      "non-carcinogenic",
+      "non carcinogenic",
+      "label -",
+      "not carcinogenic",
+      "non carcinogenic label"
+    ],
+    "evidence": [
+      "ev_concept_noncarcinogeniclabel"
+    ]
+  },
+  {
+    "id": "derived_carbonpercentage",
+    "name": "CarbonPercentage",
+    "type": "metric",
+    "definition": "Share of atoms that are carbon. Formula: CarbonAtom / Atom. Inputs: CarbonAtom = atom.element WHERE element = 'c'; Atom = atom.atom_id",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of carbon",
+      "carbon percent",
+      "carbon ratio",
+      "carbon percentage"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_doublebondpercentage",
+    "name": "DoubleBondPercentage",
+    "type": "metric",
+    "definition": "Share of bonds that are double bonds. Formula: DoubleBond / Bond. Inputs: DoubleBond = bond.bond_type WHERE bond_type = '='; Bond = bond.bond_id",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of double bonds",
+      "double bond percent",
+      "double bond ratio",
+      "double bond percentage"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_singlebondpercentage",
+    "name": "SingleBondPercentage",
+    "type": "metric",
+    "definition": "Share of bonds that are single bonds. Formula: SingleBond / Bond. Inputs: SingleBond = bond.bond_type WHERE bond_type = '-'; Bond = bond.bond_id",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of single bonds",
+      "single bond percent",
+      "single bond ratio",
+      "single bond percentage"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_triplebondpercentage",
+    "name": "TripleBondPercentage",
+    "type": "metric",
+    "definition": "Share of bonds that are triple bonds. Formula: TripleBond / Bond. Inputs: TripleBond = bond.bond_type WHERE bond_type = '#'; Bond = bond.bond_id",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of triple bonds",
+      "triple bond percent",
+      "triple bond ratio",
+      "triple bond percentage"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_carcinogenicmoleculecount",
+    "name": "CarcinogenicMoleculeCount",
+    "type": "metric",
+    "definition": "Count of molecules labeled carcinogenic. Formula: COUNT(CarcinogenicLabel). Inputs: CarcinogenicLabel = molecule.label WHERE label = '+'",
+    "scope": "derived metric",
+    "aliases": [
+      "number of carcinogenic molecules",
+      "carcinogenic count",
+      "how many carcinogenic",
+      "carcinogenic molecule count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_noncarcinogenicmoleculecount",
+    "name": "NonCarcinogenicMoleculeCount",
+    "type": "metric",
+    "definition": "Count of molecules labeled non-carcinogenic. Formula: COUNT(NonCarcinogenicLabel). Inputs: NonCarcinogenicLabel = molecule.label WHERE label = '-'",
+    "scope": "derived metric",
+    "aliases": [
+      "number of non-carcinogenic molecules",
+      "non-carcinogenic count",
+      "non carcinogenic molecule count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_averagebondspermolecule",
+    "name": "AverageBondsPerMolecule",
+    "type": "metric",
+    "definition": "Average number of bonds per molecule. Formula: Bond / Molecule. Inputs: Bond = bond.bond_id; Molecule = molecule.molecule_id",
+    "scope": "derived metric",
+    "aliases": [
+      "average bonds",
+      "average number of bonds",
+      "bonds per molecule",
+      "average bonds per molecule"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_averageatomspermolecule",
+    "name": "AverageAtomsPerMolecule",
+    "type": "metric",
+    "definition": "Average number of atoms per molecule. Formula: Atom / Molecule. Inputs: Atom = atom.atom_id; Molecule = molecule.molecule_id",
+    "scope": "derived metric",
+    "aliases": [
+      "average atoms",
+      "average number of atoms",
+      "atoms per molecule",
+      "average atoms per molecule"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_atomspermolecule",
+    "name": "AtomsPerMolecule",
+    "type": "metric",
+    "definition": "Number of atoms belonging to each molecule. Formula: COUNT(Atom) GROUP BY Molecule. Inputs: Atom = atom.atom_id; Molecule = molecule.molecule_id",
+    "scope": "derived metric",
+    "aliases": [
+      "atoms per molecule",
+      "molecule atom count",
+      "number of atoms in molecule"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_bondspermolecule",
+    "name": "BondsPerMolecule",
+    "type": "metric",
+    "definition": "Number of bonds belonging to each molecule. Formula: COUNT(Bond) GROUP BY Molecule. Inputs: Bond = bond.bond_id; Molecule = molecule.molecule_id",
+    "scope": "derived metric",
+    "aliases": [
+      "bonds per molecule",
+      "molecule bond count",
+      "number of bonds in molecule"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_doublebondcountpermolecule",
+    "name": "DoubleBondCountPerMolecule",
+    "type": "metric",
+    "definition": "Number of double bonds in each molecule. Formula: COUNT(DoubleBond) GROUP BY Molecule. Inputs: DoubleBond = bond.bond_type WHERE bond_type = '='; Molecule = molecule.molecule_id",
+    "scope": "derived metric",
+    "aliases": [
+      "double bonds per molecule",
+      "number of double bonds",
+      "double bond count",
+      "double bond count per molecule"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_singlebondcountpermolecule",
+    "name": "SingleBondCountPerMolecule",
+    "type": "metric",
+    "definition": "Number of single bonds in each molecule. Formula: COUNT(SingleBond) GROUP BY Molecule. Inputs: SingleBond = bond.bond_type WHERE bond_type = '-'; Molecule = molecule.molecule_id",
+    "scope": "derived metric",
+    "aliases": [
+      "single bonds per molecule",
+      "number of single bonds",
+      "single bond count",
+      "single bond count per molecule"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_triplebondcountpermolecule",
+    "name": "TripleBondCountPerMolecule",
+    "type": "metric",
+    "definition": "Number of triple bonds in each molecule. Formula: COUNT(TripleBond) GROUP BY Molecule. Inputs: TripleBond = bond.bond_type WHERE bond_type = '#'; Molecule = molecule.molecule_id",
+    "scope": "derived metric",
+    "aliases": [
+      "triple bonds per molecule",
+      "number of triple bonds",
+      "triple bond count",
+      "triple bond count per molecule"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_majoritybondtype",
+    "name": "MajorityBondType",
+    "type": "metric",
+    "definition": "The bond type with the highest count within a molecule. Formula: MAX(COUNT(BondType)) GROUP BY Molecule. Inputs: BondType = bond.bond_type; Molecule = molecule.molecule_id",
+    "scope": "derived metric",
+    "aliases": [
+      "majority bond type",
+      "most common bond type",
+      "dominant bond"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_unbondedatomcount",
+    "name": "UnbondedAtomCount",
+    "type": "metric",
+    "definition": "Atoms that do not appear in the connected table. Formula: COUNT(Atom) WHERE Atom NOT IN ConnectedAtom. Inputs: Atom = atom.atom_id; ConnectedAtom = connected.atom_id",
+    "scope": "derived metric",
+    "aliases": [
+      "atoms that cannot bond",
+      "unbonded atoms",
+      "atoms not in connected",
+      "unbonded atom count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_carcinogenicity",
+    "name": "Carcinogenicity",
+    "type": "concept",
+    "definition": "Classifies molecules by carcinogenic label and counts or filters molecules accordingly.",
+    "scope": "molecule.label codes",
+    "aliases": [
+      "carcinogenic",
+      "toxicology",
+      "label",
+      "cancer risk",
+      "carcinogenicity"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_bondtype",
+    "name": "BondType",
+    "type": "concept",
+    "definition": "Classifies bonds by type and supports counting or filtering by bond type.",
+    "scope": "bond.bond_type codes",
+    "aliases": [
+      "bond type",
+      "single bond",
+      "double bond",
+      "triple bond"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_elementtype",
+    "name": "ElementType",
+    "type": "concept",
+    "definition": "Classifies atoms by chemical element and supports element-based counting or filtering.",
+    "scope": "atom.element codes",
+    "aliases": [
+      "element",
+      "chemical element",
+      "atom element",
+      "element type"
+    ],
+    "evidence": []
+  }
+]

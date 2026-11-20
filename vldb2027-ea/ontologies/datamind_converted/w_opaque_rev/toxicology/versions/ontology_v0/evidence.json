@@ -1,0 +1,98 @@
+[
+  {
+    "id": "ev_schema_tab03",
+    "source": "toxicology.sqlite",
+    "query": "PRAGMA table_info(tab03)",
+    "result": "Table tab03(fld001, fld006, fld004)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_schema_tab04",
+    "source": "toxicology.sqlite",
+    "query": "PRAGMA table_info(tab04)",
+    "result": "Table tab04(fld002, fld007)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_values_tab04__fld007",
+    "source": "toxicology.sqlite",
+    "query": "SELECT DISTINCT fld007 FROM tab04",
+    "result": "+ / -",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_concept_molecule",
+    "source": "toxicology.sqlite",
+    "query": "SELECT COUNT(*) FROM tab04",
+    "result": "343 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_concept_atom",
+    "source": "toxicology.sqlite",
+    "query": "SELECT COUNT(*) FROM tab03",
+    "result": "24758 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_concept_bond",
+    "source": "toxicology.sqlite",
+    "query": "SELECT COUNT(*) FROM tab03",
+    "result": "24758 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_concept_carcinogenicity",
+    "source": "toxicology.sqlite",
+    "query": "SELECT COUNT(*) FROM tab04",
+    "result": "343 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_concept_connectedatom",
+    "source": "toxicology.sqlite",
+    "query": "SELECT COUNT(*) FROM tab03",
+    "result": "24758 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_caveat_0",
+    "source": "toxicology.sqlite",
+    "query": "SELECT fld001 FROM tab03 WHERE substr(fld001,7,1)='4' LIMIT 5",
+    "result": "[[\"TR000_4\"], [\"TR001_4\"], [\"TR001_4\"]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_caveat_1",
+    "source": "toxicology.sqlite",
+    "query": "SELECT COUNT(*) FROM tab03 WHERE fld001='TR009_12' OR fld006='TR009_12'",
+    "result": "[[6]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_caveat_2",
+    "source": "toxicology.sqlite",
+    "query": "SELECT DISTINCT substr(fld001,1,5) FROM tab03 LIMIT 10",
+    "result": "[[\"TR000\"], [\"TR001\"], [\"TR002\"]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-11-06"
+  },
+  {
+    "id": "ev_caveat_3",
+    "source": "toxicology.sqlite",
+    "query": "SELECT fld007, COUNT(*) FROM tab04 GROUP BY fld007",
+    "result": "[[\"+\", 152], [\"-\", 191]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-11-06"
+  }
+]

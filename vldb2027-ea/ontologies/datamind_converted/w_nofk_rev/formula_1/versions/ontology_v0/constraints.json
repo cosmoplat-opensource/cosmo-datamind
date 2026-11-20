@@ -1,0 +1,252 @@
+[
+  {
+    "id": "c_values_constructorresults__status",
+    "target": "term_constructorresults",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "status",
+      "constructorResults",
+      "D"
+    ],
+    "severity": "warning",
+    "scope": "Filters on constructorResults.status",
+    "confidence": "high",
+    "description": "constructorResults.status only takes these stored values: D. Filter with the stored spelling.",
+    "evidence": [
+      "ev_values_constructorresults__status"
+    ]
+  },
+  {
+    "id": "c_values_pitstops__stop",
+    "target": "term_pitstops",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "stop",
+      "pitStops",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "severity": "warning",
+    "scope": "Filters on pitStops.stop",
+    "confidence": "high",
+    "description": "pitStops.stop only takes these stored values: 1 / 2 / 3 / 4 / 5 / 6. Filter with the stored spelling.",
+    "evidence": [
+      "ev_values_pitstops__stop"
+    ]
+  },
+  {
+    "id": "c_caveat_0",
+    "target": "term_circuits",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Some",
+      "race",
+      "results",
+      "have",
+      "NULL",
+      "time",
+      "values",
+      "indicating",
+      "driver",
+      "finish"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Some race results have NULL time values, indicating the driver did not finish the race.",
+    "evidence": [
+      "ev_caveat_0"
+    ]
+  },
+  {
+    "id": "c_caveat_1",
+    "target": "term_circuits",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "status",
+      "table",
+      "uses",
+      "statusId",
+      "represent",
+      "different",
+      "outcomes",
+      "specifically",
+      "means",
+      "Accident"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "The status table uses statusId to represent different outcomes; statusId = 3 specifically means 'Accident'.",
+    "evidence": [
+      "ev_caveat_1"
+    ]
+  },
+  {
+    "id": "c_caveat_2",
+    "target": "term_circuits",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Driver",
+      "full",
+      "names",
+      "split",
+      "across",
+      "forename",
+      "surname",
+      "columns",
+      "queries",
+      "must",
+      "concatenate",
+      "them"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Driver full names are split across forename and surname columns, so queries must concatenate them.",
+    "evidence": [
+      "ev_caveat_2"
+    ]
+  },
+  {
+    "id": "c_caveat_3",
+    "target": "term_circuits",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Qualifying",
+      "times",
+      "NULL",
+      "drivers",
+      "participate",
+      "that",
+      "session"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Qualifying times (q1, q2, q3) may be NULL for drivers who did not participate in that session.",
+    "evidence": [
+      "ev_caveat_3"
+    ]
+  },
+  {
+    "id": "c_caveat_4",
+    "target": "term_circuits",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "fastest",
+      "speed",
+      "column",
+      "contain",
+      "NULL",
+      "values",
+      "races",
+      "where",
+      "recorded"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "The fastest lap speed column may contain NULL values for races where no fastest lap was recorded.",
+    "evidence": [
+      "ev_caveat_4"
+    ]
+  },
+  {
+    "id": "c_caveat_5",
+    "target": "term_circuits",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "stop",
+      "duration",
+      "stored",
+      "string",
+      "need",
+      "conversion",
+      "calculations"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Pit stop duration is stored as a string and may need conversion for calculations.",
+    "evidence": [
+      "ev_caveat_5"
+    ]
+  },
+  {
+    "id": "c_caveat_6",
+    "target": "term_circuits",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Race",
+      "names",
+      "have",
+      "slight",
+      "variations",
+      "typos",
+      "AustChineseralian",
+      "Grand",
+      "Prix",
+      "exact",
+      "matching",
+      "fail"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Race names may have slight variations or typos (e.g., 'AustChineseralian Grand Prix'), so exact matching may fail.",
+    "evidence": [
+      "ev_caveat_6"
+    ]
+  },
+  {
+    "id": "c_caveat_7",
+    "target": "term_circuits",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "earliest",
+      "recorded",
+      "year",
+      "month",
+      "correspond",
+      "first",
+      "race",
+      "dataset",
+      "data",
+      "ordering"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "The earliest recorded year and month may not correspond to the first race in the dataset due to data ordering.",
+    "evidence": [
+      "ev_caveat_7"
+    ]
+  },
+  {
+    "id": "c_caveat_8",
+    "target": "term_circuits",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Constructor",
+      "nationality",
+      "stored",
+      "constructors",
+      "table",
+      "directly",
+      "linked",
+      "results"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Constructor nationality is stored in the constructors table, not directly linked to results.",
+    "evidence": [
+      "ev_caveat_8"
+    ]
+  }
+]

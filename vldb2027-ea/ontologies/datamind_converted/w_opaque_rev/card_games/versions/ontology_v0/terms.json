@@ -1,0 +1,626 @@
+[
+  {
+    "id": "term_tab01",
+    "name": "tab01",
+    "type": "entity",
+    "definition": "主业务记录 Counterexample: 与 tab02/tab04 等明细表易混：本表列域最宽，疑为主记录载体，需业务确认其真实业务含义 Maturity: Provisional",
+    "scope": "Records of table tab01; provenance: direct source tab01",
+    "aliases": [
+      "主业务记录"
+    ],
+    "evidence": [
+      "ev_schema_tab01"
+    ]
+  },
+  {
+    "id": "term_tab02",
+    "name": "tab02",
+    "type": "entity",
+    "definition": "业务明细记录 Counterexample: 与 tab05 易混：两者均含 fld075 与 fld001，需按列域区分 Maturity: Provisional",
+    "scope": "Records of table tab02; provenance: direct source tab02",
+    "aliases": [
+      "业务明细记录"
+    ],
+    "evidence": [
+      "ev_schema_tab02"
+    ]
+  },
+  {
+    "id": "term_tab03",
+    "name": "tab03",
+    "type": "entity",
+    "definition": "业务分类记录 Counterexample: 与 tab06 易混：两者均含 fld072，需确认 fld072 指向 Maturity: Provisional",
+    "scope": "Records of table tab03; provenance: direct source tab03",
+    "aliases": [
+      "业务分类记录"
+    ],
+    "evidence": [
+      "ev_schema_tab03"
+    ]
+  },
+  {
+    "id": "term_tab04",
+    "name": "tab04",
+    "type": "entity",
+    "definition": "业务扩展记录 Counterexample: 与 tab02 易混：两者均含 fld049、fld070，需按列域与粒度区分 Maturity: Provisional",
+    "scope": "Records of table tab04; provenance: direct source tab04",
+    "aliases": [
+      "业务扩展记录"
+    ],
+    "evidence": [
+      "ev_schema_tab04"
+    ]
+  },
+  {
+    "id": "term_tab05",
+    "name": "tab05",
+    "type": "entity",
+    "definition": "业务关联记录 Counterexample: 与 tab02 易混：两者均含 fld075，需确认 fld075 语义 Maturity: Provisional",
+    "scope": "Records of table tab05; provenance: direct source tab05",
+    "aliases": [
+      "业务关联记录"
+    ],
+    "evidence": [
+      "ev_schema_tab05"
+    ]
+  },
+  {
+    "id": "term_tab06",
+    "name": "tab06",
+    "type": "entity",
+    "definition": "业务辅助记录 Counterexample: 与 tab03 易混：两者均含 fld072，需确认 fld072 指向 Maturity: Provisional",
+    "scope": "Records of table tab06; provenance: direct source tab06",
+    "aliases": [
+      "业务辅助记录"
+    ],
+    "evidence": [
+      "ev_schema_tab06"
+    ]
+  },
+  {
+    "id": "concept_card",
+    "name": "Card",
+    "type": "concept",
+    "definition": "A unique printing of a Magic card, identified by fld001.",
+    "scope": "tab01",
+    "aliases": [
+      "cards",
+      "printing",
+      "tab01 record"
+    ],
+    "evidence": [
+      "ev_concept_card"
+    ]
+  },
+  {
+    "id": "concept_cardname",
+    "name": "CardName",
+    "type": "concept",
+    "definition": "The printed name of a card.",
+    "scope": "tab01",
+    "aliases": [
+      "name of card",
+      "card name",
+      "names of all the cards"
+    ],
+    "evidence": [
+      "ev_concept_cardname"
+    ]
+  },
+  {
+    "id": "concept_bordercolor",
+    "name": "BorderColor",
+    "type": "concept",
+    "definition": "The border style/color of the card face.",
+    "scope": "tab01",
+    "aliases": [
+      "border color",
+      "border",
+      "borderless",
+      "borderless card"
+    ],
+    "evidence": [
+      "ev_concept_bordercolor"
+    ]
+  },
+  {
+    "id": "concept_borderlesscard",
+    "name": "BorderlessCard",
+    "type": "concept",
+    "definition": "A card whose border is borderless.",
+    "scope": "tab01 where fld005 = 'borderless'",
+    "aliases": [
+      "borderless card",
+      "borderless cards",
+      "borderless"
+    ],
+    "evidence": [
+      "ev_concept_borderlesscard"
+    ]
+  },
+  {
+    "id": "concept_power",
+    "name": "Power",
+    "type": "concept",
+    "definition": "The power value of a creature card; '*' or NULL means unknown/infinite.",
+    "scope": "tab01",
+    "aliases": [
+      "unknown power",
+      "infinite power"
+    ],
+    "evidence": [
+      "ev_concept_power"
+    ]
+  },
+  {
+    "id": "concept_unknownpowercard",
+    "name": "UnknownPowerCard",
+    "type": "concept",
+    "definition": "A card whose power is '*' or NULL.",
+    "scope": "tab01 where fld055 = '*' OR fld055 IS NULL",
+    "aliases": [
+      "unknown power",
+      "unknown power cards",
+      "infinite power",
+      "unknown power card"
+    ],
+    "evidence": [
+      "ev_concept_unknownpowercard"
+    ]
+  },
+  {
+    "id": "concept_infinitepowercard",
+    "name": "InfinitePowerCard",
+    "type": "concept",
+    "definition": "A card whose power is '*'.",
+    "scope": "tab01 where fld055 = '*'",
+    "aliases": [
+      "infinite power",
+      "power is infinite",
+      "infinite power card"
+    ],
+    "evidence": [
+      "ev_concept_infinitepowercard"
+    ]
+  },
+  {
+    "id": "concept_promotionalprinting",
+    "name": "PromotionalPrinting",
+    "type": "concept",
+    "definition": "Flag indicating the card is a promotional printing.",
+    "scope": "tab01 where fld029 = 1",
+    "aliases": [
+      "promotional printing",
+      "is a promotional printing"
+    ],
+    "evidence": [
+      "ev_concept_promotionalprinting"
+    ]
+  },
+  {
+    "id": "concept_framestyle",
+    "name": "FrameStyle",
+    "type": "concept",
+    "definition": "The frame style of the card.",
+    "scope": "tab01",
+    "aliases": [
+      "frame style",
+      "frame styles"
+    ],
+    "evidence": [
+      "ev_concept_framestyle"
+    ]
+  },
+  {
+    "id": "concept_textboxflag",
+    "name": "TextBoxFlag",
+    "type": "concept",
+    "definition": "Flag indicating presence of a text box (0 = no text box).",
+    "scope": "tab01 where fld034 = 0",
+    "aliases": [
+      "text box",
+      "do not have a text box",
+      "no text box",
+      "text box flag"
+    ],
+    "evidence": [
+      "ev_concept_textboxflag"
+    ]
+  },
+  {
+    "id": "concept_storyspotlight",
+    "name": "StorySpotlight",
+    "type": "concept",
+    "definition": "Flag indicating the card is a Story Spotlight card.",
+    "scope": "tab01 where fld001 IS NOT NULL AND fld034 IS NOT NULL",
+    "aliases": [
+      "Story Spotlight",
+      "isStorylight",
+      "Story Spotlight cards",
+      "story spotlight"
+    ],
+    "evidence": [
+      "ev_concept_storyspotlight"
+    ]
+  },
+  {
+    "id": "concept_foil",
+    "name": "Foil",
+    "type": "concept",
+    "definition": "Foil availability; powerful foil when both foil columns are non-null.",
+    "scope": "tab01 where fld006 IS NOT NULL AND fld007 IS NOT NULL",
+    "aliases": [
+      "powerful foils",
+      "incredibly powerful",
+      "foil is incredibly powerful"
+    ],
+    "evidence": [
+      "ev_concept_foil"
+    ]
+  },
+  {
+    "id": "concept_color",
+    "name": "Color",
+    "type": "concept",
+    "definition": "The color identity letter of the card.",
+    "scope": "tab01 where fld010 = 'B'",
+    "aliases": [
+      "black color",
+      "black"
+    ],
+    "evidence": [
+      "ev_concept_color"
+    ]
+  },
+  {
+    "id": "concept_cardtype",
+    "name": "CardType",
+    "type": "concept",
+    "definition": "The card type (e.g., Artifact).",
+    "scope": "tab01 where fld053 = 'Artifact'",
+    "aliases": [
+      "type",
+      "types",
+      "Artifact card",
+      "Artifact",
+      "card type"
+    ],
+    "evidence": [
+      "ev_concept_cardtype"
+    ]
+  },
+  {
+    "id": "concept_supertype",
+    "name": "Supertype",
+    "type": "concept",
+    "definition": "The supertype of the card.",
+    "scope": "tab01 where fld065 IS NOT NULL",
+    "aliases": [
+      "supertypes",
+      "all types"
+    ],
+    "evidence": [
+      "ev_concept_supertype"
+    ]
+  },
+  {
+    "id": "concept_subtype",
+    "name": "Subtype",
+    "type": "concept",
+    "definition": "The subtype of the card.",
+    "scope": "tab01 where fld066 IS NOT NULL",
+    "aliases": [
+      "subtypes",
+      "all types"
+    ],
+    "evidence": [
+      "ev_concept_subtype"
+    ]
+  },
+  {
+    "id": "concept_cardset",
+    "name": "CardSet",
+    "type": "concept",
+    "definition": "The set/expansion the card belongs to.",
+    "scope": "tab01",
+    "aliases": [
+      "set",
+      "card set",
+      "expansion"
+    ],
+    "evidence": [
+      "ev_concept_cardset"
+    ]
+  },
+  {
+    "id": "concept_language",
+    "name": "Language",
+    "type": "concept",
+    "definition": "The language of the card printing.",
+    "scope": "tab02 where fld075 IN ('Italian','Chinese Simplified','German')",
+    "aliases": [
+      "translation",
+      "Italian translation",
+      "Simplified Chinese",
+      "German",
+      "foreign language"
+    ],
+    "evidence": [
+      "ev_concept_language"
+    ]
+  },
+  {
+    "id": "concept_translation",
+    "name": "Translation",
+    "type": "concept",
+    "definition": "A translated name for the card/set; non-null means a translation exists.",
+    "scope": "tab05 where fld094 IS NOT NULL",
+    "aliases": [
+      "translation of the name",
+      "have a translation"
+    ],
+    "evidence": [
+      "ev_concept_translation"
+    ]
+  },
+  {
+    "id": "concept_formatlegality",
+    "name": "FormatLegality",
+    "type": "concept",
+    "definition": "Legality status of a card in a format.",
+    "scope": "tab03 where fld077 IN ('Legal','Banned')",
+    "aliases": [
+      "legal for commander play format",
+      "legal",
+      "banned",
+      "formats in which these cards are legal",
+      "format legality"
+    ],
+    "evidence": [
+      "ev_concept_formatlegality"
+    ]
+  },
+  {
+    "id": "concept_commanderlegality",
+    "name": "CommanderLegality",
+    "type": "concept",
+    "definition": "Legality of a card in the Commander format.",
+    "scope": "tab03 where fld076 = 'commander' AND fld077 = 'Legal'",
+    "aliases": [
+      "commander play format",
+      "legal for commander",
+      "commander legality"
+    ],
+    "evidence": [
+      "ev_concept_commanderlegality"
+    ]
+  },
+  {
+    "id": "concept_bannedcard",
+    "name": "BannedCard",
+    "type": "concept",
+    "definition": "A card that is banned in some format.",
+    "scope": "tab03 where fld077 = 'Banned'",
+    "aliases": [
+      "banned cards",
+      "banned",
+      "banned card"
+    ],
+    "evidence": [
+      "ev_concept_bannedcard"
+    ]
+  },
+  {
+    "id": "concept_ruling",
+    "name": "Ruling",
+    "type": "concept",
+    "definition": "A ruling entry associated with a card.",
+    "scope": "tab06",
+    "aliases": [
+      "ruling information",
+      "rulings"
+    ],
+    "evidence": [
+      "ev_concept_ruling"
+    ]
+  },
+  {
+    "id": "concept_availabilityoutsideus",
+    "name": "AvailabilityOutsideUS",
+    "type": "concept",
+    "definition": "Flag indicating the card is only available outside the US.",
+    "scope": "tab04 where fld083 = 1",
+    "aliases": [
+      "only available outside the United States",
+      "outside the United States",
+      "availability outside us"
+    ],
+    "evidence": [
+      "ev_concept_availabilityoutsideus"
+    ]
+  },
+  {
+    "id": "concept_triggeredabilitytext",
+    "name": "TriggeredAbilityText",
+    "type": "concept",
+    "definition": "Card text containing 'triggered ability'.",
+    "scope": "tab01 where fld001 IS NOT NULL",
+    "aliases": [
+      "triggered ability",
+      "info about the triggered ability",
+      "triggered ability text"
+    ],
+    "evidence": [
+      "ev_concept_triggeredabilitytext"
+    ]
+  },
+  {
+    "id": "derived_borderlesscardpercentage",
+    "name": "BorderlessCardPercentage",
+    "type": "metric",
+    "definition": "Share of cards that are borderless. Formula: BorderlessCard / Card * 100. Inputs: BorderlessCard = tab01.fld001 WHERE fld005 = 'borderless'; Card = tab01.fld001",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of borderless cards",
+      "borderless percentage",
+      "borderless card percentage"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_chinesesimplifiedcardpercentage",
+    "name": "ChineseSimplifiedCardPercentage",
+    "type": "metric",
+    "definition": "Share of cards available in Simplified Chinese. Formula: COUNT(Card WHERE Language = 'Chinese Simplified') / Card * 100. Inputs: Card = tab01.fld001; Language = tab02.fld075 WHERE fld075 IN ('Italian','Chinese Simplified','German')",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of the cards available in Chinese Simplified",
+      "Chinese Simplified percentage",
+      "chinese simplified card percentage"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_storyspotlightnotextboxpercentage",
+    "name": "StorySpotlightNoTextBoxPercentage",
+    "type": "metric",
+    "definition": "Share of Story Spotlight cards lacking a text box. Formula: COUNT(StorySpotlight WHERE TextBoxFlag = 0) / COUNT(StorySpotlight) * 100. Inputs: StorySpotlight = tab01.fld001 WHERE fld001 IS NOT NULL AND fld034 IS NOT NULL; TextBoxFlag = tab01.fld034 WHERE fld034 = 0",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of Story Spotlight cards that do not have a text ",
+      "story spotlight no text box percentage"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_incrediblypowerfulcardpercentage",
+    "name": "IncrediblyPowerfulCardPercentage",
+    "type": "metric",
+    "definition": "Share of cards with powerful foils in a set. Formula: COUNT(Foil) / COUNT(Card) * 100. Inputs: Foil = tab01.fld006 WHERE fld006 IS NOT NULL AND fld007 IS NOT NULL; Card = tab01.fld001",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of incredibly powerful cards",
+      "powerful foil percentage",
+      "incredibly powerful card percentage"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_unknownpowercardcount",
+    "name": "UnknownPowerCardCount",
+    "type": "metric",
+    "definition": "Number of cards with unknown/infinite power. Formula: COUNT(UnknownPowerCard). Inputs: UnknownPowerCard = tab01.fld001 WHERE fld055 = '*' OR fld055 IS NULL",
+    "scope": "derived metric",
+    "aliases": [
+      "how many cards have infinite power",
+      "unknown power card count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_infinitepowercardcount",
+    "name": "InfinitePowerCardCount",
+    "type": "metric",
+    "definition": "Number of cards with power '*'. Formula: COUNT(InfinitePowerCard). Inputs: InfinitePowerCard = tab01.fld001 WHERE fld055 = '*'",
+    "scope": "derived metric",
+    "aliases": [
+      "how many cards have infinite power",
+      "infinite power card count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_unknownpowertriggeredabilitycount",
+    "name": "UnknownPowerTriggeredAbilityCount",
+    "type": "metric",
+    "definition": "Number of unknown-power cards whose text mentions triggered ability. Formula: COUNT(UnknownPowerCard WHERE TriggeredAbilityText). Inputs: UnknownPowerCard = tab01.fld001 WHERE fld055 = '*' OR fld055 IS NULL; TriggeredAbilityText = tab01.fld001 WHERE fld001 IS NOT NULL",
+    "scope": "derived metric",
+    "aliases": [
+      "unknown power cards contain info about the triggered ability",
+      "unknown power triggered ability count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_maxrulingcount",
+    "name": "MaxRulingCount",
+    "type": "metric",
+    "definition": "Maximum number of rulings for any card. Formula: MAX(COUNT(Ruling) GROUP BY Card). Inputs: Ruling = tab06.fld072; Card = tab01.fld001",
+    "scope": "derived metric",
+    "aliases": [
+      "most ruling information",
+      "max rulings",
+      "max ruling count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_cardlegality",
+    "name": "CardLegality",
+    "type": "concept",
+    "definition": "Which formats a card is legal or banned in.",
+    "scope": "tab03.fld076 codes",
+    "aliases": [
+      "legality",
+      "format legality",
+      "banned",
+      "legal formats",
+      "card legality"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_cardlanguage",
+    "name": "CardLanguage",
+    "type": "concept",
+    "definition": "Languages in which card printings are available.",
+    "scope": "tab02.fld075 codes",
+    "aliases": [
+      "language",
+      "translation",
+      "foreign language",
+      "card language"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_cardborder",
+    "name": "CardBorder",
+    "type": "concept",
+    "definition": "Border styles of card faces.",
+    "scope": "tab01.fld005 codes",
+    "aliases": [
+      "border",
+      "border color",
+      "borderless",
+      "card border"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_cardcolor",
+    "name": "CardColor",
+    "type": "concept",
+    "definition": "Color identity letters of cards.",
+    "scope": "tab01.fld010 codes",
+    "aliases": [
+      "color",
+      "color identity",
+      "card color"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_cardtypetheme",
+    "name": "CardTypeTheme",
+    "type": "concept",
+    "definition": "Card types such as Artifact, Creature, etc.",
+    "scope": "tab01.fld053 codes",
+    "aliases": [
+      "card type",
+      "types",
+      "card type theme"
+    ],
+    "evidence": []
+  }
+]

@@ -1,0 +1,106 @@
+[
+  {
+    "id": "ev_schema_customers",
+    "source": "debit_card_specializing.sqlite",
+    "query": "PRAGMA table_info(customers)",
+    "result": "Table customers(CustomerID, Segment, Currency)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_customers__segment",
+    "source": "debit_card_specializing.sqlite",
+    "query": "SELECT DISTINCT Segment FROM customers",
+    "result": "KAM / LAM / SME",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_customers__currency",
+    "source": "debit_card_specializing.sqlite",
+    "query": "SELECT DISTINCT Currency FROM customers",
+    "result": "CZK / EUR",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_gasstations",
+    "source": "debit_card_specializing.sqlite",
+    "query": "PRAGMA table_info(gasstations)",
+    "result": "Table gasstations(GasStationID, ChainID, Country, Segment)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_gasstations__country",
+    "source": "debit_card_specializing.sqlite",
+    "query": "SELECT DISTINCT Country FROM gasstations",
+    "result": "CZE / SVK",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_gasstations__segment",
+    "source": "debit_card_specializing.sqlite",
+    "query": "SELECT DISTINCT Segment FROM gasstations",
+    "result": "Discount / Noname / Other / Premium / Value for money",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_products",
+    "source": "debit_card_specializing.sqlite",
+    "query": "PRAGMA table_info(products)",
+    "result": "Table products(ProductID, Description)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_transactions_1k",
+    "source": "debit_card_specializing.sqlite",
+    "query": "PRAGMA table_info(transactions_1k)",
+    "result": "Table transactions_1k(TransactionID, Date, Time, CustomerID, CardID, GasStationID, ProductID, Amount, Price)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_yearmonth",
+    "source": "debit_card_specializing.sqlite",
+    "query": "PRAGMA table_info(yearmonth)",
+    "result": "Table yearmonth(CustomerID, Date, Consumption)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_customers__transactions__customerid",
+    "source": "debit_card_specializing.sqlite",
+    "query": "distinct values of transactions_1k.CustomerID contained in customers.CustomerID",
+    "result": "overlap 100.0% (517/517 distinct child values); parent key unique: True; child rows 1000, parent rows 32461",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_gasstations__transactions__gasstationid",
+    "source": "debit_card_specializing.sqlite",
+    "query": "distinct values of transactions_1k.GasStationID contained in gasstations.GasStationID",
+    "result": "overlap 100.0% (437/437 distinct child values); parent key unique: True; child rows 1000, parent rows 5716",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_products__transactions__productid",
+    "source": "debit_card_specializing.sqlite",
+    "query": "distinct values of transactions_1k.ProductID contained in products.ProductID",
+    "result": "overlap 100.0% (28/28 distinct child values); parent key unique: True; child rows 1000, parent rows 591",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_customers__yearmonth__customerid",
+    "source": "debit_card_specializing.sqlite",
+    "query": "distinct values of yearmonth.CustomerID contained in customers.CustomerID",
+    "result": "overlap 100.0% (30566/30566 distinct child values); parent key unique: True; child rows 383282, parent rows 32461",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  }
+]

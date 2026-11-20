@@ -1,0 +1,561 @@
+[
+  {
+    "id": "term_account",
+    "name": "account",
+    "type": "entity",
+    "definition": "由金融机构开立、用于记录客户资金往来与余额的记账单元，具有唯一编号、所属地区和账单出具频率等特征。 Counterexample: 与「银行卡」辨析：银行卡是账户的访问凭证，一个账户可对应多张卡；与「贷款」辨析：贷款是账户下的一类资金业务，不是账户本身。 Maturity: Provisional",
+    "scope": "Records of table account; provenance: direct source account",
+    "aliases": [
+      "银行账户"
+    ],
+    "evidence": [
+      "ev_schema_account"
+    ]
+  },
+  {
+    "id": "term_district",
+    "name": "district",
+    "type": "entity",
+    "definition": "具有唯一编号和一组人口、行政区划统计特征的行政地理区域，是客户与账户归属的空间单元。 Counterexample: 与「地址」辨析：地址是描述具体位置的文本信息，地区是用于统计与归属划分的行政单元；与「网点」辨析：网点是办理业务的机构实体，地区是地理划分。 Maturity: Provisional",
+    "scope": "Records of table district; provenance: direct source district",
+    "aliases": [
+      "地区"
+    ],
+    "evidence": [
+      "ev_schema_district"
+    ]
+  },
+  {
+    "id": "term_client",
+    "name": "client",
+    "type": "entity",
+    "definition": "在金融机构登记注册、具有性别与出生日期等个人属性并归属某一地区的自然人主体。 Counterexample: 与「账户持有人」辨析：账户持有人是账户关系中的角色，客户是独立登记的主体，一个客户可持有多个账户；与「员工」辨析：员工是机构内部人员，客户是外部服务对象。 Maturity: Provisional",
+    "scope": "Records of table client; provenance: direct source client",
+    "aliases": [
+      "客户"
+    ],
+    "evidence": [
+      "ev_schema_client"
+    ]
+  },
+  {
+    "id": "term_disp",
+    "name": "disp",
+    "type": "entity",
+    "definition": "记录某一客户对某一账户所拥有的支配权限及其类型的关联条目，具有唯一编号并连接客户与账户。 Counterexample: 与「账户」辨析：账户是资金记账单元，支配关系是客户与账户之间的权限连接；与「交易」辨析：交易是资金变动事件，支配关系是静态权限记录。 Maturity: Provisional",
+    "scope": "Records of table disp; provenance: direct source disp",
+    "aliases": [
+      "账户支配关系"
+    ],
+    "evidence": [
+      "ev_schema_disp"
+    ]
+  },
+  {
+    "id": "term_card",
+    "name": "card",
+    "type": "entity",
+    "definition": "由金融机构发行、绑定到某一账户支配关系上、具有卡类型和发卡日期的支付凭证。 Counterexample: 与「账户」辨析：账户是资金记账单元，卡是访问账户的物理或电子凭证；与「信用卡」辨析：信用卡是卡的一种类型，不能与卡整体等同。 Maturity: Provisional",
+    "scope": "Records of table card; provenance: direct source card",
+    "aliases": [
+      "银行卡"
+    ],
+    "evidence": [
+      "ev_schema_card"
+    ]
+  },
+  {
+    "id": "term_loan",
+    "name": "loan",
+    "type": "entity",
+    "definition": "金融机构向账户发放的、具有金额、期限、还款安排和状态等特征的信贷资金业务。 Counterexample: 与「账户」辨析：账户是资金记账单元，贷款是账户下的一类信贷业务；与「交易」辨析：交易是资金变动事件，贷款是具有持续期限的信贷合约。 Maturity: Provisional",
+    "scope": "Records of table loan; provenance: direct source loan",
+    "aliases": [
+      "贷款"
+    ],
+    "evidence": [
+      "ev_schema_loan"
+    ]
+  },
+  {
+    "id": "term_order",
+    "name": "order",
+    "type": "entity",
+    "definition": "由某一账户发起、指定收款银行与收款账号并载明金额和用途的汇款指令记录。 Counterexample: 与「交易」辨析：交易是已发生的资金变动事件，汇款指令是发起汇款的请求记录；与「贷款」辨析：贷款是信贷合约，汇款指令是资金划转请求。 Maturity: Provisional",
+    "scope": "Records of table order; provenance: direct source order",
+    "aliases": [
+      "汇款指令"
+    ],
+    "evidence": [
+      "ev_schema_order"
+    ]
+  },
+  {
+    "id": "term_trans",
+    "name": "trans",
+    "type": "concept",
+    "definition": "在某一账户上发生的、具有日期、类型、操作、金额和余额等特征的资金变动事件。 Counterexample: 与「账户」辨析：账户是资金记账单元，交易是账户上发生的资金变动事件；与「汇款指令」辨析：汇款指令是请求记录，交易是实际发生的资金变动。 Maturity: Provisional",
+    "scope": "Records of table trans; provenance: direct source trans",
+    "aliases": [
+      "交易"
+    ],
+    "evidence": [
+      "ev_schema_trans"
+    ]
+  },
+  {
+    "id": "concept_weeklystatement",
+    "name": "WeeklyStatement",
+    "type": "concept",
+    "definition": "Account whose statement frequency is weekly issuance.",
+    "scope": "account where frequency IN ('POPLATEK TYDNE')",
+    "aliases": [
+      "weekly issuance",
+      "weekly statement",
+      "POPLATEK TYDNE",
+      "statement issued weekly"
+    ],
+    "evidence": [
+      "ev_concept_weeklystatement"
+    ]
+  },
+  {
+    "id": "concept_monthlystatement",
+    "name": "MonthlyStatement",
+    "type": "concept",
+    "definition": "Account whose statement frequency is monthly issuance.",
+    "scope": "account where frequency IN ('POPLATEK MESICNE')",
+    "aliases": [
+      "monthly statement",
+      "monthly issuance",
+      "POPLATEK MESICNE",
+      "statement issued monthly"
+    ],
+    "evidence": [
+      "ev_concept_monthlystatement"
+    ]
+  },
+  {
+    "id": "concept_aftertransactionstatement",
+    "name": "AfterTransactionStatement",
+    "type": "concept",
+    "definition": "Account whose statement is issued after transaction.",
+    "scope": "account where frequency IN ('POPLATEK PO OBRATU')",
+    "aliases": [
+      "issuance after transaction",
+      "statement issued after transaction",
+      "POPLATEK PO OBRATU",
+      "after transaction issuance",
+      "after transaction statement"
+    ],
+    "evidence": [
+      "ev_concept_aftertransactionstatement"
+    ]
+  },
+  {
+    "id": "concept_accountopeningdate",
+    "name": "AccountOpeningDate",
+    "type": "concept",
+    "definition": "Date on which the account was opened.",
+    "scope": "account",
+    "aliases": [
+      "account opening date",
+      "date account opened",
+      "opened account in",
+      "account opened in"
+    ],
+    "evidence": [
+      "ev_concept_accountopeningdate"
+    ]
+  },
+  {
+    "id": "concept_districtname",
+    "name": "DistrictName",
+    "type": "concept",
+    "definition": "Name of the district where the client or account is located.",
+    "scope": "district",
+    "aliases": [
+      "district name",
+      "district",
+      "A2"
+    ],
+    "evidence": [
+      "ev_concept_districtname"
+    ]
+  },
+  {
+    "id": "concept_region",
+    "name": "Region",
+    "type": "concept",
+    "definition": "Region of the district.",
+    "scope": "district",
+    "aliases": [
+      "district region",
+      "A3"
+    ],
+    "evidence": [
+      "ev_concept_region"
+    ]
+  },
+  {
+    "id": "concept_averagesalary",
+    "name": "AverageSalary",
+    "type": "concept",
+    "definition": "Average salary in the district.",
+    "scope": "district",
+    "aliases": [
+      "average salary",
+      "A11",
+      "salary"
+    ],
+    "evidence": [
+      "ev_concept_averagesalary"
+    ]
+  },
+  {
+    "id": "concept_clientgender",
+    "name": "ClientGender",
+    "type": "concept",
+    "definition": "Gender of the client.",
+    "scope": "client",
+    "aliases": [
+      "gender",
+      "male",
+      "female",
+      "M",
+      "F",
+      "client gender"
+    ],
+    "evidence": [
+      "ev_concept_clientgender"
+    ]
+  },
+  {
+    "id": "concept_clientbirthdate",
+    "name": "ClientBirthDate",
+    "type": "concept",
+    "definition": "Birth date of the client.",
+    "scope": "client",
+    "aliases": [
+      "birth date",
+      "born in",
+      "birth_date",
+      "client birth date"
+    ],
+    "evidence": [
+      "ev_concept_clientbirthdate"
+    ]
+  },
+  {
+    "id": "concept_loanapprovedamount",
+    "name": "LoanApprovedAmount",
+    "type": "concept",
+    "definition": "Amount of the approved loan.",
+    "scope": "loan",
+    "aliases": [
+      "approved amount",
+      "loan amount",
+      "amount",
+      "loan approved amount"
+    ],
+    "evidence": [
+      "ev_concept_loanapprovedamount"
+    ]
+  },
+  {
+    "id": "concept_loanapproveddate",
+    "name": "LoanApprovedDate",
+    "type": "concept",
+    "definition": "Date on which the loan was approved.",
+    "scope": "loan",
+    "aliases": [
+      "approved loan date",
+      "loan date",
+      "date",
+      "loan approved date"
+    ],
+    "evidence": [
+      "ev_concept_loanapproveddate"
+    ]
+  },
+  {
+    "id": "concept_loanduration",
+    "name": "LoanDuration",
+    "type": "concept",
+    "definition": "Duration of the loan in months.",
+    "scope": "loan",
+    "aliases": [
+      "loan validity",
+      "duration",
+      "months",
+      "loan duration"
+    ],
+    "evidence": [
+      "ev_concept_loanduration"
+    ]
+  },
+  {
+    "id": "concept_loanstatus",
+    "name": "LoanStatus",
+    "type": "concept",
+    "definition": "Status of the loan contract.",
+    "scope": "loan",
+    "aliases": [
+      "status",
+      "running contract",
+      "C",
+      "loan status"
+    ],
+    "evidence": [
+      "ev_concept_loanstatus"
+    ]
+  },
+  {
+    "id": "concept_cashwithdrawal",
+    "name": "CashWithdrawal",
+    "type": "concept",
+    "definition": "Transaction operation representing a cash withdrawal.",
+    "scope": "trans where operation IN ('VYBER')",
+    "aliases": [
+      "withdrawal in cash",
+      "withdrawals",
+      "VYBER",
+      "cash withdrawal"
+    ],
+    "evidence": [
+      "ev_concept_cashwithdrawal"
+    ]
+  },
+  {
+    "id": "concept_clientid",
+    "name": "ClientId",
+    "type": "concept",
+    "definition": "Unique identifier of the client.",
+    "scope": "client",
+    "aliases": [
+      "client id",
+      "client_id",
+      "customer id"
+    ],
+    "evidence": [
+      "ev_concept_clientid"
+    ]
+  },
+  {
+    "id": "derived_percentageofrunningloans",
+    "name": "PercentageOfRunningLoans",
+    "type": "metric",
+    "definition": "Percentage of loan amount for accounts with running status among all loans. Formula: (SUM(LoanApprovedAmount WHERE LoanStatus = 'C') / SUM(LoanApprovedAmount)) * 100. Inputs: LoanApprovedAmount = loan.amount; LoanStatus = loan.status",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of accounts still running",
+      "percentage of running contracts",
+      "percentage of accounts with no issue",
+      "percentage of running loans"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_percentageofmaleclientsrequestingweeklystatements",
+    "name": "PercentageOfMaleClientsRequestingWeeklyStatements",
+    "type": "metric",
+    "definition": "Percentage of male clients among clients who requested weekly statements. Formula: (COUNT(DISTINCT ClientId WHERE ClientGender = 'M' AND WeeklyStatement) / COUNT(DISTINCT ClientId WHERE WeeklyStatement)) * 100. Inputs: ClientId = client.client_id; ClientGender = client.gender; WeeklyStatement = account.frequency WHERE frequency IN ('POPLATEK TYDNE')",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of male clients requesting weekly statements",
+      "male clients weekly statement percentage"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_percentageofwomeninhighsalarydistricts",
+    "name": "PercentageOfWomenInHighSalaryDistricts",
+    "type": "metric",
+    "definition": "Percentage of female clients among clients in districts with average salary over 10000. Formula: (COUNT(DISTINCT ClientId WHERE ClientGender = 'F' AND AverageSalary > 10000) / COUNT(DISTINCT ClientId WHERE AverageSalary > 10000)) * 100. Inputs: ClientId = client.client_id; ClientGender = client.gender; AverageSalary = district.A11",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of women in districts with average salary over 10",
+      "women percentage high salary district",
+      "percentage of women in high salary districts"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_averageloanamountperaccount",
+    "name": "AverageLoanAmountPerAccount",
+    "type": "metric",
+    "definition": "Average loan amount per account. Formula: SUM(LoanApprovedAmount) / COUNT(DISTINCT account_id). Inputs: LoanApprovedAmount = loan.amount",
+    "scope": "derived metric",
+    "aliases": [
+      "average approved amount per account",
+      "average loan amount",
+      "average loan amount per account"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_loancountperaccount",
+    "name": "LoanCountPerAccount",
+    "type": "metric",
+    "definition": "Number of loans per account. Formula: COUNT(loan_id) / COUNT(DISTINCT account_id). Inputs: LoanApprovedAmount = loan.amount",
+    "scope": "derived metric",
+    "aliases": [
+      "number of loans per account",
+      "loan count",
+      "loan count per account"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_totalloanamount",
+    "name": "TotalLoanAmount",
+    "type": "metric",
+    "definition": "Total amount of approved loans. Formula: SUM(LoanApprovedAmount). Inputs: LoanApprovedAmount = loan.amount",
+    "scope": "derived metric",
+    "aliases": [
+      "total approved amount",
+      "total loan amount"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_totalwithdrawalamount",
+    "name": "TotalWithdrawalAmount",
+    "type": "metric",
+    "definition": "Total amount of cash withdrawals. Formula: SUM(amount WHERE CashWithdrawal). Inputs: CashWithdrawal = trans.operation WHERE operation IN ('VYBER')",
+    "scope": "derived metric",
+    "aliases": [
+      "total withdrawal amount",
+      "total cash withdrawn"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_clientcountbyregion",
+    "name": "ClientCountByRegion",
+    "type": "metric",
+    "definition": "Number of clients in each region. Formula: COUNT(DISTINCT ClientId) GROUP BY Region. Inputs: ClientId = client.client_id; Region = district.A3",
+    "scope": "derived metric",
+    "aliases": [
+      "number of clients by region",
+      "client count per region",
+      "client count by region"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_accountcountbyfrequency",
+    "name": "AccountCountByFrequency",
+    "type": "metric",
+    "definition": "Number of accounts for each statement frequency. Formula: COUNT(DISTINCT account_id) GROUP BY frequency. Inputs: WeeklyStatement = account.frequency WHERE frequency IN ('POPLATEK TYDNE'); MonthlyStatement = account.frequency WHERE frequency IN ('POPLATEK MESICNE'); AfterTransactionStatement = account.frequency WHERE frequency IN ('POPLATEK PO OBRATU')",
+    "scope": "derived metric",
+    "aliases": [
+      "number of accounts by statement frequency",
+      "account count per frequency",
+      "account count by frequency"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_loanamountpercentagebystatus",
+    "name": "LoanAmountPercentageByStatus",
+    "type": "metric",
+    "definition": "Percentage of total loan amount for each loan status. Formula: (SUM(LoanApprovedAmount) GROUP BY LoanStatus / SUM(LoanApprovedAmount)) * 100. Inputs: LoanApprovedAmount = loan.amount; LoanStatus = loan.status",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of loan amount by status",
+      "loan amount distribution by status",
+      "loan amount percentage by status"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_statementfrequency",
+    "name": "StatementFrequency",
+    "type": "concept",
+    "definition": "Analysis of account statement issuance frequency types.",
+    "scope": "account.frequency codes",
+    "aliases": [
+      "statement issuance",
+      "frequency",
+      "statement type",
+      "statement frequency"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_loanstatus",
+    "name": "LoanStatus",
+    "type": "concept",
+    "definition": "Analysis of loan contract statuses.",
+    "scope": "loan.status codes",
+    "aliases": [
+      "loan contract status",
+      "status of loans",
+      "loan status"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_transactionoperation",
+    "name": "TransactionOperation",
+    "type": "concept",
+    "definition": "Analysis of transaction operation types.",
+    "scope": "trans.operation codes",
+    "aliases": [
+      "transaction operation",
+      "operation type"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_transactiontype",
+    "name": "TransactionType",
+    "type": "concept",
+    "definition": "Analysis of transaction types.",
+    "scope": "trans.type codes",
+    "aliases": [
+      "transaction type",
+      "type of transaction"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_transactionksymbol",
+    "name": "TransactionKSymbol",
+    "type": "concept",
+    "definition": "Analysis of transaction k_symbol categories.",
+    "scope": "trans.k_symbol codes",
+    "aliases": [
+      "transaction k_symbol",
+      "k_symbol",
+      "transaction k symbol"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_orderksymbol",
+    "name": "OrderKSymbol",
+    "type": "concept",
+    "definition": "Analysis of order k_symbol categories.",
+    "scope": "order.k_symbol codes",
+    "aliases": [
+      "order k_symbol",
+      "order type",
+      "order k symbol"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_disptype",
+    "name": "DispType",
+    "type": "concept",
+    "definition": "Analysis of disposition types.",
+    "scope": "disp.type codes",
+    "aliases": [
+      "disposition type",
+      "disp type"
+    ],
+    "evidence": []
+  }
+]

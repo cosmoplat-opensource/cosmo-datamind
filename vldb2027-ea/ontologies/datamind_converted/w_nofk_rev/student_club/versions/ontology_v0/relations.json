@@ -1,0 +1,234 @@
+[
+  {
+    "id": "rel_derived_fullname__from__concept_memberfirstname",
+    "source": "concept_memberfirstname",
+    "relation_type": "derivation",
+    "target": "derived_fullname",
+    "connection_condition": "same entity and period",
+    "description": "FullName is computed from MemberFirstName: MemberFirstName || ' ' || MemberLastName",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_fullname__from__concept_memberlastname",
+    "source": "concept_memberlastname",
+    "relation_type": "derivation",
+    "target": "derived_fullname",
+    "connection_condition": "same entity and period",
+    "description": "FullName is computed from MemberLastName: MemberFirstName || ' ' || MemberLastName",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_averageexpensecost__from__concept_expensecost",
+    "source": "concept_expensecost",
+    "relation_type": "derivation",
+    "target": "derived_averageexpensecost",
+    "connection_condition": "same entity and period",
+    "description": "AverageExpenseCost is computed from ExpenseCost: AVG(ExpenseCost)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_totalexpensecost__from__concept_expensecost",
+    "source": "concept_expensecost",
+    "relation_type": "derivation",
+    "target": "derived_totalexpensecost",
+    "connection_condition": "same entity and period",
+    "description": "TotalExpenseCost is computed from ExpenseCost: SUM(ExpenseCost)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_spendtobudgetratio__from__concept_budgetspent",
+    "source": "concept_budgetspent",
+    "relation_type": "derivation",
+    "target": "derived_spendtobudgetratio",
+    "connection_condition": "same entity and period",
+    "description": "SpendToBudgetRatio is computed from BudgetSpent: BudgetSpent / BudgetAmount",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_spendtobudgetratio__from__concept_budgetamount",
+    "source": "concept_budgetamount",
+    "relation_type": "derivation",
+    "target": "derived_spendtobudgetratio",
+    "connection_condition": "same entity and period",
+    "description": "SpendToBudgetRatio is computed from BudgetAmount: BudgetSpent / BudgetAmount",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_budgetexceeded__from__concept_budgetremaining",
+    "source": "concept_budgetremaining",
+    "relation_type": "derivation",
+    "target": "derived_budgetexceeded",
+    "connection_condition": "same entity and period",
+    "description": "BudgetExceeded is computed from BudgetRemaining: CASE WHEN BudgetRemaining < 0 THEN 1 ELSE 0 END",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_attendanceperevent__from__concept_attendancecount",
+    "source": "concept_attendancecount",
+    "relation_type": "derivation",
+    "target": "derived_attendanceperevent",
+    "connection_condition": "same entity and period",
+    "description": "AttendancePerEvent is computed from AttendanceCount: COUNT(AttendanceCount)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_eventcost__from__concept_expensecost",
+    "source": "concept_expensecost",
+    "relation_type": "derivation",
+    "target": "derived_eventcost",
+    "connection_condition": "same entity and period",
+    "description": "EventCost is computed from ExpenseCost: SUM(ExpenseCost) GROUP BY EventName",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_eventcost__from__concept_eventname",
+    "source": "concept_eventname",
+    "relation_type": "derivation",
+    "target": "derived_eventcost",
+    "connection_condition": "same entity and period",
+    "description": "EventCost is computed from EventName: SUM(ExpenseCost) GROUP BY EventName",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_memberexpensetotal__from__concept_expensecost",
+    "source": "concept_expensecost",
+    "relation_type": "derivation",
+    "target": "derived_memberexpensetotal",
+    "connection_condition": "same entity and period",
+    "description": "MemberExpenseTotal is computed from ExpenseCost: SUM(ExpenseCost) GROUP BY MemberFirstName, MemberLastName",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_memberexpensetotal__from__concept_memberfirstname",
+    "source": "concept_memberfirstname",
+    "relation_type": "derivation",
+    "target": "derived_memberexpensetotal",
+    "connection_condition": "same entity and period",
+    "description": "MemberExpenseTotal is computed from MemberFirstName: SUM(ExpenseCost) GROUP BY MemberFirstName, MemberLastName",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_memberexpensetotal__from__concept_memberlastname",
+    "source": "concept_memberlastname",
+    "relation_type": "derivation",
+    "target": "derived_memberexpensetotal",
+    "connection_condition": "same entity and period",
+    "description": "MemberExpenseTotal is computed from MemberLastName: SUM(ExpenseCost) GROUP BY MemberFirstName, MemberLastName",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_budgetvariance__from__concept_budgetamount",
+    "source": "concept_budgetamount",
+    "relation_type": "derivation",
+    "target": "derived_budgetvariance",
+    "connection_condition": "same entity and period",
+    "description": "BudgetVariance is computed from BudgetAmount: BudgetAmount - BudgetSpent",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_budgetvariance__from__concept_budgetspent",
+    "source": "concept_budgetspent",
+    "relation_type": "derivation",
+    "target": "derived_budgetvariance",
+    "connection_condition": "same entity and period",
+    "description": "BudgetVariance is computed from BudgetSpent: BudgetAmount - BudgetSpent",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_incometotal__from__concept_incomeamount",
+    "source": "concept_incomeamount",
+    "relation_type": "derivation",
+    "target": "derived_incometotal",
+    "connection_condition": "same entity and period",
+    "description": "IncomeTotal is computed from IncomeAmount: SUM(IncomeAmount)",
+    "evidence": []
+  },
+  {
+    "id": "rel_event__attendance__link_to_event",
+    "source": "term_event",
+    "relation_type": "composition",
+    "target": "term_attendance",
+    "connection_condition": "attendance.link_to_event corresponds to event.event_id",
+    "description": "记录活动; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_event__attendance__link_to_event"
+    ]
+  },
+  {
+    "id": "rel_member__attendance__link_to_member",
+    "source": "term_member",
+    "relation_type": "composition",
+    "target": "term_attendance",
+    "connection_condition": "attendance.link_to_member corresponds to member.member_id",
+    "description": "记录成员; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_member__attendance__link_to_member"
+    ]
+  },
+  {
+    "id": "rel_event__budget__link_to_event",
+    "source": "term_event",
+    "relation_type": "composition",
+    "target": "term_budget",
+    "connection_condition": "budget.link_to_event corresponds to event.event_id",
+    "description": "归属活动; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_event__budget__link_to_event"
+    ]
+  },
+  {
+    "id": "rel_budget__expense__link_to_budget",
+    "source": "term_budget",
+    "relation_type": "composition",
+    "target": "term_expense",
+    "connection_condition": "expense.link_to_budget corresponds to budget.budget_id",
+    "description": "归属预算; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_budget__expense__link_to_budget"
+    ]
+  },
+  {
+    "id": "rel_member__expense__link_to_member",
+    "source": "term_member",
+    "relation_type": "composition",
+    "target": "term_expense",
+    "connection_condition": "expense.link_to_member corresponds to member.member_id",
+    "description": "由成员发生; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_member__expense__link_to_member"
+    ]
+  },
+  {
+    "id": "rel_member__income__link_to_member",
+    "source": "term_member",
+    "relation_type": "composition",
+    "target": "term_income",
+    "connection_condition": "income.link_to_member corresponds to member.member_id",
+    "description": "由成员获得; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_member__income__link_to_member"
+    ]
+  },
+  {
+    "id": "rel_major__member__link_to_major",
+    "source": "term_major",
+    "relation_type": "composition",
+    "target": "term_member",
+    "connection_condition": "member.link_to_major corresponds to major.major_id",
+    "description": "归属专业; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_major__member__link_to_major"
+    ]
+  },
+  {
+    "id": "rel_zip_code__member__zip",
+    "source": "term_zip_code",
+    "relation_type": "composition",
+    "target": "term_member",
+    "connection_condition": "member.zip corresponds to zip_code.zip_code",
+    "description": "位于邮编; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_zip_code__member__zip"
+    ]
+  }
+]

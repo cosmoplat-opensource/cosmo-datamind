@@ -1,0 +1,541 @@
+[
+  {
+    "id": "term_frpm",
+    "name": "frpm",
+    "type": "entity",
+    "definition": "一种信息记录，属加种差：它是按学年记录某所学校学生规模与免费或减价餐资格人数的统计信息条目，区别于学校基本登记信息与考试成绩统计。 Counterexample: 与 satscores 的辨析：两者都按学校统计，但 frpm 记录的是餐费资格与经济弱势相关计数，satscores 记录的是考试参考人数与平均分。 Maturity: Provisional",
+    "scope": "Records of table frpm; provenance: direct source frpm",
+    "aliases": [
+      "免费及减价餐资格统计记录"
+    ],
+    "evidence": [
+      "ev_schema_frpm"
+    ]
+  },
+  {
+    "id": "term_satscores",
+    "name": "satscores",
+    "type": "entity",
+    "definition": "一种信息记录，属加种差：它是按学校汇总的标准化考试成绩统计条目，包含参考人数与各科平均分，区别于学校登记信息与餐费资格统计。 Counterexample: 与 frpm 的辨析：satscores 度量学业考试成绩，frpm 度量免费/减价餐资格人数，二者统计口径不同。 Maturity: Provisional",
+    "scope": "Records of table satscores; provenance: direct source satscores",
+    "aliases": [
+      "SAT考试成绩统计记录"
+    ],
+    "evidence": [
+      "ev_schema_satscores"
+    ]
+  },
+  {
+    "id": "term_schools",
+    "name": "schools",
+    "type": "entity",
+    "definition": "一种教育机构，属加种差：它是由教育主管部门登记、具有唯一学校编码与地址、可开设年级并招生的办学单位，区别于其统计记录与成绩记录。 Counterexample: 与 frpm、satscores 的辨析：schools 描述学校实体本身，后两者是依附于学校的统计信息记录，不是学校实体。 Maturity: Provisional",
+    "scope": "Records of table schools; provenance: direct source schools",
+    "aliases": [
+      "学校"
+    ],
+    "evidence": [
+      "ev_schema_schools"
+    ]
+  },
+  {
+    "id": "concept_charterschoolflag",
+    "name": "CharterSchoolFlag",
+    "type": "concept",
+    "definition": "Whether a school is a charter school, recorded as Y/N in frpm and as a code in schools.",
+    "scope": "frpm",
+    "aliases": [
+      "chartered schools",
+      "non-chartered schools",
+      "charter school",
+      "Charter = 0",
+      "Charter = 1",
+      "charter school flag"
+    ],
+    "evidence": [
+      "ev_concept_charterschoolflag"
+    ]
+  },
+  {
+    "id": "concept_freemealeligiblepercent",
+    "name": "FreeMealEligiblePercent",
+    "type": "concept",
+    "definition": "Share of K-12 students eligible for free meals.",
+    "scope": "frpm",
+    "aliases": [
+      "percent (%) of eligible free meals",
+      "eligible free rate",
+      "free meal rate",
+      "Percent (%) Eligible Free (K-12)",
+      "free meal eligible percent"
+    ],
+    "evidence": [
+      "ev_concept_freemealeligiblepercent"
+    ]
+  },
+  {
+    "id": "concept_frpmcount",
+    "name": "FRPMCount",
+    "type": "concept",
+    "definition": "Number of K-12 students eligible for free or reduced-price meals.",
+    "scope": "frpm",
+    "aliases": [
+      "free or reduced price meal count",
+      "FRPM count",
+      "free/reduced meal count",
+      "FRPM Count (K-12)",
+      "frpm count"
+    ],
+    "evidence": [
+      "ev_concept_frpmcount"
+    ]
+  },
+  {
+    "id": "concept_frpmrate",
+    "name": "FRPMRate",
+    "type": "concept",
+    "definition": "Share of K-12 students eligible for free or reduced-price meals.",
+    "scope": "frpm",
+    "aliases": [
+      "eligible free or reduced price meal rate",
+      "FRPM rate",
+      "free or reduced price meal rate",
+      "Percent (%) Eligible FRPM (K-12)",
+      "frpm rate"
+    ],
+    "evidence": [
+      "ev_concept_frpmrate"
+    ]
+  },
+  {
+    "id": "concept_enrollmentk12",
+    "name": "EnrollmentK12",
+    "type": "concept",
+    "definition": "Number of students enrolled in grades K-12.",
+    "scope": "frpm",
+    "aliases": [
+      "enrollment",
+      "K-12 enrollment",
+      "Enrollment (K-12)",
+      "grades 1-12 enrollment",
+      "enrollment k 12"
+    ],
+    "evidence": [
+      "ev_concept_enrollmentk12"
+    ]
+  },
+  {
+    "id": "concept_enrollmentages517",
+    "name": "EnrollmentAges517",
+    "type": "concept",
+    "definition": "Number of students aged 5-17 enrolled.",
+    "scope": "frpm",
+    "aliases": [
+      "enrollment ages 5-17",
+      "Enrollment (Ages 5-17)",
+      "ages 5-17 enrollment",
+      "enrollment ages 517"
+    ],
+    "evidence": [
+      "ev_concept_enrollmentages517"
+    ]
+  },
+  {
+    "id": "concept_virtualschoolflag",
+    "name": "VirtualSchoolFlag",
+    "type": "concept",
+    "definition": "Whether a school is exclusively virtual (no physical building).",
+    "scope": "schools where Virtual = 'F'",
+    "aliases": [
+      "virtual school",
+      "does not offer physical building",
+      "exclusively virtual",
+      "Virtual = F",
+      "virtual school flag"
+    ],
+    "evidence": [
+      "ev_concept_virtualschoolflag"
+    ]
+  },
+  {
+    "id": "concept_districtownershipcode",
+    "name": "DistrictOwnershipCode",
+    "type": "concept",
+    "definition": "District ownership/organization code (DOC) classifying the district type.",
+    "scope": "schools",
+    "aliases": [
+      "Elementary School District",
+      "Unified School District",
+      "DOC",
+      "district ownership code"
+    ],
+    "evidence": [
+      "ev_concept_districtownershipcode"
+    ]
+  },
+  {
+    "id": "concept_schoolphone",
+    "name": "SchoolPhone",
+    "type": "concept",
+    "definition": "School contact phone number.",
+    "scope": "schools",
+    "aliases": [
+      "telephone number",
+      "phone number",
+      "communication number",
+      "Phone",
+      "school phone"
+    ],
+    "evidence": [
+      "ev_concept_schoolphone"
+    ]
+  },
+  {
+    "id": "concept_streetaddress",
+    "name": "StreetAddress",
+    "type": "concept",
+    "definition": "School street or mailing address.",
+    "scope": "schools",
+    "aliases": [
+      "full street address",
+      "postal street address",
+      "mailing street",
+      "Street",
+      "MailStreet",
+      "street address"
+    ],
+    "evidence": [
+      "ev_concept_streetaddress"
+    ]
+  },
+  {
+    "id": "concept_avgscrread",
+    "name": "AvgScrRead",
+    "type": "concept",
+    "definition": "Average SAT reading score for the school.",
+    "scope": "satscores",
+    "aliases": [
+      "average reading score",
+      "reading average",
+      "avg scr read"
+    ],
+    "evidence": [
+      "ev_concept_avgscrread"
+    ]
+  },
+  {
+    "id": "concept_avgscrmath",
+    "name": "AvgScrMath",
+    "type": "concept",
+    "definition": "Average SAT math score for the school.",
+    "scope": "satscores",
+    "aliases": [
+      "average math score",
+      "math average",
+      "avg scr math"
+    ],
+    "evidence": [
+      "ev_concept_avgscrmath"
+    ]
+  },
+  {
+    "id": "concept_avgscrwrite",
+    "name": "AvgScrWrite",
+    "type": "concept",
+    "definition": "Average SAT writing score for the school.",
+    "scope": "satscores",
+    "aliases": [
+      "average writing score",
+      "writing average",
+      "avg scr write"
+    ],
+    "evidence": [
+      "ev_concept_avgscrwrite"
+    ]
+  },
+  {
+    "id": "concept_opendate",
+    "name": "OpenDate",
+    "type": "concept",
+    "definition": "Date the school opened.",
+    "scope": "schools where OpenDate > '1991-12-31'",
+    "aliases": [
+      "opened after 1991",
+      "open date"
+    ],
+    "evidence": [
+      "ev_concept_opendate"
+    ]
+  },
+  {
+    "id": "concept_closeddate",
+    "name": "ClosedDate",
+    "type": "concept",
+    "definition": "Date the school closed.",
+    "scope": "schools where ClosedDate < '2000-01-01'",
+    "aliases": [
+      "closed before 2000",
+      "close date",
+      "closed date"
+    ],
+    "evidence": [
+      "ev_concept_closeddate"
+    ]
+  },
+  {
+    "id": "concept_countyname",
+    "name": "CountyName",
+    "type": "concept",
+    "definition": "County where the school is located.",
+    "scope": "frpm",
+    "aliases": [
+      "county",
+      "county of Los Angeles",
+      "San Diego",
+      "Santa Barbara",
+      "Orange County",
+      "Riverside",
+      "county name"
+    ],
+    "evidence": [
+      "ev_concept_countyname"
+    ]
+  },
+  {
+    "id": "concept_districtname",
+    "name": "DistrictName",
+    "type": "concept",
+    "definition": "Name of the school district.",
+    "scope": "frpm",
+    "aliases": [
+      "district",
+      "Fresno Unified",
+      "district name"
+    ],
+    "evidence": [
+      "ev_concept_districtname"
+    ]
+  },
+  {
+    "id": "concept_schoolname",
+    "name": "SchoolName",
+    "type": "concept",
+    "definition": "Name of the school.",
+    "scope": "frpm",
+    "aliases": [
+      "school name",
+      "names of schools",
+      "school"
+    ],
+    "evidence": [
+      "ev_concept_schoolname"
+    ]
+  },
+  {
+    "id": "derived_enrollmentdiff",
+    "name": "EnrollmentDiff",
+    "type": "metric",
+    "definition": "Difference between K-12 enrollment and ages 5-17 enrollment. Formula: EnrollmentK12 - EnrollmentAges517. Inputs: EnrollmentK12 = frpm.Enrollment (K-12); EnrollmentAges517 = frpm.Enrollment (Ages 5-17)",
+    "scope": "derived metric",
+    "aliases": [
+      "difference in enrollment",
+      "enrollment gap",
+      "enrollment diff"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_avgmathscore",
+    "name": "AvgMathScore",
+    "type": "metric",
+    "definition": "Average SAT math score across schools. Formula: AVG(AvgScrMath). Inputs: AvgScrMath = satscores.AvgScrMath",
+    "scope": "derived metric",
+    "aliases": [
+      "average math score",
+      "math average",
+      "avg math score"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_avgreadscore",
+    "name": "AvgReadScore",
+    "type": "metric",
+    "definition": "Average SAT reading score across schools. Formula: AVG(AvgScrRead). Inputs: AvgScrRead = satscores.AvgScrRead",
+    "scope": "derived metric",
+    "aliases": [
+      "average reading score",
+      "reading average",
+      "avg read score"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_avgwritescore",
+    "name": "AvgWriteScore",
+    "type": "metric",
+    "definition": "Average SAT writing score across schools. Formula: AVG(AvgScrWrite). Inputs: AvgScrWrite = satscores.AvgScrWrite",
+    "scope": "derived metric",
+    "aliases": [
+      "average writing score",
+      "writing average",
+      "avg write score"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_charterratio",
+    "name": "CharterRatio",
+    "type": "metric",
+    "definition": "Share of schools that are charter schools. Formula: SUM(CharterSchoolFlag) / COUNT(SchoolName). Inputs: CharterSchoolFlag = frpm.Charter School (Y/N); SchoolName = frpm.School Name",
+    "scope": "derived metric",
+    "aliases": [
+      "ratio of charter schools",
+      "charter share",
+      "charter ratio"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_virtualschoolcount",
+    "name": "VirtualSchoolCount",
+    "type": "metric",
+    "definition": "Count of schools that are exclusively virtual. Formula: COUNT(SchoolName) WHERE VirtualSchoolFlag = 'F'. Inputs: VirtualSchoolFlag = schools.Virtual WHERE Virtual = 'F'; SchoolName = frpm.School Name",
+    "scope": "derived metric",
+    "aliases": [
+      "number of virtual schools",
+      "count of virtual schools",
+      "virtual school count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_unifiedtoelementaryratio",
+    "name": "UnifiedToElementaryRatio",
+    "type": "metric",
+    "definition": "Ratio of unified school district schools to elementary school district schools. Formula: COUNT(SchoolName WHERE DistrictOwnershipCode = '54') / COUNT(SchoolName WHERE DistrictOwnershipCode = '52'). Inputs: DistrictOwnershipCode = schools.DOC; SchoolName = frpm.School Name",
+    "scope": "derived metric",
+    "aliases": [
+      "ratio of unified to elementary districts",
+      "unified/elementary ratio",
+      "unified to elementary ratio"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_top5frpmrate",
+    "name": "Top5FRPMRate",
+    "type": "metric",
+    "definition": "FRPM rate for the top 5 schools by FRPM count. Formula: FRPMRate for schools ranked by FRPMCount DESC LIMIT 5. Inputs: FRPMRate = frpm.Percent (%) Eligible FRPM (K-12); FRPMCount = frpm.FRPM Count (K-12)",
+    "scope": "derived metric",
+    "aliases": [
+      "FRPM rate for top 5 schools",
+      "top 5 FRPM rate",
+      "top 5 frpm rate"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_top5readscore",
+    "name": "Top5ReadScore",
+    "type": "metric",
+    "definition": "Reading score for the top 5 schools by average reading score. Formula: AvgScrRead for schools ranked by AvgScrRead DESC LIMIT 5. Inputs: AvgScrRead = satscores.AvgScrRead",
+    "scope": "derived metric",
+    "aliases": [
+      "top 5 reading score",
+      "highest reading average",
+      "top 5 read score"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_top7mathscore",
+    "name": "Top7MathScore",
+    "type": "metric",
+    "definition": "Math score for the school ranked 7th by average math score. Formula: AvgScrMath for school ranked 7th by AvgScrMath DESC. Inputs: AvgScrMath = satscores.AvgScrMath",
+    "scope": "derived metric",
+    "aliases": [
+      "7th highest math average",
+      "7th top math score",
+      "top 7 math score"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_lowestreadscore",
+    "name": "LowestReadScore",
+    "type": "metric",
+    "definition": "Reading score for the school with the lowest average reading score. Formula: MIN(AvgScrRead). Inputs: AvgScrRead = satscores.AvgScrRead",
+    "scope": "derived metric",
+    "aliases": [
+      "lowest average score in reading",
+      "lowest reading average",
+      "lowest read score"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_schoolswithmathabove400",
+    "name": "SchoolsWithMathAbove400",
+    "type": "metric",
+    "definition": "Schools whose average math score exceeds 400. Formula: COUNT(SchoolName) WHERE AvgScrMath > 400. Inputs: AvgScrMath = satscores.AvgScrMath; SchoolName = frpm.School Name",
+    "scope": "derived metric",
+    "aliases": [
+      "schools with math average > 400",
+      "math score above 400",
+      "schools with math above 400"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_schoolsopenedorclosed",
+    "name": "SchoolsOpenedOrClosed",
+    "type": "metric",
+    "definition": "Schools that opened after 1991 or closed before 2000. Formula: COUNT(SchoolName) WHERE OpenDate > '1991-12-31' OR ClosedDate < '2000-01-01'. Inputs: OpenDate = schools.OpenDate WHERE OpenDate > '1991-12-31'; ClosedDate = schools.ClosedDate WHERE ClosedDate < '2000-01-01'; SchoolName = frpm.School Name",
+    "scope": "derived metric",
+    "aliases": [
+      "schools opened after 1991 or closed before 2000",
+      "opened/closed schools",
+      "schools opened or closed"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_virtualschool",
+    "name": "VirtualSchool",
+    "type": "concept",
+    "definition": "Analyze virtual vs physical schools.",
+    "scope": "schools.Virtual codes",
+    "aliases": [
+      "virtual",
+      "online school",
+      "virtual school"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_districtownership",
+    "name": "DistrictOwnership",
+    "type": "concept",
+    "definition": "Analyze district ownership types.",
+    "scope": "schools.DOC codes",
+    "aliases": [
+      "DOC",
+      "district type",
+      "district ownership"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_county",
+    "name": "County",
+    "type": "concept",
+    "definition": "Analyze schools by county.",
+    "scope": "frpm.County Name codes",
+    "aliases": [
+      "county",
+      "counties"
+    ],
+    "evidence": []
+  }
+]

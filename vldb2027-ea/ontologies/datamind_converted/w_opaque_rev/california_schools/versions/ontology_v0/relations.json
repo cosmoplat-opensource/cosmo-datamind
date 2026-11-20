@@ -1,0 +1,114 @@
+[
+  {
+    "id": "rel_derived_freemealrate__from__concept_freemealeligiblecount",
+    "source": "concept_freemealeligiblecount",
+    "relation_type": "derivation",
+    "target": "derived_freemealrate",
+    "connection_condition": "same entity and period",
+    "description": "FreeMealRate is computed from FreeMealEligibleCount: FreeMealEligibleCount / EnrollmentK12",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_freemealrate__from__concept_enrollmentk12",
+    "source": "concept_enrollmentk12",
+    "relation_type": "derivation",
+    "target": "derived_freemealrate",
+    "connection_condition": "same entity and period",
+    "description": "FreeMealRate is computed from EnrollmentK12: FreeMealEligibleCount / EnrollmentK12",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_enrollmentdiffk12vs5to17__from__concept_enrollmentk12",
+    "source": "concept_enrollmentk12",
+    "relation_type": "derivation",
+    "target": "derived_enrollmentdiffk12vs5to17",
+    "connection_condition": "same entity and period",
+    "description": "EnrollmentDiffK12vs5to17 is computed from EnrollmentK12: EnrollmentK12 - EnrollmentAge5to17",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_enrollmentdiffk12vs5to17__from__concept_enrollmentage5to17",
+    "source": "concept_enrollmentage5to17",
+    "relation_type": "derivation",
+    "target": "derived_enrollmentdiffk12vs5to17",
+    "connection_condition": "same entity and period",
+    "description": "EnrollmentDiffK12vs5to17 is computed from EnrollmentAge5to17: EnrollmentK12 - EnrollmentAge5to17",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_avgmathscore__from__concept_mathavgscore",
+    "source": "concept_mathavgscore",
+    "relation_type": "derivation",
+    "target": "derived_avgmathscore",
+    "connection_condition": "same entity and period",
+    "description": "AvgMathScore is computed from MathAvgScore: AVG(MathAvgScore)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_avgreadingscore__from__concept_readingavgscore",
+    "source": "concept_readingavgscore",
+    "relation_type": "derivation",
+    "target": "derived_avgreadingscore",
+    "connection_condition": "same entity and period",
+    "description": "AvgReadingScore is computed from ReadingAvgScore: AVG(ReadingAvgScore)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_avgwritingscore__from__concept_writingavgscore",
+    "source": "concept_writingavgscore",
+    "relation_type": "derivation",
+    "target": "derived_avgwritingscore",
+    "connection_condition": "same entity and period",
+    "description": "AvgWritingScore is computed from WritingAvgScore: AVG(WritingAvgScore)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_topnmathscorerank__from__concept_mathavgscore",
+    "source": "concept_mathavgscore",
+    "relation_type": "derivation",
+    "target": "derived_topnmathscorerank",
+    "connection_condition": "same entity and period",
+    "description": "TopNMathScoreRank is computed from MathAvgScore: RANK() OVER (ORDER BY MathAvgScore DESC)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_topnreadingbycounty__from__concept_readingavgscore",
+    "source": "concept_readingavgscore",
+    "relation_type": "derivation",
+    "target": "derived_topnreadingbycounty",
+    "connection_condition": "same entity and period",
+    "description": "TopNReadingByCounty is computed from ReadingAvgScore: RANK() OVER (PARTITION BY County ORDER BY ReadingAvgScore DESC)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_topnreadingbycounty__from__concept_county",
+    "source": "concept_county",
+    "relation_type": "derivation",
+    "target": "derived_topnreadingbycounty",
+    "connection_condition": "same entity and period",
+    "description": "TopNReadingByCounty is computed from County: RANK() OVER (PARTITION BY County ORDER BY ReadingAvgScore DESC)",
+    "evidence": []
+  },
+  {
+    "id": "rel_tab03__tab01__fld001",
+    "source": "term_tab03",
+    "relation_type": "composition",
+    "target": "term_tab01",
+    "connection_condition": "tab01.fld001 corresponds to tab03.fld001",
+    "description": "引用; 重叠 100%·父键唯一·列名有据·代码契约(DDL);语义评审存疑(数据证据成立但不得用于验收问题的强路径,须人审)",
+    "evidence": [
+      "ev_rel_tab03__tab01__fld001"
+    ]
+  },
+  {
+    "id": "rel_tab03__tab02__fld030",
+    "source": "term_tab03",
+    "relation_type": "composition",
+    "target": "term_tab02",
+    "connection_condition": "tab02.fld030 corresponds to tab03.fld001",
+    "description": "引用; 重叠 91%·父键唯一·列名有据·代码契约(DDL);语义评审存疑(数据证据成立但不得用于验收问题的强路径,须人审)",
+    "evidence": [
+      "ev_rel_tab03__tab02__fld030"
+    ]
+  }
+]

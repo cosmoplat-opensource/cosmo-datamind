@@ -54,6 +54,32 @@ def save(fig, name, exact=False):
     plt.close(fig)
 
 
+def fit_width(fig, pad=0.03, top=None, bottom=None, gap=0.04):
+    """Move the subplot margins so that the axes with their tick labels and titles fill the set figure size, leaving room
+    for a figure-level legend above (top) and a figure-level x label below (bottom), which are then centred over the
+    panels. The figure can then be saved at exactly its set size and prints at 100% (no scaling of the 7-8 pt text)."""
+    W, H = fig.get_size_inches()
+    for _ in range(8):
+        fig.canvas.draw()
+        r = fig.canvas.get_renderer()
+        boxes = [ax.get_tightbbox(r) for ax in fig.axes]
+        x0, x1 = min(b.x0 for b in boxes) / fig.dpi, max(b.x1 for b in boxes) / fig.dpi
+        y0, y1 = min(b.y0 for b in boxes) / fig.dpi, max(b.y1 for b in boxes) / fig.dpi
+        th = top.get_window_extent(r).height / fig.dpi + gap if top is not None else 0
+        bh = bottom.get_window_extent(r).height / fig.dpi + gap if bottom is not None else 0
+        dl, dr = (pad - x0) / W, (x1 - (W - pad)) / W
+        db, dt = (pad + bh - y0) / H, (y1 - (H - pad - th)) / H
+        sp = fig.subplotpars
+        fig.subplots_adjust(left=sp.left + dl, right=sp.right - dr, bottom=sp.bottom + db, top=sp.top - dt)
+        xc = (min(ax.get_position().x0 for ax in fig.axes) + max(ax.get_position().x1 for ax in fig.axes)) / 2
+        if top is not None:
+            top.set_bbox_to_anchor((xc, 1 - (pad + th - gap) / H), transform=fig.transFigure)
+        if bottom is not None:
+            bottom.set_position((xc, pad / H)); bottom.set_va("bottom")
+        if max(abs(dl), abs(dr), abs(db), abs(dt)) < 0.001:
+            break
+
+
 # --------------------------------------------------------------------------- teaser
 def box(ax, x, y, w, h, text, fc="#f4f4f1", ec=AXIS, color=INK, size=7.5, weight="normal"):
     ax.add_patch(FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.02,rounding_size=0.12", fc=fc, ec=ec, lw=0.9))
@@ -103,7 +129,7 @@ def teaser():
     mg = {c: st["MG"]["conditions"][c]["tolerant"] for c in conds}
     for i, c in enumerate(conds):
         b.text(2 + (i - 1.5) * w, mg[c] + 1.2, f"{mg[c]:.0f}", ha="center", va="bottom", fontsize=7.2, color=INK)
-    b.set_xticks(range(3)); b.set_xticklabels(["Readable", "Opaque", "Merged\n60 tables"])
+    b.set_xticks(range(3)); b.set_xticklabels(["Readable", "Opaque", "Opaque merged\n(60 tables)"])
     b.set_ylim(0, 64); b.set_ylabel("Accuracy (%)")
     clean(b)
     b.legend(ncol=2, frameon=False, loc="lower left", bbox_to_anchor=(-0.02, 1.0), handlelength=1.0, columnspacing=0.8,
@@ -211,7 +237,8 @@ def forest_v4():
     axs[0].set_yticks(ys); axs[0].set_yticklabels([p[1] for p in pairs])
     axs[1].set_xlabel("Difference in column-tolerant accuracy (points); filled: 95% interval excludes 0")
     fig.subplots_adjust(wspace=0.08)
-    save(fig, "forest_v4")
+    fit_width(fig)
+    save(fig, "forest_v4", exact=True)
 
 
 # --------------------------------------------------------------------------- ontology contents
@@ -269,21 +296,22 @@ def turns():
         ys = [a6[S][c]["turn_limit_pct"] for S in ("R", "O", "MG")]
         b.bar(xs, ys, width=w - 0.025, color=C[c], zorder=3)
         b.text(2 + (i - 1.5) * w, ys[2] + 1.2, f"{ys[2]:.0f}", ha="center", va="bottom", fontsize=7.2, color=INK)
-    b.set_xticks(range(3)); b.set_xticklabels(["Readable", "Opaque", "Merged"])
+    b.set_xticks(range(3)); b.set_xticklabels(["Readable", "Opaque", "Opaque merged"])
     b.set_ylabel("Used all 30 turns (%)"); b.set_ylim(0, 60)
     clean(b)
     h, l = a.get_legend_handles_labels()
-    fig.legend(h, l, ncol=5, frameon=False, loc="lower center", bbox_to_anchor=(0.5, 0.98), handlelength=1.4,
-               columnspacing=1.4)
+    lg = fig.legend(h, l, ncol=5, frameon=False, loc="lower center", bbox_to_anchor=(0.5, 0.98), handlelength=1.4,
+                    columnspacing=1.4)
     fig.subplots_adjust(wspace=0.3)
-    save(fig, "turns")
+    fit_width(fig, top=lg)
+    save(fig, "turns", exact=True)
 
 
 # --------------------------------------------------------------------------- compiled excerpt coverage
 def coverage():
     a6 = load("analysis_sec6.json")
     fig, (a, b) = plt.subplots(1, 2, figsize=(COL, 1.45), sharey=True, gridspec_kw={"width_ratios": [1, 1.25]})
-    ys, labs = [2, 1, 0], ["Readable", "Opaque", "Merged"]
+    ys, labs = [2, 1, 0], ["Readable", "Opaque", "Opaque\nmerged"]
     vals = [a6[S]["M"]["gold_tables_covered_pct"] for S in ("R", "O", "MG")]
     a.barh(ys, vals, height=0.58, color=C["M"], zorder=3)
     for y, v in zip(ys, vals):
@@ -355,9 +383,9 @@ def ablations():
         clean(ax, grid="x"); ax.spines["left"].set_visible(False); ax.tick_params(axis="y", length=0)
     axs[0].set_yticks(ys); axs[0].set_yticklabels(["without " + c[1] for c in comps])
     fig.subplots_adjust(wspace=0.08)
-    fig.supxlabel("Change when removed (points); filled: interval excludes 0", fontsize=8, color=INK2,
-                  x=(axs[0].get_position().x0 + axs[1].get_position().x1) / 2, y=-0.06)
-    save(fig, "ablations")
+    xl = fig.supxlabel("Change when removed (points); filled: interval excludes 0", fontsize=8, color=INK2)
+    fit_width(fig, bottom=xl)
+    save(fig, "ablations", exact=True)
 
 
 # --------------------------------------------------------------------------- scoring rules (Section 3, schematic)
@@ -426,10 +454,11 @@ def perdb():
          Line2D([], [], marker="o", ls="", ms=5.5, mfc=INK2, mec="white", label="inside the 60-table merged schema (MG)")]
     fig.subplots_adjust(wspace=0.08)
     xc = (axs[0].get_position().x0 + axs[1].get_position().x1) / 2      # centre over the two panels
-    fig.legend(handles=h, ncol=2, frameon=False, loc="lower center", bbox_to_anchor=(xc, 0.97), handletextpad=0.3,
-               columnspacing=1.6)
-    fig.supxlabel("Gain in column-tolerant accuracy (points), same test questions", fontsize=8, color=INK2, x=xc, y=-0.04)
-    save(fig, "perdb")
+    lg = fig.legend(handles=h, ncol=2, frameon=False, loc="lower center", bbox_to_anchor=(xc, 0.97), handletextpad=0.3,
+                    columnspacing=1.6)
+    xl = fig.supxlabel("Gain in column-tolerant accuracy (points), same test questions", fontsize=8, color=INK2)
+    fit_width(fig, top=lg, bottom=xl)
+    save(fig, "perdb", exact=True)
 
 
 # --------------------------------------------------------------------------- protocol v5: ablation, turn budget, readable names
@@ -452,16 +481,16 @@ def v5():
         ax1.plot([v["tolerant"]], [y], "o", ms=5.5, color=col, mec="white", mew=0.8, zorder=5)
         for f, m in (("fwd", "^"), ("rev", "s")):
             ax1.plot([v["tolerant_by_fold"][f]], [y + 0.28], m, ms=3.4, color="white", mec=col, mew=0.9, zorder=4)
-    ax1.axvline(cd["MG:doc"]["tolerant"], color=C["doc"], lw=1.0, ls=(0, (3, 2)), zorder=1)
-    ax1.text(cd["MG:doc"]["tolerant"] + 0.6, len(rows) - 0.35, "Documentation", rotation=90, ha="left", va="top", fontsize=7.0, color=C["doc"])
+    ax1.plot([cd["MG:doc"]["tolerant"]] * 2, [-0.6, len(rows) - 0.4], color=C["doc"], lw=1.0, ls=(0, (3, 2)), zorder=1)
+    ax1.text(cd["MG:doc"]["tolerant"] + 0.6, len(rows) - 0.55, "Documentation", rotation=90, ha="left", va="top", fontsize=7.0, color=C["doc"])
     ax1.set_yticks(ys); ax1.set_yticklabels([r[1] for r in rows]); ax1.tick_params(axis="y", length=0)
-    ax1.set_ylim(-0.6, len(rows) - 0.3); ax1.set_xlim(2, 60); ax1.set_xticks([10, 20, 30, 40, 50, 60])
+    ax1.set_ylim(-0.6, len(rows) + 0.35); ax1.set_xlim(15, 60); ax1.set_xticks([20, 30, 40, 50, 60])
     from matplotlib.lines import Line2D
     ax1.legend(handles=[Line2D([], [], ls="", marker="o", ms=4.5, color=MUTED, mec="white", label="both folds"),
                         Line2D([], [], ls="", marker="^", ms=3.6, color="white", mec=MUTED, label="fold A→B"),
                         Line2D([], [], ls="", marker="s", ms=3.4, color="white", mec=MUTED, label="fold B→A")],
-               loc="upper left", fontsize=6.3, frameon=False, handletextpad=0.1, columnspacing=0.8, borderaxespad=0.1)
-    ax1.set_xlabel("Test accuracy, merged schema, opaque names (%)")
+               loc="upper center", ncol=3, fontsize=7, frameon=False, handletextpad=0.1, columnspacing=0.8, borderaxespad=0.1)
+    ax1.set_xlabel("Test accuracy (%), opaque merged schema")
     ax1.set_title("a  Ablation and turn budget", loc="left", fontsize=8, fontweight="bold")
     clean(ax1, grid=None); ax1.spines["left"].set_visible(False); ax1.tick_params(axis="y", length=0)
     # (b) the same 60 tables and questions with opaque and with readable names
@@ -476,11 +505,12 @@ def v5():
         ax2.plot([b["tolerant"]], [y], "o", ms=5.5, color=C[c], mec="white", mew=0.8, zorder=5)
     ax2.set_yticks(ys2); ax2.set_yticklabels([c[1] for c in conds]); ax2.tick_params(axis="y", length=0)
     ax2.set_ylim(-0.6, len(conds) - 0.4); ax2.set_xlim(15, 60)
-    ax2.set_xlabel("Test accuracy, same 60 tables and questions (%)")
+    ax2.set_xlabel("Test accuracy (%), same questions")
     ax2.set_title("b  Opaque (open) vs. readable names (filled)", loc="left", fontsize=8, fontweight="bold")
     clean(ax2, grid=None); ax2.spines["left"].set_visible(False); ax2.tick_params(axis="y", length=0)
-    fig.subplots_adjust(left=0.2, right=0.985, top=0.88, bottom=0.2, wspace=0.62)
-    save(fig, "v5")
+    fig.subplots_adjust(left=0.2, right=0.985, top=0.88, bottom=0.2, wspace=0.75)
+    fit_width(fig)
+    save(fig, "v5", exact=True)
 
 
 if __name__ == "__main__":

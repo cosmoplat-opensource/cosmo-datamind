@@ -1,0 +1,666 @@
+[
+  {
+    "id": "ev_schema_users",
+    "source": "codebase_community.sqlite",
+    "query": "PRAGMA table_info(users)",
+    "result": "Table users(Id, Reputation, CreationDate, DisplayName, LastAccessDate, WebsiteUrl, Location, AboutMe, Views, UpVotes, DownVotes, AccountId, Age, ProfileImageUrl)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_badges",
+    "source": "codebase_community.sqlite",
+    "query": "PRAGMA table_info(badges)",
+    "result": "Table badges(Id, UserId, Name, Date)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_comments",
+    "source": "codebase_community.sqlite",
+    "query": "PRAGMA table_info(comments)",
+    "result": "Table comments(Id, PostId, Score, Text, CreationDate, UserId, UserDisplayName)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_posthistory",
+    "source": "codebase_community.sqlite",
+    "query": "PRAGMA table_info(postHistory)",
+    "result": "Table postHistory(Id, PostHistoryTypeId, PostId, RevisionGUID, CreationDate, UserId, Text, Comment, UserDisplayName)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_postlinks",
+    "source": "codebase_community.sqlite",
+    "query": "PRAGMA table_info(postLinks)",
+    "result": "Table postLinks(Id, CreationDate, PostId, RelatedPostId, LinkTypeId)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_posts",
+    "source": "codebase_community.sqlite",
+    "query": "PRAGMA table_info(posts)",
+    "result": "Table posts(Id, PostTypeId, AcceptedAnswerId, CreaionDate, Score, ViewCount, Body, OwnerUserId, LasActivityDate, Title, Tags, AnswerCount, CommentCount, FavoriteCount, LastEditorUserId, LastEditDate, CommunityOwnedDate, ParentId, ClosedDate, OwnerDisplayName, LastEditorDisplayName)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_tags",
+    "source": "codebase_community.sqlite",
+    "query": "PRAGMA table_info(tags)",
+    "result": "Table tags(Id, TagName, Count, ExcerptPostId, WikiPostId)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_votes",
+    "source": "codebase_community.sqlite",
+    "query": "PRAGMA table_info(votes)",
+    "result": "Table votes(Id, PostId, VoteTypeId, CreationDate, UserId, BountyAmount)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_votes__bountyamount",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT DISTINCT BountyAmount FROM votes",
+    "result": "0 / 100 / 150 / 200 / 25 / 50",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_user",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM users",
+    "result": "40325 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_userdisplayname",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM users",
+    "result": "40325 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_userreputation",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM users",
+    "result": "40325 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_userupvotes",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM users",
+    "result": "40325 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_userdownvotes",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM users",
+    "result": "40325 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_userage",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM users",
+    "result": "40325 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_usercreationdate",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM users",
+    "result": "40325 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_userlastaccessdate",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM users",
+    "result": "40325 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_userviews",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM users",
+    "result": "40325 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_post",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM posts",
+    "result": "91966 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_posttitle",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM posts",
+    "result": "91966 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_postbody",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM posts",
+    "result": "91966 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_postscore",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM posts",
+    "result": "91966 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_postviewcount",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM posts",
+    "result": "91966 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_postcreationdate",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM posts",
+    "result": "91966 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_postanswercount",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM posts",
+    "result": "91966 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_postcommentcount",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM posts",
+    "result": "91966 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_postfavoritecount",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM posts",
+    "result": "91966 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_postowneruserid",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM posts",
+    "result": "91966 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_postlasteditoruserid",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM posts",
+    "result": "91966 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_posttags",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM posts",
+    "result": "91966 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_comment",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM comments",
+    "result": "174285 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_commenttext",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM comments",
+    "result": "174285 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_commentscore",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM comments",
+    "result": "174285 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_commentcreationdate",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM comments",
+    "result": "174285 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_commentuserid",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM comments",
+    "result": "174285 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_badge",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM badges",
+    "result": "79851 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_badgename",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM badges",
+    "result": "79851 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_badgedate",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM badges",
+    "result": "79851 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_badgeuserid",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM badges",
+    "result": "79851 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_vote",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM votes",
+    "result": "38930 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_votetypeid",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM votes",
+    "result": "38930 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_votecreationdate",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM votes",
+    "result": "38930 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_voteuserid",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM votes",
+    "result": "38930 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_votebountyamount",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM votes",
+    "result": "38930 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_postlink",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM postLinks",
+    "result": "11102 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_postlinkcreationdate",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM postLinks",
+    "result": "11102 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_postlinktypeid",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM postLinks",
+    "result": "11102 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_tag",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM tags",
+    "result": "1032 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_tagname",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM tags",
+    "result": "1032 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_tagcount",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM tags",
+    "result": "1032 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_tagexcerptpostid",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM tags",
+    "result": "1032 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_tagwikipostid",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM tags",
+    "result": "1032 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_posthistory",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM postHistory",
+    "result": "303155 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_posthistorytypeid",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM postHistory",
+    "result": "303155 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_posthistorycreationdate",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM postHistory",
+    "result": "303155 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_posthistoryuserid",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM postHistory",
+    "result": "303155 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_posthistorytext",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM postHistory",
+    "result": "303155 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_posthistorycomment",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM postHistory",
+    "result": "303155 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_0",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM posts WHERE OwnerUserId IS NULL;",
+    "result": "[[1392]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_1",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM users WHERE Age IS NULL;",
+    "result": "[[32007]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_2",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM posts WHERE FavoriteCount IS NULL;",
+    "result": "[[78723]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_3",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM posts WHERE ViewCount IS NULL;",
+    "result": "[[49054]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_4",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM votes WHERE BountyAmount IS NULL;",
+    "result": "[[38829]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_5",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM tags WHERE ExcerptPostId IS NULL;",
+    "result": "[[436]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_6",
+    "source": "codebase_community.sqlite",
+    "query": "SELECT COUNT(*) FROM tags WHERE WikiPostId IS NULL;",
+    "result": "[[436]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_users__badges__userid",
+    "source": "codebase_community.sqlite",
+    "query": "distinct values of badges.UserId contained in users.Id",
+    "result": "overlap 100.0% (25078/25078 distinct child values); parent key unique: True; child rows 79851, parent rows 40325",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_users__comments__userid",
+    "source": "codebase_community.sqlite",
+    "query": "distinct values of comments.UserId contained in users.Id",
+    "result": "overlap 100.0% (13647/13647 distinct child values); parent key unique: True; child rows 174285, parent rows 40325",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_posts__comments__postid",
+    "source": "codebase_community.sqlite",
+    "query": "distinct values of comments.PostId contained in posts.Id",
+    "result": "overlap 100.0% (53411/53416 distinct child values); parent key unique: True; child rows 174285, parent rows 91966",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_users__posthistory__userid",
+    "source": "codebase_community.sqlite",
+    "query": "distinct values of postHistory.UserId contained in users.Id",
+    "result": "overlap 100.0% (22107/22107 distinct child values); parent key unique: True; child rows 303155, parent rows 40325",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_posts__posthistory__postid",
+    "source": "codebase_community.sqlite",
+    "query": "distinct values of postHistory.PostId contained in posts.Id",
+    "result": "overlap 100.0% (91966/91976 distinct child values); parent key unique: True; child rows 303155, parent rows 91966",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_posts__postlinks__relatedpostid",
+    "source": "codebase_community.sqlite",
+    "query": "distinct values of postLinks.RelatedPostId contained in posts.Id",
+    "result": "overlap 100.0% (5175/5177 distinct child values); parent key unique: True; child rows 11102, parent rows 91966",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_posts__postlinks__relatedpostid__postid",
+    "source": "codebase_community.sqlite",
+    "query": "distinct values of postLinks.PostId contained in posts.Id",
+    "result": "overlap 100.0%; parent key unique: True",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_users__posts__owneruserid",
+    "source": "codebase_community.sqlite",
+    "query": "distinct values of posts.OwnerUserId contained in users.Id",
+    "result": "overlap 100.0% (21979/21979 distinct child values); parent key unique: True; child rows 91966, parent rows 40325",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_users__posts__owneruserid__lasteditoruserid",
+    "source": "codebase_community.sqlite",
+    "query": "distinct values of posts.LastEditorUserId contained in users.Id",
+    "result": "overlap 100.0%; parent key unique: True",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_posts__posts__parentid",
+    "source": "codebase_community.sqlite",
+    "query": "distinct values of posts.ParentId contained in posts.Id",
+    "result": "overlap 100.0% (29001/29006 distinct child values); parent key unique: True; child rows 91966, parent rows 91966",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_posts__posts__parentid__id",
+    "source": "codebase_community.sqlite",
+    "query": "distinct values of posts.Id contained in posts.Id",
+    "result": "overlap 100.0%; parent key unique: True",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_users__votes__userid",
+    "source": "codebase_community.sqlite",
+    "query": "distinct values of votes.UserId contained in users.Id",
+    "result": "overlap 100.0% (509/509 distinct child values); parent key unique: True; child rows 38930, parent rows 40325",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_users__votes__userid__id",
+    "source": "codebase_community.sqlite",
+    "query": "distinct values of votes.Id contained in users.Id",
+    "result": "overlap 71.7%; parent key unique: True",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_posts__votes__postid",
+    "source": "codebase_community.sqlite",
+    "query": "distinct values of votes.PostId contained in posts.Id",
+    "result": "overlap 100.0% (8584/8584 distinct child values); parent key unique: True; child rows 38930, parent rows 91966",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_posts__votes__postid__id",
+    "source": "codebase_community.sqlite",
+    "query": "distinct values of votes.Id contained in posts.Id",
+    "result": "overlap 82.5%; parent key unique: True",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_posts__tags__excerptpostid",
+    "source": "codebase_community.sqlite",
+    "query": "distinct values of tags.ExcerptPostId contained in posts.Id",
+    "result": "overlap 99.8% (595/596 distinct child values); parent key unique: True; child rows 1032, parent rows 91966",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_posts__tags__excerptpostid__id",
+    "source": "codebase_community.sqlite",
+    "query": "distinct values of tags.Id contained in posts.Id",
+    "result": "overlap 93.8%; parent key unique: True",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_posts__tags__excerptpostid__wikipostid",
+    "source": "codebase_community.sqlite",
+    "query": "distinct values of tags.WikiPostId contained in posts.Id",
+    "result": "overlap 100.0%; parent key unique: True",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  }
+]

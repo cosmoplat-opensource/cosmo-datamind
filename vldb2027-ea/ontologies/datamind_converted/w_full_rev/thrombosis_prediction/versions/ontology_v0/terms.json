@@ -1,0 +1,495 @@
+[
+  {
+    "id": "term_examination",
+    "name": "Examination",
+    "type": "entity",
+    "definition": "在特定时间点对某位就诊者实施的一组实验室检测与临床观察结果的汇总记录，包含自身抗体、凝血功能及临床表现等观测项。 Counterexample: 与单次单项检验结果（如仅一条 Laboratory 记录）不同，检查记录是一次就诊中多项检测与症状信息的集合性信息记录。 Maturity: Provisional",
+    "scope": "Records of table Examination; provenance: direct source Examination",
+    "aliases": [
+      "检查记录"
+    ],
+    "evidence": [
+      "ev_schema_examination"
+    ]
+  },
+  {
+    "id": "term_laboratory",
+    "name": "Laboratory",
+    "type": "entity",
+    "definition": "在某一日期对某位就诊者采集样本后，由检验科室完成的一组生化、血液与凝血指标的定量或定性测定结果记录。 Counterexample: 与检查记录（Examination）不同，实验室检验记录聚焦于检验科仪器产出的数值型指标，不含症状描述与诊断结论。 Maturity: Provisional",
+    "scope": "Records of table Laboratory; provenance: direct source Laboratory",
+    "aliases": [
+      "实验室检验记录"
+    ],
+    "evidence": [
+      "ev_schema_laboratory"
+    ]
+  },
+  {
+    "id": "term_patient",
+    "name": "Patient",
+    "type": "entity",
+    "definition": "接受医疗服务的自然人，具有性别、出生日期等固有属性，并作为检查与检验记录的归属主体。 Counterexample: 与医生、护士等医疗提供者不同，患者是服务的接受方而非提供方；与检查记录不同，患者是持续存在的实体而非一次性的信息记录。 Maturity: Provisional",
+    "scope": "Records of table Patient; provenance: direct source Patient",
+    "aliases": [
+      "患者"
+    ],
+    "evidence": [
+      "ev_schema_patient"
+    ]
+  },
+  {
+    "id": "concept_anticardiolipin_igm",
+    "name": "Anticardiolipin_IgM",
+    "type": "concept",
+    "definition": "Anticardiolipin antibody IgM measurement for a patient on an examination date.",
+    "scope": "Examination",
+    "aliases": [
+      "anti-Cardiolipin antibody",
+      "aCL IgM",
+      "anticardiolipin IgM",
+      "anticardiolipin ig m"
+    ],
+    "evidence": [
+      "ev_concept_anticardiolipin_igm"
+    ]
+  },
+  {
+    "id": "concept_uric_acid",
+    "name": "Uric_Acid",
+    "type": "concept",
+    "definition": "Serum uric acid level from laboratory tests.",
+    "scope": "Laboratory",
+    "aliases": [
+      "uric acid",
+      "UA",
+      "abnormal uric acid",
+      "uric acid within normal range"
+    ],
+    "evidence": [
+      "ev_concept_uric_acid"
+    ]
+  },
+  {
+    "id": "concept_hematocrit",
+    "name": "Hematocrit",
+    "type": "concept",
+    "definition": "Hematocrit percentage from laboratory tests.",
+    "scope": "Laboratory",
+    "aliases": [
+      "hematoclit",
+      "HCT",
+      "hematocrit level"
+    ],
+    "evidence": [
+      "ev_concept_hematocrit"
+    ]
+  },
+  {
+    "id": "concept_thrombosis_severity",
+    "name": "Thrombosis_Severity",
+    "type": "concept",
+    "definition": "Severity code of thrombosis recorded in examination.",
+    "scope": "Examination",
+    "aliases": [
+      "thrombosis",
+      "severe degree of thrombosis",
+      "most serious thrombosis",
+      "does not have thrombosis",
+      "thrombosis severity"
+    ],
+    "evidence": [
+      "ev_concept_thrombosis_severity"
+    ]
+  },
+  {
+    "id": "concept_diagnosis",
+    "name": "Diagnosis",
+    "type": "concept",
+    "definition": "Clinical diagnosis assigned to a patient.",
+    "scope": "Patient",
+    "aliases": [
+      "disease",
+      "diagnosed with",
+      "APS diagnosis",
+      "RA diagnosis"
+    ],
+    "evidence": [
+      "ev_concept_diagnosis"
+    ]
+  },
+  {
+    "id": "concept_anti_sm",
+    "name": "Anti_SM",
+    "type": "concept",
+    "definition": "Anti-Smith antibody result from laboratory tests.",
+    "scope": "Laboratory",
+    "aliases": [
+      "anti-SM",
+      "SM",
+      "normal anti-SM",
+      "anti sm"
+    ],
+    "evidence": [
+      "ev_concept_anti_sm"
+    ]
+  },
+  {
+    "id": "concept_total_cholesterol",
+    "name": "Total_Cholesterol",
+    "type": "concept",
+    "definition": "Total cholesterol level from laboratory tests.",
+    "scope": "Laboratory",
+    "aliases": [
+      "total cholesterol",
+      "T-CHO",
+      "cholesterol"
+    ],
+    "evidence": [
+      "ev_concept_total_cholesterol"
+    ]
+  },
+  {
+    "id": "concept_symptoms",
+    "name": "Symptoms",
+    "type": "concept",
+    "definition": "Symptoms recorded during examination.",
+    "scope": "Examination where Symptoms IS NOT NULL",
+    "aliases": [
+      "symptoms observed"
+    ],
+    "evidence": [
+      "ev_concept_symptoms"
+    ]
+  },
+  {
+    "id": "concept_red_blood_cell",
+    "name": "Red_Blood_Cell",
+    "type": "concept",
+    "definition": "Red blood cell count from laboratory tests.",
+    "scope": "Laboratory",
+    "aliases": [
+      "red blood cell",
+      "RBC",
+      "lower red blood cell"
+    ],
+    "evidence": [
+      "ev_concept_red_blood_cell"
+    ]
+  },
+  {
+    "id": "concept_sex",
+    "name": "Sex",
+    "type": "concept",
+    "definition": "Patient sex.",
+    "scope": "Patient",
+    "aliases": [
+      "gender",
+      "male",
+      "female",
+      "women"
+    ],
+    "evidence": [
+      "ev_concept_sex"
+    ]
+  },
+  {
+    "id": "concept_birthday",
+    "name": "Birthday",
+    "type": "concept",
+    "definition": "Patient date of birth.",
+    "scope": "Patient",
+    "aliases": [
+      "born on",
+      "born in",
+      "age",
+      "underage",
+      "older than"
+    ],
+    "evidence": [
+      "ev_concept_birthday"
+    ]
+  },
+  {
+    "id": "concept_iga",
+    "name": "IgA",
+    "type": "concept",
+    "definition": "Immunoglobulin A level from laboratory tests.",
+    "scope": "Laboratory",
+    "aliases": [
+      "Ig A",
+      "normal Ig A level",
+      "ig a"
+    ],
+    "evidence": [
+      "ev_concept_iga"
+    ]
+  },
+  {
+    "id": "concept_first_date",
+    "name": "First_Date",
+    "type": "concept",
+    "definition": "Date of first hospital visit.",
+    "scope": "Patient",
+    "aliases": [
+      "first date",
+      "came to the hospital",
+      "came at the hospital"
+    ],
+    "evidence": [
+      "ev_concept_first_date"
+    ]
+  },
+  {
+    "id": "concept_ldh",
+    "name": "LDH",
+    "type": "concept",
+    "definition": "Lactate dehydrogenase level from laboratory tests.",
+    "scope": "Laboratory",
+    "aliases": [
+      "lactate dehydrogenase"
+    ],
+    "evidence": [
+      "ev_concept_ldh"
+    ]
+  },
+  {
+    "id": "concept_admission",
+    "name": "Admission",
+    "type": "concept",
+    "definition": "Admission status of the patient.",
+    "scope": "Patient",
+    "aliases": [
+      "immediately followed at the outpatient clinic"
+    ],
+    "evidence": [
+      "ev_concept_admission"
+    ]
+  },
+  {
+    "id": "concept_prothrombin_time",
+    "name": "Prothrombin_Time",
+    "type": "concept",
+    "definition": "Prothrombin time from laboratory tests.",
+    "scope": "Laboratory",
+    "aliases": [
+      "prothrombin time",
+      "PT",
+      "abnormal prothrombin time"
+    ],
+    "evidence": [
+      "ev_concept_prothrombin_time"
+    ]
+  },
+  {
+    "id": "concept_examination_date",
+    "name": "Examination_Date",
+    "type": "concept",
+    "definition": "Date when examination was performed.",
+    "scope": "Examination",
+    "aliases": [
+      "examination date",
+      "examined during",
+      "examined in"
+    ],
+    "evidence": [
+      "ev_concept_examination_date"
+    ]
+  },
+  {
+    "id": "concept_description",
+    "name": "Description",
+    "type": "concept",
+    "definition": "Description or date field in patient record.",
+    "scope": "Patient",
+    "aliases": [
+      "came at the hospital in"
+    ],
+    "evidence": [
+      "ev_concept_description"
+    ]
+  },
+  {
+    "id": "derived_age",
+    "name": "Age",
+    "type": "metric",
+    "definition": "Patient age calculated from birthday to current year. Formula: YEAR(CURRENT_TIMESTAMP) - YEAR(Birthday). Inputs: Birthday = Patient.Birthday",
+    "scope": "derived metric",
+    "aliases": [
+      "older than",
+      "underage"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_abnormal_uric_acid",
+    "name": "Abnormal_Uric_Acid",
+    "type": "metric",
+    "definition": "Flag for uric acid outside normal range based on sex. Formula: CASE WHEN (Sex = 'M' AND Uric_Acid > 8.0) OR (Sex = 'F' AND Uric_Acid > 6.5) THEN 1 ELSE 0 END. Inputs: Uric_Acid = Laboratory.UA; Sex = Patient.SEX",
+    "scope": "derived metric",
+    "aliases": [
+      "abnormal uric acid",
+      "uric acid within normal range"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_abnormal_hematocrit",
+    "name": "Abnormal_Hematocrit",
+    "type": "metric",
+    "definition": "Flag for hematocrit outside normal range. Formula: CASE WHEN Hematocrit > 52 OR Hematocrit < 37 THEN 1 ELSE 0 END. Inputs: Hematocrit = Laboratory.HCT",
+    "scope": "derived metric",
+    "aliases": [
+      "hematoclit level exceeded normal range",
+      "abnormal hematocrit"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_abnormal_pt",
+    "name": "Abnormal_PT",
+    "type": "metric",
+    "definition": "Flag for prothrombin time above normal threshold. Formula: CASE WHEN Prothrombin_Time >= 14 THEN 1 ELSE 0 END. Inputs: Prothrombin_Time = Laboratory.PT",
+    "scope": "derived metric",
+    "aliases": [
+      "abnormal prothrombin time",
+      "PT abnormal",
+      "abnormal pt"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_normal_anti_sm",
+    "name": "Normal_Anti_SM",
+    "type": "metric",
+    "definition": "Flag for anti-SM result within normal range. Formula: CASE WHEN Anti_SM IN ('-', '+-') THEN 1 ELSE 0 END. Inputs: Anti_SM = Laboratory.SM",
+    "scope": "derived metric",
+    "aliases": [
+      "normal anti-SM",
+      "anti-SM normal",
+      "normal anti sm"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_normal_iga",
+    "name": "Normal_IgA",
+    "type": "metric",
+    "definition": "Flag for IgA within normal range. Formula: CASE WHEN IgA > 80 AND IgA < 500 THEN 1 ELSE 0 END. Inputs: IgA = Laboratory.IGA",
+    "scope": "derived metric",
+    "aliases": [
+      "normal Ig A level",
+      "IgA normal",
+      "normal ig a"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_cholesterol_decrease_rate",
+    "name": "Cholesterol_Decrease_Rate",
+    "type": "metric",
+    "definition": "Rate of decrease in total cholesterol between two months. Formula: (Total_Cholesterol_Nov - Total_Cholesterol_Dec) / Total_Cholesterol_Nov. Inputs: Total_Cholesterol = Laboratory.T-CHO",
+    "scope": "derived metric",
+    "aliases": [
+      "decrease rate for total cholesterol",
+      "cholesterol decrease rate"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_female_percentage",
+    "name": "Female_Percentage",
+    "type": "metric",
+    "definition": "Percentage of female patients in a group. Formula: SUM(CASE WHEN Sex = 'F' THEN 1 ELSE 0 END) / COUNT(*) * 100. Inputs: Sex = Patient.SEX",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of female",
+      "percentage of women",
+      "female percentage"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_male_female_ratio",
+    "name": "Male_Female_Ratio",
+    "type": "metric",
+    "definition": "Ratio of male to female patients. Formula: SUM(CASE WHEN Sex = 'M' THEN 1 ELSE 0 END) / SUM(CASE WHEN Sex = 'F' THEN 1 ELSE 0 END). Inputs: Sex = Patient.SEX",
+    "scope": "derived metric",
+    "aliases": [
+      "ratio of male to female",
+      "male to female ratio",
+      "male female ratio"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_abnormal_ldh",
+    "name": "Abnormal_LDH",
+    "type": "metric",
+    "definition": "Flag for LDH above normal threshold. Formula: CASE WHEN LDH > 500 THEN 1 ELSE 0 END. Inputs: LDH = Laboratory.LDH",
+    "scope": "derived metric",
+    "aliases": [
+      "LDH beyond normal range",
+      "abnormal LDH",
+      "abnormal ldh"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_abnormal_rbc",
+    "name": "Abnormal_RBC",
+    "type": "metric",
+    "definition": "Flag for red blood cell count below normal threshold. Formula: CASE WHEN Red_Blood_Cell < 3.5 THEN 1 ELSE 0 END. Inputs: Red_Blood_Cell = Laboratory.RBC",
+    "scope": "derived metric",
+    "aliases": [
+      "lower red blood cell",
+      "abnormal RBC",
+      "abnormal rbc"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_thrombosis_severity",
+    "name": "Thrombosis_Severity",
+    "type": "concept",
+    "definition": "Analysis of thrombosis severity levels and associated patient outcomes.",
+    "scope": "Examination.Thrombosis codes",
+    "aliases": [
+      "thrombosis",
+      "severe thrombosis",
+      "most serious thrombosis",
+      "thrombosis severity"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_diagnosis_type",
+    "name": "Diagnosis_Type",
+    "type": "concept",
+    "definition": "Analysis of patient diagnoses and their distributions.",
+    "scope": "Patient.Diagnosis codes",
+    "aliases": [
+      "diagnosis",
+      "disease",
+      "APS",
+      "RA",
+      "SLE",
+      "diagnosis type"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_anti_sm_status",
+    "name": "Anti_SM_Status",
+    "type": "concept",
+    "definition": "Analysis of anti-SM antibody results and normality.",
+    "scope": "Laboratory.SM codes",
+    "aliases": [
+      "anti-SM",
+      "SM",
+      "normal anti-SM",
+      "anti sm status"
+    ],
+    "evidence": []
+  }
+]

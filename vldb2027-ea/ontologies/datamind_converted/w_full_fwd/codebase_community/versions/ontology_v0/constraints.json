@@ -1,0 +1,187 @@
+[
+  {
+    "id": "c_values_votes__bountyamount",
+    "target": "term_votes",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "BountyAmount",
+      "bountyamount",
+      "votes",
+      "0",
+      "100",
+      "150",
+      "200",
+      "25",
+      "50"
+    ],
+    "severity": "warning",
+    "scope": "Filters on votes.BountyAmount",
+    "confidence": "high",
+    "description": "votes.BountyAmount only takes these stored values: 0 / 100 / 150 / 200 / 25 / 50. Filter with the stored spelling.",
+    "evidence": [
+      "ev_values_votes__bountyamount"
+    ]
+  },
+  {
+    "id": "c_caveat_0",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Some",
+      "posts",
+      "have",
+      "owner",
+      "OwnerUserId",
+      "NULL",
+      "joins",
+      "users",
+      "drop",
+      "them"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Some posts have no owner (OwnerUserId is NULL), so joins to users may drop them.",
+    "evidence": [
+      "ev_caveat_0"
+    ]
+  },
+  {
+    "id": "c_caveat_1",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Some",
+      "users",
+      "have",
+      "recorded",
+      "NULL",
+      "affecting",
+      "average",
+      "calculations"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Some users have no age recorded (Age is NULL), affecting average age calculations.",
+    "evidence": [
+      "ev_caveat_1"
+    ]
+  },
+  {
+    "id": "c_caveat_2",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Some",
+      "posts",
+      "have",
+      "favorite",
+      "count",
+      "FavoriteCount",
+      "NULL",
+      "affecting",
+      "calculations"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Some posts have no favorite count (FavoriteCount is NULL), affecting max favorite calculations.",
+    "evidence": [
+      "ev_caveat_2"
+    ]
+  },
+  {
+    "id": "c_caveat_3",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Some",
+      "posts",
+      "have",
+      "view",
+      "count",
+      "ViewCount",
+      "NULL",
+      "affecting",
+      "average",
+      "calculations"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Some posts have no view count (ViewCount is NULL), affecting average view calculations.",
+    "evidence": [
+      "ev_caveat_3"
+    ]
+  },
+  {
+    "id": "c_caveat_4",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Some",
+      "votes",
+      "have",
+      "bounty",
+      "amount",
+      "BountyAmount",
+      "NULL",
+      "affecting",
+      "calculations"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Some votes have no bounty amount (BountyAmount is NULL), affecting sum of bounty calculations.",
+    "evidence": [
+      "ev_caveat_4"
+    ]
+  },
+  {
+    "id": "c_caveat_5",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Some",
+      "tags",
+      "have",
+      "excerpt",
+      "post",
+      "ExcerptPostId",
+      "NULL",
+      "affecting",
+      "lookups"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Some tags have no excerpt post (ExcerptPostId is NULL), affecting excerpt post lookups.",
+    "evidence": [
+      "ev_caveat_5"
+    ]
+  },
+  {
+    "id": "c_caveat_6",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Some",
+      "tags",
+      "have",
+      "wiki",
+      "post",
+      "WikiPostId",
+      "NULL",
+      "affecting",
+      "lookups"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Some tags have no wiki post (WikiPostId is NULL), affecting wiki post lookups.",
+    "evidence": [
+      "ev_caveat_6"
+    ]
+  }
+]

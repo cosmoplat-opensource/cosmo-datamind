@@ -1,0 +1,89 @@
+[
+  {
+    "id": "c_values_tab04__fld007",
+    "target": "term_tab04",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "fld007",
+      "tab04",
+      "+",
+      "-"
+    ],
+    "severity": "warning",
+    "scope": "Filters on tab04.fld007",
+    "confidence": "high",
+    "description": "tab04.fld007 only takes these stored values: + / -. Filter with the stored spelling.",
+    "evidence": [
+      "ev_values_tab04__fld007"
+    ]
+  },
+  {
+    "id": "c_caveat_0",
+    "target": "term_tab03",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Atom",
+      "bond",
+      "records",
+      "atom",
+      "granularity",
+      "counting",
+      "rows",
+      "overcounts",
+      "molecules",
+      "COUNT",
+      "DISTINCT"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Atom and bond records are at atom/bond granularity, so counting rows overcounts molecules; use COUNT(DISTINCT fld002) for molecules.",
+    "evidence": [
+      "ev_caveat_0"
+    ]
+  },
+  {
+    "id": "c_caveat_1",
+    "target": "term_tab03",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "bond",
+      "references",
+      "atoms",
+      "counting",
+      "only",
+      "undercounts",
+      "participating",
+      "bonds"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "A bond row references two atoms (fld001 and fld006); counting only fld001 undercounts atoms participating in bonds.",
+    "evidence": [
+      "ev_caveat_1"
+    ]
+  },
+  {
+    "id": "c_caveat_2",
+    "target": "term_tab03",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Molecule",
+      "like",
+      "exist",
+      "have",
+      "atoms",
+      "check",
+      "before",
+      "dividing"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Molecule ids like 'TR006' may not exist or may have no atoms; check before dividing.",
+    "evidence": [
+      "ev_caveat_2"
+    ]
+  }
+]

@@ -1,0 +1,321 @@
+[
+  {
+    "id": "term_tab01",
+    "name": "tab01",
+    "type": "entity",
+    "definition": "主数据实体一 Counterexample: 与 tab02 的区分：tab02 含 fld004 且引用 fld002，属从属记录而非本主数据 Maturity: Provisional",
+    "scope": "Records of table tab01; provenance: direct source tab01",
+    "aliases": [
+      "主数据实体一"
+    ],
+    "evidence": [
+      "ev_schema_tab01"
+    ]
+  },
+  {
+    "id": "term_tab02",
+    "name": "tab02",
+    "type": "entity",
+    "definition": "从属记录二 Counterexample: 与 tab01 的区分：本表通过 fld002 依附于 tab01，自身不被他表以 fld002 之外键广泛引用 Maturity: Provisional",
+    "scope": "Records of table tab02; provenance: direct source tab02",
+    "aliases": [
+      "从属记录二"
+    ],
+    "evidence": [
+      "ev_schema_tab02"
+    ]
+  },
+  {
+    "id": "term_tab03",
+    "name": "tab03",
+    "type": "entity",
+    "definition": "独立实体三 Counterexample: 与 tab01 的区分：本表无 fld001/fld002 等共享主键列，属独立维度而非主数据族成员 Maturity: Provisional",
+    "scope": "Records of table tab03; provenance: direct source tab03",
+    "aliases": [
+      "独立实体三"
+    ],
+    "evidence": [
+      "ev_schema_tab03"
+    ]
+  },
+  {
+    "id": "term_tab04",
+    "name": "tab04",
+    "type": "entity",
+    "definition": "业务明细记录 Counterexample: 与 tab05 的区分：本表为多外键汇聚的明细记录，tab05 仅含 fld001、fld010、fld015 三列，属更窄的关联记录 Maturity: Provisional",
+    "scope": "Records of table tab04; provenance: direct source tab04",
+    "aliases": [
+      "业务明细记录"
+    ],
+    "evidence": [
+      "ev_schema_tab04"
+    ]
+  },
+  {
+    "id": "term_tab05",
+    "name": "tab05",
+    "type": "entity",
+    "definition": "关联记录五 Counterexample: 与 tab04 的区分：本表列数少且不含 fld004、fld007 等外键，是 tab01 与 tab04 之间的窄关联记录 Maturity: Provisional",
+    "scope": "Records of table tab05; provenance: direct source tab05",
+    "aliases": [
+      "关联记录五"
+    ],
+    "evidence": [
+      "ev_schema_tab05"
+    ]
+  },
+  {
+    "id": "concept_customersegment",
+    "name": "CustomerSegment",
+    "type": "concept",
+    "definition": "The business segment a customer belongs to (SME, LAM, KAM).",
+    "scope": "tab01",
+    "aliases": [
+      "segment",
+      "customer segment",
+      "SME",
+      "LAM",
+      "KAM",
+      "three segments"
+    ],
+    "evidence": [
+      "ev_concept_customersegment"
+    ]
+  },
+  {
+    "id": "concept_monthlyconsumption",
+    "name": "MonthlyConsumption",
+    "type": "concept",
+    "definition": "The consumption amount recorded for a customer in a given month.",
+    "scope": "tab05",
+    "aliases": [
+      "monthly consumption",
+      "consumption",
+      "amount of consumption",
+      "consumption paid",
+      "fld015"
+    ],
+    "evidence": [
+      "ev_concept_monthlyconsumption"
+    ]
+  },
+  {
+    "id": "concept_yearmonth",
+    "name": "YearMonth",
+    "type": "concept",
+    "definition": "The year-month key (YYYYMM) of a consumption record.",
+    "scope": "tab05",
+    "aliases": [
+      "date",
+      "month",
+      "year",
+      "2013",
+      "2012",
+      "September 2013",
+      "year month"
+    ],
+    "evidence": [
+      "ev_concept_yearmonth"
+    ]
+  },
+  {
+    "id": "concept_paymentcurrency",
+    "name": "PaymentCurrency",
+    "type": "concept",
+    "definition": "The currency in which a customer pays.",
+    "scope": "tab01",
+    "aliases": [
+      "paid in CZK",
+      "paid in EUR",
+      "pays in euro",
+      "currency",
+      "fld003",
+      "payment currency"
+    ],
+    "evidence": [
+      "ev_concept_paymentcurrency"
+    ]
+  },
+  {
+    "id": "concept_customer",
+    "name": "Customer",
+    "type": "concept",
+    "definition": "A unique customer entity.",
+    "scope": "tab01",
+    "aliases": [
+      "customers",
+      "customer id"
+    ],
+    "evidence": [
+      "ev_concept_customer"
+    ]
+  },
+  {
+    "id": "concept_gasstationchain",
+    "name": "GasStationChain",
+    "type": "concept",
+    "definition": "The chain number a gas station belongs to.",
+    "scope": "tab02",
+    "aliases": [
+      "chain no. 11",
+      "chain",
+      "gas station chain"
+    ],
+    "evidence": [
+      "ev_concept_gasstationchain"
+    ]
+  },
+  {
+    "id": "concept_country",
+    "name": "Country",
+    "type": "concept",
+    "definition": "The country where a gas station is located.",
+    "scope": "tab02 where fld006 = 'CZE'",
+    "aliases": [
+      "Czech Republic",
+      "CZE"
+    ],
+    "evidence": [
+      "ev_concept_country"
+    ]
+  },
+  {
+    "id": "concept_transactiontime",
+    "name": "TransactionTime",
+    "type": "concept",
+    "definition": "The timestamp at which a transaction occurred.",
+    "scope": "tab04",
+    "aliases": [
+      "transactions taken place",
+      "time of the transactions",
+      "after 2012/1/1",
+      "disparate time",
+      "transaction time"
+    ],
+    "evidence": [
+      "ev_concept_transactiontime"
+    ]
+  },
+  {
+    "id": "concept_productdescription",
+    "name": "ProductDescription",
+    "type": "concept",
+    "definition": "The description of a product consumed in a transaction.",
+    "scope": "tab03",
+    "aliases": [
+      "product description",
+      "products consumed",
+      "product"
+    ],
+    "evidence": [
+      "ev_concept_productdescription"
+    ]
+  },
+  {
+    "id": "concept_transaction",
+    "name": "Transaction",
+    "type": "concept",
+    "definition": "A single fuel/product purchase event at a gas station.",
+    "scope": "tab04",
+    "aliases": [
+      "transactions",
+      "purchase"
+    ],
+    "evidence": [
+      "ev_concept_transaction"
+    ]
+  },
+  {
+    "id": "derived_annualconsumption",
+    "name": "AnnualConsumption",
+    "type": "metric",
+    "definition": "Total consumption of a customer/segment within a calendar year. Formula: SUM(MonthlyConsumption) filtered to YearMonth year. Inputs: MonthlyConsumption = tab05.fld015; YearMonth = tab05.fld010",
+    "scope": "derived metric",
+    "aliases": [
+      "total consumption per year",
+      "annual consumption",
+      "consumption for 2013",
+      "consumption for 2012"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_eurocustomercount",
+    "name": "EuroCustomerCount",
+    "type": "metric",
+    "definition": "Number of distinct customers whose payment currency is EUR. Formula: COUNT DISTINCT(Customer) WHERE PaymentCurrency = 'EUR'. Inputs: Customer = tab01.fld001; PaymentCurrency = tab01.fld003",
+    "scope": "derived metric",
+    "aliases": [
+      "customers who paid in euro",
+      "count of euro payers",
+      "euro customer count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_highvalueeurocustomers",
+    "name": "HighValueEuroCustomers",
+    "type": "metric",
+    "definition": "Euro-paying customers whose monthly consumption exceeds 1000. Formula: COUNT DISTINCT(Customer) WHERE PaymentCurrency='EUR' AND MonthlyConsumption > 1000. Inputs: Customer = tab01.fld001; PaymentCurrency = tab01.fld003; MonthlyConsumption = tab05.fld015",
+    "scope": "derived metric",
+    "aliases": [
+      "euro customers with monthly consumption over 1000",
+      "customers over 1000",
+      "high value euro customers"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_peakconsumptionmonth",
+    "name": "PeakConsumptionMonth",
+    "type": "metric",
+    "definition": "The month with the maximum total consumption in a period. Formula: ARGMAX(SUM(MonthlyConsumption)) BY YearMonth. Inputs: MonthlyConsumption = tab05.fld015; YearMonth = tab05.fld010",
+    "scope": "derived metric",
+    "aliases": [
+      "gas consumption peak month",
+      "highest monthly consumption",
+      "peak month",
+      "peak consumption month"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_transactionsafterdate",
+    "name": "TransactionsAfterDate",
+    "type": "metric",
+    "definition": "Number of transactions occurring after a given date. Formula: COUNT(Transaction) WHERE TransactionTime > '2012-01-01'. Inputs: Transaction = tab04.fld009; TransactionTime = tab04.fld013",
+    "scope": "derived metric",
+    "aliases": [
+      "transactions after 2012/1/1",
+      "count of transactions after date",
+      "transactions after date"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_customersegmentation",
+    "name": "CustomerSegmentation",
+    "type": "concept",
+    "definition": "Which customer segment (SME, LAM, KAM) drives consumption and how segments compare.",
+    "scope": "tab01.fld002 codes",
+    "aliases": [
+      "segment analysis",
+      "SME LAM KAM",
+      "customer segmentation"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_paymentcurrency",
+    "name": "PaymentCurrency",
+    "type": "concept",
+    "definition": "How consumption splits by payment currency.",
+    "scope": "tab01.fld003 codes",
+    "aliases": [
+      "currency analysis",
+      "CZK vs EUR",
+      "payment currency"
+    ],
+    "evidence": []
+  }
+]

@@ -1,0 +1,467 @@
+[
+  {
+    "id": "term_tab01",
+    "name": "tab01",
+    "type": "entity",
+    "definition": "主数据记录 Counterexample: 与 tab02、tab03 的区分待专家确认：三表均以 fld001 为主键候选列，可能分别对应不同业务实体，也可能属于同一表族的不同成员 Maturity: Provisional",
+    "scope": "Records of table tab01; provenance: direct source tab01",
+    "aliases": [
+      "主数据记录"
+    ],
+    "evidence": [
+      "ev_schema_tab01"
+    ]
+  },
+  {
+    "id": "term_tab02",
+    "name": "tab02",
+    "type": "entity",
+    "definition": "从属明细记录 Counterexample: 与 tab01 的区分待专家确认：共享 fld001、fld008 两列可能表示引用关系，也可能只是同名字段，需数据验证 Maturity: Provisional",
+    "scope": "Records of table tab02; provenance: direct source tab02",
+    "aliases": [
+      "从属明细记录"
+    ],
+    "evidence": [
+      "ev_schema_tab02"
+    ]
+  },
+  {
+    "id": "term_tab03",
+    "name": "tab03",
+    "type": "entity",
+    "definition": "业务台账记录 Counterexample: 与 tab01、tab02 的区分待专家确认：列数最多且含大量独有列，可能是独立业务实体而非从属明细 Maturity: Provisional",
+    "scope": "Records of table tab03; provenance: direct source tab03",
+    "aliases": [
+      "业务台账记录"
+    ],
+    "evidence": [
+      "ev_schema_tab03"
+    ]
+  },
+  {
+    "id": "concept_patientid",
+    "name": "PatientID",
+    "type": "concept",
+    "definition": "每位患者的唯一标识",
+    "scope": "tab01",
+    "aliases": [
+      "patient ID",
+      "ID",
+      "patients",
+      "patient id"
+    ],
+    "evidence": [
+      "ev_concept_patientid"
+    ]
+  },
+  {
+    "id": "concept_sex",
+    "name": "Sex",
+    "type": "concept",
+    "definition": "患者性别",
+    "scope": "tab02",
+    "aliases": [
+      "female",
+      "male",
+      "gender"
+    ],
+    "evidence": [
+      "ev_concept_sex"
+    ]
+  },
+  {
+    "id": "concept_birthdate",
+    "name": "BirthDate",
+    "type": "concept",
+    "definition": "患者出生日期,用于计算年龄",
+    "scope": "tab02",
+    "aliases": [
+      "birthday",
+      "born",
+      "date of birth",
+      "birth date"
+    ],
+    "evidence": [
+      "ev_concept_birthdate"
+    ]
+  },
+  {
+    "id": "concept_examdate",
+    "name": "ExamDate",
+    "type": "concept",
+    "definition": "实验室检查日期",
+    "scope": "tab03",
+    "aliases": [
+      "examined between",
+      "date of laboratory tests",
+      "exam date"
+    ],
+    "evidence": [
+      "ev_concept_examdate"
+    ]
+  },
+  {
+    "id": "concept_diagnosis",
+    "name": "Diagnosis",
+    "type": "concept",
+    "definition": "患者所患疾病诊断",
+    "scope": "tab02",
+    "aliases": [
+      "diagnosed with",
+      "disease",
+      "most common disease"
+    ],
+    "evidence": [
+      "ev_concept_diagnosis"
+    ]
+  },
+  {
+    "id": "concept_sle",
+    "name": "SLE",
+    "type": "concept",
+    "definition": "系统性红斑狼疮诊断",
+    "scope": "tab02 where fld008 = 'SLE'",
+    "aliases": [
+      "diagnosed with SLE"
+    ],
+    "evidence": [
+      "ev_concept_sle"
+    ]
+  },
+  {
+    "id": "concept_inpatientstatus",
+    "name": "InpatientStatus",
+    "type": "concept",
+    "definition": "患者是否为住院患者",
+    "scope": "tab02",
+    "aliases": [
+      "in-patient",
+      "outpatient",
+      "inpatient status"
+    ],
+    "evidence": [
+      "ev_concept_inpatientstatus"
+    ]
+  },
+  {
+    "id": "concept_gpt",
+    "name": "GPT",
+    "type": "concept",
+    "definition": "谷丙转氨酶水平",
+    "scope": "tab03 where fld021 > 30",
+    "aliases": [
+      "ALT glutamic pylvic transaminase",
+      "GPT level"
+    ],
+    "evidence": [
+      "ev_concept_gpt"
+    ]
+  },
+  {
+    "id": "concept_albumin",
+    "name": "Albumin",
+    "type": "concept",
+    "definition": "血清白蛋白水平",
+    "scope": "tab03 where fld025 < 4",
+    "aliases": [
+      "blood albumin level",
+      "ALB level"
+    ],
+    "evidence": [
+      "ev_concept_albumin"
+    ]
+  },
+  {
+    "id": "concept_platelet",
+    "name": "Platelet",
+    "type": "concept",
+    "definition": "血小板计数",
+    "scope": "tab03 where fld038 > 400",
+    "aliases": [
+      "PLT",
+      "platelet count"
+    ],
+    "evidence": [
+      "ev_concept_platelet"
+    ]
+  },
+  {
+    "id": "concept_glucose",
+    "name": "Glucose",
+    "type": "concept",
+    "definition": "血糖水平",
+    "scope": "tab03 where fld033 >= 180",
+    "aliases": [
+      "blood glucose",
+      "GLU",
+      "GLU not within normal range"
+    ],
+    "evidence": [
+      "ev_concept_glucose"
+    ]
+  },
+  {
+    "id": "concept_totalcholesterol",
+    "name": "TotalCholesterol",
+    "type": "concept",
+    "definition": "总胆固醇水平",
+    "scope": "tab03 where fld030 >= 250",
+    "aliases": [
+      "total cholesterol",
+      "T-CHO",
+      "high cholesterol"
+    ],
+    "evidence": [
+      "ev_concept_totalcholesterol"
+    ]
+  },
+  {
+    "id": "concept_creatinine",
+    "name": "Creatinine",
+    "type": "concept",
+    "definition": "肌酐水平",
+    "scope": "tab03 where fld028 >= 1.5",
+    "aliases": [
+      "creatinine level",
+      "creatinine abnormal"
+    ],
+    "evidence": [
+      "ev_concept_creatinine"
+    ]
+  },
+  {
+    "id": "concept_creatininephosphokinase",
+    "name": "CreatininePhosphokinase",
+    "type": "concept",
+    "definition": "肌酸磷酸激酶水平",
+    "scope": "tab03 where fld032 < 250",
+    "aliases": [
+      "creatinine phosphokinase",
+      "CPK"
+    ],
+    "evidence": [
+      "ev_concept_creatininephosphokinase"
+    ]
+  },
+  {
+    "id": "concept_ureanitrogen",
+    "name": "UreaNitrogen",
+    "type": "concept",
+    "definition": "尿素氮水平",
+    "scope": "tab03 where fld027 = 29",
+    "aliases": [
+      "urea nitrogen",
+      "UN"
+    ],
+    "evidence": [
+      "ev_concept_ureanitrogen"
+    ]
+  },
+  {
+    "id": "concept_igm",
+    "name": "IgM",
+    "type": "concept",
+    "definition": "免疫球蛋白M水平",
+    "scope": "tab03 where fld048 <= 40 OR fld048 >= 400",
+    "aliases": [
+      "Ig M level",
+      "anti-Cardiolipin antibody (IgM)",
+      "ig m"
+    ],
+    "evidence": [
+      "ev_concept_igm"
+    ]
+  },
+  {
+    "id": "concept_igg",
+    "name": "IgG",
+    "type": "concept",
+    "definition": "免疫球蛋白G水平",
+    "scope": "tab03 where fld046 > 900 AND fld046 < 2000",
+    "aliases": [
+      "Ig G level",
+      "ig g"
+    ],
+    "evidence": [
+      "ev_concept_igg"
+    ]
+  },
+  {
+    "id": "concept_crp",
+    "name": "CRP",
+    "type": "concept",
+    "definition": "C反应蛋白",
+    "scope": "tab03 where fld049 = '+'",
+    "aliases": [
+      "C-reactive protein",
+      "CRP abnormal"
+    ],
+    "evidence": [
+      "ev_concept_crp"
+    ]
+  },
+  {
+    "id": "concept_antiscl70",
+    "name": "AntiScl70",
+    "type": "concept",
+    "definition": "抗Scl-70抗体",
+    "scope": "tab03 where fld056 IN ('negative','0')",
+    "aliases": [
+      "anti-scl70",
+      "normal anti-scl70",
+      "anti scl 70"
+    ],
+    "evidence": [
+      "ev_concept_antiscl70"
+    ]
+  },
+  {
+    "id": "concept_datarecorded",
+    "name": "DataRecorded",
+    "type": "concept",
+    "definition": "患者数据是否缺失",
+    "scope": "tab02 where fld016 IS NULL",
+    "aliases": [
+      "don't have data recorded",
+      "data recorded"
+    ],
+    "evidence": [
+      "ev_concept_datarecorded"
+    ]
+  },
+  {
+    "id": "derived_maleratio",
+    "name": "MaleRatio",
+    "type": "metric",
+    "definition": "男性患者占比 Formula: COUNT(PatientID WHERE Sex='M') / COUNT(PatientID). Inputs: PatientID = tab01.fld001; Sex = tab02.fld014",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of male",
+      "deviation in percentage",
+      "male ratio"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_inpatientmaleratio",
+    "name": "InpatientMaleRatio",
+    "type": "metric",
+    "definition": "住院患者中男性占比 Formula: COUNT(PatientID WHERE Sex='M' AND InpatientStatus='+') / COUNT(PatientID WHERE Sex='M'). Inputs: PatientID = tab01.fld001; Sex = tab02.fld014; InpatientStatus = tab02.fld018",
+    "scope": "derived metric",
+    "aliases": [
+      "in-patient male percentage",
+      "inpatient male ratio"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_abnormaligmrate",
+    "name": "AbnormalIgMRate",
+    "type": "metric",
+    "definition": "IgM异常患者占比 Formula: COUNT(PatientID WHERE IgM abnormal) / COUNT(PatientID). Inputs: PatientID = tab01.fld001; IgM = tab03.fld048 WHERE fld048 <= 40 OR fld048 >= 400",
+    "scope": "derived metric",
+    "aliases": [
+      "abnormal Ig M rate",
+      "abnormal ig m rate"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_highcholesterolrate",
+    "name": "HighCholesterolRate",
+    "type": "metric",
+    "definition": "高胆固醇患者占比 Formula: COUNT(PatientID WHERE TotalCholesterol >= 250) / COUNT(PatientID). Inputs: PatientID = tab01.fld001; TotalCholesterol = tab03.fld030 WHERE fld030 >= 250",
+    "scope": "derived metric",
+    "aliases": [
+      "high cholesterol rate"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_abnormalcreatininerate",
+    "name": "AbnormalCreatinineRate",
+    "type": "metric",
+    "definition": "肌酐异常患者占比 Formula: COUNT(PatientID WHERE Creatinine >= 1.5) / COUNT(PatientID). Inputs: PatientID = tab01.fld001; Creatinine = tab03.fld028 WHERE fld028 >= 1.5",
+    "scope": "derived metric",
+    "aliases": [
+      "abnormal creatinine rate"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_igmaboveavgrate",
+    "name": "IgMAboveAvgRate",
+    "type": "metric",
+    "definition": "IgM高于平均值20%的患者占比 Formula: COUNT(PatientID WHERE IgM > 1.2 * AVG(IgM)) / COUNT(PatientID). Inputs: PatientID = tab01.fld001; IgM = tab03.fld048 WHERE fld048 <= 40 OR fld048 >= 400",
+    "scope": "derived metric",
+    "aliases": [
+      "IgM 20% higher than average",
+      "ig m above avg rate"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_abnormalcrpmissingrate",
+    "name": "AbnormalCRPMissingRate",
+    "type": "metric",
+    "definition": "CRP异常且数据缺失的患者占比 Formula: COUNT(PatientID WHERE CRP='+' AND DataRecorded IS NULL) / COUNT(PatientID WHERE CRP='+'). Inputs: PatientID = tab01.fld001; CRP = tab03.fld049 WHERE fld049 = '+'; DataRecorded = tab02.fld016 WHERE fld016 IS NULL",
+    "scope": "derived metric",
+    "aliases": [
+      "abnormal CRP missing data rate",
+      "abnormal crp missing rate"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_demographics",
+    "name": "Demographics",
+    "type": "concept",
+    "definition": "患者人口学特征分析",
+    "scope": "tab02.fld014 codes",
+    "aliases": [
+      "sex",
+      "age",
+      "birthday",
+      "gender",
+      "demographics"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_inpatientstatus",
+    "name": "InpatientStatus",
+    "type": "concept",
+    "definition": "住院与门诊患者分布",
+    "scope": "tab02.fld018 codes",
+    "aliases": [
+      "in-patient",
+      "outpatient",
+      "inpatient status"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_crp",
+    "name": "CRP",
+    "type": "concept",
+    "definition": "C反应蛋白阳性情况",
+    "scope": "tab03.fld049 codes",
+    "aliases": [
+      "C-reactive protein",
+      "crp"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_antiscl70",
+    "name": "AntiScl70",
+    "type": "concept",
+    "definition": "抗Scl-70抗体结果",
+    "scope": "tab03.fld056 codes",
+    "aliases": [
+      "anti-scl70",
+      "anti scl 70"
+    ],
+    "evidence": []
+  }
+]

@@ -1,0 +1,802 @@
+[
+  {
+    "id": "ev_schema_frpm",
+    "source": "california_schools.sqlite",
+    "query": "PRAGMA table_info(frpm)",
+    "result": "Table frpm(CDSCode, Academic Year, County Code, District Code, School Code, County Name, District Name, School Name, District Type, School Type, Educational Option Type, NSLP Provision Status, Charter School (Y/N), Charter School Number, Charter Funding Type, IRC, Low Grade, High Grade, Enrollment (K-12), Free Meal Count (K-12), Percent (%) Eligible Free (K-12), FRPM Count (K-12), Percent (%) Eligible FRPM (K-12), Enrollment (Ages 5-17), Free Meal Count (Ages 5-17), Percent (%) Eligible Free (Ages 5-17), FRPM Count (Ages 5-17), Percent (%) Eligible FRPM (Ages 5-17), 2013-14 CALPADS Fall 1 Certification Status)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_frpm__academic_year",
+    "source": "california_schools.sqlite",
+    "query": "SELECT DISTINCT Academic Year FROM frpm",
+    "result": "2014-2015",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_frpm__nslp_provision_status",
+    "source": "california_schools.sqlite",
+    "query": "SELECT DISTINCT NSLP Provision Status FROM frpm",
+    "result": "Breakfast Provision 2 / CEP / Lunch Provision 2 / Multiple Provision Types / Provision 1 / Provision 2 / Provision 3",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_frpm__charter_school_y_n",
+    "source": "california_schools.sqlite",
+    "query": "SELECT DISTINCT Charter School (Y/N) FROM frpm",
+    "result": "0 / 1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_frpm__charter_funding_type",
+    "source": "california_schools.sqlite",
+    "query": "SELECT DISTINCT Charter Funding Type FROM frpm",
+    "result": "Directly funded / Locally funded / Not in CS funding model",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_frpm__irc",
+    "source": "california_schools.sqlite",
+    "query": "SELECT DISTINCT IRC FROM frpm",
+    "result": "0 / 1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_frpm__2013_14_calpads_fall_1_certification_status",
+    "source": "california_schools.sqlite",
+    "query": "SELECT DISTINCT 2013-14 CALPADS Fall 1 Certification Status FROM frpm",
+    "result": "1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_satscores",
+    "source": "california_schools.sqlite",
+    "query": "PRAGMA table_info(satscores)",
+    "result": "Table satscores(cds, rtype, sname, dname, cname, enroll12, NumTstTakr, AvgScrRead, AvgScrMath, AvgScrWrite, NumGE1500)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_satscores__rtype",
+    "source": "california_schools.sqlite",
+    "query": "SELECT DISTINCT rtype FROM satscores",
+    "result": "D / S",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_schools",
+    "source": "california_schools.sqlite",
+    "query": "PRAGMA table_info(schools)",
+    "result": "Table schools(CDSCode, NCESDist, NCESSchool, StatusType, County, District, School, Street, StreetAbr, City, Zip, State, MailStreet, MailStrAbr, MailCity, MailZip, MailState, Phone, Ext, Website, OpenDate, ClosedDate, Charter, CharterNum, FundingType, DOC, DOCType, SOC, SOCType, EdOpsCode, EdOpsName, EILCode, EILName, GSoffered, GSserved, Virtual, Magnet, Latitude, Longitude, AdmFName1, AdmLName1, AdmEmail1, AdmFName2, AdmLName2, AdmEmail2, AdmFName3, AdmLName3, AdmEmail3, LastUpdate)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_schools__statustype",
+    "source": "california_schools.sqlite",
+    "query": "SELECT DISTINCT StatusType FROM schools",
+    "result": "Active / Closed / Merged / Pending",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_schools__state",
+    "source": "california_schools.sqlite",
+    "query": "SELECT DISTINCT State FROM schools",
+    "result": "CA",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_schools__mailstate",
+    "source": "california_schools.sqlite",
+    "query": "SELECT DISTINCT MailState FROM schools",
+    "result": "CA",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_schools__charter",
+    "source": "california_schools.sqlite",
+    "query": "SELECT DISTINCT Charter FROM schools",
+    "result": "0 / 1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_schools__fundingtype",
+    "source": "california_schools.sqlite",
+    "query": "SELECT DISTINCT FundingType FROM schools",
+    "result": "Directly funded / Locally funded / Not in CS funding model",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_schools__eilcode",
+    "source": "california_schools.sqlite",
+    "query": "SELECT DISTINCT EILCode FROM schools",
+    "result": "A / ELEM / ELEMHIGH / HS / INTMIDJR / PS / UG",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_schools__virtual",
+    "source": "california_schools.sqlite",
+    "query": "SELECT DISTINCT Virtual FROM schools",
+    "result": "F / N / P",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_schools__magnet",
+    "source": "california_schools.sqlite",
+    "query": "SELECT DISTINCT Magnet FROM schools",
+    "result": "0 / 1",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_enrollmentk12",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_enrollmentages5to17",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_freemealcountk12",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_freemealcountages5to17",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_frpmcountk12",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_frpmcountages5to17",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_percenteligiblefreek12",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_percenteligiblefrpmk12",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_percenteligiblefreeages5to17",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_percenteligiblefrpmages5to17",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_numtesttakers",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM satscores",
+    "result": "2269 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_avgscorereading",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM satscores",
+    "result": "2269 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_avgscoremath",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM satscores",
+    "result": "2269 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_avgscorewriting",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM satscores",
+    "result": "2269 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_numge1500",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM satscores",
+    "result": "2269 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_enrollment12",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM satscores",
+    "result": "2269 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_schooltype",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_schoolcategory",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_charterschool",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_virtualschool",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools WHERE Virtual = 'F'",
+    "result": "69 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_magnetprogram",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_gradespanoffered",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_gradespanserved",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_opendate",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_closeddate",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_longitude",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_latitude",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_administratorfirstname",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_administratoremail",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_streetaddress",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_city",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_state",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_zipcode",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_county",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_district",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_schoolname",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_edopscode",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_edopsname",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_doc",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_doctype",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_eilcode",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_eilname",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_fundingtype",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_charternumber",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_statustype",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_phone",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_mailstreet",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_mailcity",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_mailstate",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_mailzip",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_nslpprovisionstatus",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_charterschoolfrpm",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_charterfundingtypefrpm",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_irc",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_lowgrade",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_highgrade",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_educationaloptiontype",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_districttype",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_schooltypefrpm",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_academicyear",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_calpadscertificationstatus",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM frpm",
+    "result": "9986 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_cdscode",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_ncesdist",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_ncesschool",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_streetabr",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_mailstrabr",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_ext",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools",
+    "result": "17686 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_rtype",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM satscores",
+    "result": "2269 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_sname",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM satscores",
+    "result": "2269 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_dname",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM satscores",
+    "result": "2269 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_cname",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM satscores",
+    "result": "2269 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_cdscodesat",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM satscores",
+    "result": "2269 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_0",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM satscores WHERE NumTstTakr = 0 OR NumTstTakr IS NULL;",
+    "result": "[[218]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_1",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM satscores WHERE enroll12 = 0 OR enroll12 IS NULL;",
+    "result": "[[5]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_2",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools WHERE OpenDate IS NULL;",
+    "result": "[[1369]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_3",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools WHERE ClosedDate IS NULL;",
+    "result": "[[11992]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_4",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools WHERE Longitude IS NULL OR Latitude IS NULL;",
+    "result": "[[4823]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_5",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools WHERE AdmFName1 IS NULL;",
+    "result": "[[5986]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_6",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools WHERE Website IS NULL;",
+    "result": "[[10722]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_7",
+    "source": "california_schools.sqlite",
+    "query": "SELECT COUNT(*) FROM schools WHERE Zip IS NULL;",
+    "result": "[[293]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_schools__frpm__cdscode",
+    "source": "california_schools.sqlite",
+    "query": "distinct values of frpm.CDSCode contained in schools.CDSCode",
+    "result": "overlap 100.0% (9986/9986 distinct child values); parent key unique: True; child rows 9986, parent rows 17686",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_schools__satscores__cds",
+    "source": "california_schools.sqlite",
+    "query": "distinct values of satscores.cds contained in schools.CDSCode",
+    "result": "overlap 90.7% (2058/2269 distinct child values); parent key unique: True; child rows 2269, parent rows 17686",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  }
+]

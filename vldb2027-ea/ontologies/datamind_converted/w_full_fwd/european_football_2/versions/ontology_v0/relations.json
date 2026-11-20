@@ -1,0 +1,476 @@
+[
+  {
+    "id": "rel_derived_averagehomegoals__from__concept_hometeamgoals",
+    "source": "concept_hometeamgoals",
+    "relation_type": "derivation",
+    "target": "derived_averagehomegoals",
+    "connection_condition": "same entity and period",
+    "description": "AverageHomeGoals is computed from HomeTeamGoals: SUM(HomeTeamGoals) / COUNT(DISTINCT Match.id)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_drawmatchcount__from__concept_hometeamgoals",
+    "source": "concept_hometeamgoals",
+    "relation_type": "derivation",
+    "target": "derived_drawmatchcount",
+    "connection_condition": "same entity and period",
+    "description": "DrawMatchCount is computed from HomeTeamGoals: SUM(CASE WHEN HomeTeamGoals = AwayTeamGoals THEN 1 ELSE 0 END)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_drawmatchcount__from__concept_awayteamgoals",
+    "source": "concept_awayteamgoals",
+    "relation_type": "derivation",
+    "target": "derived_drawmatchcount",
+    "connection_condition": "same entity and period",
+    "description": "DrawMatchCount is computed from AwayTeamGoals: SUM(CASE WHEN HomeTeamGoals = AwayTeamGoals THEN 1 ELSE 0 END)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_averageheadingaccuracy__from__concept_headingaccuracy",
+    "source": "concept_headingaccuracy",
+    "relation_type": "derivation",
+    "target": "derived_averageheadingaccuracy",
+    "connection_condition": "same entity and period",
+    "description": "AverageHeadingAccuracy is computed from HeadingAccuracy: SUM(HeadingAccuracy) / COUNT(Player_Attributes.player_fifa_api_id)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_averagelongshots__from__concept_longshots",
+    "source": "concept_longshots",
+    "relation_type": "derivation",
+    "target": "derived_averagelongshots",
+    "connection_condition": "same entity and period",
+    "description": "AverageLongShots is computed from LongShots: SUM(LongShots) / COUNT(Player_Attributes.player_fifa_api_id)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_jumpingdifference__from__concept_jumping",
+    "source": "concept_jumping",
+    "relation_type": "derivation",
+    "target": "derived_jumpingdifference",
+    "connection_condition": "same entity and period",
+    "description": "JumpingDifference is computed from Jumping: Jumping(player1) - Jumping(player2)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_underweightheightpercentage__from__concept_playerheight",
+    "source": "concept_playerheight",
+    "relation_type": "derivation",
+    "target": "derived_underweightheightpercentage",
+    "connection_condition": "same entity and period",
+    "description": "UnderweightHeightPercentage is computed from PlayerHeight: COUNT(PlayerHeight < 180 AND OverallRating > 70) / COUNT(Player.id) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_underweightheightpercentage__from__concept_overallrating",
+    "source": "concept_overallrating",
+    "relation_type": "derivation",
+    "target": "derived_underweightheightpercentage",
+    "connection_condition": "same entity and period",
+    "description": "UnderweightHeightPercentage is computed from OverallRating: COUNT(PlayerHeight < 180 AND OverallRating > 70) / COUNT(Player.id) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_leftfootpercentage__from__concept_preferredfoot",
+    "source": "concept_preferredfoot",
+    "relation_type": "derivation",
+    "target": "derived_leftfootpercentage",
+    "connection_condition": "same entity and period",
+    "description": "LeftFootPercentage is computed from PreferredFoot: SUM(CASE WHEN PreferredFoot = 'left' THEN 1 ELSE 0 END) * 100 / COUNT(Player_Attributes.player_fifa_api_id)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_playerage__from__concept_playerbirthday",
+    "source": "concept_playerbirthday",
+    "relation_type": "derivation",
+    "target": "derived_playerage",
+    "connection_condition": "same entity and period",
+    "description": "PlayerAge is computed from PlayerBirthday: DATETIME() - PlayerBirthday",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_highestbuildupplayspeed__from__concept_buildupplayspeed",
+    "source": "concept_buildupplayspeed",
+    "relation_type": "derivation",
+    "target": "derived_highestbuildupplayspeed",
+    "connection_condition": "same entity and period",
+    "description": "HighestBuildUpPlaySpeed is computed from BuildUpPlaySpeed: MAX(BuildUpPlaySpeed)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_highestchancecreationpassing__from__concept_chancecreationpassing",
+    "source": "concept_chancecreationpassing",
+    "relation_type": "derivation",
+    "target": "derived_highestchancecreationpassing",
+    "connection_condition": "same entity and period",
+    "description": "HighestChanceCreationPassing is computed from ChanceCreationPassing: MAX(ChanceCreationPassing)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_highestoverallrating__from__concept_overallrating",
+    "source": "concept_overallrating",
+    "relation_type": "derivation",
+    "target": "derived_highestoverallrating",
+    "connection_condition": "same entity and period",
+    "description": "HighestOverallRating is computed from OverallRating: MAX(OverallRating)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_lowestpotential__from__concept_potential",
+    "source": "concept_potential",
+    "relation_type": "derivation",
+    "target": "derived_lowestpotential",
+    "connection_condition": "same entity and period",
+    "description": "LowestPotential is computed from Potential: MIN(Potential)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_highestcrossing__from__concept_crossing",
+    "source": "concept_crossing",
+    "relation_type": "derivation",
+    "target": "derived_highestcrossing",
+    "connection_condition": "same entity and period",
+    "description": "HighestCrossing is computed from Crossing: MAX(Crossing)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_heaviestweight__from__concept_playerweight",
+    "source": "concept_playerweight",
+    "relation_type": "derivation",
+    "target": "derived_heaviestweight",
+    "connection_condition": "same entity and period",
+    "description": "HeaviestWeight is computed from PlayerWeight: MAX(PlayerWeight)",
+    "evidence": []
+  },
+  {
+    "id": "rel_country__league__country_id",
+    "source": "term_country",
+    "relation_type": "composition",
+    "target": "term_league",
+    "connection_condition": "League.country_id corresponds to Country.id",
+    "description": "归属; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_country__league__country_id"
+    ]
+  },
+  {
+    "id": "rel_country__league__country_id__id",
+    "source": "term_country",
+    "relation_type": "composition",
+    "target": "term_league",
+    "connection_condition": "League.id corresponds to Country.id",
+    "description": "role key of the same relation (id)",
+    "evidence": [
+      "ev_rel_country__league__country_id__id"
+    ]
+  },
+  {
+    "id": "rel_league__match__league_id",
+    "source": "term_league",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.league_id corresponds to League.id",
+    "description": "归属; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_league__match__league_id"
+    ]
+  },
+  {
+    "id": "rel_country__match__country_id",
+    "source": "term_country",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.country_id corresponds to Country.id",
+    "description": "归属; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_country__match__country_id"
+    ]
+  },
+  {
+    "id": "rel_team__match__away_team_api_id",
+    "source": "term_team",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.away_team_api_id corresponds to Team.team_api_id",
+    "description": "包含主队; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_team__match__away_team_api_id"
+    ]
+  },
+  {
+    "id": "rel_team__match__away_team_api_id__home_team_api_id",
+    "source": "term_team",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.home_team_api_id corresponds to Team.team_api_id",
+    "description": "role key of the same relation (home_team_api_id)",
+    "evidence": [
+      "ev_rel_team__match__away_team_api_id__home_team_api_id"
+    ]
+  },
+  {
+    "id": "rel_player__player_attributes__player_api_id",
+    "source": "term_player",
+    "relation_type": "composition",
+    "target": "term_player_attributes",
+    "connection_condition": "Player_Attributes.player_api_id corresponds to Player.player_api_id",
+    "description": "描述; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_player__player_attributes__player_api_id"
+    ]
+  },
+  {
+    "id": "rel_team__team_attributes__team_api_id",
+    "source": "term_team",
+    "relation_type": "composition",
+    "target": "term_team_attributes",
+    "connection_condition": "Team_Attributes.team_api_id corresponds to Team.team_api_id",
+    "description": "描述; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_team__team_attributes__team_api_id"
+    ]
+  },
+  {
+    "id": "rel_player__match__away_player_11",
+    "source": "term_player",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.away_player_11 corresponds to Player.player_api_id",
+    "description": "引用; 重叠 100%·父键唯一·列名有据·代码契约(DDL);语义评审存疑(数据证据成立但不得用于验收问题的强路径,须人审)",
+    "evidence": [
+      "ev_rel_player__match__away_player_11"
+    ]
+  },
+  {
+    "id": "rel_player__match__away_player_11__home_player_1",
+    "source": "term_player",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.home_player_1 corresponds to Player.player_api_id",
+    "description": "role key of the same relation (home_player_1)",
+    "evidence": [
+      "ev_rel_player__match__away_player_11__home_player_1"
+    ]
+  },
+  {
+    "id": "rel_player__match__away_player_11__home_player_2",
+    "source": "term_player",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.home_player_2 corresponds to Player.player_api_id",
+    "description": "role key of the same relation (home_player_2)",
+    "evidence": [
+      "ev_rel_player__match__away_player_11__home_player_2"
+    ]
+  },
+  {
+    "id": "rel_player__match__away_player_11__home_player_3",
+    "source": "term_player",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.home_player_3 corresponds to Player.player_api_id",
+    "description": "role key of the same relation (home_player_3)",
+    "evidence": [
+      "ev_rel_player__match__away_player_11__home_player_3"
+    ]
+  },
+  {
+    "id": "rel_player__match__away_player_11__home_player_4",
+    "source": "term_player",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.home_player_4 corresponds to Player.player_api_id",
+    "description": "role key of the same relation (home_player_4)",
+    "evidence": [
+      "ev_rel_player__match__away_player_11__home_player_4"
+    ]
+  },
+  {
+    "id": "rel_player__match__away_player_11__home_player_5",
+    "source": "term_player",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.home_player_5 corresponds to Player.player_api_id",
+    "description": "role key of the same relation (home_player_5)",
+    "evidence": [
+      "ev_rel_player__match__away_player_11__home_player_5"
+    ]
+  },
+  {
+    "id": "rel_player__match__away_player_11__home_player_6",
+    "source": "term_player",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.home_player_6 corresponds to Player.player_api_id",
+    "description": "role key of the same relation (home_player_6)",
+    "evidence": [
+      "ev_rel_player__match__away_player_11__home_player_6"
+    ]
+  },
+  {
+    "id": "rel_player__match__away_player_11__home_player_7",
+    "source": "term_player",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.home_player_7 corresponds to Player.player_api_id",
+    "description": "role key of the same relation (home_player_7)",
+    "evidence": [
+      "ev_rel_player__match__away_player_11__home_player_7"
+    ]
+  },
+  {
+    "id": "rel_player__match__away_player_11__home_player_8",
+    "source": "term_player",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.home_player_8 corresponds to Player.player_api_id",
+    "description": "role key of the same relation (home_player_8)",
+    "evidence": [
+      "ev_rel_player__match__away_player_11__home_player_8"
+    ]
+  },
+  {
+    "id": "rel_player__match__away_player_11__home_player_9",
+    "source": "term_player",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.home_player_9 corresponds to Player.player_api_id",
+    "description": "role key of the same relation (home_player_9)",
+    "evidence": [
+      "ev_rel_player__match__away_player_11__home_player_9"
+    ]
+  },
+  {
+    "id": "rel_player__match__away_player_11__home_player_10",
+    "source": "term_player",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.home_player_10 corresponds to Player.player_api_id",
+    "description": "role key of the same relation (home_player_10)",
+    "evidence": [
+      "ev_rel_player__match__away_player_11__home_player_10"
+    ]
+  },
+  {
+    "id": "rel_player__match__away_player_11__home_player_11",
+    "source": "term_player",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.home_player_11 corresponds to Player.player_api_id",
+    "description": "role key of the same relation (home_player_11)",
+    "evidence": [
+      "ev_rel_player__match__away_player_11__home_player_11"
+    ]
+  },
+  {
+    "id": "rel_player__match__away_player_11__away_player_1",
+    "source": "term_player",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.away_player_1 corresponds to Player.player_api_id",
+    "description": "role key of the same relation (away_player_1)",
+    "evidence": [
+      "ev_rel_player__match__away_player_11__away_player_1"
+    ]
+  },
+  {
+    "id": "rel_player__match__away_player_11__away_player_2",
+    "source": "term_player",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.away_player_2 corresponds to Player.player_api_id",
+    "description": "role key of the same relation (away_player_2)",
+    "evidence": [
+      "ev_rel_player__match__away_player_11__away_player_2"
+    ]
+  },
+  {
+    "id": "rel_player__match__away_player_11__away_player_3",
+    "source": "term_player",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.away_player_3 corresponds to Player.player_api_id",
+    "description": "role key of the same relation (away_player_3)",
+    "evidence": [
+      "ev_rel_player__match__away_player_11__away_player_3"
+    ]
+  },
+  {
+    "id": "rel_player__match__away_player_11__away_player_4",
+    "source": "term_player",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.away_player_4 corresponds to Player.player_api_id",
+    "description": "role key of the same relation (away_player_4)",
+    "evidence": [
+      "ev_rel_player__match__away_player_11__away_player_4"
+    ]
+  },
+  {
+    "id": "rel_player__match__away_player_11__away_player_5",
+    "source": "term_player",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.away_player_5 corresponds to Player.player_api_id",
+    "description": "role key of the same relation (away_player_5)",
+    "evidence": [
+      "ev_rel_player__match__away_player_11__away_player_5"
+    ]
+  },
+  {
+    "id": "rel_player__match__away_player_11__away_player_6",
+    "source": "term_player",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.away_player_6 corresponds to Player.player_api_id",
+    "description": "role key of the same relation (away_player_6)",
+    "evidence": [
+      "ev_rel_player__match__away_player_11__away_player_6"
+    ]
+  },
+  {
+    "id": "rel_player__match__away_player_11__away_player_7",
+    "source": "term_player",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.away_player_7 corresponds to Player.player_api_id",
+    "description": "role key of the same relation (away_player_7)",
+    "evidence": [
+      "ev_rel_player__match__away_player_11__away_player_7"
+    ]
+  },
+  {
+    "id": "rel_player__match__away_player_11__away_player_8",
+    "source": "term_player",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.away_player_8 corresponds to Player.player_api_id",
+    "description": "role key of the same relation (away_player_8)",
+    "evidence": [
+      "ev_rel_player__match__away_player_11__away_player_8"
+    ]
+  },
+  {
+    "id": "rel_player__match__away_player_11__away_player_9",
+    "source": "term_player",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.away_player_9 corresponds to Player.player_api_id",
+    "description": "role key of the same relation (away_player_9)",
+    "evidence": [
+      "ev_rel_player__match__away_player_11__away_player_9"
+    ]
+  },
+  {
+    "id": "rel_player__match__away_player_11__away_player_10",
+    "source": "term_player",
+    "relation_type": "composition",
+    "target": "term_match",
+    "connection_condition": "Match.away_player_10 corresponds to Player.player_api_id",
+    "description": "role key of the same relation (away_player_10)",
+    "evidence": [
+      "ev_rel_player__match__away_player_11__away_player_10"
+    ]
+  }
+]

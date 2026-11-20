@@ -1,0 +1,261 @@
+[
+  {
+    "id": "rel_derived_percentageofrunningloans__from__concept_loanapprovedamount",
+    "source": "concept_loanapprovedamount",
+    "relation_type": "derivation",
+    "target": "derived_percentageofrunningloans",
+    "connection_condition": "same entity and period",
+    "description": "PercentageOfRunningLoans is computed from LoanApprovedAmount: (SUM(LoanApprovedAmount WHERE LoanStatus = 'C') / SUM(LoanApprovedAmount)) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_percentageofrunningloans__from__concept_loanstatus",
+    "source": "concept_loanstatus",
+    "relation_type": "derivation",
+    "target": "derived_percentageofrunningloans",
+    "connection_condition": "same entity and period",
+    "description": "PercentageOfRunningLoans is computed from LoanStatus: (SUM(LoanApprovedAmount WHERE LoanStatus = 'C') / SUM(LoanApprovedAmount)) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_percentageofmaleclientsrequestingweeklystatements__from__concept_clientid",
+    "source": "concept_clientid",
+    "relation_type": "derivation",
+    "target": "derived_percentageofmaleclientsrequestingweeklystatements",
+    "connection_condition": "same entity and period",
+    "description": "PercentageOfMaleClientsRequestingWeeklyStatements is computed from ClientId: (COUNT(DISTINCT ClientId WHERE ClientGender = 'M' AND WeeklyStatement) / COUNT(DISTINCT ClientId WHERE WeeklyStatement)) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_percentageofmaleclientsrequestingweeklystatements__from__concept_clientgender",
+    "source": "concept_clientgender",
+    "relation_type": "derivation",
+    "target": "derived_percentageofmaleclientsrequestingweeklystatements",
+    "connection_condition": "same entity and period",
+    "description": "PercentageOfMaleClientsRequestingWeeklyStatements is computed from ClientGender: (COUNT(DISTINCT ClientId WHERE ClientGender = 'M' AND WeeklyStatement) / COUNT(DISTINCT ClientId WHERE WeeklyStatement)) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_percentageofmaleclientsrequestingweeklystatements__from__concept_weeklystatement",
+    "source": "concept_weeklystatement",
+    "relation_type": "derivation",
+    "target": "derived_percentageofmaleclientsrequestingweeklystatements",
+    "connection_condition": "same entity and period",
+    "description": "PercentageOfMaleClientsRequestingWeeklyStatements is computed from WeeklyStatement: (COUNT(DISTINCT ClientId WHERE ClientGender = 'M' AND WeeklyStatement) / COUNT(DISTINCT ClientId WHERE WeeklyStatement)) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_percentageofwomeninhighsalarydistricts__from__concept_clientid",
+    "source": "concept_clientid",
+    "relation_type": "derivation",
+    "target": "derived_percentageofwomeninhighsalarydistricts",
+    "connection_condition": "same entity and period",
+    "description": "PercentageOfWomenInHighSalaryDistricts is computed from ClientId: (COUNT(DISTINCT ClientId WHERE ClientGender = 'F' AND AverageSalary > 10000) / COUNT(DISTINCT ClientId WHERE AverageSalary > 10000)) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_percentageofwomeninhighsalarydistricts__from__concept_clientgender",
+    "source": "concept_clientgender",
+    "relation_type": "derivation",
+    "target": "derived_percentageofwomeninhighsalarydistricts",
+    "connection_condition": "same entity and period",
+    "description": "PercentageOfWomenInHighSalaryDistricts is computed from ClientGender: (COUNT(DISTINCT ClientId WHERE ClientGender = 'F' AND AverageSalary > 10000) / COUNT(DISTINCT ClientId WHERE AverageSalary > 10000)) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_percentageofwomeninhighsalarydistricts__from__concept_averagesalary",
+    "source": "concept_averagesalary",
+    "relation_type": "derivation",
+    "target": "derived_percentageofwomeninhighsalarydistricts",
+    "connection_condition": "same entity and period",
+    "description": "PercentageOfWomenInHighSalaryDistricts is computed from AverageSalary: (COUNT(DISTINCT ClientId WHERE ClientGender = 'F' AND AverageSalary > 10000) / COUNT(DISTINCT ClientId WHERE AverageSalary > 10000)) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_averageloanamountperaccount__from__concept_loanapprovedamount",
+    "source": "concept_loanapprovedamount",
+    "relation_type": "derivation",
+    "target": "derived_averageloanamountperaccount",
+    "connection_condition": "same entity and period",
+    "description": "AverageLoanAmountPerAccount is computed from LoanApprovedAmount: SUM(LoanApprovedAmount) / COUNT(DISTINCT account_id)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_loancountperaccount__from__concept_loanapprovedamount",
+    "source": "concept_loanapprovedamount",
+    "relation_type": "derivation",
+    "target": "derived_loancountperaccount",
+    "connection_condition": "same entity and period",
+    "description": "LoanCountPerAccount is computed from LoanApprovedAmount: COUNT(loan_id) / COUNT(DISTINCT account_id)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_totalloanamount__from__concept_loanapprovedamount",
+    "source": "concept_loanapprovedamount",
+    "relation_type": "derivation",
+    "target": "derived_totalloanamount",
+    "connection_condition": "same entity and period",
+    "description": "TotalLoanAmount is computed from LoanApprovedAmount: SUM(LoanApprovedAmount)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_totalwithdrawalamount__from__concept_cashwithdrawal",
+    "source": "concept_cashwithdrawal",
+    "relation_type": "derivation",
+    "target": "derived_totalwithdrawalamount",
+    "connection_condition": "same entity and period",
+    "description": "TotalWithdrawalAmount is computed from CashWithdrawal: SUM(amount WHERE CashWithdrawal)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_clientcountbyregion__from__concept_clientid",
+    "source": "concept_clientid",
+    "relation_type": "derivation",
+    "target": "derived_clientcountbyregion",
+    "connection_condition": "same entity and period",
+    "description": "ClientCountByRegion is computed from ClientId: COUNT(DISTINCT ClientId) GROUP BY Region",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_clientcountbyregion__from__concept_region",
+    "source": "concept_region",
+    "relation_type": "derivation",
+    "target": "derived_clientcountbyregion",
+    "connection_condition": "same entity and period",
+    "description": "ClientCountByRegion is computed from Region: COUNT(DISTINCT ClientId) GROUP BY Region",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_accountcountbyfrequency__from__concept_weeklystatement",
+    "source": "concept_weeklystatement",
+    "relation_type": "derivation",
+    "target": "derived_accountcountbyfrequency",
+    "connection_condition": "same entity and period",
+    "description": "AccountCountByFrequency is computed from WeeklyStatement: COUNT(DISTINCT account_id) GROUP BY frequency",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_accountcountbyfrequency__from__concept_monthlystatement",
+    "source": "concept_monthlystatement",
+    "relation_type": "derivation",
+    "target": "derived_accountcountbyfrequency",
+    "connection_condition": "same entity and period",
+    "description": "AccountCountByFrequency is computed from MonthlyStatement: COUNT(DISTINCT account_id) GROUP BY frequency",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_accountcountbyfrequency__from__concept_aftertransactionstatement",
+    "source": "concept_aftertransactionstatement",
+    "relation_type": "derivation",
+    "target": "derived_accountcountbyfrequency",
+    "connection_condition": "same entity and period",
+    "description": "AccountCountByFrequency is computed from AfterTransactionStatement: COUNT(DISTINCT account_id) GROUP BY frequency",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_loanamountpercentagebystatus__from__concept_loanapprovedamount",
+    "source": "concept_loanapprovedamount",
+    "relation_type": "derivation",
+    "target": "derived_loanamountpercentagebystatus",
+    "connection_condition": "same entity and period",
+    "description": "LoanAmountPercentageByStatus is computed from LoanApprovedAmount: (SUM(LoanApprovedAmount) GROUP BY LoanStatus / SUM(LoanApprovedAmount)) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_loanamountpercentagebystatus__from__concept_loanstatus",
+    "source": "concept_loanstatus",
+    "relation_type": "derivation",
+    "target": "derived_loanamountpercentagebystatus",
+    "connection_condition": "same entity and period",
+    "description": "LoanAmountPercentageByStatus is computed from LoanStatus: (SUM(LoanApprovedAmount) GROUP BY LoanStatus / SUM(LoanApprovedAmount)) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_district__account__district_id",
+    "source": "term_district",
+    "relation_type": "composition",
+    "target": "term_account",
+    "connection_condition": "account.district_id corresponds to district.district_id",
+    "description": "归属; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_district__account__district_id"
+    ]
+  },
+  {
+    "id": "rel_district__client__district_id",
+    "source": "term_district",
+    "relation_type": "composition",
+    "target": "term_client",
+    "connection_condition": "client.district_id corresponds to district.district_id",
+    "description": "归属; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_district__client__district_id"
+    ]
+  },
+  {
+    "id": "rel_client__disp__client_id",
+    "source": "term_client",
+    "relation_type": "composition",
+    "target": "term_disp",
+    "connection_condition": "disp.client_id corresponds to client.client_id",
+    "description": "关联; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_client__disp__client_id"
+    ]
+  },
+  {
+    "id": "rel_account__disp__account_id",
+    "source": "term_account",
+    "relation_type": "composition",
+    "target": "term_disp",
+    "connection_condition": "disp.account_id corresponds to account.account_id",
+    "description": "关联; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_account__disp__account_id"
+    ]
+  },
+  {
+    "id": "rel_disp__card__disp_id",
+    "source": "term_disp",
+    "relation_type": "composition",
+    "target": "term_card",
+    "connection_condition": "card.disp_id corresponds to disp.disp_id",
+    "description": "关联; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_disp__card__disp_id"
+    ]
+  },
+  {
+    "id": "rel_account__loan__account_id",
+    "source": "term_account",
+    "relation_type": "composition",
+    "target": "term_loan",
+    "connection_condition": "loan.account_id corresponds to account.account_id",
+    "description": "归属; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_account__loan__account_id"
+    ]
+  },
+  {
+    "id": "rel_account__order__account_id",
+    "source": "term_account",
+    "relation_type": "composition",
+    "target": "term_order",
+    "connection_condition": "order.account_id corresponds to account.account_id",
+    "description": "归属; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_account__order__account_id"
+    ]
+  },
+  {
+    "id": "rel_account__trans__account_id",
+    "source": "term_account",
+    "relation_type": "composition",
+    "target": "term_trans",
+    "connection_condition": "trans.account_id corresponds to account.account_id",
+    "description": "归属; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_account__trans__account_id"
+    ]
+  }
+]

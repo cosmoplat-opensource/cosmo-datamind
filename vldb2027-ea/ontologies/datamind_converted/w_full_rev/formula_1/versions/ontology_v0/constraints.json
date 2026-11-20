@@ -1,0 +1,276 @@
+[
+  {
+    "id": "c_values_constructorresults__status",
+    "target": "term_constructorresults",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "status",
+      "constructorResults",
+      "D"
+    ],
+    "severity": "warning",
+    "scope": "Filters on constructorResults.status",
+    "confidence": "high",
+    "description": "constructorResults.status only takes these stored values: D. Filter with the stored spelling.",
+    "evidence": [
+      "ev_values_constructorresults__status"
+    ]
+  },
+  {
+    "id": "c_values_pitstops__stop",
+    "target": "term_pitstops",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "stop",
+      "pitStops",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "severity": "warning",
+    "scope": "Filters on pitStops.stop",
+    "confidence": "high",
+    "description": "pitStops.stop only takes these stored values: 1 / 2 / 3 / 4 / 5 / 6. Filter with the stored spelling.",
+    "evidence": [
+      "ev_values_pitstops__stop"
+    ]
+  },
+  {
+    "id": "c_caveat_0",
+    "target": "term_circuits",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Some",
+      "race",
+      "results",
+      "have",
+      "NULL",
+      "time",
+      "meaning",
+      "driver",
+      "finish",
+      "filtering",
+      "needed",
+      "finished"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Some race results have NULL time, meaning the driver did not finish; filtering on time IS NOT NULL is needed for finished drivers.",
+    "evidence": [
+      "ev_caveat_0"
+    ]
+  },
+  {
+    "id": "c_caveat_1",
+    "target": "term_circuits",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Accidents",
+      "recorded",
+      "with",
+      "statusId",
+      "other",
+      "statuses",
+      "also",
+      "indicate",
+      "incidents",
+      "verify",
+      "status",
+      "meaning"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Accidents are recorded with statusId = 3, but other statuses may also indicate incidents; verify status meaning before counting.",
+    "evidence": [
+      "ev_caveat_1"
+    ]
+  },
+  {
+    "id": "c_caveat_2",
+    "target": "term_circuits",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Driver",
+      "full",
+      "name",
+      "split",
+      "across",
+      "forename",
+      "surname",
+      "queries",
+      "must",
+      "concatenate",
+      "filter",
+      "both"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Driver full name is split across forename and surname; queries must concatenate or filter both.",
+    "evidence": [
+      "ev_caveat_2"
+    ]
+  },
+  {
+    "id": "c_caveat_3",
+    "target": "term_circuits",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Race",
+      "names",
+      "repeat",
+      "across",
+      "years",
+      "always",
+      "filter",
+      "year",
+      "raceId",
+      "avoid",
+      "ambiguity"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Race names may repeat across years; always filter by year or raceId to avoid ambiguity.",
+    "evidence": [
+      "ev_caveat_3"
+    ]
+  },
+  {
+    "id": "c_caveat_4",
+    "target": "term_circuits",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Circuit",
+      "coordinates",
+      "stored",
+      "separate",
+      "columns",
+      "both",
+      "must",
+      "selected"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Circuit coordinates are stored as separate lat and lng columns; both must be selected.",
+    "evidence": [
+      "ev_caveat_4"
+    ]
+  },
+  {
+    "id": "c_caveat_5",
+    "target": "term_circuits",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "stop",
+      "duration",
+      "milliseconds",
+      "convert",
+      "seconds",
+      "readability",
+      "needed"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Pit stop duration is in milliseconds; convert to seconds for readability if needed.",
+    "evidence": [
+      "ev_caveat_5"
+    ]
+  },
+  {
+    "id": "c_caveat_6",
+    "target": "term_circuits",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Fastest",
+      "speed",
+      "NULL",
+      "some",
+      "races",
+      "filter",
+      "NULLs",
+      "when",
+      "finding"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Fastest lap speed may be NULL for some races; filter out NULLs when finding max.",
+    "evidence": [
+      "ev_caveat_6"
+    ]
+  },
+  {
+    "id": "c_caveat_7",
+    "target": "term_circuits",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Constructor",
+      "nationality",
+      "stored",
+      "constructors",
+      "table",
+      "British",
+      "value"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Constructor nationality is stored in constructors table; 'British' is a nationality value.",
+    "evidence": [
+      "ev_caveat_7"
+    ]
+  },
+  {
+    "id": "c_caveat_8",
+    "target": "term_circuits",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Driver",
+      "date",
+      "birth",
+      "drivers",
+      "year",
+      "extraction",
+      "needed",
+      "filters"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Driver date of birth is in drivers.dob; year extraction needed for age filters.",
+    "evidence": [
+      "ev_caveat_8"
+    ]
+  },
+  {
+    "id": "c_caveat_9",
+    "target": "term_circuits",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Qualifying",
+      "results",
+      "have",
+      "NULL",
+      "drivers",
+      "eliminated",
+      "early",
+      "handle",
+      "NULLs"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Qualifying results may have NULL q1, q2, or q3 for drivers eliminated early; handle NULLs.",
+    "evidence": [
+      "ev_caveat_9"
+    ]
+  }
+]

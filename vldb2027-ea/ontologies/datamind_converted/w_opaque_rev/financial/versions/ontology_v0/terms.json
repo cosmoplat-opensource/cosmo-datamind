@@ -1,0 +1,369 @@
+[
+  {
+    "id": "term_tab01",
+    "name": "tab01",
+    "type": "entity",
+    "definition": "主数据实体一 Counterexample: 与 tab02 等其它主数据表的区别待专家确认；仅凭列名无法判定业务含义 Maturity: Provisional",
+    "scope": "Records of table tab01; provenance: direct source tab01",
+    "aliases": [
+      "主数据实体一"
+    ],
+    "evidence": [
+      "ev_schema_tab01"
+    ]
+  },
+  {
+    "id": "term_tab02",
+    "name": "tab02",
+    "type": "entity",
+    "definition": "主数据实体二 Counterexample: 与 tab01 的区别待专家确认；列名无语义信息 Maturity: Provisional",
+    "scope": "Records of table tab02; provenance: direct source tab02",
+    "aliases": [
+      "主数据实体二"
+    ],
+    "evidence": [
+      "ev_schema_tab02"
+    ]
+  },
+  {
+    "id": "term_tab03",
+    "name": "tab03",
+    "type": "entity",
+    "definition": "主数据实体三 Counterexample: 与 tab01 共享 fld002，可能是引用方也可能是同域属性，待复核 Maturity: Provisional",
+    "scope": "Records of table tab03; provenance: direct source tab03",
+    "aliases": [
+      "主数据实体三"
+    ],
+    "evidence": [
+      "ev_schema_tab03"
+    ]
+  },
+  {
+    "id": "term_tab04",
+    "name": "tab04",
+    "type": "entity",
+    "definition": "关联记录四 Counterexample: 若后续发现其带业务属性（系数、生效期等）则应改建为关联对象而非纯关系 Maturity: Provisional",
+    "scope": "Records of table tab04; provenance: direct source tab04",
+    "aliases": [
+      "关联记录四"
+    ],
+    "evidence": [
+      "ev_schema_tab04"
+    ]
+  },
+  {
+    "id": "term_tab05",
+    "name": "tab05",
+    "type": "entity",
+    "definition": "业务明细记录五 Counterexample: 与 tab01 的区别待专家确认；列名无语义信息 Maturity: Provisional",
+    "scope": "Records of table tab05; provenance: direct source tab05",
+    "aliases": [
+      "业务明细记录五"
+    ],
+    "evidence": [
+      "ev_schema_tab05"
+    ]
+  },
+  {
+    "id": "term_tab06",
+    "name": "tab06",
+    "type": "entity",
+    "definition": "业务记录六 Counterexample: 与 tab07、tab08 共享列较多，是否同族待复核 Maturity: Provisional",
+    "scope": "Records of table tab06; provenance: direct source tab06",
+    "aliases": [
+      "业务记录六"
+    ],
+    "evidence": [
+      "ev_schema_tab06"
+    ]
+  },
+  {
+    "id": "term_tab07",
+    "name": "tab07",
+    "type": "entity",
+    "definition": "业务记录七 Counterexample: 与 tab06、tab08 共享列较多，是否同族待复核 Maturity: Provisional",
+    "scope": "Records of table tab07; provenance: direct source tab07",
+    "aliases": [
+      "业务记录七"
+    ],
+    "evidence": [
+      "ev_schema_tab07"
+    ]
+  },
+  {
+    "id": "term_tab08",
+    "name": "tab08",
+    "type": "entity",
+    "definition": "业务记录八 Counterexample: 与 tab06、tab07 共享列较多，是否同族待复核 Maturity: Provisional",
+    "scope": "Records of table tab08; provenance: direct source tab08",
+    "aliases": [
+      "业务记录八"
+    ],
+    "evidence": [
+      "ev_schema_tab08"
+    ]
+  },
+  {
+    "id": "concept_account",
+    "name": "Account",
+    "type": "concept",
+    "definition": "银行账户,以账户号标识",
+    "scope": "tab01",
+    "aliases": [
+      "account numbers",
+      "accounts",
+      "account holder"
+    ],
+    "evidence": [
+      "ev_concept_account"
+    ]
+  },
+  {
+    "id": "concept_loanamount",
+    "name": "LoanAmount",
+    "type": "concept",
+    "definition": "贷款合同金额",
+    "scope": "tab07",
+    "aliases": [
+      "amount of loan",
+      "loan amount",
+      "average amount of loan"
+    ],
+    "evidence": [
+      "ev_concept_loanamount"
+    ]
+  },
+  {
+    "id": "concept_creditcardtype",
+    "name": "CreditCardType",
+    "type": "concept",
+    "definition": "信用卡等级,gold 为高等级",
+    "scope": "tab02 where fld007 = 'gold'",
+    "aliases": [
+      "high level credit card",
+      "gold card",
+      "credit card level",
+      "credit card type"
+    ],
+    "evidence": [
+      "ev_concept_creditcardtype"
+    ]
+  },
+  {
+    "id": "concept_loaneligibility",
+    "name": "LoanEligibility",
+    "type": "concept",
+    "definition": "客户在贷款中的角色,OWNER 表示有资格/为贷款持有人",
+    "scope": "tab04 where fld007 = 'OWNER'",
+    "aliases": [
+      "eligible for loans",
+      "loan owner",
+      "OWNER",
+      "loan eligibility"
+    ],
+    "evidence": [
+      "ev_concept_loaneligibility"
+    ]
+  },
+  {
+    "id": "concept_creditcardwithdrawal",
+    "name": "CreditCardWithdrawal",
+    "type": "concept",
+    "definition": "交易类型为信用卡取现的交易",
+    "scope": "tab08 where fld037 = 'VYBER KARTOU'",
+    "aliases": [
+      "credit card withdrawal",
+      "transactions on the credit card",
+      "VYBER KARTOU"
+    ],
+    "evidence": [
+      "ev_concept_creditcardwithdrawal"
+    ]
+  },
+  {
+    "id": "concept_transactionamount",
+    "name": "TransactionAmount",
+    "type": "concept",
+    "definition": "单笔交易的金额",
+    "scope": "tab08",
+    "aliases": [
+      "amount",
+      "transaction amount",
+      "amount is less than the average"
+    ],
+    "evidence": [
+      "ev_concept_transactionamount"
+    ]
+  },
+  {
+    "id": "concept_transactionyear",
+    "name": "TransactionYear",
+    "type": "concept",
+    "definition": "交易发生的年份",
+    "scope": "tab08",
+    "aliases": [
+      "in 1998",
+      "year of transaction",
+      "1995",
+      "transaction year"
+    ],
+    "evidence": [
+      "ev_concept_transactionyear"
+    ]
+  },
+  {
+    "id": "concept_unemploymentrate1995",
+    "name": "UnemploymentRate1995",
+    "type": "concept",
+    "definition": "地区1995年的失业率",
+    "scope": "tab05",
+    "aliases": [
+      "unemployment rate 1995",
+      "unemployment rate in 1995"
+    ],
+    "evidence": [
+      "ev_concept_unemploymentrate1995"
+    ]
+  },
+  {
+    "id": "concept_unemploymentrate1996",
+    "name": "UnemploymentRate1996",
+    "type": "concept",
+    "definition": "地区1996年的失业率",
+    "scope": "tab05",
+    "aliases": [
+      "unemployment rate 1996",
+      "unemployment rate in 1996"
+    ],
+    "evidence": [
+      "ev_concept_unemploymentrate1996"
+    ]
+  },
+  {
+    "id": "concept_crimecount1995",
+    "name": "CrimeCount1995",
+    "type": "concept",
+    "definition": "地区1995年发生的犯罪数量",
+    "scope": "tab05",
+    "aliases": [
+      "crimes committed in 1995",
+      "average number of crimes",
+      "number of crimes",
+      "crime count 1995"
+    ],
+    "evidence": [
+      "ev_concept_crimecount1995"
+    ]
+  },
+  {
+    "id": "concept_branch",
+    "name": "Branch",
+    "type": "concept",
+    "definition": "银行分行,以分行号标识",
+    "scope": "tab03",
+    "aliases": [
+      "branch location",
+      "Branch location 1"
+    ],
+    "evidence": [
+      "ev_concept_branch"
+    ]
+  },
+  {
+    "id": "concept_districtpopulation",
+    "name": "DistrictPopulation",
+    "type": "concept",
+    "definition": "地区居民人口数",
+    "scope": "tab05",
+    "aliases": [
+      "number of inhabitants",
+      "biggest number of inhabitants",
+      "population",
+      "district population"
+    ],
+    "evidence": [
+      "ev_concept_districtpopulation"
+    ]
+  },
+  {
+    "id": "derived_unemploymentincrementrate",
+    "name": "UnemploymentIncrementRate",
+    "type": "metric",
+    "definition": "失业率从1995到1996年的百分比增长 Formula: (UnemploymentRate1996 - UnemploymentRate1995) / UnemploymentRate1995 * 100. Inputs: UnemploymentRate1995 = tab05.fld015; UnemploymentRate1996 = tab05.fld016",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage unemployment rate increment",
+      "unemployment increment rate",
+      "unemployment growth"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_belowaveragecreditcardtxns",
+    "name": "BelowAverageCreditCardTxns",
+    "type": "metric",
+    "definition": "信用卡取现金额低于全部交易平均值的交易 Formula: TransactionAmount < AVG(TransactionAmount). Inputs: TransactionAmount = tab08.fld039; CreditCardWithdrawal = tab08.fld037 WHERE fld037 = 'VYBER KARTOU'",
+    "scope": "derived metric",
+    "aliases": [
+      "transactions less than the average",
+      "below average credit card amount",
+      "below average credit card txns"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_crimeavg1995highregions",
+    "name": "CrimeAvg1995HighRegions",
+    "type": "metric",
+    "definition": "犯罪数超过4000的地区在1995年的平均犯罪数 Formula: AVG(CrimeCount1995) WHERE CrimeCount1995 > 4000. Inputs: CrimeCount1995 = tab05.fld025",
+    "scope": "derived metric",
+    "aliases": [
+      "average crimes in high-crime regions",
+      "average number of crimes committed in 1995",
+      "crime avg 1995 high regions"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_creditcardlevel",
+    "name": "CreditCardLevel",
+    "type": "concept",
+    "definition": "信用卡等级分类",
+    "scope": "tab02.fld007 codes",
+    "aliases": [
+      "credit card level",
+      "gold",
+      "high level credit card",
+      "信用卡等级"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_loanrole",
+    "name": "LoanRole",
+    "type": "concept",
+    "definition": "客户在贷款合同中的角色",
+    "scope": "tab04.fld007 codes",
+    "aliases": [
+      "eligible for loans",
+      "OWNER",
+      "loan role",
+      "贷款角色"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_transactiontype",
+    "name": "TransactionType",
+    "type": "concept",
+    "definition": "交易类型代码,用于识别信用卡取现等交易",
+    "scope": "tab08.fld037 codes",
+    "aliases": [
+      "credit card withdrawal",
+      "VYBER KARTOU",
+      "transaction type",
+      "交易类型"
+    ],
+    "evidence": []
+  }
+]

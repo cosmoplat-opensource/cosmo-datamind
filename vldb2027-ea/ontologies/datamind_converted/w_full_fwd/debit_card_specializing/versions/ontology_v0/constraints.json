@@ -1,0 +1,211 @@
+[
+  {
+    "id": "c_values_customers__segment",
+    "target": "term_customers",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "Segment",
+      "segment",
+      "customers",
+      "KAM",
+      "LAM",
+      "SME"
+    ],
+    "severity": "warning",
+    "scope": "Filters on customers.Segment",
+    "confidence": "high",
+    "description": "customers.Segment only takes these stored values: KAM / LAM / SME. Filter with the stored spelling.",
+    "evidence": [
+      "ev_values_customers__segment"
+    ]
+  },
+  {
+    "id": "c_values_customers__currency",
+    "target": "term_customers",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "Currency",
+      "currency",
+      "customers",
+      "CZK",
+      "EUR"
+    ],
+    "severity": "warning",
+    "scope": "Filters on customers.Currency",
+    "confidence": "high",
+    "description": "customers.Currency only takes these stored values: CZK / EUR. Filter with the stored spelling.",
+    "evidence": [
+      "ev_values_customers__currency"
+    ]
+  },
+  {
+    "id": "c_values_gasstations__country",
+    "target": "term_gasstations",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "Country",
+      "country",
+      "gasstations",
+      "CZE",
+      "SVK"
+    ],
+    "severity": "warning",
+    "scope": "Filters on gasstations.Country",
+    "confidence": "high",
+    "description": "gasstations.Country only takes these stored values: CZE / SVK. Filter with the stored spelling.",
+    "evidence": [
+      "ev_values_gasstations__country"
+    ]
+  },
+  {
+    "id": "c_values_gasstations__segment",
+    "target": "term_gasstations",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "Segment",
+      "segment",
+      "gasstations",
+      "Discount",
+      "Noname",
+      "Other",
+      "Premium",
+      "Value for money"
+    ],
+    "severity": "warning",
+    "scope": "Filters on gasstations.Segment",
+    "confidence": "high",
+    "description": "gasstations.Segment only takes these stored values: Discount / Noname / Other / Premium / Value for money. Filter with the stored spelling.",
+    "evidence": [
+      "ev_values_gasstations__segment"
+    ]
+  },
+  {
+    "id": "c_caveat_0",
+    "target": "term_customers",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Date",
+      "column",
+      "yearmonth",
+      "stored",
+      "integer",
+      "like",
+      "string",
+      "where",
+      "first",
+      "digits",
+      "year",
+      "next"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "The Date column in yearmonth is stored as an integer-like string where the first 4 digits are the year and the next 2 digits are the month, so string operations are needed to extract year and month.",
+    "evidence": [
+      "ev_caveat_0"
+    ]
+  },
+  {
+    "id": "c_caveat_1",
+    "target": "term_customers",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Date",
+      "column",
+      "transactions_",
+      "stored",
+      "different",
+      "format",
+      "YYYY",
+      "than",
+      "yearmonth",
+      "date",
+      "comparisons",
+      "must"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "The Date column in transactions_1k may be stored in a different format (e.g., 'YYYY-MM-DD') than the yearmonth Date column, so date comparisons must use the correct format.",
+    "evidence": [
+      "ev_caveat_1"
+    ]
+  },
+  {
+    "id": "c_caveat_2",
+    "target": "term_customers",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Currency",
+      "column",
+      "customers",
+      "contain",
+      "values",
+      "other",
+      "than",
+      "filtering",
+      "specific",
+      "currency",
+      "should",
+      "exact"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "The Currency column in customers may contain values other than 'CZK' and 'EUR', so filtering for a specific currency should use exact match.",
+    "evidence": [
+      "ev_caveat_2"
+    ]
+  },
+  {
+    "id": "c_caveat_3",
+    "target": "term_customers",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Country",
+      "column",
+      "gasstations",
+      "contain",
+      "values",
+      "other",
+      "than",
+      "filtering",
+      "Czech",
+      "Republic",
+      "should"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "The Country column in gasstations may contain values other than 'CZE', so filtering for Czech Republic should use 'CZE'.",
+    "evidence": [
+      "ev_caveat_3"
+    ]
+  },
+  {
+    "id": "c_caveat_4",
+    "target": "term_customers",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "ChainID",
+      "column",
+      "gasstations",
+      "contain",
+      "values",
+      "other",
+      "than",
+      "filtering",
+      "chain",
+      "should",
+      "exact",
+      "match"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "The ChainID column in gasstations may contain values other than 11, so filtering for chain no. 11 should use exact match.",
+    "evidence": [
+      "ev_caveat_4"
+    ]
+  }
+]

@@ -1,0 +1,200 @@
+[
+  {
+    "id": "c_values_votes__bountyamount",
+    "target": "term_votes",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "BountyAmount",
+      "bountyamount",
+      "votes",
+      "0",
+      "100",
+      "150",
+      "200",
+      "25",
+      "50"
+    ],
+    "severity": "warning",
+    "scope": "Filters on votes.BountyAmount",
+    "confidence": "high",
+    "description": "votes.BountyAmount only takes these stored values: 0 / 100 / 150 / 200 / 25 / 50. Filter with the stored spelling.",
+    "evidence": [
+      "ev_values_votes__bountyamount"
+    ]
+  },
+  {
+    "id": "c_caveat_0",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Post",
+      "creation",
+      "date",
+      "column",
+      "misspelled",
+      "CreaionDate",
+      "CreationDate"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Post creation date column is misspelled as CreaionDate, not CreationDate.",
+    "evidence": [
+      "ev_caveat_0"
+    ]
+  },
+  {
+    "id": "c_caveat_1",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "OwnerDisplayName",
+      "Community",
+      "community",
+      "owned",
+      "posts",
+      "OwnerUserId",
+      "NULL"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "OwnerDisplayName may be 'Community' for community-owned posts, so OwnerUserId may be NULL.",
+    "evidence": [
+      "ev_caveat_1"
+    ]
+  },
+  {
+    "id": "c_caveat_2",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Tags",
+      "stored",
+      "delimited",
+      "string",
+      "posts",
+      "separate",
+      "join",
+      "table"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Tags are stored as a delimited string in posts.Tags, not as a separate join table.",
+    "evidence": [
+      "ev_caveat_2"
+    ]
+  },
+  {
+    "id": "c_caveat_3",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "ClosedDate",
+      "NULL",
+      "means",
+      "post",
+      "still",
+      "open",
+      "null",
+      "closed"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "ClosedDate NULL means the post is still open; non-null means closed.",
+    "evidence": [
+      "ev_caveat_3"
+    ]
+  },
+  {
+    "id": "c_caveat_4",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "BountyAmount",
+      "only",
+      "populated",
+      "bounty",
+      "related",
+      "votes",
+      "NULL",
+      "otherwise"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "BountyAmount is only populated for bounty-related votes and may be NULL otherwise.",
+    "evidence": [
+      "ev_caveat_4"
+    ]
+  },
+  {
+    "id": "c_caveat_5",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "User",
+      "NULL",
+      "many",
+      "users",
+      "affecting",
+      "elder",
+      "user",
+      "filters"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "User Age may be NULL for many users, affecting elder-user filters.",
+    "evidence": [
+      "ev_caveat_5"
+    ]
+  },
+  {
+    "id": "c_caveat_6",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "DisplayName",
+      "guaranteed",
+      "unique",
+      "across",
+      "users"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "DisplayName is not guaranteed unique across users.",
+    "evidence": [
+      "ev_caveat_6"
+    ]
+  },
+  {
+    "id": "c_caveat_7",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "PostHistoryTypeId",
+      "values",
+      "cover",
+      "many",
+      "event",
+      "types",
+      "filtering",
+      "only",
+      "edits",
+      "requires",
+      "specific",
+      "codes"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "PostHistoryTypeId values cover many event types; filtering only edits requires specific codes.",
+    "evidence": [
+      "ev_caveat_7"
+    ]
+  }
+]

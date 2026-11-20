@@ -1,0 +1,601 @@
+[
+  {
+    "id": "term_users",
+    "name": "users",
+    "type": "entity",
+    "definition": "在问答社区中注册并拥有账户的自然人，具有声誉值、注册时间与访问记录等属性。 Counterexample: 与 badges 中的徽章授予记录不同：徽章记录是用户获得荣誉的事件性信息，而用户是荣誉的承受主体。 Maturity: Provisional",
+    "scope": "Records of table users; provenance: direct source users",
+    "aliases": [
+      "用户"
+    ],
+    "evidence": [
+      "ev_schema_users"
+    ]
+  },
+  {
+    "id": "term_badges",
+    "name": "badges",
+    "type": "entity",
+    "definition": "记录某用户在某时间获得某名称徽章的信息条目，包含徽章名称与授予日期。 Counterexample: 与用户不同：徽章授予记录是荣誉授予的信息记录，用户是荣誉的获得者。 Maturity: Provisional",
+    "scope": "Records of table badges; provenance: direct source badges",
+    "aliases": [
+      "徽章授予记录"
+    ],
+    "evidence": [
+      "ev_schema_badges"
+    ]
+  },
+  {
+    "id": "term_comments",
+    "name": "comments",
+    "type": "entity",
+    "definition": "用户针对某帖子发表的文字反馈信息，包含评分、正文与创建时间。 Counterexample: 与帖子不同：评论依附于帖子存在，是短文本反馈；帖子是独立发布的问答内容主体。 Maturity: Provisional",
+    "scope": "Records of table comments; provenance: direct source comments",
+    "aliases": [
+      "评论"
+    ],
+    "evidence": [
+      "ev_schema_comments"
+    ]
+  },
+  {
+    "id": "term_posthistory",
+    "name": "postHistory",
+    "type": "entity",
+    "definition": "记录帖子历次修订动作的信息条目，包含修订类型、修订标识、时间与操作者。 Counterexample: 与帖子不同：修订历史是帖子变更过程的记录，帖子是变更所作用的当前内容实体。 Maturity: Provisional",
+    "scope": "Records of table postHistory; provenance: direct source postHistory",
+    "aliases": [
+      "帖子修订历史"
+    ],
+    "evidence": [
+      "ev_schema_posthistory"
+    ]
+  },
+  {
+    "id": "term_postlinks",
+    "name": "postLinks",
+    "type": "entity",
+    "definition": "记录两个帖子之间关联关系的信息条目，包含链接类型与创建时间。 Counterexample: 与帖子不同：帖子链接描述帖子之间的关联，帖子是关联两端的独立内容实体。 Maturity: Provisional",
+    "scope": "Records of table postLinks; provenance: direct source postLinks",
+    "aliases": [
+      "帖子链接"
+    ],
+    "evidence": [
+      "ev_schema_postlinks"
+    ]
+  },
+  {
+    "id": "term_posts",
+    "name": "posts",
+    "type": "entity",
+    "definition": "用户在问答社区中发布的问答内容实体，具有标题、正文、标签、评分与浏览计数等属性。 Counterexample: 与评论不同：帖子是独立发布的内容主体，评论是依附于帖子的短文本反馈。 Maturity: Provisional",
+    "scope": "Records of table posts; provenance: direct source posts",
+    "aliases": [
+      "帖子"
+    ],
+    "evidence": [
+      "ev_schema_posts"
+    ]
+  },
+  {
+    "id": "term_tags",
+    "name": "tags",
+    "type": "entity",
+    "definition": "用于对帖子主题进行分类的词汇条目，包含标签名称与使用计数。 Counterexample: 与帖子不同：标签是分类词汇，帖子是被分类的内容实体。 Maturity: Provisional",
+    "scope": "Records of table tags; provenance: direct source tags",
+    "aliases": [
+      "标签"
+    ],
+    "evidence": [
+      "ev_schema_tags"
+    ]
+  },
+  {
+    "id": "term_votes",
+    "name": "votes",
+    "type": "entity",
+    "definition": "用户对帖子表达赞成或反对态度的信息记录，包含投票类型、时间与悬赏金额。 Counterexample: 与评论不同：投票是二元或分类的态度表达，评论是文字反馈。 Maturity: Provisional",
+    "scope": "Records of table votes; provenance: direct source votes",
+    "aliases": [
+      "投票"
+    ],
+    "evidence": [
+      "ev_schema_votes"
+    ]
+  },
+  {
+    "id": "concept_user",
+    "name": "User",
+    "type": "concept",
+    "definition": "A registered account on the platform, identified by DisplayName or Id.",
+    "scope": "users",
+    "aliases": [
+      "owner",
+      "poster",
+      "author",
+      "member"
+    ],
+    "evidence": [
+      "ev_concept_user"
+    ]
+  },
+  {
+    "id": "concept_userreputation",
+    "name": "UserReputation",
+    "type": "concept",
+    "definition": "The reputation score accumulated by a user.",
+    "scope": "users",
+    "aliases": [
+      "reputation",
+      "influence",
+      "score of user",
+      "user reputation"
+    ],
+    "evidence": [
+      "ev_concept_userreputation"
+    ]
+  },
+  {
+    "id": "concept_userage",
+    "name": "UserAge",
+    "type": "concept",
+    "definition": "The age attribute of a user profile.",
+    "scope": "users where Age > 65",
+    "aliases": [
+      "age",
+      "elder user",
+      "older user",
+      "user age"
+    ],
+    "evidence": [
+      "ev_concept_userage"
+    ]
+  },
+  {
+    "id": "concept_post",
+    "name": "Post",
+    "type": "concept",
+    "definition": "A piece of content (question or answer) posted on the site.",
+    "scope": "posts",
+    "aliases": [
+      "question",
+      "answer",
+      "entry"
+    ],
+    "evidence": [
+      "ev_concept_post"
+    ]
+  },
+  {
+    "id": "concept_postscore",
+    "name": "PostScore",
+    "type": "concept",
+    "definition": "The net score of a post.",
+    "scope": "posts",
+    "aliases": [
+      "score",
+      "post score",
+      "votes on post"
+    ],
+    "evidence": [
+      "ev_concept_postscore"
+    ]
+  },
+  {
+    "id": "concept_postviewcount",
+    "name": "PostViewCount",
+    "type": "concept",
+    "definition": "Number of times a post has been viewed.",
+    "scope": "posts",
+    "aliases": [
+      "views",
+      "total views",
+      "view count",
+      "popularity",
+      "post view count"
+    ],
+    "evidence": [
+      "ev_concept_postviewcount"
+    ]
+  },
+  {
+    "id": "concept_postfavoritecount",
+    "name": "PostFavoriteCount",
+    "type": "concept",
+    "definition": "Number of times a post was marked as favorite.",
+    "scope": "posts",
+    "aliases": [
+      "favorite count",
+      "favorites",
+      "bookmarks",
+      "post favorite count"
+    ],
+    "evidence": [
+      "ev_concept_postfavoritecount"
+    ]
+  },
+  {
+    "id": "concept_postcreationdate",
+    "name": "PostCreationDate",
+    "type": "concept",
+    "definition": "Timestamp when a post was created.",
+    "scope": "posts",
+    "aliases": [
+      "post date",
+      "posted on",
+      "creation date",
+      "post creation date"
+    ],
+    "evidence": [
+      "ev_concept_postcreationdate"
+    ]
+  },
+  {
+    "id": "concept_postcloseddate",
+    "name": "PostClosedDate",
+    "type": "concept",
+    "definition": "Timestamp when a post was closed; NULL means still open.",
+    "scope": "posts where ClosedDate IS NULL",
+    "aliases": [
+      "closed date",
+      "well-finished",
+      "closed",
+      "post closed date"
+    ],
+    "evidence": [
+      "ev_concept_postcloseddate"
+    ]
+  },
+  {
+    "id": "concept_posttitle",
+    "name": "PostTitle",
+    "type": "concept",
+    "definition": "The title text of a post.",
+    "scope": "posts",
+    "aliases": [
+      "title",
+      "post title",
+      "question title"
+    ],
+    "evidence": [
+      "ev_concept_posttitle"
+    ]
+  },
+  {
+    "id": "concept_posttag",
+    "name": "PostTag",
+    "type": "concept",
+    "definition": "Tags associated with a post, stored as a delimited string.",
+    "scope": "posts where Tags LIKE '%<r>%'",
+    "aliases": [
+      "tag",
+      "tags",
+      "language tag",
+      "post tag"
+    ],
+    "evidence": [
+      "ev_concept_posttag"
+    ]
+  },
+  {
+    "id": "concept_badge",
+    "name": "Badge",
+    "type": "concept",
+    "definition": "An achievement awarded to a user.",
+    "scope": "badges",
+    "aliases": [
+      "award",
+      "achievement"
+    ],
+    "evidence": [
+      "ev_concept_badge"
+    ]
+  },
+  {
+    "id": "concept_badgedate",
+    "name": "BadgeDate",
+    "type": "concept",
+    "definition": "Timestamp when a badge was awarded.",
+    "scope": "badges",
+    "aliases": [
+      "badge date",
+      "awarded date",
+      "first badge"
+    ],
+    "evidence": [
+      "ev_concept_badgedate"
+    ]
+  },
+  {
+    "id": "concept_comment",
+    "name": "Comment",
+    "type": "concept",
+    "definition": "A comment left by a user on a post.",
+    "scope": "comments",
+    "aliases": [
+      "reply"
+    ],
+    "evidence": [
+      "ev_concept_comment"
+    ]
+  },
+  {
+    "id": "concept_commentcreationdate",
+    "name": "CommentCreationDate",
+    "type": "concept",
+    "definition": "Timestamp when a comment was created.",
+    "scope": "comments",
+    "aliases": [
+      "comment date",
+      "commented at",
+      "comment time",
+      "comment creation date"
+    ],
+    "evidence": [
+      "ev_concept_commentcreationdate"
+    ]
+  },
+  {
+    "id": "concept_vote",
+    "name": "Vote",
+    "type": "concept",
+    "definition": "A vote cast by a user on a post.",
+    "scope": "votes",
+    "aliases": [
+      "voting",
+      "cast vote"
+    ],
+    "evidence": [
+      "ev_concept_vote"
+    ]
+  },
+  {
+    "id": "concept_votecreationdate",
+    "name": "VoteCreationDate",
+    "type": "concept",
+    "definition": "Timestamp when a vote was cast.",
+    "scope": "votes",
+    "aliases": [
+      "vote date",
+      "first vote",
+      "voted at",
+      "vote creation date"
+    ],
+    "evidence": [
+      "ev_concept_votecreationdate"
+    ]
+  },
+  {
+    "id": "concept_bountyamount",
+    "name": "BountyAmount",
+    "type": "concept",
+    "definition": "Bounty amount attached to a vote.",
+    "scope": "votes where BountyAmount = 50",
+    "aliases": [
+      "bounty",
+      "bounty amount",
+      "bounty of 50"
+    ],
+    "evidence": [
+      "ev_concept_bountyamount"
+    ]
+  },
+  {
+    "id": "concept_posthistoryedit",
+    "name": "PostHistoryEdit",
+    "type": "concept",
+    "definition": "A revision/edit event recorded in post history.",
+    "scope": "postHistory where PostHistoryTypeId IN (4,5,6,7,8)",
+    "aliases": [
+      "edit",
+      "edited post",
+      "revision",
+      "post history edit"
+    ],
+    "evidence": [
+      "ev_concept_posthistoryedit"
+    ]
+  },
+  {
+    "id": "derived_elderuserpostcount",
+    "name": "ElderUserPostCount",
+    "type": "metric",
+    "definition": "Number of posts owned by users older than 65. Formula: COUNT(Post.Id) WHERE UserAge > 65. Inputs: Post = posts.Id; UserAge = users.Age WHERE Age > 65",
+    "scope": "derived metric",
+    "aliases": [
+      "posts by elder users",
+      "elder user posts",
+      "elder user post count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_highscorepostcount",
+    "name": "HighScorePostCount",
+    "type": "metric",
+    "definition": "Number of posts with score >= 20. Formula: COUNT(Post.Id) WHERE PostScore >= 20. Inputs: Post = posts.Id; PostScore = posts.Score",
+    "scope": "derived metric",
+    "aliases": [
+      "posts with score over 19",
+      "high score posts",
+      "high score post count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_userswithmanybadges",
+    "name": "UsersWithManyBadges",
+    "type": "metric",
+    "definition": "Number of users awarded more than 5 badges. Formula: COUNT(DISTINCT User.Id) WHERE COUNT(Badge.Name) > 5. Inputs: User = users.Id; Badge = badges.Name",
+    "scope": "derived metric",
+    "aliases": [
+      "users with more than 5 badges",
+      "badge-heavy users",
+      "users with many badges"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_avgpostscoreperuser",
+    "name": "AvgPostScorePerUser",
+    "type": "metric",
+    "definition": "Average score of posts owned by a given user. Formula: AVG(PostScore) GROUP BY User. Inputs: PostScore = posts.Score; User = users.Id",
+    "scope": "derived metric",
+    "aliases": [
+      "average score of posts",
+      "avg score by user",
+      "avg post score per user"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_pctpostsbyhighrepusers2011",
+    "name": "PctPostsByHighRepUsers2011",
+    "type": "metric",
+    "definition": "Percentage of 2011 posts whose owners had reputation > 1000. Formula: COUNT(Post.Id WHERE YEAR(PostCreationDate)=2011 AND UserReputation>1000) / COUNT(Post.Id WHERE YEAR(PostCreationDate)=2011) * 100. Inputs: Post = posts.Id; PostCreationDate = posts.CreaionDate; UserReputation = users.Reputation",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of posts by high reputation users in 2011",
+      "pct posts by high rep users 2011"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_pctrpostsbycommunity",
+    "name": "PctRPostsByCommunity",
+    "type": "metric",
+    "definition": "Percentage of Community-owned posts tagged with R. Formula: COUNT(Post.Id WHERE PostTag='r' AND User.DisplayName='Community') / COUNT(Post.Id WHERE User.DisplayName='Community') * 100. Inputs: Post = posts.Id; PostTag = posts.Tags WHERE Tags LIKE '%<r>%'; User = users.Id",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of R posts by Community",
+      "pct r posts by community"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_pcthighscorepostsbyelderusers",
+    "name": "PctHighScorePostsByElderUsers",
+    "type": "metric",
+    "definition": "Among posts with score > 5, percentage owned by users older than 65. Formula: COUNT(Post.Id WHERE PostScore>5 AND UserAge>65) / COUNT(Post.Id WHERE PostScore>5) * 100. Inputs: Post = posts.Id; PostScore = posts.Score; UserAge = users.Age WHERE Age > 65",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of high score posts by elder users",
+      "pct high score posts by elder users"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_pcthighscorepostsbytopuser",
+    "name": "PctHighScorePostsByTopUser",
+    "type": "metric",
+    "definition": "Percentage of posts by the highest-reputation user that have score > 50. Formula: COUNT(Post.Id WHERE PostScore>50 AND UserReputation=MAX(UserReputation)) / COUNT(Post.Id WHERE UserReputation=MAX(UserReputation)) * 100. Inputs: Post = posts.Id; PostScore = posts.Score; UserReputation = users.Reputation",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of posts with score above 50 by most influential ",
+      "pct high score posts by top user"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_firstvotedate",
+    "name": "FirstVoteDate",
+    "type": "metric",
+    "definition": "Earliest vote timestamp for a user. Formula: MIN(VoteCreationDate) GROUP BY User. Inputs: VoteCreationDate = votes.CreationDate; User = users.Id",
+    "scope": "derived metric",
+    "aliases": [
+      "first vote",
+      "earliest vote",
+      "first vote date"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_firstbadgedate",
+    "name": "FirstBadgeDate",
+    "type": "metric",
+    "definition": "Earliest badge award date for a given badge name. Formula: MIN(BadgeDate) WHERE Badge.Name = 'Autobiographer'. Inputs: Badge = badges.Name; BadgeDate = badges.Date",
+    "scope": "derived metric",
+    "aliases": [
+      "first badge",
+      "earliest badge",
+      "first badge date"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_postpopularity",
+    "name": "PostPopularity",
+    "type": "metric",
+    "definition": "Popularity of a post measured by view count. Formula: SUM(PostViewCount) GROUP BY Post. Inputs: PostViewCount = posts.ViewCount; Post = posts.Id",
+    "scope": "derived metric",
+    "aliases": [
+      "popularity",
+      "most popular post",
+      "post popularity"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_higherreputationuser",
+    "name": "HigherReputationUser",
+    "type": "metric",
+    "definition": "Comparison of reputation between two users. Formula: MAX(UserReputation) GROUP BY User. Inputs: UserReputation = users.Reputation; User = users.Id",
+    "scope": "derived metric",
+    "aliases": [
+      "higher reputation",
+      "more influential user",
+      "higher reputation user"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_posthistorytypes",
+    "name": "PostHistoryTypes",
+    "type": "concept",
+    "definition": "Types of events recorded in post history (edits, closures, etc.).",
+    "scope": "postHistory.PostHistoryTypeId codes",
+    "aliases": [
+      "post history",
+      "edit types",
+      "revision types",
+      "post history types"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_votetypes",
+    "name": "VoteTypes",
+    "type": "concept",
+    "definition": "Categories of votes cast on posts (upvote, downvote, bounty, etc.).",
+    "scope": "votes.VoteTypeId codes",
+    "aliases": [
+      "vote types",
+      "voting categories"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_posttypes",
+    "name": "PostTypes",
+    "type": "concept",
+    "definition": "Types of posts (question, answer, wiki, tag wiki, etc.).",
+    "scope": "posts.PostTypeId codes",
+    "aliases": [
+      "post types",
+      "question or answer"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_linktypes",
+    "name": "LinkTypes",
+    "type": "concept",
+    "definition": "Types of links between posts (duplicate, related, etc.).",
+    "scope": "postLinks.LinkTypeId codes",
+    "aliases": [
+      "link types",
+      "related post links"
+    ],
+    "evidence": []
+  }
+]

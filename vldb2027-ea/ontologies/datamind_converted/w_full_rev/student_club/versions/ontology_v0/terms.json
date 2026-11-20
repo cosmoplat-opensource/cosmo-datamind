@@ -1,0 +1,867 @@
+[
+  {
+    "id": "term_attendance",
+    "name": "attendance",
+    "type": "entity",
+    "definition": "一种信息记录,记录某个成员参与某场活动的关联事实,以成员标识与活动标识为连接键。 Counterexample: 易与成员(member)混淆:成员是参与活动的人这一实体,参与记录只是成员与活动之间的关联信息。 Maturity: Provisional",
+    "scope": "Records of table attendance; provenance: direct source attendance",
+    "aliases": [
+      "活动参与记录"
+    ],
+    "evidence": [
+      "ev_schema_attendance"
+    ]
+  },
+  {
+    "id": "term_budget",
+    "name": "budget",
+    "type": "concept",
+    "definition": "一种信息记录,针对某场活动按类别设定的经费额度,含预算金额、已支出与剩余金额。 Counterexample: 易与支出(expense)混淆:预算是事先设定的额度,支出是实际发生的费用。 Maturity: Provisional",
+    "scope": "Records of table budget; provenance: direct source budget",
+    "aliases": [
+      "活动预算"
+    ],
+    "evidence": [
+      "ev_schema_budget"
+    ]
+  },
+  {
+    "id": "term_event",
+    "name": "event",
+    "type": "concept",
+    "definition": "在特定日期与地点发生、具有名称、类型与状态的一次组织性活动。 Counterexample: 易与预算(budget)混淆:活动是发生的事件,预算是为该事件编制的经费计划。 Maturity: Provisional",
+    "scope": "Records of table event; provenance: direct source event",
+    "aliases": [
+      "活动"
+    ],
+    "evidence": [
+      "ev_schema_event"
+    ]
+  },
+  {
+    "id": "term_expense",
+    "name": "expense",
+    "type": "entity",
+    "definition": "一种信息记录,记录某成员在某日期发生的一笔费用及其金额与审批状态,并归属到相应预算。 Counterexample: 易与预算(budget)混淆:支出是实际发生的费用记录,预算是事先设定的额度。 Maturity: Provisional",
+    "scope": "Records of table expense; provenance: direct source expense",
+    "aliases": [
+      "支出"
+    ],
+    "evidence": [
+      "ev_schema_expense"
+    ]
+  },
+  {
+    "id": "term_income",
+    "name": "income",
+    "type": "entity",
+    "definition": "一种信息记录,记录某成员在某日期收到的一笔款项及其来源与金额。 Counterexample: 易与支出(expense)混淆:收入是资金流入记录,支出是资金流出记录。 Maturity: Provisional",
+    "scope": "Records of table income; provenance: direct source income",
+    "aliases": [
+      "收入"
+    ],
+    "evidence": [
+      "ev_schema_income"
+    ]
+  },
+  {
+    "id": "term_major",
+    "name": "major",
+    "type": "entity",
+    "definition": "高等学校中按学科门类划分的培养方向,隶属于某院系与学院。 Counterexample: 易与成员(member)混淆:专业是培养方向这一分类信息,成员是就读于该专业的人。 Maturity: Provisional",
+    "scope": "Records of table major; provenance: direct source major",
+    "aliases": [
+      "专业"
+    ],
+    "evidence": [
+      "ev_schema_major"
+    ]
+  },
+  {
+    "id": "term_member",
+    "name": "member",
+    "type": "entity",
+    "definition": "加入该组织并具有姓名、联系方式、职位等属性的自然人。 Counterexample: 易与专业(major)混淆:成员是自然人,专业是其所归属的培养方向。 Maturity: Provisional",
+    "scope": "Records of table member; provenance: direct source member",
+    "aliases": [
+      "成员"
+    ],
+    "evidence": [
+      "ev_schema_member"
+    ]
+  },
+  {
+    "id": "term_zip_code",
+    "name": "zip_code",
+    "type": "entity",
+    "definition": "一种信息记录,以邮政编码标识某地理区域,并给出该区域所属城市、县、州等信息。 Counterexample: 易与成员(member)混淆:邮政编码是地理区域编码信息,成员是自然人。 Maturity: Provisional",
+    "scope": "Records of table zip_code; provenance: direct source zip_code",
+    "aliases": [
+      "邮政编码"
+    ],
+    "evidence": [
+      "ev_schema_zip_code"
+    ]
+  },
+  {
+    "id": "concept_eventstatus",
+    "name": "EventStatus",
+    "type": "concept",
+    "definition": "The current status of an event (e.g., Open, Closed, Planning).",
+    "scope": "event",
+    "aliases": [
+      "status of the event",
+      "event status",
+      "closed events",
+      "event state"
+    ],
+    "evidence": [
+      "ev_concept_eventstatus"
+    ]
+  },
+  {
+    "id": "concept_expensedescription",
+    "name": "ExpenseDescription",
+    "type": "concept",
+    "definition": "A textual description of what an expense was for.",
+    "scope": "expense",
+    "aliases": [
+      "kind of expenses",
+      "expense description",
+      "type of expenses",
+      "what was bought"
+    ],
+    "evidence": [
+      "ev_concept_expensedescription"
+    ]
+  },
+  {
+    "id": "concept_expensedate",
+    "name": "ExpenseDate",
+    "type": "concept",
+    "definition": "The date on which an expense was incurred.",
+    "scope": "expense",
+    "aliases": [
+      "on 2019/8/20",
+      "expense date",
+      "date of expense",
+      "when spent"
+    ],
+    "evidence": [
+      "ev_concept_expensedate"
+    ]
+  },
+  {
+    "id": "concept_expensecost",
+    "name": "ExpenseCost",
+    "type": "concept",
+    "definition": "The monetary cost of an individual expense.",
+    "scope": "expense",
+    "aliases": [
+      "cost",
+      "expense cost",
+      "amount spent",
+      "total value",
+      "spend"
+    ],
+    "evidence": [
+      "ev_concept_expensecost"
+    ]
+  },
+  {
+    "id": "concept_expenseapproved",
+    "name": "ExpenseApproved",
+    "type": "concept",
+    "definition": "Whether an expense has been approved.",
+    "scope": "expense",
+    "aliases": [
+      "approved",
+      "approval status",
+      "approved expense",
+      "expense approved"
+    ],
+    "evidence": [
+      "ev_concept_expenseapproved"
+    ]
+  },
+  {
+    "id": "concept_memberposition",
+    "name": "MemberPosition",
+    "type": "concept",
+    "definition": "The role or position a member holds in the club.",
+    "scope": "member",
+    "aliases": [
+      "position",
+      "role",
+      "President",
+      "club position",
+      "member position"
+    ],
+    "evidence": [
+      "ev_concept_memberposition"
+    ]
+  },
+  {
+    "id": "concept_membertshirtsize",
+    "name": "MemberTShirtSize",
+    "type": "concept",
+    "definition": "The t-shirt size of a member.",
+    "scope": "member",
+    "aliases": [
+      "t-shirt size",
+      "wear medium size t-shirt",
+      "shirt size",
+      "member t shirt size"
+    ],
+    "evidence": [
+      "ev_concept_membertshirtsize"
+    ]
+  },
+  {
+    "id": "concept_memberfirstname",
+    "name": "MemberFirstName",
+    "type": "concept",
+    "definition": "The first name of a member.",
+    "scope": "member",
+    "aliases": [
+      "first name",
+      "given name",
+      "member first name"
+    ],
+    "evidence": [
+      "ev_concept_memberfirstname"
+    ]
+  },
+  {
+    "id": "concept_memberlastname",
+    "name": "MemberLastName",
+    "type": "concept",
+    "definition": "The last name of a member.",
+    "scope": "member",
+    "aliases": [
+      "last name",
+      "surname",
+      "family name",
+      "member last name"
+    ],
+    "evidence": [
+      "ev_concept_memberlastname"
+    ]
+  },
+  {
+    "id": "concept_memberphone",
+    "name": "MemberPhone",
+    "type": "concept",
+    "definition": "The phone number of a member.",
+    "scope": "member",
+    "aliases": [
+      "phone number",
+      "contact number",
+      "phone",
+      "member phone"
+    ],
+    "evidence": [
+      "ev_concept_memberphone"
+    ]
+  },
+  {
+    "id": "concept_memberzip",
+    "name": "MemberZip",
+    "type": "concept",
+    "definition": "The zip code of a member's address.",
+    "scope": "member",
+    "aliases": [
+      "zip code",
+      "postal code",
+      "member zip"
+    ],
+    "evidence": [
+      "ev_concept_memberzip"
+    ]
+  },
+  {
+    "id": "concept_majorname",
+    "name": "MajorName",
+    "type": "concept",
+    "definition": "The name of the academic major.",
+    "scope": "major",
+    "aliases": [
+      "major",
+      "major name",
+      "field of study",
+      "department"
+    ],
+    "evidence": [
+      "ev_concept_majorname"
+    ]
+  },
+  {
+    "id": "concept_majordepartment",
+    "name": "MajorDepartment",
+    "type": "concept",
+    "definition": "The department offering the major.",
+    "scope": "major",
+    "aliases": [
+      "department",
+      "academic department",
+      "major department"
+    ],
+    "evidence": [
+      "ev_concept_majordepartment"
+    ]
+  },
+  {
+    "id": "concept_majorcollege",
+    "name": "MajorCollege",
+    "type": "concept",
+    "definition": "The college offering the major.",
+    "scope": "major",
+    "aliases": [
+      "college",
+      "school",
+      "major college"
+    ],
+    "evidence": [
+      "ev_concept_majorcollege"
+    ]
+  },
+  {
+    "id": "concept_eventname",
+    "name": "EventName",
+    "type": "concept",
+    "definition": "The name of an event.",
+    "scope": "event",
+    "aliases": [
+      "event",
+      "event name",
+      "meeting",
+      "activity"
+    ],
+    "evidence": [
+      "ev_concept_eventname"
+    ]
+  },
+  {
+    "id": "concept_eventtype",
+    "name": "EventType",
+    "type": "concept",
+    "definition": "The type/category of an event.",
+    "scope": "event",
+    "aliases": [
+      "type of event",
+      "event type",
+      "fundraiser"
+    ],
+    "evidence": [
+      "ev_concept_eventtype"
+    ]
+  },
+  {
+    "id": "concept_eventdate",
+    "name": "EventDate",
+    "type": "concept",
+    "definition": "The date on which an event occurs.",
+    "scope": "event",
+    "aliases": [
+      "event date",
+      "date of event",
+      "when event happened"
+    ],
+    "evidence": [
+      "ev_concept_eventdate"
+    ]
+  },
+  {
+    "id": "concept_budgetcategory",
+    "name": "BudgetCategory",
+    "type": "concept",
+    "definition": "The category of a budget item.",
+    "scope": "budget",
+    "aliases": [
+      "budget category",
+      "category",
+      "Advertisement"
+    ],
+    "evidence": [
+      "ev_concept_budgetcategory"
+    ]
+  },
+  {
+    "id": "concept_budgetspent",
+    "name": "BudgetSpent",
+    "type": "concept",
+    "definition": "The amount of budget already spent.",
+    "scope": "budget",
+    "aliases": [
+      "spent",
+      "budget spent",
+      "amount spent from budget"
+    ],
+    "evidence": [
+      "ev_concept_budgetspent"
+    ]
+  },
+  {
+    "id": "concept_budgetremaining",
+    "name": "BudgetRemaining",
+    "type": "concept",
+    "definition": "The remaining budget amount.",
+    "scope": "budget",
+    "aliases": [
+      "remaining",
+      "budget remaining",
+      "leftover budget"
+    ],
+    "evidence": [
+      "ev_concept_budgetremaining"
+    ]
+  },
+  {
+    "id": "concept_budgetamount",
+    "name": "BudgetAmount",
+    "type": "concept",
+    "definition": "The total budget amount allocated.",
+    "scope": "budget",
+    "aliases": [
+      "amount",
+      "budget amount",
+      "allocated budget"
+    ],
+    "evidence": [
+      "ev_concept_budgetamount"
+    ]
+  },
+  {
+    "id": "concept_budgeteventstatus",
+    "name": "BudgetEventStatus",
+    "type": "concept",
+    "definition": "The status of the event associated with a budget.",
+    "scope": "budget",
+    "aliases": [
+      "event status in budget",
+      "budget event status"
+    ],
+    "evidence": [
+      "ev_concept_budgeteventstatus"
+    ]
+  },
+  {
+    "id": "concept_attendancecount",
+    "name": "AttendanceCount",
+    "type": "concept",
+    "definition": "The number of members who attended an event.",
+    "scope": "attendance",
+    "aliases": [
+      "attendance",
+      "number of attendees",
+      "students attended",
+      "attendance count"
+    ],
+    "evidence": [
+      "ev_concept_attendancecount"
+    ]
+  },
+  {
+    "id": "concept_incomeamount",
+    "name": "IncomeAmount",
+    "type": "concept",
+    "definition": "The amount of income received.",
+    "scope": "income",
+    "aliases": [
+      "income",
+      "amount received",
+      "revenue",
+      "income amount"
+    ],
+    "evidence": [
+      "ev_concept_incomeamount"
+    ]
+  },
+  {
+    "id": "concept_incomesource",
+    "name": "IncomeSource",
+    "type": "concept",
+    "definition": "The source of income.",
+    "scope": "income",
+    "aliases": [
+      "source of income",
+      "income source"
+    ],
+    "evidence": [
+      "ev_concept_incomesource"
+    ]
+  },
+  {
+    "id": "concept_zipcodecity",
+    "name": "ZipCodeCity",
+    "type": "concept",
+    "definition": "The city associated with a zip code.",
+    "scope": "zip_code",
+    "aliases": [
+      "city",
+      "cities",
+      "zip code city"
+    ],
+    "evidence": [
+      "ev_concept_zipcodecity"
+    ]
+  },
+  {
+    "id": "concept_zipcodecounty",
+    "name": "ZipCodeCounty",
+    "type": "concept",
+    "definition": "The county associated with a zip code.",
+    "scope": "zip_code",
+    "aliases": [
+      "county",
+      "Orange County",
+      "zip code county"
+    ],
+    "evidence": [
+      "ev_concept_zipcodecounty"
+    ]
+  },
+  {
+    "id": "concept_zipcodestate",
+    "name": "ZipCodeState",
+    "type": "concept",
+    "definition": "The state associated with a zip code.",
+    "scope": "zip_code",
+    "aliases": [
+      "state",
+      "Virginia",
+      "Illinois",
+      "zip code state"
+    ],
+    "evidence": [
+      "ev_concept_zipcodestate"
+    ]
+  },
+  {
+    "id": "concept_zipcodeshortstate",
+    "name": "ZipCodeShortState",
+    "type": "concept",
+    "definition": "The abbreviated state code.",
+    "scope": "zip_code",
+    "aliases": [
+      "short state",
+      "state abbreviation",
+      "zip code short state"
+    ],
+    "evidence": [
+      "ev_concept_zipcodeshortstate"
+    ]
+  },
+  {
+    "id": "concept_zipcodetype",
+    "name": "ZipCodeType",
+    "type": "concept",
+    "definition": "The type of zip code area.",
+    "scope": "zip_code",
+    "aliases": [
+      "zip type",
+      "type of zip code",
+      "zip code type"
+    ],
+    "evidence": [
+      "ev_concept_zipcodetype"
+    ]
+  },
+  {
+    "id": "derived_fullname",
+    "name": "FullName",
+    "type": "metric",
+    "definition": "The full name of a member, combining first and last name. Formula: CONCAT(MemberFirstName, ' ', MemberLastName). Inputs: MemberFirstName = member.first_name; MemberLastName = member.last_name",
+    "scope": "derived metric",
+    "aliases": [
+      "full name",
+      "name of member",
+      "member name"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_averageexpensecost",
+    "name": "AverageExpenseCost",
+    "type": "metric",
+    "definition": "The average cost of expenses. Formula: AVG(ExpenseCost). Inputs: ExpenseCost = expense.cost",
+    "scope": "derived metric",
+    "aliases": [
+      "average cost",
+      "avg cost",
+      "mean expense",
+      "average expense cost"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_totalexpensecost",
+    "name": "TotalExpenseCost",
+    "type": "metric",
+    "definition": "The total cost of expenses. Formula: SUM(ExpenseCost). Inputs: ExpenseCost = expense.cost",
+    "scope": "derived metric",
+    "aliases": [
+      "total cost",
+      "total value",
+      "sum of costs",
+      "total expense cost"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_spendtobudgetratio",
+    "name": "SpendToBudgetRatio",
+    "type": "metric",
+    "definition": "The ratio of budget spent to budget amount. Formula: BudgetSpent / BudgetAmount. Inputs: BudgetSpent = budget.spent; BudgetAmount = budget.amount",
+    "scope": "derived metric",
+    "aliases": [
+      "spend-to-budget ratio",
+      "spent over amount",
+      "budget utilization",
+      "spend to budget ratio"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_budgetexceeded",
+    "name": "BudgetExceeded",
+    "type": "metric",
+    "definition": "Indicates if the budget was exceeded (remaining < 0). Formula: CASE WHEN BudgetRemaining < 0 THEN 1 ELSE 0 END. Inputs: BudgetRemaining = budget.remaining",
+    "scope": "derived metric",
+    "aliases": [
+      "exceeded budget",
+      "over budget",
+      "remaining negative",
+      "budget exceeded"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_attendancecountperevent",
+    "name": "AttendanceCountPerEvent",
+    "type": "metric",
+    "definition": "The number of members who attended a specific event. Formula: COUNT(AttendanceCount). Inputs: AttendanceCount = attendance.link_to_member",
+    "scope": "derived metric",
+    "aliases": [
+      "attendance count",
+      "number of attendees",
+      "students attended",
+      "attendance count per event"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_eventcost",
+    "name": "EventCost",
+    "type": "metric",
+    "definition": "The total cost of expenses for an event. Formula: SUM(ExpenseCost). Inputs: ExpenseCost = expense.cost",
+    "scope": "derived metric",
+    "aliases": [
+      "event cost",
+      "total cost per event"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_memberexpensetotal",
+    "name": "MemberExpenseTotal",
+    "type": "metric",
+    "definition": "The total expenses incurred by a member. Formula: SUM(ExpenseCost). Inputs: ExpenseCost = expense.cost",
+    "scope": "derived metric",
+    "aliases": [
+      "total spent by member",
+      "member expense total"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_budgetspentperevent",
+    "name": "BudgetSpentPerEvent",
+    "type": "metric",
+    "definition": "The total budget spent for a specific event. Formula: SUM(BudgetSpent). Inputs: BudgetSpent = budget.spent",
+    "scope": "derived metric",
+    "aliases": [
+      "budget spent per event",
+      "spent for event"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_budgetamountperevent",
+    "name": "BudgetAmountPerEvent",
+    "type": "metric",
+    "definition": "The total budget amount allocated for a specific event. Formula: SUM(BudgetAmount). Inputs: BudgetAmount = budget.amount",
+    "scope": "derived metric",
+    "aliases": [
+      "budget amount per event",
+      "allocated budget for event"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_incometotal",
+    "name": "IncomeTotal",
+    "type": "metric",
+    "definition": "The total income received. Formula: SUM(IncomeAmount). Inputs: IncomeAmount = income.amount",
+    "scope": "derived metric",
+    "aliases": [
+      "total income",
+      "sum of income",
+      "income total"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_expensecount",
+    "name": "ExpenseCount",
+    "type": "metric",
+    "definition": "The number of expenses. Formula: COUNT(ExpenseCost). Inputs: ExpenseCost = expense.cost",
+    "scope": "derived metric",
+    "aliases": [
+      "number of expenses",
+      "count of expenses",
+      "expense count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_membercount",
+    "name": "MemberCount",
+    "type": "metric",
+    "definition": "The number of members. Formula: COUNT(MemberFirstName). Inputs: MemberFirstName = member.first_name",
+    "scope": "derived metric",
+    "aliases": [
+      "number of members",
+      "count of members",
+      "member count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_eventcount",
+    "name": "EventCount",
+    "type": "metric",
+    "definition": "The number of events. Formula: COUNT(EventName). Inputs: EventName = event.event_name",
+    "scope": "derived metric",
+    "aliases": [
+      "number of events",
+      "count of events",
+      "event count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_citycount",
+    "name": "CityCount",
+    "type": "metric",
+    "definition": "The number of distinct cities. Formula: COUNT(DISTINCT ZipCodeCity). Inputs: ZipCodeCity = zip_code.city",
+    "scope": "derived metric",
+    "aliases": [
+      "number of cities",
+      "count of cities",
+      "city count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_eventstatus",
+    "name": "EventStatus",
+    "type": "concept",
+    "definition": "Answers questions about the status of events.",
+    "scope": "event.status codes",
+    "aliases": [
+      "event status",
+      "status of event"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_memberposition",
+    "name": "MemberPosition",
+    "type": "concept",
+    "definition": "Answers questions about member positions.",
+    "scope": "member.position codes",
+    "aliases": [
+      "position",
+      "role",
+      "member position"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_membertshirtsize",
+    "name": "MemberTShirtSize",
+    "type": "concept",
+    "definition": "Answers questions about t-shirt sizes.",
+    "scope": "member.t_shirt_size codes",
+    "aliases": [
+      "t-shirt size",
+      "shirt size",
+      "member t shirt size"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_majorname",
+    "name": "MajorName",
+    "type": "concept",
+    "definition": "Answers questions about academic majors.",
+    "scope": "major.major_name codes",
+    "aliases": [
+      "major",
+      "field of study",
+      "major name"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_eventtype",
+    "name": "EventType",
+    "type": "concept",
+    "definition": "Answers questions about event types.",
+    "scope": "event.type codes",
+    "aliases": [
+      "event type",
+      "type of event"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_budgetcategory",
+    "name": "BudgetCategory",
+    "type": "concept",
+    "definition": "Answers questions about budget categories.",
+    "scope": "budget.category codes",
+    "aliases": [
+      "budget category",
+      "category"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_zipcodestate",
+    "name": "ZipCodeState",
+    "type": "concept",
+    "definition": "Answers questions about states.",
+    "scope": "zip_code.state codes",
+    "aliases": [
+      "state",
+      "state name",
+      "zip code state"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_zipcodecounty",
+    "name": "ZipCodeCounty",
+    "type": "concept",
+    "definition": "Answers questions about counties.",
+    "scope": "zip_code.county codes",
+    "aliases": [
+      "county",
+      "county name",
+      "zip code county"
+    ],
+    "evidence": []
+  }
+]

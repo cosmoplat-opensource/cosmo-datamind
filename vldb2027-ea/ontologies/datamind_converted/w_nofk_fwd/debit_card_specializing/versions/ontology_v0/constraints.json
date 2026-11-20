@@ -1,0 +1,232 @@
+[
+  {
+    "id": "c_values_customers__segment",
+    "target": "term_customers",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "Segment",
+      "segment",
+      "customers",
+      "KAM",
+      "LAM",
+      "SME"
+    ],
+    "severity": "warning",
+    "scope": "Filters on customers.Segment",
+    "confidence": "high",
+    "description": "customers.Segment only takes these stored values: KAM / LAM / SME. Filter with the stored spelling.",
+    "evidence": [
+      "ev_values_customers__segment"
+    ]
+  },
+  {
+    "id": "c_values_customers__currency",
+    "target": "term_customers",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "Currency",
+      "currency",
+      "customers",
+      "CZK",
+      "EUR"
+    ],
+    "severity": "warning",
+    "scope": "Filters on customers.Currency",
+    "confidence": "high",
+    "description": "customers.Currency only takes these stored values: CZK / EUR. Filter with the stored spelling.",
+    "evidence": [
+      "ev_values_customers__currency"
+    ]
+  },
+  {
+    "id": "c_values_gasstations__country",
+    "target": "term_gasstations",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "Country",
+      "country",
+      "gasstations",
+      "CZE",
+      "SVK"
+    ],
+    "severity": "warning",
+    "scope": "Filters on gasstations.Country",
+    "confidence": "high",
+    "description": "gasstations.Country only takes these stored values: CZE / SVK. Filter with the stored spelling.",
+    "evidence": [
+      "ev_values_gasstations__country"
+    ]
+  },
+  {
+    "id": "c_values_gasstations__segment",
+    "target": "term_gasstations",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "Segment",
+      "segment",
+      "gasstations",
+      "Discount",
+      "Noname",
+      "Other",
+      "Premium",
+      "Value for money"
+    ],
+    "severity": "warning",
+    "scope": "Filters on gasstations.Segment",
+    "confidence": "high",
+    "description": "gasstations.Segment only takes these stored values: Discount / Noname / Other / Premium / Value for money. Filter with the stored spelling.",
+    "evidence": [
+      "ev_values_gasstations__segment"
+    ]
+  },
+  {
+    "id": "c_caveat_0",
+    "target": "term_customers",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Date",
+      "column",
+      "yearmonth",
+      "stored",
+      "integer",
+      "YYYYMM",
+      "date",
+      "type",
+      "string",
+      "functions",
+      "needed"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "The Date column in yearmonth is stored as an integer YYYYMM, not a date type, so string functions may be needed.",
+    "evidence": [
+      "ev_caveat_0"
+    ]
+  },
+  {
+    "id": "c_caveat_1",
+    "target": "term_customers",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Date",
+      "column",
+      "transactions_",
+      "stored",
+      "text",
+      "with",
+      "slashes",
+      "requiring",
+      "conversion",
+      "date",
+      "comparisons"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "The Date column in transactions_1k may be stored as text with slashes, requiring conversion for date comparisons.",
+    "evidence": [
+      "ev_caveat_1"
+    ]
+  },
+  {
+    "id": "c_caveat_2",
+    "target": "term_customers",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Currency",
+      "values",
+      "have",
+      "different",
+      "cases",
+      "formats"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Currency values may have different cases or formats (e.g., 'EUR' vs 'eur').",
+    "evidence": [
+      "ev_caveat_2"
+    ]
+  },
+  {
+    "id": "c_caveat_3",
+    "target": "term_customers",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Segment",
+      "values",
+      "have",
+      "different",
+      "cases",
+      "abbreviations"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Segment values may have different cases or abbreviations.",
+    "evidence": [
+      "ev_caveat_3"
+    ]
+  },
+  {
+    "id": "c_caveat_4",
+    "target": "term_customers",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Country",
+      "codes",
+      "stored",
+      "full",
+      "names",
+      "abbreviations"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Country codes may be stored as full names or abbreviations.",
+    "evidence": [
+      "ev_caveat_4"
+    ]
+  },
+  {
+    "id": "c_caveat_5",
+    "target": "term_customers",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "ChainID",
+      "stored",
+      "text",
+      "integer",
+      "affecting",
+      "comparisons"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "ChainID may be stored as text or integer, affecting comparisons.",
+    "evidence": [
+      "ev_caveat_5"
+    ]
+  },
+  {
+    "id": "c_caveat_6",
+    "target": "term_customers",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Consumption",
+      "values",
+      "NULL",
+      "zero",
+      "affecting",
+      "averages"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Consumption values may be NULL or zero, affecting averages.",
+    "evidence": [
+      "ev_caveat_6"
+    ]
+  }
+]

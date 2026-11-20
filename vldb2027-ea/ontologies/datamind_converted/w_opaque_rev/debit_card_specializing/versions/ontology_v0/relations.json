@@ -1,0 +1,154 @@
+[
+  {
+    "id": "rel_derived_eurtoczkratio__from__concept_currency",
+    "source": "concept_currency",
+    "relation_type": "derivation",
+    "target": "derived_eurtoczkratio",
+    "connection_condition": "same entity and period",
+    "description": "EURtoCZKRatio is computed from Currency: COUNT(Currency='EUR') / COUNT(Currency='CZK')",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_smepaymentdifference__from__concept_customersegment",
+    "source": "concept_customersegment",
+    "relation_type": "derivation",
+    "target": "derived_smepaymentdifference",
+    "connection_condition": "same entity and period",
+    "description": "SMEPaymentDifference is computed from CustomerSegment: COUNT(CustomerSegment='SME' AND Currency='CZK') - COUNT(CustomerSegment='SME' AND Currency='EUR')",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_smepaymentdifference__from__concept_currency",
+    "source": "concept_currency",
+    "relation_type": "derivation",
+    "target": "derived_smepaymentdifference",
+    "connection_condition": "same entity and period",
+    "description": "SMEPaymentDifference is computed from Currency: COUNT(CustomerSegment='SME' AND Currency='CZK') - COUNT(CustomerSegment='SME' AND Currency='EUR')",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_consumptiondifferenceczkvseur__from__concept_gasconsumption",
+    "source": "concept_gasconsumption",
+    "relation_type": "derivation",
+    "target": "derived_consumptiondifferenceczkvseur",
+    "connection_condition": "same entity and period",
+    "description": "ConsumptionDifferenceCZKvsEUR is computed from GasConsumption: SUM(GasConsumption WHERE Currency='CZK') - SUM(GasConsumption WHERE Currency='EUR')",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_consumptiondifferenceczkvseur__from__concept_currency",
+    "source": "concept_currency",
+    "relation_type": "derivation",
+    "target": "derived_consumptiondifferenceczkvseur",
+    "connection_condition": "same entity and period",
+    "description": "ConsumptionDifferenceCZKvsEUR is computed from Currency: SUM(GasConsumption WHERE Currency='CZK') - SUM(GasConsumption WHERE Currency='EUR')",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_premiumsegmentpercentage__from__concept_customersegment",
+    "source": "concept_customersegment",
+    "relation_type": "derivation",
+    "target": "derived_premiumsegmentpercentage",
+    "connection_condition": "same entity and period",
+    "description": "PremiumSegmentPercentage is computed from CustomerSegment: COUNT(CustomerSegment='premium') / COUNT(CustomerSegment)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_discountstationdifference__from__concept_country",
+    "source": "concept_country",
+    "relation_type": "derivation",
+    "target": "derived_discountstationdifference",
+    "connection_condition": "same entity and period",
+    "description": "DiscountStationDifference is computed from Country: COUNT(Country='CZE' AND CustomerSegment='discount') - COUNT(Country='SVK' AND CustomerSegment='discount')",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_discountstationdifference__from__concept_customersegment",
+    "source": "concept_customersegment",
+    "relation_type": "derivation",
+    "target": "derived_discountstationdifference",
+    "connection_condition": "same entity and period",
+    "description": "DiscountStationDifference is computed from CustomerSegment: COUNT(Country='CZE' AND CustomerSegment='discount') - COUNT(Country='SVK' AND CustomerSegment='discount')",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_averagepriceperitem__from__concept_price",
+    "source": "concept_price",
+    "relation_type": "derivation",
+    "target": "derived_averagepriceperitem",
+    "connection_condition": "same entity and period",
+    "description": "AveragePricePerItem is computed from Price: SUM(Price) / SUM(Quantity)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_averagepriceperitem__from__concept_quantity",
+    "source": "concept_quantity",
+    "relation_type": "derivation",
+    "target": "derived_averagepriceperitem",
+    "connection_condition": "same entity and period",
+    "description": "AveragePricePerItem is computed from Quantity: SUM(Price) / SUM(Quantity)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_highconsumptioncustomerpercentage__from__concept_gasconsumption",
+    "source": "concept_gasconsumption",
+    "relation_type": "derivation",
+    "target": "derived_highconsumptioncustomerpercentage",
+    "connection_condition": "same entity and period",
+    "description": "HighConsumptionCustomerPercentage is computed from GasConsumption: COUNT(GasConsumption > 528.3) / COUNT(Customer)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_highconsumptioncustomerpercentage__from__concept_customer",
+    "source": "concept_customer",
+    "relation_type": "derivation",
+    "target": "derived_highconsumptioncustomerpercentage",
+    "connection_condition": "same entity and period",
+    "description": "HighConsumptionCustomerPercentage is computed from Customer: COUNT(GasConsumption > 528.3) / COUNT(Customer)",
+    "evidence": []
+  },
+  {
+    "id": "rel_tab01__tab04__fld001",
+    "source": "term_tab01",
+    "relation_type": "composition",
+    "target": "term_tab04",
+    "connection_condition": "tab04.fld001 corresponds to tab01.fld001",
+    "description": "引用; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_tab01__tab04__fld001"
+    ]
+  },
+  {
+    "id": "rel_tab02__tab04__fld004",
+    "source": "term_tab02",
+    "relation_type": "composition",
+    "target": "term_tab04",
+    "connection_condition": "tab04.fld004 corresponds to tab02.fld004",
+    "description": "引用; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_tab02__tab04__fld004"
+    ]
+  },
+  {
+    "id": "rel_tab03__tab04__fld007",
+    "source": "term_tab03",
+    "relation_type": "composition",
+    "target": "term_tab04",
+    "connection_condition": "tab04.fld007 corresponds to tab03.fld007",
+    "description": "引用; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_tab03__tab04__fld007"
+    ]
+  },
+  {
+    "id": "rel_tab01__tab05__fld001",
+    "source": "term_tab01",
+    "relation_type": "composition",
+    "target": "term_tab05",
+    "connection_condition": "tab05.fld001 corresponds to tab01.fld001",
+    "description": "引用; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_tab01__tab05__fld001"
+    ]
+  }
+]

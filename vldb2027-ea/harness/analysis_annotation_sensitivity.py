@@ -16,6 +16,7 @@ CI: 95% bootstrap over questions within source database (stats_v4.boot). Output:
 """
 import json
 import re
+from collections import Counter
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
@@ -38,7 +39,7 @@ def corrected():
 def rows_or_none(args):
     path, sql = args
     try:
-        return R.execute(path, sql, R.GOLD_TIMEOUT)
+        return R.execute(path, sql, 1800)     # fwd:701 needs about 3 min alone; 600 s can expire under load
     except Exception:                                                             # noqa: BLE001
         return None
 
@@ -115,7 +116,7 @@ def mg(pool, aw, norm):
         except Exception:                                                         # noqa: BLE001
             continue
         o, n = rows_or_none((str(mo.SRC / src / f"{src}.sqlite"), a["SQL"])), rows_or_none((dbpath, new))
-        if o is None or n is None or set(o) != set(n):
+        if o is None or n is None or Counter(o) != Counter(n):     # multiset, as make_opaque_merged.py
             continue
         keys.append(k); gsql[k] = new
     db = {k: meta[k]["source_db"] for k in keys}

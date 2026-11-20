@@ -1,0 +1,202 @@
+[
+  {
+    "id": "c_values_votes__bountyamount",
+    "target": "term_votes",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "BountyAmount",
+      "bountyamount",
+      "votes",
+      "0",
+      "100",
+      "150",
+      "200",
+      "25",
+      "50"
+    ],
+    "severity": "warning",
+    "scope": "Filters on votes.BountyAmount",
+    "confidence": "high",
+    "description": "votes.BountyAmount only takes these stored values: 0 / 100 / 150 / 200 / 25 / 50. Filter with the stored spelling.",
+    "evidence": [
+      "ev_values_votes__bountyamount"
+    ]
+  },
+  {
+    "id": "c_caveat_0",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "posts",
+      "CreaionDate",
+      "misspelled",
+      "missing",
+      "queries",
+      "using",
+      "CreationDate",
+      "will",
+      "fail"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "posts.CreaionDate is misspelled (missing 't'); queries using CreationDate on posts will fail.",
+    "evidence": [
+      "ev_caveat_0"
+    ]
+  },
+  {
+    "id": "c_caveat_1",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Some",
+      "posts",
+      "have",
+      "NULL",
+      "OwnerUserId",
+      "Community",
+      "owned",
+      "joins",
+      "users",
+      "drop",
+      "rows"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Some posts have NULL OwnerUserId (e.g. Community-owned), so joins to users may drop rows.",
+    "evidence": [
+      "ev_caveat_1"
+    ]
+  },
+  {
+    "id": "c_caveat_2",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "users",
+      "often",
+      "NULL",
+      "filters",
+      "exclude",
+      "many"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "users.Age is often NULL, so Age > 65 filters exclude many users.",
+    "evidence": [
+      "ev_caveat_2"
+    ]
+  },
+  {
+    "id": "c_caveat_3",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "posts",
+      "ClosedDate",
+      "NULL",
+      "means",
+      "post",
+      "still",
+      "open",
+      "closed"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "posts.ClosedDate NULL means the post is still open; non-NULL means closed.",
+    "evidence": [
+      "ev_caveat_3"
+    ]
+  },
+  {
+    "id": "c_caveat_4",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "votes",
+      "BountyAmount",
+      "NULL",
+      "bounty",
+      "filtering",
+      "only",
+      "matches"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "votes.BountyAmount is NULL for non-bounty votes; filtering BountyAmount=50 only matches bounty votes.",
+    "evidence": [
+      "ev_caveat_4"
+    ]
+  },
+  {
+    "id": "c_caveat_5",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "comments",
+      "UserId",
+      "match",
+      "users",
+      "deleted",
+      "UserDisplayName",
+      "fallback"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "comments.UserId may not match users.Id for deleted users; use UserDisplayName as fallback.",
+    "evidence": [
+      "ev_caveat_5"
+    ]
+  },
+  {
+    "id": "c_caveat_6",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "badges",
+      "Name",
+      "case",
+      "sensitive",
+      "Autobiographer",
+      "autobiographer",
+      "differ"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "badges.Name is case-sensitive; 'Autobiographer' vs 'autobiographer' may differ.",
+    "evidence": [
+      "ev_caveat_6"
+    ]
+  },
+  {
+    "id": "c_caveat_7",
+    "target": "term_users",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "posts",
+      "Title",
+      "contain",
+      "special",
+      "characters",
+      "LIKE",
+      "with",
+      "wildcards",
+      "partial",
+      "matches"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "posts.Title may contain special characters; use LIKE with wildcards for partial matches.",
+    "evidence": [
+      "ev_caveat_7"
+    ]
+  }
+]

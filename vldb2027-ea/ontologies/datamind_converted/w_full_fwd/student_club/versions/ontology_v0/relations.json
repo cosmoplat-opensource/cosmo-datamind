@@ -1,0 +1,162 @@
+[
+  {
+    "id": "rel_derived_totalbudgetamount__from__concept_budgetamount",
+    "source": "concept_budgetamount",
+    "relation_type": "derivation",
+    "target": "derived_totalbudgetamount",
+    "connection_condition": "same entity and period",
+    "description": "TotalBudgetAmount is computed from BudgetAmount: SUM(BudgetAmount)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_totalbudgetspent__from__concept_budgetspent",
+    "source": "concept_budgetspent",
+    "relation_type": "derivation",
+    "target": "derived_totalbudgetspent",
+    "connection_condition": "same entity and period",
+    "description": "TotalBudgetSpent is computed from BudgetSpent: SUM(BudgetSpent)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_totalexpensecost__from__concept_expensecost",
+    "source": "concept_expensecost",
+    "relation_type": "derivation",
+    "target": "derived_totalexpensecost",
+    "connection_condition": "same entity and period",
+    "description": "TotalExpenseCost is computed from ExpenseCost: SUM(ExpenseCost)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_totalincomeamount__from__concept_incomeamount",
+    "source": "concept_incomeamount",
+    "relation_type": "derivation",
+    "target": "derived_totalincomeamount",
+    "connection_condition": "same entity and period",
+    "description": "TotalIncomeAmount is computed from IncomeAmount: SUM(IncomeAmount)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_budgetvariance__from__concept_budgetamount",
+    "source": "concept_budgetamount",
+    "relation_type": "derivation",
+    "target": "derived_budgetvariance",
+    "connection_condition": "same entity and period",
+    "description": "BudgetVariance is computed from BudgetAmount: BudgetAmount - BudgetSpent",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_budgetvariance__from__concept_budgetspent",
+    "source": "concept_budgetspent",
+    "relation_type": "derivation",
+    "target": "derived_budgetvariance",
+    "connection_condition": "same entity and period",
+    "description": "BudgetVariance is computed from BudgetSpent: BudgetAmount - BudgetSpent",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_yearoveryearspentdifference__from__concept_budgetspent",
+    "source": "concept_budgetspent",
+    "relation_type": "derivation",
+    "target": "derived_yearoveryearspentdifference",
+    "connection_condition": "same entity and period",
+    "description": "YearOverYearSpentDifference is computed from BudgetSpent: SUM(BudgetSpent for year1) - SUM(BudgetSpent for year2)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_yearoveryearspentdifference__from__concept_eventdate",
+    "source": "concept_eventdate",
+    "relation_type": "derivation",
+    "target": "derived_yearoveryearspentdifference",
+    "connection_condition": "same entity and period",
+    "description": "YearOverYearSpentDifference is computed from EventDate: SUM(BudgetSpent for year1) - SUM(BudgetSpent for year2)",
+    "evidence": []
+  },
+  {
+    "id": "rel_event__attendance__link_to_event",
+    "source": "term_event",
+    "relation_type": "composition",
+    "target": "term_attendance",
+    "connection_condition": "attendance.link_to_event corresponds to event.event_id",
+    "description": "参与; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_event__attendance__link_to_event"
+    ]
+  },
+  {
+    "id": "rel_member__attendance__link_to_member",
+    "source": "term_member",
+    "relation_type": "composition",
+    "target": "term_attendance",
+    "connection_condition": "attendance.link_to_member corresponds to member.member_id",
+    "description": "参与; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_member__attendance__link_to_member"
+    ]
+  },
+  {
+    "id": "rel_event__budget__link_to_event",
+    "source": "term_event",
+    "relation_type": "composition",
+    "target": "term_budget",
+    "connection_condition": "budget.link_to_event corresponds to event.event_id",
+    "description": "归属; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_event__budget__link_to_event"
+    ]
+  },
+  {
+    "id": "rel_member__expense__link_to_member",
+    "source": "term_member",
+    "relation_type": "composition",
+    "target": "term_expense",
+    "connection_condition": "expense.link_to_member corresponds to member.member_id",
+    "description": "归属; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_member__expense__link_to_member"
+    ]
+  },
+  {
+    "id": "rel_budget__expense__link_to_budget",
+    "source": "term_budget",
+    "relation_type": "composition",
+    "target": "term_expense",
+    "connection_condition": "expense.link_to_budget corresponds to budget.budget_id",
+    "description": "归属; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_budget__expense__link_to_budget"
+    ]
+  },
+  {
+    "id": "rel_member__income__link_to_member",
+    "source": "term_member",
+    "relation_type": "composition",
+    "target": "term_income",
+    "connection_condition": "income.link_to_member corresponds to member.member_id",
+    "description": "归属; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_member__income__link_to_member"
+    ]
+  },
+  {
+    "id": "rel_major__member__link_to_major",
+    "source": "term_major",
+    "relation_type": "composition",
+    "target": "term_member",
+    "connection_condition": "member.link_to_major corresponds to major.major_id",
+    "description": "归属; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_major__member__link_to_major"
+    ]
+  },
+  {
+    "id": "rel_zip_code__member__zip",
+    "source": "term_zip_code",
+    "relation_type": "composition",
+    "target": "term_member",
+    "connection_condition": "member.zip corresponds to zip_code.zip_code",
+    "description": "位于; 重叠 100%·父键唯一·列名有据·代码契约(DDL)",
+    "evidence": [
+      "ev_rel_zip_code__member__zip"
+    ]
+  }
+]

@@ -1,0 +1,414 @@
+[
+  {
+    "id": "rel_derived_elderuserpostcount__from__concept_post",
+    "source": "concept_post",
+    "relation_type": "derivation",
+    "target": "derived_elderuserpostcount",
+    "connection_condition": "same entity and period",
+    "description": "ElderUserPostCount is computed from Post: COUNT(Post.Id) WHERE UserAge > 65",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_elderuserpostcount__from__concept_userage",
+    "source": "concept_userage",
+    "relation_type": "derivation",
+    "target": "derived_elderuserpostcount",
+    "connection_condition": "same entity and period",
+    "description": "ElderUserPostCount is computed from UserAge: COUNT(Post.Id) WHERE UserAge > 65",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_highscorepostcount__from__concept_post",
+    "source": "concept_post",
+    "relation_type": "derivation",
+    "target": "derived_highscorepostcount",
+    "connection_condition": "same entity and period",
+    "description": "HighScorePostCount is computed from Post: COUNT(Post.Id) WHERE PostScore >= 20",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_highscorepostcount__from__concept_postscore",
+    "source": "concept_postscore",
+    "relation_type": "derivation",
+    "target": "derived_highscorepostcount",
+    "connection_condition": "same entity and period",
+    "description": "HighScorePostCount is computed from PostScore: COUNT(Post.Id) WHERE PostScore >= 20",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_userswithmanybadges__from__concept_user",
+    "source": "concept_user",
+    "relation_type": "derivation",
+    "target": "derived_userswithmanybadges",
+    "connection_condition": "same entity and period",
+    "description": "UsersWithManyBadges is computed from User: COUNT(DISTINCT Badge.UserId) HAVING COUNT(Badge.Name) > 5",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_userswithmanybadges__from__concept_badge",
+    "source": "concept_badge",
+    "relation_type": "derivation",
+    "target": "derived_userswithmanybadges",
+    "connection_condition": "same entity and period",
+    "description": "UsersWithManyBadges is computed from Badge: COUNT(DISTINCT Badge.UserId) HAVING COUNT(Badge.Name) > 5",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_averagepostscore__from__concept_postscore",
+    "source": "concept_postscore",
+    "relation_type": "derivation",
+    "target": "derived_averagepostscore",
+    "connection_condition": "same entity and period",
+    "description": "AveragePostScore is computed from PostScore: AVG(PostScore)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_highreputationpostpercentage2011__from__concept_post",
+    "source": "concept_post",
+    "relation_type": "derivation",
+    "target": "derived_highreputationpostpercentage2011",
+    "connection_condition": "same entity and period",
+    "description": "HighReputationPostPercentage2011 is computed from Post: COUNT(Post.Id WHERE YEAR(PostCreationDate)=2011 AND UserReputation>1000) / COUNT(Post.Id WHERE YEAR(PostCreationDate)=2011) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_highreputationpostpercentage2011__from__concept_postcreationdate",
+    "source": "concept_postcreationdate",
+    "relation_type": "derivation",
+    "target": "derived_highreputationpostpercentage2011",
+    "connection_condition": "same entity and period",
+    "description": "HighReputationPostPercentage2011 is computed from PostCreationDate: COUNT(Post.Id WHERE YEAR(PostCreationDate)=2011 AND UserReputation>1000) / COUNT(Post.Id WHERE YEAR(PostCreationDate)=2011) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_highreputationpostpercentage2011__from__concept_userreputation",
+    "source": "concept_userreputation",
+    "relation_type": "derivation",
+    "target": "derived_highreputationpostpercentage2011",
+    "connection_condition": "same entity and period",
+    "description": "HighReputationPostPercentage2011 is computed from UserReputation: COUNT(Post.Id WHERE YEAR(PostCreationDate)=2011 AND UserReputation>1000) / COUNT(Post.Id WHERE YEAR(PostCreationDate)=2011) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_communityrlanguagepercentage__from__concept_post",
+    "source": "concept_post",
+    "relation_type": "derivation",
+    "target": "derived_communityrlanguagepercentage",
+    "connection_condition": "same entity and period",
+    "description": "CommunityRLanguagePercentage is computed from Post: COUNT(Post.Id WHERE PostTag='r' AND PostOwner='Community') / COUNT(Post.Id WHERE PostOwner='Community') * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_communityrlanguagepercentage__from__concept_posttag",
+    "source": "concept_posttag",
+    "relation_type": "derivation",
+    "target": "derived_communityrlanguagepercentage",
+    "connection_condition": "same entity and period",
+    "description": "CommunityRLanguagePercentage is computed from PostTag: COUNT(Post.Id WHERE PostTag='r' AND PostOwner='Community') / COUNT(Post.Id WHERE PostOwner='Community') * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_communityrlanguagepercentage__from__concept_postowner",
+    "source": "concept_postowner",
+    "relation_type": "derivation",
+    "target": "derived_communityrlanguagepercentage",
+    "connection_condition": "same entity and period",
+    "description": "CommunityRLanguagePercentage is computed from PostOwner: COUNT(Post.Id WHERE PostTag='r' AND PostOwner='Community') / COUNT(Post.Id WHERE PostOwner='Community') * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_highscoreelderuserpercentage__from__concept_post",
+    "source": "concept_post",
+    "relation_type": "derivation",
+    "target": "derived_highscoreelderuserpercentage",
+    "connection_condition": "same entity and period",
+    "description": "HighScoreElderUserPercentage is computed from Post: COUNT(Post.Id WHERE PostScore>5 AND UserAge>65) / COUNT(Post.Id WHERE PostScore>5) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_highscoreelderuserpercentage__from__concept_postscore",
+    "source": "concept_postscore",
+    "relation_type": "derivation",
+    "target": "derived_highscoreelderuserpercentage",
+    "connection_condition": "same entity and period",
+    "description": "HighScoreElderUserPercentage is computed from PostScore: COUNT(Post.Id WHERE PostScore>5 AND UserAge>65) / COUNT(Post.Id WHERE PostScore>5) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_highscoreelderuserpercentage__from__concept_userage",
+    "source": "concept_userage",
+    "relation_type": "derivation",
+    "target": "derived_highscoreelderuserpercentage",
+    "connection_condition": "same entity and period",
+    "description": "HighScoreElderUserPercentage is computed from UserAge: COUNT(Post.Id WHERE PostScore>5 AND UserAge>65) / COUNT(Post.Id WHERE PostScore>5) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_mostinfluentialuserhighscorepercentage__from__concept_post",
+    "source": "concept_post",
+    "relation_type": "derivation",
+    "target": "derived_mostinfluentialuserhighscorepercentage",
+    "connection_condition": "same entity and period",
+    "description": "MostInfluentialUserHighScorePercentage is computed from Post: COUNT(Post.Id WHERE PostScore>50 AND UserReputation=MAX(UserReputation)) / COUNT(Post.Id WHERE UserReputation=MAX(UserReputation)) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_mostinfluentialuserhighscorepercentage__from__concept_postscore",
+    "source": "concept_postscore",
+    "relation_type": "derivation",
+    "target": "derived_mostinfluentialuserhighscorepercentage",
+    "connection_condition": "same entity and period",
+    "description": "MostInfluentialUserHighScorePercentage is computed from PostScore: COUNT(Post.Id WHERE PostScore>50 AND UserReputation=MAX(UserReputation)) / COUNT(Post.Id WHERE UserReputation=MAX(UserReputation)) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_mostinfluentialuserhighscorepercentage__from__concept_userreputation",
+    "source": "concept_userreputation",
+    "relation_type": "derivation",
+    "target": "derived_mostinfluentialuserhighscorepercentage",
+    "connection_condition": "same entity and period",
+    "description": "MostInfluentialUserHighScorePercentage is computed from UserReputation: COUNT(Post.Id WHERE PostScore>50 AND UserReputation=MAX(UserReputation)) / COUNT(Post.Id WHERE UserReputation=MAX(UserReputation)) * 100",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_postpopularity__from__concept_postviewcount",
+    "source": "concept_postviewcount",
+    "relation_type": "derivation",
+    "target": "derived_postpopularity",
+    "connection_condition": "same entity and period",
+    "description": "PostPopularity is computed from PostViewCount: SUM(PostViewCount)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_firstvotedate__from__concept_votecreationdate",
+    "source": "concept_votecreationdate",
+    "relation_type": "derivation",
+    "target": "derived_firstvotedate",
+    "connection_condition": "same entity and period",
+    "description": "FirstVoteDate is computed from VoteCreationDate: MIN(VoteCreationDate)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_firstvotedate__from__concept_voteuser",
+    "source": "concept_voteuser",
+    "relation_type": "derivation",
+    "target": "derived_firstvotedate",
+    "connection_condition": "same entity and period",
+    "description": "FirstVoteDate is computed from VoteUser: MIN(VoteCreationDate)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_firstbadgedate__from__concept_badgedate",
+    "source": "concept_badgedate",
+    "relation_type": "derivation",
+    "target": "derived_firstbadgedate",
+    "connection_condition": "same entity and period",
+    "description": "FirstBadgeDate is computed from BadgeDate: MIN(BadgeDate)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_firstbadgedate__from__concept_badge",
+    "source": "concept_badge",
+    "relation_type": "derivation",
+    "target": "derived_firstbadgedate",
+    "connection_condition": "same entity and period",
+    "description": "FirstBadgeDate is computed from Badge: MIN(BadgeDate)",
+    "evidence": []
+  },
+  {
+    "id": "rel_derived_postclosedstatus__from__concept_postcloseddate",
+    "source": "concept_postcloseddate",
+    "relation_type": "derivation",
+    "target": "derived_postclosedstatus",
+    "connection_condition": "same entity and period",
+    "description": "PostClosedStatus is computed from PostClosedDate: CASE WHEN PostClosedDate IS NULL THEN 'open' ELSE 'closed' END",
+    "evidence": []
+  },
+  {
+    "id": "rel_users__badges__userid",
+    "source": "term_users",
+    "relation_type": "composition",
+    "target": "term_badges",
+    "connection_condition": "badges.UserId corresponds to users.Id",
+    "description": "归属; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_users__badges__userid"
+    ]
+  },
+  {
+    "id": "rel_users__comments__userid",
+    "source": "term_users",
+    "relation_type": "composition",
+    "target": "term_comments",
+    "connection_condition": "comments.UserId corresponds to users.Id",
+    "description": "归属; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_users__comments__userid"
+    ]
+  },
+  {
+    "id": "rel_posts__comments__postid",
+    "source": "term_posts",
+    "relation_type": "composition",
+    "target": "term_comments",
+    "connection_condition": "comments.PostId corresponds to posts.Id",
+    "description": "归属; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_posts__comments__postid"
+    ]
+  },
+  {
+    "id": "rel_users__posthistory__userid",
+    "source": "term_users",
+    "relation_type": "composition",
+    "target": "term_posthistory",
+    "connection_condition": "postHistory.UserId corresponds to users.Id",
+    "description": "归属; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_users__posthistory__userid"
+    ]
+  },
+  {
+    "id": "rel_posts__posthistory__postid",
+    "source": "term_posts",
+    "relation_type": "composition",
+    "target": "term_posthistory",
+    "connection_condition": "postHistory.PostId corresponds to posts.Id",
+    "description": "归属; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_posts__posthistory__postid"
+    ]
+  },
+  {
+    "id": "rel_posts__postlinks__postid",
+    "source": "term_posts",
+    "relation_type": "composition",
+    "target": "term_postlinks",
+    "connection_condition": "postLinks.PostId corresponds to posts.Id",
+    "description": "归属; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_posts__postlinks__postid"
+    ]
+  },
+  {
+    "id": "rel_posts__postlinks__postid__relatedpostid",
+    "source": "term_posts",
+    "relation_type": "composition",
+    "target": "term_postlinks",
+    "connection_condition": "postLinks.RelatedPostId corresponds to posts.Id",
+    "description": "role key of the same relation (RelatedPostId)",
+    "evidence": [
+      "ev_rel_posts__postlinks__postid__relatedpostid"
+    ]
+  },
+  {
+    "id": "rel_users__posts__owneruserid",
+    "source": "term_users",
+    "relation_type": "composition",
+    "target": "term_posts",
+    "connection_condition": "posts.OwnerUserId corresponds to users.Id",
+    "description": "归属; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_users__posts__owneruserid"
+    ]
+  },
+  {
+    "id": "rel_users__posts__owneruserid__lasteditoruserid",
+    "source": "term_users",
+    "relation_type": "composition",
+    "target": "term_posts",
+    "connection_condition": "posts.LastEditorUserId corresponds to users.Id",
+    "description": "role key of the same relation (LastEditorUserId)",
+    "evidence": [
+      "ev_rel_users__posts__owneruserid__lasteditoruserid"
+    ]
+  },
+  {
+    "id": "rel_users__votes__userid",
+    "source": "term_users",
+    "relation_type": "composition",
+    "target": "term_votes",
+    "connection_condition": "votes.UserId corresponds to users.Id",
+    "description": "归属; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_users__votes__userid"
+    ]
+  },
+  {
+    "id": "rel_users__votes__userid__id",
+    "source": "term_users",
+    "relation_type": "composition",
+    "target": "term_votes",
+    "connection_condition": "votes.Id corresponds to users.Id",
+    "description": "role key of the same relation (Id)",
+    "evidence": [
+      "ev_rel_users__votes__userid__id"
+    ]
+  },
+  {
+    "id": "rel_posts__votes__postid",
+    "source": "term_posts",
+    "relation_type": "composition",
+    "target": "term_votes",
+    "connection_condition": "votes.PostId corresponds to posts.Id",
+    "description": "归属; 重叠 100%·父键唯一·列名有据",
+    "evidence": [
+      "ev_rel_posts__votes__postid"
+    ]
+  },
+  {
+    "id": "rel_posts__votes__postid__id",
+    "source": "term_posts",
+    "relation_type": "composition",
+    "target": "term_votes",
+    "connection_condition": "votes.Id corresponds to posts.Id",
+    "description": "role key of the same relation (Id)",
+    "evidence": [
+      "ev_rel_posts__votes__postid__id"
+    ]
+  },
+  {
+    "id": "rel_posts__tags__wikipostid",
+    "source": "term_posts",
+    "relation_type": "composition",
+    "target": "term_tags",
+    "connection_condition": "tags.WikiPostId corresponds to posts.Id",
+    "description": "引用; 重叠 100%·父键唯一·列名有据;语义评审存疑(数据证据成立但不得用于验收问题的强路径,须人审)",
+    "evidence": [
+      "ev_rel_posts__tags__wikipostid"
+    ]
+  },
+  {
+    "id": "rel_posts__tags__wikipostid__id",
+    "source": "term_posts",
+    "relation_type": "composition",
+    "target": "term_tags",
+    "connection_condition": "tags.Id corresponds to posts.Id",
+    "description": "role key of the same relation (Id)",
+    "evidence": [
+      "ev_rel_posts__tags__wikipostid__id"
+    ]
+  },
+  {
+    "id": "rel_posts__tags__wikipostid__excerptpostid",
+    "source": "term_posts",
+    "relation_type": "composition",
+    "target": "term_tags",
+    "connection_condition": "tags.ExcerptPostId corresponds to posts.Id",
+    "description": "role key of the same relation (ExcerptPostId)",
+    "evidence": [
+      "ev_rel_posts__tags__wikipostid__excerptpostid"
+    ]
+  },
+  {
+    "id": "rel_cand_posts__posts__parentid",
+    "source": "term_posts",
+    "relation_type": "association",
+    "target": "term_posts",
+    "connection_condition": "posts.ParentId corresponds to posts.Id",
+    "description": "candidate (data overlap below threshold or unresolved): 上级; 自引用:posts.ParentId 指回本表标识 Id",
+    "evidence": [
+      "ev_rel_cand_posts__posts__parentid"
+    ]
+  }
+]

@@ -1,0 +1,380 @@
+[
+  {
+    "id": "term_tab01",
+    "name": "tab01",
+    "type": "entity",
+    "definition": "主数据实体一 Counterexample: 与 tab02 区分：tab02 由 fld005 标识且不被其他表引用，属独立实体而非本表族成员 Maturity: Provisional",
+    "scope": "Records of table tab01; provenance: direct source tab01",
+    "aliases": [
+      "主数据实体一"
+    ],
+    "evidence": [
+      "ev_schema_tab01"
+    ]
+  },
+  {
+    "id": "term_tab02",
+    "name": "tab02",
+    "type": "entity",
+    "definition": "主数据实体二 Counterexample: 与 tab01 区分：tab01 的键 fld001 被四张表引用，本表键 fld005 无引用 Maturity: Provisional",
+    "scope": "Records of table tab02; provenance: direct source tab02",
+    "aliases": [
+      "主数据实体二"
+    ],
+    "evidence": [
+      "ev_schema_tab02"
+    ]
+  },
+  {
+    "id": "term_tab03",
+    "name": "tab03",
+    "type": "entity",
+    "definition": "明细记录 Counterexample: 与 tab05 区分：tab05 列数多且含 fld012–fld026 扩展属性，本表仅四列 Maturity: Provisional",
+    "scope": "Records of table tab03; provenance: direct source tab03",
+    "aliases": [
+      "明细记录"
+    ],
+    "evidence": [
+      "ev_schema_tab03"
+    ]
+  },
+  {
+    "id": "term_tab04",
+    "name": "tab04",
+    "type": "entity",
+    "definition": "关联记录 Counterexample: 与 tab03 区分：tab03 是被引用方，本表为引用方 Maturity: Provisional",
+    "scope": "Records of table tab04; provenance: direct source tab04",
+    "aliases": [
+      "关联记录"
+    ],
+    "evidence": [
+      "ev_schema_tab04"
+    ]
+  },
+  {
+    "id": "term_tab05",
+    "name": "tab05",
+    "type": "entity",
+    "definition": "扩展业务记录 Counterexample: 与 tab03 区分：两者均引用 fld002，但本表列集为 fld012–fld026 扩展属性 Maturity: Provisional",
+    "scope": "Records of table tab05; provenance: direct source tab05",
+    "aliases": [
+      "扩展业务记录"
+    ],
+    "evidence": [
+      "ev_schema_tab05"
+    ]
+  },
+  {
+    "id": "term_tab06",
+    "name": "tab06",
+    "type": "entity",
+    "definition": "业务台账 Counterexample: 与 tab07 区分：tab07 含 fld032/fld033/fld034 等不同列集 Maturity: Provisional",
+    "scope": "Records of table tab06; provenance: direct source tab06",
+    "aliases": [
+      "业务台账"
+    ],
+    "evidence": [
+      "ev_schema_tab06"
+    ]
+  },
+  {
+    "id": "term_tab07",
+    "name": "tab07",
+    "type": "entity",
+    "definition": "业务台账明细 Counterexample: 与 tab06 区分：本表无 fld004 列 Maturity: Provisional",
+    "scope": "Records of table tab07; provenance: direct source tab07",
+    "aliases": [
+      "业务台账明细"
+    ],
+    "evidence": [
+      "ev_schema_tab07"
+    ]
+  },
+  {
+    "id": "term_tab08",
+    "name": "tab08",
+    "type": "entity",
+    "definition": "综合业务记录 Counterexample: 与 tab07 区分：本表同时含 fld004 与 fld007 引用列 Maturity: Provisional",
+    "scope": "Records of table tab08; provenance: direct source tab08",
+    "aliases": [
+      "综合业务记录"
+    ],
+    "evidence": [
+      "ev_schema_tab08"
+    ]
+  },
+  {
+    "id": "concept_account",
+    "name": "Account",
+    "type": "concept",
+    "definition": "银行账户实体，每个账户有唯一标识",
+    "scope": "tab03",
+    "aliases": [
+      "accounts",
+      "account ID"
+    ],
+    "evidence": [
+      "ev_concept_account"
+    ]
+  },
+  {
+    "id": "concept_client",
+    "name": "Client",
+    "type": "concept",
+    "definition": "银行客户实体，每个客户有唯一标识",
+    "scope": "tab02",
+    "aliases": [
+      "clients",
+      "customer",
+      "customers"
+    ],
+    "evidence": [
+      "ev_concept_client"
+    ]
+  },
+  {
+    "id": "concept_birthdate",
+    "name": "BirthDate",
+    "type": "concept",
+    "definition": "客户出生日期",
+    "scope": "tab02",
+    "aliases": [
+      "born",
+      "birth date",
+      "date of birth"
+    ],
+    "evidence": [
+      "ev_concept_birthdate"
+    ]
+  },
+  {
+    "id": "concept_district",
+    "name": "District",
+    "type": "concept",
+    "definition": "账户所属地区（行政区）",
+    "scope": "tab01",
+    "aliases": [
+      "district name",
+      "district ID"
+    ],
+    "evidence": [
+      "ev_concept_district"
+    ]
+  },
+  {
+    "id": "concept_accountopeningdate",
+    "name": "AccountOpeningDate",
+    "type": "concept",
+    "definition": "账户开立日期",
+    "scope": "tab03",
+    "aliases": [
+      "account opening date",
+      "opened account",
+      "opening date",
+      "accounts in 1993"
+    ],
+    "evidence": [
+      "ev_concept_accountopeningdate"
+    ]
+  },
+  {
+    "id": "concept_loan",
+    "name": "Loan",
+    "type": "concept",
+    "definition": "贷款记录实体",
+    "scope": "tab06",
+    "aliases": [
+      "loans",
+      "approved loan"
+    ],
+    "evidence": [
+      "ev_concept_loan"
+    ]
+  },
+  {
+    "id": "concept_loanamount",
+    "name": "LoanAmount",
+    "type": "concept",
+    "definition": "贷款批准金额",
+    "scope": "tab06",
+    "aliases": [
+      "approved amount",
+      "loan amount",
+      "amount"
+    ],
+    "evidence": [
+      "ev_concept_loanamount"
+    ]
+  },
+  {
+    "id": "concept_loandate",
+    "name": "LoanDate",
+    "type": "concept",
+    "definition": "贷款批准日期",
+    "scope": "tab06",
+    "aliases": [
+      "approved loan date",
+      "loan date",
+      "date approved"
+    ],
+    "evidence": [
+      "ev_concept_loandate"
+    ]
+  },
+  {
+    "id": "concept_loanduration",
+    "name": "LoanDuration",
+    "type": "concept",
+    "definition": "贷款期限（月）",
+    "scope": "tab06",
+    "aliases": [
+      "loan validity",
+      "duration",
+      "months",
+      "loan duration"
+    ],
+    "evidence": [
+      "ev_concept_loanduration"
+    ]
+  },
+  {
+    "id": "concept_loanstatus",
+    "name": "LoanStatus",
+    "type": "concept",
+    "definition": "贷款合同状态，C 表示运行正常",
+    "scope": "tab06",
+    "aliases": [
+      "status",
+      "running contract",
+      "contract status",
+      "condition",
+      "loan status"
+    ],
+    "evidence": [
+      "ev_concept_loanstatus"
+    ]
+  },
+  {
+    "id": "concept_runningloan",
+    "name": "RunningLoan",
+    "type": "concept",
+    "definition": "状态为运行正常的贷款",
+    "scope": "tab06 where fld031 = 'C'",
+    "aliases": [
+      "running contract",
+      "still running",
+      "no issue",
+      "ok so far",
+      "running loan"
+    ],
+    "evidence": [
+      "ev_concept_runningloan"
+    ]
+  },
+  {
+    "id": "concept_transaction",
+    "name": "Transaction",
+    "type": "concept",
+    "definition": "账户交易记录实体",
+    "scope": "tab08",
+    "aliases": [
+      "transactions"
+    ],
+    "evidence": [
+      "ev_concept_transaction"
+    ]
+  },
+  {
+    "id": "concept_transactiontype",
+    "name": "TransactionType",
+    "type": "concept",
+    "definition": "交易类型代码",
+    "scope": "tab08",
+    "aliases": [
+      "transaction type",
+      "type of transaction"
+    ],
+    "evidence": [
+      "ev_concept_transactiontype"
+    ]
+  },
+  {
+    "id": "concept_cashwithdrawal",
+    "name": "CashWithdrawal",
+    "type": "concept",
+    "definition": "现金取款交易",
+    "scope": "tab08 where fld037 = 'VYBER'",
+    "aliases": [
+      "withdrawal in cash",
+      "withdrawals in cash",
+      "VYBER",
+      "cash withdrawal"
+    ],
+    "evidence": [
+      "ev_concept_cashwithdrawal"
+    ]
+  },
+  {
+    "id": "derived_runningloanpct",
+    "name": "RunningLoanPct",
+    "type": "metric",
+    "definition": "贷款中状态为运行正常的比例 Formula: RunningLoanCount / LoanCount * 100. Inputs: Loan = tab06.fld027; RunningLoan = tab06.fld031 WHERE fld031 = 'C'",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of accounts still running",
+      "share of running contracts",
+      "running loan pct"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_avgloanamount",
+    "name": "AvgLoanAmount",
+    "type": "metric",
+    "definition": "平均贷款批准金额 Formula: SUM(LoanAmount) / COUNT(DISTINCT Loan). Inputs: Loan = tab06.fld027; LoanAmount = tab06.fld028",
+    "scope": "derived metric",
+    "aliases": [
+      "average approved amount",
+      "mean loan amount",
+      "avg loan amount"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_cashwithdrawalcount",
+    "name": "CashWithdrawalCount",
+    "type": "metric",
+    "definition": "现金取款交易笔数 Formula: COUNT(DISTINCT Transaction) WHERE TransactionType = 'VYBER'. Inputs: Transaction = tab08.fld036; CashWithdrawal = tab08.fld037 WHERE fld037 = 'VYBER'",
+    "scope": "derived metric",
+    "aliases": [
+      "number of cash withdrawals",
+      "cash withdrawal count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_loanstatus",
+    "name": "LoanStatus",
+    "type": "concept",
+    "definition": "贷款合同状态",
+    "scope": "tab06.fld031 codes",
+    "aliases": [
+      "contract status",
+      "贷款状态",
+      "loan status"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_transactiontype",
+    "name": "TransactionType",
+    "type": "concept",
+    "definition": "账户交易类型",
+    "scope": "tab08.fld037 codes",
+    "aliases": [
+      "transaction type",
+      "交易类型"
+    ],
+    "evidence": []
+  }
+]

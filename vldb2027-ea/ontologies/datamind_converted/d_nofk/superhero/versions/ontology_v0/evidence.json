@@ -1,0 +1,194 @@
+[
+  {
+    "id": "ev_schema_superhero",
+    "source": "superhero.sqlite",
+    "query": "PRAGMA table_info(superhero)",
+    "result": "Table superhero(id, superhero_name, full_name, gender_id, eye_colour_id, hair_colour_id, skin_colour_id, race_id, publisher_id, alignment_id, height_cm, weight_kg)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_alignment",
+    "source": "superhero.sqlite",
+    "query": "PRAGMA table_info(alignment)",
+    "result": "Table alignment(id, alignment)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_alignment__alignment",
+    "source": "superhero.sqlite",
+    "query": "SELECT DISTINCT alignment FROM alignment",
+    "result": "Bad / Good / N/A / Neutral",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_attribute",
+    "source": "superhero.sqlite",
+    "query": "PRAGMA table_info(attribute)",
+    "result": "Table attribute(id, attribute_name)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_attribute__attribute_name",
+    "source": "superhero.sqlite",
+    "query": "SELECT DISTINCT attribute_name FROM attribute",
+    "result": "Combat / Durability / Intelligence / Power / Speed / Strength",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_gender",
+    "source": "superhero.sqlite",
+    "query": "PRAGMA table_info(gender)",
+    "result": "Table gender(id, gender)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_gender__gender",
+    "source": "superhero.sqlite",
+    "query": "SELECT DISTINCT gender FROM gender",
+    "result": "Female / Male / N/A",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_colour",
+    "source": "superhero.sqlite",
+    "query": "PRAGMA table_info(colour)",
+    "result": "Table colour(id, colour)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_race",
+    "source": "superhero.sqlite",
+    "query": "PRAGMA table_info(race)",
+    "result": "Table race(id, race)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_publisher",
+    "source": "superhero.sqlite",
+    "query": "PRAGMA table_info(publisher)",
+    "result": "Table publisher(id, publisher_name)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_superpower",
+    "source": "superhero.sqlite",
+    "query": "PRAGMA table_info(superpower)",
+    "result": "Table superpower(id, power_name)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_hero_attribute",
+    "source": "superhero.sqlite",
+    "query": "PRAGMA table_info(hero_attribute)",
+    "result": "Table hero_attribute(hero_id, attribute_id, attribute_value)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_hero_power",
+    "source": "superhero.sqlite",
+    "query": "PRAGMA table_info(hero_power)",
+    "result": "Table hero_power(hero_id, power_id)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_gender__superhero__gender_id",
+    "source": "superhero.sqlite",
+    "query": "distinct values of superhero.gender_id contained in gender.id",
+    "result": "overlap 100.0% (3/3 distinct child values); parent key unique: True; child rows 750, parent rows 3",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_race__superhero__race_id",
+    "source": "superhero.sqlite",
+    "query": "distinct values of superhero.race_id contained in race.id",
+    "result": "overlap 100.0% (61/61 distinct child values); parent key unique: True; child rows 750, parent rows 61",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_publisher__superhero__publisher_id",
+    "source": "superhero.sqlite",
+    "query": "distinct values of superhero.publisher_id contained in publisher.id",
+    "result": "overlap 100.0% (25/25 distinct child values); parent key unique: True; child rows 750, parent rows 25",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_alignment__superhero__alignment_id",
+    "source": "superhero.sqlite",
+    "query": "distinct values of superhero.alignment_id contained in alignment.id",
+    "result": "overlap 100.0% (3/3 distinct child values); parent key unique: True; child rows 750, parent rows 4",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_colour__superhero__eye_colour_id",
+    "source": "superhero.sqlite",
+    "query": "distinct values of superhero.eye_colour_id contained in colour.id",
+    "result": "overlap 100.0% (21/21 distinct child values); parent key unique: True; child rows 750, parent rows 35",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_colour__superhero__eye_colour_id__hair_colour_id",
+    "source": "superhero.sqlite",
+    "query": "distinct values of superhero.hair_colour_id contained in colour.id",
+    "result": "overlap 100.0%; parent key unique: True",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_colour__superhero__eye_colour_id__skin_colour_id",
+    "source": "superhero.sqlite",
+    "query": "distinct values of superhero.skin_colour_id contained in colour.id",
+    "result": "overlap 100.0%; parent key unique: True",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_superhero__hero_attribute__hero_id",
+    "source": "superhero.sqlite",
+    "query": "distinct values of hero_attribute.hero_id contained in superhero.id",
+    "result": "overlap 100.0% (623/623 distinct child values); parent key unique: True; child rows 3738, parent rows 750",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_attribute__hero_attribute__attribute_id",
+    "source": "superhero.sqlite",
+    "query": "distinct values of hero_attribute.attribute_id contained in attribute.id",
+    "result": "overlap 100.0% (6/6 distinct child values); parent key unique: True; child rows 3738, parent rows 6",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_superhero__hero_power__hero_id",
+    "source": "superhero.sqlite",
+    "query": "distinct values of hero_power.hero_id contained in superhero.id",
+    "result": "overlap 100.0% (652/652 distinct child values); parent key unique: True; child rows 5825, parent rows 750",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_superpower__hero_power__power_id",
+    "source": "superhero.sqlite",
+    "query": "distinct values of hero_power.power_id contained in superpower.id",
+    "result": "overlap 100.0% (167/167 distinct child values); parent key unique: True; child rows 5825, parent rows 167",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  }
+]

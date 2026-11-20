@@ -1,0 +1,118 @@
+[
+  {
+    "id": "c_values_tab04__fld007",
+    "target": "term_tab04",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "fld007",
+      "tab04",
+      "+",
+      "-"
+    ],
+    "severity": "warning",
+    "scope": "Filters on tab04.fld007",
+    "confidence": "high",
+    "description": "tab04.fld007 only takes these stored values: + / -. Filter with the stored spelling.",
+    "evidence": [
+      "ev_values_tab04__fld007"
+    ]
+  },
+  {
+    "id": "c_caveat_0",
+    "target": "term_tab03",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Atom",
+      "encode",
+      "molecule",
+      "atom",
+      "number",
+      "filtering",
+      "requires",
+      "substring",
+      "matching",
+      "rather",
+      "than",
+      "equality"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Atom ids encode molecule and atom number, so filtering by atom number requires substring matching rather than equality.",
+    "evidence": [
+      "ev_caveat_0"
+    ]
+  },
+  {
+    "id": "c_caveat_1",
+    "target": "term_tab03",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "bond",
+      "references",
+      "atoms",
+      "both",
+      "sides",
+      "counting",
+      "bonds",
+      "atom",
+      "requires",
+      "checking",
+      "columns",
+      "avoid"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "A bond references atoms on both sides (fld001 and fld006), so counting bonds by atom requires checking both columns to avoid double counting or misses.",
+    "evidence": [
+      "ev_caveat_1"
+    ]
+  },
+  {
+    "id": "c_caveat_2",
+    "target": "term_tab03",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Molecule",
+      "match",
+      "atom",
+      "prefixes",
+      "joins",
+      "must",
+      "done",
+      "molecule",
+      "prefix"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Molecule ids in tab04 may not match atom id prefixes in tab03, so joins must be done on the molecule prefix of fld001.",
+    "evidence": [
+      "ev_caveat_2"
+    ]
+  },
+  {
+    "id": "c_caveat_3",
+    "target": "term_tab03",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Carcinogenicity",
+      "missing",
+      "other",
+      "codes",
+      "besides",
+      "counts",
+      "carcinogenic",
+      "total",
+      "molecules"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Carcinogenicity may be missing or use other codes besides '+' and '-', so counts of carcinogenic vs non-carcinogenic may not sum to total molecules.",
+    "evidence": [
+      "ev_caveat_3"
+    ]
+  }
+]

@@ -1,0 +1,363 @@
+[
+  {
+    "id": "term_frpm",
+    "name": "frpm",
+    "type": "entity",
+    "definition": "按学年记录某所学校学生规模与免费/减价餐资格人数的统计信息记录。 Counterexample: 与 satscores 的辨析:frpm 记录的是按学年统计的餐费资格与在册人数,不是考试参与与成绩统计;两者虽都以 CDSCode 指向学校,但记录内容不同。 Maturity: Provisional",
+    "scope": "Records of table frpm; provenance: direct source frpm",
+    "aliases": [
+      "免费及减价餐资格统计记录"
+    ],
+    "evidence": [
+      "ev_schema_frpm"
+    ]
+  },
+  {
+    "id": "term_satscores",
+    "name": "satscores",
+    "type": "entity",
+    "definition": "按学校记录 SAT 考试参与人数与阅读、数学、写作平均成绩的统计信息记录。 Counterexample: 与 frpm 的辨析:satscores 记录考试参与与成绩,frpm 记录餐费资格与在册人数;两者都是按学校汇总的统计记录,但度量对象不同。 Maturity: Provisional",
+    "scope": "Records of table satscores; provenance: direct source satscores",
+    "aliases": [
+      "SAT考试成绩统计记录"
+    ],
+    "evidence": [
+      "ev_schema_satscores"
+    ]
+  },
+  {
+    "id": "term_schools",
+    "name": "schools",
+    "type": "entity",
+    "definition": "由教育主管部门登记、具有唯一 CDSCode 标识并拥有地址与联系方式的教育机构。 Counterexample: 与 frpm、satscores 的辨析:schools 是学校实体本身,frpm 与 satscores 是描述该实体的统计信息记录,不是学校实体。 Maturity: Provisional",
+    "scope": "Records of table schools; provenance: direct source schools",
+    "aliases": [
+      "学校"
+    ],
+    "evidence": [
+      "ev_schema_schools"
+    ]
+  },
+  {
+    "id": "concept_statespecialschool",
+    "name": "StateSpecialSchool",
+    "type": "concept",
+    "definition": "A school operated as a State Special School, identified by EdOpsCode = 'SSS'.",
+    "scope": "schools where EdOpsCode = 'SSS'",
+    "aliases": [
+      "State Special School",
+      "SSS school",
+      "state special school"
+    ],
+    "evidence": [
+      "ev_concept_statespecialschool"
+    ]
+  },
+  {
+    "id": "concept_virtualschool",
+    "name": "VirtualSchool",
+    "type": "concept",
+    "definition": "Schools that are exclusively virtual, indicated by Virtual = 'F'.",
+    "scope": "schools where Virtual = 'F'",
+    "aliases": [
+      "exclusively virtual",
+      "virtual school",
+      "Virtual = 'F'"
+    ],
+    "evidence": [
+      "ev_concept_virtualschool"
+    ]
+  },
+  {
+    "id": "concept_satmathscore",
+    "name": "SATMathScore",
+    "type": "concept",
+    "definition": "Average SAT Math score for a school.",
+    "scope": "satscores where AvgScrMath > 400",
+    "aliases": [
+      "average score in Math",
+      "SAT Math score",
+      "AvgScrMath",
+      "sat math score"
+    ],
+    "evidence": [
+      "ev_concept_satmathscore"
+    ]
+  },
+  {
+    "id": "concept_longitude",
+    "name": "Longitude",
+    "type": "concept",
+    "definition": "Longitude coordinate of a school.",
+    "scope": "schools",
+    "aliases": [
+      "highest longitude",
+      "maximum absolute longitude"
+    ],
+    "evidence": [
+      "ev_concept_longitude"
+    ]
+  },
+  {
+    "id": "concept_administratoremail",
+    "name": "AdministratorEmail",
+    "type": "concept",
+    "definition": "Email address of the school administrator, derived from AdmFName1 or other fields.",
+    "scope": "schools where AdmFName1 IS NOT NULL",
+    "aliases": [
+      "e-mail addresses of the administrator",
+      "administrator email",
+      "valid e-mail addresses"
+    ],
+    "evidence": [
+      "ev_concept_administratoremail"
+    ]
+  },
+  {
+    "id": "concept_averagewritingscore",
+    "name": "AverageWritingScore",
+    "type": "concept",
+    "definition": "Average SAT Writing score for a school.",
+    "scope": "satscores",
+    "aliases": [
+      "average writing score",
+      "AvgScrWrite",
+      "writing score"
+    ],
+    "evidence": [
+      "ev_concept_averagewritingscore"
+    ]
+  },
+  {
+    "id": "concept_enrollmentk12",
+    "name": "EnrollmentK12",
+    "type": "concept",
+    "definition": "Enrollment count for grades K-12.",
+    "scope": "frpm",
+    "aliases": [
+      "enrolment for students in grades 1 through 12",
+      "K-12 enrollment",
+      "Enrollment (K-12)",
+      "enrollment k 12"
+    ],
+    "evidence": [
+      "ev_concept_enrollmentk12"
+    ]
+  },
+  {
+    "id": "concept_freemealcountk12",
+    "name": "FreeMealCountK12",
+    "type": "concept",
+    "definition": "Number of students eligible for free meals in grades K-12.",
+    "scope": "frpm",
+    "aliases": [
+      "free meal count K-12",
+      "Free Meal Count (K-12)",
+      "eligible free rate",
+      "free meal count k 12"
+    ],
+    "evidence": [
+      "ev_concept_freemealcountk12"
+    ]
+  },
+  {
+    "id": "concept_elementaryschooldistrict",
+    "name": "ElementarySchoolDistrict",
+    "type": "concept",
+    "definition": "School district type classified as Elementary School District, indicated by DOC = 52.",
+    "scope": "schools where DOC = 52",
+    "aliases": [
+      "Elementary School District",
+      "DOC = 52",
+      "elementary district",
+      "elementary school district"
+    ],
+    "evidence": [
+      "ev_concept_elementaryschooldistrict"
+    ]
+  },
+  {
+    "id": "concept_opendate",
+    "name": "OpenDate",
+    "type": "concept",
+    "definition": "Date when the school opened.",
+    "scope": "schools where OpenDate IS NOT NULL",
+    "aliases": [
+      "opened",
+      "open date",
+      "school opened"
+    ],
+    "evidence": [
+      "ev_concept_opendate"
+    ]
+  },
+  {
+    "id": "concept_countyalameda",
+    "name": "CountyAlameda",
+    "type": "concept",
+    "definition": "Schools located in Alameda County.",
+    "scope": "schools where County = 'Alameda'",
+    "aliases": [
+      "Alameda County",
+      "county Alameda",
+      "county alameda"
+    ],
+    "evidence": [
+      "ev_concept_countyalameda"
+    ]
+  },
+  {
+    "id": "concept_citysanbernardino",
+    "name": "CitySanBernardino",
+    "type": "concept",
+    "definition": "Schools located in San Bernardino City Unified district.",
+    "scope": "schools where City = 'San Bernardino'",
+    "aliases": [
+      "San Bernardino City Unified",
+      "City of San Bernardino City Unified",
+      "San Bernardino",
+      "city san bernardino"
+    ],
+    "evidence": [
+      "ev_concept_citysanbernardino"
+    ]
+  },
+  {
+    "id": "concept_countysanbernardino",
+    "name": "CountySanBernardino",
+    "type": "concept",
+    "definition": "Schools located in San Bernardino County.",
+    "scope": "schools where County = 'San Bernardino'",
+    "aliases": [
+      "San Bernardino county",
+      "county San Bernardino",
+      "county san bernardino"
+    ],
+    "evidence": [
+      "ev_concept_countysanbernardino"
+    ]
+  },
+  {
+    "id": "concept_citymonterey",
+    "name": "CityMonterey",
+    "type": "concept",
+    "definition": "Schools located in Monterey city.",
+    "scope": "schools where City = 'Monterey'",
+    "aliases": [
+      "Monterey",
+      "city Monterey",
+      "city monterey"
+    ],
+    "evidence": [
+      "ev_concept_citymonterey"
+    ]
+  },
+  {
+    "id": "concept_cityfremont",
+    "name": "CityFremont",
+    "type": "concept",
+    "definition": "Schools located in Fremont city.",
+    "scope": "schools where City = 'Fremont'",
+    "aliases": [
+      "Fremont",
+      "city Fremont",
+      "city fremont"
+    ],
+    "evidence": [
+      "ev_concept_cityfremont"
+    ]
+  },
+  {
+    "id": "concept_enrollmentages5to17",
+    "name": "EnrollmentAges5to17",
+    "type": "concept",
+    "definition": "Enrollment count for students aged 5 to 17.",
+    "scope": "frpm",
+    "aliases": [
+      "students from the ages of 5 to 17",
+      "enrollment ages 5-17",
+      "Enrollment (Ages 5-17)",
+      "enrollment ages 5 to 17"
+    ],
+    "evidence": [
+      "ev_concept_enrollmentages5to17"
+    ]
+  },
+  {
+    "id": "derived_eligiblefreerate",
+    "name": "EligibleFreeRate",
+    "type": "metric",
+    "definition": "Proportion of students eligible for free meals. Formula: FreeMealCountK12 / EnrollmentK12. Inputs: FreeMealCountK12 = frpm.Free Meal Count (K-12); EnrollmentK12 = frpm.Enrollment (K-12)",
+    "scope": "derived metric",
+    "aliases": [
+      "eligible free rate",
+      "free rate",
+      "Eligible free rate for K-12"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_monthlyaverageschoolsopened",
+    "name": "MonthlyAverageSchoolsOpened",
+    "type": "metric",
+    "definition": "Average number of schools opened per month in a given year. Formula: COUNT(OpenDate in year) / 12. Inputs: OpenDate = schools.OpenDate WHERE OpenDate IS NOT NULL",
+    "scope": "derived metric",
+    "aliases": [
+      "monthly average number of schools",
+      "average schools opened per month",
+      "monthly average schools opened"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_averagewritingscoreperschool",
+    "name": "AverageWritingScorePerSchool",
+    "type": "metric",
+    "definition": "Average writing score for each school. Formula: AVG(AvgScrWrite). Inputs: AverageWritingScore = satscores.AvgScrWrite",
+    "scope": "derived metric",
+    "aliases": [
+      "average writing score",
+      "AvgScrWrite per school",
+      "average writing score per school"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_nslpprovisionstatus",
+    "name": "NSLPProvisionStatus",
+    "type": "concept",
+    "definition": "NSLP provision status for schools (e.g., Multiple Provision Types).",
+    "scope": "frpm.NSLP Provision Status codes",
+    "aliases": [
+      "NSLP provision status",
+      "provision type",
+      "nslp provision status"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_virtualstatus",
+    "name": "VirtualStatus",
+    "type": "concept",
+    "definition": "Whether a school is virtual or not.",
+    "scope": "schools.Virtual codes",
+    "aliases": [
+      "virtual status",
+      "virtual"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_doctype",
+    "name": "DOCType",
+    "type": "concept",
+    "definition": "District type classification (e.g., Elementary School District).",
+    "scope": "schools.DOC codes",
+    "aliases": [
+      "district type",
+      "DOC",
+      "doc type"
+    ],
+    "evidence": []
+  }
+]

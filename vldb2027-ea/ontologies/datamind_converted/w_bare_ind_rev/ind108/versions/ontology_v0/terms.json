@@ -1,0 +1,4352 @@
+[
+  {
+    "id": "term_dim_equipment",
+    "name": "dim_equipment",
+    "type": "entity",
+    "definition": "由制造厂生产、安装于生产线并用于加工或生产的物质性人工制品，具有唯一编号、型号类别与设计寿命。 Counterexample: 设备类型(dim_equipment_type)是设备的分类目录条目，不是具体物理设备；备件(dim_spare_part)是用于维修设备的消耗件，本身不是生产设备。 Maturity: Provisional",
+    "scope": "Records of table dim_equipment; provenance: direct source dim_equipment",
+    "aliases": [
+      "设备"
+    ],
+    "evidence": [
+      "ev_schema_dim_equipment"
+    ]
+  },
+  {
+    "id": "term_dim_equipment_type",
+    "name": "dim_equipment_type",
+    "type": "entity",
+    "definition": "对具有相同类别、制造厂与型号特征的一类设备进行归并描述的信息记录。 Counterexample: 设备(dim_equipment)是具体物理个体，设备类型是其分类描述，二者为分类与实例的关系。 Maturity: Provisional",
+    "scope": "Records of table dim_equipment_type; provenance: direct source dim_equipment_type",
+    "aliases": [
+      "设备类型"
+    ],
+    "evidence": [
+      "ev_schema_dim_equipment_type"
+    ]
+  },
+  {
+    "id": "term_dim_production_line",
+    "name": "dim_production_line",
+    "type": "entity",
+    "definition": "布置在车间内、由若干设备与工位组成并具有额定产能的连续生产设施。 Counterexample: 车间(dim_workshop)是包含多条生产线的更大空间单元；工作中心(dim_work_center)是生产线内更细的加工单元。 Maturity: Provisional",
+    "scope": "Records of table dim_production_line; provenance: direct source dim_production_line",
+    "aliases": [
+      "生产线"
+    ],
+    "evidence": [
+      "ev_schema_dim_production_line"
+    ]
+  },
+  {
+    "id": "term_dim_workshop",
+    "name": "dim_workshop",
+    "type": "entity",
+    "definition": "工厂内按工艺或产品划分、容纳生产线与人员的空间单元。 Counterexample: 工厂(dim_factory)是包含多个车间的更大生产场所；生产线是车间内的设施而非空间单元。 Maturity: Provisional",
+    "scope": "Records of table dim_workshop; provenance: direct source dim_workshop",
+    "aliases": [
+      "车间"
+    ],
+    "evidence": [
+      "ev_schema_dim_workshop"
+    ]
+  },
+  {
+    "id": "term_dim_factory",
+    "name": "dim_factory",
+    "type": "entity",
+    "definition": "隶属于某一业务单元、具有固定场所与面积的制造场所。 Counterexample: 业务单元(dim_business_unit)是管理口径的组织划分，工厂是其下辖的物理生产场所。 Maturity: Provisional",
+    "scope": "Records of table dim_factory; provenance: direct source dim_factory",
+    "aliases": [
+      "工厂"
+    ],
+    "evidence": [
+      "ev_schema_dim_factory"
+    ]
+  },
+  {
+    "id": "term_dim_business_unit",
+    "name": "dim_business_unit",
+    "type": "entity",
+    "definition": "隶属于某一企业、按业务类型划分的管理组织单元。 Counterexample: 企业(dim_enterprise)是法人主体，业务单元是其内部按业务划分的管理单元。 Maturity: Provisional",
+    "scope": "Records of table dim_business_unit; provenance: direct source dim_business_unit",
+    "aliases": [
+      "业务单元"
+    ],
+    "evidence": [
+      "ev_schema_dim_business_unit"
+    ]
+  },
+  {
+    "id": "term_dim_enterprise",
+    "name": "dim_enterprise",
+    "type": "entity",
+    "definition": "依法登记、具有统一社会信用代码与法定代表人的经营主体。 Counterexample: 业务单元是企业内部的管理划分，不具有独立法人资格。 Maturity: Provisional",
+    "scope": "Records of table dim_enterprise; provenance: direct source dim_enterprise",
+    "aliases": [
+      "企业"
+    ],
+    "evidence": [
+      "ev_schema_dim_enterprise"
+    ]
+  },
+  {
+    "id": "term_dim_supplier",
+    "name": "dim_supplier",
+    "type": "entity",
+    "definition": "向本企业提供物料或服务、具有信用等级与合作起始时间的交易相对方。 Counterexample: 客户(dim_customer)是购买本企业产品的交易相对方，二者交易方向相反。 Maturity: Provisional",
+    "scope": "Records of table dim_supplier; provenance: direct source dim_supplier",
+    "aliases": [
+      "供应商"
+    ],
+    "evidence": [
+      "ev_schema_dim_supplier"
+    ]
+  },
+  {
+    "id": "term_dim_supplier_category",
+    "name": "dim_supplier_category",
+    "type": "entity",
+    "definition": "按层级组织、用于对供应商进行归类的目录条目。 Counterexample: 物料类别(dim_material_category)归类的是物料而非供应商。 Maturity: Provisional",
+    "scope": "Records of table dim_supplier_category; provenance: direct source dim_supplier_category",
+    "aliases": [
+      "供应商类别"
+    ],
+    "evidence": [
+      "ev_schema_dim_supplier_category"
+    ]
+  },
+  {
+    "id": "term_dim_customer",
+    "name": "dim_customer",
+    "type": "entity",
+    "definition": "与本企业发生交易、具有所属行业、所在地区与信用状态的购买方。 Counterexample: 供应商是向本企业供货的相对方，交易方向与客户相反。 Maturity: Provisional",
+    "scope": "Records of table dim_customer; provenance: direct source dim_customer",
+    "aliases": [
+      "客户"
+    ],
+    "evidence": [
+      "ev_schema_dim_customer"
+    ]
+  },
+  {
+    "id": "term_dim_customer_credit",
+    "name": "dim_customer_credit",
+    "type": "entity",
+    "definition": "记录某一客户授信额度、已用额度与信用评级的信用档案信息。 Counterexample: 客户(dim_customer)是交易主体本身，客户信用是描述其信用状况的信息记录。 Maturity: Provisional",
+    "scope": "Records of table dim_customer_credit; provenance: direct source dim_customer_credit",
+    "aliases": [
+      "客户信用"
+    ],
+    "evidence": [
+      "ev_schema_dim_customer_credit"
+    ]
+  },
+  {
+    "id": "term_dim_material",
+    "name": "dim_material",
+    "type": "entity",
+    "definition": "具有规格、计量单位与单价、可用于生产或采购的物资。 Counterexample: 产品(dim_product)是面向销售、具有标准成本的产出物；物料多作为投入或备件使用。 Maturity: Provisional",
+    "scope": "Records of table dim_material; provenance: direct source dim_material",
+    "aliases": [
+      "物料"
+    ],
+    "evidence": [
+      "ev_schema_dim_material"
+    ]
+  },
+  {
+    "id": "term_dim_material_category",
+    "name": "dim_material_category",
+    "type": "entity",
+    "definition": "按层级组织、用于对物料进行归类的目录条目。 Counterexample: 供应商类别归类的是供应商而非物料。 Maturity: Provisional",
+    "scope": "Records of table dim_material_category; provenance: direct source dim_material_category",
+    "aliases": [
+      "物料类别"
+    ],
+    "evidence": [
+      "ev_schema_dim_material_category"
+    ]
+  },
+  {
+    "id": "term_dim_product",
+    "name": "dim_product",
+    "type": "entity",
+    "definition": "具有规格、标准成本与指导价、由某产品线产出的可销售物品。 Counterexample: 物料是投入或备件，产品是面向销售的产出物。 Maturity: Provisional",
+    "scope": "Records of table dim_product; provenance: direct source dim_product",
+    "aliases": [
+      "产品"
+    ],
+    "evidence": [
+      "ev_schema_dim_product"
+    ]
+  },
+  {
+    "id": "term_dim_product_line",
+    "name": "dim_product_line",
+    "type": "entity",
+    "definition": "对具有共同市场定位的一类产品进行归并描述的分类条目。 Counterexample: 生产线(dim_production_line)是物理生产设施，产品线是产品分类口径。 Maturity: Provisional",
+    "scope": "Records of table dim_product_line; provenance: direct source dim_product_line",
+    "aliases": [
+      "产品线"
+    ],
+    "evidence": [
+      "ev_schema_dim_product_line"
+    ]
+  },
+  {
+    "id": "term_dim_bom",
+    "name": "dim_bom",
+    "type": "entity",
+    "definition": "描述某一产品在特定版本与生效日期下所需物料构成的技术文件。 Counterexample: 物料清单行(dim_bom_line)是清单内的单条物料明细，物料清单是整份文件。 Maturity: Provisional",
+    "scope": "Records of table dim_bom; provenance: direct source dim_bom",
+    "aliases": [
+      "物料清单"
+    ],
+    "evidence": [
+      "ev_schema_dim_bom"
+    ]
+  },
+  {
+    "id": "term_dim_bom_line",
+    "name": "dim_bom_line",
+    "type": "entity",
+    "definition": "物料清单中记录某一物料单耗与损耗率的明细条目。 Counterexample: 物料清单是整份文件，物料清单行是其内部明细。 Maturity: Provisional",
+    "scope": "Records of table dim_bom_line; provenance: direct source dim_bom_line",
+    "aliases": [
+      "物料清单行"
+    ],
+    "evidence": [
+      "ev_schema_dim_bom_line"
+    ]
+  },
+  {
+    "id": "term_dim_warehouse",
+    "name": "dim_warehouse",
+    "type": "entity",
+    "definition": "隶属于某一工厂、具有类型与容量、用于存放物资的场所。 Counterexample: 库位(dim_storage_location)是仓库内更细的存放位置。 Maturity: Provisional",
+    "scope": "Records of table dim_warehouse; provenance: direct source dim_warehouse",
+    "aliases": [
+      "仓库"
+    ],
+    "evidence": [
+      "ev_schema_dim_warehouse"
+    ]
+  },
+  {
+    "id": "term_dim_storage_location",
+    "name": "dim_storage_location",
+    "type": "entity",
+    "definition": "仓库内按分区划分、具有容量上限的具体存放位置。 Counterexample: 仓库是包含多个库位的整体场所。 Maturity: Provisional",
+    "scope": "Records of table dim_storage_location; provenance: direct source dim_storage_location",
+    "aliases": [
+      "库位"
+    ],
+    "evidence": [
+      "ev_schema_dim_storage_location"
+    ]
+  },
+  {
+    "id": "term_dim_work_center",
+    "name": "dim_work_center",
+    "type": "entity",
+    "definition": "隶属于某生产线、具有日产能与类型、承担具体加工任务的作业单元。 Counterexample: 生产线是包含多个工作中心的更大设施。 Maturity: Provisional",
+    "scope": "Records of table dim_work_center; provenance: direct source dim_work_center",
+    "aliases": [
+      "工作中心"
+    ],
+    "evidence": [
+      "ev_schema_dim_work_center"
+    ]
+  },
+  {
+    "id": "term_dim_operation",
+    "name": "dim_operation",
+    "type": "entity",
+    "definition": "工艺路线中按顺序编号、指定工作中心与标准工时的加工步骤。 Counterexample: 工艺路线(dim_routing)是工序的集合，工序是路线中的单个步骤。 Maturity: Provisional",
+    "scope": "Records of table dim_operation; provenance: direct source dim_operation",
+    "aliases": [
+      "工序"
+    ],
+    "evidence": [
+      "ev_schema_dim_operation"
+    ]
+  },
+  {
+    "id": "term_dim_routing",
+    "name": "dim_routing",
+    "type": "entity",
+    "definition": "描述某一产品在特定版本下加工步骤顺序的技术文件。 Counterexample: 工序是工艺路线中的单个步骤，路线是步骤的集合。 Maturity: Provisional",
+    "scope": "Records of table dim_routing; provenance: direct source dim_routing",
+    "aliases": [
+      "工艺路线"
+    ],
+    "evidence": [
+      "ev_schema_dim_routing"
+    ]
+  },
+  {
+    "id": "term_dim_employee",
+    "name": "dim_employee",
+    "type": "entity",
+    "definition": "受雇于本企业、隶属于某部门并具有入职日期的从业人员。 Counterexample: 部门(dim_department)是组织单元，员工是其中的任职人员。 Maturity: Provisional",
+    "scope": "Records of table dim_employee; provenance: direct source dim_employee",
+    "aliases": [
+      "员工"
+    ],
+    "evidence": [
+      "ev_schema_dim_employee"
+    ]
+  },
+  {
+    "id": "term_dim_department",
+    "name": "dim_department",
+    "type": "entity",
+    "definition": "隶属于某区域、承担特定职能的组织单元。 Counterexample: 成本中心(dim_cost_center)是核算口径的组织单元，部门是行政组织单元。 Maturity: Provisional",
+    "scope": "Records of table dim_department; provenance: direct source dim_department",
+    "aliases": [
+      "部门"
+    ],
+    "evidence": [
+      "ev_schema_dim_department"
+    ]
+  },
+  {
+    "id": "term_dim_team",
+    "name": "dim_team",
+    "type": "entity",
+    "definition": "班组 Counterexample: 部门是行政组织单元，班组是按班次与生产线组织的作业小组。 Maturity: Provisional",
+    "scope": "Records of table dim_team; provenance: direct source dim_team",
+    "aliases": [
+      "班组"
+    ],
+    "evidence": [
+      "ev_schema_dim_team"
+    ]
+  },
+  {
+    "id": "term_dim_cost_center",
+    "name": "dim_cost_center",
+    "type": "entity",
+    "definition": "隶属于某部门与业务单元、用于归集费用的核算单元。 Counterexample: 利润中心(dim_profit_center)核算利润，成本中心只归集成本费用。 Maturity: Provisional",
+    "scope": "Records of table dim_cost_center; provenance: direct source dim_cost_center",
+    "aliases": [
+      "成本中心"
+    ],
+    "evidence": [
+      "ev_schema_dim_cost_center"
+    ]
+  },
+  {
+    "id": "term_dim_profit_center",
+    "name": "dim_profit_center",
+    "type": "entity",
+    "definition": "隶属于某业务单元、用于核算收入与利润的经营单元。 Counterexample: 成本中心只归集成本，利润中心核算收入与利润。 Maturity: Provisional",
+    "scope": "Records of table dim_profit_center; provenance: direct source dim_profit_center",
+    "aliases": [
+      "利润中心"
+    ],
+    "evidence": [
+      "ev_schema_dim_profit_center"
+    ]
+  },
+  {
+    "id": "term_dim_account",
+    "name": "dim_account",
+    "type": "entity",
+    "definition": "按层级组织、具有科目类型与借贷方向的会计核算条目。 Counterexample: 会计准则是核算规则体系，会计科目是其中的具体核算条目。 Maturity: Provisional",
+    "scope": "Records of table dim_account; provenance: direct source dim_account",
+    "aliases": [
+      "会计科目"
+    ],
+    "evidence": [
+      "ev_schema_dim_account"
+    ]
+  },
+  {
+    "id": "term_dim_coa",
+    "name": "dim_coa",
+    "type": "entity",
+    "definition": "规定会计核算口径与科目体系的标准规范。 Counterexample: 会计科目是准则下的具体核算条目，准则是规则体系。 Maturity: Provisional",
+    "scope": "Records of table dim_coa; provenance: direct source dim_coa",
+    "aliases": [
+      "会计准则"
+    ],
+    "evidence": [
+      "ev_schema_dim_coa"
+    ]
+  },
+  {
+    "id": "term_dim_fixed_asset",
+    "name": "dim_fixed_asset",
+    "type": "entity",
+    "definition": "由企业持有、具有原值、使用年限与折旧记录的长期资产。 Counterexample: 设备是生产设施，固定资产是财务核算口径的资产台账条目，二者可指向同一实物但口径不同。 Maturity: Provisional",
+    "scope": "Records of table dim_fixed_asset; provenance: direct source dim_fixed_asset",
+    "aliases": [
+      "固定资产"
+    ],
+    "evidence": [
+      "ev_schema_dim_fixed_asset"
+    ]
+  },
+  {
+    "id": "term_dim_spare_part",
+    "name": "dim_spare_part",
+    "type": "entity",
+    "definition": "用于维修某类设备、具有库存上下限与当前库存的替换件。 Counterexample: 设备是生产设施本身，备件是用于维修设备的替换件。 Maturity: Provisional",
+    "scope": "Records of table dim_spare_part; provenance: direct source dim_spare_part",
+    "aliases": [
+      "备件"
+    ],
+    "evidence": [
+      "ev_schema_dim_spare_part"
+    ]
+  },
+  {
+    "id": "term_dim_tool",
+    "name": "dim_tool",
+    "type": "entity",
+    "definition": "隶属于某生产线、具有总寿命与已用寿命的加工辅助器具。 Counterexample: 设备是主要生产设施，工装是辅助加工的器具。 Maturity: Provisional",
+    "scope": "Records of table dim_tool; provenance: direct source dim_tool",
+    "aliases": [
+      "工装"
+    ],
+    "evidence": [
+      "ev_schema_dim_tool"
+    ]
+  },
+  {
+    "id": "term_dim_sensor",
+    "name": "dim_sensor",
+    "type": "entity",
+    "definition": "安装于某设备、具有测量类型、单位与精度的测量装置。 Counterexample: 设备是生产设施，传感器是安装于其上的测量装置。 Maturity: Provisional",
+    "scope": "Records of table dim_sensor; provenance: direct source dim_sensor",
+    "aliases": [
+      "传感器"
+    ],
+    "evidence": [
+      "ev_schema_dim_sensor"
+    ]
+  },
+  {
+    "id": "term_dim_downtime_reason",
+    "name": "dim_downtime_reason",
+    "type": "concept",
+    "definition": "停机原因 Counterexample: 风险等级是对风险高低的划分，停机原因是对停机事由的归类。 Maturity: Provisional",
+    "scope": "Records of table dim_downtime_reason; provenance: direct source dim_downtime_reason",
+    "aliases": [
+      "停机原因"
+    ],
+    "evidence": [
+      "ev_schema_dim_downtime_reason"
+    ]
+  },
+  {
+    "id": "term_dim_hazard",
+    "name": "dim_hazard",
+    "type": "entity",
+    "definition": "位于特定位置、具有类别与风险等级、可能造成伤害的来源。 Counterexample: 风险等级是对风险高低的划分，危险源是可能造成伤害的具体来源。 Maturity: Provisional",
+    "scope": "Records of table dim_hazard; provenance: direct source dim_hazard",
+    "aliases": [
+      "危险源"
+    ],
+    "evidence": [
+      "ev_schema_dim_hazard"
+    ]
+  },
+  {
+    "id": "term_dim_risk_level",
+    "name": "dim_risk_level",
+    "type": "entity",
+    "definition": "对风险高低进行分级、并规定所需应对措施的等级条目。 Counterexample: 危险源是可能造成伤害的来源，风险等级是对其高低的划分。 Maturity: Provisional",
+    "scope": "Records of table dim_risk_level; provenance: direct source dim_risk_level",
+    "aliases": [
+      "风险等级"
+    ],
+    "evidence": [
+      "ev_schema_dim_risk_level"
+    ]
+  },
+  {
+    "id": "term_dim_region",
+    "name": "dim_region",
+    "type": "entity",
+    "definition": "用于划分地理或管理范围的区域条目。 Counterexample: 工厂是生产场所，区域是地理或管理范围的划分。 Maturity: Provisional",
+    "scope": "Records of table dim_region; provenance: direct source dim_region",
+    "aliases": [
+      "区域"
+    ],
+    "evidence": [
+      "ev_schema_dim_region"
+    ]
+  },
+  {
+    "id": "term_dim_carrier",
+    "name": "dim_carrier",
+    "type": "entity",
+    "definition": "以特定运输方式承担货物运输、具有联系方式与状态的承运方。 Counterexample: 供应商提供物料，承运商提供运输服务。 Maturity: Provisional",
+    "scope": "Records of table dim_carrier; provenance: direct source dim_carrier",
+    "aliases": [
+      "承运商"
+    ],
+    "evidence": [
+      "ev_schema_dim_carrier"
+    ]
+  },
+  {
+    "id": "term_dim_pricing",
+    "name": "dim_pricing",
+    "type": "entity",
+    "definition": "记录某一产品在特定价格类型与有效期内的单价与币种的价格信息。 Counterexample: 产品是物品本身，定价是描述其价格的信息记录。 Maturity: Provisional",
+    "scope": "Records of table dim_pricing; provenance: direct source dim_pricing",
+    "aliases": [
+      "定价"
+    ],
+    "evidence": [
+      "ev_schema_dim_pricing"
+    ]
+  },
+  {
+    "id": "term_dim_metric_catalog",
+    "name": "dim_metric_catalog",
+    "type": "entity",
+    "definition": "登记指标名称、类型、来源表与取值列等元数据的目录条目。 Counterexample: 派生指标配置是具体计算规则，指标目录是元数据登记条目。 Maturity: Provisional",
+    "scope": "Records of table dim_metric_catalog; provenance: direct source dim_metric_catalog",
+    "aliases": [
+      "指标目录"
+    ],
+    "evidence": [
+      "ev_schema_dim_metric_catalog"
+    ]
+  },
+  {
+    "id": "term_dim_derived_metric_config",
+    "name": "dim_derived_metric_config",
+    "type": "entity",
+    "definition": "记录由若干原子指标经指定计算方式与分组条件组合而成的指标计算规则。 Counterexample: 指标目录是元数据登记条目，派生指标配置是具体计算规则。 Maturity: Provisional",
+    "scope": "Records of table dim_derived_metric_config; provenance: direct source dim_derived_metric_config",
+    "aliases": [
+      "派生指标配置"
+    ],
+    "evidence": [
+      "ev_schema_dim_derived_metric_config"
+    ]
+  },
+  {
+    "id": "term_dim_composite_metric_config",
+    "name": "dim_composite_metric_config",
+    "type": "entity",
+    "definition": "记录由多个组成指标按公式合成的指标计算规则。 Counterexample: 派生指标配置基于原子指标与分组条件，复合指标配置基于多个组成指标与公式。 Maturity: Provisional",
+    "scope": "Records of table dim_composite_metric_config; provenance: direct source dim_composite_metric_config",
+    "aliases": [
+      "复合指标配置"
+    ],
+    "evidence": [
+      "ev_schema_dim_composite_metric_config"
+    ]
+  },
+  {
+    "id": "term_dws_equipment_daily",
+    "name": "DWS_EQUIPMENT_DAILY",
+    "type": "entity",
+    "definition": "按日期与设备汇总运行时长、停机、报警与维护工单等指标的统计记录。 Counterexample: 设备是物理设施，设备日运行汇总是按日统计其运行状况的信息记录。 Maturity: Provisional",
+    "scope": "Records of table DWS_EQUIPMENT_DAILY; provenance: direct source DWS_EQUIPMENT_DAILY",
+    "aliases": [
+      "设备日运行汇总"
+    ],
+    "evidence": [
+      "ev_schema_dws_equipment_daily"
+    ]
+  },
+  {
+    "id": "term_dws_production_daily",
+    "name": "DWS_PRODUCTION_DAILY",
+    "type": "entity",
+    "definition": "按日期、产线、车间与产品汇总产量、质量、能耗与设备利用等指标的统计记录。 Counterexample: 设备日运行汇总以设备为主粒度，生产日汇总以产线与产品为主粒度。 Maturity: Provisional",
+    "scope": "Records of table DWS_PRODUCTION_DAILY; provenance: direct source DWS_PRODUCTION_DAILY",
+    "aliases": [
+      "生产日汇总"
+    ],
+    "evidence": [
+      "ev_schema_dws_production_daily"
+    ]
+  },
+  {
+    "id": "term_dws_risk_daily",
+    "name": "DWS_RISK_DAILY",
+    "type": "entity",
+    "definition": "按日期、员工与产品汇总超期库存、负毛利与超期应收等风险指标的统计记录。 Counterexample: 生产日汇总统计产量与质量，风险日汇总统计超期与负毛利等风险指标。 Maturity: Provisional",
+    "scope": "Records of table DWS_RISK_DAILY; provenance: direct source DWS_RISK_DAILY",
+    "aliases": [
+      "风险日汇总"
+    ],
+    "evidence": [
+      "ev_schema_dws_risk_daily"
+    ]
+  },
+  {
+    "id": "term_fact_alarm",
+    "name": "fact_alarm",
+    "type": "concept",
+    "definition": "由传感器或设备在运行过程中触发的、记录异常状态及其处置情况的事件记录。 Counterexample: 与「停机事件」不同：报警是异常信号被触发的记录，未必导致设备停止运行；停机事件记录的是设备实际停止运行的时间段。 Maturity: Provisional",
+    "scope": "Records of table fact_alarm; provenance: direct source fact_alarm",
+    "aliases": [
+      "设备报警事件"
+    ],
+    "evidence": [
+      "ev_schema_fact_alarm"
+    ]
+  },
+  {
+    "id": "term_fact_ap",
+    "name": "fact_ap",
+    "type": "entity",
+    "definition": "企业因采购货物或接受服务而对供应商形成的、以发票为依据的待付款项记录。 Counterexample: 与「付款单」不同：应付账款是债务本身，付款单是清偿该债务的实际资金流出记录。 Maturity: Provisional",
+    "scope": "Records of table fact_ap; provenance: direct source fact_ap",
+    "aliases": [
+      "应付账款"
+    ],
+    "evidence": [
+      "ev_schema_fact_ap"
+    ]
+  },
+  {
+    "id": "term_fact_ar_aging",
+    "name": "fact_ar_aging",
+    "type": "entity",
+    "definition": "按客户与发票维度对应收账款余额按逾期时长分档统计的账龄分析记录。 Counterexample: 与「应收账款」不同：应收账款是单笔债权金额，账龄分析是把余额按逾期区间拆分的统计视图。 Maturity: Provisional",
+    "scope": "Records of table fact_ar_aging; provenance: direct source fact_ar_aging",
+    "aliases": [
+      "应收账款账龄"
+    ],
+    "evidence": [
+      "ev_schema_fact_ar_aging"
+    ]
+  },
+  {
+    "id": "term_fact_budget",
+    "name": "fact_budget",
+    "type": "entity",
+    "definition": "按成本中心与年月维度编制的、包含预算金额与实际发生额对比的财务计划记录。 Counterexample: 与「预算费用」不同：预算按成本中心编制并含实际对比，预算费用按部门编制仅含预算金额。 Maturity: Provisional",
+    "scope": "Records of table fact_budget; provenance: direct source fact_budget",
+    "aliases": [
+      "预算"
+    ],
+    "evidence": [
+      "ev_schema_fact_budget"
+    ]
+  },
+  {
+    "id": "term_fact_budget_expense",
+    "name": "fact_budget_expense",
+    "type": "entity",
+    "definition": "按部门与年月维度编制的费用预算额度记录。 Counterexample: 与「预算」不同：部门预算费用只记录预算额度，不含实际发生额与成本中心维度。 Maturity: Provisional",
+    "scope": "Records of table fact_budget_expense; provenance: direct source fact_budget_expense",
+    "aliases": [
+      "部门预算费用"
+    ],
+    "evidence": [
+      "ev_schema_fact_budget_expense"
+    ]
+  },
+  {
+    "id": "term_fact_contract",
+    "name": "fact_contract",
+    "type": "entity",
+    "definition": "企业与外部当事方之间就交易事项约定权利义务、金额与有效期的法律文件记录。 Counterexample: 与「采购订单」不同：合同是双方权利义务的法律约定，采购订单是合同项下具体的采购执行指令。 Maturity: Provisional",
+    "scope": "Records of table fact_contract; provenance: direct source fact_contract",
+    "aliases": [
+      "合同"
+    ],
+    "evidence": [
+      "ev_schema_fact_contract"
+    ]
+  },
+  {
+    "id": "term_fact_delivery",
+    "name": "fact_delivery",
+    "type": "concept",
+    "definition": "针对销售订单执行货物出库交付、记录交付数量与金额的单据。 Counterexample: 与「销售订单」不同：销售订单是客户需求的约定，发货单是订单项下实际交付货物的执行凭证。 Maturity: Provisional",
+    "scope": "Records of table fact_delivery; provenance: direct source fact_delivery",
+    "aliases": [
+      "发货单"
+    ],
+    "evidence": [
+      "ev_schema_fact_delivery"
+    ]
+  },
+  {
+    "id": "term_fact_depreciation",
+    "name": "fact_depreciation",
+    "type": "entity",
+    "definition": "按会计期间对固定资产计提折旧、记录本期折旧额与累计折旧的核算记录。 Counterexample: 与「固定资产」不同：固定资产是资产本身，折旧记录是资产价值按期摊销的核算结果。 Maturity: Provisional",
+    "scope": "Records of table fact_depreciation; provenance: direct source fact_depreciation",
+    "aliases": [
+      "资产折旧"
+    ],
+    "evidence": [
+      "ev_schema_fact_depreciation"
+    ]
+  },
+  {
+    "id": "term_fact_downtime",
+    "name": "fact_downtime",
+    "type": "concept",
+    "definition": "设备在某一时段内停止运行、并记录停机原因与持续时长的事件。 Counterexample: 与「设备报警」不同：停机事件记录设备实际停止运行的时间段，报警是异常信号被触发的记录，未必导致停机。 Maturity: Provisional",
+    "scope": "Records of table fact_downtime; provenance: direct source fact_downtime",
+    "aliases": [
+      "设备停机事件"
+    ],
+    "evidence": [
+      "ev_schema_fact_downtime"
+    ]
+  },
+  {
+    "id": "term_fact_energy_consumption",
+    "name": "fact_energy_consumption",
+    "type": "entity",
+    "definition": "按产线与日期记录电、水、气、蒸汽等能源介质消耗量的计量记录。 Counterexample: 与「环境记录」不同：能源消耗记录的是能源介质的用量，环境记录的是排放物浓度与达标情况。 Maturity: Provisional",
+    "scope": "Records of table fact_energy_consumption; provenance: direct source fact_energy_consumption",
+    "aliases": [
+      "能源消耗记录"
+    ],
+    "evidence": [
+      "ev_schema_fact_energy_consumption"
+    ]
+  },
+  {
+    "id": "term_fact_env_record",
+    "name": "fact_env_record",
+    "type": "entity",
+    "definition": "按日期与排放类型记录污染物实测值、限值及达标判定的环境监测记录。 Counterexample: 与「能源消耗记录」不同：环境监测记录的是排放物浓度与达标判定，能源消耗记录的是能源介质用量。 Maturity: Provisional",
+    "scope": "Records of table fact_env_record; provenance: direct source fact_env_record",
+    "aliases": [
+      "环境监测记录"
+    ],
+    "evidence": [
+      "ev_schema_fact_env_record"
+    ]
+  },
+  {
+    "id": "term_fact_equipment_runtime",
+    "name": "fact_equipment_runtime",
+    "type": "entity",
+    "definition": "按产线与日期汇总设备计划运行、实际运行、停机时长及综合效率的统计记录。 Counterexample: 与「设备停机事件」不同：运行日报是按日汇总的统计结果，停机事件是单次停机的明细记录。 Maturity: Provisional",
+    "scope": "Records of table fact_equipment_runtime; provenance: direct source fact_equipment_runtime",
+    "aliases": [
+      "设备运行日报"
+    ],
+    "evidence": [
+      "ev_schema_fact_equipment_runtime"
+    ]
+  },
+  {
+    "id": "term_fact_expense",
+    "name": "fact_expense",
+    "type": "entity",
+    "definition": "员工因业务发生支出后按费用类型申请报销、记录金额与归属部门的单据。 Counterexample: 与「部门预算费用」不同：费用报销单是实际发生的支出记录，部门预算费用是事前核定的额度。 Maturity: Provisional",
+    "scope": "Records of table fact_expense; provenance: direct source fact_expense",
+    "aliases": [
+      "费用报销单"
+    ],
+    "evidence": [
+      "ev_schema_fact_expense"
+    ]
+  },
+  {
+    "id": "term_fact_goods_receipt",
+    "name": "fact_goods_receipt",
+    "type": "concept",
+    "definition": "针对采购订单执行到货接收、记录收货数量与检验结果的单据。 Counterexample: 与「采购订单」不同：采购订单是采购需求的约定，收货单是订单项下实际到货的接收凭证。 Maturity: Provisional",
+    "scope": "Records of table fact_goods_receipt; provenance: direct source fact_goods_receipt",
+    "aliases": [
+      "收货单"
+    ],
+    "evidence": [
+      "ev_schema_fact_goods_receipt"
+    ]
+  },
+  {
+    "id": "term_fact_incident",
+    "name": "fact_incident",
+    "type": "concept",
+    "definition": "在生产场所发生的、造成或可能造成人员伤害与财产损失的安全事件记录。 Counterexample: 与「危险源」不同：危险源是可能引发事故的根源，安全事故是已经实际发生的事件。 Maturity: Provisional",
+    "scope": "Records of table fact_incident; provenance: direct source fact_incident",
+    "aliases": [
+      "安全事故"
+    ],
+    "evidence": [
+      "ev_schema_fact_incident"
+    ]
+  },
+  {
+    "id": "term_fact_incident_inv",
+    "name": "fact_incident_inv",
+    "type": "concept",
+    "definition": "针对已发生安全事故开展的、记录调查方法、根本原因与促成因素的分析记录。 Counterexample: 与「安全事故」不同：安全事故是事件本身，事故调查是对该事件原因的分析结论。 Maturity: Provisional",
+    "scope": "Records of table fact_incident_inv; provenance: direct source fact_incident_inv",
+    "aliases": [
+      "事故调查"
+    ],
+    "evidence": [
+      "ev_schema_fact_incident_inv"
+    ]
+  },
+  {
+    "id": "term_fact_inventory",
+    "name": "fact_inventory",
+    "type": "entity",
+    "definition": "按产品与批次记录在库数量、成本及存放时长的存货台账记录。 Counterexample: 与「物料消耗」不同：库存记录的是在库结存状态，物料消耗记录的是生产领用出库的数量。 Maturity: Provisional",
+    "scope": "Records of table fact_inventory; provenance: direct source fact_inventory",
+    "aliases": [
+      "库存"
+    ],
+    "evidence": [
+      "ev_schema_fact_inventory"
+    ]
+  },
+  {
+    "id": "term_fact_invoice",
+    "name": "fact_invoice",
+    "type": "entity",
+    "definition": "针对发货业务开具的、记录不含税金额、税额与价税合计的税务凭证。 Counterexample: 与「发货单」不同：发货单是货物交付凭证，销售发票是据此开具的税务结算凭证。 Maturity: Provisional",
+    "scope": "Records of table fact_invoice; provenance: direct source fact_invoice",
+    "aliases": [
+      "销售发票"
+    ],
+    "evidence": [
+      "ev_schema_fact_invoice"
+    ]
+  },
+  {
+    "id": "term_fact_iot_data",
+    "name": "fact_iot_data",
+    "type": "entity",
+    "definition": "由传感器按时间戳采集并记录数值、单位与质量标记的时序测量数据。 Counterexample: 与「设备报警」不同：测点数据是连续采集的原始数值，报警是数值越限后触发的异常事件。 Maturity: Provisional",
+    "scope": "Records of table fact_iot_data; provenance: direct source fact_iot_data",
+    "aliases": [
+      "物联网测点数据"
+    ],
+    "evidence": [
+      "ev_schema_fact_iot_data"
+    ]
+  },
+  {
+    "id": "term_fact_maintenance_plan",
+    "name": "fact_maintenance_plan",
+    "type": "entity",
+    "definition": "按设备与维修类型预先设定的、规定保养间隔与下次执行日期的计划记录。 Counterexample: 与「维修工单」不同：维修计划是周期性安排，维修工单是计划触发后实际派发的执行任务。 Maturity: Provisional",
+    "scope": "Records of table fact_maintenance_plan; provenance: direct source fact_maintenance_plan",
+    "aliases": [
+      "维修计划"
+    ],
+    "evidence": [
+      "ev_schema_fact_maintenance_plan"
+    ]
+  },
+  {
+    "id": "term_fact_maintenance_record",
+    "name": "fact_maintenance_record",
+    "type": "entity",
+    "definition": "针对维修工单执行完毕后记录的维修内容、更换备件、工时与费用的结果记录。 Counterexample: 与「维修工单」不同：维修工单是待执行的维修任务，维修记录是任务完成后的实际执行结果。 Maturity: Provisional",
+    "scope": "Records of table fact_maintenance_record; provenance: direct source fact_maintenance_record",
+    "aliases": [
+      "维修记录"
+    ],
+    "evidence": [
+      "ev_schema_fact_maintenance_record"
+    ]
+  },
+  {
+    "id": "term_fact_maintenance_wo",
+    "name": "fact_maintenance_wo",
+    "type": "entity",
+    "definition": "针对设备维修任务派发给指定技术人员、记录优先级与执行状态的工单。 Counterexample: 与「维修计划」不同：维修工单是已派发的具体执行任务，维修计划是周期性的预先安排。 Maturity: Provisional",
+    "scope": "Records of table fact_maintenance_wo; provenance: direct source fact_maintenance_wo",
+    "aliases": [
+      "维修工单"
+    ],
+    "evidence": [
+      "ev_schema_fact_maintenance_wo"
+    ]
+  },
+  {
+    "id": "term_fact_material_consumption",
+    "name": "fact_material_consumption",
+    "type": "entity",
+    "definition": "按生产订单与物料记录计划用量、实际用量与报废量的领用消耗记录。 Counterexample: 与「库存」不同：物料消耗记录的是生产领用出库的数量，库存记录的是在库结存状态。 Maturity: Provisional",
+    "scope": "Records of table fact_material_consumption; provenance: direct source fact_material_consumption",
+    "aliases": [
+      "物料消耗"
+    ],
+    "evidence": [
+      "ev_schema_fact_material_consumption"
+    ]
+  },
+  {
+    "id": "term_fact_opportunity",
+    "name": "fact_opportunity",
+    "type": "entity",
+    "definition": "销售人员针对潜在客户需求登记的、含预估金额与成交状态的商机记录。 Counterexample: 与「销售订单」不同：销售机会是尚未确认的潜在需求，销售订单是客户已确认的购买约定。 Maturity: Provisional",
+    "scope": "Records of table fact_opportunity; provenance: direct source fact_opportunity",
+    "aliases": [
+      "销售机会"
+    ],
+    "evidence": [
+      "ev_schema_fact_opportunity"
+    ]
+  },
+  {
+    "id": "term_fact_payment",
+    "name": "fact_payment",
+    "type": "entity",
+    "definition": "针对应收账款收到的、记录收款金额与收款方式的资金流入单据。 Counterexample: 与「付款单」不同：收款单记录客户回款流入，付款单记录企业向供应商付款流出。 Maturity: Provisional",
+    "scope": "Records of table fact_payment; provenance: direct source fact_payment",
+    "aliases": [
+      "收款单"
+    ],
+    "evidence": [
+      "ev_schema_fact_payment"
+    ]
+  },
+  {
+    "id": "term_fact_payment_out",
+    "name": "fact_payment_out",
+    "type": "entity",
+    "definition": "针对应付账款支付的、记录付款金额与付款方式的资金流出单据。 Counterexample: 与「收款单」不同：付款单记录企业向供应商付款流出，收款单记录客户回款流入。 Maturity: Provisional",
+    "scope": "Records of table fact_payment_out; provenance: direct source fact_payment_out",
+    "aliases": [
+      "付款单"
+    ],
+    "evidence": [
+      "ev_schema_fact_payment_out"
+    ]
+  },
+  {
+    "id": "term_fact_payment_target",
+    "name": "fact_payment_target",
+    "type": "entity",
+    "definition": "按员工与年度设定的、规定资金周转率应达成水平的考核目标记录。 Counterexample: 与「回款单」不同：回款目标是事前设定的考核指标，回款单是实际发生的资金流入记录。 Maturity: Provisional",
+    "scope": "Records of table fact_payment_target; provenance: direct source fact_payment_target",
+    "aliases": [
+      "回款目标"
+    ],
+    "evidence": [
+      "ev_schema_fact_payment_target"
+    ]
+  },
+  {
+    "id": "term_fact_po_line",
+    "name": "fact_po_line",
+    "type": "entity",
+    "definition": "采购订单下按物料明细列示数量、单价、金额与已收数量的行项目记录。 Counterexample: 与「采购订单」不同：采购订单是整单约定，采购订单行是订单内按物料拆分的明细项。 Maturity: Provisional",
+    "scope": "Records of table fact_po_line; provenance: direct source fact_po_line",
+    "aliases": [
+      "采购订单行"
+    ],
+    "evidence": [
+      "ev_schema_fact_po_line"
+    ]
+  },
+  {
+    "id": "term_fact_product_cost",
+    "name": "fact_product_cost",
+    "type": "entity",
+    "definition": "按产品、批次与会计期间归集材料、人工与制造费用并计算单位成本的核算记录。 Counterexample: 与「物料消耗」不同：产品成本是费用归集与单位成本核算结果，物料消耗是实物领用数量记录。 Maturity: Provisional",
+    "scope": "Records of table fact_product_cost; provenance: direct source fact_product_cost",
+    "aliases": [
+      "产品成本"
+    ],
+    "evidence": [
+      "ev_schema_fact_product_cost"
+    ]
+  },
+  {
+    "id": "term_fact_production_order",
+    "name": "fact_production_order",
+    "type": "entity",
+    "definition": "生产工单 Counterexample: 与「生产计划」不同：生产工单是已下达的具体执行指令，生产计划是按月编制的产量安排。 Maturity: Provisional",
+    "scope": "Records of table fact_production_order; provenance: direct source fact_production_order",
+    "aliases": [
+      "生产工单"
+    ],
+    "evidence": [
+      "ev_schema_fact_production_order"
+    ]
+  },
+  {
+    "id": "term_fact_production_output",
+    "name": "fact_production_output",
+    "type": "concept",
+    "definition": "按生产工单与日期记录产出数量、等级及一级品率的完工产出记录。 Counterexample: 与「生产工单」不同：生产工单是执行指令，生产产出是工单项下按日实际完工的产量与质量等级记录。 Maturity: Provisional",
+    "scope": "Records of table fact_production_output; provenance: direct source fact_production_output",
+    "aliases": [
+      "生产产出"
+    ],
+    "evidence": [
+      "ev_schema_fact_production_output"
+    ]
+  },
+  {
+    "id": "term_fact_production_plan",
+    "name": "fact_production_plan",
+    "type": "entity",
+    "definition": "按产线与年月编制的、含计划产量与实际达成率的产量安排记录。 Counterexample: 与「生产工单」不同：生产计划是按月编制的产量安排，生产工单是据此下达的具体执行指令。 Maturity: Provisional",
+    "scope": "Records of table fact_production_plan; provenance: direct source fact_production_plan",
+    "aliases": [
+      "生产计划"
+    ],
+    "evidence": [
+      "ev_schema_fact_production_plan"
+    ]
+  },
+  {
+    "id": "term_fact_purchase_order",
+    "name": "fact_purchase_order",
+    "type": "entity",
+    "definition": "企业向供应商发出的、约定采购物料、金额、交期与付款条件的订购单据。 Counterexample: 与「采购申请」不同：采购申请是内部提出的采购需求，采购订单是对外发出的正式订购约定。 Maturity: Provisional",
+    "scope": "Records of table fact_purchase_order; provenance: direct source fact_purchase_order",
+    "aliases": [
+      "采购订单"
+    ],
+    "evidence": [
+      "ev_schema_fact_purchase_order"
+    ]
+  },
+  {
+    "id": "term_fact_purchase_requisition",
+    "name": "fact_purchase_requisition",
+    "type": "entity",
+    "definition": "由需求部门提出、经审批后用于发起采购的物料需求申请单据。 Counterexample: 与「采购订单」不同：采购申请是内部需求提出，采购订单是对外发出的正式订购约定。 Maturity: Provisional",
+    "scope": "Records of table fact_purchase_requisition; provenance: direct source fact_purchase_requisition",
+    "aliases": [
+      "采购申请"
+    ],
+    "evidence": [
+      "ev_schema_fact_purchase_requisition"
+    ]
+  },
+  {
+    "id": "term_fact_quality_inspection",
+    "name": "fact_quality_inspection",
+    "type": "concept",
+    "definition": "按生产批次对指定质量特性实测值与标准值比对并给出判定结论的检验记录。 Counterexample: 与「生产产出」不同：生产产出记录产量与等级，质量检验记录具体质量特性的实测值与合格判定。 Maturity: Provisional",
+    "scope": "Records of table fact_quality_inspection; provenance: direct source fact_quality_inspection",
+    "aliases": [
+      "质量检验"
+    ],
+    "evidence": [
+      "ev_schema_fact_quality_inspection"
+    ]
+  },
+  {
+    "id": "term_fact_quotation",
+    "name": "fact_quotation",
+    "type": "entity",
+    "definition": "向客户发出的、约定产品单价、数量与有效期的价格要约单据。 Counterexample: 与「销售订单」不同：报价单是价格要约，销售订单是客户接受要约后形成的购买约定。 Maturity: Provisional",
+    "scope": "Records of table fact_quotation; provenance: direct source fact_quotation",
+    "aliases": [
+      "报价单"
+    ],
+    "evidence": [
+      "ev_schema_fact_quotation"
+    ]
+  },
+  {
+    "id": "term_fact_return",
+    "name": "fact_return",
+    "type": "concept",
+    "definition": "客户针对已交付货物退回、记录退回数量、金额与原因的事件。 Counterexample: 与「发货单」不同：发货单是货物交付，退货事件是已交付货物被退回的反向流动。 Maturity: Provisional",
+    "scope": "Records of table fact_return; provenance: direct source fact_return",
+    "aliases": [
+      "退货事件"
+    ],
+    "evidence": [
+      "ev_schema_fact_return"
+    ]
+  },
+  {
+    "id": "term_fact_risk_assessment",
+    "name": "fact_risk_assessment",
+    "type": "entity",
+    "definition": "针对危险源评估其发生可能性与后果严重程度、判定风险等级并提出控制需求的记录。 Counterexample: 与「安全事故」不同：风险评估是事前对危险源的分析判定，安全事故是已经实际发生的事件。 Maturity: Provisional",
+    "scope": "Records of table fact_risk_assessment; provenance: direct source fact_risk_assessment",
+    "aliases": [
+      "风险评估"
+    ],
+    "evidence": [
+      "ev_schema_fact_risk_assessment"
+    ]
+  },
+  {
+    "id": "term_fact_safety_audit",
+    "name": "fact_safety_audit",
+    "type": "entity",
+    "definition": "对车间安全状况按审核类型开展检查、记录得分与问题数量的审核记录。 Counterexample: 与「风险评估」不同：安全审核是对现场安全状况的检查评分，风险评估是对危险源的可能性与后果分析。 Maturity: Provisional",
+    "scope": "Records of table fact_safety_audit; provenance: direct source fact_safety_audit",
+    "aliases": [
+      "安全审核"
+    ],
+    "evidence": [
+      "ev_schema_fact_safety_audit"
+    ]
+  },
+  {
+    "id": "term_dws_after_sales_daily",
+    "name": "DWS_AFTER_SALES_DAILY",
+    "type": "entity",
+    "definition": "按日期与员工维度汇总退货次数与退货数量的售后统计记录。 Counterexample: 与「退货事件」不同：售后日汇总按日按人聚合统计，退货事件是单笔退货明细。 Maturity: Provisional",
+    "scope": "Records of table DWS_AFTER_SALES_DAILY; provenance: direct source DWS_AFTER_SALES_DAILY",
+    "aliases": [
+      "售后日汇总"
+    ],
+    "evidence": [
+      "ev_schema_dws_after_sales_daily"
+    ]
+  },
+  {
+    "id": "term_metric_dws_after_sales_daily__x",
+    "name": "何涛",
+    "type": "metric",
+    "definition": "Metric '何涛' () stored as rows of DWS_AFTER_SALES_DAILY with emp_name = '何涛'; the number is in return_quantity.",
+    "scope": "Rows of DWS_AFTER_SALES_DAILY where emp_name = '何涛'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_after_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_after_sales_daily__x",
+    "name": "何芳",
+    "type": "metric",
+    "definition": "Metric '何芳' () stored as rows of DWS_AFTER_SALES_DAILY with emp_name = '何芳'; the number is in return_quantity.",
+    "scope": "Rows of DWS_AFTER_SALES_DAILY where emp_name = '何芳'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_after_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_after_sales_daily__x",
+    "name": "吴涛",
+    "type": "metric",
+    "definition": "Metric '吴涛' () stored as rows of DWS_AFTER_SALES_DAILY with emp_name = '吴涛'; the number is in return_quantity.",
+    "scope": "Rows of DWS_AFTER_SALES_DAILY where emp_name = '吴涛'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_after_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_after_sales_daily__x",
+    "name": "吴艳",
+    "type": "metric",
+    "definition": "Metric '吴艳' () stored as rows of DWS_AFTER_SALES_DAILY with emp_name = '吴艳'; the number is in return_quantity.",
+    "scope": "Rows of DWS_AFTER_SALES_DAILY where emp_name = '吴艳'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_after_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_after_sales_daily__x",
+    "name": "唐刚",
+    "type": "metric",
+    "definition": "Metric '唐刚' () stored as rows of DWS_AFTER_SALES_DAILY with emp_name = '唐刚'; the number is in return_quantity.",
+    "scope": "Rows of DWS_AFTER_SALES_DAILY where emp_name = '唐刚'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_after_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_after_sales_daily__x",
+    "name": "张桂英",
+    "type": "metric",
+    "definition": "Metric '张桂英' () stored as rows of DWS_AFTER_SALES_DAILY with emp_name = '张桂英'; the number is in return_quantity.",
+    "scope": "Rows of DWS_AFTER_SALES_DAILY where emp_name = '张桂英'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_after_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_after_sales_daily__x",
+    "name": "彭芳",
+    "type": "metric",
+    "definition": "Metric '彭芳' () stored as rows of DWS_AFTER_SALES_DAILY with emp_name = '彭芳'; the number is in return_quantity.",
+    "scope": "Rows of DWS_AFTER_SALES_DAILY where emp_name = '彭芳'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_after_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_after_sales_daily__x",
+    "name": "徐艳",
+    "type": "metric",
+    "definition": "Metric '徐艳' () stored as rows of DWS_AFTER_SALES_DAILY with emp_name = '徐艳'; the number is in return_quantity.",
+    "scope": "Rows of DWS_AFTER_SALES_DAILY where emp_name = '徐艳'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_after_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_after_sales_daily__x",
+    "name": "曾欣怡",
+    "type": "metric",
+    "definition": "Metric '曾欣怡' () stored as rows of DWS_AFTER_SALES_DAILY with emp_name = '曾欣怡'; the number is in return_quantity.",
+    "scope": "Rows of DWS_AFTER_SALES_DAILY where emp_name = '曾欣怡'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_after_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_after_sales_daily__x",
+    "name": "潘军",
+    "type": "metric",
+    "definition": "Metric '潘军' () stored as rows of DWS_AFTER_SALES_DAILY with emp_name = '潘军'; the number is in return_quantity.",
+    "scope": "Rows of DWS_AFTER_SALES_DAILY where emp_name = '潘军'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_after_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_after_sales_daily__x",
+    "name": "肖子涵",
+    "type": "metric",
+    "definition": "Metric '肖子涵' () stored as rows of DWS_AFTER_SALES_DAILY with emp_name = '肖子涵'; the number is in return_quantity.",
+    "scope": "Rows of DWS_AFTER_SALES_DAILY where emp_name = '肖子涵'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_after_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_after_sales_daily__x",
+    "name": "胡丽娟",
+    "type": "metric",
+    "definition": "Metric '胡丽娟' () stored as rows of DWS_AFTER_SALES_DAILY with emp_name = '胡丽娟'; the number is in return_quantity.",
+    "scope": "Rows of DWS_AFTER_SALES_DAILY where emp_name = '胡丽娟'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_after_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_after_sales_daily__x",
+    "name": "董丽娟",
+    "type": "metric",
+    "definition": "Metric '董丽娟' () stored as rows of DWS_AFTER_SALES_DAILY with emp_name = '董丽娟'; the number is in return_quantity.",
+    "scope": "Rows of DWS_AFTER_SALES_DAILY where emp_name = '董丽娟'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_after_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_after_sales_daily__x",
+    "name": "袁浩然",
+    "type": "metric",
+    "definition": "Metric '袁浩然' () stored as rows of DWS_AFTER_SALES_DAILY with emp_name = '袁浩然'; the number is in return_quantity.",
+    "scope": "Rows of DWS_AFTER_SALES_DAILY where emp_name = '袁浩然'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_after_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_after_sales_daily__x",
+    "name": "谢嘉豪",
+    "type": "metric",
+    "definition": "Metric '谢嘉豪' () stored as rows of DWS_AFTER_SALES_DAILY with emp_name = '谢嘉豪'; the number is in return_quantity.",
+    "scope": "Rows of DWS_AFTER_SALES_DAILY where emp_name = '谢嘉豪'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_after_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_after_sales_daily__x",
+    "name": "谢敏",
+    "type": "metric",
+    "definition": "Metric '谢敏' () stored as rows of DWS_AFTER_SALES_DAILY with emp_name = '谢敏'; the number is in return_quantity.",
+    "scope": "Rows of DWS_AFTER_SALES_DAILY where emp_name = '谢敏'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_after_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_after_sales_daily__x",
+    "name": "赵霞",
+    "type": "metric",
+    "definition": "Metric '赵霞' () stored as rows of DWS_AFTER_SALES_DAILY with emp_name = '赵霞'; the number is in return_quantity.",
+    "scope": "Rows of DWS_AFTER_SALES_DAILY where emp_name = '赵霞'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_after_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_after_sales_daily__x",
+    "name": "郑浩然",
+    "type": "metric",
+    "definition": "Metric '郑浩然' () stored as rows of DWS_AFTER_SALES_DAILY with emp_name = '郑浩然'; the number is in return_quantity.",
+    "scope": "Rows of DWS_AFTER_SALES_DAILY where emp_name = '郑浩然'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_after_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_after_sales_daily__x",
+    "name": "陈敏",
+    "type": "metric",
+    "definition": "Metric '陈敏' () stored as rows of DWS_AFTER_SALES_DAILY with emp_name = '陈敏'; the number is in return_quantity.",
+    "scope": "Rows of DWS_AFTER_SALES_DAILY where emp_name = '陈敏'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_after_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_after_sales_daily__x",
+    "name": "韩欣怡",
+    "type": "metric",
+    "definition": "Metric '韩欣怡' () stored as rows of DWS_AFTER_SALES_DAILY with emp_name = '韩欣怡'; the number is in return_quantity.",
+    "scope": "Rows of DWS_AFTER_SALES_DAILY where emp_name = '韩欣怡'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_after_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_after_sales_daily__x",
+    "name": "马晓东",
+    "type": "metric",
+    "definition": "Metric '马晓东' () stored as rows of DWS_AFTER_SALES_DAILY with emp_name = '马晓东'; the number is in return_quantity.",
+    "scope": "Rows of DWS_AFTER_SALES_DAILY where emp_name = '马晓东'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_after_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_after_sales_daily__x",
+    "name": "马浩然",
+    "type": "metric",
+    "definition": "Metric '马浩然' () stored as rows of DWS_AFTER_SALES_DAILY with emp_name = '马浩然'; the number is in return_quantity.",
+    "scope": "Rows of DWS_AFTER_SALES_DAILY where emp_name = '马浩然'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_after_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_after_sales_daily__x",
+    "name": "高伟",
+    "type": "metric",
+    "definition": "Metric '高伟' () stored as rows of DWS_AFTER_SALES_DAILY with emp_name = '高伟'; the number is in return_quantity.",
+    "scope": "Rows of DWS_AFTER_SALES_DAILY where emp_name = '高伟'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_after_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_after_sales_daily__x",
+    "name": "孙明",
+    "type": "metric",
+    "definition": "Metric '孙明' () stored as rows of DWS_AFTER_SALES_DAILY with emp_name = '孙明'; the number is in return_quantity.",
+    "scope": "Rows of DWS_AFTER_SALES_DAILY where emp_name = '孙明'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_after_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_after_sales_daily__x",
+    "name": "袁平",
+    "type": "metric",
+    "definition": "Metric '袁平' () stored as rows of DWS_AFTER_SALES_DAILY with emp_name = '袁平'; the number is in return_quantity.",
+    "scope": "Rows of DWS_AFTER_SALES_DAILY where emp_name = '袁平'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_after_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_dws_cash_daily",
+    "name": "DWS_CASH_DAILY",
+    "type": "entity",
+    "definition": "按日期与员工维度汇总在途货物、开票天数与银行承兑比例的资信统计记录。 Counterexample: 与「收款单」不同：资金日汇总按日按人聚合统计，收款单是单笔资金流入明细。 Maturity: Provisional",
+    "scope": "Records of table DWS_CASH_DAILY; provenance: direct source DWS_CASH_DAILY",
+    "aliases": [
+      "资金日汇总"
+    ],
+    "evidence": [
+      "ev_schema_dws_cash_daily"
+    ]
+  },
+  {
+    "id": "term_metric_dws_cash_daily__x",
+    "name": "何涛",
+    "type": "metric",
+    "definition": "Metric '何涛' () stored as rows of DWS_CASH_DAILY with emp_name = '何涛'; the number is in goods_in_transit_qty.",
+    "scope": "Rows of DWS_CASH_DAILY where emp_name = '何涛'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_cash_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_cash_daily__x",
+    "name": "何芳",
+    "type": "metric",
+    "definition": "Metric '何芳' () stored as rows of DWS_CASH_DAILY with emp_name = '何芳'; the number is in goods_in_transit_qty.",
+    "scope": "Rows of DWS_CASH_DAILY where emp_name = '何芳'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_cash_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_cash_daily__x",
+    "name": "吴涛",
+    "type": "metric",
+    "definition": "Metric '吴涛' () stored as rows of DWS_CASH_DAILY with emp_name = '吴涛'; the number is in goods_in_transit_qty.",
+    "scope": "Rows of DWS_CASH_DAILY where emp_name = '吴涛'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_cash_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_cash_daily__x",
+    "name": "吴艳",
+    "type": "metric",
+    "definition": "Metric '吴艳' () stored as rows of DWS_CASH_DAILY with emp_name = '吴艳'; the number is in goods_in_transit_qty.",
+    "scope": "Rows of DWS_CASH_DAILY where emp_name = '吴艳'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_cash_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_cash_daily__x",
+    "name": "唐刚",
+    "type": "metric",
+    "definition": "Metric '唐刚' () stored as rows of DWS_CASH_DAILY with emp_name = '唐刚'; the number is in goods_in_transit_qty.",
+    "scope": "Rows of DWS_CASH_DAILY where emp_name = '唐刚'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_cash_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_cash_daily__x",
+    "name": "张桂英",
+    "type": "metric",
+    "definition": "Metric '张桂英' () stored as rows of DWS_CASH_DAILY with emp_name = '张桂英'; the number is in goods_in_transit_qty.",
+    "scope": "Rows of DWS_CASH_DAILY where emp_name = '张桂英'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_cash_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_cash_daily__x",
+    "name": "彭芳",
+    "type": "metric",
+    "definition": "Metric '彭芳' () stored as rows of DWS_CASH_DAILY with emp_name = '彭芳'; the number is in goods_in_transit_qty.",
+    "scope": "Rows of DWS_CASH_DAILY where emp_name = '彭芳'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_cash_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_cash_daily__x",
+    "name": "徐艳",
+    "type": "metric",
+    "definition": "Metric '徐艳' () stored as rows of DWS_CASH_DAILY with emp_name = '徐艳'; the number is in goods_in_transit_qty.",
+    "scope": "Rows of DWS_CASH_DAILY where emp_name = '徐艳'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_cash_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_cash_daily__x",
+    "name": "曾欣怡",
+    "type": "metric",
+    "definition": "Metric '曾欣怡' () stored as rows of DWS_CASH_DAILY with emp_name = '曾欣怡'; the number is in goods_in_transit_qty.",
+    "scope": "Rows of DWS_CASH_DAILY where emp_name = '曾欣怡'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_cash_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_cash_daily__x",
+    "name": "潘军",
+    "type": "metric",
+    "definition": "Metric '潘军' () stored as rows of DWS_CASH_DAILY with emp_name = '潘军'; the number is in goods_in_transit_qty.",
+    "scope": "Rows of DWS_CASH_DAILY where emp_name = '潘军'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_cash_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_cash_daily__x",
+    "name": "肖子涵",
+    "type": "metric",
+    "definition": "Metric '肖子涵' () stored as rows of DWS_CASH_DAILY with emp_name = '肖子涵'; the number is in goods_in_transit_qty.",
+    "scope": "Rows of DWS_CASH_DAILY where emp_name = '肖子涵'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_cash_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_cash_daily__x",
+    "name": "胡丽娟",
+    "type": "metric",
+    "definition": "Metric '胡丽娟' () stored as rows of DWS_CASH_DAILY with emp_name = '胡丽娟'; the number is in goods_in_transit_qty.",
+    "scope": "Rows of DWS_CASH_DAILY where emp_name = '胡丽娟'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_cash_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_cash_daily__x",
+    "name": "董丽娟",
+    "type": "metric",
+    "definition": "Metric '董丽娟' () stored as rows of DWS_CASH_DAILY with emp_name = '董丽娟'; the number is in goods_in_transit_qty.",
+    "scope": "Rows of DWS_CASH_DAILY where emp_name = '董丽娟'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_cash_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_cash_daily__x",
+    "name": "袁浩然",
+    "type": "metric",
+    "definition": "Metric '袁浩然' () stored as rows of DWS_CASH_DAILY with emp_name = '袁浩然'; the number is in goods_in_transit_qty.",
+    "scope": "Rows of DWS_CASH_DAILY where emp_name = '袁浩然'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_cash_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_cash_daily__x",
+    "name": "谢嘉豪",
+    "type": "metric",
+    "definition": "Metric '谢嘉豪' () stored as rows of DWS_CASH_DAILY with emp_name = '谢嘉豪'; the number is in goods_in_transit_qty.",
+    "scope": "Rows of DWS_CASH_DAILY where emp_name = '谢嘉豪'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_cash_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_cash_daily__x",
+    "name": "谢敏",
+    "type": "metric",
+    "definition": "Metric '谢敏' () stored as rows of DWS_CASH_DAILY with emp_name = '谢敏'; the number is in goods_in_transit_qty.",
+    "scope": "Rows of DWS_CASH_DAILY where emp_name = '谢敏'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_cash_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_cash_daily__x",
+    "name": "赵霞",
+    "type": "metric",
+    "definition": "Metric '赵霞' () stored as rows of DWS_CASH_DAILY with emp_name = '赵霞'; the number is in goods_in_transit_qty.",
+    "scope": "Rows of DWS_CASH_DAILY where emp_name = '赵霞'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_cash_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_cash_daily__x",
+    "name": "郑浩然",
+    "type": "metric",
+    "definition": "Metric '郑浩然' () stored as rows of DWS_CASH_DAILY with emp_name = '郑浩然'; the number is in goods_in_transit_qty.",
+    "scope": "Rows of DWS_CASH_DAILY where emp_name = '郑浩然'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_cash_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_cash_daily__x",
+    "name": "陈敏",
+    "type": "metric",
+    "definition": "Metric '陈敏' () stored as rows of DWS_CASH_DAILY with emp_name = '陈敏'; the number is in goods_in_transit_qty.",
+    "scope": "Rows of DWS_CASH_DAILY where emp_name = '陈敏'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_cash_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_cash_daily__x",
+    "name": "韩欣怡",
+    "type": "metric",
+    "definition": "Metric '韩欣怡' () stored as rows of DWS_CASH_DAILY with emp_name = '韩欣怡'; the number is in goods_in_transit_qty.",
+    "scope": "Rows of DWS_CASH_DAILY where emp_name = '韩欣怡'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_cash_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_cash_daily__x",
+    "name": "马晓东",
+    "type": "metric",
+    "definition": "Metric '马晓东' () stored as rows of DWS_CASH_DAILY with emp_name = '马晓东'; the number is in goods_in_transit_qty.",
+    "scope": "Rows of DWS_CASH_DAILY where emp_name = '马晓东'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_cash_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_cash_daily__x",
+    "name": "马浩然",
+    "type": "metric",
+    "definition": "Metric '马浩然' () stored as rows of DWS_CASH_DAILY with emp_name = '马浩然'; the number is in goods_in_transit_qty.",
+    "scope": "Rows of DWS_CASH_DAILY where emp_name = '马浩然'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_cash_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_cash_daily__x",
+    "name": "高伟",
+    "type": "metric",
+    "definition": "Metric '高伟' () stored as rows of DWS_CASH_DAILY with emp_name = '高伟'; the number is in goods_in_transit_qty.",
+    "scope": "Rows of DWS_CASH_DAILY where emp_name = '高伟'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_cash_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_cash_daily__x",
+    "name": "孙明",
+    "type": "metric",
+    "definition": "Metric '孙明' () stored as rows of DWS_CASH_DAILY with emp_name = '孙明'; the number is in goods_in_transit_qty.",
+    "scope": "Rows of DWS_CASH_DAILY where emp_name = '孙明'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_cash_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_cash_daily__x",
+    "name": "袁平",
+    "type": "metric",
+    "definition": "Metric '袁平' () stored as rows of DWS_CASH_DAILY with emp_name = '袁平'; the number is in goods_in_transit_qty.",
+    "scope": "Rows of DWS_CASH_DAILY where emp_name = '袁平'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_cash_daily__x"
+    ]
+  },
+  {
+    "id": "term_dws_org_expense_daily",
+    "name": "DWS_ORG_EXPENSE_DAILY",
+    "type": "entity",
+    "definition": "按日期、员工、部门与区域维度汇总销售费用与费用预算的组织费用统计记录。 Counterexample: 与「费用报销单」不同：组织费用日汇总按多维度聚合统计，费用报销单是单笔报销明细。 Maturity: Provisional",
+    "scope": "Records of table DWS_ORG_EXPENSE_DAILY; provenance: direct source DWS_ORG_EXPENSE_DAILY",
+    "aliases": [
+      "组织费用日汇总"
+    ],
+    "evidence": [
+      "ev_schema_dws_org_expense_daily"
+    ]
+  },
+  {
+    "id": "term_dws_org_performance_daily",
+    "name": "DWS_ORG_PERFORMANCE_DAILY",
+    "type": "entity",
+    "definition": "按日期、员工、部门与区域维度汇总销量、销售额、毛利与应收的组织业绩统计记录。 Counterexample: 与「组织费用日汇总」不同：业绩日汇总统计销量与毛利，费用日汇总统计费用与费用预算。 Maturity: Provisional",
+    "scope": "Records of table DWS_ORG_PERFORMANCE_DAILY; provenance: direct source DWS_ORG_PERFORMANCE_DAILY",
+    "aliases": [
+      "组织业绩日汇总"
+    ],
+    "evidence": [
+      "ev_schema_dws_org_performance_daily"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_performance_daily__x",
+    "name": "何涛",
+    "type": "metric",
+    "definition": "Metric '何涛' () stored as rows of DWS_ORG_PERFORMANCE_DAILY with emp_name = '何涛'; the number is in sales_quantity.",
+    "scope": "Rows of DWS_ORG_PERFORMANCE_DAILY where emp_name = '何涛'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_performance_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_performance_daily__x",
+    "name": "何芳",
+    "type": "metric",
+    "definition": "Metric '何芳' () stored as rows of DWS_ORG_PERFORMANCE_DAILY with emp_name = '何芳'; the number is in sales_quantity.",
+    "scope": "Rows of DWS_ORG_PERFORMANCE_DAILY where emp_name = '何芳'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_performance_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_performance_daily__x",
+    "name": "吴涛",
+    "type": "metric",
+    "definition": "Metric '吴涛' () stored as rows of DWS_ORG_PERFORMANCE_DAILY with emp_name = '吴涛'; the number is in sales_quantity.",
+    "scope": "Rows of DWS_ORG_PERFORMANCE_DAILY where emp_name = '吴涛'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_performance_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_performance_daily__x",
+    "name": "吴艳",
+    "type": "metric",
+    "definition": "Metric '吴艳' () stored as rows of DWS_ORG_PERFORMANCE_DAILY with emp_name = '吴艳'; the number is in sales_quantity.",
+    "scope": "Rows of DWS_ORG_PERFORMANCE_DAILY where emp_name = '吴艳'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_performance_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_performance_daily__x",
+    "name": "唐刚",
+    "type": "metric",
+    "definition": "Metric '唐刚' () stored as rows of DWS_ORG_PERFORMANCE_DAILY with emp_name = '唐刚'; the number is in sales_quantity.",
+    "scope": "Rows of DWS_ORG_PERFORMANCE_DAILY where emp_name = '唐刚'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_performance_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_performance_daily__x",
+    "name": "张桂英",
+    "type": "metric",
+    "definition": "Metric '张桂英' () stored as rows of DWS_ORG_PERFORMANCE_DAILY with emp_name = '张桂英'; the number is in sales_quantity.",
+    "scope": "Rows of DWS_ORG_PERFORMANCE_DAILY where emp_name = '张桂英'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_performance_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_performance_daily__x",
+    "name": "彭芳",
+    "type": "metric",
+    "definition": "Metric '彭芳' () stored as rows of DWS_ORG_PERFORMANCE_DAILY with emp_name = '彭芳'; the number is in sales_quantity.",
+    "scope": "Rows of DWS_ORG_PERFORMANCE_DAILY where emp_name = '彭芳'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_performance_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_performance_daily__x",
+    "name": "徐艳",
+    "type": "metric",
+    "definition": "Metric '徐艳' () stored as rows of DWS_ORG_PERFORMANCE_DAILY with emp_name = '徐艳'; the number is in sales_quantity.",
+    "scope": "Rows of DWS_ORG_PERFORMANCE_DAILY where emp_name = '徐艳'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_performance_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_performance_daily__x",
+    "name": "曾欣怡",
+    "type": "metric",
+    "definition": "Metric '曾欣怡' () stored as rows of DWS_ORG_PERFORMANCE_DAILY with emp_name = '曾欣怡'; the number is in sales_quantity.",
+    "scope": "Rows of DWS_ORG_PERFORMANCE_DAILY where emp_name = '曾欣怡'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_performance_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_performance_daily__x",
+    "name": "潘军",
+    "type": "metric",
+    "definition": "Metric '潘军' () stored as rows of DWS_ORG_PERFORMANCE_DAILY with emp_name = '潘军'; the number is in sales_quantity.",
+    "scope": "Rows of DWS_ORG_PERFORMANCE_DAILY where emp_name = '潘军'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_performance_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_performance_daily__x",
+    "name": "肖子涵",
+    "type": "metric",
+    "definition": "Metric '肖子涵' () stored as rows of DWS_ORG_PERFORMANCE_DAILY with emp_name = '肖子涵'; the number is in sales_quantity.",
+    "scope": "Rows of DWS_ORG_PERFORMANCE_DAILY where emp_name = '肖子涵'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_performance_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_performance_daily__x",
+    "name": "胡丽娟",
+    "type": "metric",
+    "definition": "Metric '胡丽娟' () stored as rows of DWS_ORG_PERFORMANCE_DAILY with emp_name = '胡丽娟'; the number is in sales_quantity.",
+    "scope": "Rows of DWS_ORG_PERFORMANCE_DAILY where emp_name = '胡丽娟'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_performance_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_performance_daily__x",
+    "name": "董丽娟",
+    "type": "metric",
+    "definition": "Metric '董丽娟' () stored as rows of DWS_ORG_PERFORMANCE_DAILY with emp_name = '董丽娟'; the number is in sales_quantity.",
+    "scope": "Rows of DWS_ORG_PERFORMANCE_DAILY where emp_name = '董丽娟'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_performance_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_performance_daily__x",
+    "name": "袁浩然",
+    "type": "metric",
+    "definition": "Metric '袁浩然' () stored as rows of DWS_ORG_PERFORMANCE_DAILY with emp_name = '袁浩然'; the number is in sales_quantity.",
+    "scope": "Rows of DWS_ORG_PERFORMANCE_DAILY where emp_name = '袁浩然'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_performance_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_performance_daily__x",
+    "name": "谢嘉豪",
+    "type": "metric",
+    "definition": "Metric '谢嘉豪' () stored as rows of DWS_ORG_PERFORMANCE_DAILY with emp_name = '谢嘉豪'; the number is in sales_quantity.",
+    "scope": "Rows of DWS_ORG_PERFORMANCE_DAILY where emp_name = '谢嘉豪'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_performance_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_performance_daily__x",
+    "name": "谢敏",
+    "type": "metric",
+    "definition": "Metric '谢敏' () stored as rows of DWS_ORG_PERFORMANCE_DAILY with emp_name = '谢敏'; the number is in sales_quantity.",
+    "scope": "Rows of DWS_ORG_PERFORMANCE_DAILY where emp_name = '谢敏'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_performance_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_performance_daily__x",
+    "name": "赵霞",
+    "type": "metric",
+    "definition": "Metric '赵霞' () stored as rows of DWS_ORG_PERFORMANCE_DAILY with emp_name = '赵霞'; the number is in sales_quantity.",
+    "scope": "Rows of DWS_ORG_PERFORMANCE_DAILY where emp_name = '赵霞'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_performance_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_performance_daily__x",
+    "name": "郑浩然",
+    "type": "metric",
+    "definition": "Metric '郑浩然' () stored as rows of DWS_ORG_PERFORMANCE_DAILY with emp_name = '郑浩然'; the number is in sales_quantity.",
+    "scope": "Rows of DWS_ORG_PERFORMANCE_DAILY where emp_name = '郑浩然'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_performance_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_performance_daily__x",
+    "name": "陈敏",
+    "type": "metric",
+    "definition": "Metric '陈敏' () stored as rows of DWS_ORG_PERFORMANCE_DAILY with emp_name = '陈敏'; the number is in sales_quantity.",
+    "scope": "Rows of DWS_ORG_PERFORMANCE_DAILY where emp_name = '陈敏'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_performance_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_performance_daily__x",
+    "name": "韩欣怡",
+    "type": "metric",
+    "definition": "Metric '韩欣怡' () stored as rows of DWS_ORG_PERFORMANCE_DAILY with emp_name = '韩欣怡'; the number is in sales_quantity.",
+    "scope": "Rows of DWS_ORG_PERFORMANCE_DAILY where emp_name = '韩欣怡'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_performance_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_performance_daily__x",
+    "name": "马晓东",
+    "type": "metric",
+    "definition": "Metric '马晓东' () stored as rows of DWS_ORG_PERFORMANCE_DAILY with emp_name = '马晓东'; the number is in sales_quantity.",
+    "scope": "Rows of DWS_ORG_PERFORMANCE_DAILY where emp_name = '马晓东'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_performance_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_performance_daily__x",
+    "name": "马浩然",
+    "type": "metric",
+    "definition": "Metric '马浩然' () stored as rows of DWS_ORG_PERFORMANCE_DAILY with emp_name = '马浩然'; the number is in sales_quantity.",
+    "scope": "Rows of DWS_ORG_PERFORMANCE_DAILY where emp_name = '马浩然'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_performance_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_performance_daily__x",
+    "name": "高伟",
+    "type": "metric",
+    "definition": "Metric '高伟' () stored as rows of DWS_ORG_PERFORMANCE_DAILY with emp_name = '高伟'; the number is in sales_quantity.",
+    "scope": "Rows of DWS_ORG_PERFORMANCE_DAILY where emp_name = '高伟'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_performance_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_performance_daily__x",
+    "name": "孙明",
+    "type": "metric",
+    "definition": "Metric '孙明' () stored as rows of DWS_ORG_PERFORMANCE_DAILY with emp_name = '孙明'; the number is in sales_quantity.",
+    "scope": "Rows of DWS_ORG_PERFORMANCE_DAILY where emp_name = '孙明'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_performance_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_performance_daily__x",
+    "name": "袁平",
+    "type": "metric",
+    "definition": "Metric '袁平' () stored as rows of DWS_ORG_PERFORMANCE_DAILY with emp_name = '袁平'; the number is in sales_quantity.",
+    "scope": "Rows of DWS_ORG_PERFORMANCE_DAILY where emp_name = '袁平'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_performance_daily__x"
+    ]
+  },
+  {
+    "id": "term_dws_org_target_daily",
+    "name": "DWS_ORG_TARGET_DAILY",
+    "type": "entity",
+    "definition": "按日期、员工与部门维度汇总销量、利润与回款目标的组织目标统计记录。 Counterexample: 与「组织业绩日汇总」不同：目标日汇总记录应达成的目标值，业绩日汇总记录实际完成值。 Maturity: Provisional",
+    "scope": "Records of table DWS_ORG_TARGET_DAILY; provenance: direct source DWS_ORG_TARGET_DAILY",
+    "aliases": [
+      "组织目标日汇总"
+    ],
+    "evidence": [
+      "ev_schema_dws_org_target_daily"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_target_daily__x",
+    "name": "何涛",
+    "type": "metric",
+    "definition": "Metric '何涛' () stored as rows of DWS_ORG_TARGET_DAILY with emp_name = '何涛'; the number is in sales_plan_quantity.",
+    "scope": "Rows of DWS_ORG_TARGET_DAILY where emp_name = '何涛'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_target_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_target_daily__x",
+    "name": "何芳",
+    "type": "metric",
+    "definition": "Metric '何芳' () stored as rows of DWS_ORG_TARGET_DAILY with emp_name = '何芳'; the number is in sales_plan_quantity.",
+    "scope": "Rows of DWS_ORG_TARGET_DAILY where emp_name = '何芳'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_target_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_target_daily__x",
+    "name": "吴涛",
+    "type": "metric",
+    "definition": "Metric '吴涛' () stored as rows of DWS_ORG_TARGET_DAILY with emp_name = '吴涛'; the number is in sales_plan_quantity.",
+    "scope": "Rows of DWS_ORG_TARGET_DAILY where emp_name = '吴涛'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_target_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_target_daily__x",
+    "name": "吴艳",
+    "type": "metric",
+    "definition": "Metric '吴艳' () stored as rows of DWS_ORG_TARGET_DAILY with emp_name = '吴艳'; the number is in sales_plan_quantity.",
+    "scope": "Rows of DWS_ORG_TARGET_DAILY where emp_name = '吴艳'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_target_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_target_daily__x",
+    "name": "唐刚",
+    "type": "metric",
+    "definition": "Metric '唐刚' () stored as rows of DWS_ORG_TARGET_DAILY with emp_name = '唐刚'; the number is in sales_plan_quantity.",
+    "scope": "Rows of DWS_ORG_TARGET_DAILY where emp_name = '唐刚'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_target_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_target_daily__x",
+    "name": "张桂英",
+    "type": "metric",
+    "definition": "Metric '张桂英' () stored as rows of DWS_ORG_TARGET_DAILY with emp_name = '张桂英'; the number is in sales_plan_quantity.",
+    "scope": "Rows of DWS_ORG_TARGET_DAILY where emp_name = '张桂英'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_target_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_target_daily__x",
+    "name": "彭芳",
+    "type": "metric",
+    "definition": "Metric '彭芳' () stored as rows of DWS_ORG_TARGET_DAILY with emp_name = '彭芳'; the number is in sales_plan_quantity.",
+    "scope": "Rows of DWS_ORG_TARGET_DAILY where emp_name = '彭芳'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_target_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_target_daily__x",
+    "name": "徐艳",
+    "type": "metric",
+    "definition": "Metric '徐艳' () stored as rows of DWS_ORG_TARGET_DAILY with emp_name = '徐艳'; the number is in sales_plan_quantity.",
+    "scope": "Rows of DWS_ORG_TARGET_DAILY where emp_name = '徐艳'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_target_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_target_daily__x",
+    "name": "曾欣怡",
+    "type": "metric",
+    "definition": "Metric '曾欣怡' () stored as rows of DWS_ORG_TARGET_DAILY with emp_name = '曾欣怡'; the number is in sales_plan_quantity.",
+    "scope": "Rows of DWS_ORG_TARGET_DAILY where emp_name = '曾欣怡'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_target_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_target_daily__x",
+    "name": "潘军",
+    "type": "metric",
+    "definition": "Metric '潘军' () stored as rows of DWS_ORG_TARGET_DAILY with emp_name = '潘军'; the number is in sales_plan_quantity.",
+    "scope": "Rows of DWS_ORG_TARGET_DAILY where emp_name = '潘军'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_target_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_target_daily__x",
+    "name": "肖子涵",
+    "type": "metric",
+    "definition": "Metric '肖子涵' () stored as rows of DWS_ORG_TARGET_DAILY with emp_name = '肖子涵'; the number is in sales_plan_quantity.",
+    "scope": "Rows of DWS_ORG_TARGET_DAILY where emp_name = '肖子涵'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_target_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_target_daily__x",
+    "name": "胡丽娟",
+    "type": "metric",
+    "definition": "Metric '胡丽娟' () stored as rows of DWS_ORG_TARGET_DAILY with emp_name = '胡丽娟'; the number is in sales_plan_quantity.",
+    "scope": "Rows of DWS_ORG_TARGET_DAILY where emp_name = '胡丽娟'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_target_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_target_daily__x",
+    "name": "董丽娟",
+    "type": "metric",
+    "definition": "Metric '董丽娟' () stored as rows of DWS_ORG_TARGET_DAILY with emp_name = '董丽娟'; the number is in sales_plan_quantity.",
+    "scope": "Rows of DWS_ORG_TARGET_DAILY where emp_name = '董丽娟'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_target_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_target_daily__x",
+    "name": "袁浩然",
+    "type": "metric",
+    "definition": "Metric '袁浩然' () stored as rows of DWS_ORG_TARGET_DAILY with emp_name = '袁浩然'; the number is in sales_plan_quantity.",
+    "scope": "Rows of DWS_ORG_TARGET_DAILY where emp_name = '袁浩然'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_target_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_target_daily__x",
+    "name": "谢嘉豪",
+    "type": "metric",
+    "definition": "Metric '谢嘉豪' () stored as rows of DWS_ORG_TARGET_DAILY with emp_name = '谢嘉豪'; the number is in sales_plan_quantity.",
+    "scope": "Rows of DWS_ORG_TARGET_DAILY where emp_name = '谢嘉豪'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_target_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_target_daily__x",
+    "name": "谢敏",
+    "type": "metric",
+    "definition": "Metric '谢敏' () stored as rows of DWS_ORG_TARGET_DAILY with emp_name = '谢敏'; the number is in sales_plan_quantity.",
+    "scope": "Rows of DWS_ORG_TARGET_DAILY where emp_name = '谢敏'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_target_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_target_daily__x",
+    "name": "赵霞",
+    "type": "metric",
+    "definition": "Metric '赵霞' () stored as rows of DWS_ORG_TARGET_DAILY with emp_name = '赵霞'; the number is in sales_plan_quantity.",
+    "scope": "Rows of DWS_ORG_TARGET_DAILY where emp_name = '赵霞'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_target_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_target_daily__x",
+    "name": "郑浩然",
+    "type": "metric",
+    "definition": "Metric '郑浩然' () stored as rows of DWS_ORG_TARGET_DAILY with emp_name = '郑浩然'; the number is in sales_plan_quantity.",
+    "scope": "Rows of DWS_ORG_TARGET_DAILY where emp_name = '郑浩然'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_target_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_target_daily__x",
+    "name": "陈敏",
+    "type": "metric",
+    "definition": "Metric '陈敏' () stored as rows of DWS_ORG_TARGET_DAILY with emp_name = '陈敏'; the number is in sales_plan_quantity.",
+    "scope": "Rows of DWS_ORG_TARGET_DAILY where emp_name = '陈敏'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_target_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_target_daily__x",
+    "name": "韩欣怡",
+    "type": "metric",
+    "definition": "Metric '韩欣怡' () stored as rows of DWS_ORG_TARGET_DAILY with emp_name = '韩欣怡'; the number is in sales_plan_quantity.",
+    "scope": "Rows of DWS_ORG_TARGET_DAILY where emp_name = '韩欣怡'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_target_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_target_daily__x",
+    "name": "马晓东",
+    "type": "metric",
+    "definition": "Metric '马晓东' () stored as rows of DWS_ORG_TARGET_DAILY with emp_name = '马晓东'; the number is in sales_plan_quantity.",
+    "scope": "Rows of DWS_ORG_TARGET_DAILY where emp_name = '马晓东'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_target_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_target_daily__x",
+    "name": "马浩然",
+    "type": "metric",
+    "definition": "Metric '马浩然' () stored as rows of DWS_ORG_TARGET_DAILY with emp_name = '马浩然'; the number is in sales_plan_quantity.",
+    "scope": "Rows of DWS_ORG_TARGET_DAILY where emp_name = '马浩然'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_target_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_target_daily__x",
+    "name": "高伟",
+    "type": "metric",
+    "definition": "Metric '高伟' () stored as rows of DWS_ORG_TARGET_DAILY with emp_name = '高伟'; the number is in sales_plan_quantity.",
+    "scope": "Rows of DWS_ORG_TARGET_DAILY where emp_name = '高伟'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_target_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_target_daily__x",
+    "name": "孙明",
+    "type": "metric",
+    "definition": "Metric '孙明' () stored as rows of DWS_ORG_TARGET_DAILY with emp_name = '孙明'; the number is in sales_plan_quantity.",
+    "scope": "Rows of DWS_ORG_TARGET_DAILY where emp_name = '孙明'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_target_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_org_target_daily__x",
+    "name": "袁平",
+    "type": "metric",
+    "definition": "Metric '袁平' () stored as rows of DWS_ORG_TARGET_DAILY with emp_name = '袁平'; the number is in sales_plan_quantity.",
+    "scope": "Rows of DWS_ORG_TARGET_DAILY where emp_name = '袁平'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_org_target_daily__x"
+    ]
+  },
+  {
+    "id": "term_agg_metric_monthly",
+    "name": "agg_metric_monthly",
+    "type": "entity",
+    "definition": "按员工与年月维度汇总销售、毛利、费用、回款、应收、商机、样品、订单与退货等多项指标的月度统计记录。 Counterexample: 与「组织业绩日汇总」不同：月度指标汇总按员工按月聚合且指标范围更广，业绩日汇总按日并按组织多维度聚合。 Maturity: Provisional",
+    "scope": "Records of table agg_metric_monthly; provenance: direct source agg_metric_monthly",
+    "aliases": [
+      "员工月度指标汇总"
+    ],
+    "evidence": [
+      "ev_schema_agg_metric_monthly"
+    ]
+  },
+  {
+    "id": "term_metric_agg_metric_monthly__x",
+    "name": "何涛",
+    "type": "metric",
+    "definition": "Metric '何涛' () stored as rows of agg_metric_monthly with emp_name = '何涛'; the number is in sales_quantity.",
+    "scope": "Rows of agg_metric_monthly where emp_name = '何涛'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_agg_metric_monthly__x"
+    ]
+  },
+  {
+    "id": "term_metric_agg_metric_monthly__x",
+    "name": "何芳",
+    "type": "metric",
+    "definition": "Metric '何芳' () stored as rows of agg_metric_monthly with emp_name = '何芳'; the number is in sales_quantity.",
+    "scope": "Rows of agg_metric_monthly where emp_name = '何芳'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_agg_metric_monthly__x"
+    ]
+  },
+  {
+    "id": "term_metric_agg_metric_monthly__x",
+    "name": "吴涛",
+    "type": "metric",
+    "definition": "Metric '吴涛' () stored as rows of agg_metric_monthly with emp_name = '吴涛'; the number is in sales_quantity.",
+    "scope": "Rows of agg_metric_monthly where emp_name = '吴涛'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_agg_metric_monthly__x"
+    ]
+  },
+  {
+    "id": "term_metric_agg_metric_monthly__x",
+    "name": "吴艳",
+    "type": "metric",
+    "definition": "Metric '吴艳' () stored as rows of agg_metric_monthly with emp_name = '吴艳'; the number is in sales_quantity.",
+    "scope": "Rows of agg_metric_monthly where emp_name = '吴艳'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_agg_metric_monthly__x"
+    ]
+  },
+  {
+    "id": "term_metric_agg_metric_monthly__x",
+    "name": "唐刚",
+    "type": "metric",
+    "definition": "Metric '唐刚' () stored as rows of agg_metric_monthly with emp_name = '唐刚'; the number is in sales_quantity.",
+    "scope": "Rows of agg_metric_monthly where emp_name = '唐刚'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_agg_metric_monthly__x"
+    ]
+  },
+  {
+    "id": "term_metric_agg_metric_monthly__x",
+    "name": "张桂英",
+    "type": "metric",
+    "definition": "Metric '张桂英' () stored as rows of agg_metric_monthly with emp_name = '张桂英'; the number is in sales_quantity.",
+    "scope": "Rows of agg_metric_monthly where emp_name = '张桂英'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_agg_metric_monthly__x"
+    ]
+  },
+  {
+    "id": "term_metric_agg_metric_monthly__x",
+    "name": "彭芳",
+    "type": "metric",
+    "definition": "Metric '彭芳' () stored as rows of agg_metric_monthly with emp_name = '彭芳'; the number is in sales_quantity.",
+    "scope": "Rows of agg_metric_monthly where emp_name = '彭芳'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_agg_metric_monthly__x"
+    ]
+  },
+  {
+    "id": "term_metric_agg_metric_monthly__x",
+    "name": "徐艳",
+    "type": "metric",
+    "definition": "Metric '徐艳' () stored as rows of agg_metric_monthly with emp_name = '徐艳'; the number is in sales_quantity.",
+    "scope": "Rows of agg_metric_monthly where emp_name = '徐艳'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_agg_metric_monthly__x"
+    ]
+  },
+  {
+    "id": "term_metric_agg_metric_monthly__x",
+    "name": "曾欣怡",
+    "type": "metric",
+    "definition": "Metric '曾欣怡' () stored as rows of agg_metric_monthly with emp_name = '曾欣怡'; the number is in sales_quantity.",
+    "scope": "Rows of agg_metric_monthly where emp_name = '曾欣怡'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_agg_metric_monthly__x"
+    ]
+  },
+  {
+    "id": "term_metric_agg_metric_monthly__x",
+    "name": "潘军",
+    "type": "metric",
+    "definition": "Metric '潘军' () stored as rows of agg_metric_monthly with emp_name = '潘军'; the number is in sales_quantity.",
+    "scope": "Rows of agg_metric_monthly where emp_name = '潘军'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_agg_metric_monthly__x"
+    ]
+  },
+  {
+    "id": "term_metric_agg_metric_monthly__x",
+    "name": "肖子涵",
+    "type": "metric",
+    "definition": "Metric '肖子涵' () stored as rows of agg_metric_monthly with emp_name = '肖子涵'; the number is in sales_quantity.",
+    "scope": "Rows of agg_metric_monthly where emp_name = '肖子涵'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_agg_metric_monthly__x"
+    ]
+  },
+  {
+    "id": "term_metric_agg_metric_monthly__x",
+    "name": "胡丽娟",
+    "type": "metric",
+    "definition": "Metric '胡丽娟' () stored as rows of agg_metric_monthly with emp_name = '胡丽娟'; the number is in sales_quantity.",
+    "scope": "Rows of agg_metric_monthly where emp_name = '胡丽娟'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_agg_metric_monthly__x"
+    ]
+  },
+  {
+    "id": "term_metric_agg_metric_monthly__x",
+    "name": "董丽娟",
+    "type": "metric",
+    "definition": "Metric '董丽娟' () stored as rows of agg_metric_monthly with emp_name = '董丽娟'; the number is in sales_quantity.",
+    "scope": "Rows of agg_metric_monthly where emp_name = '董丽娟'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_agg_metric_monthly__x"
+    ]
+  },
+  {
+    "id": "term_metric_agg_metric_monthly__x",
+    "name": "袁浩然",
+    "type": "metric",
+    "definition": "Metric '袁浩然' () stored as rows of agg_metric_monthly with emp_name = '袁浩然'; the number is in sales_quantity.",
+    "scope": "Rows of agg_metric_monthly where emp_name = '袁浩然'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_agg_metric_monthly__x"
+    ]
+  },
+  {
+    "id": "term_metric_agg_metric_monthly__x",
+    "name": "谢嘉豪",
+    "type": "metric",
+    "definition": "Metric '谢嘉豪' () stored as rows of agg_metric_monthly with emp_name = '谢嘉豪'; the number is in sales_quantity.",
+    "scope": "Rows of agg_metric_monthly where emp_name = '谢嘉豪'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_agg_metric_monthly__x"
+    ]
+  },
+  {
+    "id": "term_metric_agg_metric_monthly__x",
+    "name": "谢敏",
+    "type": "metric",
+    "definition": "Metric '谢敏' () stored as rows of agg_metric_monthly with emp_name = '谢敏'; the number is in sales_quantity.",
+    "scope": "Rows of agg_metric_monthly where emp_name = '谢敏'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_agg_metric_monthly__x"
+    ]
+  },
+  {
+    "id": "term_metric_agg_metric_monthly__x",
+    "name": "赵霞",
+    "type": "metric",
+    "definition": "Metric '赵霞' () stored as rows of agg_metric_monthly with emp_name = '赵霞'; the number is in sales_quantity.",
+    "scope": "Rows of agg_metric_monthly where emp_name = '赵霞'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_agg_metric_monthly__x"
+    ]
+  },
+  {
+    "id": "term_metric_agg_metric_monthly__x",
+    "name": "郑浩然",
+    "type": "metric",
+    "definition": "Metric '郑浩然' () stored as rows of agg_metric_monthly with emp_name = '郑浩然'; the number is in sales_quantity.",
+    "scope": "Rows of agg_metric_monthly where emp_name = '郑浩然'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_agg_metric_monthly__x"
+    ]
+  },
+  {
+    "id": "term_metric_agg_metric_monthly__x",
+    "name": "陈敏",
+    "type": "metric",
+    "definition": "Metric '陈敏' () stored as rows of agg_metric_monthly with emp_name = '陈敏'; the number is in sales_quantity.",
+    "scope": "Rows of agg_metric_monthly where emp_name = '陈敏'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_agg_metric_monthly__x"
+    ]
+  },
+  {
+    "id": "term_metric_agg_metric_monthly__x",
+    "name": "韩欣怡",
+    "type": "metric",
+    "definition": "Metric '韩欣怡' () stored as rows of agg_metric_monthly with emp_name = '韩欣怡'; the number is in sales_quantity.",
+    "scope": "Rows of agg_metric_monthly where emp_name = '韩欣怡'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_agg_metric_monthly__x"
+    ]
+  },
+  {
+    "id": "term_metric_agg_metric_monthly__x",
+    "name": "马晓东",
+    "type": "metric",
+    "definition": "Metric '马晓东' () stored as rows of agg_metric_monthly with emp_name = '马晓东'; the number is in sales_quantity.",
+    "scope": "Rows of agg_metric_monthly where emp_name = '马晓东'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_agg_metric_monthly__x"
+    ]
+  },
+  {
+    "id": "term_metric_agg_metric_monthly__x",
+    "name": "马浩然",
+    "type": "metric",
+    "definition": "Metric '马浩然' () stored as rows of agg_metric_monthly with emp_name = '马浩然'; the number is in sales_quantity.",
+    "scope": "Rows of agg_metric_monthly where emp_name = '马浩然'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_agg_metric_monthly__x"
+    ]
+  },
+  {
+    "id": "term_metric_agg_metric_monthly__x",
+    "name": "高伟",
+    "type": "metric",
+    "definition": "Metric '高伟' () stored as rows of agg_metric_monthly with emp_name = '高伟'; the number is in sales_quantity.",
+    "scope": "Rows of agg_metric_monthly where emp_name = '高伟'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_agg_metric_monthly__x"
+    ]
+  },
+  {
+    "id": "term_metric_agg_metric_monthly__x",
+    "name": "孙明",
+    "type": "metric",
+    "definition": "Metric '孙明' () stored as rows of agg_metric_monthly with emp_name = '孙明'; the number is in sales_quantity.",
+    "scope": "Rows of agg_metric_monthly where emp_name = '孙明'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_agg_metric_monthly__x"
+    ]
+  },
+  {
+    "id": "term_metric_agg_metric_monthly__x",
+    "name": "袁平",
+    "type": "metric",
+    "definition": "Metric '袁平' () stored as rows of agg_metric_monthly with emp_name = '袁平'; the number is in sales_quantity.",
+    "scope": "Rows of agg_metric_monthly where emp_name = '袁平'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_agg_metric_monthly__x"
+    ]
+  },
+  {
+    "id": "term_fact_safety_objective",
+    "name": "fact_safety_objective",
+    "type": "entity",
+    "definition": "安全目标是一类信息记录，属于安全管理工作计划的组成部分，记载某项安全工作的目标描述、目标值、计量单位、完成期限与责任部门。 Counterexample: 易与安全审核(fact_safety_audit)混淆：后者是对安全状况的检查评价记录，前者是预先设定的待达成指标。 Maturity: Provisional",
+    "scope": "Records of table fact_safety_objective; provenance: direct source fact_safety_objective",
+    "aliases": [
+      "安全目标"
+    ],
+    "evidence": [
+      "ev_schema_fact_safety_objective"
+    ]
+  },
+  {
+    "id": "term_fact_safety_plan",
+    "name": "fact_safety_plan",
+    "type": "entity",
+    "definition": "安全工作计划是一类信息记录，属于企业安全管理工作安排，记载计划编号、年度、计划类型、状态、下发日期与下发人。 Counterexample: 易与安全目标(fact_safety_objective)混淆：计划是整体工作安排，目标是计划下可量化的具体指标条目。 Maturity: Provisional",
+    "scope": "Records of table fact_safety_plan; provenance: direct source fact_safety_plan",
+    "aliases": [
+      "安全工作计划"
+    ],
+    "evidence": [
+      "ev_schema_fact_safety_plan"
+    ]
+  },
+  {
+    "id": "term_fact_safety_training",
+    "name": "fact_safety_training",
+    "type": "concept",
+    "definition": "安全培训是一类已发生的业务事件，属于安全教育活动，记载培训编号、类型、讲师、日期、时长、参训人数、主题与平均成绩。 Counterexample: 易与安全审核(fact_safety_audit)混淆：培训以知识传授为目的并记录参训与成绩，审核以合规检查为目的并记录评分。 Maturity: Provisional",
+    "scope": "Records of table fact_safety_training; provenance: direct source fact_safety_training",
+    "aliases": [
+      "安全培训"
+    ],
+    "evidence": [
+      "ev_schema_fact_safety_training"
+    ]
+  },
+  {
+    "id": "term_fact_sales_order",
+    "name": "fact_sales_order",
+    "type": "entity",
+    "definition": "销售订单是一类信息记录，属于客户购买产品的交易凭据，记载下单日期、客户、业务员、产品、数量、单价、金额、各类成本与毛利及订单状态。 Counterexample: 易与报价单(fact_quotation)混淆：报价单是交易前的价格提议，销售订单是客户确认后的成交凭据。 Maturity: Provisional",
+    "scope": "Records of table fact_sales_order; provenance: direct source fact_sales_order",
+    "aliases": [
+      "销售订单"
+    ],
+    "evidence": [
+      "ev_schema_fact_sales_order"
+    ]
+  },
+  {
+    "id": "term_fact_sales_plan",
+    "name": "fact_sales_plan",
+    "type": "entity",
+    "definition": "销售计划是一类信息记录，属于销售人员按月度预先安排的销售数量安排，记载业务员、年度、月份与计划数量。 Counterexample: 易与销售目标(fact_sales_target)混淆：计划侧重数量安排，目标还包含利润、回款与销售额等多维指标。 Maturity: Provisional",
+    "scope": "Records of table fact_sales_plan; provenance: direct source fact_sales_plan",
+    "aliases": [
+      "销售计划"
+    ],
+    "evidence": [
+      "ev_schema_fact_sales_plan"
+    ]
+  },
+  {
+    "id": "term_fact_sales_target",
+    "name": "fact_sales_target",
+    "type": "entity",
+    "definition": "销售目标是一类信息记录，属于对销售人员按月度设定的考核指标，记载销售数量、利润、回款与销售额等目标值。 Counterexample: 易与销售计划(fact_sales_plan)混淆：目标是对结果的考核要求，计划是对过程的行动安排。 Maturity: Provisional",
+    "scope": "Records of table fact_sales_target; provenance: direct source fact_sales_target",
+    "aliases": [
+      "销售目标"
+    ],
+    "evidence": [
+      "ev_schema_fact_sales_target"
+    ]
+  },
+  {
+    "id": "term_fact_sample",
+    "name": "fact_sample",
+    "type": "entity",
+    "definition": "样品记录是一类已发生的业务事件，属于向客户提供样品并获取反馈的活动，记载送样日期、客户、业务员、数量、反馈日期、反馈结果与是否成功。 Counterexample: 易与销售机会(fact_opportunity)混淆：样品记录聚焦实物送样与反馈，销售机会聚焦潜在成交项目的推进状态。 Maturity: Provisional",
+    "scope": "Records of table fact_sample; provenance: direct source fact_sample",
+    "aliases": [
+      "样品记录"
+    ],
+    "evidence": [
+      "ev_schema_fact_sample"
+    ]
+  },
+  {
+    "id": "term_fact_supplier_eval",
+    "name": "fact_supplier_eval",
+    "type": "concept",
+    "definition": "供应商评价是一类已发生的业务事件，属于对供应商在特定周期内表现的考核活动，记载评价日期、评价周期、交付、质量、服务得分、总分与等级。 Counterexample: 易与质量检验(fact_quality_inspection)混淆：评价针对供应商整体表现按周期打分，检验针对具体批次货物判定合格与否。 Maturity: Provisional",
+    "scope": "Records of table fact_supplier_eval; provenance: direct source fact_supplier_eval",
+    "aliases": [
+      "供应商评价"
+    ],
+    "evidence": [
+      "ev_schema_fact_supplier_eval"
+    ]
+  },
+  {
+    "id": "term_fact_work_permit",
+    "name": "fact_work_permit",
+    "type": "entity",
+    "definition": "作业许可是⼀类信息记录，属于对特定危险作业的授权凭据，记载许可编号、类型、申请人、有效期、作业地点、作业描述、涉及危险源、所需防护用品与状态。 Counterexample: 易与风险评估(fact_risk_assessment)混淆：作业许可是对具体作业的授权，风险评估是对危险源的分析定级。 Maturity: Provisional",
+    "scope": "Records of table fact_work_permit; provenance: direct source fact_work_permit",
+    "aliases": [
+      "作业许可"
+    ],
+    "evidence": [
+      "ev_schema_fact_work_permit"
+    ]
+  },
+  {
+    "id": "term_dws_finance_daily",
+    "name": "DWS_FINANCE_DAILY",
+    "type": "entity",
+    "definition": "财务日汇总是一类信息记录，属于按成本中心与日期汇总的财务指标数据，记载预算、实际发生额、费用、材料、人工、制造费用、产品成本与折旧金额。 Counterexample: 易与组织费用日汇总(DWS_ORG_EXPENSE_DAILY)混淆：前者按成本中心汇总财务口径，后者按组织维度汇总费用口径。 Maturity: Provisional",
+    "scope": "Records of table DWS_FINANCE_DAILY; provenance: direct source DWS_FINANCE_DAILY",
+    "aliases": [
+      "财务日汇总"
+    ],
+    "evidence": [
+      "ev_schema_dws_finance_daily"
+    ]
+  },
+  {
+    "id": "term_dws_in_sales_daily",
+    "name": "DWS_IN_SALES_DAILY",
+    "type": "entity",
+    "definition": "销售订单日汇总是一类信息记录，属于按业务员与日期汇总的订单数量数据，记载订单数与未交付订单数。 Counterexample: 易与销售计划(fact_sales_plan)混淆：前者是对已发生订单的统计汇总，后者是对未来销售的事先安排。 Maturity: Provisional",
+    "scope": "Records of table DWS_IN_SALES_DAILY; provenance: direct source DWS_IN_SALES_DAILY",
+    "aliases": [
+      "销售订单日汇总"
+    ],
+    "evidence": [
+      "ev_schema_dws_in_sales_daily"
+    ]
+  },
+  {
+    "id": "term_dws_kpi_daily",
+    "name": "DWS_KPI_DAILY",
+    "type": "entity",
+    "definition": "KPI日汇总是一类信息记录，属于按员工与部门、日期汇总的考核指标数据，记载部门级、区域级、个人级的KPI与KPT计数。 Counterexample: 易与组织业绩日汇总(DWS_ORG_PERFORMANCE_DAILY)混淆：前者统计指标条目数量，后者统计业绩达成数值。 Maturity: Provisional",
+    "scope": "Records of table DWS_KPI_DAILY; provenance: direct source DWS_KPI_DAILY",
+    "aliases": [
+      "KPI日汇总"
+    ],
+    "evidence": [
+      "ev_schema_dws_kpi_daily"
+    ]
+  },
+  {
+    "id": "term_dws_market_daily",
+    "name": "DWS_MARKET_DAILY",
+    "type": "entity",
+    "definition": "市场日汇总是一类信息记录，属于按客户与行业、日期汇总的市场指标数据，记载市场容量、市场份额、各类客户数量与指导价偏差。 Counterexample: 易与销售订单日汇总(DWS_IN_SALES_DAILY)混淆：前者刻画市场与客户结构，后者刻画订单执行数量。 Maturity: Provisional",
+    "scope": "Records of table DWS_MARKET_DAILY; provenance: direct source DWS_MARKET_DAILY",
+    "aliases": [
+      "市场日汇总"
+    ],
+    "evidence": [
+      "ev_schema_dws_market_daily"
+    ]
+  },
+  {
+    "id": "term_dws_pre_sales_daily",
+    "name": "DWS_PRE_SALES_DAILY",
+    "type": "entity",
+    "definition": "售前日汇总是一类信息记录，属于按业务员与日期汇总的售前活动数据，记载机会预估数量、机会数、流失与停滞机会数、重要机会数、机会周期与样品数量。 Counterexample: 易与销售订单日汇总(DWS_IN_SALES_DAILY)混淆：前者统计成交前的机会与送样，后者统计已成交订单。 Maturity: Provisional",
+    "scope": "Records of table DWS_PRE_SALES_DAILY; provenance: direct source DWS_PRE_SALES_DAILY",
+    "aliases": [
+      "售前日汇总"
+    ],
+    "evidence": [
+      "ev_schema_dws_pre_sales_daily"
+    ]
+  },
+  {
+    "id": "term_metric_dws_pre_sales_daily__x",
+    "name": "何涛",
+    "type": "metric",
+    "definition": "Metric '何涛' () stored as rows of DWS_PRE_SALES_DAILY with emp_name = '何涛'; the number is in opp_estimated_quantity.",
+    "scope": "Rows of DWS_PRE_SALES_DAILY where emp_name = '何涛'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_pre_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_pre_sales_daily__x",
+    "name": "何芳",
+    "type": "metric",
+    "definition": "Metric '何芳' () stored as rows of DWS_PRE_SALES_DAILY with emp_name = '何芳'; the number is in opp_estimated_quantity.",
+    "scope": "Rows of DWS_PRE_SALES_DAILY where emp_name = '何芳'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_pre_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_pre_sales_daily__x",
+    "name": "吴涛",
+    "type": "metric",
+    "definition": "Metric '吴涛' () stored as rows of DWS_PRE_SALES_DAILY with emp_name = '吴涛'; the number is in opp_estimated_quantity.",
+    "scope": "Rows of DWS_PRE_SALES_DAILY where emp_name = '吴涛'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_pre_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_pre_sales_daily__x",
+    "name": "吴艳",
+    "type": "metric",
+    "definition": "Metric '吴艳' () stored as rows of DWS_PRE_SALES_DAILY with emp_name = '吴艳'; the number is in opp_estimated_quantity.",
+    "scope": "Rows of DWS_PRE_SALES_DAILY where emp_name = '吴艳'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_pre_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_pre_sales_daily__x",
+    "name": "唐刚",
+    "type": "metric",
+    "definition": "Metric '唐刚' () stored as rows of DWS_PRE_SALES_DAILY with emp_name = '唐刚'; the number is in opp_estimated_quantity.",
+    "scope": "Rows of DWS_PRE_SALES_DAILY where emp_name = '唐刚'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_pre_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_pre_sales_daily__x",
+    "name": "张桂英",
+    "type": "metric",
+    "definition": "Metric '张桂英' () stored as rows of DWS_PRE_SALES_DAILY with emp_name = '张桂英'; the number is in opp_estimated_quantity.",
+    "scope": "Rows of DWS_PRE_SALES_DAILY where emp_name = '张桂英'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_pre_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_pre_sales_daily__x",
+    "name": "彭芳",
+    "type": "metric",
+    "definition": "Metric '彭芳' () stored as rows of DWS_PRE_SALES_DAILY with emp_name = '彭芳'; the number is in opp_estimated_quantity.",
+    "scope": "Rows of DWS_PRE_SALES_DAILY where emp_name = '彭芳'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_pre_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_pre_sales_daily__x",
+    "name": "徐艳",
+    "type": "metric",
+    "definition": "Metric '徐艳' () stored as rows of DWS_PRE_SALES_DAILY with emp_name = '徐艳'; the number is in opp_estimated_quantity.",
+    "scope": "Rows of DWS_PRE_SALES_DAILY where emp_name = '徐艳'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_pre_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_pre_sales_daily__x",
+    "name": "曾欣怡",
+    "type": "metric",
+    "definition": "Metric '曾欣怡' () stored as rows of DWS_PRE_SALES_DAILY with emp_name = '曾欣怡'; the number is in opp_estimated_quantity.",
+    "scope": "Rows of DWS_PRE_SALES_DAILY where emp_name = '曾欣怡'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_pre_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_pre_sales_daily__x",
+    "name": "潘军",
+    "type": "metric",
+    "definition": "Metric '潘军' () stored as rows of DWS_PRE_SALES_DAILY with emp_name = '潘军'; the number is in opp_estimated_quantity.",
+    "scope": "Rows of DWS_PRE_SALES_DAILY where emp_name = '潘军'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_pre_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_pre_sales_daily__x",
+    "name": "肖子涵",
+    "type": "metric",
+    "definition": "Metric '肖子涵' () stored as rows of DWS_PRE_SALES_DAILY with emp_name = '肖子涵'; the number is in opp_estimated_quantity.",
+    "scope": "Rows of DWS_PRE_SALES_DAILY where emp_name = '肖子涵'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_pre_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_pre_sales_daily__x",
+    "name": "胡丽娟",
+    "type": "metric",
+    "definition": "Metric '胡丽娟' () stored as rows of DWS_PRE_SALES_DAILY with emp_name = '胡丽娟'; the number is in opp_estimated_quantity.",
+    "scope": "Rows of DWS_PRE_SALES_DAILY where emp_name = '胡丽娟'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_pre_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_pre_sales_daily__x",
+    "name": "董丽娟",
+    "type": "metric",
+    "definition": "Metric '董丽娟' () stored as rows of DWS_PRE_SALES_DAILY with emp_name = '董丽娟'; the number is in opp_estimated_quantity.",
+    "scope": "Rows of DWS_PRE_SALES_DAILY where emp_name = '董丽娟'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_pre_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_pre_sales_daily__x",
+    "name": "袁浩然",
+    "type": "metric",
+    "definition": "Metric '袁浩然' () stored as rows of DWS_PRE_SALES_DAILY with emp_name = '袁浩然'; the number is in opp_estimated_quantity.",
+    "scope": "Rows of DWS_PRE_SALES_DAILY where emp_name = '袁浩然'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_pre_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_pre_sales_daily__x",
+    "name": "谢嘉豪",
+    "type": "metric",
+    "definition": "Metric '谢嘉豪' () stored as rows of DWS_PRE_SALES_DAILY with emp_name = '谢嘉豪'; the number is in opp_estimated_quantity.",
+    "scope": "Rows of DWS_PRE_SALES_DAILY where emp_name = '谢嘉豪'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_pre_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_pre_sales_daily__x",
+    "name": "谢敏",
+    "type": "metric",
+    "definition": "Metric '谢敏' () stored as rows of DWS_PRE_SALES_DAILY with emp_name = '谢敏'; the number is in opp_estimated_quantity.",
+    "scope": "Rows of DWS_PRE_SALES_DAILY where emp_name = '谢敏'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_pre_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_pre_sales_daily__x",
+    "name": "赵霞",
+    "type": "metric",
+    "definition": "Metric '赵霞' () stored as rows of DWS_PRE_SALES_DAILY with emp_name = '赵霞'; the number is in opp_estimated_quantity.",
+    "scope": "Rows of DWS_PRE_SALES_DAILY where emp_name = '赵霞'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_pre_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_pre_sales_daily__x",
+    "name": "郑浩然",
+    "type": "metric",
+    "definition": "Metric '郑浩然' () stored as rows of DWS_PRE_SALES_DAILY with emp_name = '郑浩然'; the number is in opp_estimated_quantity.",
+    "scope": "Rows of DWS_PRE_SALES_DAILY where emp_name = '郑浩然'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_pre_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_pre_sales_daily__x",
+    "name": "陈敏",
+    "type": "metric",
+    "definition": "Metric '陈敏' () stored as rows of DWS_PRE_SALES_DAILY with emp_name = '陈敏'; the number is in opp_estimated_quantity.",
+    "scope": "Rows of DWS_PRE_SALES_DAILY where emp_name = '陈敏'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_pre_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_pre_sales_daily__x",
+    "name": "韩欣怡",
+    "type": "metric",
+    "definition": "Metric '韩欣怡' () stored as rows of DWS_PRE_SALES_DAILY with emp_name = '韩欣怡'; the number is in opp_estimated_quantity.",
+    "scope": "Rows of DWS_PRE_SALES_DAILY where emp_name = '韩欣怡'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_pre_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_pre_sales_daily__x",
+    "name": "马晓东",
+    "type": "metric",
+    "definition": "Metric '马晓东' () stored as rows of DWS_PRE_SALES_DAILY with emp_name = '马晓东'; the number is in opp_estimated_quantity.",
+    "scope": "Rows of DWS_PRE_SALES_DAILY where emp_name = '马晓东'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_pre_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_pre_sales_daily__x",
+    "name": "马浩然",
+    "type": "metric",
+    "definition": "Metric '马浩然' () stored as rows of DWS_PRE_SALES_DAILY with emp_name = '马浩然'; the number is in opp_estimated_quantity.",
+    "scope": "Rows of DWS_PRE_SALES_DAILY where emp_name = '马浩然'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_pre_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_pre_sales_daily__x",
+    "name": "高伟",
+    "type": "metric",
+    "definition": "Metric '高伟' () stored as rows of DWS_PRE_SALES_DAILY with emp_name = '高伟'; the number is in opp_estimated_quantity.",
+    "scope": "Rows of DWS_PRE_SALES_DAILY where emp_name = '高伟'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_pre_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_pre_sales_daily__x",
+    "name": "孙明",
+    "type": "metric",
+    "definition": "Metric '孙明' () stored as rows of DWS_PRE_SALES_DAILY with emp_name = '孙明'; the number is in opp_estimated_quantity.",
+    "scope": "Rows of DWS_PRE_SALES_DAILY where emp_name = '孙明'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_pre_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_metric_dws_pre_sales_daily__x",
+    "name": "袁平",
+    "type": "metric",
+    "definition": "Metric '袁平' () stored as rows of DWS_PRE_SALES_DAILY with emp_name = '袁平'; the number is in opp_estimated_quantity.",
+    "scope": "Rows of DWS_PRE_SALES_DAILY where emp_name = '袁平'",
+    "aliases": [],
+    "evidence": [
+      "ev_catalog_dws_pre_sales_daily__x"
+    ]
+  },
+  {
+    "id": "term_dws_procurement_daily",
+    "name": "DWS_PROCUREMENT_DAILY",
+    "type": "entity",
+    "definition": "采购日汇总是一类信息记录，属于按供应商与日期汇总的采购执行数据，记载订单数、订单金额、收货数、收货量、检验合格率、应付与付款金额。 Counterexample: 易与供应商评价(fact_supplier_eval)混淆：前者是采购业务量的统计汇总，后者是对供应商表现的评分考核。 Maturity: Provisional",
+    "scope": "Records of table DWS_PROCUREMENT_DAILY; provenance: direct source DWS_PROCUREMENT_DAILY",
+    "aliases": [
+      "采购日汇总"
+    ],
+    "evidence": [
+      "ev_schema_dws_procurement_daily"
+    ]
+  },
+  {
+    "id": "term_dws_safety_daily",
+    "name": "DWS_SAFETY_DAILY",
+    "type": "entity",
+    "definition": "安全日汇总是一类信息记录，属于按车间与日期汇总的安全环保数据，记载事故数、未遂数、风险评估数、高风险数、作业许可数、培训数、审核得分与环境合规率。 Counterexample: 易与风险日汇总(DWS_RISK_DAILY)混淆：前者按车间汇总安全环保综合指标，后者按人员与产品汇总风险指标。 Maturity: Provisional",
+    "scope": "Records of table DWS_SAFETY_DAILY; provenance: direct source DWS_SAFETY_DAILY",
+    "aliases": [
+      "安全日汇总"
+    ],
+    "evidence": [
+      "ev_schema_dws_safety_daily"
+    ]
+  },
+  {
+    "id": "concept_purchaseorderamount",
+    "name": "PurchaseOrderAmount",
+    "type": "concept",
+    "definition": "采购订单的金额合计",
+    "scope": "fact_purchase_order",
+    "aliases": [
+      "采购订单总金额",
+      "采购金额",
+      "采购订单金额",
+      "purchase order amount"
+    ],
+    "evidence": [
+      "ev_concept_purchaseorderamount"
+    ]
+  },
+  {
+    "id": "concept_paymentterms",
+    "name": "PaymentTerms",
+    "type": "concept",
+    "definition": "采购订单约定的付款条件",
+    "scope": "fact_purchase_order where payment_terms = '月结45天'",
+    "aliases": [
+      "付款条件",
+      "账期",
+      "付款条款",
+      "payment terms"
+    ],
+    "evidence": [
+      "ev_concept_paymentterms"
+    ]
+  },
+  {
+    "id": "concept_safetyplancount",
+    "name": "SafetyPlanCount",
+    "type": "concept",
+    "definition": "安全计划的条数",
+    "scope": "fact_safety_plan",
+    "aliases": [
+      "安全计划数量",
+      "安全计划条数",
+      "安全计划记录数",
+      "safety plan count"
+    ],
+    "evidence": [
+      "ev_concept_safetyplancount"
+    ]
+  },
+  {
+    "id": "concept_safetyplanstatus",
+    "name": "SafetyPlanStatus",
+    "type": "concept",
+    "definition": "安全计划当前的状态",
+    "scope": "fact_safety_plan where status = 'active'",
+    "aliases": [
+      "安全计划状态",
+      "计划状态",
+      "safety plan status"
+    ],
+    "evidence": [
+      "ev_concept_safetyplanstatus"
+    ]
+  },
+  {
+    "id": "concept_incidentcount",
+    "name": "IncidentCount",
+    "type": "concept",
+    "definition": "事故记录的起数",
+    "scope": "fact_incident",
+    "aliases": [
+      "事故起数",
+      "事故数量",
+      "事故记录数",
+      "事故次数",
+      "incident count"
+    ],
+    "evidence": [
+      "ev_concept_incidentcount"
+    ]
+  },
+  {
+    "id": "concept_incidentseverity",
+    "name": "IncidentSeverity",
+    "type": "concept",
+    "definition": "事故的严重度等级",
+    "scope": "fact_incident where severity = 'near_miss'",
+    "aliases": [
+      "事故严重度",
+      "严重程度",
+      "事故等级",
+      "incident severity"
+    ],
+    "evidence": [
+      "ev_concept_incidentseverity"
+    ]
+  },
+  {
+    "id": "concept_paymentcount",
+    "name": "PaymentCount",
+    "type": "concept",
+    "definition": "付款单的笔数",
+    "scope": "fact_payment",
+    "aliases": [
+      "付款笔数",
+      "付款数量",
+      "付款记录数",
+      "付款单数",
+      "payment count"
+    ],
+    "evidence": [
+      "ev_concept_paymentcount"
+    ]
+  },
+  {
+    "id": "concept_riskassessmentcount",
+    "name": "RiskAssessmentCount",
+    "type": "concept",
+    "definition": "风险评估记录的次数",
+    "scope": "fact_risk_assessment",
+    "aliases": [
+      "风险评估次数",
+      "风险评估数量",
+      "风险评估记录数",
+      "risk assessment count"
+    ],
+    "evidence": [
+      "ev_concept_riskassessmentcount"
+    ]
+  },
+  {
+    "id": "concept_risklevel",
+    "name": "RiskLevel",
+    "type": "concept",
+    "definition": "风险评估中确定的风险等级",
+    "scope": "fact_risk_assessment where risk_level = 'L3'",
+    "aliases": [
+      "风险等级",
+      "风险级别",
+      "风险评级",
+      "risk level"
+    ],
+    "evidence": [
+      "ev_concept_risklevel"
+    ]
+  },
+  {
+    "id": "concept_estimatedamount",
+    "name": "EstimatedAmount",
+    "type": "concept",
+    "definition": "业务机会或订单的预估金额",
+    "scope": "fact_opportunity",
+    "aliases": [
+      "预估金额",
+      "预计金额",
+      "预估金额合计",
+      "estimated amount"
+    ],
+    "evidence": [
+      "ev_concept_estimatedamount"
+    ]
+  },
+  {
+    "id": "concept_customername",
+    "name": "CustomerName",
+    "type": "concept",
+    "definition": "客户的名称",
+    "scope": "dim_customer",
+    "aliases": [
+      "客户名称",
+      "客户",
+      "客户名",
+      "customer name"
+    ],
+    "evidence": [
+      "ev_concept_customername"
+    ]
+  },
+  {
+    "id": "concept_quotationcount",
+    "name": "QuotationCount",
+    "type": "concept",
+    "definition": "报价单的张数",
+    "scope": "fact_quotation",
+    "aliases": [
+      "报价单数量",
+      "报价单张数",
+      "报价单条数",
+      "quotation count"
+    ],
+    "evidence": [
+      "ev_concept_quotationcount"
+    ]
+  },
+  {
+    "id": "concept_quotationstatus",
+    "name": "QuotationStatus",
+    "type": "concept",
+    "definition": "报价单当前的状态",
+    "scope": "fact_quotation",
+    "aliases": [
+      "报价单状态",
+      "报价状态",
+      "quotation status"
+    ],
+    "evidence": [
+      "ev_concept_quotationstatus"
+    ]
+  },
+  {
+    "id": "concept_fixedassetaccumulateddep",
+    "name": "FixedAssetAccumulatedDep",
+    "type": "concept",
+    "definition": "固定资产的累计折旧金额",
+    "scope": "dim_fixed_asset",
+    "aliases": [
+      "累计折旧金额",
+      "累计折旧",
+      "已提折旧",
+      "fixed asset accumulated dep"
+    ],
+    "evidence": [
+      "ev_concept_fixedassetaccumulateddep"
+    ]
+  },
+  {
+    "id": "concept_fixedassetname",
+    "name": "FixedAssetName",
+    "type": "concept",
+    "definition": "固定资产的名称",
+    "scope": "dim_fixed_asset",
+    "aliases": [
+      "固定资产名称",
+      "资产名称",
+      "固定资产",
+      "fixed asset name"
+    ],
+    "evidence": [
+      "ev_concept_fixedassetname"
+    ]
+  },
+  {
+    "id": "concept_employeename",
+    "name": "EmployeeName",
+    "type": "concept",
+    "definition": "员工的姓名",
+    "scope": "dim_employee",
+    "aliases": [
+      "员工姓名",
+      "员工",
+      "姓名",
+      "employee name"
+    ],
+    "evidence": [
+      "ev_concept_employeename"
+    ]
+  },
+  {
+    "id": "concept_productionlinename",
+    "name": "ProductionLineName",
+    "type": "concept",
+    "definition": "生产线的名称",
+    "scope": "dim_production_line",
+    "aliases": [
+      "产线名称",
+      "产线",
+      "生产线",
+      "production line name"
+    ],
+    "evidence": [
+      "ev_concept_productionlinename"
+    ]
+  },
+  {
+    "id": "concept_inspectionresult",
+    "name": "InspectionResult",
+    "type": "concept",
+    "definition": "收货单的检验结果",
+    "scope": "fact_goods_receipt where inspection_result = 'pass'",
+    "aliases": [
+      "检验结果",
+      "质检结果",
+      "收货检验结果",
+      "inspection result"
+    ],
+    "evidence": [
+      "ev_concept_inspectionresult"
+    ]
+  },
+  {
+    "id": "concept_safetyauditscore",
+    "name": "SafetyAuditScore",
+    "type": "concept",
+    "definition": "安全审计的评分",
+    "scope": "fact_safety_audit",
+    "aliases": [
+      "安全审计评分",
+      "审计评分",
+      "安全审计分数",
+      "safety audit score"
+    ],
+    "evidence": [
+      "ev_concept_safetyauditscore"
+    ]
+  },
+  {
+    "id": "concept_maintenancerecordcount",
+    "name": "MaintenanceRecordCount",
+    "type": "concept",
+    "definition": "设备维护记录的条数",
+    "scope": "fact_maintenance_record",
+    "aliases": [
+      "维护记录数量",
+      "维护记录条数",
+      "维护次数",
+      "maintenance record count"
+    ],
+    "evidence": [
+      "ev_concept_maintenancerecordcount"
+    ]
+  },
+  {
+    "id": "concept_downtimereasoncount",
+    "name": "DowntimeReasonCount",
+    "type": "concept",
+    "definition": "每种停机原因出现的次数",
+    "scope": "fact_downtime",
+    "aliases": [
+      "停机原因出现次数",
+      "停机原因数量",
+      "停机次数",
+      "downtime reason count"
+    ],
+    "evidence": [
+      "ev_concept_downtimereasoncount"
+    ]
+  },
+  {
+    "id": "concept_equipmentmanufacturer",
+    "name": "EquipmentManufacturer",
+    "type": "concept",
+    "definition": "设备的制造商名称",
+    "scope": "dim_equipment where manufacturer = '示例机械F'",
+    "aliases": [
+      "设备制造商",
+      "制造商",
+      "生产厂商",
+      "equipment manufacturer"
+    ],
+    "evidence": [
+      "ev_concept_equipmentmanufacturer"
+    ]
+  },
+  {
+    "id": "concept_contractcount",
+    "name": "ContractCount",
+    "type": "concept",
+    "definition": "合同的数量",
+    "scope": "fact_contract",
+    "aliases": [
+      "合同数量",
+      "合同个数",
+      "合同条数",
+      "contract count"
+    ],
+    "evidence": [
+      "ev_concept_contractcount"
+    ]
+  },
+  {
+    "id": "concept_maintenanceplancount",
+    "name": "MaintenancePlanCount",
+    "type": "concept",
+    "definition": "维护计划的条数",
+    "scope": "fact_maintenance_plan",
+    "aliases": [
+      "维护计划数量",
+      "维护计划条数",
+      "维护计划记录数",
+      "maintenance plan count"
+    ],
+    "evidence": [
+      "ev_concept_maintenanceplancount"
+    ]
+  },
+  {
+    "id": "concept_equipmentname",
+    "name": "EquipmentName",
+    "type": "concept",
+    "definition": "设备的名称",
+    "scope": "dim_equipment",
+    "aliases": [
+      "设备名称",
+      "设备",
+      "设备名",
+      "equipment name"
+    ],
+    "evidence": [
+      "ev_concept_equipmentname"
+    ]
+  },
+  {
+    "id": "concept_costcentername",
+    "name": "CostCenterName",
+    "type": "concept",
+    "definition": "成本中心的名称",
+    "scope": "dim_cost_center",
+    "aliases": [
+      "成本中心名称",
+      "成本中心",
+      "成本中心名",
+      "cost center name"
+    ],
+    "evidence": [
+      "ev_concept_costcentername"
+    ]
+  },
+  {
+    "id": "concept_salesordercount",
+    "name": "SalesOrderCount",
+    "type": "concept",
+    "definition": "销售订单的笔数",
+    "scope": "fact_sales_order",
+    "aliases": [
+      "销售订单笔数",
+      "销售订单数量",
+      "销售订单数",
+      "sales order count"
+    ],
+    "evidence": [
+      "ev_concept_salesordercount"
+    ]
+  },
+  {
+    "id": "concept_materialname",
+    "name": "MaterialName",
+    "type": "concept",
+    "definition": "物料的名称",
+    "scope": "dim_material",
+    "aliases": [
+      "物料名称",
+      "物料",
+      "物料名",
+      "material name"
+    ],
+    "evidence": [
+      "ev_concept_materialname"
+    ]
+  },
+  {
+    "id": "concept_hazardlocation",
+    "name": "HazardLocation",
+    "type": "concept",
+    "definition": "危险源所在的位置",
+    "scope": "dim_hazard where location = 'PP改性车间挤出区'",
+    "aliases": [
+      "危险源位置",
+      "危险源区域",
+      "位置",
+      "hazard location"
+    ],
+    "evidence": [
+      "ev_concept_hazardlocation"
+    ]
+  },
+  {
+    "id": "concept_incidenttype",
+    "name": "IncidentType",
+    "type": "concept",
+    "definition": "事故的类型",
+    "scope": "fact_incident",
+    "aliases": [
+      "事故类型",
+      "事故类别",
+      "incident type"
+    ],
+    "evidence": [
+      "ev_concept_incidenttype"
+    ]
+  },
+  {
+    "id": "concept_productionworkorder",
+    "name": "ProductionWorkOrder",
+    "type": "concept",
+    "definition": "生产工单记录，包含工单状态、下单日期、实际产量等",
+    "scope": "DWS_PRODUCTION_DAILY",
+    "aliases": [
+      "生产工单",
+      "工单",
+      "生产订单",
+      "production work order"
+    ],
+    "evidence": [
+      "ev_concept_productionworkorder"
+    ]
+  },
+  {
+    "id": "concept_suppliercompositescore",
+    "name": "SupplierCompositeScore",
+    "type": "concept",
+    "definition": "供应商的综合评分合计值",
+    "scope": "dim_supplier",
+    "aliases": [
+      "综合评分",
+      "供应商评分",
+      "综合得分",
+      "supplier composite score"
+    ],
+    "evidence": [
+      "ev_concept_suppliercompositescore"
+    ]
+  },
+  {
+    "id": "concept_businessopportunity",
+    "name": "BusinessOpportunity",
+    "type": "concept",
+    "definition": "商机记录，包含商机状态、预估金额等",
+    "scope": "dim_customer",
+    "aliases": [
+      "商机",
+      "销售机会",
+      "机会",
+      "business opportunity"
+    ],
+    "evidence": [
+      "ev_concept_businessopportunity"
+    ]
+  },
+  {
+    "id": "concept_iotdataquality",
+    "name": "IoTDataQuality",
+    "type": "concept",
+    "definition": "IoT传感器数据质量记录",
+    "scope": "dim_sensor",
+    "aliases": [
+      "IoT数据",
+      "物联网数据",
+      "数据质量",
+      "io t data quality"
+    ],
+    "evidence": [
+      "ev_concept_iotdataquality"
+    ]
+  },
+  {
+    "id": "concept_environmentalmonitoring",
+    "name": "EnvironmentalMonitoring",
+    "type": "concept",
+    "definition": "环境监测记录，包含监测类型、合规情况等",
+    "scope": "dim_hazard",
+    "aliases": [
+      "环境监测",
+      "环保监测",
+      "监测记录",
+      "environmental monitoring"
+    ],
+    "evidence": [
+      "ev_concept_environmentalmonitoring"
+    ]
+  },
+  {
+    "id": "concept_salespersonturnovertarget",
+    "name": "SalespersonTurnoverTarget",
+    "type": "concept",
+    "definition": "业务员的周转率目标合计值",
+    "scope": "dim_employee",
+    "aliases": [
+      "周转率目标",
+      "业务员目标",
+      "周转目标",
+      "salesperson turnover target"
+    ],
+    "evidence": [
+      "ev_concept_salespersonturnovertarget"
+    ]
+  },
+  {
+    "id": "concept_downtimereason",
+    "name": "DowntimeReason",
+    "type": "concept",
+    "definition": "设备停机原因记录，包含停机时长",
+    "scope": "dim_downtime_reason",
+    "aliases": [
+      "停机原因",
+      "停机理由",
+      "故障原因",
+      "downtime reason"
+    ],
+    "evidence": [
+      "ev_concept_downtimereason"
+    ]
+  },
+  {
+    "id": "concept_paymentcollection",
+    "name": "PaymentCollection",
+    "type": "concept",
+    "definition": "收款记录，包含收款方式、金额等",
+    "scope": "dim_customer_credit",
+    "aliases": [
+      "收款",
+      "回款",
+      "收款笔数",
+      "payment collection"
+    ],
+    "evidence": [
+      "ev_concept_paymentcollection"
+    ]
+  },
+  {
+    "id": "concept_grossprofit",
+    "name": "GrossProfit",
+    "type": "concept",
+    "definition": "实际毛利金额",
+    "scope": "DWS_PRODUCTION_DAILY",
+    "aliases": [
+      "毛利",
+      "实际毛利",
+      "毛利润",
+      "gross profit"
+    ],
+    "evidence": [
+      "ev_concept_grossprofit"
+    ]
+  },
+  {
+    "id": "concept_alarmseverity",
+    "name": "AlarmSeverity",
+    "type": "concept",
+    "definition": "告警的严重程度分类",
+    "scope": "DWS_EQUIPMENT_DAILY",
+    "aliases": [
+      "告警严重度",
+      "告警级别",
+      "严重度",
+      "alarm severity"
+    ],
+    "evidence": [
+      "ev_concept_alarmseverity"
+    ]
+  },
+  {
+    "id": "concept_suppliercity",
+    "name": "SupplierCity",
+    "type": "concept",
+    "definition": "供应商所在城市",
+    "scope": "dim_supplier",
+    "aliases": [
+      "供应商城市",
+      "城市",
+      "所在地",
+      "supplier city"
+    ],
+    "evidence": [
+      "ev_concept_suppliercity"
+    ]
+  },
+  {
+    "id": "concept_accountspayable",
+    "name": "AccountsPayable",
+    "type": "concept",
+    "definition": "应付账款记录，包含付款笔数",
+    "scope": "dim_supplier",
+    "aliases": [
+      "应付账款",
+      "应付",
+      "应付款",
+      "accounts payable"
+    ],
+    "evidence": [
+      "ev_concept_accountspayable"
+    ]
+  },
+  {
+    "id": "concept_quotation",
+    "name": "Quotation",
+    "type": "concept",
+    "definition": "报价单记录，包含状态、日期等",
+    "scope": "dim_pricing",
+    "aliases": [
+      "报价单",
+      "报价",
+      "报价记录"
+    ],
+    "evidence": [
+      "ev_concept_quotation"
+    ]
+  },
+  {
+    "id": "concept_inventoryage",
+    "name": "InventoryAge",
+    "type": "concept",
+    "definition": "库存物品在库的平均天数",
+    "scope": "DWS_RISK_DAILY",
+    "aliases": [
+      "在库天数",
+      "库存天数",
+      "库龄",
+      "inventory age"
+    ],
+    "evidence": [
+      "ev_concept_inventoryage"
+    ]
+  },
+  {
+    "id": "concept_purchaserequest",
+    "name": "PurchaseRequest",
+    "type": "concept",
+    "definition": "采购申请记录，包含总金额等",
+    "scope": "dim_material",
+    "aliases": [
+      "采购申请",
+      "采购需求",
+      "请购单",
+      "purchase request"
+    ],
+    "evidence": [
+      "ev_concept_purchaserequest"
+    ]
+  },
+  {
+    "id": "concept_productionlinedowntime",
+    "name": "ProductionLineDowntime",
+    "type": "concept",
+    "definition": "产线的停机时长合计",
+    "scope": "DWS_EQUIPMENT_DAILY",
+    "aliases": [
+      "产线停机",
+      "停机时长",
+      "产线停机时长",
+      "production line downtime"
+    ],
+    "evidence": [
+      "ev_concept_productionlinedowntime"
+    ]
+  },
+  {
+    "id": "concept_waterconsumption",
+    "name": "WaterConsumption",
+    "type": "concept",
+    "definition": "生产线的用水量合计",
+    "scope": "DWS_PRODUCTION_DAILY",
+    "aliases": [
+      "用水量",
+      "耗水量",
+      "水耗",
+      "water consumption"
+    ],
+    "evidence": [
+      "ev_concept_waterconsumption"
+    ]
+  },
+  {
+    "id": "concept_materialpurchaseamount",
+    "name": "MaterialPurchaseAmount",
+    "type": "concept",
+    "definition": "原材料采购金额合计",
+    "scope": "dim_material",
+    "aliases": [
+      "采购金额",
+      "原材料采购",
+      "采购额",
+      "material purchase amount"
+    ],
+    "evidence": [
+      "ev_concept_materialpurchaseamount"
+    ]
+  },
+  {
+    "id": "concept_productionlineruntime",
+    "name": "ProductionLineRuntime",
+    "type": "concept",
+    "definition": "产线的生产工单运行时长合计",
+    "scope": "DWS_PRODUCTION_DAILY",
+    "aliases": [
+      "产线运行时长",
+      "运行时长",
+      "生产运行时间",
+      "production line runtime"
+    ],
+    "evidence": [
+      "ev_concept_productionlineruntime"
+    ]
+  },
+  {
+    "id": "concept_monitoringtype",
+    "name": "MonitoringType",
+    "type": "concept",
+    "definition": "环境监测的类型分类",
+    "scope": "dim_hazard",
+    "aliases": [
+      "监测类型",
+      "监测类别",
+      "环境监测类型",
+      "monitoring type"
+    ],
+    "evidence": [
+      "ev_concept_monitoringtype"
+    ]
+  },
+  {
+    "id": "concept_equipmentmaintenancecost",
+    "name": "EquipmentMaintenanceCost",
+    "type": "concept",
+    "definition": "设备维护费用合计",
+    "scope": "dim_fixed_asset",
+    "aliases": [
+      "维护费用",
+      "设备维护费",
+      "维修成本",
+      "equipment maintenance cost"
+    ],
+    "evidence": [
+      "ev_concept_equipmentmaintenancecost"
+    ]
+  },
+  {
+    "id": "concept_riskassessment",
+    "name": "RiskAssessment",
+    "type": "concept",
+    "definition": "风险评估记录，包含可能性等",
+    "scope": "dim_risk_level",
+    "aliases": [
+      "风险评估",
+      "风险评价",
+      "风险等级",
+      "risk assessment"
+    ],
+    "evidence": [
+      "ev_concept_riskassessment"
+    ]
+  },
+  {
+    "id": "concept_accountsreceivableage",
+    "name": "AccountsReceivableAge",
+    "type": "concept",
+    "definition": "应收账款的账龄区间，如3-4月",
+    "scope": "DWS_RISK_DAILY",
+    "aliases": [
+      "应收账款账龄",
+      "账龄",
+      "应收账龄",
+      "accounts receivable age"
+    ],
+    "evidence": [
+      "ev_concept_accountsreceivableage"
+    ]
+  },
+  {
+    "id": "concept_safetytrainingattendance",
+    "name": "SafetyTrainingAttendance",
+    "type": "concept",
+    "definition": "员工参加安全培训的参训人数记录",
+    "scope": "fact_safety_training",
+    "aliases": [
+      "安全培训参训人数",
+      "参训人数",
+      "安全培训合计参训人数",
+      "safety training attendance"
+    ],
+    "evidence": [
+      "ev_concept_safetytrainingattendance"
+    ]
+  },
+  {
+    "id": "concept_customerreturn",
+    "name": "CustomerReturn",
+    "type": "concept",
+    "definition": "客户产生的退货记录笔数",
+    "scope": "fact_return",
+    "aliases": [
+      "退货",
+      "退货笔数",
+      "客户退货",
+      "customer return"
+    ],
+    "evidence": [
+      "ev_concept_customerreturn"
+    ]
+  },
+  {
+    "id": "concept_productionoutput",
+    "name": "ProductionOutput",
+    "type": "concept",
+    "definition": "生产产出记录",
+    "scope": "fact_production_output",
+    "aliases": [
+      "产出记录",
+      "产出",
+      "产品等级产出记录",
+      "production output"
+    ],
+    "evidence": [
+      "ev_concept_productionoutput"
+    ]
+  },
+  {
+    "id": "concept_equipmentrunhours",
+    "name": "EquipmentRunHours",
+    "type": "concept",
+    "definition": "设备实际运行的小时数",
+    "scope": "DWS_EQUIPMENT_DAILY",
+    "aliases": [
+      "设备实际运行小时数",
+      "实际运行小时数",
+      "运行小时数",
+      "equipment run hours"
+    ],
+    "evidence": [
+      "ev_concept_equipmentrunhours"
+    ]
+  },
+  {
+    "id": "concept_quotationunitprice",
+    "name": "QuotationUnitPrice",
+    "type": "concept",
+    "definition": "报价单中的产品单价",
+    "scope": "fact_quotation",
+    "aliases": [
+      "报价单单价",
+      "报价单的单价",
+      "报价单价",
+      "quotation unit price"
+    ],
+    "evidence": [
+      "ev_concept_quotationunitprice"
+    ]
+  },
+  {
+    "id": "derived_averagesafetyauditscore",
+    "name": "AverageSafetyAuditScore",
+    "type": "metric",
+    "definition": "安全审计评分的平均值 Formula: AVG(SafetyAuditScore). Inputs: SafetyAuditScore = fact_safety_audit.score",
+    "scope": "derived metric",
+    "aliases": [
+      "安全审计平均评分",
+      "平均审计评分",
+      "审计平均分",
+      "average safety audit score"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_totalestimatedamount",
+    "name": "TotalEstimatedAmount",
+    "type": "metric",
+    "definition": "业务机会预估金额的合计 Formula: SUM(EstimatedAmount). Inputs: EstimatedAmount = fact_opportunity.estimated_amount",
+    "scope": "derived metric",
+    "aliases": [
+      "预估金额合计",
+      "总预估金额",
+      "预估金额总和",
+      "total estimated amount"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_grossprofitmargin",
+    "name": "GrossProfitMargin",
+    "type": "metric",
+    "definition": "毛利占销售收入的比例 Formula: GrossProfit / Revenue. Inputs: GrossProfit = DWS_PRODUCTION_DAILY.actual_quantity",
+    "scope": "derived metric",
+    "aliases": [
+      "毛利率",
+      "毛利比率",
+      "毛利率百分比",
+      "gross profit margin"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_inventoryturnoverdays",
+    "name": "InventoryTurnoverDays",
+    "type": "metric",
+    "definition": "平均库存周转所需天数 Formula: InventoryAge. Inputs: InventoryAge = DWS_RISK_DAILY.overdue_inventory_qty",
+    "scope": "derived metric",
+    "aliases": [
+      "库存周转天数",
+      "周转天数",
+      "在库天数",
+      "inventory turnover days"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_suppliercompositescoretotal",
+    "name": "SupplierCompositeScoreTotal",
+    "type": "metric",
+    "definition": "供应商综合评分的合计值 Formula: SUM(SupplierCompositeScore). Inputs: SupplierCompositeScore = dim_supplier.credit_level",
+    "scope": "derived metric",
+    "aliases": [
+      "综合评分合计",
+      "供应商总分",
+      "评分总和",
+      "supplier composite score total"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_downtimerate",
+    "name": "DowntimeRate",
+    "type": "metric",
+    "definition": "停机时长占总运行时间的比例 Formula: ProductionLineDowntime / (ProductionLineDowntime + ProductionLineRuntime). Inputs: ProductionLineDowntime = DWS_EQUIPMENT_DAILY.downtime_hours; ProductionLineRuntime = DWS_PRODUCTION_DAILY.actual_run_hours",
+    "scope": "derived metric",
+    "aliases": [
+      "停机率",
+      "停机比例",
+      "故障停机率",
+      "downtime rate"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_planachievementrate",
+    "name": "PlanAchievementRate",
+    "type": "metric",
+    "definition": "实际产量与计划产量的比率 Formula: actual_quantity / planned_quantity. Inputs: ProductionWorkOrder = DWS_PRODUCTION_DAILY.order_count",
+    "scope": "derived metric",
+    "aliases": [
+      "计划达成率",
+      "达成率",
+      "计划完成率",
+      "plan achievement rate"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_qualitypassrate",
+    "name": "QualityPassRate",
+    "type": "metric",
+    "definition": "质量合格数量占总生产数量的比例 Formula: quality_pass_rate. Inputs: ProductionWorkOrder = DWS_PRODUCTION_DAILY.order_count",
+    "scope": "derived metric",
+    "aliases": [
+      "质量合格率",
+      "合格率",
+      "质量通过率",
+      "quality pass rate"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_overduearratio",
+    "name": "OverdueARRatio",
+    "type": "metric",
+    "definition": "逾期应收账款占总应收账款的比例 Formula: overdue_ar_amt / total_ar_amt. Inputs: AccountsReceivableAge = DWS_RISK_DAILY.overdue_ar_amt",
+    "scope": "derived metric",
+    "aliases": [
+      "逾期应收比率",
+      "逾期账款比例",
+      "应收逾期率",
+      "overdue ar ratio"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_compliancerate",
+    "name": "ComplianceRate",
+    "type": "metric",
+    "definition": "环境监测记录中合规的比例 Formula: compliant_count / total_count. Inputs: EnvironmentalMonitoring = dim_hazard.hazard_id",
+    "scope": "derived metric",
+    "aliases": [
+      "合规率",
+      "合规比例",
+      "环保合规率",
+      "compliance rate"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_averagepurchaseamount",
+    "name": "AveragePurchaseAmount",
+    "type": "metric",
+    "definition": "采购申请的平均总金额 Formula: SUM(PurchaseRequest) / COUNT(PurchaseRequest). Inputs: PurchaseRequest = dim_material.material_id",
+    "scope": "derived metric",
+    "aliases": [
+      "平均采购金额",
+      "采购均值",
+      "平均采购额",
+      "average purchase amount"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_averagegrossprofit",
+    "name": "AverageGrossProfit",
+    "type": "metric",
+    "definition": "实际毛利的平均值 Formula: AVG(GrossProfit). Inputs: GrossProfit = DWS_PRODUCTION_DAILY.actual_quantity",
+    "scope": "derived metric",
+    "aliases": [
+      "平均毛利",
+      "毛利均值",
+      "平均毛利润",
+      "average gross profit"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_totalpaymentcount",
+    "name": "TotalPaymentCount",
+    "type": "metric",
+    "definition": "所有付款笔数的合计 Formula: COUNT(PaymentCollection). Inputs: PaymentCollection = dim_customer_credit.credit_id",
+    "scope": "derived metric",
+    "aliases": [
+      "付款总笔数",
+      "付款笔数合计",
+      "总付款笔数",
+      "total payment count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_totalquotationcount",
+    "name": "TotalQuotationCount",
+    "type": "metric",
+    "definition": "报价单的总数量 Formula: COUNT(Quotation). Inputs: Quotation = dim_pricing.pricing_id",
+    "scope": "derived metric",
+    "aliases": [
+      "报价单总数",
+      "报价单数量",
+      "报价总数",
+      "total quotation count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_averagequotationprice",
+    "name": "AverageQuotationPrice",
+    "type": "metric",
+    "definition": "报价单单价的平均值 Formula: AVG(QuotationUnitPrice). Inputs: QuotationUnitPrice = fact_quotation.unit_price",
+    "scope": "derived metric",
+    "aliases": [
+      "报价单平均单价",
+      "报价单价平均",
+      "平均报价",
+      "average quotation price"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_totalequipmentrunhours",
+    "name": "TotalEquipmentRunHours",
+    "type": "metric",
+    "definition": "设备实际运行小时数的总和 Formula: SUM(EquipmentRunHours). Inputs: EquipmentRunHours = DWS_EQUIPMENT_DAILY.actual_run_hours",
+    "scope": "derived metric",
+    "aliases": [
+      "设备运行小时数合计",
+      "总运行小时数",
+      "运行小时合计",
+      "total equipment run hours"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_totalcustomerreturns",
+    "name": "TotalCustomerReturns",
+    "type": "metric",
+    "definition": "客户退货的总笔数 Formula: COUNT(CustomerReturn). Inputs: CustomerReturn = fact_return.return_id",
+    "scope": "derived metric",
+    "aliases": [
+      "退货合计",
+      "退货总数",
+      "退货笔数合计",
+      "total customer returns"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_totalproductionoutput",
+    "name": "TotalProductionOutput",
+    "type": "metric",
+    "definition": "生产产出记录的总条数 Formula: COUNT(ProductionOutput). Inputs: ProductionOutput = fact_production_output.output_id",
+    "scope": "derived metric",
+    "aliases": [
+      "产出记录合计",
+      "产出总数",
+      "产出记录总数",
+      "total production output"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_downtimereason",
+    "name": "DowntimeReason",
+    "type": "concept",
+    "definition": "按原因分析停机次数",
+    "scope": "dim_downtime_reason.reason_name codes",
+    "aliases": [
+      "停机原因",
+      "停机理由",
+      "downtime reason"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_finance",
+    "name": "Finance",
+    "type": "concept",
+    "definition": "分析财务相关指标，如毛利、应收、应付、费用等",
+    "scope": "dim_account.account_name codes",
+    "aliases": [
+      "财务",
+      "财务管理",
+      "会计",
+      "finance"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "term_metric_total_actual_quantity",
+    "name": "total_actual_quantity",
+    "type": "metric",
+    "definition": "total_actual_quantity. Rule: SUM(actual_quantity) 按 date/month. Layer: atomic",
+    "scope": "DWS_PRODUCTION_DAILY; status verified",
+    "aliases": [
+      "total actual quantity"
+    ],
+    "evidence": [
+      "ev_term_metric_total_actual_quantity"
+    ]
+  },
+  {
+    "id": "term_metric_total_planned_quantity",
+    "name": "total_planned_quantity",
+    "type": "metric",
+    "definition": "total_planned_quantity. Rule: SUM(planned_quantity) 按 date/month. Layer: atomic",
+    "scope": "DWS_PRODUCTION_DAILY; status candidate",
+    "aliases": [
+      "total planned quantity"
+    ],
+    "evidence": [
+      "ev_term_metric_total_planned_quantity"
+    ]
+  },
+  {
+    "id": "term_metric_avg_yield_rate",
+    "name": "avg_yield_rate",
+    "type": "metric",
+    "definition": "avg_yield_rate. Rule: AVG(yield_rate) 按 date/month. Layer: atomic",
+    "scope": "DWS_PRODUCTION_DAILY; status verified",
+    "aliases": [
+      "avg yield rate"
+    ],
+    "evidence": [
+      "ev_term_metric_avg_yield_rate"
+    ]
+  },
+  {
+    "id": "term_metric_amount_sum",
+    "name": "amount_sum",
+    "type": "metric",
+    "definition": "amount_sum. Rule: SUM(amount) 按 order_date/month. Layer: atomic",
+    "scope": "fact_sales_order; status candidate",
+    "aliases": [
+      "amount sum"
+    ],
+    "evidence": [
+      "ev_term_metric_amount_sum"
+    ]
+  },
+  {
+    "id": "term_metric_fact_sales_order_count",
+    "name": "fact_sales_order_count",
+    "type": "metric",
+    "definition": "fact_sales_order_count. Rule: COUNT(*) 按 order_date/month. Layer: atomic",
+    "scope": "fact_sales_order; status candidate",
+    "aliases": [
+      "fact sales order count"
+    ],
+    "evidence": [
+      "ev_term_metric_fact_sales_order_count"
+    ]
+  },
+  {
+    "id": "term_metric_quantity_sum",
+    "name": "quantity_sum",
+    "type": "metric",
+    "definition": "quantity_sum. Rule: SUM(quantity) 按 output_date/month. Layer: atomic",
+    "scope": "fact_production_output; status verified",
+    "aliases": [
+      "quantity sum"
+    ],
+    "evidence": [
+      "ev_term_metric_quantity_sum"
+    ]
+  },
+  {
+    "id": "term_metric_dim_equipment_count",
+    "name": "dim_equipment_count",
+    "type": "metric",
+    "definition": "dim_equipment_count. Rule: COUNT(*) 按 install_date/month. Layer: atomic",
+    "scope": "dim_equipment; status verified",
+    "aliases": [
+      "dim equipment count"
+    ],
+    "evidence": [
+      "ev_term_metric_dim_equipment_count"
+    ]
+  },
+  {
+    "id": "term_metric_gross_profit_actual_avg",
+    "name": "gross_profit_actual_avg",
+    "type": "metric",
+    "definition": "gross_profit_actual_avg. Rule: AVG(gross_profit_actual) 按 order_date/month. Layer: atomic",
+    "scope": "fact_sales_order; status verified",
+    "aliases": [
+      "gross profit actual avg"
+    ],
+    "evidence": [
+      "ev_term_metric_gross_profit_actual_avg"
+    ]
+  },
+  {
+    "id": "term_metric_fact_return_count",
+    "name": "fact_return_count",
+    "type": "metric",
+    "definition": "fact_return_count. Rule: COUNT(*) 按 return_date/month. Layer: atomic",
+    "scope": "fact_return; status verified",
+    "aliases": [
+      "fact return count"
+    ],
+    "evidence": [
+      "ev_term_metric_fact_return_count"
+    ]
+  }
+]

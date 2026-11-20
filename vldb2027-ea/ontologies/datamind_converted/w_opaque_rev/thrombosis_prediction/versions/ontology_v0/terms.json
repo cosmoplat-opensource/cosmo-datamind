@@ -1,0 +1,435 @@
+[
+  {
+    "id": "term_tab01",
+    "name": "tab01",
+    "type": "entity",
+    "definition": "主数据记录 Counterexample: 与 tab02、tab03 的区分待专家确认：三表均以 fld001 为首列，可能为同一实体的不同层级或不同业务域记录，当前证据不足以判定 Maturity: Provisional",
+    "scope": "Records of table tab01; provenance: direct source tab01",
+    "aliases": [
+      "主数据记录"
+    ],
+    "evidence": [
+      "ev_schema_tab01"
+    ]
+  },
+  {
+    "id": "term_tab02",
+    "name": "tab02",
+    "type": "entity",
+    "definition": "从属明细记录 Counterexample: 与 tab01 的区分待专家确认：共享 fld001、fld008 可能表示从属或并列，需业务确认 Maturity: Provisional",
+    "scope": "Records of table tab02; provenance: direct source tab02",
+    "aliases": [
+      "从属明细记录"
+    ],
+    "evidence": [
+      "ev_schema_tab02"
+    ]
+  },
+  {
+    "id": "term_tab03",
+    "name": "tab03",
+    "type": "entity",
+    "definition": "业务台账记录 Counterexample: 与 tab01、tab02 的区分待专家确认：仅凭列结构无法判定其为独立实体还是前两表的扩展 Maturity: Provisional",
+    "scope": "Records of table tab03; provenance: direct source tab03",
+    "aliases": [
+      "业务台账记录"
+    ],
+    "evidence": [
+      "ev_schema_tab03"
+    ]
+  },
+  {
+    "id": "concept_patientid",
+    "name": "PatientID",
+    "type": "concept",
+    "definition": "Unique identifier of a patient",
+    "scope": "tab01",
+    "aliases": [
+      "patient number",
+      "ID",
+      "patient ID",
+      "patient with the number",
+      "patient id"
+    ],
+    "evidence": [
+      "ev_concept_patientid"
+    ]
+  },
+  {
+    "id": "concept_examdate",
+    "name": "ExamDate",
+    "type": "concept",
+    "definition": "Date of the laboratory examination/visit",
+    "scope": "tab02",
+    "aliases": [
+      "came to the hospital",
+      "examined",
+      "examination date",
+      "came at the hospital",
+      "exam date"
+    ],
+    "evidence": [
+      "ev_concept_examdate"
+    ]
+  },
+  {
+    "id": "concept_examdatealt",
+    "name": "ExamDateAlt",
+    "type": "concept",
+    "definition": "Alternative examination/visit date column used in some questions",
+    "scope": "tab02",
+    "aliases": [
+      "came to the hospital after",
+      "visit date",
+      "examined in",
+      "exam date alt"
+    ],
+    "evidence": [
+      "ev_concept_examdatealt"
+    ]
+  },
+  {
+    "id": "concept_diagnosis",
+    "name": "Diagnosis",
+    "type": "concept",
+    "definition": "Diagnosis code assigned to the patient",
+    "scope": "tab01",
+    "aliases": [
+      "disease the patient is diagnosed with",
+      "diagnosed with"
+    ],
+    "evidence": [
+      "ev_concept_diagnosis"
+    ]
+  },
+  {
+    "id": "concept_slediagnosis",
+    "name": "SLEDiagnosis",
+    "type": "concept",
+    "definition": "Patient diagnosed with SLE",
+    "scope": "tab01 where fld008 = 'SLE'",
+    "aliases": [
+      "SLE",
+      "diagnosed with SLE",
+      "Systemic Lupus Erythematosus",
+      "sle diagnosis"
+    ],
+    "evidence": [
+      "ev_concept_slediagnosis"
+    ]
+  },
+  {
+    "id": "concept_radiagnosis",
+    "name": "RADiagnosis",
+    "type": "concept",
+    "definition": "Patient diagnosed with rheumatoid arthritis",
+    "scope": "tab01 where fld008 = 'RA'",
+    "aliases": [
+      "RA",
+      "diagnosed with RA",
+      "rheumatoid arthritis",
+      "ra diagnosis"
+    ],
+    "evidence": [
+      "ev_concept_radiagnosis"
+    ]
+  },
+  {
+    "id": "concept_apsdiagnosis",
+    "name": "APSDiagnosis",
+    "type": "concept",
+    "definition": "Patient diagnosed with antiphospholipid syndrome",
+    "scope": "tab01 where fld008 = 'APS'",
+    "aliases": [
+      "APS",
+      "APS diagnosis",
+      "antiphospholipid syndrome",
+      "aps diagnosis"
+    ],
+    "evidence": [
+      "ev_concept_apsdiagnosis"
+    ]
+  },
+  {
+    "id": "concept_thrombosisseverity",
+    "name": "ThrombosisSeverity",
+    "type": "concept",
+    "definition": "Thrombosis severity grade (0 none, 1 most severe, 2 severe)",
+    "scope": "tab01",
+    "aliases": [
+      "thrombosis",
+      "severe degree of thrombosis",
+      "most serious thrombosis",
+      "does not have thrombosis",
+      "thrombosis severity"
+    ],
+    "evidence": [
+      "ev_concept_thrombosisseverity"
+    ]
+  },
+  {
+    "id": "concept_uricacid",
+    "name": "UricAcid",
+    "type": "concept",
+    "definition": "Serum uric acid concentration",
+    "scope": "tab03",
+    "aliases": [
+      "uric acid",
+      "uric acid within a normal range",
+      "abnormal uric acid"
+    ],
+    "evidence": [
+      "ev_concept_uricacid"
+    ]
+  },
+  {
+    "id": "concept_hematocrit",
+    "name": "Hematocrit",
+    "type": "concept",
+    "definition": "Hematocrit laboratory value",
+    "scope": "tab03",
+    "aliases": [
+      "hematoclit level",
+      "hematocrit exceeded normal range"
+    ],
+    "evidence": [
+      "ev_concept_hematocrit"
+    ]
+  },
+  {
+    "id": "concept_redbloodcell",
+    "name": "RedBloodCell",
+    "type": "concept",
+    "definition": "Red blood cell count",
+    "scope": "tab03 where fld035 < 3.5",
+    "aliases": [
+      "red blood cell",
+      "lower red blood cell",
+      "RBC"
+    ],
+    "evidence": [
+      "ev_concept_redbloodcell"
+    ]
+  },
+  {
+    "id": "concept_ldh",
+    "name": "LDH",
+    "type": "concept",
+    "definition": "Lactate dehydrogenase level",
+    "scope": "tab03 where fld022 > 500",
+    "aliases": [
+      "LDH beyond normal range",
+      "lactate dehydrogenase"
+    ],
+    "evidence": [
+      "ev_concept_ldh"
+    ]
+  },
+  {
+    "id": "concept_iga",
+    "name": "IgA",
+    "type": "concept",
+    "definition": "Immunoglobulin A level",
+    "scope": "tab03 where fld047 > 80 AND fld047 < 500",
+    "aliases": [
+      "Ig A level",
+      "normal Ig A level",
+      "ig a"
+    ],
+    "evidence": [
+      "ev_concept_iga"
+    ]
+  },
+  {
+    "id": "concept_prothrombintime",
+    "name": "ProthrombinTime",
+    "type": "concept",
+    "definition": "Prothrombin time value",
+    "scope": "tab03 where fld039 >= 14",
+    "aliases": [
+      "prothrombin time",
+      "PT",
+      "abnormal prothrombin time"
+    ],
+    "evidence": [
+      "ev_concept_prothrombintime"
+    ]
+  },
+  {
+    "id": "concept_antism",
+    "name": "AntiSM",
+    "type": "concept",
+    "definition": "Anti-Smith antibody status coded as -, +-, +, 0, 1",
+    "scope": "tab03 where fld055 IN ('-','+-','0')",
+    "aliases": [
+      "anti-SM",
+      "normal anti-SM",
+      "anti-Smith antibody",
+      "anti sm"
+    ],
+    "evidence": [
+      "ev_concept_antism"
+    ]
+  },
+  {
+    "id": "concept_anticardiolipin",
+    "name": "AntiCardiolipin",
+    "type": "concept",
+    "definition": "Anti-cardiolipin antibody concentration status",
+    "scope": "tab03",
+    "aliases": [
+      "anti-Cardiolipin",
+      "aCL",
+      "anti-Cardiolipin antibody concentration",
+      "anti cardiolipin"
+    ],
+    "evidence": [
+      "ev_concept_anticardiolipin"
+    ]
+  },
+  {
+    "id": "concept_totalcholesterol",
+    "name": "TotalCholesterol",
+    "type": "concept",
+    "definition": "Total cholesterol level",
+    "scope": "tab03",
+    "aliases": [
+      "total cholesterol",
+      "cholesterol"
+    ],
+    "evidence": [
+      "ev_concept_totalcholesterol"
+    ]
+  },
+  {
+    "id": "concept_followupstatus",
+    "name": "FollowUpStatus",
+    "type": "concept",
+    "definition": "Follow-up status code after visit",
+    "scope": "tab02 where fld018 = '-'",
+    "aliases": [
+      "immediately followed at the outpatient clinic",
+      "followed at outpatient clinic",
+      "follow up status"
+    ],
+    "evidence": [
+      "ev_concept_followupstatus"
+    ]
+  },
+  {
+    "id": "concept_symptoms",
+    "name": "Symptoms",
+    "type": "concept",
+    "definition": "Observed symptom description",
+    "scope": "tab01 where fld012 IS NOT NULL",
+    "aliases": [
+      "symptoms observed"
+    ],
+    "evidence": [
+      "ev_concept_symptoms"
+    ]
+  },
+  {
+    "id": "derived_cholesteroldecreaserate",
+    "name": "CholesterolDecreaseRate",
+    "type": "metric",
+    "definition": "Relative decline of total cholesterol between two months Formula: (SUM(TotalCholesterol Nov) - SUM(TotalCholesterol Dec)) / SUM(TotalCholesterol Nov). Inputs: TotalCholesterol = tab03.fld030; ExamDate = tab02.fld016",
+    "scope": "derived metric",
+    "aliases": [
+      "decrease rate for total cholesterol",
+      "cholesterol drop rate",
+      "cholesterol decrease rate"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_abnormalptrate",
+    "name": "AbnormalPTRate",
+    "type": "metric",
+    "definition": "Share of patients with PT >= 14 among a cohort Formula: COUNT(ProthrombinTime >= 14) / COUNT(PatientID). Inputs: ProthrombinTime = tab03.fld039 WHERE fld039 >= 14; PatientID = tab01.fld001",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage with abnormal prothrombin time",
+      "abnormal PT share",
+      "abnormal pt rate"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_normalantismrate",
+    "name": "NormalAntiSMRate",
+    "type": "metric",
+    "definition": "Share of patients with normal anti-SM among a cohort Formula: COUNT(AntiSM normal) / COUNT(PatientID). Inputs: AntiSM = tab03.fld055 WHERE fld055 IN ('-','+-','0'); PatientID = tab01.fld001",
+    "scope": "derived metric",
+    "aliases": [
+      "share with normal anti-SM",
+      "normal anti-SM percentage",
+      "normal anti sm rate"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_thrombosisfreerate",
+    "name": "ThrombosisFreeRate",
+    "type": "metric",
+    "definition": "Share of patients with no thrombosis Formula: COUNT(ThrombosisSeverity = 0) / COUNT(PatientID). Inputs: ThrombosisSeverity = tab01.fld013; PatientID = tab01.fld001",
+    "scope": "derived metric",
+    "aliases": [
+      "share without thrombosis",
+      "no thrombosis percentage",
+      "thrombosis free rate"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_examcountperpatient",
+    "name": "ExamCountPerPatient",
+    "type": "metric",
+    "definition": "Number of exams recorded per patient Formula: COUNT(PatientID). Inputs: PatientID = tab01.fld001",
+    "scope": "derived metric",
+    "aliases": [
+      "number of laboratory examinations",
+      "two or more examinations",
+      "exam count per patient"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_diagnosis",
+    "name": "Diagnosis",
+    "type": "concept",
+    "definition": "Which disease a patient is diagnosed with",
+    "scope": "tab01.fld008 codes",
+    "aliases": [
+      "diagnosis",
+      "disease"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_thrombosisseverity",
+    "name": "ThrombosisSeverity",
+    "type": "concept",
+    "definition": "Thrombosis severity grade",
+    "scope": "tab01.fld013 codes",
+    "aliases": [
+      "thrombosis",
+      "severity of thrombosis",
+      "thrombosis severity"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_antismstatus",
+    "name": "AntiSMStatus",
+    "type": "concept",
+    "definition": "Anti-SM antibody result coding",
+    "scope": "tab03.fld055 codes",
+    "aliases": [
+      "anti-SM status",
+      "anti-Smith result",
+      "anti sm status"
+    ],
+    "evidence": []
+  }
+]

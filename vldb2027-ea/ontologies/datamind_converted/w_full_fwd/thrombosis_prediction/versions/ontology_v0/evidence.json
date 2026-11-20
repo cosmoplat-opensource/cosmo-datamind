@@ -1,0 +1,410 @@
+[
+  {
+    "id": "ev_schema_examination",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "PRAGMA table_info(Examination)",
+    "result": "Table Examination(ID, Examination Date, aCL IgG, aCL IgM, ANA, ANA Pattern, aCL IgA, Diagnosis, KCT, RVVT, LAC, Symptoms, Thrombosis)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_examination__ana",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT DISTINCT ANA FROM Examination",
+    "result": "0 / 1024 / 16 / 256 / 4 / 4094 / 4096 / 64",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_examination__kct",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT DISTINCT KCT FROM Examination",
+    "result": "+ / -",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_examination__rvvt",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT DISTINCT RVVT FROM Examination",
+    "result": "+ / -",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_examination__lac",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT DISTINCT LAC FROM Examination",
+    "result": "+ / -",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_examination__thrombosis",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT DISTINCT Thrombosis FROM Examination",
+    "result": "0 / 1 / 2 / 3",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_laboratory",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "PRAGMA table_info(Laboratory)",
+    "result": "Table Laboratory(ID, Date, GOT, GPT, LDH, ALP, TP, ALB, UA, UN, CRE, T-BIL, T-CHO, TG, CPK, GLU, WBC, RBC, HGB, HCT, PLT, PT, APTT, FG, PIC, TAT, TAT2, U-PRO, IGG, IGA, IGM, CRP, RA, RF, C3, C4, RNP, SM, SC170, SSA, SSB, CENTROMEA, DNA, DNA-II)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_laboratory__ra",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT DISTINCT RA FROM Laboratory",
+    "result": "+ / +- / - / 2+ / 7-",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_laboratory__rnp",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT DISTINCT RNP FROM Laboratory",
+    "result": "0 / 1 / 15 / 16 / 256 / 4 / 64 / negative",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_laboratory__sm",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT DISTINCT SM FROM Laboratory",
+    "result": "0 / 1 / 2 / 8 / negative",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_laboratory__sc170",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT DISTINCT SC170 FROM Laboratory",
+    "result": "0 / 1 / 16 / 4 / negative",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_laboratory__ssa",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT DISTINCT SSA FROM Laboratory",
+    "result": "0 / 1 / 16 / 256 / 4 / 64 / negative",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_laboratory__ssb",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT DISTINCT SSB FROM Laboratory",
+    "result": "0 / 1 / 2 / 32 / 8 / negative",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_values_laboratory__centromea",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT DISTINCT CENTROMEA FROM Laboratory",
+    "result": "0 / negative",
+    "validation_method": "distinct value inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_schema_patient",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "PRAGMA table_info(Patient)",
+    "result": "Table Patient(ID, SEX, Birthday, Description, First Date, Admission, Diagnosis)",
+    "validation_method": "schema inspection",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_albumin",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory",
+    "result": "13908 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_plateletcount",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory",
+    "result": "13908 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_gpt",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory",
+    "result": "13908 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_glucose",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory",
+    "result": "13908 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_totalcholesterol",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory",
+    "result": "13908 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_igm",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory",
+    "result": "13908 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_creatinephosphokinase",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory",
+    "result": "13908 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_creactiveprotein",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory",
+    "result": "13908 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_creatinine",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory",
+    "result": "13908 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_ureanitrogen",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory",
+    "result": "13908 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_igg",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory",
+    "result": "13908 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_anticardiolipinigm",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Examination",
+    "result": "806 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_coagulationpositive",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Examination WHERE KCT = '+' OR RVVT = '+' OR LAC = '+'",
+    "result": "75 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_rvvt",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Examination",
+    "result": "806 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_thrombosis",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Examination",
+    "result": "806 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_anapattern",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Examination",
+    "result": "806 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_symptoms",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Examination",
+    "result": "806 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_diagnosis",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Patient",
+    "result": "1238 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_sex",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Patient",
+    "result": "1238 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_age",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Patient",
+    "result": "1238 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_admission",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Patient",
+    "result": "1238 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_description",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Patient",
+    "result": "1238 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_anticentromere",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory",
+    "result": "13908 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_antissb",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory",
+    "result": "13908 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_concept_antiscl70",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory",
+    "result": "13908 rows",
+    "validation_method": "concept mapping executed on the data",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_0",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Patient p LEFT JOIN Laboratory l ON p.ID = l.ID WHERE l.ID IS NULL;",
+    "result": "[[936]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_1",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Patient p LEFT JOIN Examination e ON p.ID = e.ID WHERE e.ID IS NULL;",
+    "result": "[[1169]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_2",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Patient WHERE Description IS NULL;",
+    "result": "[[216]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_3",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Examination WHERE Symptoms IS NULL;",
+    "result": "[[726]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_4",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Patient WHERE Birthday IS NULL;",
+    "result": "[[1]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_5",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Laboratory WHERE ALB IS NULL OR GPT IS NULL OR PLT IS NULL;",
+    "result": "[[4013]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_6",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT COUNT(*) FROM Examination WHERE KCT IS NULL OR RVVT IS NULL OR LAC IS NULL;",
+    "result": "[[660]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_7",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT ID, COUNT(*) FROM Laboratory GROUP BY ID HAVING COUNT(*) > 1 LIMIT 5;",
+    "result": "[[27654, 36], [30609, 60], [43003, 23]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_caveat_8",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "SELECT ID, COUNT(*) FROM Examination GROUP BY ID HAVING COUNT(*) > 1 LIMIT 5;",
+    "result": "[[null, 36], [5329900, 2], [5346280, 2]]",
+    "validation_method": "caveat check query returned supporting rows",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_patient__examination__id",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "distinct values of Examination.ID contained in Patient.ID",
+    "result": "overlap 9.0% (69/763 distinct child values); parent key unique: True; child rows 806, parent rows 1238",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  },
+  {
+    "id": "ev_rel_patient__laboratory__id",
+    "source": "thrombosis_prediction.sqlite",
+    "query": "distinct values of Laboratory.ID contained in Patient.ID",
+    "result": "overlap 100.0% (302/302 distinct child values); parent key unique: True; child rows 13908, parent rows 1238",
+    "validation_method": "data adjudication: value overlap and parent-key uniqueness",
+    "timestamp": "2026-10-10"
+  }
+]

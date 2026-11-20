@@ -1,0 +1,134 @@
+[
+  {
+    "id": "c_values_molecule__label",
+    "target": "term_molecule",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "label",
+      "molecule",
+      "+",
+      "-"
+    ],
+    "severity": "warning",
+    "scope": "Filters on molecule.label",
+    "confidence": "high",
+    "description": "molecule.label only takes these stored values: + / -. Filter with the stored spelling.",
+    "evidence": [
+      "ev_values_molecule__label"
+    ]
+  },
+  {
+    "id": "c_values_bond__bond_type",
+    "target": "term_bond",
+    "constraint_type": "enum_semantics",
+    "trigger_keywords": [
+      "bond_type",
+      "bond",
+      "#",
+      "-",
+      "="
+    ],
+    "severity": "warning",
+    "scope": "Filters on bond.bond_type",
+    "confidence": "high",
+    "description": "bond.bond_type only takes these stored values: # / - / =. Filter with the stored spelling.",
+    "evidence": [
+      "ev_values_bond__bond_type"
+    ]
+  },
+  {
+    "id": "c_caveat_0",
+    "target": "term_molecule",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Bond",
+      "type",
+      "values",
+      "include",
+      "spaces",
+      "inconsistent",
+      "formatting",
+      "exact",
+      "string",
+      "matching",
+      "miss",
+      "rows"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Bond type values may include spaces or inconsistent formatting, so exact string matching can miss rows.",
+    "evidence": [
+      "ev_caveat_0"
+    ]
+  },
+  {
+    "id": "c_caveat_1",
+    "target": "term_molecule",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Some",
+      "atoms",
+      "appear",
+      "connected",
+      "table",
+      "joins",
+      "drop",
+      "unbonded"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Some atoms may not appear in the connected table, so joins can drop unbonded atoms.",
+    "evidence": [
+      "ev_caveat_1"
+    ]
+  },
+  {
+    "id": "c_caveat_2",
+    "target": "term_molecule",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Molecule",
+      "labels",
+      "contain",
+      "values",
+      "other",
+      "than",
+      "filtering",
+      "only",
+      "those",
+      "exclude",
+      "molecules"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Molecule labels may contain values other than '+' and '-', so filtering only on those two can exclude molecules.",
+    "evidence": [
+      "ev_caveat_2"
+    ]
+  },
+  {
+    "id": "c_caveat_3",
+    "target": "term_molecule",
+    "constraint_type": "data_caveat",
+    "trigger_keywords": [
+      "Element",
+      "values",
+      "case",
+      "sensitive",
+      "matching",
+      "instead",
+      "return",
+      "rows"
+    ],
+    "severity": "warning",
+    "scope": "queries on this database",
+    "confidence": "high",
+    "description": "Element values may be case-sensitive, so matching 'C' instead of 'c' can return no rows.",
+    "evidence": [
+      "ev_caveat_3"
+    ]
+  }
+]

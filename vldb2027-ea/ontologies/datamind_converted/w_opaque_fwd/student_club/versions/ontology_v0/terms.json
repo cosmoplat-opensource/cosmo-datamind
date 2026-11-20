@@ -1,0 +1,625 @@
+[
+  {
+    "id": "term_tab01",
+    "name": "tab01",
+    "type": "entity",
+    "definition": "业务主表一 Counterexample: 与 tab02 等无共同键的独立表区分；仅凭列名无法判定其业务含义 Maturity: Provisional",
+    "scope": "Records of table tab01; provenance: direct source tab01",
+    "aliases": [
+      "业务主表一"
+    ],
+    "evidence": [
+      "ev_schema_tab01"
+    ]
+  },
+  {
+    "id": "term_tab02",
+    "name": "tab02",
+    "type": "entity",
+    "definition": "业务主表二 Counterexample: 与 tab01 无共享列，不能合并为同一概念 Maturity: Provisional",
+    "scope": "Records of table tab02; provenance: direct source tab02",
+    "aliases": [
+      "业务主表二"
+    ],
+    "evidence": [
+      "ev_schema_tab02"
+    ]
+  },
+  {
+    "id": "term_tab03",
+    "name": "tab03",
+    "type": "entity",
+    "definition": "业务明细表三 Counterexample: 与 tab01 共享 fld004 但列集不同，属不同对象而非同一表族成员 Maturity: Provisional",
+    "scope": "Records of table tab03; provenance: direct source tab03",
+    "aliases": [
+      "业务明细表三"
+    ],
+    "evidence": [
+      "ev_schema_tab03"
+    ]
+  },
+  {
+    "id": "term_tab04",
+    "name": "tab04",
+    "type": "entity",
+    "definition": "业务代码表四 Counterexample: 与 tab05、tab06、tab07 共享 fld017 或 fld018，但列数极少，不能直接当作业务实体表 Maturity: Provisional",
+    "scope": "Records of table tab04; provenance: direct source tab04",
+    "aliases": [
+      "业务代码表四"
+    ],
+    "evidence": [
+      "ev_schema_tab04"
+    ]
+  },
+  {
+    "id": "term_tab05",
+    "name": "tab05",
+    "type": "entity",
+    "definition": "业务记录表五 Counterexample: 与 tab04 共享 fld017，但列集远多于 tab04，不能视为同一概念 Maturity: Provisional",
+    "scope": "Records of table tab05; provenance: direct source tab05",
+    "aliases": [
+      "业务记录表五"
+    ],
+    "evidence": [
+      "ev_schema_tab05"
+    ]
+  },
+  {
+    "id": "term_tab06",
+    "name": "tab06",
+    "type": "entity",
+    "definition": "业务记录表六 Counterexample: 与 tab07 共享 fld018，但列集不同，不能合并 Maturity: Provisional",
+    "scope": "Records of table tab06; provenance: direct source tab06",
+    "aliases": [
+      "业务记录表六"
+    ],
+    "evidence": [
+      "ev_schema_tab06"
+    ]
+  },
+  {
+    "id": "term_tab07",
+    "name": "tab07",
+    "type": "entity",
+    "definition": "业务记录表七 Counterexample: 与 tab05 共享 fld023、与 tab01 共享 fld005，但列集不同，属不同对象 Maturity: Provisional",
+    "scope": "Records of table tab07; provenance: direct source tab07",
+    "aliases": [
+      "业务记录表七"
+    ],
+    "evidence": [
+      "ev_schema_tab07"
+    ]
+  },
+  {
+    "id": "term_tab08",
+    "name": "tab08",
+    "type": "entity",
+    "definition": "业务记录表八 Counterexample: 与其余表无共享列，不能凭列数推断其与 tab01-tab07 的关系 Maturity: Provisional",
+    "scope": "Records of table tab08; provenance: direct source tab08",
+    "aliases": [
+      "业务记录表八"
+    ],
+    "evidence": [
+      "ev_schema_tab08"
+    ]
+  },
+  {
+    "id": "concept_memberlastname",
+    "name": "MemberLastName",
+    "type": "concept",
+    "definition": "成员的姓氏",
+    "scope": "tab08",
+    "aliases": [
+      "last name",
+      "surname",
+      "member last name"
+    ],
+    "evidence": [
+      "ev_concept_memberlastname"
+    ]
+  },
+  {
+    "id": "concept_membermajor",
+    "name": "MemberMajor",
+    "type": "concept",
+    "definition": "成员所学专业名称",
+    "scope": "tab02",
+    "aliases": [
+      "major",
+      "field of study",
+      "area of study",
+      "member major"
+    ],
+    "evidence": [
+      "ev_concept_membermajor"
+    ]
+  },
+  {
+    "id": "concept_memberdepartment",
+    "name": "MemberDepartment",
+    "type": "concept",
+    "definition": "成员所属的系或部门名称",
+    "scope": "tab02",
+    "aliases": [
+      "department",
+      "dept",
+      "member department"
+    ],
+    "evidence": [
+      "ev_concept_memberdepartment"
+    ]
+  },
+  {
+    "id": "concept_membercollege",
+    "name": "MemberCollege",
+    "type": "concept",
+    "definition": "成员所属的学院名称",
+    "scope": "tab02",
+    "aliases": [
+      "college",
+      "college name",
+      "school",
+      "member college"
+    ],
+    "evidence": [
+      "ev_concept_membercollege"
+    ]
+  },
+  {
+    "id": "concept_membertshirtsize",
+    "name": "MemberTShirtSize",
+    "type": "concept",
+    "definition": "成员T恤尺码",
+    "scope": "tab08 where fld038 = 'Member'",
+    "aliases": [
+      "t-shirt size",
+      "shirt size",
+      "member t shirt size"
+    ],
+    "evidence": [
+      "ev_concept_membertshirtsize"
+    ]
+  },
+  {
+    "id": "concept_eventname",
+    "name": "EventName",
+    "type": "concept",
+    "definition": "事件的名称",
+    "scope": "tab01",
+    "aliases": [
+      "event name",
+      "name of event",
+      "event"
+    ],
+    "evidence": [
+      "ev_concept_eventname"
+    ]
+  },
+  {
+    "id": "concept_eventdate",
+    "name": "EventDate",
+    "type": "concept",
+    "definition": "事件发生的日期",
+    "scope": "tab01",
+    "aliases": [
+      "event date",
+      "date of event"
+    ],
+    "evidence": [
+      "ev_concept_eventdate"
+    ]
+  },
+  {
+    "id": "concept_eventcategory",
+    "name": "EventCategory",
+    "type": "concept",
+    "definition": "事件的类别",
+    "scope": "tab01",
+    "aliases": [
+      "category of event",
+      "event category",
+      "type of event"
+    ],
+    "evidence": [
+      "ev_concept_eventcategory"
+    ]
+  },
+  {
+    "id": "concept_eventstatus",
+    "name": "EventStatus",
+    "type": "concept",
+    "definition": "事件的状态（如 Closed）",
+    "scope": "tab01",
+    "aliases": [
+      "event status",
+      "closed event",
+      "status"
+    ],
+    "evidence": [
+      "ev_concept_eventstatus"
+    ]
+  },
+  {
+    "id": "concept_eventlocation",
+    "name": "EventLocation",
+    "type": "concept",
+    "definition": "事件举办地点",
+    "scope": "tab01",
+    "aliases": [
+      "location of event",
+      "event location",
+      "venue"
+    ],
+    "evidence": [
+      "ev_concept_eventlocation"
+    ]
+  },
+  {
+    "id": "concept_budgetedamount",
+    "name": "BudgetedAmount",
+    "type": "concept",
+    "definition": "事件预算类别对应的预算金额",
+    "scope": "tab05",
+    "aliases": [
+      "amount budgeted",
+      "budgeted amount",
+      "budget"
+    ],
+    "evidence": [
+      "ev_concept_budgetedamount"
+    ]
+  },
+  {
+    "id": "concept_budgetcategory",
+    "name": "BudgetCategory",
+    "type": "concept",
+    "definition": "事件预算所属类别",
+    "scope": "tab05",
+    "aliases": [
+      "budget category",
+      "budgeted categories",
+      "category"
+    ],
+    "evidence": [
+      "ev_concept_budgetcategory"
+    ]
+  },
+  {
+    "id": "concept_expenseamount",
+    "name": "ExpenseAmount",
+    "type": "concept",
+    "definition": "一笔支出或费用的金额",
+    "scope": "tab06",
+    "aliases": [
+      "total expense",
+      "amount spent",
+      "cost",
+      "total amount of money spent",
+      "expense amount"
+    ],
+    "evidence": [
+      "ev_concept_expenseamount"
+    ]
+  },
+  {
+    "id": "concept_expensedate",
+    "name": "ExpenseDate",
+    "type": "concept",
+    "definition": "支出发生的日期",
+    "scope": "tab06",
+    "aliases": [
+      "expense date",
+      "date of expense",
+      "spent on date"
+    ],
+    "evidence": [
+      "ev_concept_expensedate"
+    ]
+  },
+  {
+    "id": "concept_expensedescription",
+    "name": "ExpenseDescription",
+    "type": "concept",
+    "definition": "支出用途描述",
+    "scope": "tab06",
+    "aliases": [
+      "expense description",
+      "spent money for",
+      "spent for"
+    ],
+    "evidence": [
+      "ev_concept_expensedescription"
+    ]
+  },
+  {
+    "id": "concept_eventspentamount",
+    "name": "EventSpentAmount",
+    "type": "concept",
+    "definition": "按事件记录的支出金额",
+    "scope": "tab05",
+    "aliases": [
+      "total amount spent",
+      "amount spent in events",
+      "total cost for event",
+      "event spent amount"
+    ],
+    "evidence": [
+      "ev_concept_eventspentamount"
+    ]
+  },
+  {
+    "id": "concept_eventspentcategory",
+    "name": "EventSpentCategory",
+    "type": "concept",
+    "definition": "事件支出所属类别（如 Food）",
+    "scope": "tab05",
+    "aliases": [
+      "spent for food",
+      "spent category",
+      "expense category",
+      "event spent category"
+    ],
+    "evidence": [
+      "ev_concept_eventspentcategory"
+    ]
+  },
+  {
+    "id": "concept_fundraisingamount",
+    "name": "FundraisingAmount",
+    "type": "concept",
+    "definition": "筹款或资金收入金额",
+    "scope": "tab07 where fld033 = 'Fundraising'",
+    "aliases": [
+      "amount received",
+      "funds received",
+      "amount of funds received",
+      "fundraising amount"
+    ],
+    "evidence": [
+      "ev_concept_fundraisingamount"
+    ]
+  },
+  {
+    "id": "concept_fundraisingdate",
+    "name": "FundraisingDate",
+    "type": "concept",
+    "definition": "筹款或资金收入发生的日期",
+    "scope": "tab07 where fld033 = 'Fundraising'",
+    "aliases": [
+      "fundraising date",
+      "date of fundraising",
+      "received funds on date"
+    ],
+    "evidence": [
+      "ev_concept_fundraisingdate"
+    ]
+  },
+  {
+    "id": "concept_fundraisingnotes",
+    "name": "FundraisingNotes",
+    "type": "concept",
+    "definition": "筹款记录的备注说明",
+    "scope": "tab07 where fld033 = 'Fundraising'",
+    "aliases": [
+      "notes of the fundraising",
+      "fundraising notes"
+    ],
+    "evidence": [
+      "ev_concept_fundraisingnotes"
+    ]
+  },
+  {
+    "id": "concept_duespaymentdate",
+    "name": "DuesPaymentDate",
+    "type": "concept",
+    "definition": "成员缴纳会费的日期",
+    "scope": "tab07 where fld033 = 'Dues'",
+    "aliases": [
+      "date dues paid",
+      "paid dues",
+      "dues payment date"
+    ],
+    "evidence": [
+      "ev_concept_duespaymentdate"
+    ]
+  },
+  {
+    "id": "concept_duesamount",
+    "name": "DuesAmount",
+    "type": "concept",
+    "definition": "成员缴纳会费的金额",
+    "scope": "tab07 where fld033 = 'Dues'",
+    "aliases": [
+      "dues amount",
+      "amount of dues"
+    ],
+    "evidence": [
+      "ev_concept_duesamount"
+    ]
+  },
+  {
+    "id": "concept_memberattendance",
+    "name": "MemberAttendance",
+    "type": "concept",
+    "definition": "成员参加某事件的记录",
+    "scope": "tab03",
+    "aliases": [
+      "attend event",
+      "attended",
+      "attendance",
+      "member attendance"
+    ],
+    "evidence": [
+      "ev_concept_memberattendance"
+    ]
+  },
+  {
+    "id": "derived_totalbudgetedamount",
+    "name": "TotalBudgetedAmount",
+    "type": "metric",
+    "definition": "某事件所有预算类别的预算金额合计 Formula: SUM(BudgetedAmount). Inputs: BudgetedAmount = tab05.fld023",
+    "scope": "derived metric",
+    "aliases": [
+      "total budgeted",
+      "total budget",
+      "total budgeted amount"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_totalexpense",
+    "name": "TotalExpense",
+    "type": "metric",
+    "definition": "某日期或某范围内所有支出的合计金额 Formula: SUM(ExpenseAmount). Inputs: ExpenseAmount = tab06.fld028",
+    "scope": "derived metric",
+    "aliases": [
+      "total expense",
+      "total amount spent"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_totaleventspent",
+    "name": "TotalEventSpent",
+    "type": "metric",
+    "definition": "所有事件支出金额的合计 Formula: SUM(EventSpentAmount). Inputs: EventSpentAmount = tab05.fld021",
+    "scope": "derived metric",
+    "aliases": [
+      "total amount spent in events",
+      "total cost for all events",
+      "total event spent"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_eventspentshare",
+    "name": "EventSpentShare",
+    "type": "metric",
+    "definition": "某事件支出占全部事件支出的百分比 Formula: SUM(EventSpentAmount WHERE EventName = 'Yearly Kickoff') / SUM(EventSpentAmount) * 100. Inputs: EventSpentAmount = tab05.fld021; EventName = tab01.fld002",
+    "scope": "derived metric",
+    "aliases": [
+      "percentage of cost for event",
+      "share of total cost",
+      "event spent share"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_yearlyspentdifference",
+    "name": "YearlySpentDifference",
+    "type": "metric",
+    "definition": "两个年度事件支出合计之差 Formula: SUM(EventSpentAmount WHERE YEAR(EventDate) = 2019) - SUM(EventSpentAmount WHERE YEAR(EventDate) = 2020). Inputs: EventSpentAmount = tab05.fld021; EventDate = tab01.fld003",
+    "scope": "derived metric",
+    "aliases": [
+      "difference of total amount spent",
+      "year over year difference",
+      "yearly spent difference"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_foodexpensetotal",
+    "name": "FoodExpenseTotal",
+    "type": "metric",
+    "definition": "支出类别为 Food 的金额合计 Formula: SUM(EventSpentAmount WHERE EventSpentCategory = 'Food'). Inputs: EventSpentAmount = tab05.fld021; EventSpentCategory = tab05.fld020",
+    "scope": "derived metric",
+    "aliases": [
+      "total amount spent for food",
+      "food cost",
+      "food expense total"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_fundraisingtotal",
+    "name": "FundraisingTotal",
+    "type": "metric",
+    "definition": "筹款收入金额合计 Formula: SUM(FundraisingAmount). Inputs: FundraisingAmount = tab07.fld023 WHERE fld033 = 'Fundraising'",
+    "scope": "derived metric",
+    "aliases": [
+      "total funds received",
+      "total fundraising amount",
+      "fundraising total"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_membereventattendancecount",
+    "name": "MemberEventAttendanceCount",
+    "type": "metric",
+    "definition": "某成员参加事件的数量 Formula: COUNT(MemberAttendance). Inputs: MemberAttendance = tab03.fld013",
+    "scope": "derived metric",
+    "aliases": [
+      "number of events attended",
+      "attendance count",
+      "member event attendance count"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "derived_averageexpenseperevent",
+    "name": "AverageExpensePerEvent",
+    "type": "metric",
+    "definition": "平均每个事件的支出金额 Formula: SUM(EventSpentAmount) / COUNT(DISTINCT EventName). Inputs: EventSpentAmount = tab05.fld021; EventName = tab01.fld002",
+    "scope": "derived metric",
+    "aliases": [
+      "average cost per event",
+      "average spent per event",
+      "average expense per event"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_eventcategory",
+    "name": "EventCategory",
+    "type": "concept",
+    "definition": "按事件类别分析事件数量与支出",
+    "scope": "tab01.fld004 codes",
+    "aliases": [
+      "event category",
+      "type of event",
+      "category of events"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_eventstatus",
+    "name": "EventStatus",
+    "type": "concept",
+    "definition": "按事件状态筛选事件",
+    "scope": "tab01.fld007 codes",
+    "aliases": [
+      "event status",
+      "closed event",
+      "open event"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_fundraisingtype",
+    "name": "FundraisingType",
+    "type": "concept",
+    "definition": "按交易类型区分筹款与会费记录",
+    "scope": "tab07.fld033 codes",
+    "aliases": [
+      "fundraising",
+      "dues",
+      "type of transaction",
+      "fundraising type"
+    ],
+    "evidence": []
+  },
+  {
+    "id": "theme_tshirtsize",
+    "name": "TShirtSize",
+    "type": "concept",
+    "definition": "按T恤尺码分析成员分布",
+    "scope": "tab08.fld039 codes",
+    "aliases": [
+      "t-shirt size",
+      "shirt size",
+      "t shirt size"
+    ],
+    "evidence": []
+  }
+]
