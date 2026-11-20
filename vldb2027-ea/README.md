@@ -49,8 +49,8 @@ on the day of scoring.
 | Section 6.2, Figure 9 | `stats_dr093.py`; code in `results/v4/dr093_frozen_code/` | `results/v4/stats_dr093.json` |
 | Sections 6.3–6.5, Figures 10–11 | `analysis_sec6.py` | `results/v4/analysis_sec6.json` |
 | Section 6.6, Figure 12 | `rescore_v3.py`, `analysis_ablation_v3.py` | `results/v4/analysis_ablation_v3.json` |
-| Section 7 (prior-knowledge check) | `audit_prior_knowledge.py` | `results/v4/prior_knowledge_audit.json` |
-| Section 3.1 (input-aligned rebuild) | `benchmarks/opaque_merged/workload_aligned/`, `chain_aligned.sh` (`EVO_WORKLOAD_DIR`, `DM_WORKLOAD_DIR`, `*_ROOT_SUFFIX=_aligned`), `analysis_aligned_20261120.py` | `results/v4/aligned_rebuild_20261120.json` |
+| Section 7 (prior-knowledge check) | `audit_prior_knowledge.py` (first audit; 70 of 141 for BIRD-opaque), rerun in `analysis_v5_prior.py` (69 of 141, the value in the paper) | `results/v4/prior_knowledge_audit.json`, `results/v4/analysis_v5_prior.json` |
+| Section 3.1 (input-aligned rebuild) | `benchmarks/opaque_merged/workload_aligned/`, `chain_aligned.sh` (`EVO_WORKLOAD_DIR`, `DM_WORKLOAD_DIR`, `*_ROOT_SUFFIX=_aligned`), `analysis_aligned_20261120.py`; file-access audit of the two rebuild sessions: `audit_aligned_builds_20261120.py` | `results/v4/aligned_rebuild_20261120.json`, `results/v4/evo_build_audit_aligned_20261120.json` |
 | Table 3; Section 6.1 (final-query table recall, join matching by table and column); Section 6.2 (without the 61 validation questions); Figure 10 by source database; Figure 11 caption (turn limit) | `analysis_review_20261120.py` | `results/v4/analysis_review_20261120.json` |
 | Section 6.1 (flat term dictionary; Figure 7a, last row) | `make_flat_dictionary.py`, `chain_flat.sh`, `analysis_flat_dictionary_20261120.py` | `results/v5/flat_dictionary_stats_20261120.json` |
 | Section 6.1 (column codes in the store without mappings) | `analysis_nomap_columns_20261120.py` | `results/v5/nomap_columns_20261120.json` |
