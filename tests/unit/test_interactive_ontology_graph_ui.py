@@ -2,6 +2,7 @@
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 
 import playwright
 
@@ -43,3 +44,16 @@ def test_snapshot_is_detached_and_pause_pin_are_preserved():
 
 def test_oversized_updates_are_transactional():
     run_case('oversized_updates_are_transactional')
+
+
+def test_graph_browser_shared_fixture_dependencies_resolve(tmp_path):
+    result = subprocess.run([sys.executable, '-m', 'pytest',
+        'tests/frontend/robotics-interactive-ontology-graph-browser.py', '--setup-plan', '-q',
+        '--junitxml=' + str(tmp_path / 'fixture-plan.xml')],
+        cwd=ROOT, capture_output=True, text=True, timeout=30)
+    assert result.returncode == 0, result.stdout + result.stderr
+    # Resolve the complete fixture graph without starting a browser or service.
+    import xml.etree.ElementTree as ET
+    cases = list(ET.parse(tmp_path / 'fixture-plan.xml').getroot().iter('testcase'))
+    assert len(cases) == 11
+    assert all(c.find('error') is None and c.find('failure') is None for c in cases)

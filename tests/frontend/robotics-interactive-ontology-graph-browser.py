@@ -20,6 +20,7 @@ support = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(support)
 browser = support.browser
 live = support.live
+prepared_seeds = support.prepared_seeds
 
 
 @pytest.fixture(autouse=True)

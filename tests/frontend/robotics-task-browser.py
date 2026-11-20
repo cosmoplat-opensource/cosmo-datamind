@@ -84,6 +84,67 @@ def done(site):
     site.evidence['assertions_completed'] = True
 
 
+@pytest.mark.parametrize('phase', ['headers', 'body', 'navigation'])
+def test_xml_download_deadline_cancellation_and_explicit_retry(live, phase):
+    site, page, calls = live
+    ref = site.submit()['output_asset_ref']; panel = open_task(page, site, ref)
+    current = finish(page, panel, submit_task(page, panel))
+    before = site.get('/api/robotics/tasks/' + current['session_id'])
+    versions = AssetStore(site.root).list_versions(ref['ontology_id'])
+    link = panel.get_by_role('link', name='下载行为树 XML', exact=True)
+    href = link.get_attribute('href')
+    page.wait_for_load_state('networkidle')
+    page.clock.install()
+    downloaded = []
+    page.on('download', lambda item: downloaded.append(item))
+    # Delay only the download transport; generation and the final retry use real HTTP/XML.
+    page.evaluate('''({href,phase})=>{
+      const original=window.fetch.bind(window);window.__downloadOriginal=original;
+      const probe=window.__downloadProbe={calls:0,signal:null,release:null};
+      window.fetch=(url,options={})=>{
+        if(new URL(url,location.href).pathname+new URL(url,location.href).search!==href)return original(url,options);
+        probe.calls++;probe.signal=options.signal;
+        if(phase==='headers')return new Promise(resolve=>{probe.release=()=>resolve(new Response('late'));});
+        return Promise.resolve({ok:true,status:200,blob:()=>new Promise(resolve=>{
+          probe.release=()=>resolve(new Blob(['late']));
+        })});
+      };
+    }''', {'href': href, 'phase': phase})
+    link.evaluate('node=>{node.click();node.click();}')
+    page.wait_for_function('window.__downloadProbe.release!==null')
+    if phase == 'navigation':
+        page.goto(site.url + '/#library')
+        expect(page.get_by_test_id('ontology-catalog')).to_be_visible()
+    else:
+        page.clock.fast_forward(30001)
+        expect(panel.get_by_role('alert')).to_contain_text('下载超时')
+        expect(link).not_to_have_attribute('aria-disabled', 'true')
+    assert page.evaluate('window.__downloadProbe.signal?.aborted===true')
+    assert page.evaluate('window.__downloadProbe.calls') == 1
+    page.evaluate('window.__downloadProbe.release()')
+    page.clock.run_for(10)
+    assert downloaded == [], 'a late download must never save a file'
+    page.evaluate('window.fetch=window.__downloadOriginal')
+    if phase == 'navigation':
+        assert page.url.endswith('#library')
+        page.goto(site.url + '/#robotics-task?session=' + current['session_id'])
+        expect(panel.get_by_test_id('task-tree')).to_be_visible()
+    else:
+        # Failed HTTP replies release controls and preserve the current result for retry.
+        page.evaluate('''href=>{const original=window.fetch;window.fetch=(url,options)=>
+          new URL(url,location.href).pathname+new URL(url,location.href).search===href?
+          Promise.resolve(new Response(JSON.stringify({error:{message:'合成下载拒绝'}}),{status:503})):original(url,options);
+        }''', href)
+        link.click()
+        expect(panel.get_by_role('alert')).to_contain_text('合成下载拒绝')
+        expect(link).not_to_have_attribute('aria-disabled', 'true')
+        page.evaluate('window.fetch=window.__downloadOriginal')
+    download(page, site, panel, current)
+    assert site.get('/api/robotics/tasks/' + current['session_id']) == before
+    assert AssetStore(site.root).list_versions(ref['ontology_id']) == versions and len(calls) == 1
+    done(site)
+
+
 def test_timed_out_saved_completion_retries_same_identity_without_duplicate_version(live):
     site, page, calls = live
     ref = site.submit()['output_asset_ref']; panel = open_task(page, site, ref)

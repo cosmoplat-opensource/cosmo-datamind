@@ -10,7 +10,7 @@ import pytest
 def test_offline_controller_requests_and_version_notice(case):
     script = r"""
 const vm=require('node:vm'),fs=require('node:fs'),assert=require('node:assert/strict');
-const ctx=vm.createContext({console});ctx.window=ctx;
+const ctx=vm.createContext({console,AbortController,setTimeout,clearTimeout});ctx.window=ctx;
 vm.runInContext(fs.readFileSync('ui/modules/robotics-task.js','utf8'),ctx);
 const kind=process.argv[1], calls=[];
 const session={session_id:'s',ontology_id:'a',version_id:'ver_internal_old',version_number:3,revision:1,gaps:[]};
@@ -22,6 +22,8 @@ const c=ctx.RoboticsTask.createController({requestId:()=> 'r',fetch:async(url,op
 }});
 (async()=>{
   await c.restore('s');
+  assert.equal(c.snapshot().error,null,'the controller must restore before testing writes');
+  assert.equal(c.snapshot().session.session_id,'s');
   if(kind.startsWith('notes')){
     c.setNote('grasp_compatibility','待调试');await c.saveNotes();
     assert.equal(calls[0].url,'/api/robotics/tasks/s/notes');

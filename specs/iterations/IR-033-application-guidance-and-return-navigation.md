@@ -8,7 +8,7 @@
 - [x] AGN-02：默认一个“完善本体”入口，可信定义缺项与自定义术语分别进入合适流程，保留其它处理能力。
 - [x] AGN-03：修复后退时重新检查并恢复有效操作，禁止自动修复循环、重复任务和绕过过期保护。
 - [x] AGN-04：覆盖任务内嵌检查及其它导航入口，记录同类问题的实际排查范围与结果。
-- [x] TASK-NET-01：任务读取、保存和生成超时后恢复操作，离开取消请求；保留输入、请求编号与修订号，显式重试不重复保存或生成。
+- [x] TASK-NET-01：任务读取、保存、生成和 XML 下载超时后恢复操作，离开取消请求；保留输入、请求编号与修订号，显式重试不重复保存、生成或并行下载。
 
 ## 任务
 
@@ -60,10 +60,6 @@ python -m pytest tests/frontend/robotics-review-browser.py -k unsaved_navigation
 python scripts/scenario_bench.py
 ```
 
-浏览器套件分别启动独立进程，避免同步 Playwright 运行时相互嵌套。
-未改变构建语义、SSE 步骤或数据查询规则；本轮机器人场景由上述浏览器和契约用例覆盖，不向数据查询合成库添加无关场景。
-逐次日志与截图仅保留本地或 CI；公开复现使用上述版本、差异和命令。
-
 ## 本轮回归补充
 
 验证基于 `3f0056da8d3441f1d4ce7b2a355c67525e42dc05` 与本次差异；复现前记录版本并保存 `git diff --cached`，Python 3.10.12，依赖采用仓库固定版本。
@@ -91,3 +87,37 @@ python -m ruff check .
 python -m mypy . --no-error-summary
 python scripts/scenario_bench.py
 ```
+
+## 下载与共享夹具修复
+
+验证基于 `c7b191ed4f13f1e2cd4373da14dea4f25f1786c5` 与本次差异；复现前记录版本并保存 `git diff --cached`，环境为 Python 3.10.12、仓库固定开发依赖、Playwright Chromium 与可用 Node。
+该提交的全量检查暴露离线 VM 缺少浏览器 API、图谱共享夹具缺少依赖，以及 XML 下载没有总时限；本轮仅修复这些问题，历史全量结果不替代当前差异的验证。
+离线 VM 补齐取消和定时 API，先验证任务读取成功，原备注、失败草稿、生成及版本提示断言保留。
+图谱套件引入共享夹具的完整依赖，新增 setup-plan 检查在单元入口解析全部依赖；真实浏览器仍执行原有 11 项交互用例。
+XML 下载与 JSON 共用 30 秒期限，覆盖响应头、错误响应和文件内容；重复点击只发起一个请求，失败释放控件，离开或任务修订变化取消等待。
+下载故障用例覆盖响应头等待、内容读取等待及离开页面，验证迟到结果不生成文件，显式重试得到真实固定版本 XML，原任务、本体版本和模型请求数量不变。
+
+- 相关单元、组件与规约 215 项通过（18.39 秒），包括此前失败的离线 4 项和新的共享夹具检查。
+- 下载边界 3 项通过（41.20 秒）；完整任务浏览器 26 项通过，检查进程耗时 340.648 秒，完整组包含该 3 项，不重复累计。
+- 真实图谱浏览器 11 项通过，检查进程耗时 44.996 秒；设计浏览器 50 项通过，检查进程耗时 211.491 秒。
+- 上述检查均无失败、错误或跳过；相关浏览器仍使用原有 360 秒限制，覆盖率门槛及测试集合不删减。
+- 全仓 lint、类型检查和场景基准 55/55 通过；本轮未重新运行全量回归、全仓覆盖率门禁、远端 CI、真实模型或物理设备验证。
+
+浏览器分别通过 `scripts.check.isolated_env` 和 `run_check` 执行，保持临时数据与进程清理。可使用相同仓库依赖独立复现用例：
+
+```bash
+python -m pytest tests/meta tests/unit/test_robotics_task_ui.py tests/unit/test_robotics_offline_ui.py tests/unit/test_robotics_task_configuration_ui.py tests/unit/test_robotics_task_save_feedback.py tests/unit/test_robotics_task_completion_feedback.py tests/unit/test_robotics_design_ui.py tests/unit/test_robotics_schema_repair_ui.py tests/unit/test_robotics_schema_repair_guidance.py tests/unit/test_interactive_ontology_graph_ui.py tests/unit/test_interactive_ontology_graph_network.py tests/unit/test_check_parallel.py tests/unit/test_check_isolation.py -ra
+python tests/frontend/robotics-interactive-ontology-graph-browser.py
+python tests/frontend/robotics-design-browser.py --workers 2
+python tests/frontend/robotics-task-browser.py
+python -m pytest tests/frontend/robotics-task-browser.py -k xml_download_deadline -ra
+python -m ruff check .
+python -m mypy . --no-error-summary
+python scripts/scenario_bench.py
+```
+
+逐次产物仅保留本地或 CI，以上版本、差异和入口为复现依据。
+
+浏览器套件分别启动独立进程，避免同步 Playwright 运行时相互嵌套。
+未改变构建语义、SSE 步骤或数据查询规则；本轮机器人场景由上述浏览器和契约用例覆盖，不向数据查询合成库添加无关场景。
+逐次日志与截图仅保留本地或 CI；公开复现使用上述版本、差异和命令。
