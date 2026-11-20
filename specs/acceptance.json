@@ -1,5 +1,5 @@
 {
-  "iteration": "IR-014–IR-032",
+  "iteration": "IR-014–IR-036",
   "requirements": [
     {
       "id": "ALG-01",
@@ -3851,6 +3851,110 @@
         "tests/frontend/robotics-design-browser.py::test_stale_application_check_never_automatically_adapts_or_edits_design",
         "tests/frontend/robotics-design-browser.py::test_completed_adaptation_history_is_readonly_until_explicit_continue_and_reuses_task",
         "tests/frontend/robotics-design-browser.py::test_automatic_return_never_overwrites_a_concurrently_changed_task_and_offers_its_current_page"
+      ]
+    },
+    {
+      "id": "AGN-01",
+      "decision": "DR-167",
+      "iteration": "IR-033",
+      "status": "delivered",
+      "criterion": "应用检查以业务含义说明缺少内容、影响及解决办法，技术标识和原始约束折叠保留并安全转义。",
+      "tests": [
+        "tests/frontend/robotics-design-browser.py::test_application_guidance_explains_business_gap_and_has_one_primary_action",
+        "tests/unit/test_robotics_schema_repair_ui.py::test_schema_repair_context_and_suggestions"
+      ]
+    },
+    {
+      "id": "AGN-02",
+      "decision": "DR-167",
+      "iteration": "IR-033",
+      "status": "delivered",
+      "criterion": "默认只显示一个完善本体入口，受控词表缺项优先补充定义、自定义词表优先核对已有内容，保留其它处理能力与服务端校验。",
+      "tests": [
+        "tests/unit/test_application_repair_recommendation.py::test_recommended_repair_uses_frozen_vocabulary_and_retains_both_actions",
+        "tests/frontend/robotics-design-browser.py::test_unresolved_role_allows_manual_selection_and_one_confirm_generate",
+        "tests/frontend/robotics-design-browser.py::test_application_guidance_explains_business_gap_and_has_one_primary_action"
+      ]
+    },
+    {
+      "id": "AGN-03",
+      "decision": "DR-167",
+      "iteration": "IR-033",
+      "status": "delivered",
+      "criterion": "从修复流程后退时重新检查并恢复有效操作，保留固定版本与任务范围；不得强行启用过期报告、自动再次修复或留下永久禁用按钮。",
+      "tests": [
+        "tests/frontend/robotics-design-browser.py::test_back_from_each_repair_refreshes_check_without_repair_loop_and_allows_reentry",
+        "tests/frontend/robotics-design-browser.py::test_repair_controls_unlock_after_failure_and_reject_duplicate_inflight_actions",
+        "tests/frontend/robotics-design-browser.py::test_late_repair_response_cannot_navigate_away_and_back_restores_working_controls",
+        "tests/frontend/robotics-design-browser.py::test_stale_application_check_never_automatically_adapts_or_edits_design",
+        "tests/frontend/robotics-design-browser.py::test_repair_revision_conflict_requires_fresh_check_instead_of_reenabling_old_action",
+        "tests/frontend/robotics-design-browser.py::test_repair_request_timeout_unlocks_controls_without_automatic_retry"
+      ]
+    },
+    {
+      "id": "AGN-04",
+      "decision": "DR-167",
+      "iteration": "IR-033",
+      "status": "delivered",
+      "criterion": "任务内嵌检查返回保留原任务与草稿，图谱导航恢复可操作控件；相关构建与评审的离开和返回不产生重复提交或放宽已有保护。",
+      "tests": [
+        "tests/frontend/robotics-task-browser.py::test_inline_application_check_back_keeps_task_scope_draft_and_enabled_repair",
+        "tests/frontend/robotics-interactive-ontology-graph-browser.py::test_graph_back_restores_enabled_controls_without_writes",
+        "tests/frontend/robotics-build-browser.py::test_leaving_page_stops_polling_but_queued_build_continues",
+        "tests/frontend/robotics-review-browser.py::test_unsaved_navigation_requires_explicit_discard",
+        "tests/frontend/robotics-task-browser.py::test_back_after_task_version_change_offers_current_task_instead_of_retry_loop",
+        "tests/unit/test_robotics_task_ui.py::test_task_controller_state_contract"
+      ]
+    },
+    {
+      "id": "TCF-01",
+      "decision": "DR-169",
+      "iteration": "IR-035",
+      "status": "delivered",
+      "criterion": "应用检查仅提供完善本体入口，按既有推荐进入修订或人工对应流程，移除其它完善方式且保留服务端校验。",
+      "tests": [
+        "tests/frontend/robotics-design-browser.py::test_application_guidance_explains_business_gap_and_has_one_primary_action"
+      ]
+    },
+    {
+      "id": "TCF-02",
+      "decision": "DR-168",
+      "iteration": "IR-034",
+      "status": "delivered",
+      "criterion": "保存按当前缺项给出确认、对象和参数等具体提示；失败保留输入且不写入，允许合法分步保存并说明剩余缺项。",
+      "tests": [
+        "tests/unit/test_robotics_task_completion_feedback.py::test_completion_feedback_identifies_missing_fields_and_preserves_drafts",
+        "tests/unit/test_robotics_task_completion_feedback.py::test_empty_answers_explain_current_gap_without_mutation",
+        "tests/unit/test_robotics_task_save_feedback.py::test_completion_feedback_preserves_answers_and_save_contract",
+        "tests/frontend/robotics-task-browser.py::test_save_feedback_names_missing_fields_and_unchecked_knowledge_without_writes",
+        "tests/frontend/robotics-task-browser.py::test_missing_parameter_has_no_guessed_default_and_invalid_value_stays_editable"
+      ]
+    },
+    {
+      "id": "GEN-FEEDBACK-01",
+      "decision": "DR-170",
+      "iteration": "IR-036",
+      "status": "delivered",
+      "criterion": "生成失败按当前任务配置提示补齐与重试，未选中草稿不触发完善本体，历史失败可显式重新生成且不重复模型请求。",
+      "tests": [
+        "tests/unit/test_robotics_task_generation_feedback.py::test_unused_configuration_is_preserved_and_reported_only_by_full_validation",
+        "tests/unit/test_robotics_task_generation_feedback.py::test_saved_generation_failures_preserve_facts_without_leaking_internal_exception",
+        "tests/frontend/robotics-task-browser.py::test_unused_profile_is_preserved_and_task_errors_retry_current_selection",
+        "tests/frontend/robotics-task-browser.py::test_optional_notes_do_not_block_generation_or_confirm_applicability"
+      ]
+    },
+    {
+      "id": "CFG-SCOPE-01",
+      "decision": "DR-170",
+      "iteration": "IR-036",
+      "status": "delivered",
+      "criterion": "任务适配只校验最终选中配置及依赖，切回原配置后未完成草稿不阻断生成，草稿和历史保持；结构、可信规则、版本与完整发布校验保持。",
+      "tests": [
+        "tests/unit/test_robotics_task_scope.py::test_switching_back_from_partly_saved_configuration_uses_final_selection_only",
+        "tests/unit/test_robotics_task_scope.py::test_task_scope_retains_trust_execution_and_selected_dependency_validation",
+        "tests/unit/test_robotics_task_scope.py::test_task_scope_preserves_full_snapshot_hash_and_rejects_another_task",
+        "tests/frontend/robotics-task-browser.py::test_switch_back_from_unfinished_configuration_generates_from_final_selection",
+        "tests/unit/test_robotics_application_workflow.py::test_application_task_switch_back_keeps_unfinished_draft_and_synchronized_bundle"
       ]
     }
   ],

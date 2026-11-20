@@ -161,6 +161,42 @@ def download(page, site, panel, current, *, values=None):
     return raw
 
 
+def test_save_feedback_names_missing_fields_and_unchecked_knowledge_without_writes(live):
+    """DR-168: empty or blank saves explain the current stage and keep drafts."""
+    site, page, calls = live
+    ref = site.submit()['output_asset_ref']; panel = open_task(page, site, ref)
+    current = submit_task(page, panel)
+    before = site.get('/api/robotics/tasks/' + current['session_id'])
+    completion_posts = []
+    page.on('request', lambda r: completion_posts.append(r) if r.method == 'POST' and r.url.endswith('/completion') else None)
+    panel.get_by_role('button', name='保存并继续', exact=True).click()
+    alert = panel.locator('.rt-completion [role="alert"]')
+    expect(alert).to_contain_text('感知配置')
+    expect(alert).to_contain_text('放置配置')
+    assert completion_posts == [] and site.get('/api/robotics/tasks/' + current['session_id']) == before
+    for _ in range(8):
+        if not any(g['kind'] in ('mapping', 'parameter') for g in current['gaps']):
+            break
+        fill_gaps(panel, current); current = save_gaps(page, panel)
+        expect(panel).to_have_attribute('data-version-id', current['version_id'])
+    checkbox = panel.get_by_role('checkbox', name='我已核对当前任务知识', exact=True)
+    expect(checkbox).to_be_visible(); expect(checkbox).not_to_be_checked()
+    fill_gaps(panel, {**current, 'gaps': [g for g in current['gaps'] if g['kind'] != 'confirmation']})
+    # Save any independent evidence first; partial saves must remain supported.
+    if any(g['kind'] == 'applicability' for g in current['gaps']):
+        current = save_gaps(page, panel)
+        expect(panel).to_have_attribute('data-version-id', current['version_id'])
+    assert current['gaps'] and all(g['kind'] == 'confirmation' for g in current['gaps'])
+    before = site.get('/api/robotics/tasks/' + current['session_id']); count = len(completion_posts)
+    panel.get_by_role('button', name='保存并继续', exact=True).click()
+    expect(alert).to_contain_text('请先勾选“我已核对当前任务知识”')
+    assert len(completion_posts) == count and site.get('/api/robotics/tasks/' + current['session_id']) == before
+    expect(panel.get_by_role('button', name='保存并继续', exact=True)).to_be_enabled()
+    checkbox.check(); current = save_gaps(page, panel)
+    assert current['status'] == 'generated' and len(calls) == 1
+    download(page, site, panel, current); done(site)
+
+
 def test_task_knowledge_is_confirmed_once_after_all_mapping_and_parameter_edits(live):
     """DR-166: never confirm unseen dependencies or ask twice for known edits."""
     site, page, calls = live
@@ -185,6 +221,86 @@ def test_task_knowledge_is_confirmed_once_after_all_mapping_and_parameter_edits(
     assert current['status'] == 'generated' and confirmations == 1
     assert len(calls) == 1 and AssetStore(site.root).read_payload(**ref) == original
     download(page, site, panel, current)
+    done(site)
+
+
+def test_inline_application_check_back_keeps_task_scope_draft_and_enabled_repair(live):
+    """DR-167: return refresh also handles an existing task's embedded report."""
+    site, page, calls = live
+    ref = site.submit()['output_asset_ref']; panel = open_task(page, site, ref)
+    current = submit_task(page, panel)
+    body = {'entrypoint': 'robotics.generate_behavior_tree',
+        'asset_refs': [{k: current[k] for k in ('ontology_id', 'version_id')}],
+        'context': {'mode': current['mode'], 'task_ref': {'session_id': current['session_id']}},
+        'request_id': 'inline-navigation-check'}
+    response = page.request.post(site.url + '/api/application-checks', data=body)
+    assert response.status == 201, response.text()
+    cid = response.json()['report']['check_id']
+    page.goto(site.url + '/#robotics-task?asset=' + current['ontology_id'] + '&version=' + current['version_id'] +
+        '&session=' + current['session_id'] + '&check=' + cid)
+    expect(panel).to_have_attribute('data-session-id', current['session_id'])
+    mapping = next(g for g in current['gaps'] if g['field'] == 'hasPerceptionProfile')
+    select = panel.locator('[data-target="' + mapping['id'] + '"]')
+    select.select_option(str(S.Perception_Current))
+    check = page.get_by_test_id('application-check')
+    with page.expect_response(lambda r: r.request.method == 'POST' and r.url.endswith('/repairs')) as pending:
+        check.get_by_role('button', name='补齐任务信息', exact=True).click()
+    assert pending.value.status == 200
+    page.wait_for_function('!new URLSearchParams(location.hash.split("?")[1]).has("check")')
+    expect(panel).to_have_attribute('data-session-id', current['session_id'])
+    page.go_back()
+    expect(check.get_by_role('button', name='补齐任务信息', exact=True)).to_be_enabled()
+    new_id = check.get_attribute('data-check-id'); assert new_id != cid
+    new = page.request.get(site.url + '/api/application-checks/' + new_id).json()['report']
+    assert new['task_ref']['session_id'] == current['session_id'] and new['asset_refs'] == body['asset_refs']
+    check.get_by_role('button', name='补齐任务信息', exact=True).click()
+    page.wait_for_function('!new URLSearchParams(location.hash.split("?")[1]).has("check")')
+    expect(panel).to_have_attribute('data-session-id', current['session_id'])
+    expect(select).to_have_value(str(S.Perception_Current))
+    assert len(calls) == 1
+    done(site)
+
+
+@pytest.mark.parametrize('navigation', ['back', 'recheck', 'direct'])
+def test_back_after_task_version_change_offers_current_task_instead_of_retry_loop(live, navigation):
+    """DR-167: a fixed report cannot be replayed against a newer task version."""
+    from domain_runs.robotics_task_service import TaskService
+    site, page, calls = live
+    ref = site.submit()['output_asset_ref']; panel = open_task(page, site, ref)
+    current = submit_task(page, panel)
+    body = {'entrypoint': 'robotics.generate_behavior_tree',
+        'asset_refs': [{k: current[k] for k in ('ontology_id', 'version_id')}],
+        'context': {'mode': 'real', 'task_ref': {'session_id': current['session_id']}}, 'request_id': 'changing-task-check'}
+    response = page.request.post(site.url + '/api/application-checks', data=body)
+    assert response.status == 201
+    cid = response.json()['report']['check_id']
+    page.goto(site.url + '/#robotics-task?asset=' + current['ontology_id'] + '&version=' + current['version_id'] +
+        '&session=' + current['session_id'] + '&check=' + cid)
+    expect(panel).to_have_attribute('data-version-id', current['version_id'])
+    expect(page.get_by_test_id('application-check').get_by_role('button', name='补齐任务信息', exact=True)).to_be_visible()
+    if navigation == 'back':
+        page.get_by_role('button', name='补齐任务信息', exact=True).click()
+        page.wait_for_function('!new URLSearchParams(location.hash.split("?")[1]).has("check")')
+    targets = {'hasPerceptionProfile': S.Perception_Current, 'hasPlacementProfile': S.Placement_Current}
+    newer = TaskService(site.root, generation_policy='offline').complete(current['session_id'],
+        expected_revision=current['revision'], request_id='another-tab-completion',
+        answers=[{'gap_id': g['id'], 'target': str(targets[g['field']])} for g in current['gaps'] if g['kind'] == 'mapping'])
+    assert newer['version_id'] != current['version_id']
+    if navigation == 'back':
+        page.go_back()
+    elif navigation == 'recheck':
+        page.get_by_role('button', name='补齐任务信息', exact=True).click()
+        expect(page.locator('#rt_task').get_by_role('alert')).to_contain_text('重新检查')
+        page.get_by_test_id('application-check').get_by_role('button', name='重新检查', exact=True).click()
+    else:
+        page.goto(site.url + '/#robotics-task?asset=' + current['ontology_id'] + '&version=' + current['version_id'] +
+            '&session=' + current['session_id'])
+    link = page.get_by_role('link', name='查看当前任务', exact=True)
+    expect(link).to_be_visible()
+    link.click()
+    expect(panel).to_have_attribute('data-session-id', current['session_id'])
+    expect(panel).to_have_attribute('data-version-id', newer['version_id'])
+    assert len(calls) == 1
     done(site)
 
 
@@ -248,6 +364,11 @@ def test_missing_parameter_has_no_guessed_default_and_invalid_value_stays_editab
     field = panel.get_by_label('曝光时间', exact=True)
     expect(field).to_have_value('')
     assert panel.get_by_label('识别阈值', exact=True).count() == 0
+    field.fill('  ')
+    panel.get_by_role('button', name='保存并继续', exact=True).click()
+    expect(panel.get_by_role('alert')).to_contain_text('曝光时间：请填写实际参数')
+    expect(field).to_have_value('  ')
+    assert len(assets.list_versions(ref['ontology_id'])) == 2
     field.fill('-1')
     panel.get_by_role('button', name='保存并继续', exact=True).click()
     expect(panel.get_by_role('alert')).to_be_visible()
@@ -293,6 +414,105 @@ def test_unknown_configuration_can_be_created_inline_without_user_iri(live):
     done(site)
 
 
+def test_unused_profile_is_preserved_and_task_errors_retry_current_selection(live):
+    """DR-170: ignored drafts stay intact; old errors retry without a modelling detour."""
+    from rdflib import RDFS, Literal
+    site, page, _ = live
+    ref = site.submit()['output_asset_ref']; assets = AssetStore(site.root)
+    original = assets.read_payload(**ref)
+    graph = Graph().parse(data=original, format='xml')
+    graph.set((S.PartType_A, S.hasPerceptionProfile, S.Perception_Current))
+    graph.set((S.Slot_B_01, S.hasPlacementProfile, S.Placement_Current))
+    graph.add((S.OtherProfile, RDF.type, S.PerceptionProfile))
+    graph.add((S.OtherProfile, RDFS.label, Literal('备用感知配置')))
+    graph.remove((S.Perception_Current, S.exposureTime, None))
+    base = assets.get_version(**ref)
+    version = assets.add_version(ref['ontology_id'], graph.serialize(format='xml', encoding='utf-8'),
+        payload_kind='robotics_rdf', parent_version_id=ref['version_id'],
+        source_asset_ids=base['source_asset_ids'], metadata=base['metadata'])
+    panel = open_task(page, site, version); current = submit_task(page, panel)
+    for _ in range(4):
+        if current['status'] == 'generated':
+            break
+        assert current['status'] == 'needs_information' and current['gaps']
+        fill_gaps(panel, current); current = save_gaps(page, panel)
+        expect(panel).to_have_attribute('data-version-id', current['version_id'])
+    assert current['status'] == 'generated' and current['candidate']
+    expect(panel.get_by_role('alert')).to_have_count(0)
+    expect(panel.get_by_role('link', name='完善本体', exact=True)).to_have_count(0)
+    assert (S.OtherProfile, RDF.type, S.PerceptionProfile) in Graph().parse(
+        data=assets.read_payload(current['ontology_id'], current['version_id']), format='xml')
+    values = config(); values['Perception']['exposure_time'] = '155'
+    download(page, site, panel, current, values=values)
+    # A historical response contains no structured diagnostic; do not rewrite it on read.
+    import json
+    import sqlite3
+    legacy = {**current, 'status': 'error', 'candidate': None, 'tree': None, 'run_id': None, 'result': None, 'issues': [], 'error': {'code': 'generation_error',
+        'message': '信息已保存，但本体仍未通过严格生成校验，请检查后继续。'}}
+    with sqlite3.connect(site.root / 'domain.sqlite3') as conn:
+        conn.execute('UPDATE robotics_task_sessions SET record=? WHERE session_id=?',
+                     (json.dumps(legacy), current['session_id']))
+    page.reload()
+    expect(panel.get_by_role('alert')).to_contain_text('行为树未能生成')
+    assert '严格生成校验' not in panel.get_by_role('alert').inner_text()
+    assert site.get('/api/robotics/tasks/' + current['session_id'])['error'] == legacy['error']
+    expect(panel.get_by_role('link', name='完善本体', exact=True)).to_have_count(0)
+    with page.expect_response(lambda r: r.request.method == 'POST' and r.url.endswith('/generate')) as retry:
+        panel.get_by_role('button', name='按当前配置重试生成', exact=True).click()
+    assert retry.value.status == 200
+    restored = retry.value.json()
+    assert restored['status'] == 'generated' and restored['version_id'] == current['version_id']
+    download(page, site, panel, restored, values=values)
+    assert assets.read_payload(**ref) == original
+    done(site)
+
+
+@pytest.mark.parametrize('field,label,kind,original', [
+    ('hasPerceptionProfile', '感知配置', 'PerceptionProfile', str(S.Perception_Current)),
+    ('hasPlacementProfile', '放置配置', 'PlacementProfile', str(S.Placement_Current)),
+])
+def test_switch_back_from_unfinished_configuration_generates_from_final_selection(live, field, label, kind, original):
+    """DR-170: the actual configuration editor can abandon a draft without blocking the task."""
+    site, page, calls = live
+    ref = site.submit()['output_asset_ref']; assets = AssetStore(site.root)
+    before = assets.read_payload(**ref)
+    panel = open_task(page, site, ref); current = finish(page, panel, submit_task(page, panel))
+    def save_configuration():
+        with page.expect_response(lambda r: r.request.method == 'POST' and r.url.endswith('/configurations')) as pending:
+            panel.get_by_role('button', name='保存配置更换', exact=True).click()
+        assert pending.value.status == 200, pending.value.text()
+        state = pending.value.json(); expect(panel).to_have_attribute('data-version-id', state['version_id'])
+        return state
+    panel.get_by_role('button', name='更换'+label, exact=True).click()
+    panel.get_by_role('button', name='新建配置', exact=True).click()
+    panel.get_by_label('配置名称', exact=True).fill('未完成的临时'+label)
+    current = save_configuration()
+    assert current['status'] == 'needs_information' and current['candidate'] is None
+    draft = next(c['profile_iri'] for c in current['configurations'] if c['field'] == field)
+    if kind == 'PerceptionProfile':
+        panel.get_by_label('识别对象名', exact=True).fill('partial-object')
+        current = save_gaps(page, panel)
+        assert current['status'] == 'needs_information' and current['candidate'] is None
+    panel.get_by_role('button', name='更换'+label, exact=True).click()
+    panel.get_by_label('选择配置', exact=True).select_option(original)
+    current = save_configuration()
+    assert all(g['entity_iri'] != draft for g in current['gaps'])
+    expect(panel.locator('[data-value]')).to_have_count(0)
+    current = finish(page, panel, current)
+    expect(panel.get_by_role('alert')).to_have_count(0)
+    expect(panel.get_by_role('link', name='完善本体', exact=True)).to_have_count(0)
+    assert next(c['profile_iri'] for c in current['configurations'] if c['field'] == field) == original
+    graph = Graph().parse(data=assets.read_payload(current['ontology_id'], current['version_id']), format='xml')
+    from rdflib import URIRef
+    assert (URIRef(draft), RDF.type, S[kind]) in graph
+    assert graph.value(URIRef(draft), S.modelName) is None
+    assert assets.read_payload(**ref) == before and len(calls) == 1
+    download(page, site, panel, current)
+    page.reload(); expect(panel.get_by_test_id('task-tree')).to_be_visible()
+    assert len(calls) == 1
+    done(site)
+
+
 def test_optional_notes_do_not_block_generation_or_confirm_applicability(live):
     site, page, _ = live
     panel = open_task(page, site, site.submit()['output_asset_ref'])
@@ -302,6 +522,9 @@ def test_optional_notes_do_not_block_generation_or_confirm_applicability(live):
         fill_gaps(panel, state)
         state = save_gaps(page, panel)
     assert state['status'] == 'generated' and state['task_readiness'] == 'not_verified'
+    assert '任务适配未验证' not in panel.inner_text() and '执行未验证' not in panel.inner_text()
+    assert '设备侧验证' not in panel.inner_text()
+    expect(panel.get_by_role('alert')).to_have_count(0)
     expect(panel.get_by_role('link', name='下载行为树 XML', exact=True)).to_be_visible()
     assert panel.get_by_label('有效期', exact=True).count() == 0
     panel.get_by_text('适配记录（可选）', exact=True).click()

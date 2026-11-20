@@ -29,6 +29,48 @@ function fixture(){
   return f;
 }
 const cases={
+  async specific_completion_feedback(){
+    const f=fixture(),kind=process.argv[3];
+    const mapping={id:'map',kind:'mapping',label:'感知配置'},parameter={id:'param',kind:'parameter',label:'曝光时间'},
+      confirm={id:'confirm',kind:'confirmation',label:'当前任务知识确认'},evidence={id:'evidence',kind:'applicability',label:'抓取适配依据'};
+    const gaps=kind==='confirmation'||kind==='retry'?[confirm]:kind==='multiple'?[mapping,parameter,confirm]:
+      kind==='partial'?[mapping,parameter]:kind==='mapping'||kind==='new_name'?[mapping]:kind==='parameter'?[parameter]:[evidence];
+    f.handler=async()=>response(session({gaps}));await f.c.restore('task_a');f.calls.length=0;
+    if(kind==='mapping')f.c.setAnswer('map',{target:''});
+    if(kind==='new_name')f.c.setAnswer('map',{create:{kind:'PerceptionProfile',label:'  '}});
+    if(kind==='parameter')f.c.setAnswer('param',{value:'  '});
+    if(kind==='evidence')f.c.setAnswer('evidence',{confirmed:true});
+    if(kind==='partial')f.c.setAnswer('param',{value:'155'});
+    const before=clone(f.state().answers);await f.c.save();
+    if(kind==='partial'){
+      assert.equal(f.calls.length,1,'valid partial answers must still save');
+      assert.equal(f.state().error,null);assert.match(f.state().notice,/已保存.*感知配置/);return;
+    }
+    assert.equal(f.calls.length,0,'missing fields must be explained before sending');
+    assert.deepEqual(f.state().answers,before);assert.equal(f.state().busy,false);
+    assert.equal(f.state().error.operation,'completion');
+    const message=f.state().error.message;
+    if(kind==='confirmation'||kind==='retry')assert.match(message,/勾选.*我已核对当前任务知识/);
+    if(kind==='mapping')assert.match(message,/感知配置.*选择/);
+    if(kind==='new_name')assert.match(message,/感知配置.*名称/);
+    if(kind==='parameter')assert.match(message,/曝光时间.*填写/);
+    if(kind==='multiple'){assert.match(message,/感知配置/);assert.match(message,/曝光时间/);assert.doesNotMatch(message,/勾选/);}
+    if(kind==='evidence'){assert.match(message,/抓取适配依据/);assert.match(message,/适配依据/);assert.match(message,/有效期/);}
+    if(kind==='retry'){
+      f.c.setAnswer('confirm',{confirmed:true});f.handler=async()=>response(session({gaps:[],revision:2}));
+      await f.c.save();assert.equal(f.calls.length,1);assert.equal(f.state().error,null);
+    }
+  },
+  async restored_task_version_change_requires_explicit_reentry(){
+    const f=fixture();f.handler=async()=>response(session({version_id:'ver_new',revision:2}));
+    await f.c.restore('task_a',ref);
+    assert.equal(f.state().session,null);
+    assert.equal(f.state().error.code,'task_scope_changed');
+    assert.match(f.state().error.message,/版本.*查看当前任务/);
+    f.calls.length=0;await f.c.restore('task_a');
+    assert.equal(f.state().session.version_id,'ver_new');assert.equal(f.calls.length,1);
+    assert.equal(f.calls[0].options.method,undefined,'explicit reentry only reads the existing task');
+  },
   async hidden_confirmation_draft_is_not_submitted_with_mapping_or_parameter_edits(){
     const f=fixture(),confirmation={id:'gap_confirm',kind:'confirmation',entity_iri:'urn:profile',field:'confirmationStatus'};
     f.handler=async()=>response(session({gaps:[...session().gaps,confirmation]}));

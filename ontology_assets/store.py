@@ -1,4 +1,4 @@
-"""Asset/version services with explicit publication and consumption — DR-141 / DR-146 / DR-147."""
+"""Asset/version services with explicit publication and consumption — DR-141 / DR-146 / DR-147 / DR-170."""
 from datetime import datetime, timezone
 import json
 from pathlib import Path
@@ -172,7 +172,7 @@ class AssetStore:
             raise ValueError("指定版本不是数据 IR，不能用于数据本体读取。")
         return data_ir(self.read_payload(ontology_id, version_id))
 
-    def _robotics_context(self, record, mode):
+    def _robotics_context(self, record, mode, *, task=None):
         if record["payload_kind"] != "robotics_rdf":
             raise ValueError("指定版本不是机器人本体。")
         from domains.robotics.consumer import load_ontology
@@ -184,7 +184,7 @@ class AssetStore:
                 with self.storage.transaction() as conn:
                     load(self.storage, conn, record)
                     verify_sources(self.storage, conn, record)
-            context = load_ontology(Path(confine(self.storage.root, record["path"])), mode=mode)
+            context = load_ontology(Path(confine(self.storage.root, record["path"])), mode=mode, task=task)
         if record['metadata'].get('evidence_policy'):
             from domains.robotics.evidence import policy, POLICY
             if policy(context['graph']) != POLICY:
@@ -215,11 +215,11 @@ class AssetStore:
             raise ValueError("只能加载已发布且模式一致的机器人版本。")
         return self._robotics_context(record, mode)
 
-    def load_robotics_application(self, ontology_id, version_id, *, mode="real"):
-        """DR-148: candidate application still uses the complete consumer validation."""
+    def load_robotics_application(self, ontology_id, version_id, *, mode="real", task=None):
+        """DR-148/170: explicit tasks scope configuration targets; ordinary loads remain global."""
         from .lifecycle import require_active
         with self.storage.transaction() as conn: require_active(conn, ontology_id)
-        return self._robotics_context(self.get_version(ontology_id, version_id), mode)
+        return self._robotics_context(self.get_version(ontology_id, version_id), mode, task=task)
 
     def _register_legacy(self, entries):
         """Commit each prepared inventory as one transaction; callbacks have no DB lock."""

@@ -129,6 +129,21 @@ def test_class_focus_immediately_offers_restore_without_selecting_another_node(l
     assert not site.evidence['page_errors']
 
 
+@pytest.mark.parametrize('live', [{'prepare': support.prepare_candidate}], indirect=True)
+def test_graph_back_restores_enabled_controls_without_writes(live):
+    site, page, calls = live; ref = site.prepared['output_asset_ref']
+    before = support.db_rows(site.root)
+    page.goto(site.url + '/#robotics-view?asset=' + ref['ontology_id'] + '&version=' + ref['version_id'] + '&view=interactive-ontology-graph')
+    panel = interactive_graph_panel(page)
+    panel.get_by_role('button', name='暂停布局', exact=True).click()
+    page.goto(site.url + '/#library')
+    expect(page.get_by_test_id('ontology-catalog')).to_be_visible()
+    page.go_back(); interactive_graph_panel(page)
+    for name in ('暂停布局', '适应画布', '可读视图'):
+        expect(panel.get_by_role('button', name=name, exact=True)).to_be_enabled()
+    assert support.db_rows(site.root) == before and calls == []
+
+
 def test_panel_rejects_oversized_revision_without_changing_caption(live):
     site, page, _ = live
     panel = probe(page, site)

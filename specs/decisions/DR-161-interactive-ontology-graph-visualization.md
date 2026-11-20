@@ -3,7 +3,7 @@
 - **状态 / Status**：accepted（2026-11-17 用户要求按 SDD 启动 IR-031；T01 冻结技术契约作为 RED 依据）。
 - **日期 / Date**：2026-11-17。
 - **关联 / Refs**：[IR-031](../iterations/IR-031-robotics-interactive-ontology-graph-visualization.md)、[DR-150](DR-150-robotics-readonly-graph-views.md)、[DR-152](DR-152-robotics-dual-build.md)、[DR-155](DR-155-ontology-detail-experience.md)、[DR-158](DR-158-master-development-integration.md)。
-- **范围修订**：2026-11-19，按维护者要求，现阶段仅实现机器人本体的交互式图谱；数据本体维持现有可视化和交互，不安排第二轮接入。当前实现交付状态：delivered（相关回归通过）。
+- **范围修订**：2026-11-19，按维护者要求，现阶段仅实现机器人本体的交互式图谱；数据本体维持现有可视化和交互，不安排第二轮接入。当前实现交付状态：delivered。
 
 ## 上下文 / Context
 

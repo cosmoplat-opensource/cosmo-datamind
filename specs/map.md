@@ -20,6 +20,8 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 
 ## 机器人构建与应用交互
 
+[DR-167](decisions/DR-167-application-guidance-and-return-navigation.md) 与 [IR-033](iterations/IR-033-application-guidance-and-return-navigation.md)：应用检查提示、统一完善入口、浏览器后退与操作恢复。AGN-01～AGN-04。
+
 [DR-166](decisions/DR-166-robotics-workflow-continuity.md) 与 [IR-032](iterations/IR-032-robotics-workflow-continuity.md)：任务检查入口、集中知识确认、紧凑设计画布、完成导航与自动执行适配。RUX-01～RUX-06。
 
 ## 测试执行与隔离
@@ -369,3 +371,15 @@ IR-029 于 2026-11-17 按用户反馈精简删除／恢复弹窗及回收站卡�
 ## 交互式本体图谱统一命名
 
 [DR-165 · 交互式本体图谱命名与视图契约](decisions/DR-165-interactive-ontology-graph-naming-and-view-contract.md)：模块、只读接口、页面参数及验收入口统一使用功能名称；GRAPH-NAME-01 本次交付状态为 delivered。
+
+## 任务补齐反馈
+
+[DR-168 · 任务补齐的明确反馈与完善方式说明](decisions/DR-168-task-completion-feedback.md) ／ [IR-034](iterations/IR-034-task-completion-feedback.md)：保存反馈 TCF-02；入口验收 TCF-01 当前范围见下方 DR-169 / IR-035。
+
+## 单一完善入口与生成提示
+
+[DR-169 · 单一本体完善入口与生成结果提示](decisions/DR-169-single-repair-entry-and-generation-feedback.md) ／ [IR-035](iterations/IR-035-single-repair-entry-and-generation-feedback.md)：TCF-01；GEN-FEEDBACK-01 当前任务范围见下方 DR-170 / IR-036。
+
+## 最终任务配置范围
+
+[DR-170 · 按最终任务配置校验与生成](decisions/DR-170-task-configuration-validation-scope.md) ／ [IR-036](iterations/IR-036-task-configuration-validation-scope.md)：CFG-SCOPE-01、GEN-FEEDBACK-01。

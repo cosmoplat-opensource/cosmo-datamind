@@ -11,8 +11,23 @@ const gap=(kind,role)=>({code:'schema.missing_role',layer:'schema',message:'缺�
 const report=()=>({report:{application_id:'robotics.pick_place',entrypoint:'robotics.generate_behavior_tree',check_id:'c1',
  issues:[gap('classes','ParameterBinding'),gap('object_properties','hasBinding'),gap('data_properties','literalValue')]},freshness:'current'});
 const cases={
+ business_guidance(){
+  const issue=gap('data_properties','cppType');issue.expected.label='原始C++类型';
+  assert.match(app.issueText(issue),/参数.*数据类型/);
+  assert.doesNotMatch(app.issueText(issue),/cppType|C\+\+|xsd:/);
+  const html=app.renderIssue(issue);
+  assert.match(html,/<details/);assert.match(html,/查看技术详情/);assert.match(html,/cppType/);
+  const unknown=gap('classes','UnknownInternalRole');unknown.expected.label='UnknownInternalRole';
+  assert.doesNotMatch(app.issueText(unknown),/UnknownInternalRole/);
+  assert.match(app.renderIssue(unknown),/UnknownInternalRole/);
+  for(const role of ['constructor','__proto__','toString']){
+    const inherited=gap('classes',role);inherited.expected.label=role;
+    assert.doesNotMatch(app.issueText(inherited),/function|native code|\[object/);
+  }
+ },
  legacy_names(){const issue={code:'schema.missing_role',message:'缺少明确的应用角色对应。',expected:'旧报告',entity_refs:['urn:example#ImplementationConfiguration']};
-  assert.ok(app.issueText(issue).includes('ImplementationConfiguration'));
+  assert.ok(app.issueText(issue).includes('技能的参数配置'));
+  assert.ok(!app.issueText(issue).includes('ImplementationConfiguration'));
   assert.ok(app.renderIssue(issue).includes('ImplementationConfiguration'));},
  context_identity(){const response=report();response.report.issues.push({...gap('classes','Other'),repair_actions:[{action_id:'robotics.revise_tbox',target:{resource_id:'other'}}]});
   const result=design.repairContext(response,'s1');assert.equal(result.items.length,3);assert.equal(result.revision,10);

@@ -1,4 +1,4 @@
-"""Generate from a pinned published asset and commit durable outputs — DR-144 / DR-146 / DR-147."""
+"""Generate from a pinned published asset and commit durable outputs — DR-144 / DR-146 / DR-147 / DR-170."""
 from pathlib import Path
 import tempfile
 
@@ -28,7 +28,7 @@ def generate_from_version(root, *, ontology_id, version_id, task, mode, session_
 def generate_application(root, *, ontology_id, version_id, task, mode, session_ref, model_info=None, purpose='strict'):
     """DR-148: same validated compiler/run pipeline, without automatic publication."""
     assets = AssetStore(root)
-    context = assets.load_robotics_application(ontology_id, version_id, mode=mode)
+    context = assets.load_robotics_application(ontology_id, version_id, mode=mode, task=task)
     return _generate(root, assets, context, ontology_id, version_id, task, mode, session_ref, model_info, purpose)
 
 

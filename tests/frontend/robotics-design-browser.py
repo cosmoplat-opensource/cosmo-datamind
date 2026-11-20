@@ -357,7 +357,7 @@ def test_application_click_checks_once_and_reload_only_reads_history(live, entry
     assert report['preparation_status'] == 'blocked' and report['execution_status'] == 'not_evaluated'
     panel = page.get_by_test_id('application-check')
     expect(panel).to_have_attribute('data-check-id', cid)
-    expect(panel).to_contain_text('未满足')
+    expect(panel).to_contain_text('还需补齐')
     assert page.get_by_label('选择应用', exact=True).count() == 0
     assert panel.locator('[data-repair-availability="unavailable"] a[href]').count() == 0
     assert not [r for r in site.evidence['requests'] if r['method'] == 'POST'
@@ -810,7 +810,7 @@ def test_adaptation_property_repair_link_also_opens_properties_and_reload_does_n
     assert status == 201 and adaptation['status'] == 'needs_tbox_revision'
     page.goto(site.url + '/#robotics-task?adaptation=' + adaptation['adaptation_id'])
     expect(page.get_by_test_id('robotics-application-adaptation')).to_be_visible()
-    page.get_by_role('link', name='修订本体骨架', exact=True).click()
+    page.get_by_role('link', name='补充缺失定义', exact=True).click()
     wait_design(page, original['session_id'], 'properties', 'awaiting_input')
     assert session(site, original['session_id'])['class_confirmation'] == original['class_confirmation']
     assert calls == []
@@ -874,7 +874,7 @@ def test_unresolved_role_allows_manual_selection_and_one_confirm_generate(live):
     panel = page.get_by_test_id('robotics-application-adaptation')
     expect(panel).to_have_attribute('data-status', 'needs_tbox_revision')
     source = DesignAssets(site.root).detail(**ref)['tbox']['namespace'] + 'CallSite'
-    choose = panel.get_by_role('combobox', name='对应术语：SkillInvocation', exact=True)
+    choose = panel.get_by_role('combobox', name='对应内容：技能的调用信息', exact=True)
     expect(choose).to_have_value('')
     submit = panel.get_by_role('button', name='确认并生成应用版本', exact=True)
     expect(submit).to_be_disabled()
@@ -999,7 +999,7 @@ def test_schema_repair_completion_returns_to_application_flow_with_new_candidate
         flow = ApplicationService(site.root).prepare(**old, mode='real', task_ref=None,
             request_id='repair-return', automatic=True)
         page.goto(site.url + '/#robotics-task?adaptation=' + flow['adaptation_id'])
-        page.get_by_role('link', name='修订本体骨架', exact=True).click()
+        page.get_by_role('link', name='补充缺失定义', exact=True).click()
     wait_design(page, sid, 'classes', 'awaiting_input')
     assert_compact_design_controls(page)
     page.get_by_label('建模要求', exact=True).fill('补齐应用所需类别')
@@ -1161,6 +1161,159 @@ def test_automatic_return_never_overwrites_a_concurrently_changed_task_and_offer
     expect(restored).to_have_attribute('data-session-id', task['session_id'])
     expect(restored).to_have_attribute('data-version-id', task['version_id'])
     assert db_rows(site.root) == before and calls == []
+    done(site)
+
+
+def prepare_cpp_type_gap(root):
+    from copy import deepcopy
+    from tests.robotics_design_support import reply
+    h = Harness(root); state = h.classes()
+    state = h.service.confirm_classes(state['session_id'], request_id='confirm-classes',
+        expected_revision=state['revision'], snapshot_sha256=state['snapshot_sha256'])
+    properties = deepcopy(proposals()[1])
+    properties['data_properties'] = [p for p in properties['data_properties'] if p['id'] != 'cppType']
+    h.runtime.responses.append(reply(properties)); h.message(state); h.run(); state = h.get(state)
+    h.service.confirm_schema(state['session_id'], request_id='confirm-schema',
+        expected_revision=state['revision'], snapshot_sha256=state['snapshot_sha256'])
+    h.run(); return h.get(state)
+
+
+@pytest.mark.parametrize('live', [{'prepare': prepare_cpp_type_gap}], indirect=True)
+@pytest.mark.parametrize('width', [1440, 390])
+def test_application_guidance_explains_business_gap_and_has_one_primary_action(live, width):
+    site, page, calls = live; original = site.prepared
+    page.set_viewport_size({'width': width, 'height': 1000})
+    report = assess_candidate(page, site, original['output_asset_ref'])
+    assert any(i['expected'].get('role') == 'cppType' for i in report['issues'])
+    panel = page.get_by_test_id('application-check')
+    visible = panel.inner_text()
+    assert '参数' in visible and '数据类型' in visible and '完善本体' in visible
+    assert not re.search(r'cppType|C\+\+|xsd:|PortContract', visible)
+    primary = panel.get_by_role('button', name='完善本体', exact=True)
+    expect(primary).to_have_count(1); expect(primary).to_be_enabled()
+    expect(panel.get_by_role('button', name='修订本体骨架', exact=True)).to_have_count(0)
+    expect(panel.get_by_role('button', name='核对角色对应', exact=True)).to_have_count(0)
+    primary_box = primary.bounding_box()
+    recheck_box = panel.get_by_role('button', name='重新检查', exact=True).bounding_box()
+    assert primary_box['x'] + primary_box['width'] + 8 <= recheck_box['x'] or primary_box['y'] + primary_box['height'] + 8 <= recheck_box['y']
+    expect(panel.locator('.rc-options')).to_have_count(0)
+    expect(panel.get_by_role('button', name='使用已有定义', exact=True)).to_have_count(0)
+    expect(panel.locator('[data-action-id]')).to_have_count(1)
+    assert '执行未验证' not in panel.inner_text()
+    panel.get_by_text('查看技术详情', exact=True).first.click()
+    expect(panel).to_contain_text('cppType')
+    assert page.evaluate('document.documentElement.scrollWidth <= innerWidth + 2') and calls == []
+    done(site)
+
+
+@pytest.mark.parametrize('live,action', [
+    ({'prepare': prepare_incomplete_tbox}, 'robotics.revise_tbox'),
+    ({'prepare': prepare_custom_role_candidate}, 'robotics.adapt_execution'),
+], indirect=['live'])
+def test_back_from_each_repair_refreshes_check_without_repair_loop_and_allows_reentry(live, action):
+    site, page, calls = live; ref = site.prepared['output_asset_ref']
+    old = assess_candidate(page, site, ref)
+    application_repair(page, action)
+    destination = page.get_by_test_id('robotics-design' if action.endswith('revise_tbox') else 'robotics-application-adaptation')
+    expect(destination).to_be_visible()
+    before = db_rows(site.root)
+    assert site.get('/api/application-checks/' + old['check_id'])['freshness'] == 'stale'
+    repairs = len([r for r in application_posts(site) if r['url'].endswith('/repairs')])
+    page.go_back()
+    panel = page.get_by_test_id('application-check'); expect(panel).to_be_visible()
+    expect(panel.locator('[data-action-id="' + action + '"]').first).to_be_enabled()
+    new_id = panel.get_attribute('data-check-id')
+    assert new_id != old['check_id']
+    assert site.get('/api/application-checks/' + new_id)['freshness'] == 'current'
+    after = db_rows(site.root)
+    for table in ('versions', 'runs', 'design_sessions', 'design_revisions', 'robotics_adaptations', 'robotics_task_sessions'):
+        assert after[table] == before[table]
+    assert len([r for r in application_posts(site) if r['url'].endswith('/repairs')]) == repairs and calls == []
+    page.go_forward(); expect(destination).to_be_visible()
+    page.go_back(); expect(panel).to_be_visible()
+    expect(panel.locator('[data-action-id="' + action + '"]').first).to_be_enabled()
+    application_repair(page, action)
+    expect(destination).to_be_visible()
+    assert calls == []
+    done(site)
+
+
+@pytest.mark.parametrize('live', [{'prepare': prepare_incomplete_tbox}], indirect=True)
+@pytest.mark.parametrize('malformed', [False, True])
+def test_repair_controls_unlock_after_failure_and_reject_duplicate_inflight_actions(live, malformed):
+    site, page, calls = live
+    assess_candidate(page, site, site.prepared['output_asset_ref'])
+    pending = []
+    page.route('**/api/application-checks/*/repairs', lambda route: pending.append(route))
+    panel = page.get_by_test_id('application-check')
+    button = panel.get_by_role('button', name='完善本体', exact=True)
+    button.click(); expect(button).to_be_disabled()
+    expect(panel.get_by_role('button', name='重新检查', exact=True)).to_be_disabled()
+    button.evaluate('b=>{b.click();b.click();}')
+    assert len(pending) == 1
+    pending[0].fulfill(status=200 if malformed else 503, content_type='application/json',
+        body=json.dumps({'kind': 'unexpected'} if malformed else {'error': {'message': '服务暂不可用'}}))
+    expect(page.locator('#rt_task').get_by_role('alert')).not_to_be_empty()
+    expect(button).to_be_enabled()
+    expect(panel.get_by_role('button', name='重新检查', exact=True)).to_be_enabled()
+    assert calls == []
+    done(site)
+
+
+@pytest.mark.parametrize('live', [{'prepare': prepare_incomplete_tbox}], indirect=True)
+def test_late_repair_response_cannot_navigate_away_and_back_restores_working_controls(live):
+    site, page, calls = live
+    assess_candidate(page, site, site.prepared['output_asset_ref'])
+    pending = []
+    page.route('**/api/application-checks/*/repairs', lambda route: pending.append(route))
+    with page.expect_request('**/api/application-checks/*/repairs'):
+        page.get_by_role('button', name='完善本体', exact=True).click()
+    assert len(pending) == 1
+    page.goto(site.url + '/#library')
+    expect(page.get_by_test_id('ontology-catalog')).to_be_visible()
+    pending[0].fulfill(response=pending[0].fetch())
+    page.wait_for_timeout(300)
+    assert page.url.endswith('#library') and calls == []
+    page.go_back()
+    expect(page.get_by_role('button', name='完善本体', exact=True)).to_be_enabled()
+    done(site)
+
+
+@pytest.mark.parametrize('live', [{'prepare': prepare_incomplete_tbox}], indirect=True)
+def test_repair_revision_conflict_requires_fresh_check_instead_of_reenabling_old_action(live):
+    site, page, calls = live; original = site.prepared
+    report = assess_candidate(page, site, original['output_asset_ref'])
+    site.post_json('/api/robotics/design-sessions/' + original['session_id'] + '/edit-classes',
+        {'expected_revision': original['revision'], 'request_id': 'concurrent-browser-change'})
+    panel = page.get_by_test_id('application-check')
+    primary = panel.get_by_role('button', name='完善本体', exact=True)
+    primary.click()
+    expect(page.locator('#rt_task').get_by_role('alert')).to_contain_text('重新检查')
+    expect(primary).to_be_disabled()
+    expect(panel.get_by_role('button', name='重新检查', exact=True)).to_be_enabled()
+    panel.get_by_role('button', name='重新检查', exact=True).click()
+    expect(primary).to_be_enabled()
+    assert panel.get_attribute('data-check-id') != report['check_id'] and calls == []
+    done(site)
+
+
+@pytest.mark.parametrize('live', [{'prepare': prepare_incomplete_tbox}], indirect=True)
+def test_repair_request_timeout_unlocks_controls_without_automatic_retry(live):
+    site, page, calls = live
+    assess_candidate(page, site, site.prepared['output_asset_ref'])
+    page.clock.install()
+    pending = []
+    page.route('**/api/application-checks/*/repairs', lambda route: pending.append(route))
+    button = page.get_by_role('button', name='完善本体', exact=True)
+    with page.expect_request('**/api/application-checks/*/repairs'):
+        button.click()
+    expect(button).to_be_disabled()
+    page.clock.fast_forward(30001)
+    expect(page.locator('#rt_task').get_by_role('alert')).to_contain_text('超时')
+    expect(button).to_be_enabled()
+    expect(page.get_by_role('button', name='重新检查', exact=True)).to_be_enabled()
+    assert len(pending) == 1 and calls == []
+    page.unroute_all(behavior='ignoreErrors')
     done(site)
 
 

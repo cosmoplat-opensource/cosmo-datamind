@@ -191,3 +191,40 @@ def test_existing_legacy_demo_rejects_real_task_without_model_calls(tmp_path):
     assert db_rows(tmp_path) == before and transport.calls == []
     allowed = tasks.start(ontology_id=version['ontology_id'], version_id=version['version_id'], mode='demo', request_id='correct-demo')
     assert allowed['status'] == 'idle' and allowed['mode'] == 'demo' and transport.calls == []
+
+
+def test_application_task_switch_back_keeps_unfinished_draft_and_synchronized_bundle(tmp_path):
+    """DR-170: scope also applies to application-origin immutable JSON/OWL versions."""
+    service(tmp_path); _, _, completed = adapted(tmp_path)
+    initial, transport = fill_task(tmp_path, completed['output_asset_ref'])
+    original_profile = next(c['profile_iri'] for c in initial['configurations'] if c['field'] == 'hasPerceptionProfile')
+    original_bundle = current_bundle(tmp_path, {k: initial[k] for k in ('ontology_id', 'version_id')})
+    tasks = TaskService(tmp_path)
+    state = tasks.configure(initial['session_id'], field='hasPerceptionProfile',
+        create={'kind': 'PerceptionProfile', 'label': '未完成的临时配置'},
+        expected_revision=initial['revision'], request_id='temporary-profile')
+    assert state['status'] == 'needs_information' and state['candidate'] is None
+    draft = next(c['profile_iri'] for c in state['configurations'] if c['field'] == 'hasPerceptionProfile')
+    gap = next(g for g in state['gaps'] if g['field'] == 'objectName')
+    state = tasks.complete(state['session_id'], answers=[{'gap_id': gap['id'], 'value': 'partial-only'}],
+        expected_revision=state['revision'], request_id='save-partial-profile')
+    partial_bundle = current_bundle(tmp_path, {k: state[k] for k in ('ontology_id', 'version_id')})
+    partial_ref = {k: state[k] for k in ('ontology_id', 'version_id')}
+    state = tasks.configure(state['session_id'], field='hasPerceptionProfile', target=original_profile,
+        expected_revision=state['revision'], request_id='restore-original-profile')
+    for index in range(8):
+        if state['status'] == 'generated': break
+        assert state['status'] == 'needs_information' and state['gaps']
+        assert all(g['entity_iri'] != draft for g in state['gaps'])
+        graph = Graph().parse(data=AssetStore(tmp_path).read_payload(state['ontology_id'], state['version_id']), format='xml')
+        state = tasks.complete(state['session_id'], answers=answers(state, graph),
+            expected_revision=state['revision'], request_id='confirm-final-'+str(index))
+    assert_generated(tmp_path, state)
+    raw, document = current_bundle(tmp_path, {k: state[k] for k in ('ontology_id', 'version_id')})
+    from rdflib import URIRef
+    graph = Graph().parse(data=raw, format='xml')
+    assert str(graph.value(URIRef(draft), S.objectName)) == 'partial-only'
+    assert graph.value(URIRef(draft), S.exposureTime) is None
+    assert current_bundle(tmp_path, partial_ref) == partial_bundle
+    assert current_bundle(tmp_path, {k: initial[k] for k in ('ontology_id', 'version_id')}) == original_bundle
+    assert document['origin'] == original_bundle[1]['origin'] and len(transport.calls) == 1

@@ -1,4 +1,4 @@
-"""Strict structured-task generation and explicit authoring drafts — DR-143 / DR-144.
+"""Strict structured-task generation and explicit authoring drafts — DR-143 / DR-144 / DR-170.
 
 No LLM, source XML, online XML editor or physical robot execution is involved.
 """
@@ -91,6 +91,8 @@ def generate_task(context, task, *, mode="real", output_dir, purpose="strict"):
         _validate_task(task)
     except ValueError as exc:
         return _issue(result, "invalid_task", exc)
+    if isinstance(context, dict) and context.get('task_scope') is not None and context['task_scope'] != task:
+        return _issue(result, 'task_scope_mismatch', '任务与已校验的配置范围不一致，请按当前任务重新检查。')
     try:
         graph = _snapshot(context)
         try:
@@ -121,7 +123,8 @@ def generate_task(context, task, *, mode="real", output_dir, purpose="strict"):
         if grounding["config"] is None:
             return _issue(result, "missing_configuration", "本体未提供完整配置。", status="needs_information")
         _check_snapshot(context, graph)
-        validation, _ = validate_graph(graph, mode=mode)
+        validation, _ = (validate_graph(graph, mode=mode, task=task)
+                         if context.get('task_scope') is not None else validate_graph(graph, mode=mode))
         template = xml_from_graph(graph)
         models, paths = node_models_from_graph(graph), configuration_paths(graph)
         candidate = instantiate(template, grounding["config"], baseline=template, models_root=models, config_paths=paths)

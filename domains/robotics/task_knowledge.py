@@ -1,4 +1,4 @@
-"""Inspect incomplete candidates and apply only task-scoped answers — DR-143 / DR-148.
+"""Inspect incomplete candidates and apply only task-scoped answers — DR-143 / DR-148 / DR-168 / DR-170.
 
 Inspection tolerates missing editable knowledge, never damaged executable semantics.
 Strict consumption still uses the unmodified consumer/SHACL contract.
@@ -25,7 +25,8 @@ def inspect_structure(graph, mode):
     for implementation in (S.grasp_Subtree_Impl, S.Place_Subtree_Impl):
         if (implementation, RDF.type, S.SkillImplementation) not in graph:
             raise ValueError('缺少当前模板的技能实现声明。')
-    conforms, report, detail = graph_validation(graph)
+    # DR-170: admission checks executable structure before the task has chosen profiles.
+    conforms, report, detail = graph_validation(graph, configuration_focus={})
     if not conforms:
         repairable = {S[name] for name in ('objectName', 'modelName', 'threshold', 'exposureTime',
             'rawValue', 'hasCaptureJoints', 'hasTargetPose', 'confirmationStatus')}
@@ -100,9 +101,15 @@ def replace_configuration(graph, task, *, field, mode, target=None, create=None,
 
 
 def apply_answers(graph, task, answers, *, mode, revocations=()):
-    if not isinstance(answers, list) or not 1 <= len(answers) <= 256:
-        raise ValueError('请至少填写一项当前缺少的信息。')
+    if not isinstance(answers, list) or len(answers) > 256:
+        raise ValueError('补齐信息必须是列表，且一次最多保存 256 项。')
     projection = inspect_gaps(graph, task, mode=mode, revocations=revocations)
+    if not answers:
+        items = projection['items']
+        if items and all(item['kind'] == 'confirmation' for item in items):
+            raise ValueError('请先勾选“我已核对当前任务知识”，再保存并继续。')
+        labels = list(dict.fromkeys(item['label'] for item in items if item['kind'] != 'confirmation'))
+        raise ValueError('尚未填写本次补齐内容，请完成：' + ('、'.join(labels) or '当前任务信息') + '。可分步填写并保存。')
     permitted = {item['id']: item for item in projection['items']}
     seen = set()
     for answer in answers:

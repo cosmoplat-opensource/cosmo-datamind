@@ -46,7 +46,8 @@ class Resolver:
                 from ontology_assets.robotics_design import DesignAssets
                 doc=DesignAssets(self.root)._load(**asset_refs[0])[1]
                 robotics['design']={'session_ref':doc['session_ref'],
-                    'state':{'schema_confirmation':doc['state']['schema_confirmation']},
+                    'state':{'schema_confirmation':doc['state']['schema_confirmation'],
+                             'vocabulary':{'sha256':doc['state']['vocabulary']['sha256']}},
                     'abox':{'individuals':doc['abox']['individuals'][:1]}}
             with assets.storage.transaction() as conn:
                 session_ref=doc['session_ref'] if doc else robotics.get('application_origin',{}).get('session_ref')

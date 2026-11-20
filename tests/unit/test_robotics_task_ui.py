@@ -19,7 +19,8 @@ def run(case, *args):
 
 @pytest.mark.parametrize('case', ['restore_get_only', 'scoped_save', 'duplicate_save', 'non_json_error',
     'retry_identity', 'late_session', 'changed_during_save', 'late_dispose', 'clear_previous_result',
-    'wrong_identity', 'snapshot_copy', 'hidden_confirmation_draft_is_not_submitted_with_mapping_or_parameter_edits'])
+    'wrong_identity', 'snapshot_copy', 'hidden_confirmation_draft_is_not_submitted_with_mapping_or_parameter_edits',
+    'restored_task_version_change_requires_explicit_reentry'])
 def test_task_controller_state_contract(case):
     run(case)
 
