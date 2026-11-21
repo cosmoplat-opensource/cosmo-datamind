@@ -22,7 +22,6 @@ from pathlib import Path
 
 import make_opaque as mo
 import rescore_v2 as R
-import stats_v4 as SV
 import analysis_review_20261120 as AR
 
 EXP = Path(__file__).resolve().parent
@@ -103,7 +102,7 @@ def mg(pool, aw, norm):
     meta = AR.mg_meta()
     orig = {i: q for d in ("fwd", "rev") for i, q in R.questions(d).items()}   # original BIRD text (MG evidence is renamed)
     dbpath = str(EXP / "variants/opaque_merged/dev_databases/bird_merged/bird_merged.sqlite")
-    keys, gsql = [], {}
+    keys, gcor = [], {}
     for k, q in meta.items():
         a = aw.get(str(q["question_id"]))
         o0 = orig.get(str(q["question_id"]))
@@ -118,10 +117,12 @@ def mg(pool, aw, norm):
         o, n = rows_or_none((str(mo.SRC / src / f"{src}.sqlite"), a["SQL"])), rows_or_none((dbpath, new))
         if o is None or n is None or Counter(o) != Counter(n):     # multiset, as make_opaque_merged.py
             continue
-        keys.append(k); gsql[k] = new
+        keys.append(k); gcor[k] = n                                # reuse the checked rows; do not rerun the query
+    gorig = dict(zip(keys, pool.map(rows_or_none, [(dbpath, meta[k]["SQL"]) for k in keys])))
+    failed = [k for k in keys if gorig[k] is None]                  # original merged gold failed or timed out: drop
+    keys = [k for k in keys if gorig[k] is not None]
     db = {k: meta[k]["source_db"] for k in keys}
-    gold = {"original": dict(zip(keys, pool.map(rows_or_none, [(dbpath, meta[k]["SQL"]) for k in keys]))),
-            "corrected": dict(zip(keys, pool.map(rows_or_none, [(dbpath, gsql[k]) for k in keys])))}
+    gold = {"original": gorig, "corrected": gcor}
     acc = {}
     for cond in ("evo", "none"):
         for fold, rep, d, results, _ in AR.runs_mg(cond):
@@ -132,7 +133,7 @@ def mg(pool, aw, norm):
                 for k, (_st, tol) in zip(ks, res):
                     acc.setdefault((cond, which), {}).setdefault(k, []).append(tol)
     m = {key: {k: sum(v) / len(v) for k, v in d.items()} for key, d in acc.items()}
-    out = {"n_questions": len(keys)}
+    out = {"n_questions": len(keys), "dropped_original_gold_failed": len(failed)}
     for which in ("original", "corrected"):
         a, b = m[("evo", which)], m[("none", which)]
         f = lambda ks, a=a, b=b: mean_diff(a, b, ks)                              # noqa: E731

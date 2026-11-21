@@ -104,7 +104,7 @@ def teaser():
     fig = plt.figure(figsize=(TXT, 2.15))
     a = fig.add_axes([0.0, 0.02, 0.56, 0.96])
     a.set_xlim(-0.05, 10); a.set_ylim(0, 4.6); a.axis("off")
-    # inputs -> two builders -> same agent (+ optional side information) -> one scorer
+    # inputs -> two builders -> same agent (+ optional auxiliary inputs) -> one scorer
     box(a, 0.1, 1.7, 1.72, 1.2, "Database +\nconstruction\nquestions", fc="#ffffff", size=7.3)
     box(a, 2.15, 2.75, 1.95, 0.85, "EvoOntology\nbuilder", fc="#fde7dd", ec=C["evo"])
     box(a, 2.15, 1.0, 1.95, 0.85, "DataMind\nbuilder", fc="#dcf3ea", ec=C["dm"])
@@ -118,7 +118,7 @@ def teaser():
     arrow(a, (7.02, 2.3), (7.73, 2.3))
     badge(a, 9.53, 2.6, 1); badge(a, 9.53, 2.0, 2)          # beside the scorer box, clear of its border
     a.text(0.05, 0.45, "Pitfalls controlled", ha="left", va="center", color=INK2, fontsize=7)
-    for i, (x, t) in enumerate(zip((2.6, 5.1, 7.35), ["multiset vs set", "extra column", "unequal side info"])):
+    for i, (x, t) in enumerate(zip((2.6, 5.1, 7.35), ["multiset vs set", "extra column", "unequal inputs"])):
         badge(a, x, 0.45, i + 1)
         a.text(x + 0.25, 0.45, t, ha="left", va="center", color=INK2, fontsize=7)
     # right: accuracy by setting
@@ -159,7 +159,7 @@ def pitfalls():
     setr = md_row(EXP / "runs/v2/rescore/统计_v3.md", "BIRD / full / native", "strict")
     tol = md_row(EXP / "runs/v2/rescore/统计_v3.md", "BIRD / full / native", "tolerant")
     rows = [("Own scorers", *own), ("One set rule", *setr), ("+ column tolerance", *tol),
-            ("+ same side info", a3["diff"], *a3["ci"])]
+            ("+ same inputs", a3["diff"], *a3["ci"])]
     fig, ax = plt.subplots(figsize=(COL, 1.45))
     ys = list(range(len(rows)))[::-1]
     for y, (lab, d, lo, hi) in zip(ys, rows):
@@ -506,7 +506,7 @@ def v5():
         ax2.plot([lo, hi], [y, y], color=C[c], lw=6, alpha=0.22, solid_capstyle="butt", zorder=2)
         ax2.plot([b["tolerant"]], [y], "o", ms=5.5, color=C[c], mec="white", mew=0.8, zorder=5)
     ax2.set_yticks(ys2); ax2.set_yticklabels([c[1] for c in conds]); ax2.tick_params(axis="y", length=0)
-    ax2.set_ylim(-0.6, len(conds) - 0.4); ax2.set_xlim(15, 60)
+    ax2.set_ylim(-0.6, len(conds) - 0.4); ax2.set_xlim(15, 62)
     ax2.set_xlabel("Test accuracy (%), same questions")
     ax2.set_title("b  Opaque (open) vs. readable names (filled)", loc="left", fontsize=8, fontweight="bold")
     clean(ax2, grid=None); ax2.spines["left"].set_visible(False); ax2.tick_params(axis="y", length=0)

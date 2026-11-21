@@ -28,7 +28,7 @@ Section 6.1; under `results/v5/`).
 **Scorer correction (2026-11-20).** The first version of `rescore_v2.tolerant_match` tried column reorderings only when
 the prediction had more columns than the gold result, so an answer with the gold columns in another order was judged
 wrong. The released `rescore_v2.py` also permutes equal-width predictions; this changed 481 of 172,752 question-run
-judgments, all from wrong to correct, and every released score and statistic uses the corrected rule. Question 1031 of
+judgments, all from wrong to correct (8 strict judgments also changed on rescoring, all on question 1031 below), and every released score and statistic uses the corrected rule. Question 1031 of
 fold B→A (european_football_2) has a gold query that uses `DATETIME()`, so its result, and the judgments on it, depend
 on the day of scoring.
 

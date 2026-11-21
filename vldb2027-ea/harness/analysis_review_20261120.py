@@ -18,7 +18,6 @@
 """
 import glob
 import json
-import random
 import re
 from collections import defaultdict
 from pathlib import Path
@@ -57,6 +56,7 @@ def per_question(root, setting, cond):
             for i, v in json.loads(f.read_text()).items():
                 per[i].append(v[1])
         for i, vs in per.items():
+            assert len(vs) == 3, (setting, cond, fold, i)               # every question in all three repeats
             acc[f"{fold}:{i}"] = sum(vs) / len(vs)
     return acc
 

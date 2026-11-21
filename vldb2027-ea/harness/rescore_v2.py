@@ -4,7 +4,8 @@
 strict:   set(pred rows) == set(gold rows)                      (the original scorer's rule)
 tolerant: some ordered choice of len(gold columns) distinct prediction columns, projected,
           gives set(projected rows) == set(gold rows)            (extra columns such as an aggregate next to
-          the asked-for name are allowed; missing or wrong columns are not)
+          the asked-for name are allowed; a gold column must be matched by some prediction column with the same
+          values, which need not be the intended one; predictions wider than MAX_PRED_COLS get no tolerance)
 
 Only the first SQL of a DataMind answer is scored (ex_first), the ReAct agent's pred_sql otherwise.
 Each unit is executed on the database variant it used (variants/<S>/dev_databases for S != full).
@@ -16,7 +17,6 @@ usage: python3 rescore_v2.py [--workers 8] [--only SUBSTRING]
 from __future__ import annotations
 
 import argparse
-import hashlib
 import itertools
 import json
 import pickle
