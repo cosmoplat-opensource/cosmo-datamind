@@ -9,10 +9,12 @@ foreign-key references consistent). Outputs, under variants/opaque/:
   dev_databases/<db>/<db>.sqlite          renamed copy
   mapping/<db>.json                       {"tables": {orig: code}, "columns": {orig: code}}
   dictionaries/<db>.json                  the BIRD column documentation re-keyed to the codes
-  questions/<split>/<db>.json             questions with gold SQL rewritten to the codes, evidence rewritten
-                                          (identifier tokens only); each rewritten gold SQL is executed on the
+  questions/<sr>/<split>/<db>.json        questions with gold SQL rewritten to the codes, evidence rewritten
+                                          (see rewrite_text); each rewritten gold SQL is executed on the
                                           opaque database and must return the same multiset of rows as the original
-  construction_workload/<db>.json         construction questions with rewritten evidence (no SQL)
+  questions/<sr>/construction/<db>.json   construction questions with rewritten evidence (no SQL); the builders read
+                                          a copy of these at variants/opaque_workload/<sr>/<db>.json (identical
+                                          question and evidence texts, checked 2026-11-21; released with the benchmarks)
   verify.json                             per-split counts; questions whose rewrite does not reproduce the result
                                           are listed and dropped
 usage: python3 make_opaque.py [db ...]
@@ -100,7 +102,10 @@ def rewrite_sql(sql, tmap, cmap):
 def rewrite_text(text, tmap, cmap):
     """Replace identifier tokens in evidence text: backticked or double-quoted names, qualified names (T1.col), and
     bare names used in an expression position (followed by an operator or closing parenthesis, or preceded by an
-    opening parenthesis or comma inside one). Prose words that merely equal a column name are left as they are."""
+    opening parenthesis or comma inside one). Because the lookahead also accepts "in", "is" and a comma in any case, a prose
+    word that equals a table or column name is replaced when one of these follows it ("client in debt" -> "tab03 in
+    debt"); about a dozen such replacements occur in the construction evidence. Kept as is: the released variants and all
+    ontologies were built with this rule (Section 4.1 of the paper discloses it)."""
     names = {k.lower(): v for k, v in tmap.items()} | dict(cmap)
 
     def sub_quoted(m):

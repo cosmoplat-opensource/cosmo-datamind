@@ -16,6 +16,9 @@ import gzip
 import json
 import re
 import sqlite3
+
+import sqlglot
+from sqlglot import exp
 from collections import defaultdict
 from pathlib import Path
 
@@ -36,8 +39,14 @@ def tables_of(S, db):
 
 
 def sql_tables(sql, names):
-    s = sql.lower()
-    return {t for t in names if re.search(r'(?<![\w])["`\[]?' + re.escape(t.lower()) + r'["`\]]?(?![\w])', s)}
+    """Tables the query reads, from the parse tree (a regex over the text took the keyword ORDER for the table "order")."""
+    low = {t.lower(): t for t in names}
+    try:
+        found = {x.name.lower() for x in sqlglot.parse_one(sql, read="sqlite").find_all(exp.Table)}
+    except Exception:                                                     # noqa: BLE001
+        s = sql.lower()                                                   # unparsable: fall back to the text match
+        return {t for t in names if re.search(r'(?<![\w])["`\[]?' + re.escape(t.lower()) + r'["`\]]?(?![\w])', s)}
+    return {low[n] for n in found if n in low}
 
 
 def load_trace(f):
@@ -78,6 +87,7 @@ def main():
             a = agg[c]
             for r in results:
                 qid = str(r["question_id"])
+                a["no_rescore"] += qid not in rescore                          # counted, scored as wrong
                 tol = rescore.get(qid, [0, 0])[1]
                 calls = float(r.get("semantic_tool_calls") or 0)
                 a["n"] += 1; a["turns"] += float(r.get("turns") or 0); a["acc"] += tol
@@ -92,6 +102,7 @@ def main():
                     continue
                 tf = glob.glob(str(rdir / r["db_id"] / "traces" / f"{qid}.json*"))
                 if not tf:
+                    a["no_trace"] += 1                                             # counted in the output
                     continue
                 msgs = load_trace(tf[0]).get("messages") or []
                 if c == "M":
@@ -111,7 +122,8 @@ def main():
         for c, a in agg.items():
             x = {"question_runs": int(a["n"]), "mean_turns": round(a["turns"] / a["n"], 1),
                  "turn_limit_pct": round(100 * a["at_limit"] / a["n"], 1),
-                 "tolerant_acc": round(100 * a["acc"] / a["n"], 1)}
+                 "tolerant_acc": round(100 * a["acc"] / a["n"], 1),
+                 "missing_score": int(a["no_rescore"]), "missing_trace": int(a["no_trace"])}
             if c in ("evo", "dm", "evodoc", "dmdoc"):
                 x.update(tool_use_pct=round(100 * a["n_call"] / a["n"], 1), mean_tool_calls=round(a["calls"] / a["n"], 2),
                          acc_with_call=round(100 * a["acc_call"] / a["n_call"], 1) if a["n_call"] else None,

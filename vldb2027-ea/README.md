@@ -41,7 +41,7 @@ on the day of scoring.
 | Table 1, row 3 and note (+7.5, +0.5); Section 3.4; Figure 3, last bar | `rescore_v3.py`, `analysis_sec3.py` | `results/v4/analysis_sec3.json` |
 | Figure 2 | — | schematic with illustrative values |
 | Section 3.2 (reruns after the infrastructure audit) | `audit_infra_v4.py` | `results/v4/discarded_infra/` |
-| Section 4, Figure 4 (benchmark checks, leakage audit) | `make_opaque.py`, `make_opaque_merged.py`, `audit_evo_builds.py` | `benchmarks/*/verify.json`, `benchmarks/opaque_merged/mapping.json`, `results/v4/evo_build_audit.json` |
+| Section 4, Figure 4 (benchmark checks, leakage audit) | `make_opaque.py`, `make_opaque_merged.py`, `audit_evo_builds.py` | `benchmarks/*/verify.json`, `benchmarks/opaque_merged/mapping.json`, `benchmarks/opaque_workload/` (BIRD-opaque builder inputs, copies of `benchmarks/opaque/questions/*/construction/`), `results/v4/evo_build_audit.json` |
 | Table 2, Figure 5, Section 5 | `queue_v4.py` (runs), `score_v4_all.sh` → `score_react_dir.py`, `stats_v4.py` | `results/v4/统计_v4.md`, `results/v4/stats_v4.json` |
 | Figure 6 (per source database) | `analysis_perdb.py` | `results/v4/analysis_perdb.json` |
 | Figure 7; Sections 4.2, 5 (readable names, large schema), 6.1 (ablation), 6.5 (60 turns) | `make_readable_merged.py`, `make_v5_ablations.py`, `queue_v5.py`, `score_v5_all.sh`, `stats_v5.py` | `results/v5/stats_v5.json`, `benchmarks/readable_merged/verify.json` |
@@ -98,7 +98,10 @@ released (`rescore.json`), `stats_v4.py`, `stats_dr093.py` and `analysis_ablatio
 3. Schema variants: `make_schema_variants.py` (nofk, bare), `make_opaque.py`, `make_opaque_merged.py`.
 4. Model access: the scripts read an OpenAI-compatible endpoint and key from environment variables
    (`DEEPSEEK_API_KEY` or `BIRD_AGENT_API_KEY`; see `evo_env.sh`). All runs used the `deepseek-flash` model; the
-   EvoOntology builder ran through the Claude Code CLI with `--model deepseek-flash`.
+   EvoOntology builder ran through the Claude Code CLI with `--model deepseek-flash`. `deepseek-flash` is a floating alias and the logs record
+   only the alias; the model behind it may have changed between the October runs (`results/v2`, readable-BIRD
+   builds) and the November runs (everything else). `analysis_run_dates_20261121.py` lists the dates per run family
+   (`results/v5/run_dates_20261121.json`); Section 3.1 of the paper names the comparisons that span both periods.
 5. Ontology builds: `build_evo_v2.py` (EvoOntology builder agent) and `build_dm_v2.py` (DataMind builder: this
    repository at the commit of this branch, checked out next to the experiment root as `../cosmo-datamind-exp`, the
    path `build_dm_v2.py` and `bird_datamind.py` expect); conversion with `dm2evo.py` (`DM2EVO_FULL=1`; Section 6.2 additionally

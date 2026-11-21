@@ -1,0 +1,131 @@
+{
+ "db_id": "european_football_2",
+ "questions": [
+  {
+   "question_id": 1035,
+   "db_id": "european_football_2",
+   "question": "Give the team_fifa_api_id of teams with more than 50 but less than 60 build-up play speed.",
+   "evidence": "teams with more than 50 but less than 60 build-up play speed refers to fld053 >50 AND fld053 <60; ",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1025,
+   "db_id": "european_football_2",
+   "question": "Give the name of the league had the most goals in the 2016 season?",
+   "evidence": "league that had the most goals refers to MAX(SUM(fld080, fld081)); 2016 season refers to fld075 = '2015/2016';",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1105,
+   "db_id": "european_football_2",
+   "question": "How was Francesco Migliore's attacking work rate on 2015/5/1?",
+   "evidence": "Francesco Migliore refers to fld043 = 'Francesco Migliore'; on 2015/5/1 refers to fld004 LIKE '2015-05-01%';",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1028,
+   "db_id": "european_football_2",
+   "question": "In Scotland Premier League, which away team won the most during the 2010 season?",
+   "evidence": "Final result should return the tab05.fld051; Scotland Premier League refers to tab03.fld048 = 'Scotland Premier League'; away team refers to fld079; away team that won the most refers to MAX(SUBTRACT(fld081, fld080) > 0); 2010 season refers to fld075 = '2009/2010'; won the most refers to MAX(COUNT(*));",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1133,
+   "db_id": "european_football_2",
+   "question": "How many football players born after the 1990s have the first name \"Aaron\"?",
+   "evidence": "first name \"Aaron\" refers to fld043 LIKE 'Aaron%'; born after the 1990s refers to fld044 > '1990'",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1115,
+   "db_id": "european_football_2",
+   "question": "What percentage is Landon Donovan's overall rating higher than Jordan Bowery on 2013/7/12?",
+   "evidence": "Landon Donovan's refers to fld043 = 'Landon Donovan'; Jordan Bowery refers to fld043 = 'Jordan Bowery'; percentage refers to DIVIDE(SUBTRACT(fld043 = 'Landon Donovan' fld005; fld043 = 'Jordan Bowery' fld005), fld043 = 'Landon Donovan' fld005)*100",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1036,
+   "db_id": "european_football_2",
+   "question": "List the long name of teams with above-average build-up play passing in 2012.",
+   "evidence": "long name of teams refers to fld051; build-up play passing refers to fld057; above-average build-up play passing = fld057 > DIVIDE(SUM(fld057), COUNT(fld051) WHERE fld057 IS NOT NULL); in 2012 refers to strftime('%Y', fld004) = '2012'; ",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1096,
+   "db_id": "european_football_2",
+   "question": "Calculate the average overall rating of Pietro Marino.",
+   "evidence": "Pietro Marino refers to fld043 = 'Pietro Marino'; average overall rating AVG(T1.fld005)",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1084,
+   "db_id": "european_football_2",
+   "question": "Among the players born before the year 1986, how many of them would remain in his position and defense while the team attacked?",
+   "evidence": "players born before the year 1986 refers to strftime('%Y', fld044)<'1986'; players who would remain in his position and defense while the team attacked refers to fld009 = 'high'; Should consider DISTINCT in the final result;",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1124,
+   "db_id": "european_football_2",
+   "question": "Who are the players that tend to be attacking when their mates were doing attack moves? List down their name.",
+   "evidence": "tend to be attacking when their mates were doing attack moves refers to fld008 = 'high';",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1116,
+   "db_id": "european_football_2",
+   "question": "List down most tallest players' name.",
+   "evidence": "tallest refers to rank based on the fld045 in descending order; Most tallest players refers to rank = 1 ",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1103,
+   "db_id": "european_football_2",
+   "question": "What was the overall rating for Aaron Mooy on 2016/2/4?",
+   "evidence": "Aaron Mooy refers to fld043 = 'Aaron Mooy'; on 2016/2/4 refers to fld004 LIKE '2016-02-04%';",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1114,
+   "db_id": "european_football_2",
+   "question": "What was the average overall rating for Marko Arnautovic from 2007/2/22 to 2016/4/21?",
+   "evidence": "average overall rating refers to avg(fld005); Marko Arnautovic refers to fld043 = 'Marko Arnautovic'; from 2007/2/22 to 2016/4/21 refers to the first 10 characters of fld004 BETWEEN '2007-02-22' and '2016-04-21'",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1092,
+   "db_id": "european_football_2",
+   "question": "Give the name of the league had the most matches in the 2008/2009 season?",
+   "evidence": "league that had the most matches in the 2008/2009 season refers to MAX(league_name WHERE fld075 = '2008/2009');",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1088,
+   "db_id": "european_football_2",
+   "question": "Please list the names of the players whose volley score and dribbling score are over 70.",
+   "evidence": "volley score are over 70 refers to fld014 > 70; dribbling score refers to dribbling are over 70 refers to fld015 > 70;",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1058,
+   "db_id": "european_football_2",
+   "question": "Who has the highest average finishing rate between the highest and shortest football player?",
+   "evidence": "finishing rate refers to finishing; highest average finishing rate = MAX(AVG(fld011)); highest football player refers to MAX(fld045); shortest football player refers to MIN(fld045);",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1079,
+   "db_id": "european_football_2",
+   "question": "Which player is the tallest?",
+   "evidence": "tallest player refers to MAX(fld045);",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1130,
+   "db_id": "european_football_2",
+   "question": "What are the short name of team who played safe while creating chance of passing?",
+   "evidence": "played safe while creating chance of passing refers to fld061 = 'Safe'; short name of team refers to fld052",
+   "difficulty": "moderate"
+  }
+ ]
+}

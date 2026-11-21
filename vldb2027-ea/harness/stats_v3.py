@@ -77,7 +77,8 @@ def stats(left, right, meta, samples=10000):
     rng = np.random.default_rng(20261013)
     ch = tot[rng.integers(0, len(tot), (samples, len(tot)))].sum(axis=1)
     diffs = 100 * (ch[:, 1] - ch[:, 2]) / ch[:, 0]
-    p_boot = min(1.0, 2 * min((diffs <= 0).mean(), (diffs >= 0).mean()))
+    n = len(diffs)                                                        # (count + 1) / (B + 1): never exactly 0
+    p_boot = min(1.0, 2 * min(((diffs <= 0).sum() + 1) / (n + 1), ((diffs >= 0).sum() + 1) / (n + 1)))
     kinds = sorted({meta[q]["difficulty"] for q in ids})
     return {**row(ids, "all"), "databases": len(groups), "ci95": np.quantile(diffs, [.025, .975]).tolist(), "p_boot": p_boot,
             "mcnemar": [ag.mcnemar({k: v for k, v in left[r].items()}, {k: v for k, v in right[r].items()})[0] for r in (1, 2, 3)],

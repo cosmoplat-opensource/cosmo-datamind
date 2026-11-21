@@ -73,7 +73,8 @@ def main():
             res.setdefault("full_chain", {})[metric] = round(100 * sum(base.values()) / len(base), 1)
             for cond in ABL:
                 u = unit(pool, v3("dm-w", cond), j)
-                if u is None:
+                if u is None:                       # only the metric ablation is absent, and only on BIRD (no metrics there)
+                    assert (pool, cond) == ("BIRD", "nomet"), (pool, cond)
                     continue
                 res.setdefault(cond, {"label": ABL[cond]})[metric] = dict(diff(pool, u, base, dbs, cluster), acc=round(100 * sum(u.values()) / len(u), 1))
             none = unit(pool, v3("none", "noexdict"), j)

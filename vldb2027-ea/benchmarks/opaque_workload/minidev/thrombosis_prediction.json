@@ -1,0 +1,131 @@
+{
+ "db_id": "thrombosis_prediction",
+ "questions": [
+  {
+   "question_id": 1195,
+   "db_id": "thrombosis_prediction",
+   "question": "What is the average blood albumin level for female patients with a PLT greater than 400 who have been diagnosed with SLE?",
+   "evidence": "average blood albumin level refers to AVG(fld025); female refers to fld014 = 'F'; PLT greater than 400 refers to fld038 > 400; diagnosed with SLE refers to fld008= 'SLE'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1187,
+   "db_id": "thrombosis_prediction",
+   "question": "How many patients who were examined between 1987/7/6 and 1996/1/31 had a GPT level greater than 30 and an ALB level less than 4? List them by their ID.",
+   "evidence": "examined between 1987/7/6 and 1996/1/31 refers to fld019 BETWEEN '1987-07-06' AND '1996-01-31'; GPT level greater than 30 refers to fld021 > 30; ALB level less than 4 fld025 < 4",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1153,
+   "db_id": "thrombosis_prediction",
+   "question": "What is the disease patient '30609' diagnosed with. List all the date of laboratory tests done for this patient.",
+   "evidence": "'30609' is the Patient ID; disease means Diagnosis",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1156,
+   "db_id": "thrombosis_prediction",
+   "question": "State the ID and age of patient with positive degree of coagulation.",
+   "evidence": "age refers to SUBTRACT(year(current_timestamp), year(fld015)); positive degree of coagulation refers to fld010 = '+';",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1232,
+   "db_id": "thrombosis_prediction",
+   "question": "Provide ID, sex and age of patient who has blood glucose (GLU) not within normal range but with total cholesterol(T-CHO) within normal range.",
+   "evidence": "age = SUBTRACT(year(current_timestamp), year(fld015)); blood glucose (fld033) not within normal range refers to fld033 > = 180; total cholesterol(T-CHO) within normal range refers to fld030 < 250; ",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1255,
+   "db_id": "thrombosis_prediction",
+   "question": "For the patients with an abnormal Ig M level, what is the most common disease they are diagnosed with?",
+   "evidence": "abnormal Ig M level refers to fld048 <=40 OR fld048 >= 400; most common disease refers to MAX(COUNT(fld008));",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1208,
+   "db_id": "thrombosis_prediction",
+   "question": "Provide IDs for male patients with ALT glutamic pylvic transaminase (GPT) that have history of ALT glutamic pylvic transaminase (GPT) exceed the normal range.",
+   "evidence": "male refers to fld014 = 'M'; ALT glutamic pylvic transaminase (fld021) exceed the normal range refers to fld021 > = 60",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1302,
+   "db_id": "thrombosis_prediction",
+   "question": "For the patients with a normal range of creatinine phosphokinase, how many of them have a positive measure of degree of coagulation?",
+   "evidence": "normal range of creatinine phosphokinase refers to fld032 < 250; positive measure of degree of coagulation refers to fld009 = '+' or fld010 = '+' or fld011 = '+' ;",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1256,
+   "db_id": "thrombosis_prediction",
+   "question": "How many patients with a abnormal C-reactive protein don't have their data recorded?",
+   "evidence": "abnormal C-reactive protein refers to fld049 ='+'; don't have data recorded refers to fld016 IS NULL;",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1257,
+   "db_id": "thrombosis_prediction",
+   "question": "Among the patients whose creatinine level is abnormal, how many of them aren't 70 yet?",
+   "evidence": "creatinine level is abnormal refers to fld028 >= 1.5; aren't 70 yet refers to SUBTRACT((YEAR(CURDATE()), YEAR(fld015))) < 70; ",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1189,
+   "db_id": "thrombosis_prediction",
+   "question": "What number of patients with a degree of thrombosis level 2 and ANA pattern of only S, have a level of anti-Cardiolip in antibody (IgM) 20% higher than average?",
+   "evidence": "thrombosis level 2 refers to fld013 = 2; ANA pattern of only S refers to fld005 = 'S'; average anti-Cardiolip in antibody (fld048) refers to AVG(fld004); calculation = MULTIPLY(AVG + AVG, 0.2)",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1231,
+   "db_id": "thrombosis_prediction",
+   "question": "For patient born between 1936-1956, how many male patients have creatinine phosphokinase beyond the normal range?",
+   "evidence": "born between 1936-1956 refers to year(fld015) BETWEEN '1936' AND '1956'; male patients refers to fld014 = 'M'; creatinine phosphokinase beyond the normal range refers to fld032 > = 250; Should consider DISTINCT in the final result;",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1220,
+   "db_id": "thrombosis_prediction",
+   "question": "Provide all ID, sex and birthday of patients whose urea nitrogen (UN) just within the borderline of passing?",
+   "evidence": "urea nitrogen (fld027) just within the borderline of passing refers to fld027 = 29; ",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 1149,
+   "db_id": "thrombosis_prediction",
+   "question": "Are there more in-patient or outpatient who were male? What is the deviation in percentage?",
+   "evidence": "male refers to fld014 = 'M'; in-patient refers to fld018 = '+'; outpatient refers to fld018 = '-'; percentage = DIVIDE(COUNT(fld001) where fld014 = 'M' and fld018 = '+', COUNT(fld001) where fld014  = 'M' and fld018 = '-')",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1275,
+   "db_id": "thrombosis_prediction",
+   "question": "Among the patients who has a normal level of anti-centromere and a normal level of anti-SSB, how many of them are male?",
+   "evidence": "normal level of anti-centromere refers to fld059 IN('-', '+-'); normal level of anti-SSB refers to fld058 IN('-', '+-'); male refers to fld014 = 'M'; Should consider DISTINCT in the final result;",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1252,
+   "db_id": "thrombosis_prediction",
+   "question": "Among the patients with a normal Ig G level, how many of them have symptoms?",
+   "evidence": "normal Ig G level refers to fld046 > 900 and fld046 < 2000; have symptoms refers to fld012 IS NOT NULL;",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 1270,
+   "db_id": "thrombosis_prediction",
+   "question": "Among the patients who has a normal anti-scl70, how many of them are female and does not have any symptom?",
+   "evidence": "normal anti-scl70 refers to fld056 IN('negative', '0'); female refers to fld014 = 'F'; does not have any symptom refers to fld012 IS NULL; Should consider DISTINCT in the final result;",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 1227,
+   "db_id": "thrombosis_prediction",
+   "question": "What is the average age of the male patient with high cholesterol?",
+   "evidence": "average age = DIVIDE(SUM(SUBTRACT(YEAR(NOW()), YEAR(fld015))), COUNT(fld001)); male patient refers to fld014 = 'M'; high cholesterol refers to fld030 > = 250;",
+   "difficulty": "moderate"
+  }
+ ]
+}

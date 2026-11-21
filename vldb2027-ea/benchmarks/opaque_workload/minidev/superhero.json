@@ -1,0 +1,131 @@
+{
+ "db_id": "superhero",
+ "questions": [
+  {
+   "question_id": 766,
+   "db_id": "superhero",
+   "question": "What is the hero's full name with the highest attribute in strength?",
+   "evidence": "highest tab02 in strength refers to MAX(fld021) WHERE fld003 = 'strength';",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 736,
+   "db_id": "superhero",
+   "question": "Who is the dumbest superhero?",
+   "evidence": "the dumbest superhero refers to MIN(fld021) where fld003 = 'Intelligence'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 794,
+   "db_id": "superhero",
+   "question": "Which hero was the fastest?",
+   "evidence": "which hero refers to fld008; fastest refers to MAX(fld021) WHERE fld003 = 'Speed';",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 798,
+   "db_id": "superhero",
+   "question": "What is the publisher for Hawkman, Karate Kid and Speedy?",
+   "evidence": "publisher refers to fld006; Hawkman refers to fld008 = 'Hawkman'; Karate Kid refers to fld008 = 'Karate Kid'; Speedy refers to fld008 = 'Speedy';",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 829,
+   "db_id": "superhero",
+   "question": "Which publisher created more superheroes: DC or Marvel Comics? Find the difference in the number of superheroes.",
+   "evidence": "DC refers to fld006 = 'DC Comics'; Marvel Comics refers to fld006 = 'Marvel Comics'; difference = SUBTRACT(SUM(fld006 = 'DC Comics'), SUM(fld006 = 'Marvel Comics'));",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 772,
+   "db_id": "superhero",
+   "question": "List the eyes, hair and skin colour of all female superheroes published by Dark Horse Comics.",
+   "evidence": "eyes refers to fld011; hair refers to fld012; skin colour refers to fld013; female superheroes refers to fld005 = 'Female'; published by Dark Horse Comics refers to fld006 = 'Dark Horse Comics';",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 724,
+   "db_id": "superhero",
+   "question": "Please list the superhero names of all the superheroes that have blue eyes and blond hair.",
+   "evidence": "blue eyes refers to fld004 = 'Blue' and fld011 = fld004.fld001; blond hair refers to fld004 = 'Blond' and fld012 = fld004.fld001; super power of \"Agility\" refers to fld022 = 'Agility'",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 760,
+   "db_id": "superhero",
+   "question": "In superheroes with height between 150 to 180, what is the percentage of heroes published by Marvel Comics?",
+   "evidence": "height between 150 to 180 refers to fld017 BETWEEN 150 AND 180; heroes published by Marvel Comics refers to fld006 = 'Marvel Comics'; calculation = MULTIPLY(DIVIDE(SUM(tab05.fld001 = 13)), COUNT(tab05.fld001), 100)",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 819,
+   "db_id": "superhero",
+   "question": "In superheroes with missing weight data, calculate the difference between the number of superheroes with blue eyes and no eye color.",
+   "evidence": "missing weight data refers to fld018 = 0 OR T1.fld018 = NULL; difference = SUBTRACT(SUM(fld004.fld001 = 7), SUM(fld004.fld001 = 1)); blue eyes refers to fld011 WHERE fld004.fld001 = 7; no eye color refers to fld011 WHERE fld004.fld001 = 1;",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 773,
+   "db_id": "superhero",
+   "question": "Which superhero has the same eyes, hair and skin colour? Indicate the publisher of the superhero.",
+   "evidence": "which superhero refers to fld008; the same eyes, hair and skin colour refers to fld012 = fld013 AND fld012 = fld011; publisher refers to fld006;",
+   "difficulty": "challenging"
+  },
+  {
+   "question_id": 765,
+   "db_id": "superhero",
+   "question": "How many heroes have stealth power?",
+   "evidence": "stealth power refers to fld022 = 'Stealth';",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 751,
+   "db_id": "superhero",
+   "question": "List down at least five superpowers of male superheroes.",
+   "evidence": "male refers to fld005 = 'Male'; superpowers refers to fld022;",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 728,
+   "db_id": "superhero",
+   "question": "Rank superheroes from Marvel Comics by their eye color popularity, starting with the most common color.",
+   "evidence": "the superheroes from Marvel Comics refers to fld006 = 'Marvel Comics'; most common color refers to COUNT(tab07.fld001) DESC;",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 717,
+   "db_id": "superhero",
+   "question": "Please list all the superpowers of 3-D Man.",
+   "evidence": "3-D Man refers to fld008 = '3-D Man'; superpowers refers to fld022",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 747,
+   "db_id": "superhero",
+   "question": "What is the total number of superheroes without full name?",
+   "evidence": "superheroes without full name refers to fld009 IS NULL",
+   "difficulty": "simple"
+  },
+  {
+   "question_id": 723,
+   "db_id": "superhero",
+   "question": "Among the superheroes with blue eyes, how many of them have the super power of \"Agility\"?",
+   "evidence": "blue eyes refers to fld004 = 'Blue' and fld011 = fld004.fld001; super power of \"Agility\" refers to fld022 = 'Agility'",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 758,
+   "db_id": "superhero",
+   "question": "Provide the hair colour of the human superhero who is 185 cm tall.",
+   "evidence": "185 cm tall refers to fld017 = 185; human superhero refers to fld007 = 'human'; hair colour refers to colour where fld012 = fld004.fld001;",
+   "difficulty": "moderate"
+  },
+  {
+   "question_id": 782,
+   "db_id": "superhero",
+   "question": "List the heroes' names whose eyes and hair colours are both black.",
+   "evidence": "heroes' names refers to fld008; eyes and hair colours are both black refers to fld011 AND fld012 WHERE fld004.fld004 = 'Black';",
+   "difficulty": "moderate"
+  }
+ ]
+}
