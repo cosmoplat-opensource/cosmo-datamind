@@ -72,8 +72,10 @@ def fit_width(fig, pad=0.03, top=None, bottom=None, gap=0.04):
         sp = fig.subplotpars
         fig.subplots_adjust(left=sp.left + dl, right=sp.right - dr, bottom=sp.bottom + db, top=sp.top - dt)
         xc = (min(ax.get_position().x0 for ax in fig.axes) + max(ax.get_position().x1 for ax in fig.axes)) / 2
-        if top is not None:
-            top.set_bbox_to_anchor((xc, 1 - (pad + th - gap) / H), transform=fig.transFigure)
+        if top is not None:                          # centred over the panels, but kept inside the figure
+            hw = top.get_window_extent(r).width / fig.dpi / W / 2
+            xt = min(max(xc, hw + pad / W), 1 - hw - pad / W)
+            top.set_bbox_to_anchor((xt, 1 - (pad + th - gap) / H), transform=fig.transFigure)
         if bottom is not None:
             bottom.set_position((xc, pad / H)); bottom.set_va("bottom")
         if max(abs(dl), abs(dr), abs(db), abs(dt)) < 0.001:
@@ -211,7 +213,7 @@ def benchmarks():
            ha="center", va="center", fontsize=7, color=INK2)
     b.text(10, -0.45, "Shade alternates by source database\ntables per database: " + ", ".join(map(str, sizes)),
            ha="center", va="center", linespacing=1.2,
-           fontsize=7.2, color=MUTED)
+           fontsize=7.2, color=INK2)
     save(fig, "benchmarks")
 
 
@@ -255,13 +257,13 @@ def contents():
         ax.barh(y, good, height=0.62, color=C["doc"], zorder=3, label="Business-named term" if y == ys[0] else None)
         ax.barh(y, bad, left=good + 6, height=0.62, color="#c9c8c1", zorder=3, label="Code-named term" if y == ys[0] else None)
         ax.text(good / 2, y, str(good), ha="center", va="center", color="white", fontsize=7.2)
-        if bad > 60:
+        if bad > 200:
             ax.text(good + 6 + bad / 2, y, str(bad), ha="center", va="center", color=INK, fontsize=7.2)
         elif bad > 0:
             ax.text(good + bad + 14, y, str(bad), ha="left", va="center", color=INK, fontsize=7.2)
     ax.set_yticks(ys); ax.set_yticklabels([r[0] for r in rows])
     ax.set_xlabel("Column-level mappings")
-    ax.set_xlim(0, 1000); ax.set_xticks([0, 250, 500, 750, 1000])
+    ax.set_xlim(0, 1060); ax.set_xticks([0, 250, 500, 750, 1000])
     clean(ax, grid="x"); ax.spines["left"].set_visible(False); ax.tick_params(axis="y", length=0)
     ax.legend(frameon=False, ncol=2, loc="lower right", bbox_to_anchor=(1.02, 1.0), handlelength=1.0, columnspacing=0.9,
               handletextpad=0.4, borderaxespad=0.1)
@@ -372,7 +374,7 @@ def ablations():
         d = ab[pool]
         for y, (k, _) in zip(ys, comps):
             if k not in d:
-                ax.text(0.3, y, "not run", va="center", ha="left", fontsize=7.0, color=MUTED)
+                ax.text(0.3, y, "not run", va="center", ha="left", fontsize=7.0, color=INK2)
                 continue
             p = d[k]["tolerant"]; lo, hi = p["ci"]; sig = lo > 0 or hi < 0
             ax.plot([lo, hi], [y, y], color=C["dm"], lw=1.5, solid_capstyle="round", zorder=3)
@@ -423,7 +425,7 @@ def scoring():
     verdict(17.6, 2.1, "column-tolerant accuracy", True)
     a.plot([16.6, 16.6], [1.4, 5.8], color=GRID, lw=0.9)
     a.text(0.3, 0.65, "Values are illustrative; Sections 3.3 and 3.4 give the counts on the benchmarks.",
-           ha="left", va="center", fontsize=7.5, color=MUTED)
+           ha="left", va="center", fontsize=7.5, color=INK2)
     save(fig, "scoring")
 
 
@@ -432,8 +434,8 @@ def perdb():
     pd = load("analysis_perdb.json")
     mg = pd["MG"]
     dbs = sorted(mg, key=lambda d: (mg[d]["tables"], d))[::-1]
-    short = {"california_schools": "california_schools", "thrombosis_prediction": "thrombosis", "toxicology": "toxicology",
-             "debit_card_specializing": "debit_card", "card_games": "card_games", "financial": "financial",
+    short = {"california_schools": "california_schools", "thrombosis_prediction": "thrombosis_prediction", "toxicology": "toxicology",
+             "debit_card_specializing": "debit_card_specializing", "card_games": "card_games", "financial": "financial",
              "student_club": "student_club", "superhero": "superhero", "formula_1": "formula_1"}
     fig, axs = plt.subplots(1, 2, figsize=(TXT, 2.05), sharey=True)
     ys = list(range(len(dbs)))
@@ -480,7 +482,7 @@ def v5():
         ax1.plot([lo, hi], [y, y], color=col, lw=6, alpha=0.22, solid_capstyle="butt", zorder=2)
         ax1.plot([v["tolerant"]], [y], "o", ms=5.5, color=col, mec="white", mew=0.8, zorder=5)
         for f, m in (("fwd", "^"), ("rev", "s")):
-            ax1.plot([v["tolerant_by_fold"][f]], [y + 0.28], m, ms=3.4, color="white", mec=col, mew=0.9, zorder=4)
+            ax1.plot([v["tolerant_by_fold"][f]], [y + 0.34], m, ms=3.4, color="white", mec=col, mew=0.9, zorder=4)
     ax1.plot([cd["MG:doc"]["tolerant"]] * 2, [-0.6, len(rows) - 0.4], color=C["doc"], lw=1.0, ls=(0, (3, 2)), zorder=1)
     ax1.text(cd["MG:doc"]["tolerant"] + 0.6, len(rows) - 0.55, "Documentation", rotation=90, ha="left", va="top", fontsize=7.0, color=C["doc"])
     ax1.set_yticks(ys); ax1.set_yticklabels([r[1] for r in rows]); ax1.tick_params(axis="y", length=0)
