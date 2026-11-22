@@ -166,7 +166,9 @@ def main():
                                   env, reports, results)
                     if args.suite in ("ui", "all"):
                         for name, file in (("state-transition-browser", "state_transition_browser.py"),
-                                           ("navigation-browser", "navigation_transitions.py")):
+                                           ("navigation-browser", "navigation_transitions.py"),
+                                           ("representation-browser", "representation_fidelity_browser.py"),
+                                           ("page-values-browser", "page_value_contracts.py")):
                             run_check(name, [py, "-m", "pytest", f"tests/frontend/{file}",
                                              "--junitxml", str(reports / f"{name}.xml")], env, reports, results)
                         run_check("functional-browser", [py, "-m", "pytest", "tests/frontend/functional_workflows.py"],

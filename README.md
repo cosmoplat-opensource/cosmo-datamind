@@ -117,6 +117,12 @@ python scripts/check.py --suite all
 python -m pytest tests/unit/test_state_transitions.py tests/frontend/state_transition_browser.py tests/frontend/navigation_transitions.py
 ```
 
+跨入口数据核对使用同一组原始值，覆盖表格和图表读数、导出文件回读、外部驱动类型及页面业务数字。
+
+```bash
+python -m pytest tests/unit/test_representation_fidelity.py tests/frontend/representation_fidelity_browser.py tests/frontend/page_value_contracts.py
+```
+
 逐次执行记录保留在本地或 CI 附件中，结果须关联被检查的代码版本。
 需求到测试映射见 [specs/acceptance.json](specs/acceptance.json)。
 

@@ -4185,6 +4185,98 @@
         "tests/frontend/state_transition_browser.py::test_glossary_combined_filters_and_clear_restore_inventory",
         "tests/frontend/state_transition_browser.py::test_sparql_replaces_previous_answer_after_empty_or_invalid_query"
       ]
+    },
+    {
+      "id": "FID-CATALOG-01",
+      "criterion": "已登记库的两份表清单须与实际行列数一致，列出的中文表名、带空格表名可用原名打开详情和预览。",
+      "tests": [
+        "tests/unit/test_representation_fidelity.py::test_two_inventories_agree_with_physical_row_and_column_counts",
+        "tests/unit/test_representation_fidelity.py::test_listed_table_opens_with_its_original_name"
+      ]
+    },
+    {
+      "id": "FID-CATALOG-02",
+      "criterion": "字段详情须描述数据预览包含的可查询生成列，列数和计算值与物理表一致。",
+      "tests": [
+        "tests/unit/test_representation_fidelity.py::test_schema_describes_every_column_including_generated_preview_values"
+      ]
+    },
+    {
+      "id": "FID-LIMIT-01",
+      "criterion": "工作台和可视化须区分完整结果和已截断的预览；指标卡的末行与其数据范围一致。",
+      "tests": [
+        "tests/unit/test_representation_fidelity.py::test_bounded_queries_distinguish_complete_result_from_preview",
+        "tests/frontend/representation_fidelity_browser.py::test_last_observation_kpi_discloses_a_partial_result"
+      ]
+    },
+    {
+      "id": "FID-UPLOAD-01",
+      "criterion": "含引号、换行、前导零编码及零值的 UTF-8 BOM、GB18030 和 TSV 上传记录可经 SQL 原值读回。",
+      "tests": [
+        "tests/unit/test_representation_fidelity.py::test_uploaded_table_round_trips_codes_quotes_and_lines"
+      ]
+    },
+    {
+      "id": "FID-RDF-01",
+      "criterion": "完整本体导出的三个格式可独立解析，保留对象详情中每个字段及唯一所属对象，包括宽表和共享命名片段。",
+      "tests": [
+        "tests/unit/test_representation_fidelity.py::test_exported_properties_match_each_object_detail",
+        "tests/frontend/page_value_contracts.py::test_sparql_class_count_matches_reparsed_download",
+        "tests/frontend/page_value_contracts.py::test_download_buttons_export_the_selected_graphs_class_labels"
+      ]
+    },
+    {
+      "id": "FID-DRIVER-01",
+      "criterion": "外部驱动的定点金额经 JSON 往返保留精度；二进制值可区分、可重复读取和序列化。",
+      "tests": [
+        "tests/unit/test_representation_fidelity.py::test_external_fixed_point_values_survive_json_round_trip",
+        "tests/unit/test_representation_fidelity.py::test_external_binary_fields_are_identifiable_and_stable"
+      ]
+    },
+    {
+      "id": "FID-DISPLAY-01",
+      "criterion": "四个表格入口可核对 64 位编号与接近的高精度读数，文本 NULL 与空字符串可区分。",
+      "tests": [
+        "tests/frontend/representation_fidelity_browser.py::test_each_table_retains_inspectable_source_values",
+        "tests/frontend/representation_fidelity_browser.py::test_null_text_is_distinguishable_from_an_empty_string",
+        "tests/unit/test_representation_fidelity.py::test_numeric_payload_precedes_browser_formatting"
+      ]
+    },
+    {
+      "id": "FID-VIZ-01",
+      "criterion": "已验证可取数的外部数据源可用于界面建图；重新打开的指标卡保留预览中的多期观测归属。",
+      "tests": [
+        "tests/frontend/representation_fidelity_browser.py::test_live_sql_source_is_also_selectable_for_a_chart",
+        "tests/frontend/representation_fidelity_browser.py::test_saved_kpi_identifies_the_same_observation_as_its_preview"
+      ]
+    },
+    {
+      "id": "FID-AX-01",
+      "criterion": "用键盘切换到不同页面时，辅助技术可识别当前导航项。",
+      "tests": [
+        "tests/frontend/representation_fidelity_browser.py::test_navigation_exposes_the_current_destination_after_keyboard_activation"
+      ]
+    },
+    {
+      "id": "FID-PAGE-01",
+      "criterion": "总览序列、图谱选择、数据源、评审、指标、质量、术语和动作显示与相应的数据范围和记录一致。",
+      "tests": [
+        "tests/frontend/page_value_contracts.py::test_home_chart_periods_and_series_match_overview_rows",
+        "tests/frontend/page_value_contracts.py::test_available_source_counts_agree_with_registry",
+        "tests/frontend/page_value_contracts.py::test_graph_choices_refer_to_the_same_registered_ids",
+        "tests/frontend/page_value_contracts.py::test_metric_names_and_quality_counts_match_the_active_graph",
+        "tests/frontend/page_value_contracts.py::test_registry_rows_can_be_found_in_catalog_and_glossary",
+        "tests/frontend/page_value_contracts.py::test_current_engine_and_action_type_labels_match_configuration"
+      ]
+    },
+    {
+      "id": "FID-PAGE-02",
+      "criterion": "机器人历史条数与服务记录一致，缺少绑定的视图可返回资产库；问数模式和评测页显示对应内容。",
+      "tests": [
+        "tests/frontend/page_value_contracts.py::test_robotics_history_and_task_counts_match_records",
+        "tests/frontend/page_value_contracts.py::test_incomplete_robotics_deep_link_returns_to_the_asset_library",
+        "tests/frontend/page_value_contracts.py::test_question_modes_and_evaluation_agree_with_visible_outputs"
+      ]
     }
   ],
   "planned_requirements": [
