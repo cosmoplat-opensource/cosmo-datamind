@@ -56,6 +56,8 @@ button:hover{filter:brightness(1.06)} button.ghost{background:#EEF2FF;color:#4A5
 .tag{display:inline-block;padding:2px 8px;border-radius:var(--rs);font-size:12px;margin-right:6px}
 .tag.ok{background:#e8f7ee;color:var(--ok)} .tag.warn{background:#fdf1e3;color:var(--warn)} .tag.evt{background:#f0e9fd;color:var(--evt)}
 .step{font-size:12px;color:var(--sub);padding:4px 0;border-bottom:1px dashed #eef2ff}
+#claw_sessions button.step{display:block;width:100%;background:transparent;text-align:left;overflow-wrap:anywhere}
+#dq_save_warning{padding:8px 12px;background:#fff3df;color:#854600}
 .step b{color:var(--txt)} .msg-user{background:#EEF2FF;border-radius:12px 12px 2px 12px;padding:10px 14px;margin:10px 0 10px 20%;}
 .msg-ai{background:var(--panel);border:1px solid var(--line);border-radius:12px 12px 12px 2px;padding:12px 14px;margin:10px 20% 10px 0}
 pre{background:#f6f8fe;border:1px solid #eef2ff;border-radius:8px;padding:10px;font-size:12px;overflow:auto;color:#1e40af}
@@ -197,14 +199,14 @@ a{color:var(--acc)}
 <header class="topbar">
  <div class="wm">◈ COSMO DataMind <small>数据智脑 · 治理 × 本体 × 问数</small></div>
  <div class="tools">
-  <span class="pill nav-toggle" onclick="document.querySelector('aside').classList.toggle('open')">菜单</span>
+  <button type="button" class="pill nav-toggle" aria-controls="app_sidebar" aria-expanded="false" onclick="toggleMobileMenu()">菜单</button>
   <span class="pill" onclick="location.hash='chat'">深度问数</span>
   <span class="pill solid" id="rt_pill" title="当前推理引擎">引擎就绪</span>
   <span class="av">IM</span>
  </div>
 </header>
 <div class="shell">
-<aside>
+<aside id="app_sidebar">
  <div class="database-switch"><label for="app_source">当前数据库</label><select id="app_source" disabled onchange="appSourceChange(this.value)"><option>读取数据源…</option></select><div class="muted" id="app_source_status" role="status">切换后各页面默认使用所选库；已保存的问数历史按库保留。</div></div>
  <div class="ucard"><div class="av">◈</div><div class="nm">COSMO 工作区</div><div class="rl">数据智脑 · 治理×本体×问数</div><div class="bar"></div></div>
  <div class="nav on" data-p="home">总览驾驶舱</div>
@@ -293,7 +295,7 @@ a{color:var(--acc)}
    <div>
     <div class="card"><h3>预览</h3><div id="vz_prev" class="chart" style="height:300px"><div class="muted" style="padding:40px;text-align:center">运行取数后在此预览图表</div></div></div>
     <div class="card" style="margin-top:12px"><div class="row" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-      <h3 style="margin:0">数据看板 <span class="muted" id="vz_board_n"></span></h3>
+      <h3 style="margin:0">数据看板 <span class="muted" id="vz_board_n">（0/24 张）</span></h3>
       <div class="row" style="gap:6px"><select id="vz_board_sel" onchange="vzLoadBoard()" style="width:150px"><option value="">— 新建看板 —</option></select>
        <input id="vz_board_name" placeholder="看板名称" style="width:120px"><button onclick="vzSaveBoard()">保存看板</button></div></div>
      <div id="vz_grid" class="vz-grid" style="margin-top:12px"><div class="muted" style="padding:20px;text-align:center">运行取数后点「添加到看板」，可拼装多图看板并保存</div></div></div>
@@ -430,6 +432,7 @@ a{color:var(--acc)}
     <div class="dq-view" id="dqv_deep" style="display:flex;flex-direction:column;flex:1;min-height:0">
      <div class="dq-ancbar" id="dq_ancbar" style="display:none"></div>
      <div class="dq-stream" id="dq_stream"></div>
+     <div id="dq_save_warning" role="alert" hidden>会话未保存到浏览器。请在离开前复制答案，或腾出存储空间后<button type="button" class="ghost" onclick="dqSaveConv()">重试保存</button>。</div>
      <div class="dq-inputbar">
       <textarea id="chat_q" placeholder="请输入数据分析问题(支持上传 Excel、CSV、TXT 文件)" onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();ask()}"></textarea>
       <div class="dq-atts" id="dq_atts"></div>
@@ -757,10 +760,13 @@ const KIND={object:{c:'#16a34a',n:'对象'},event:{c:'#7c3aed',n:'事件'},actio
 const KCOL=k=>(KIND[k]||{c:'#5b9dff'}).c, KNM=k=>(KIND[k]||{n:k}).n;
 // 页面切换 + URL 寻址：每个子页对应 #<page> hash，可直接寻址/前进后退/刷新保持
 // 弹窗挂在 body 上,不随页面隐藏:切页时一并关掉,否则会留在新页面上挡住操作
+function toggleMobileMenu(){const aside=$('#app_sidebar');
+ $('.nav-toggle').setAttribute('aria-expanded',String(aside.classList.toggle('open')));}
 function closeDialogs(){document.querySelectorAll('.dq-modal').forEach(m=>{m.style.display='none'});try{RVM=null}catch(e){}
  if(window.OntologyLifecycle&&OntologyLifecycle.close)OntologyLifecycle.close();
- const a=document.querySelector('aside');if(a)a.classList.remove('open');}
+ if($('#app_sidebar').classList.contains('open'))toggleMobileMenu();}
 function goPage(p){const nav=document.querySelector('[data-p="'+p+'"]');if(!nav)return false;closeDialogs();
+ if(p!=='chat' && $('#p_chat').classList.contains('on'))dqLeaveChat();
  document.querySelectorAll('.nav').forEach(x=>x.classList.remove('on'));nav.classList.add('on');
  if(p==='robotics-task')nav.scrollIntoView({block:'nearest'});
  document.querySelectorAll('.page').forEach(pg=>pg.classList.remove('on'));const el=$('#p_'+p);if(el)el.classList.add('on');
@@ -1519,10 +1525,12 @@ async function lineage(name){const g=mGraph();
   <div class="step"><b>编码</b>: <code>${esc(m.id||'-')}</code>${m.review_reason?` · <span class="muted">${esc(m.review_reason)}</span>`:''}</div>${actions}`;
  el.scrollIntoView({behavior:'smooth'});}
 let CHAT_HIST=[];
-async function chatInit(){const m=await J('/api/metrics');
- $('#iq_sel').innerHTML=Object.entries(m).map(([k,arr])=>`<optgroup label="${esc(k)}">`+arr.filter(x=>x.table&&x.value_col).map(x=>`<option>${esc(x.name)}</option>`).join('')+'</optgroup>').join('');
+async function chatInit(){
  if(!DQ_CONV && !$('#dq_stream').innerHTML.trim()){$('#dq_stream').innerHTML=dqHero();$('#dqv_deep').classList.add('dqv-empty');}
- dqRenderHist();dqRenderAtts();}
+ dqRenderHist();dqRenderAtts();
+ const m=await J('/api/metrics');
+ if(m.error){$('#iq_info').textContent=m.error;return;}
+ $('#iq_sel').innerHTML=Object.entries(m).map(([k,arr])=>`<optgroup label="${esc(k)}">`+arr.filter(x=>x.table&&x.value_col).map(x=>`<option>${esc(x.name)}</option>`).join('')+'</optgroup>').join('');}
 async function instantQ(){const n=$('#iq_sel').value;if(!n)return;
  const d=await J('/api/metric/quick?name='+encodeURIComponent(n));
  if(d.error){$('#iq_info').textContent=d.error;return}
@@ -1645,7 +1653,7 @@ function dqReport(){const el=$('#dq_report');const conv=DQ_CONV||dqAllConv()[0];
   <div style="margin-top:14px"><button class="ghost" onclick="window.print()">打印 / 导出 PDF</button></div></div>`;
  el.innerHTML=html;
  conv.turns.forEach((t,i)=>{((t.d&&t.d.results)||[]).forEach((r,j)=>{const c=el.querySelector('#rpc_'+i+'_'+j);if(c)dqChart(c,r);});});}
-function dqNew(){dqAbort();DQ_CONV=null;window.DQ_VIEW_MODE='new';CHAT_HIST=[];DQ_ANC_LAST=null;dqAncBar(null);$('#dq_stream').innerHTML=dqHero();dqRenderHist();$('#dqv_deep').classList.add('dqv-empty');dqMode('deep');if(typeof a11yScan==='function')a11yScan();}
+function dqNew(){dqAbort();DQ_CONV=null;window.DQ_VIEW_MODE='new';CHAT_HIST=[];DQ_ANC_LAST=null;dqAncBar(null);$('#dq_save_warning').hidden=true;$('#dq_stream').innerHTML=dqHero();dqRenderHist();$('#dqv_deep').classList.add('dqv-empty');dqMode('deep');if(typeof a11yScan==='function')a11yScan();}
 function dqMD(t){return esc(t||'').replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/`([^`]+)`/g,'<code>$1</code>');}
 function dqTable(data){const cols=data.columns||[];const all=data.rows||[];
  // 长序列取首5+末5(时序时末尾为最新期，与图表、洞察的取数范围一致)，中间省略；短序列全展示
@@ -1797,7 +1805,10 @@ async function ask(){if(DQ_MODE==='diag')return diagAsk();
     else if(ev.type==='done'){done=ev;}
     else if(ev.type==='error'){card.innerHTML=dqContractErrorHTML(ev);}}}
   if(done&&card.isConnected){CHAT_HIST.push({q,summary:done.summary||''});dqRenderCard(card,q,done);dqAncBar(done.anchor);
-   const dT={narrative:done.narrative,summary:done.summary,anchor:done.anchor,application_check:done.application_check,cached:done.cached,elapsed:done.elapsed,session:done.session,steps:done.steps,results:(done.results||[]).map(r=>({title:r.title,sql:r.sql,chart:r.chart,data:{columns:r.data.columns,rows:(r.data.rows||[]).slice(0,200)}}))};
+   const dT={narrative:done.narrative,summary:done.summary,anchor:done.anchor,evidence_card:done.evidence_card,
+    metric_cards:done.metric_cards,degraded:done.degraded,application_check:done.application_check,cached:done.cached,
+    elapsed:done.elapsed,session:done.session,steps:done.steps,results:(done.results||[]).map(r=>({title:r.title,
+     result_id:r.result_id,sql:r.sql,chart:r.chart,data:{columns:r.data.columns,rows:(r.data.rows||[]).slice(0,200)}}))};
    myConv.turns.push({q,d:dT});if(!myConv.title)myConv.title=q;dqSaveConv(myConv);}
  }catch(e){if(e&&e.name==='AbortError')return;
   if(card.isConnected){
@@ -2284,22 +2295,27 @@ async function vzRun(){const sql=$('#vz_sql').value.trim();if(!sql){toast('请�
  const d=await J('/api/viz/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({src:source,sql})}).catch(e=>({error:''+e}));
  if(request!==VZ_REQUEST||source!==$('#vz_src').value)return;
  if(d.error){$('#vz_info').textContent='';$('#vz_prev').innerHTML=`<div class="tag warn" style="margin:12px">${esc(d.error)}</div>`;VZ_DATA=null;return}
- VZ_DATA=d;$('#vz_info').textContent=`${d.rows.length} 行 × ${d.columns.length} 列`;
+ VZ_DATA={...d,sql,src:source};$('#vz_info').textContent=`${d.rows.length} 行 × ${d.columns.length} 列`;
  // 自动映射：第一列为 X，其余数值列为 Y(X 若本身是数值列则从 Y 中排除，避免自己画自己)
  const cols=d.columns||[];const x0=cols[0]||'';
- const numCols=cols.filter(c=>d.rows.some(r=>r[c]!==''&&r[c]!=null&&!isNaN(r[c])));
+ const numCols=cols.filter(c=>d.rows.some(r=>vzNumber(r[c])!==null));
  $('#vz_x').innerHTML=cols.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
  $('#vz_x').value=x0;
  let yc=numCols.filter(c=>c!==x0);if(!yc.length)yc=(numCols.length?numCols:cols.slice(1));  // 单列时回退，保证 KPI 可用
  $('#vz_y').innerHTML=cols.map(c=>`<option value="${esc(c)}" ${yc.includes(c)?'selected':''}>${esc(c)}</option>`).join('');
  vzRender();}
 function vzSel(id){return [...$('#'+id).selectedOptions].map(o=>o.value);}
+function vzNumber(value){
+ if(typeof value!=='number' && (typeof value!=='string'||!value.trim()))return null;
+ const n=Number(value);return Number.isFinite(n)?n:null;}
 function vzChartOption(data,type,x,ys){const rows=data.rows||[];const cats=rows.map(r=>r[x]);
- if(type==='pie'){const y=ys[0]||(data.columns||[])[1];return {tooltip:{trigger:'item'},legend:{type:'scroll',bottom:0,textStyle:{color:'#64748b'}},series:[{type:'pie',radius:['38%','66%'],data:rows.map(r=>({name:r[x],value:+r[y]||0})),label:{color:'#475569'}}]};}
+ if(type==='pie'){const y=ys[0]||(data.columns||[])[1];
+  const slices=rows.map(r=>({name:r[x],value:vzNumber(r[y])})).filter(slice=>slice.value!==null);
+  return {tooltip:{trigger:'item'},legend:{type:'scroll',bottom:0,textStyle:{color:'#64748b'}},series:[{type:'pie',radius:['38%','66%'],stillShowZeroSum:false,data:slices,label:{color:'#475569'}}]};}
  const COLZ=['#4A5FF3','#38bdf8','#4ade80','#f4b13d','#e05377','#7c50e6'];
  return {grid:{top:34,left:52,right:20,bottom:40},legend:{textStyle:{color:'#64748b'},top:4},tooltip:{trigger:'axis'},
   xAxis:{type:'category',data:cats,...AX,axisLabel:{...AX.axisLabel,rotate:cats.length>10?35:0}},yAxis:{type:'value',...AX},
-  series:ys.map((y,i)=>({name:y,type:type==='bar'?'bar':'line',data:rows.map(r=>+r[y]||0),smooth:type!=='bar',
+  series:ys.map((y,i)=>({name:y,type:type==='bar'?'bar':'line',data:rows.map(r=>vzNumber(r[y])),smooth:type!=='bar',
    areaStyle:type==='area'?{opacity:.15}:undefined,itemStyle:{color:COLZ[i%COLZ.length]}}))};}
 function vzRender(){if(!VZ_DATA){return}const type=$('#vz_type').value,x=$('#vz_x').value,ys=vzSel('vz_y');const el=$('#vz_prev');
  if(type==='table'){el.innerHTML=`<div class="scroll" style="max-height:300px"><table><tr>`+(VZ_DATA.columns||[]).map(c=>`<th>${esc(c)}</th>`).join('')+'</tr>'+(VZ_DATA.rows||[]).map(r=>'<tr>'+(VZ_DATA.columns||[]).map(c=>`<td>${cell(r[c])}</td>`).join('')+'</tr>').join('')+'</table></div>';return;}
@@ -2308,11 +2324,13 @@ function vzRender(){if(!VZ_DATA){return}const type=$('#vz_type').value,x=$('#vz_
   el.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%"><div class="muted">${esc(y||'')}</div><div style="font-size:42px;font-weight:700;color:var(--acc);font-variant-numeric:tabular-nums">${esc(last[y]??'-')}</div>${rowLabel}</div>`;return;}
  el.innerHTML='';mk(el,vzChartOption(VZ_DATA,type,x,ys));}
 function vzAdd(){if(!VZ_DATA){toast('请先运行取数');return}
- const spec={title:$('#vz_title').value||('图表'+(VZ_BOARD.length+1)),src:$('#vz_src').value,sql:$('#vz_sql').value.trim(),
+ if(VZ_DATA.sql!==$('#vz_sql').value.trim() || VZ_DATA.src!==$('#vz_src').value){toast('查询已修改，请重新运行取数');return}
+ if(VZ_BOARD.length>=24){toast('每个看板最多可添加 24 张图表');return}
+ const spec={title:$('#vz_title').value||('图表'+(VZ_BOARD.length+1)),src:VZ_DATA.src,sql:VZ_DATA.sql,
   type:$('#vz_type').value,x:$('#vz_x').value,ys:vzSel('vz_y')};
  VZ_BOARD.push(spec);$('#vz_title').value='';vzGridRender();toast('已添加到看板');}
 let VZ_BOARD=[],VZ_GEN=0;
-function vzGridRender(){const g=$('#vz_grid');$('#vz_board_n').textContent='('+VZ_BOARD.length+' 图)';
+function vzGridRender(){const g=$('#vz_grid');$('#vz_board_n').textContent='（'+VZ_BOARD.length+'/24 张）';
  g.querySelectorAll('.vc').forEach(el=>{const i=echarts.getInstanceByDom(el);if(i)i.dispose();});  // 释放旧实例，防重渲染泄漏
  const gen=++VZ_GEN;
  if(!VZ_BOARD.length){g.innerHTML='<div class="muted" style="padding:20px;text-align:center;grid-column:1/-1">运行取数后点「添加到看板」，可拼装多图看板并保存</div>';return}
@@ -2349,18 +2367,25 @@ async function clawSwitchGraph(){const key=clawGraph();try{localStorage.setItem(
  CLAW_ID=null;$('#claw_log').innerHTML='<div class="muted" style="padding:8px">已切换图谱，请新建或选择该图谱下的会话。</div>';
  await clawSessions();await clawEdits();await clawAudit();}
 async function clawSessions(){const ss=await J('/api/ont/chats?graph='+encodeURIComponent(clawGraph()));
- $('#claw_sessions').innerHTML=ss.map(x=>`<div class="step" style="cursor:pointer" onclick="clawOpen(${jsAttr(x.id)})">${esc(x.title||'(空)')} <span class="muted">${esc(x.n)}</span></div>`).join('')||'<div class=muted>无会话</div>';}
+ $('#claw_sessions').innerHTML=ss.map(x=>`<button type="button" class="step" onclick="clawOpen(${jsAttr(x.id)})">${esc(x.title||'(空)')} <span class="muted">${esc(x.n)}</span></button>`).join('')||'<div class=muted>无会话</div>';}
 async function clawOpen(id){CLAW_ID=id;const d=await J('/api/ont/chats/'+id);
  if((d.graph||'demo')!==clawGraph()){CLAW_ID=null;toast('该会话属于另一图谱，请重新选择');return;}
  $('#claw_log').innerHTML=(d.messages||[]).map(m=>`<div class="${m.role==='user'?'msg-user':'msg-ai'}">${esc(m.text||'').replace(/EDIT_OP:\{[\s\S]*\}/,'').replace(/\n/g,'<br>')}</div>`).join('');}
 async function clawNew(){const c=await J('/api/ont/chats/new',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:clawGraph()})});CLAW_ID=c.id;$('#claw_log').innerHTML='';clawSessions();}
 function clawFileLabel(){const n=($('#claw_file').files||[]).length;$('#claw_file_btn').textContent=n?`已选 ${n} 个附件`:'选择附件';}
+function clawReadAttachment(file){
+ return new Promise((resolve,reject)=>{
+  const reader=new FileReader();
+  reader.onload=()=>resolve({name:file.name,b64:reader.result.split(',')[1]});
+  reader.onerror=()=>reject(reader.error);
+  reader.readAsDataURL(file);
+ });}
 async function clawAsk(){const q=$('#claw_q').value.trim();if(!q)return;$('#claw_q').value='';$('#claw_btn').disabled=true;
  const log=$('#claw_log');log.insertAdjacentHTML('beforeend',`<div class="msg-user">${esc(q)}</div>`);
  const hold=document.createElement('div');hold.className='msg-ai';hold.textContent='智能引擎处理中…';log.appendChild(hold);log.scrollTop=1e9;
  try{if(!CLAW_ID){const c=await J('/api/ont/chats/new',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:clawGraph()})});CLAW_ID=c.id;}
-  const atts=[];for(const f of ($('#claw_file').files||[])){const b=await f.arrayBuffer();
-   atts.push({name:f.name,b64:btoa(String.fromCharCode(...new Uint8Array(b)))});}
+  const atts=[];
+  for(const file of $('#claw_file').files)atts.push(await clawReadAttachment(file));
   $('#claw_file').value='';clawFileLabel();
   const resp=await appFetch('/api/ont/chat/stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:CLAW_ID,message:q,graph:clawGraph(),attachments:atts})});
   const rd=resp.body.getReader();const dec=new TextDecoder();let buf='',d=null;
@@ -2435,7 +2460,7 @@ function routeHash(){if(window.RoboticsReview?.guardHash())return;const h=locati
  if(h){if(!goPage(h)){goPage('home');history.replaceState(null,'','#home');}}else goPage('home');}  // 未知 hash 回首页并纠正 URL，避免地址与页面不一致
 addEventListener('hashchange',()=>{ROUTED_BY_HASH=true;routeHash();});
 // 可访问性：让 onclick 的 div/span 可 Tab 聚焦 + Enter/Space 触发(键盘可操作)
-const A11Y_SEL=`.nav,.dq-mode,.eg,.pill:not(#rt_pill),.dq-sel,.dq-modal .mt,.dq-modal-hd .x,span[title="关闭"],.dq-att .x,.vz-card .x,.cn-row .x,tr[onclick],#cat_tags .tag,.nav-group .gh,.dq-collapse,.dq-hist .it,.ds-card,.sk-card,.dq-react span,.dq-tab .c,.bc-eg[onclick],.bc-srow[onclick],.bc-hist-pop .it,.bc-hist-pop .del,.bc-srow .x,.bc-srow .nm[onclick],.bc-chip .x,.cn-row`;
+const A11Y_SEL=`.nav,.dq-mode,.eg,.pill:not(#rt_pill):not(button),.dq-sel,.dq-modal .mt,.dq-modal-hd .x,span[title="关闭"],.dq-att .x,.vz-card .x,.cn-row .x,tr[onclick],#cat_tags .tag,.nav-group .gh,.dq-collapse,.dq-hist .it,.ds-card,.sk-card,.dq-react span,.dq-tab .c,.bc-eg[onclick],.bc-srow[onclick],.bc-hist-pop .it,.bc-hist-pop .del,.bc-srow .x,.bc-srow .nm[onclick],.bc-chip .x,.cn-row`;
 function a11yScan(){
  // 没有 label 的输入框:用占位文字、提示文字或同一行前面的文字作为可读名称
  document.querySelectorAll('input,select,textarea').forEach(el=>{if(el.type==='hidden'||el.hasAttribute('aria-label')||el.hasAttribute('aria-labelledby')||(el.labels&&el.labels.length))return;

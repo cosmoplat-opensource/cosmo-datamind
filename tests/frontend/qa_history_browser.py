@@ -122,3 +122,25 @@ def test_storage_quota_cannot_silently_drop_a_completed_chat(page):
     if latest.is_visible():
         latest.click()
         expect(page.locator("#dq_stream .dq-insight")).to_have_text(newest)
+
+
+def test_failed_followup_can_be_saved_again_without_losing_the_previous_turn(page):
+    previous = ask(page, CUSTOMERS)
+    page.evaluate("""() => {
+        const write = Storage.prototype.setItem;
+        Storage.prototype.setItem = function(key, value) {
+            if (key === 'dq_convs') {
+                Storage.prototype.setItem = write;
+                throw new DOMException('Storage full', 'QuotaExceededError');
+            }
+            return write.call(this, key, value);
+        };
+    }""")
+    newest = ask(page, PRODUCTS)
+    assert page.evaluate("JSON.parse(localStorage.getItem('dq_convs'))[0].turns.length") == 1
+    retry = page.get_by_role("button", name="重试保存")
+    retry.click()
+    expect(retry).to_be_hidden()
+    page.reload()
+    history_entry(page, CUSTOMERS).click()
+    expect(page.locator("#dq_stream .dq-insight")).to_have_text([previous, newest])

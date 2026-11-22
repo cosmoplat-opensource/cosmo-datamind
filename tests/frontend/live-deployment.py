@@ -203,6 +203,8 @@ class Acceptance:
         for name in PAGES:
             errors_before = len(self.errors)
             await self.goto(page, name)
+            if name == "home":
+                await page.locator("#kpis .kpi .n").first.wait_for(timeout=15000)
             text = (await page.locator(f"#p_{name}").inner_text()).strip()
             self.check(f"page {name}", len(text) > 30 and len(self.errors) == errors_before,
                        {"text_length": len(text), "new_errors": self.errors[errors_before:]})

@@ -115,14 +115,15 @@
     },
     {
       "id": "QUERY-COLUMNS-01",
-      "criterion": "SQL 工作台与可视化取数须按列保留原值。列名相同或只差大小写时可明确拒绝有歧义的结果。",
+      "criterion": "SQL 工作台与可视化取数按列位置保留原值。列名相同或只差大小写时，为后续列生成唯一后缀并保留查询显式指定的别名。空结果也返回相同的列名。",
       "tests": [
-        "tests/unit/test_query_and_board_fidelity.py::test_query_columns_preserve_both_values_or_explain_ambiguity"
+        "tests/unit/test_query_and_board_fidelity.py::test_query_columns_preserve_both_values_or_explain_ambiguity",
+        "tests/unit/test_query_and_board_fidelity.py::test_generated_labels_preserve_explicit_aliases_and_do_not_depend_on_rows"
       ]
     },
     {
       "id": "VIZ-ROUNDTRIP-01",
-      "criterion": "看板保存成功后可完整重开每张图，超限时可明确拒绝并保留旧看板。图表区分空值与零；编辑 SQL 后添加的卡片保持查询、指标绑定和值一致。",
+      "criterion": "每个看板最多保存 24 张图，超限时拒绝整次保存并保留旧看板。图表区分空值与零。修改预览过的 SQL 后，须重新取数才能添加到看板。",
       "tests": [
         "tests/unit/test_query_and_board_fidelity.py::test_board_update_preserves_all_charts_or_rejects_without_overwrite",
         "tests/frontend/functional_workflows.py::test_missing_chart_value_stays_distinct_from_zero",
@@ -153,7 +154,8 @@
         "tests/frontend/qa_history_browser.py::test_replay_preserves_the_original_result_reference",
         "tests/frontend/qa_history_browser.py::test_completed_chat_is_listed_when_returning_from_another_page",
         "tests/frontend/qa_history_browser.py::test_saved_chat_replays_when_metrics_are_unavailable",
-        "tests/frontend/qa_history_browser.py::test_storage_quota_cannot_silently_drop_a_completed_chat"
+        "tests/frontend/qa_history_browser.py::test_storage_quota_cannot_silently_drop_a_completed_chat",
+        "tests/frontend/qa_history_browser.py::test_failed_followup_can_be_saved_again_without_losing_the_previous_turn"
       ]
     },
     {

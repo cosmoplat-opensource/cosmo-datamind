@@ -576,12 +576,17 @@ def _iof_edge_ann(r, verb, source_bfo=None, target_bfo=None, bfo_enabled=True):
         "evidence_status": r.get("evidence_status") or r.get("status", ""),
     }
 
+def _graph_uses_object_names(ir):
+    objects = ir.get("objects")
+    return "relations" in ir and bool(objects) and "kind" in objects[0]
+
+
 def ir_to_graph(key, ir):
     """统一成 {nodes:[{id,name,kind,...IOF-AV}], edges:[{s,t,verb,status,founded_relation,temporal}]}"""
     nodes, edges = [], []
     if not isinstance(ir, dict): return {"nodes": nodes, "edges": edges}
     bfo_enabled = _bfo_enabled_for_ir(ir)
-    if "relations" in ir and "objects" in ir and ir["objects"] and "kind" in ir["objects"][0]:
+    if _graph_uses_object_names(ir):
         # 应用本体 IR:节点显示名优先用中文名(cn),id 仍用 name 以保证边引用稳定
         for o in ir["objects"]:
             nodes.append({"id": o["name"], "name": o.get("cn") or o["name"], "kind": o.get("kind", "object"),
@@ -633,6 +638,27 @@ def _clip_cell(v):
     return v, False
 
 
+def _result_columns(description):
+    """Keep the first label and disambiguate repeats without taking another column's SQL alias."""
+    names = [column[0] for column in description or ()]
+    reserved = {name.casefold() for name in names}
+    next_suffix = {}
+    columns = []
+    for name in names:
+        key = name.casefold()
+        if key in next_suffix:
+            suffix = next_suffix[key]
+            while f"{key}_{suffix}" in reserved:
+                suffix += 1
+            name = f"{name}_{suffix}"
+            reserved.add(name.casefold())
+            next_suffix[key] = suffix + 1
+        else:
+            next_suffix[key] = 2
+        columns.append(name)
+    return columns
+
+
 def q(sql, db=None, limit=500, attach_uploads=False, clean=None):
     # 以只读模式打开(mode=ro):即便 SQL 含写操作,引擎层也会拒绝,杜绝改/删库
     path = db or _qa_db()
@@ -667,15 +693,16 @@ def q(sql, db=None, limit=500, attach_uploads=False, clean=None):
         con.create_function('randomblob', 1, lambda n: os.urandom(blob_size(n, 1)))
     try:
         cur = con.execute(sql)
+        columns = _result_columns(cur.description)
         rows, cut = [], 0
         for r in cur.fetchmany(limit):
-            row = dict(r)
-            for k, v in row.items():
+            row = {}
+            for k, v in zip(columns, r):
                 shown, was_cut = _clip_cell(v)
-                if was_cut or shown is not v:
-                    row[k] = shown; cut += was_cut
+                row[k] = shown
+                cut += was_cut
             rows.append(row)
-        out = {"columns": [c[0] for c in cur.description or []], "rows": rows}
+        out = {"columns": columns, "rows": rows}
         if cut: out["truncated_cells"] = cut
         if applied: out["cleaning"] = applied
         if notes: out["cleaning_notes"] = notes
@@ -3659,8 +3686,28 @@ def apply_any(ir, op):
         if kind == "remove_relation":
             rels.remove(l)
             return
+    return _apply_upstream_edit(ir, op)
+
+
+def _apply_upstream_edit(ir, op):
     import serve_claw as SC
-    return SC.apply_op(ir, op)
+    if op.get("op") != "rename" or not _graph_uses_object_names(ir):
+        return SC.apply_op(ir, op)
+    # 构建图谱用 name 定位对象。为上游编辑器提供 id，同时保留其校验和人工修改依据。
+    from copy import deepcopy
+    key = op.get("target", "").removeprefix("obj:")
+    obj = next((o for o in ir["objects"] if o.get("name") == key), None)
+    if obj is None:  # 兼容按 id 记录的历史操作
+        obj = next((o for o in ir["objects"] if o.get("id") == key), None)
+    if obj is None:
+        raise ValueError(f"对象不存在: {key}")
+    edited = deepcopy(obj)
+    edited.update(id=key, cn=obj.get("cn") or key)
+    previous = SC.apply_op({**ir, "objects": [edited]}, op)
+    obj["cn"] = edited["cn"]
+    if "evidence" in edited:
+        obj["evidence"] = edited["evidence"]
+    return previous
 
 # 回放失败的编辑操作(DR-097):图谱键 → [{index, op, target, error}]。每次回放后整体替换。
 _EDIT_REPLAY_FAILED: dict[str, list] = {}
@@ -10928,7 +10975,7 @@ def _ext_query(conn, sql, limit=500):
         try:
             cur = con.cursor()
             cur.execute(sql)
-            cols = [d[0] for d in cur.description or []]
+            cols = _result_columns(cur.description)
             return {"columns": cols, "rows": _jsonable_rows(cols, cur.fetchmany(limit))}
         finally:
             con.close()
@@ -10941,7 +10988,7 @@ def _ext_query(conn, sql, limit=500):
             con.set_session(readonly=True)       # 会话级只读,双保险
             cur = con.cursor()
             cur.execute(sql)
-            cols = [d[0] for d in cur.description or []]
+            cols = _result_columns(cur.description)
             return {"columns": cols, "rows": _jsonable_rows(cols, cur.fetchmany(limit))}
         finally:
             con.close()
@@ -11082,8 +11129,9 @@ def viz_save():
     charts = body.get("charts") or []
     if not name: return jsonify({"error": "需要看板名称"}), 400
     if not isinstance(charts, list) or not charts: return jsonify({"error": "看板至少含一张图表"}), 400
+    if len(charts) > 24: return jsonify({"error": "每个看板最多可保存 24 张图表"}), 400
     bid = body.get("id") or ("board_" + uuid.uuid4().hex[:6])
-    board = {"id": bid, "name": name, "charts": charts[:24], "ts": time.strftime("%Y-%m-%d %H:%M:%S")}
+    board = {"id": bid, "name": name, "charts": charts, "ts": time.strftime("%Y-%m-%d %H:%M:%S")}
     with _WRITE_LOCK:
         boards = [b for b in _load_boards() if b.get("id") != bid]
         boards.insert(0, board); _atomic_json(_VIZ_BOARDS_F, boards[:50])

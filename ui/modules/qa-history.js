@@ -1,5 +1,11 @@
 /* 深度问数会话状态：区分本次实时分析与历史回放，历史记录只读、续问自动分支。 */
 window.DQ_VIEW_MODE = 'new';
+let leftLiveChat = false;
+
+function dqLeaveChat() {
+  leftLiveChat = true;
+  dqRenderHist();
+}
 
 function dqAllConv() {
   try {
@@ -32,14 +38,19 @@ function dqSaveConv(conv) {
   let all = dqAllConv().filter(c => c.id !== conv.id);
   all.unshift(conv);
   all = all.slice(0, 30);
-  try { localStorage.setItem(typeof appSourceStorageKey === 'function' ? appSourceStorageKey() : 'dq_convs', JSON.stringify(all)); } catch (_) {}
+  try {
+    localStorage.setItem(typeof appSourceStorageKey === 'function' ? appSourceStorageKey() : 'dq_convs', JSON.stringify(all));
+    $('#dq_save_warning').hidden = true;
+  } catch (_) {
+    $('#dq_save_warning').hidden = false;
+  }
   dqRenderHist();
 }
 
 function dqRenderHist() {
   const all = dqAllConv();
-  // 当前分析虽已安全落盘，但在本轮仍属于“实时会话”，不混进历史栏造成跳转错觉。
-  const visible = all.filter(c => !(window.DQ_VIEW_MODE === 'live' && DQ_CONV && c.id === DQ_CONV.id));
+  // 本次停留期间隐藏正在进行的分析。离开问数页后，可从历史栏打开已保存的轮次。
+  const visible = all.filter(c => !(window.DQ_VIEW_MODE === 'live' && !leftLiveChat && DQ_CONV && c.id === DQ_CONV.id));
   $('#dq_hist').innerHTML = visible.length ? visible.map(c => {
     const selected = window.DQ_VIEW_MODE === 'history' && DQ_CONV && c.id === DQ_CONV.id;
     return `<div class="it ${selected ? 'on' : ''}" onclick="dqOpen(${esc(JSON.stringify(c.id))})">`
@@ -58,6 +69,7 @@ function dqDelConv(id) {
 function dqOpen(id) {
   const c = dqAllConv().find(x => x.id === id);
   if (!c) return;
+  $('#dq_save_warning').hidden = true;
   dqAbort();
   dqRestoreScope(c);
   DQ_CONV = c;
@@ -95,6 +107,7 @@ function dqBeginQuestion() {
     $('#dq_stream').innerHTML = '';
   }
   CHAT_HIST = inherited;
+  leftLiveChat = false;
   window.DQ_VIEW_MODE = 'live';
   dqRenderHist();
   return {conv: DQ_CONV, branched: fromHistory};

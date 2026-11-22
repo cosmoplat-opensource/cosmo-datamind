@@ -18,6 +18,15 @@ def test_query_columns_preserve_both_values_or_explain_ambiguity(route, names):
     assert [data["rows"][0][column] for column in data["columns"]] == [11, 22]
 
 
+def test_generated_labels_preserve_explicit_aliases_and_do_not_depend_on_rows():
+    sql = 'SELECT 11 AS n, 22 AS n, 33 AS N_2, 44 AS N'
+    client = server.app.test_client()
+    for suffix, expected in [("", [[11, 22, 33, 44]]), (" WHERE 0", [])]:
+        data = client.post("/api/query", json={"src": "demo", "sql": sql + suffix}).get_json()
+        assert data["columns"] == ["n", "n_3", "N_2", "N_4"]
+        assert [[r[c] for c in data["columns"]] for r in data["rows"]] == expected
+
+
 @pytest.mark.parametrize("count", [24, 25])
 def test_board_update_preserves_all_charts_or_rejects_without_overwrite(count, tmp_path, monkeypatch):
     monkeypatch.setattr(server, "_VIZ_BOARDS_F", str(tmp_path / "boards.json"))
