@@ -54,7 +54,7 @@ def isolated_env(directory):
 def run_check(name, args, env, reports, results):
     start = time.monotonic()
     # Hosted runners also verify the complete RDF build and validation paths under coverage.
-    timeout = {"unit": 7200, "unit-shard": 3300}.get(name, 360)
+    timeout = {"unit": 7200, "unit-shard": 3300, "navigation-browser": 720}.get(name, 360)
     with (reports / f"{name}.log").open("w", encoding="utf-8") as log:
         process = subprocess.Popen(args, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT,
                                    start_new_session=True)
@@ -165,6 +165,10 @@ def main():
                                   "--graph", "built_2d74f0", "--report", str(reports / "strict10.json")],
                                   env, reports, results)
                     if args.suite in ("ui", "all"):
+                        for name, file in (("state-transition-browser", "state_transition_browser.py"),
+                                           ("navigation-browser", "navigation_transitions.py")):
+                            run_check(name, [py, "-m", "pytest", f"tests/frontend/{file}",
+                                             "--junitxml", str(reports / f"{name}.xml")], env, reports, results)
                         run_check("functional-browser", [py, "-m", "pytest", "tests/frontend/functional_workflows.py"],
                                   env, reports, results)
                         run_check("build-webkit-browser", [py, "-m", "pytest", "tests/frontend/build_viewport_browser.py"],

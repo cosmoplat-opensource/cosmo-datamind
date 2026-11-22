@@ -4106,6 +4106,85 @@
         "tests/unit/test_robotics_baseline.py::test_frozen_consumer_contract_cases_execute",
         "tests/unit/test_robotics_baseline.py::test_frozen_real_task_without_evidence_still_refuses_a_candidate"
       ]
+    },
+    {
+      "id": "STATE-BOARD-01",
+      "criterion": "保存新看板时，此前已确认保存的看板及其图表均可回读。达到收藏容量时允许明确拒绝新建。",
+      "tests": [
+        "tests/unit/test_state_transitions.py::test_board_collection_preserves_acknowledged_saves"
+      ]
+    },
+    {
+      "id": "STATE-SOURCE-01",
+      "criterion": "连续登记不同物理数据源时，已确认登记的连接仍可枚举和查询，超限应在新登记操作中说明。",
+      "tests": [
+        "tests/unit/test_state_transitions.py::test_registered_sources_still_resolve_after_next_registration"
+      ]
+    },
+    {
+      "id": "STATE-CHAT-01",
+      "criterion": "重叠的本体问答须保留每次已确认的问答，显式并发冲突可重试。在途回复完成后，已确认删除的会话仍保持删除。",
+      "tests": [
+        "tests/unit/test_state_transitions.py::test_chat_completed_during_another_turn_is_durable"
+      ]
+    },
+    {
+      "id": "STATE-SQL-01",
+      "criterion": "SQL 工作台在执行前后更换局部数据源时，旧结果须清除或标明来源，后续运行应显示新源的值。",
+      "tests": [
+        "tests/frontend/state_transition_browser.py::test_sql_results_belong_to_the_displayed_source"
+      ]
+    },
+    {
+      "id": "STATE-CHAT-02",
+      "criterion": "新建或清空会话失败时，保留当前会话、正文和可见的失败提示。确认清空后，会话从历史列表移除。",
+      "tests": [
+        "tests/frontend/state_transition_browser.py::test_chat_mutation_keeps_transcript_until_success"
+      ]
+    },
+    {
+      "id": "STATE-LIST-01",
+      "criterion": "数据质量、动作记录、看板目录、问数评测和本体会话列表须区分服务不可用和真实空数据；服务恢复后重新加载可读。",
+      "tests": [
+        "tests/frontend/state_transition_browser.py::test_list_distinguishes_service_failure_from_empty_and_recovers"
+      ]
+    },
+    {
+      "id": "STATE-CSV-01",
+      "criterion": "动作记录 CSV 每个导出字段有独立列名，含双引号、逗号或换行的值可正确读回。",
+      "tests": [
+        "tests/frontend/state_transition_browser.py::test_action_csv_has_one_header_for_each_exported_field"
+      ]
+    },
+    {
+      "id": "STATE-GRAPH-01",
+      "criterion": "元数据覆盖页仅显示当前图谱的语义评审统计；切换或重新选择图谱后不残留旧统计。",
+      "tests": [
+        "tests/frontend/state_transition_browser.py::test_metadata_review_count_tracks_selected_graph_and_revisits"
+      ]
+    },
+    {
+      "id": "STATE-NAV-01",
+      "criterion": "每个登记页面支持正常键盘入口或专用深链。浏览器后退、前进和刷新后当前页与选中导航一致，窄屏无页面级横向溢出。",
+      "tests": [
+        "tests/frontend/navigation_transitions.py::test_navigation_survives_back_forward_and_reload"
+      ]
+    },
+    {
+      "id": "STATE-NAV-02",
+      "criterion": "移动菜单收起时，Tab 可从工具栏进入当前页面，隐藏侧栏不会接收焦点。",
+      "tests": [
+        "tests/frontend/navigation_transitions.py::test_closed_mobile_sidebar_does_not_receive_tab_focus"
+      ]
+    },
+    {
+      "id": "STATE-READ-01",
+      "criterion": "总览恢复后指标数值与接口一致，术语组合筛选和清除后行数正确；SPARQL 的真值、假值、语法错误及恢复查询各自显示对应的结果。",
+      "tests": [
+        "tests/frontend/state_transition_browser.py::test_overview_survives_unavailable_data_and_recovers_exact_totals",
+        "tests/frontend/state_transition_browser.py::test_glossary_combined_filters_and_clear_restore_inventory",
+        "tests/frontend/state_transition_browser.py::test_sparql_replaces_previous_answer_after_empty_or_invalid_query"
+      ]
     }
   ],
   "planned_requirements": [

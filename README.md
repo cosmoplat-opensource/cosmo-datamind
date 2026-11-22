@@ -105,12 +105,18 @@ python3 test_all.py                          # 系统级回归(源码定义 548 
 ```bash
 python -m pip install --upgrade pip==26.2
 pip install -r requirements-dev.txt -r requirements-ui.txt
-python -m playwright install chromium webkit
+python -m playwright install chromium webkit firefox
 python scripts/check.py --suite all
 ```
 
 可分别选择 `--suite unit`、`integration`、`ui`；日志、逐层退出码和浏览器截图在 `.check-results/`。
 `pytest` 默认也使用临时运行目录；Node.js 用于执行真实前端函数的行为测试。
+状态切换回归涵盖保存上限、会话并发、局部切库、服务恢复、CSV 回读和键盘导航，可独立运行。
+
+```bash
+python -m pytest tests/unit/test_state_transitions.py tests/frontend/state_transition_browser.py tests/frontend/navigation_transitions.py
+```
+
 逐次执行记录保留在本地或 CI 附件中，结果须关联被检查的代码版本。
 需求到测试映射见 [specs/acceptance.json](specs/acceptance.json)。
 
