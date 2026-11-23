@@ -65,7 +65,7 @@ def unit_command(py, reports, workers):
 def run_check(name, args, env, reports, results):
     start = time.monotonic()
     # Hosted runners also verify the complete RDF build and validation paths under coverage.
-    timeout = {"unit": 7200, "unit-shard": 3300}.get(name, 360)
+    timeout = {"unit": 7200, "unit-shard": 3300}.get(name, 600)
     with (reports / f"{name}.log").open("w", encoding="utf-8") as log:
         process = subprocess.Popen(args, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT,
                                    start_new_session=True)
