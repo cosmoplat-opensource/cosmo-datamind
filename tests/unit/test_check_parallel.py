@@ -54,6 +54,51 @@ def test_design_browser_entry_keeps_full_suite_and_bounded_isolated_workers(tmp_
         assert '-n' not in args
 
 
+@pytest.mark.parametrize('workers', [None, 1, 2])
+@pytest.mark.parametrize('selected', [None, 'unused_profile_is_preserved'])
+def test_task_browser_entry_preserves_cases_bounded_workers_and_failures(tmp_path, monkeypatch, workers, selected):
+    module = import_module('scripts.check')
+    source = module.ROOT / 'tests/frontend/robotics-task-browser.py'
+    calls = []
+    monkeypatch.setenv('DATAMIND_ROBOTICS_TASK_TEST_OUTPUT', 'synthetic-task-output')
+    monkeypatch.setattr(pytest, 'main', lambda args: calls.append(args) or 1)
+    command = [str(source), '--output', str(tmp_path)]
+    if workers is not None:
+        command.extend(['--workers', str(workers)])
+    if selected:
+        command.extend(['--case', selected])
+    monkeypatch.setattr(sys, 'argv', command)
+    with pytest.raises(SystemExit) as caught:
+        runpy.run_path(str(source), run_name='__main__')
+    assert caught.value.code == 1, 'browser failures must propagate'
+    args = calls[0]
+    assert args[0] == str(source) and '-m' not in args
+    assert '--junitxml=' + str(tmp_path / 'junit.xml') in args
+    assert '--durations=20' in args and '-vv' in args and '--tb=short' in args
+    assert os.environ['DATAMIND_ROBOTICS_TASK_TEST_OUTPUT'] == str(tmp_path)
+    if workers != 1:
+        assert args[args.index('-n') + 1] == '2'
+        assert args[args.index('--dist') + 1] == 'worksteal'
+    else:
+        assert '-n' not in args
+    if selected:
+        assert args[args.index('-k') + 1] == selected
+    else:
+        assert '-k' not in args
+
+
+@pytest.mark.parametrize('workers', [0, 3])
+def test_task_browser_entry_rejects_unbounded_workers(tmp_path, monkeypatch, workers):
+    module = import_module('scripts.check')
+    calls = []
+    monkeypatch.setattr(pytest, 'main', lambda args: calls.append(args))
+    monkeypatch.setattr(sys, 'argv', ['robotics-task-browser.py', '--output', str(tmp_path),
+                                    '--workers', str(workers)])
+    with pytest.raises(SystemExit) as caught:
+        runpy.run_path(str(module.ROOT / 'tests/frontend/robotics-task-browser.py'), run_name='__main__')
+    assert caught.value.code == 2 and calls == []
+
+
 @pytest.mark.parametrize('failure', [False, True])
 def test_parallel_workers_merge_coverage_and_propagate_failures(tmp_path, failure):
     module = import_module('scripts.check')

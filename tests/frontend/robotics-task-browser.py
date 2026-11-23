@@ -1,5 +1,6 @@
 """T04 RED: real browser/build/OWL/completion/compiler/download; only model HTTP is scripted — DR-145 / DR-148."""
 import argparse
+from contextlib import contextmanager
 import os
 from pathlib import Path
 import re
@@ -82,6 +83,39 @@ def live(tmp_path, request, browser):
 def done(site):
     assert not site.evidence['page_errors']
     site.evidence['assertions_completed'] = True
+
+
+@contextmanager
+def slow_network(page, latency_ms):
+    """Delay the real browser transport without replacing backend responses."""
+    network = page.context.new_cdp_session(page)
+    network.send('Network.enable')
+    network.send('Network.emulateNetworkConditions', {
+        'offline': False, 'latency': latency_ms, 'downloadThroughput': -1, 'uploadThroughput': -1,
+    })
+    try:
+        yield
+    finally:
+        network.send('Network.emulateNetworkConditions', {
+            'offline': False, 'latency': 0, 'downloadThroughput': -1, 'uploadThroughput': -1,
+        })
+        network.detach()
+
+
+def test_task_entry_waits_for_actual_fixed_version_on_slow_network(live):
+    site, page, calls = live
+    ref = site.submit()['output_asset_ref']
+    site.enable_task_model()
+    page.goto(site.url + '/#library')
+    page.wait_for_load_state('networkidle')
+    with slow_network(page, 6000):
+        panel = open_task(page, site, ref)
+    expect(panel).to_have_attribute('data-status', 'idle')
+    state = site.get('/api/robotics/tasks/' + panel.get_attribute('data-session-id'))
+    assert state['ontology_id'] == ref['ontology_id'] and state['version_id'] == ref['version_id']
+    assert state['status'] == 'idle' and state['candidate'] is None and calls == []
+    assert not any(r['url'].endswith(('/messages', '/completion', '/generate')) for r in site.evidence['requests'])
+    done(site)
 
 
 @pytest.mark.parametrize('phase', ['headers', 'body', 'navigation'])
@@ -194,8 +228,8 @@ def open_task(page, site, ref, *, enable_model=True):
         site.enable_task_model()
     page.goto(site.url + '/#robotics-task?asset=' + ref['ontology_id'] + '&version=' + ref['version_id'])
     panel = page.get_by_test_id('robotics-task')
-    expect(panel).to_be_visible()
-    expect(panel).to_have_attribute('data-version-id', ref['version_id'])
+    expect(panel).to_be_visible(timeout=30000)
+    expect(panel).to_have_attribute('data-version-id', ref['version_id'], timeout=30000)
     return panel
 
 
@@ -421,6 +455,7 @@ def test_real_build_to_inline_completion_generation_download_and_restart(live):
     site.enable_task_model()
     page.get_by_role('link', name='生成行为树', exact=True).click()
     panel = page.get_by_test_id('robotics-task')
+    expect(panel).to_have_attribute('data-version-id', original_ref['version_id'], timeout=30000)
     expect(panel.get_by_test_id('task-current-version')).to_have_count(1)
     expect(panel.get_by_test_id('task-current-version')).to_contain_text('版本 1')
     for label in ['操作者署名', '操作理由', '工作头', '编辑底本', '修改依据']:
@@ -730,11 +765,13 @@ def test_import_demo_is_explicit_and_real_asset_cannot_use_demo_switch_to_fill_g
     page.get_by_label('OWL 文件', exact=True).set_input_files(
         {'name': 'candidate.owl', 'mimeType': 'application/rdf+xml', 'buffer': fresh_payload('real')})
     page.get_by_label('本体名称', exact=True).fill('可选导入测试')
-    with page.expect_response(lambda r: r.request.method == 'POST' and r.url.endswith('/api/robotics/imports')) as pending:
-        page.get_by_role('button', name='导入', exact=True).click()
+    with slow_network(page, 4000):
+        with page.expect_response(lambda r: r.request.method == 'POST' and r.url.endswith('/api/robotics/imports'), timeout=30000) as pending:
+            page.get_by_role('button', name='导入', exact=True).click()
     assert pending.value.status == 201
+    assert pending.value.request.timing['responseStart'] > 3500
     imported = pending.value.json()
-    expect(page.get_by_test_id('robotics-task')).to_have_attribute('data-version-id', imported['version_id'])
+    expect(page.get_by_test_id('robotics-task')).to_have_attribute('data-version-id', imported['version_id'], timeout=30000)
     done(site)
 
 
@@ -751,7 +788,7 @@ def test_new_task_during_slow_model_response_cannot_restore_old_form(live):
         panel.get_by_role('button', name='生成行为树', exact=True).click()
         assert entered.wait(timeout=5)
         panel.get_by_role('button', name='新任务', exact=True).click()
-        expect(panel).not_to_have_attribute('data-session-id', original_sid)
+        expect(panel).not_to_have_attribute('data-session-id', original_sid, timeout=30000)
         new_sid = panel.get_attribute('data-session-id')
         release.set()
         # Poll the real old session to observe completion rather than sleeping a guessed duration.
@@ -799,11 +836,17 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, default=ROOT / '.check-results/robotics-task-browser')
     parser.add_argument('--case')
+    parser.add_argument('--workers', type=int, choices=(1, 2), default=2)
     args = parser.parse_args()
     args.output = args.output.resolve()
     args.output.mkdir(parents=True, exist_ok=True)
     os.environ['DATAMIND_ROBOTICS_TASK_TEST_OUTPUT'] = str(args.output)
-    command = [str(Path(__file__).resolve()), '-q', '-ra', '--junitxml=' + str(args.output / 'junit.xml')]
+    # Two verbosity levels also override the repository's default quiet option.
+    command = [str(Path(__file__).resolve()), '-vv', '-ra', '--tb=short', '--durations=20',
+               '--junitxml=' + str(args.output / 'junit.xml')]
+    # DR-163: each worker owns its browser, model server and per-test storage.
+    if args.workers > 1:
+        command.extend(['-n', str(args.workers), '--dist', 'worksteal'])
     if args.case: command += ['-k', args.case]
     raise SystemExit(pytest.main(command))
 
@@ -819,13 +862,14 @@ def test_task_application_history_retains_two_generations_and_reopens_without_mo
     expect(page.get_by_role('heading', name='从一句任务，到行为树', exact=True)).to_be_visible()
     assert site.posts() == [] and calls == []
     page.get_by_label('选择机器人本体', exact=True).select_option(version['ontology_id'])
-    page.get_by_role('button', name='开始新任务', exact=True).click()
     panel = page.get_by_test_id('robotics-task')
-    expect(panel).to_have_attribute('data-version-id', version['version_id'])
+    with slow_network(page, 6000):
+        page.get_by_role('button', name='开始新任务', exact=True).click()
+        expect(panel).to_have_attribute('data-version-id', version['version_id'], timeout=30000)
     first = submit_task(page, panel)
     assert first['status'] == 'generated'
     panel.get_by_role('button', name='新任务', exact=True).click()
-    expect(panel).to_have_attribute('data-status', 'idle')
+    expect(panel).to_have_attribute('data-status', 'idle', timeout=30000)
     second = submit_task(page, panel)
     assert second['status'] == 'generated' and second['session_id'] != first['session_id']
     history = page.get_by_test_id('robotics-task-history')
@@ -863,8 +907,8 @@ def test_graph_starts_task_with_selected_ontology_version(live):
     page.get_by_role('link', name='基于此本体生成行为树', exact=True).click()
     # DR-155: retain preflight, enter directly, and expose the bound check in the task page.
     panel = page.get_by_test_id('robotics-task')
-    expect(panel).to_have_attribute('data-ontology-id', ref['ontology_id'])
-    expect(panel).to_have_attribute('data-version-id', ref['version_id'])
+    expect(panel).to_have_attribute('data-ontology-id', ref['ontology_id'], timeout=30000)
+    expect(panel).to_have_attribute('data-version-id', ref['version_id'], timeout=30000)
     expect(panel).to_contain_text('可准备任务')
     expect(panel).to_have_attribute('data-check-id', re.compile('^check_'))
     expect(page.get_by_role('link', name='继续描述任务', exact=True)).to_have_count(0)

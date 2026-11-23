@@ -1,6 +1,6 @@
 # IR-033 · 应用检查提示、统一入口与后退恢复
 
-状态：delivered。关联：[DR-167](../decisions/DR-167-application-guidance-and-return-navigation.md)。
+状态：delivered。关联：[DR-167](../decisions/DR-167-application-guidance-and-return-navigation.md)、[DR-163](../decisions/DR-163-isolated-test-seeds-and-bounded-parallel-checks.md)。
 
 ## 目标与验收
 
@@ -121,3 +121,42 @@ python scripts/scenario_bench.py
 浏览器套件分别启动独立进程，避免同步 Playwright 运行时相互嵌套。
 未改变构建语义、SSE 步骤或数据查询规则；本轮机器人场景由上述浏览器和契约用例覆盖，不向数据查询合成库添加无关场景。
 逐次日志与截图仅保留本地或 CI；公开复现使用上述版本、差异和命令。
+
+## 任务浏览器的 CI 阶段超时修复
+
+验证基于 `3a69436b250fe64988c05458624935ac40e1767d` 与本次差异，Python 3.10.12、Linux、仓库固定依赖及 Playwright Chromium；浏览器进程限定在两颗可用 CPU 上。
+本地资源限制用于验证运行速度变化下的边界，不代表完全复刻远端 Ubuntu／Python 3.11 主机。
+任务浏览器复用既有有界并行机制，默认两个独立进程，保留 `--workers 1` 串行对照、原有用例与校验、定向选例和失败退出。
+任务直接入口、构建完成、选择器、图谱入口及会话切换按既有 30 秒请求期限等待真实身份与固定版本就绪，再执行页面及生成断言；OWL 导入响应同样明确期限。
+新增直接入口 6 秒慢网场景，并为原选择器历史、导入用例加入 6 秒／4 秒传输延迟；只延迟真实网络，不替换业务响应，保留原模式隔离、历史、幂等、来源字节及 XML 校验。
+所有原有 Python 断言保留；完整任务套件由 27 项增至 28 项。阶段上限仍为 600 秒，CI 总预算及覆盖率门槛不变。
+
+- 修改前串行 27 项在两颗 CPU 下通过，耗时 458.931 秒；同样限定两颗 CPU、增加两个有界 CPU 竞争进程后，在 600.025 秒被阶段上限终止，仅完成 17 项，复现原 CI 的整组超时。
+- 入口约束先出现 6 项预期失败；慢网先复现直接入口、导入和选择器的提前断言。修正后，直接入口／构建／导入 3 项通过（38.65 秒），选择器／图谱／任务切换 3 项通过（47.22 秒）。
+- 最终任务套件在两颗 CPU 下 28 项通过，检查进程耗时 277.847 秒，28 份交互证据全部完成断言，无失败、错误或跳过。
+- 最终任务套件在同样两颗 CPU、两个有界竞争进程下再次 28 项通过，检查进程耗时 542.431 秒，28 份交互证据全部完成断言；与超时串行基准使用同类资源条件，仍受 600 秒上限约束。
+- 相关入口、真实并行失败传播、环境隔离及规约 121 项通过（11.438 秒）；全仓 lint、类型检查及差异空白检查通过。
+
+完整 `scripts/check.py --suite ui` 在调度修订时执行过，9 个阶段均通过；额外强压力检查随后暴露任务准备／导入的短等待，收尾后只修改任务测试，并完整重跑最终 28 项任务套件。
+其余 8 个阶段的测试、产品实现与执行参数未变；完整 UI 中有 3 项真实模型连通检查按既有条件跳过，不将其计为执行通过。
+本轮没有重新运行项目全量单元、覆盖率门禁或远端 CI，不声明真实模型、物理设备或部署验证。
+
+### 复现
+
+记录 `git rev-parse HEAD` 与候选差异，安装仓库固定开发和 UI 依赖，将 Node 放入 PATH。
+串行对照在基准版本的独立副本执行；候选版本执行下列命令，CPU 编号动态选择，不依赖开发者机器路径。
+
+```bash
+TEST_CPUS="$(python -c 'import os; print(",".join(map(str, sorted(os.sched_getaffinity(0))[:2])))')"
+taskset -c "$TEST_CPUS" python tests/frontend/robotics-task-browser.py --workers 1
+taskset -c "$TEST_CPUS" python tests/frontend/robotics-task-browser.py --workers 2
+taskset -c "$TEST_CPUS" python scripts/check.py --suite ui
+python -m pytest tests/unit/test_check_parallel.py tests/unit/test_check_isolation.py tests/meta -q
+python -m ruff check .
+python -m mypy . --no-error-summary
+git diff --check
+```
+
+压力对照在同样两颗 CPU 的亲和性内增加两个独立 Python 计算进程，每个最多运行 620 秒，持续计算 `sum(i*i for i in range(10000))`。
+各阶段通过 `scripts.check.isolated_env` 与 `run_check` 执行，仍由原 600 秒限制判定退出码；完成或失败后终止并回收本轮创建的竞争进程和服务。
+原始日志、逐项耗时、源文件摘要、候选差异与复现脚本仅保留本地或 CI，公开复现依据为上述版本、资源条件及命令。
