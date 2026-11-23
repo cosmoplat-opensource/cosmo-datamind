@@ -5172,6 +5172,9 @@ def ont_rebuild():
                     "backup": os.path.basename(discarded) if discarded else ""})
 
 
+SPARQL_ROW_LIMIT = 500
+
+
 @app.post("/api/sparql")
 def sparql():
     """原生 SPARQL:优先代理经典引擎(rdflib);未就绪时对当前 IR 做轻量三元组匹配(降级)"""
@@ -5193,22 +5196,33 @@ def sparql():
             with _RDF_LOCK:   # 串行化 SPARQL 解析+执行,规避 pyparsing 语法状态并发污染
                 qres = g.query(query)
                 if qres.type == "ASK":
-                    return "ASK", [], [], bool(qres.askAnswer)
+                    return "ASK", [], [], bool(qres.askAnswer), 1
+                # 最多返回 SPARQL_ROW_LIMIT 行,total 始终是完整结果数,超出时标记 truncated
                 if qres.type in ("CONSTRUCT", "DESCRIBE"):   # 结果是一张图:按 主/谓/宾 三列给出
-                    triples = [{"s": str(s), "p": str(p), "o": str(o)} for s, p, o in qres][:500]
-                    return qres.type, ["s", "p", "o"], triples, None
+                    triples, n = [], 0
+                    for s, p, o in qres:
+                        n += 1
+                        if n <= SPARQL_ROW_LIMIT:
+                            triples.append({"s": str(s), "p": str(p), "o": str(o)})
+                    return qres.type, ["s", "p", "o"], triples, None, n
                 vs = [str(v) for v in (qres.vars or [])]
-                return "SELECT", vs, [{v: (str(r[i]) if r[i] is not None else "") for i, v in enumerate(vs)} for r in qres][:500], None
+                rows, n = [], 0
+                for r in qres:
+                    n += 1
+                    if n <= SPARQL_ROW_LIMIT:
+                        rows.append({v: (str(r[i]) if r[i] is not None else "") for i, v in enumerate(vs)})
+                return "SELECT", vs, rows, None, n
         out, err, timed_out = _bounded_ex(_run, 8, default=None)   # 限时执行,防止病态查询占满 CPU
         if timed_out:
             return jsonify({"error": "SPARQL 执行超时(>8s):查询过重或图谱过大,请增加过滤或 LIMIT"}), 400
         if err is not None:   # 语法/语义错误——如实回报,不再伪装成超时
             return jsonify({"error": f"SPARQL 查询错误: {str(err)[:200]}"}), 400
-        kind, vars_, rows, answer = out
+        kind, vars_, rows, answer, total = out
         if kind == "ASK":
             return jsonify({"type": "ASK", "boolean": answer, "vars": ["结果"],
                             "rows": [{"结果": "是" if answer else "否"}], "total": 1, "graph": key})
-        return jsonify({"type": kind, "vars": vars_, "rows": rows, "total": len(rows), "graph": key})
+        return jsonify({"type": kind, "vars": vars_, "rows": rows, "total": total,
+                        "truncated": total > len(rows), "graph": key})
     except Exception as e:
         return jsonify({"error": f"SPARQL 失败: {str(e)[:200]}"}), 400
 
@@ -7186,12 +7200,13 @@ def build_sources():
     utabs = _sqlite_tables(UPLOAD_DB) if os.path.exists(UPLOAD_DB) else []
     srcs.append({"id": "uploads", "name": "上传数据库", "kind": "sqlite", "builtin": True,
                  "tables": len(utabs), "desc": "CSV/TSV 上传自动建表", "ready": bool(utabs), "table_names": utabs[:50]})
-    for c in _load_conns():
+    all_conns = _load_conns()
+    for c in all_conns:
         ready, tabs = False, 0
         if c.get("kind") == "sqlite" and c.get("path") and os.path.exists(c["path"]):
             t = _sqlite_tables(c["path"]); ready, tabs = bool(t), len(t)
         elif c.get("kind") == "api":             # API 源:已物化(up.api_*)即就绪
-            ready = _api_conn_table(c) in utabs; tabs = 1 if ready else 0
+            ready = _api_conn_table(c, all_conns) in utabs; tabs = 1 if ready else 0
         srcs.append({**_mask_conn(c), "tables": tabs, "ready": ready})   # DSN 里的残留凭据不回显
     assets = []
     for p in sorted(glob.glob(os.path.join(WORK, "uploads_*"))):
@@ -7407,10 +7422,26 @@ def build_connect_del():
     _save_conn_secret(cid, "", "")               # 连带清除凭据
     return jsonify({"ok": True})
 
-def _api_conn_table(conn):
-    """API 源物化目标表名:api_<连接名 slug>"""
-    slug = re.sub(r"[^a-z0-9_]+", "_", (conn.get("name") or "src").lower()).strip("_")[:24] or "src"
-    return "api_" + slug
+def _api_slug_table(conn):
+    slug = re.sub(r"[^a-z0-9_]+", "_", (conn.get("name") or "").lower()).strip("_")[:24]
+    return "api_" + slug if slug else ""
+
+
+def _api_conn_table(conn, conns=None):
+    """API 源物化目标表名,每个连接独占一张表。
+    取数时记下的表名若只属于本连接则沿用;否则用 api_<连接名 slug>,slug 为空(如中文名)或与其他
+    API 连接撞名(如 "line-a" 与 "line a")时追加连接编号的摘要,避免两个源写进同一张表。"""
+    conns = _load_conns() if conns is None else conns
+    others = [c for c in conns if c.get("kind") == "api" and c.get("id") != conn.get("id")]
+    recorded = conn.get("table")
+    if recorded and all(c.get("table") != recorded for c in others):
+        return recorded
+    base = _api_slug_table(conn)
+    claimed = {c.get("table") for c in others} | {_api_slug_table(c) for c in others}
+    if base and base not in claimed:
+        return base
+    tag = hashlib.sha1(str(conn.get("id") or "").encode()).hexdigest()[:8]
+    return f"{base or 'api_src'}_{tag}"
 
 @app.post("/api/conn/api_fetch")
 def conn_api_fetch():
@@ -7442,9 +7473,11 @@ def conn_api_fetch():
         data = [data]
     if not (isinstance(data, list) and data and all(isinstance(x, dict) for x in data[:5000])):
         return jsonify({"error": "json_path 需指向对象数组(list of objects)"}), 400
+    total_rows = len(data)
     data = data[:5000]
-    cols, source_cols, seen, used_names = [], [], set(), set()
+    cols, source_cols, seen, used_names, all_keys = [], [], set(), set(), set()
     for row in data:
+        all_keys.update(row.keys())
         for k in row.keys():
             if k not in seen and len(cols) < 40:
                 # 列名消毒后才可进 DDL:去除引号等可越出标识符边界的字符(与 CSV 上传同规则)
@@ -7484,8 +7517,12 @@ def conn_api_fetch():
         for c in conns:
             if c.get("id") == cid:
                 c["last_fetch"] = time.strftime("%Y-%m-%d %H:%M:%S"); c["last_rows"] = len(data); c["table"] = table
+                c["last_total_rows"], c["last_total_columns"] = total_rows, len(all_keys)
         _atomic_json(_BUILD_CONN_F, conns)
-    return jsonify({"ok": True, "table": "up." + table, "rows": len(data), "columns": cols})
+    # 超出 5000 行 / 40 列上限时如实报告:实际导入的范围与原始总数,不静默截断
+    truncated = total_rows > len(data) or len(all_keys) > len(cols)
+    return jsonify({"ok": True, "table": "up." + table, "rows": len(data), "columns": cols,
+                    "total_rows": total_rows, "total_columns": len(all_keys), "truncated": truncated})
 
 @app.get("/api/build/skills")
 def build_skills():

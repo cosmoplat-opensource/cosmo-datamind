@@ -165,7 +165,8 @@ def main():
                                   "--graph", "built_2d74f0", "--report", str(reports / "strict10.json")],
                                   env, reports, results)
                     if args.suite in ("ui", "all"):
-                        for name, file in (("state-transition-browser", "state_transition_browser.py"),
+                        for name, file in (("result-scope-browser", "result_scope_browser.py"),
+                                           ("state-transition-browser", "state_transition_browser.py"),
                                            ("navigation-browser", "navigation_transitions.py"),
                                            ("representation-browser", "representation_fidelity_browser.py"),
                                            ("page-values-browser", "page_value_contracts.py")):

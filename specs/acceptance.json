@@ -2,6 +2,66 @@
   "iteration": "IR-014 / IR-015",
   "requirements": [
     {
+      "id": "SCOPE-PAGE-01",
+      "criterion": "从链接进入任意已登记页面并刷新，全局数据库选择、上下文请求和实际表数一致。",
+      "tests": ["tests/frontend/result_scope_browser.py::test_link_and_reload_keep_the_database_shown_on_each_page"]
+    },
+    {
+      "id": "SCOPE-IMPORT-01",
+      "criterion": "API 导入达到行列边界时，保留原数据或明确告知拒绝或部分导入；成功响应的行数和列名与物化表相符。",
+      "tests": ["tests/unit/test_result_scope.py::test_api_import_reports_the_actual_scope"]
+    },
+    {
+      "id": "SCOPE-SOURCE-01",
+      "criterion": "不同 API 连接分别报告取数状态，并保留各自的查询结果，即使两项业务名称归一化后相同。",
+      "tests": ["tests/unit/test_result_scope.py::test_fetching_one_source_preserves_the_other_source"]
+    },
+    {
+      "id": "SCOPE-RDF-01",
+      "criterion": "SPARQL 查询或构造图谱的返回值须与导出的对象集合一致；截断时能识别部分结果或取得正确总数。",
+      "tests": ["tests/unit/test_result_scope.py::test_sparql_reports_full_cardinality_or_discloses_a_partial_result"]
+    },
+    {
+      "id": "SCOPE-PENDING-01",
+      "criterion": "在动作中心能从待审批数找到对应的未结事项，即使有超过一页的较新记录。",
+      "tests": ["tests/frontend/result_scope_browser.py::test_pending_approval_is_reachable_from_the_action_center"]
+    },
+    {
+      "id": "SCOPE-RETENTION-01",
+      "criterion": "保存新的动作记录时保留仍待处理的审批及其身份。",
+      "tests": ["tests/unit/test_result_scope.py::test_new_action_preserves_unresolved_approval"]
+    },
+    {
+      "id": "SCOPE-CSV-01",
+      "criterion": "动作记录导出与当前状态、关键词筛选相符，若导出所有记录，操作入口明确标识；无匹配时同样适用。",
+      "tests": ["tests/frontend/result_scope_browser.py::test_action_csv_matches_filtered_rows"]
+    },
+    {
+      "id": "SCOPE-CHAT-01",
+      "criterion": "问数请求使用最终确认的表范围，确认“分析所有表”清除先前表限制，取消编辑保留已确认的选择。",
+      "tests": ["tests/frontend/result_scope_browser.py::test_question_uses_the_confirmed_table_selection"]
+    },
+    {
+      "id": "SCOPE-REPLAY-01",
+      "criterion": "历史回放保留实时答案的行数和末条数据，使用户能复查同一期的结果。",
+      "tests": ["tests/frontend/result_scope_browser.py::test_history_replays_the_latest_row_and_total_of_the_live_answer"]
+    },
+    {
+      "id": "SCOPE-REVIEW-01",
+      "criterion": "批量评审仅更新提交的关系，任一项无效则整批不写入；分页筛选后全选按钮按本页实际勾选状态显示。",
+      "tests": ["tests/unit/test_result_scope.py::test_batch_review_preserves_selected_scope_and_atomicity", "tests/frontend/result_scope_browser.py::test_review_page_select_all_reflects_the_visible_checkboxes"]
+    },
+    {
+      "id": "SCOPE-REVIEW-02",
+      "criterion": "连续切换图谱后，当前选项、显示的关系、最终写入评审结论的图谱一致，包括较早响应晚到的情况。",
+      "tests": ["tests/frontend/result_scope_browser.py::test_review_saves_the_graph_whose_relationship_was_displayed"]
+    },
+    {
+      "id": "SCOPE-OBS-01",
+      "criterion": "按类型查询当天最近的事件时，其他类型的新增事件不能让最近的匹配记录消失。",
+      "tests": ["tests/unit/test_result_scope.py::test_recent_build_filter_finds_latest_build_in_todays_log"]
+    },
+    {
       "id": "ALG-01",
       "criterion": "完整值域决定重叠率，前缀截断不能制造或遗漏 verified",
       "tests": [

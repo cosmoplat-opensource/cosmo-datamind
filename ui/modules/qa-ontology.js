@@ -149,6 +149,8 @@ function dqDsCancel() {
 function dqDsCommit() {
   const valid = new Set((DQ_GRAPHS || []).filter(g => g.queryable).map(g => g.id));
   DQ_DS.graphs = DQ_DS.graphs.filter(id => valid.has(id));
+  // 勾选“不指定表”即放弃逐表选择:请求、标签与快照都不再带先前选中的表
+  if (DQ_DS.allTables) DQ_DS.tables = [];
   DQ_DS.availableCount = dqScopeAvailable(DQ_DS);
   const before = JSON.stringify(DQ_DS_BEFORE || {});
   const after = JSON.stringify(dqScopeSnapshot());

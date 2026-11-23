@@ -736,6 +736,7 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
 <script src="/assets/modules/graph-render.js?v=2"></script>
 <script src="/assets/modules/chart-series.js?v=3"></script>
 <script src="/assets/modules/qa-contract.js?v=1"></script>
+<script src="/assets/modules/action-log.js?v=1"></script>
 <script>const $=s=>document.querySelector(s);
 // 刚被点击的按钮:写请求在途时置灰,避免重复提交(各页面的提交函数不必各写一遍)
 let CLICKED=null,CLICKED_AT=0;addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('button');if(b){CLICKED=b;CLICKED_AT=Date.now();}},true);
@@ -1005,7 +1006,8 @@ async function rvFbResolve(id){const d=await J('/api/chat/feedback/resolve',{met
 async function rvLoad(){RV_KEY=$('#rv_sel').value;if(!RV_KEY)return;
  rvFbLoad();
  if($('#rv_who')&&!$('#rv_who').value)$('#rv_who').value=localStorage.getItem('rv_reviewer')||'';
- const d=await J('/api/ont/review?graph='+encodeURIComponent(RV_KEY)).catch(e=>({error:''+e}));
+ const graph=RV_KEY,seq=++RV_LOAD_SEQ,d=await J('/api/ont/review?graph='+encodeURIComponent(graph)).catch(e=>({error:''+e}));
+ if(seq!==RV_LOAD_SEQ||RV_KEY!==graph)return;
  if(d.error){$('#rv_body').innerHTML=`<div class="muted">${esc(d.error)}</div>`;return;}
  const semanticEl=$('#rv_semantic');if(semanticEl){semanticEl.style.display=(d.semantic||[]).length?'block':'none';semanticEl.innerHTML=rvSemanticHTML(d.semantic||[]);}
  const c=d.counts;$('#rv_kpis').innerHTML=`<span class="tag warn">待审 ${c.pending}</span> <span class="tag ok">已通过 ${c.approved}</span> <span class="tag evt">已否决 ${c.rejected}</span> <span class="muted" style="margin-left:6px">共 ${c.total} 条${c.disputed?` · 语义存疑 ${c.disputed}`:''}</span>`+((d.replay_failed||[]).length?` <span class="tag warn" title="${esc(d.replay_failed.map(f=>f.op+' '+f.target+':'+f.error).join('\n'))}">${d.replay_failed.length} 条人工审核记录未能应用</span>`:'');
@@ -1056,7 +1058,7 @@ async function rvmSubmit(){if(!RVM)return;
  if(RVM.op==='verb'){const v=$('#rvm_verb').value.trim();if(!v||v.length>12){toast('动词需 1~12 字',false);$('#rvm_verb').focus();return;}params={verb:v};}
  try{localStorage.setItem('rv_reviewer',who);}catch(e){}
  if($('#rv_who'))$('#rv_who').value=who;
- const graph=RVM.graphPage?GRAPH_CUR.key:RV_KEY,source=RVM.graphPage?'graph':'review';   // 审计来源:评审台或图谱页,不再记成外部调用
+ const graph=RVM.graphPage?GRAPH_CUR.key:((typeof RV!=='undefined'&&RV.data&&RV.data.graph)||RV_KEY),source=RVM.graphPage?'graph':'review';   // 审计来源:评审台或图谱页,不再记成外部调用
  if(RVM.busy)return;RVM.busy=true;$('#rvm_ok').disabled=true;                             // 防止双击提交两次
  const payload=RVM.batch?{graph,reviewer:who,source,ops:RVM.batch.map(target=>({op:RVM.op,target,reason}))}
   :{graph,reviewer:who,source,op:{op:RVM.op,target:RVM.target,params,reason}};
@@ -1157,14 +1159,14 @@ function acLogRender(){const items=AC_LOG;
  const SB={pending:['warn','待审批'],executing:['evt','执行中'],executed:['ok','已形成记录'],denied:['evt','已驳回'],failed:['warn','执行失败'],unknown:['warn','结果未知']};
  const st=($('#acf_status')&&$('#acf_status').value)||'';
  const kw=(($('#acf_kw')&&$('#acf_kw').value)||'').trim();
- const rows=items.filter(x=>(!st||x.status===st)&&(!kw||JSON.stringify([x.action_cn,x.operator,x.approver,x.params]).includes(kw)));
+ const rows=acLogRows();
  $('#ac_log').innerHTML=`<div class="row" style="justify-content:space-between;align-items:center;margin-bottom:8px">
    <h3 style="margin:0">动作记录<span class="muted" style="font-weight:400;font-size:12px"> ${rows.length}/${items.length} 条</span></h3>
    <div class="row" style="gap:6px"><select id="acf_status" onchange="acLogRender()" style="width:110px">
      <option value="" ${st===''?'selected':''}>全部状态</option><option value="pending" ${st==='pending'?'selected':''}>待审批</option>
      <option value="executed" ${st==='executed'?'selected':''}>已形成记录</option><option value="denied" ${st==='denied'?'selected':''}>已驳回</option><option value="failed" ${st==='failed'?'selected':''}>执行失败</option><option value="executing" ${st==='executing'?'selected':''}>执行中</option><option value="unknown" ${st==='unknown'?'selected':''}>结果未知</option></select>
     <input id="acf_kw" placeholder="搜动作/操作人/参数…" value="${esc(kw)}" style="width:180px" oninput="acLogRender()">
-    <button class="ghost" onclick="acLogCsv()">导出 CSV</button></div></div>`
+    <button class="ghost" onclick="acLogCsv()" ${rows.length?'':'disabled'} title="导出当前筛选的 ${rows.length} 条记录">导出 CSV</button></div></div>`
   +(rows.length?'<table><tr><th>时间</th><th>动作</th><th>状态</th><th>操作人</th><th>审批人/意见</th><th>效果</th></tr>'
    +rows.slice(0,60).map(x=>`<tr><td class="muted" style="font-size:12px;white-space:nowrap">${esc(x.ts)}</td><td>${esc(x.action_cn)}</td>
     <td><span class="tag ${(SB[x.status]||['warn'])[0]}">${(SB[x.status]||['',x.status])[1]}</span>${x.status==='unknown'?` <button class="ghost ac-resolve" style="padding:1px 8px;font-size:12px" onclick="acResolve(${jsAttr(x.id)})">处置</button>`:''}</td><td>${esc(x.operator)}</td>
@@ -1172,13 +1174,6 @@ function acLogRender(){const items=AC_LOG;
     <td class="muted" style="font-size:12px">${esc((x.effects||[]).join(' / '))||'-'}</td></tr>`).join('')+'</table>'
    :'<div class="muted">'+(items.length?'无匹配记录(调整筛选)':'暂无记录。可在动作类型卡上「发起」，或从诊断结果发起')+'</div>');
  const el=$('#acf_kw');if(el&&kw){el.focus();el.setSelectionRange(kw.length,kw.length);}}
-function acLogCsv(){const items=AC_LOG;if(!items.length){toast('暂无记录',false);return;}
- const esc2=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
- const csv='﻿'+['时间，动作，状态，操作人，参数，审批人，审批意见，审批时间，效果']
-  .concat(items.map(x=>[x.ts,x.action_cn,x.status,x.operator,Object.entries(x.params||{}).map(([k,v])=>k+':'+v).join(';'),
-   x.approver||'',x.approve_comment||'',x.approve_ts||'',(x.effects||[]).join(';')].map(esc2).join(','))).join('\n');
- const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
- a.download='动作审计_'+new Date().toISOString().slice(0,10)+'.csv';a.click();URL.revokeObjectURL(a.href);}
 async function acOpen(tid,prefill){if($('#acm_ok'))$('#acm_ok').textContent='提交动作';
  await acTypes();const t=AC_TYPES.find(x=>x.id===tid);if(!t){toast('动作类型不存在',false);return;}
  ACM={t,mode:'invoke'};$('#acm_oplabel').textContent='操作人';
@@ -1605,7 +1600,7 @@ async function dqDsTab(t){
   if(!DQ_TABLES){body.innerHTML='<div class="muted">数据表列表加载失败，请关闭后重试</div>';return;}
   const sel=new Set(DQ_DS.tables);const groups={};
   DQ_TABLES.forEach(t=>{const g=(t.name.split('_')[0]||'其他').toUpperCase();(groups[g]=groups[g]||[]).push(t);});
-  body.innerHTML=`<label style="display:block;margin-bottom:10px;font-size:13px;cursor:pointer"><input type="checkbox" id="ds_notable" ${DQ_DS.allTables?'checked':''} onchange="DQ_DS.allTables=this.checked"> 不指定表(分析所有表)</label>
+  body.innerHTML=`<label style="display:block;margin-bottom:10px;font-size:13px;cursor:pointer"><input type="checkbox" id="ds_notable" ${DQ_DS.allTables?'checked':''} onchange="DQ_DS.allTables=this.checked;if(this.checked){DQ_DS.tables=[];document.querySelectorAll('#ds_tgrid .sel').forEach(c=>c.classList.remove('sel'));}"> 不指定表(分析所有表)</label>
    <input id="ds_tsearch" placeholder="搜索表名…" style="width:260px;margin-bottom:10px" oninput="dqDsTblFilter()">
    <div class="ds-grid" id="ds_tgrid">`+DQ_TABLES.map(t=>`<div class="ds-card ${sel.has(t.name)?'sel':''}" data-t="${esc(t.name)}" onclick="dqDsToggleT(${esc(JSON.stringify(t.name))})"><div class="ck">✓</div><div class="nm">${esc(t.name)}</div><div class="ds">${t.rows} 行 · ${t.cols} 列</div></div>`).join('')+`</div>`;
  }}
@@ -1689,7 +1684,7 @@ function dqRenderCard(card,q,d,origin='live'){const uid=DQ_UID++;const okN=d.ste
  (d.results||[]).forEach((r,i)=>{const cols=r.data.columns||[];
   html+=`<div class="dq-res"><h4>${esc(r.title)}</h4><div class="chart" id="dqc_${uid}_${i}"></div>
    <div class="dq-overview"><div class="ov-hd">数据概览</div>
-    <div class="ov-row"><span class="ov-l">数据行数:</span>${r.data.rows.length}</div>
+    <div class="ov-row"><span class="ov-l">数据行数:</span>${r.data.total_rows??r.data.rows.length}${r.data.total_rows>r.data.rows.length?`<span class="muted">(回放只保存了前 ${r.data.rows.length} 行)</span>`:''}</div>
     <div class="ov-row"><span class="ov-l">数据列数:</span>${cols.length}</div>
     <div class="ov-row"><span class="ov-l">列名:</span>${cols.map(c=>esc(c)).join('、')||'-'}</div></div>
    <details><summary class="muted">数据预览(首尾各 5 行，末尾为最新期)</summary>${dqTable(r.data)}</details>
@@ -1808,7 +1803,7 @@ async function ask(){if(DQ_MODE==='diag')return diagAsk();
    const dT={narrative:done.narrative,summary:done.summary,anchor:done.anchor,evidence_card:done.evidence_card,
     metric_cards:done.metric_cards,degraded:done.degraded,application_check:done.application_check,cached:done.cached,
     elapsed:done.elapsed,session:done.session,steps:done.steps,results:(done.results||[]).map(r=>({title:r.title,
-     result_id:r.result_id,sql:r.sql,chart:r.chart,data:{columns:r.data.columns,rows:(r.data.rows||[]).slice(0,200)}}))};
+     result_id:r.result_id,sql:r.sql,chart:r.chart,data:{columns:r.data.columns,rows:(r.data.rows||[]).slice(0,DQ_HIST_ROWS),total_rows:(r.data.rows||[]).length}}))};
    myConv.turns.push({q,d:dT});if(!myConv.title)myConv.title=q;dqSaveConv(myConv);}
  }catch(e){if(e&&e.name==='AbortError')return;
   if(card.isConnected){
@@ -2263,6 +2258,7 @@ async function cnApiFetch(id,btn){if(btn)btn.textContent='取数中…';   // C8
  const d=await J('/api/conn/api_fetch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}).catch(e=>({error:''+e}));
  if(btn)btn.textContent='取数';
  if(d.error){toast(d.error,false);return}
+ if(d.truncated){toast(`已导入 ${esc(d.table)} · 仅前 ${d.rows} / ${d.total_rows} 行、${d.columns.length} / ${d.total_columns} 列(超出单次上限 5000 行 / 40 列,其余未导入)`,false);cnLoad();return}
  toast(`已导入 ${esc(d.table)} · ${d.rows} 行(问数/SQL 即可用)`,true);cnLoad();}
 async function cnDel(id){if(!confirm('移除该连接?'))return;
  await J('/api/build/connect/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
@@ -2440,7 +2436,7 @@ async function libDel(id){
 async function sparqlRun(){$('#sq_info').textContent='查询中…';
  const d=await J('/api/sparql',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:$('#sq_q').value})}).catch(e=>({error:''+e}));
  if(d.error){$('#sq_info').textContent=d.error+(d.hint?' — '+d.hint:'');$('#sq_out').innerHTML='';return}
- $('#sq_info').textContent=`${d.type||''} · ${d.total??(d.rows||[]).length} 行`;
+ $('#sq_info').textContent=`${d.type||''} · ${d.total??(d.rows||[]).length} 行`+(d.truncated?`(仅显示前 ${(d.rows||[]).length} 行)`:'');
  const rows=d.rows||[];const cols=d.vars||(rows[0]?Object.keys(rows[0]):[]);
  $('#sq_out').innerHTML='<table><tr>'+cols.map(c=>`<th>${esc(c)}</th>`).join('')+'</tr>'+rows.map(r=>'<tr>'+cols.map(c=>`<td>${esc(r[c])}</td>`).join('')+'</tr>').join('')+'</table>';}
 // 初始寻址：带 hash 直达对应子页，否则默认首页

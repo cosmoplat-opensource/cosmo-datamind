@@ -3,6 +3,8 @@
 const RV = {data: null, filter: {pending: true, status: '', q: ''}, shown: 50, picked: new Set(), open: new Set(), samples: {}};
 const RV_STATUS = {verified: '已验证', asserted: '人工断言', candidate: '待取证', inferred: '推理得出', gap: '待补', rejected: '已否决'};
 const RV_PAGE = 50;
+// rvLoad(index.html)的请求序号:连续切换图谱时只采用最后一次请求的结果,晚到的响应丢弃(DR-161)
+let RV_LOAD_SEQ = 0;
 
 // 关系在评审里的键:源->目标,同一对对象有多种关系时带 #角色(DR-114),与后端的 rel: 引用写法一致
 function rvKey(r) { return r.s + '->' + r.t + (r.role ? '#' + r.role : ''); }
@@ -90,6 +92,8 @@ function rvDraw() {
   if (!d || !body) return;
   const rows = rvVisible(), shown = rows.slice(0, RV.shown), f = RV.filter;
   const picked = [...RV.picked].filter(k => rows.some(r => rvKey(r) === k));
+  // “全选本页 / 取消全选”只看本页显示的行:筛选或收起后,页外仍选中的行不能让按钮误判为本页已全选
+  const allShownPicked = shown.length > 0 && shown.every(r => RV.picked.has(rvKey(r)));
   const status = Object.entries(RV_STATUS).map(([k, v]) => `<option value="${esc(k)}" ${f.status === k ? 'selected' : ''}>${esc(v)}</option>`).join('');
   body.innerHTML = `<div class="rv-bar">
      <label><input type="checkbox" ${f.pending ? 'checked' : ''} onchange="rvSetFilter('pending',this.checked)"> 只看待审</label>
@@ -99,7 +103,7 @@ function rvDraw() {
      <span>已选 ${picked.length} 条</span>
      <button class="ghost" ${picked.length ? '' : 'disabled'} onclick="rvBatch('confirm_relation')">通过所选</button>
      <button class="ghost" ${picked.length ? '' : 'disabled'} onclick="rvBatch('reject_relation')">否决所选</button>
-     <button class="ghost" onclick="rvPickAll(${picked.length === shown.length && shown.length ? 'false' : 'true'})">${picked.length === shown.length && shown.length ? '取消全选' : '全选本页'}</button></div>`
+     <button class="ghost" onclick="rvPickAll(${allShownPicked ? 'false' : 'true'})">${allShownPicked ? '取消全选' : '全选本页'}</button></div>`
     + (shown.length
       ? `<table class="rv-table"><tr><th></th><th>关系</th><th>动词</th><th>状态</th><th>取值重合</th><th>语义评审</th><th>人工审核</th><th>操作</th></tr>${shown.map(rvRowHTML).join('')}</table>`
       : `<div class="muted" style="padding:14px 4px">${d.rows.length ? '没有符合筛选条件的关系。' : '这张图谱还没有关系。'}</div>`)
@@ -121,7 +125,11 @@ function rvSetFilter(name, value) { RV.filter[name] = value; RV.shown = RV_PAGE;
 function rvMore() { RV.shown += RV_PAGE; rvDraw(); }
 function rvToggle(key) { if (RV.open.has(key)) RV.open.delete(key); else RV.open.add(key); rvDraw(); }
 function rvPick(key, on) { if (on) RV.picked.add(key); else RV.picked.delete(key); rvDraw(); }
-function rvPickAll(on) { RV.picked.clear(); if (on) rvVisible().slice(0, RV.shown).forEach(r => RV.picked.add(rvKey(r))); rvDraw(); }
+function rvPickAll(on) {
+  const page = rvVisible().slice(0, RV.shown).map(rvKey);
+  if (on) { RV.picked.clear(); page.forEach(k => RV.picked.add(k)); } else page.forEach(k => RV.picked.delete(k));
+  rvDraw();
+}
 
 async function rvSamples(key) {
   const [pair, role] = key.split('#'), [s, t] = pair.split('->'), graph = RV.data.graph;

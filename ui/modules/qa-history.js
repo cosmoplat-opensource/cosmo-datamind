@@ -1,5 +1,7 @@
 /* 深度问数会话状态：区分本次实时分析与历史回放，历史记录只读、续问自动分支。 */
 window.DQ_VIEW_MODE = 'new';
+// 历史回放随对话存进浏览器存储:结果行在此上限内全量保存,超出时记下原始行数并在回放卡上注明(DR-161)
+const DQ_HIST_ROWS = 2000;
 let leftLiveChat = false;
 
 function dqLeaveChat() {
