@@ -272,7 +272,7 @@ a{color:var(--acc)}
     <input id="cn_jpath" placeholder="json_path：对象数组所在路径，如 data.items(可空=根)" style="width:100%;margin-bottom:8px">
     <div class="muted" style="font-size:12px;margin-bottom:8px">登记后点「取数」把返回的对象数组导入为 <code>up.api_*</code> 表(≤2MB/5000 行)—— 深度问数 / SQL 工作台 / 可视化即刻可用。</div></div>
    <div id="cn_ext_f" style="display:none">
-    <div class="row" style="margin-bottom:8px"><input id="cn_host" placeholder="主机 host" style="flex:2" oninput="cnDsn()"><input id="cn_port" placeholder="端口" style="width:88px" oninput="cnDsn()"></div>
+    <div class="row" style="margin-bottom:8px"><input id="cn_host" placeholder="主机 host" style="flex:2" oninput="cnDsn()"><input id="cn_port" placeholder="端口" aria-label="端口" style="width:88px" oninput="this.dataset.user=this.value?'1':'';cnDsn()"></div>
     <div class="row" style="margin-bottom:8px"><input id="cn_db" placeholder="数据库 / schema" style="flex:1" oninput="cnDsn()"><input id="cn_user" placeholder="用户名" style="width:130px"><input id="cn_pass" type="password" placeholder="密码(可空)" style="width:130px"></div>
     <input id="cn_dsn" placeholder="DSN 连接串(可自动生成或手填)" style="width:100%;margin-bottom:8px">
     <div class="muted" style="font-size:12px;margin-bottom:8px">MySQL/Doris/PostgreSQL 已支持<b>实连取数</b>(需网络连通；MySQL 驱动已内置，PG 需 psycopg2)。凭据单独保存，界面不回显。</div></div>
@@ -1602,7 +1602,7 @@ async function dqDsTab(t){
   DQ_TABLES.forEach(t=>{const g=(t.name.split('_')[0]||'其他').toUpperCase();(groups[g]=groups[g]||[]).push(t);});
   body.innerHTML=`<label style="display:block;margin-bottom:10px;font-size:13px;cursor:pointer"><input type="checkbox" id="ds_notable" ${DQ_DS.allTables?'checked':''} onchange="DQ_DS.allTables=this.checked;if(this.checked){DQ_DS.tables=[];document.querySelectorAll('#ds_tgrid .sel').forEach(c=>c.classList.remove('sel'));}"> 不指定表(分析所有表)</label>
    <input id="ds_tsearch" placeholder="搜索表名…" style="width:260px;margin-bottom:10px" oninput="dqDsTblFilter()">
-   <div class="ds-grid" id="ds_tgrid">`+DQ_TABLES.map(t=>`<div class="ds-card ${sel.has(t.name)?'sel':''}" data-t="${esc(t.name)}" onclick="dqDsToggleT(${esc(JSON.stringify(t.name))})"><div class="ck">✓</div><div class="nm">${esc(t.name)}</div><div class="ds">${t.rows} 行 · ${t.cols} 列</div></div>`).join('')+`</div>`;
+   <div class="ds-grid" id="ds_tgrid">`+DQ_TABLES.map(t=>`<div class="ds-card ${sel.has(t.name)?'sel':''}" data-t="${esc(t.name)}" onclick="dqDsToggleT(${esc(JSON.stringify(t.name))})"><div class="ck">✓</div><div class="nm">${esc(t.name)}</div><div class="ds">${t.rows??'-'} 行 · ${t.cols??'-'} 列</div></div>`).join('')+`</div>`;
  }}
 function dqDsToggleG(id){const g=(DQ_GRAPHS||[]).find(x=>x.id===id);if(g&&!g.queryable){toast(g.reason||'该本体没有可查询的数据表',false);return;}const i=DQ_DS.graphs.indexOf(id);if(i<0)DQ_DS.graphs.push(id);else DQ_DS.graphs.splice(i,1);
  const c=$('#dq_ds_body').querySelector(`.ds-card[data-g="${CSS.escape(id)}"]`);if(c)c.classList.toggle('sel');   // 原地切换，不重建(避免闪烁)
@@ -2216,7 +2216,7 @@ async function cnLoad(){const d=await J('/api/build/sources').catch(()=>({source
   const kind=s.kind==='sqlite'?'SQLite':s.kind==='api'?'API':(s.kind||'external').toUpperCase();
   const meta=s.kind==='sqlite'?`${kind} · ${s.tables} 张表 · ${s.ready?'就绪':(s.builtin?'空':'不可读')}`
    :s.kind==='api'?`${kind} · ${s.ready?`已导入 up.${s.table||''} · ${s.last_rows||0} 行`:'未取数'}`
-   :`${kind} · 实连(点击浏览)`;
+   :s.live_status==='ok'?`${kind} · 已连通${s.engine?' · '+s.engine:''}(点击浏览)`:s.live_status==='failed'?`${kind} · 最近一次连接失败(点击重试)`:`${kind} · 已登记 · 未验证(点击浏览以连接)`;
   const del=s.builtin?'':`<span class="x" title="移除" onclick="event.stopPropagation();cnDel(${jsAttr(s.id)})">✕</span>`;
   const fetchBtn=s.kind==='api'?`<button class="ghost" style="font-size:12px;padding:2px 8px" onclick="event.stopPropagation();cnApiFetch(${jsAttr(s.id)},this)">取数</button>`:'';
   const clickable=(s.ready&&s.kind==='sqlite')||(!s.builtin&&s.kind!=='sqlite'&&s.kind!=='api');   // C7 外部库可点击→实连浏览
@@ -2227,7 +2227,7 @@ async function cnBrowse(id,name){CN_SRC=id;cnLoad();$('#cn_preview').style.displ
  const d=await J('/api/conn/tables?src='+encodeURIComponent(id)).catch(e=>({error:''+e,tables:[]}));
  if(d.error){$('#cnb_list').innerHTML=`<div class="tag warn">${esc(d.error)}</div>`;$('#cnb_n').textContent='';return}
  $('#cnb_n').textContent='('+d.tables.length+')';
- $('#cnb_list').innerHTML='<table><tr><th>表名</th><th>行数</th><th>列数</th><th></th></tr>'+d.tables.map(t=>`<tr><td>${esc(t.name)}</td><td>${t.rows.toLocaleString()}</td><td>${t.cols}</td><td><a href="#" onclick="event.preventDefault();cnPrev(${jsAttr(id)},${jsAttr(t.name)})">预览↗</a></td></tr>`).join('')+'</table>';}
+ $('#cnb_list').innerHTML='<table><tr><th>表名</th><th>行数</th><th>列数</th><th></th></tr>'+d.tables.map(t=>`<tr><td>${esc(t.name)}</td><td>${t.rows==null?'-':t.rows.toLocaleString()}</td><td>${t.cols==null?'-':t.cols}</td><td><a href="#" onclick="event.preventDefault();cnPrev(${jsAttr(id)},${jsAttr(t.name)})">预览↗</a></td></tr>`).join('')+'</table>';}
 async function cnPrev(id,table){const d=await J('/api/conn/preview?src='+encodeURIComponent(id)+'&table='+encodeURIComponent(table)).catch(e=>({error:''+e}));
  const el=$('#cn_preview');el.style.display='block';
  if(d.error){el.innerHTML=`<div class="tag warn">${esc(d.error)}</div>`;return}
@@ -2235,11 +2235,11 @@ async function cnPrev(id,table){const d=await J('/api/conn/preview?src='+encodeU
 function cnDlg(){$('#cn_msg').textContent='';$('#cn_kind').value='sqlite';cnKind();
  if(!$('#cn_name').value)$('#cn_name').value=CN_DEF.conn_name||'';
  if(!$('#cn_path').value)$('#cn_path').value=CN_DEF.sqlite_path||'';   // 预填真实可用 SQLite 路径(可改)
- const e=CN_DEF.ext||{};if(!$('#cn_host').value)$('#cn_host').value=e.host||'';if(!$('#cn_port').value)$('#cn_port').value=e.port||'';if(!$('#cn_db').value)$('#cn_db').value=e.db||'';
+ const e=CN_DEF.ext||{};if(!$('#cn_host').value)$('#cn_host').value=e.host||'';$('#cn_port').value='';$('#cn_port').dataset.user='';if(!$('#cn_db').value)$('#cn_db').value=e.db||'';
  $('#cn_modal').style.display='flex';}
 function cnKind(){const k=$('#cn_kind').value,sq=k==='sqlite',ap=k==='api';
  $('#cn_sqlite_f').style.display=sq?'block':'none';$('#cn_api_f').style.display=ap?'block':'none';
- $('#cn_ext_f').style.display=(sq||ap)?'none':'block';cnDsn();}
+ $('#cn_ext_f').style.display=(sq||ap)?'none':'block';if(!$('#cn_port').dataset.user)$('#cn_port').value=CN_PORT[k]||'';cnDsn();}
 const CN_PORT={mysql:'3306',doris:'9030',postgresql:'5432',hive:'10000'};
 function cnDsn(){const k=$('#cn_kind').value;if(k==='sqlite'||k==='external')return;
  const host=$('#cn_host').value||'host',port=$('#cn_port').value||CN_PORT[k]||'',db=$('#cn_db').value||'db';

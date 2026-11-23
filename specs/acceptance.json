@@ -4313,6 +4313,42 @@
       "tests": ["tests/unit/test_business_name_discovery.py::test_same_name_boards_reopen_with_independent_cards"]
     },
     {
+      "id": "FIELD-PORT-01",
+      "criterion": "数据连接页新建 Doris 或 Hive 连接时，未编辑端口应按所选引擎保存默认查询端口，手工填写端口时应保存输入值。",
+      "tests": [
+        "tests/frontend/representation_fidelity_browser.py::test_saved_connection_uses_selected_engine_port"
+      ]
+    },
+    {
+      "id": "FIELD-HIVE-STATUS-01",
+      "criterion": "仅完成登记的 Hive 连接，列表应让用户识别尚未验证的状态或当前可用的取数途径。",
+      "tests": [
+        "tests/frontend/representation_fidelity_browser.py::test_unverified_hive_connection_describes_its_availability"
+      ]
+    },
+    {
+      "id": "HIVE-LIVE-01",
+      "criterion": "Hive 或 Spark Thrift Server(HiveServer2 协议)连接经 JDBC 桥接实连:SQL 工作台、图表、表清单与预览返回 live 结果并保留数值与 NULL;写语句与堆叠语句在到达驱动前拒绝;口令经标准输入传递不出现在进程参数中。",
+      "tests": [
+        "tests/unit/test_hive_bridge.py::test_workbench_and_chart_return_live_hive_rows",
+        "tests/unit/test_hive_bridge.py::test_hive_rejects_writes_before_reaching_the_bridge",
+        "tests/unit/test_hive_bridge.py::test_table_catalog_and_preview_use_hive_metadata_and_backticks",
+        "tests/unit/test_hive_bridge.py::test_request_goes_over_stdin_and_rows_keep_types"
+      ]
+    },
+    {
+      "id": "HIVE-LIVE-02",
+      "criterion": "Hive 侧失败按阶段给出可处理的说明(驱动或 JDK 缺失、无法连接、服务端内存不足、超时),不回显地址与账号;连接列表据最近一次实连区分未验证、已连通与连接失败。表清单不提交查询作业,读不到的列数报告为未知而非 0。",
+      "tests": [
+        "tests/unit/test_hive_bridge.py::test_missing_driver_or_jdk_is_reported",
+        "tests/unit/test_hive_bridge.py::test_server_out_of_memory_is_explained",
+        "tests/unit/test_hive_bridge.py::test_connect_failure_hides_address_and_account",
+        "tests/unit/test_hive_bridge.py::test_server_failure_is_reported_and_marks_the_connection",
+        "tests/unit/test_hive_bridge.py::test_bridge_source_writes_valid_json_and_reads_the_database_from_the_url",
+        "tests/unit/test_hive_bridge.py::test_hiveserver2_identity_accepts_hive_and_spark_thrift"
+      ]
+    },
+    {
       "id": "FID-CATALOG-01",
       "criterion": "已登记库的两份表清单须与实际行列数一致，列出的中文表名、带空格表名可用原名打开详情和预览。",
       "tests": [

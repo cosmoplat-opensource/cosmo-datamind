@@ -38,6 +38,44 @@ def open_page(page, site, name, source="demo"):
     expect(page.locator("#p_" + name)).to_be_visible()
 
 
+@pytest.mark.parametrize(("engine", "custom_port", "expected_port"), [
+    ("doris", None, "9030"),
+    ("hive", None, "10000"),
+    ("doris", "19030", "19030"),
+])
+def test_saved_connection_uses_selected_engine_port(page, site, engine, custom_port, expected_port):
+    open_page(page, site, "conn")
+    expect(page.locator("#cn_n")).to_contain_text(re.compile(r"\d"))
+    page.get_by_role("button", name="+ 新建连接").click()
+    page.locator("#cn_kind").select_option(engine)
+    page.locator("#cn_name").fill("端口回归")
+    page.locator("#cn_host").fill("warehouse.invalid")
+    page.locator("#cn_db").fill("fixture")
+    if custom_port:
+        page.locator("#cn_port").fill(custom_port)
+    with page.expect_response(lambda r: r.url.endswith("/api/build/connect") and r.request.method == "POST") as saved:
+        page.get_by_role("button", name="保存连接", exact=True).click()
+    assert saved.value.ok
+    source_id = saved.value.json()["conn"]["id"]
+    sources = page.request.get(site + "/api/build/sources").json()["sources"]
+    stored = next(source for source in sources if source["id"] == source_id)
+    scheme = "hive2" if engine == "hive" else "mysql"
+    assert stored["kind"] == engine
+    assert stored["dsn"] == f"jdbc:{scheme}://warehouse.invalid:{expected_port}/fixture"
+
+
+def test_unverified_hive_connection_describes_its_availability(page, site):
+    response = page.request.post(site + "/api/build/connect", data={
+        "name": "待验证的 Hive", "kind": "hive", "dsn": "jdbc:hive2://warehouse.invalid:10000/availability",
+    })
+    assert response.ok
+    open_page(page, site, "conn")
+    row = page.locator("#cn_list .cn-row").filter(has_text="待验证的 Hive")
+    expect(row.locator(".mt")).to_be_visible()
+    status = row.locator(".mt").inner_text()
+    assert re.search(r"登记|待验|未验|未连|离线|命令行|CLI|暂未|不支持|未接入|未测试", status, re.I), status
+
+
 def result_table(page, site, source, surface):
     open_page(page, site, surface, source)
     sql = "SELECT seq,work_id,reading,note FROM readings ORDER BY seq"

@@ -11019,7 +11019,34 @@ def _single_statement(sql):
     parts = code.split(";")
     return bool(parts[0].strip()) and (len(parts) == 1 or (len(parts) == 2 and not parts[1].strip()))
 
+def _note_conn_status(conn, ok, engine=""):
+    """记下外部连接最近一次实连的结果:列表据此区分「已登记未验证」「已连通」「连接失败」。
+    只在状态变化时写盘,避免每次查询都改连接清单。"""
+    status = "ok" if ok else "failed"
+    with _WRITE_LOCK:
+        conns = _load_conns()
+        c = next((x for x in conns if x.get("id") == conn.get("id")), None)
+        if c is None or (c.get("live_status") == status and (not engine or c.get("engine") == engine)):
+            return
+        c["live_status"], c["live_checked_at"] = status, time.strftime("%Y-%m-%d %H:%M:%S")
+        if engine: c["engine"] = engine
+        _atomic_json(_BUILD_CONN_F, conns)
+
+
 def _ext_query(conn, sql, limit=500):
+    """外部库真查询并记录连通状态,见 _ext_query_raw。"""
+    try:
+        out = _ext_query_raw(conn, sql, limit)
+    except ValueError:
+        raise                                    # 只读、单语句等前置校验失败,不代表连接状态
+    except Exception:
+        _note_conn_status(conn, False)
+        raise
+    _note_conn_status(conn, True, out.get("engine") or "")
+    return out
+
+
+def _ext_query_raw(conn, sql, limit=500):
     """外部库真查询:只读放行 SELECT/WITH;驱动未装/不可达给明确报错(不静默)。→ {columns, rows}"""
     if not sql_is_readonly(sql): raise ValueError("仅允许只读 SELECT/WITH 查询")
     if not _single_statement(sql): raise ValueError("仅允许单条查询语句(检测到堆叠 SQL)")
@@ -11055,8 +11082,12 @@ def _ext_query(conn, sql, limit=500):
             return {"columns": cols, "rows": _jsonable_rows(cols, cur.fetchmany(limit))}
         finally:
             con.close()
-    if kind == "hive":
-        raise RuntimeError("Hive 实连需 pyhive/thrift 与内网通道,当前经 hive-client 命令行侧通;HTTP 取数暂未接")
+    if kind == "hive":                           # HiveServer2(Hive 或 Spark Thrift Server)经 JDBC 桥接(DR-163)
+        import hive_bridge
+        out = hive_bridge.query(conn.get("dsn") or "", sec.get("user") or u["user"] or "", pwd, sql, limit=limit)
+        cols = out["columns"]
+        rows = [{c: r[i] for i, c in enumerate(cols)} for r in out["rows"]]
+        return {"columns": cols, "rows": rows, "truncated": out["truncated"], "engine": out["engine"]}
     raise RuntimeError(f"不支持的连接类型: {kind}")
 
 def _ext_tables(conn):
@@ -11073,6 +11104,17 @@ def _ext_tables(conn):
                              "(SELECT COUNT(*) FROM information_schema.columns c WHERE c.table_name=s.relname) AS cols_ "
                              "FROM pg_stat_user_tables s ORDER BY 1", limit=500)
         return [{"name": r["name"], "rows": int(r["rows_"] or 0), "cols": int(r["cols_"] or 0)} for r in d["rows"]]
+    if kind == "hive":                           # 只读 JDBC 元数据,不提交查询作业;行数未知时为 None
+        import hive_bridge
+        u, sec = _parse_dsn(conn.get("dsn")), _conn_secret(conn.get("id"))
+        try:
+            out = hive_bridge.tables(conn.get("dsn") or "", sec.get("user") or u["user"] or "",
+                                     sec.get("password") or u["password"] or "")
+        except Exception:
+            _note_conn_status(conn, False)
+            raise
+        _note_conn_status(conn, True)
+        return out
     raise RuntimeError(f"该类型不支持表清单: {kind}")
 
 def _find_conn(src):
@@ -11133,7 +11175,7 @@ def conn_preview():
                 # 按方言加标识符引号(MySQL/Doris 用反引号——默认配置下双引号是字符串字面量,
                 # 一律用 " 会让预览直接语法错)。表名已过 ^[A-Za-z0-9_]{1,64}$,引号内不可能出现
                 # 引号字符,故这里是纯粹的边界加固,不引入新的转义问题。
-                qt = "`" if _ext_kind(conn) in ("mysql", "doris") else '"'
+                qt = "`" if _ext_kind(conn) in ("mysql", "doris", "hive") else '"'
                 return jsonify({"live": True, **_ext_query(conn, f"SELECT * FROM {qt}{table}{qt} LIMIT 100", limit=100)})
             except Exception as e:
                 return jsonify({"error": f"外部库预览失败:{str(e)[:140]}"})

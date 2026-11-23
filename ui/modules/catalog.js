@@ -7,7 +7,7 @@ async function catalog(){CAT=await JL('/api/tables')||[];
 function catalog_tags(){document.querySelectorAll('#cat_tags .tag').forEach(t=>t.className='tag '+(t.textContent===CAT_DOM?'ok':''));}
 function catRender(){const q=($('#cat_q').value||'').toLowerCase();
  const rows=CAT.filter(t=>DOMS[CAT_DOM](t.name)&&(!q||(t.name+' '+(t.cn||'')).toLowerCase().includes(q)));
- $('#tbl_list').innerHTML=`<div class="muted" style="margin-bottom:6px">${rows.length}/${CAT.length} 张</div><table><tr><th>表</th><th>行</th><th>列</th></tr>`+rows.map(t=>`<tr onclick="tbl(${esc(JSON.stringify(t.name))})" style="cursor:pointer"><td><div>${esc(t.name)}</div>${t.cn?`<div class="muted">${esc(t.cn)}</div>`:''}</td><td>${t.rows}</td><td>${t.cols}</td></tr>`).join('')+'</table>';}
+ $('#tbl_list').innerHTML=`<div class="muted" style="margin-bottom:6px">${rows.length}/${CAT.length} 张</div><table><tr><th>表</th><th>行</th><th>列</th></tr>`+rows.map(t=>`<tr onclick="tbl(${esc(JSON.stringify(t.name))})" style="cursor:pointer"><td><div>${esc(t.name)}</div>${t.cn?`<div class="muted">${esc(t.cn)}</div>`:''}</td><td>${t.rows??'-'}</td><td>${t.cols??'-'}</td></tr>`).join('')+'</table>';}
 async function tbl(n){const en=encodeURIComponent(n);$('#tbl_cols').innerHTML='<div class="muted">加载中…</div>';$('#tbl_prev').innerHTML='';
  const d=await J('/api/table/'+en);const info=await J('/api/table/'+en+'/info');
  if(d.error||info.error||!d.columns||!d.preview){$('#tbl_cols').innerHTML=`<div class="muted" style="color:#b91c1c">表信息加载失败:${esc(d.error||info.error||'返回内容不完整')}</div>`;return;}
