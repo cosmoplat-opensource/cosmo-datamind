@@ -137,8 +137,12 @@ async def test_database_switch(args):
                     await go(name)
                     overflow=await page.evaluate('document.documentElement.scrollWidth>innerWidth+1')
                     check(str(width)+' '+name+' has no page overflow',not overflow)
+                # 窄屏下数据库切换随菜单展开出现(收起时整个侧栏 inert,不抢键盘焦点)
+                toggle=page.locator('.nav-toggle')
+                if await toggle.is_visible() and await toggle.get_attribute('aria-expanded')!='true': await toggle.click()
                 await page.locator('#app_source').scroll_into_view_if_needed()
                 await page.screenshot(path=str(args.output/('selector-'+str(width)+'.png')))
+                if await toggle.get_attribute('aria-expanded')=='true': await toggle.click()
             check('no frontend JavaScript errors',not errors)
             check('no model requests during UI acceptance',not model_requests)
             completed=True

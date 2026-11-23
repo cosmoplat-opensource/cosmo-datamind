@@ -752,7 +752,7 @@ const jsAttr=x=>esc(JSON.stringify(x));
 const JL=async u=>{const d=await J(u);if(Array.isArray(d))return d;toast('列表加载失败:'+((d&&d.error)||'返回内容不是列表'));return null;};  // 列表接口:失败时提示并返回 null,调用方按空列表或「加载失败」处理
 // 数据格子统一格式化：浮点去 IEEE-754 表示噪声(14.74000000000002→14.74、90.04999…8→90.05)，保留12位有效数字;
 // 仅作用于显示层(预览/查询结果/看板)，不改后端原始值与导出。非数字/整数原样经 esc 转义。
-const cell=v=>(typeof v==='number'&&Number.isFinite(v)&&!Number.isInteger(v))?esc(parseFloat(v.toPrecision(12))):esc(v);
+const cell=v=>v===null||v===undefined?'<span class="muted" title="空值(NULL)">NULL</span>':(typeof v==='number'&&Number.isFinite(v)&&!Number.isInteger(v))?esc(parseFloat(v.toPrecision(15))):esc(v);   // 15 位有效数字即双精度能保真的位数;NULL 与空串区分显示
 // 核心助手显式挂 window：内联 onclick 处理器在全局作用域执行，const 顶层绑定跨浏览器可见性不保证，显式暴露杜绝隐患
 Object.assign(window,{$,J,esc,jsAttr,cell});
 function toast(msg,ok){document.getElementById('app_toast')?.remove();const t=document.createElement('div');t.id='app_toast';t.setAttribute('role',ok?'status':'alert');t.textContent=msg;t.style.cssText='position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:9999;background:'+(ok?'#16a34a':'#1f2740')+';color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;max-width:70vw;box-shadow:0 6px 20px rgba(31,39,64,.22);opacity:0;transition:opacity .2s';document.body.appendChild(t);requestAnimationFrame(()=>t.style.opacity='1');setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),250);},2800);}
@@ -762,13 +762,15 @@ const KCOL=k=>(KIND[k]||{c:'#5b9dff'}).c, KNM=k=>(KIND[k]||{n:k}).n;
 // 页面切换 + URL 寻址：每个子页对应 #<page> hash，可直接寻址/前进后退/刷新保持
 // 弹窗挂在 body 上,不随页面隐藏:切页时一并关掉,否则会留在新页面上挡住操作
 function toggleMobileMenu(){const aside=$('#app_sidebar');
- $('.nav-toggle').setAttribute('aria-expanded',String(aside.classList.toggle('open')));}
+ $('.nav-toggle').setAttribute('aria-expanded',String(aside.classList.toggle('open')));syncSidebar();}
+// 窄屏下收起的侧栏移出画面但仍可被 Tab 聚焦:收起时设为 inert,展开或宽屏时恢复
+const SIDEBAR_MQ=matchMedia('(max-width:820px)');function syncSidebar(){const a=$('#app_sidebar');if(a)a.inert=SIDEBAR_MQ.matches&&!a.classList.contains('open');}SIDEBAR_MQ.addEventListener('change',syncSidebar);document.addEventListener('DOMContentLoaded',syncSidebar);
 function closeDialogs(){document.querySelectorAll('.dq-modal').forEach(m=>{m.style.display='none'});try{RVM=null}catch(e){}
  if(window.OntologyLifecycle&&OntologyLifecycle.close)OntologyLifecycle.close();
  if($('#app_sidebar').classList.contains('open'))toggleMobileMenu();}
 function goPage(p){const nav=document.querySelector('[data-p="'+p+'"]');if(!nav)return false;closeDialogs();
  if(p!=='chat' && $('#p_chat').classList.contains('on'))dqLeaveChat();
- document.querySelectorAll('.nav').forEach(x=>x.classList.remove('on'));nav.classList.add('on');
+ document.querySelectorAll('.nav').forEach(x=>{x.classList.remove('on');x.removeAttribute('aria-current');});nav.classList.add('on');nav.setAttribute('aria-current','page');
  if(p==='robotics-task')nav.scrollIntoView({block:'nearest'});
  document.querySelectorAll('.page').forEach(pg=>pg.classList.remove('on'));const el=$('#p_'+p);if(el)el.classList.add('on');
  window.RoboticsBuild?.page(p);window.RoboticsAssets?.page(p);window.RoboticsReview?.page(p);window.RoboticsTaskApp?.page(p);window.RoboticsTask?.page(p);window.RoboticsViews?.page(p);
@@ -803,7 +805,7 @@ async function ontQualityRender(){const k=$('#oq_sel').value;if(!k)return;
  $('#oq_kpis').innerHTML=[['元数据覆盖',sc+'%',scol],['对象定义',o.withDefinition+'/'+o.total,'#4A5FF3'],['反例',o.withCounterExample+'/'+o.total,'#4A5FF3'],['开发状态',o.withMaturity+'/'+o.total,'#4A5FF3'],['标准关系映射',r.grounded+'/'+r.total,'#4A5FF3']].map(([l,n,c])=>`<div class="kpi"><div class="n" style="color:${c}">${esc(''+n)}</div><div class="l">${esc(l)}</div></div>`).join('');
  const bar=(obj)=>{const ent=Object.entries(obj||{});const tot=ent.reduce((a,b)=>a+b[1],0)||1;return ent.sort((a,b)=>b[1]-a[1]).map(([kk,v])=>`<div class="step"><b>${esc(kk)}</b> ${v} <span class="muted">(${Math.round(100*v/tot)}%)</span><div style="height:6px;background:#eef2ff;border-radius:3px;margin-top:3px"><div style="height:6px;width:${Math.round(100*v/tot)}%;background:#4A5FF3;border-radius:3px"></div></div></div>`).join('')||'<div class="muted">—</div>';};
  $('#oq_bfo').innerHTML=bar(o.byBFO);$('#oq_mat').innerHTML=bar(o.byMaturity);
- const _sr=d.relations||{};if(_sr.semanticReviewed>0){const el=document.createElement('div');el.className='muted';el.style.cssText='margin-top:6px;font-size:12px';el.textContent=`语义评审:${_sr.semanticReviewed} 条已审 · ${_sr.semanticDisputed||0} 条存疑`;$('#oq_kpis').after(el);}
+ const _sr=d.relations||{};$('#oq_sem')?.remove();if(_sr.semanticReviewed>0){const el=document.createElement('div');el.id='oq_sem';el.className='muted';el.style.cssText='margin-top:6px;font-size:12px';el.textContent=`语义评审:${_sr.semanticReviewed} 条已审 · ${_sr.semanticDisputed||0} 条存疑`;$('#oq_kpis').after(el);}
  $('#oq_gaps').innerHTML=(d.gaps&&d.gaps.length)?d.gaps.map(g=>`<div class="step">${esc(g)}</div>`).join(''):'<div class="muted">没有待补定义，全部对象已有定义 ✓</div>';}
 async function oqUpgrade(btn){const k=$('#oq_sel').value;if(!k)return;const t0=btn.textContent;btn.disabled=true;btn.textContent='补定义中…';
  const P=(p)=>appFetch(p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:k})}).then(x=>x.json());
@@ -814,10 +816,10 @@ async function oqUpgrade(btn){const k=$('#oq_sel').value;if(!k)return;const t0=b
 async function sdInit(){try{const d=await J('/api/build/sources');const ss=(d.sources||[]).filter(s=>s.kind!=='api');
  $('#sd_src').innerHTML=ss.map(s=>`<option value="${esc(s.id)}">${esc(sourceLabel(s,ss))}${s.kind!=='sqlite'?' · '+esc((s.kind||'').toUpperCase())+' 实连':''}</option>`).join('')||'<option value="demo">示例主库</option>';const selected=APP_DATA.draft?.sqlSource||appSourceId();if(ss.some(x=>x.id===selected))$('#sd_src').value=selected;}catch(_){}}
 async function sqlDevRun(){const sql=$('#sd_q').value.trim();if(!sql)return;$('#sd_info').textContent='执行中…';
- const src=($('#sd_src')&&$('#sd_src').value)||'demo';
+ const src=($('#sd_src')&&$('#sd_src').value)||'demo',srcName=($('#sd_src')?.selectedOptions[0]?.textContent||src).trim();   // 结果注明出自哪个库:切换数据源后旧结果不会被误认成新库的
  const d=await J('/api/query',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sql,src})});
  if(d.error){$('#sd_info').textContent='';$('#sd_out').innerHTML=`<div class="tag warn">${esc(d.error)}</div>`;return}
- $('#sd_info').textContent=`${d.rows.length} 行 × ${d.columns.length} 列${d.live?' · 外部库实连':''}`;
+ $('#sd_info').textContent=`来源 ${srcName} · ${d.rows.length} 行 × ${d.columns.length} 列${d.live?' · 外部库实连':''}${d.truncated?` · 结果超过上限，仅显示前 ${d.rows.length} 行`:''}`;
  $('#sd_out').innerHTML='<table><tr>'+d.columns.map(c=>`<th>${esc(c)}</th>`).join('')+'</tr>'+
   d.rows.map(r=>'<tr>'+d.columns.map(c=>`<td>${cell(r[c])}</td>`).join('')+'</tr>').join('')+'</table>';}
 // 数据质量
@@ -1144,7 +1146,7 @@ async function actDel(tid){const t=AC_TYPES.find(x=>x.id===tid);
  const d=await J('/api/action/type/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:tid})}).catch(e=>({error:''+e}));
  if(d.error){toast(d.error,false);return;}toast('已删除',true);AC_TYPES=null;acCenter();}
 let AC_LOG=[];
-async function acLogLoad(){const d=await J('/api/action/log').catch(()=>({items:[]}));AC_LOG=d.items||[];
+async function acLogLoad(){const d=await J('/api/action/log').catch(e=>({error:''+e}));if(d.error||!Array.isArray(d.items)){AC_LOG=[];$('#ac_log').innerHTML=`<div class="tag warn" style="margin:8px 0">加载失败:${esc(d.error||'返回内容不正确')}，请刷新重试</div>`;return;}AC_LOG=d.items;
  const pend=AC_LOG.filter(x=>x.status==='pending');
  const pd=$('#ac_pending');
  if(pend.length){pd.style.display='block';
@@ -1380,6 +1382,7 @@ async function qeRun(){const model=$('#qe_model').value.trim();const repeats=+$(
  if(d.error){toast(d.error,false);return}
  toast('评测已启动(后台运行，每题即时落盘)',true);qePoll();}
 function qeRender(d){
+ if(d&&d.error){$('#qe_kpis').innerHTML='';$('#qe_body').innerHTML=`<div class="tag warn" style="margin:8px 0">加载失败:${esc(d.error)}，请刷新重试</div>`;return;}   // 服务出错与“尚未运行”分开显示
  if(!d||d.empty||!(d.items||[]).length){$('#qe_kpis').innerHTML='';$('#qe_body').innerHTML=(appSourceId()!=='demo'?'<div class="muted" style="padding:10px">当前数据库使用自动生成的简单计数检查题，仅用于功能验收，不代表业务问数准确率。</div>':'')+'<div class="muted" style="padding:10px">尚未运行评测，点上方「开始评测」。三组同题对照:A 只给英文表名和列名(基线),B 加中文语义+本体关系，C 本体全量(再叠加指标/术语/本体约束校验)。</div>';return;}
  const n=(d.items||[]).length;const A=d.arms||{};const S=(d.summary||{}).arms||{};const P=(d.summary||{}).pairs||{};
  const pct=v=>v==null?'—':(v*100).toFixed(1)+'%';const pp=v=>(v>=0?'+':'')+(v*100).toFixed(1);
@@ -2267,7 +2270,7 @@ async function cnDel(id){if(!confirm('移除该连接?'))return;
 let VZ_DATA=null,VZ_QUICK={},VZ_REQUEST=0;
 async function vzInit(){
  const d=await J('/api/build/sources').catch(()=>({sources:[]}));
- const ready=(d.sources||[]).filter(s=>s.ready&&s.kind==='sqlite');
+ const ready=(d.sources||[]).filter(s=>(s.ready&&s.kind==='sqlite')||(!s.builtin&&s.kind!=='sqlite'&&s.kind!=='api'));   // 外部实连库与 SQL 工作台一致可选
  $('#vz_src').innerHTML=ready.map(s=>`<option value="${esc(s.id)}">${esc(sourceLabel(s,ready))}</option>`).join('')||'<option value="demo">示例主库</option>';const selected=APP_DATA.draft?.vizSource||appSourceId();if(ready.some(s=>s.id===selected))$('#vz_src').value=selected;
  await vzQuickOpts();vzBoardsLoad();if(VZ_BOARD.length)vzGridRender();}
 async function vzQuickOpts(){VZ_QUICK={};const src=$('#vz_src').value||'demo';let opts='<option value="">— 选表 / 指标自动生成 SQL —</option>';
@@ -2291,7 +2294,7 @@ async function vzRun(){const sql=$('#vz_sql').value.trim();if(!sql){toast('请�
  const d=await J('/api/viz/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({src:source,sql})}).catch(e=>({error:''+e}));
  if(request!==VZ_REQUEST||source!==$('#vz_src').value)return;
  if(d.error){$('#vz_info').textContent='';$('#vz_prev').innerHTML=`<div class="tag warn" style="margin:12px">${esc(d.error)}</div>`;VZ_DATA=null;return}
- VZ_DATA={...d,sql,src:source};$('#vz_info').textContent=`${d.rows.length} 行 × ${d.columns.length} 列`;
+ VZ_DATA={...d,sql,src:source};$('#vz_info').textContent=`${d.rows.length} 行 × ${d.columns.length} 列`+(d.truncated?` · 结果超过上限，仅取前 ${d.rows.length} 行`:'');
  // 自动映射：第一列为 X，其余数值列为 Y(X 若本身是数值列则从 Y 中排除，避免自己画自己)
  const cols=d.columns||[];const x0=cols[0]||'';
  const numCols=cols.filter(c=>d.rows.some(r=>vzNumber(r[c])!==null));
@@ -2338,9 +2341,10 @@ async function vzCardRender(c,i,gen){const d=await J('/api/viz/run',{method:'POS
  if(d.error){el.innerHTML=`<div class="tag warn" style="margin:8px">${esc(d.error)}</div>`;return}
  if(c.type==='table'){el.innerHTML=`<div class="scroll" style="max-height:210px"><table><tr>`+(d.columns||[]).map(x=>`<th>${esc(x)}</th>`).join('')+'</tr>'+(d.rows||[]).map(r=>'<tr>'+(d.columns||[]).map(x=>`<td>${cell(r[x])}</td>`).join('')+'</tr>').join('')+'</table></div>';return;}
  if(c.type==='kpi'){const y=c.ys[0]||(d.columns||[])[1];const last=(d.rows||[]).slice(-1)[0]||{};
-  el.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%"><div class="muted">${esc(y||'')}</div><div style="font-size:34px;font-weight:700;color:var(--acc)">${esc(last[y]??'-')}</div></div>`;return;}
+  const x=c.x,rowLabel=(d.rows||[]).length>1&&x&&x!==y?`<div class="muted" style="font-size:12px">最后一行：${esc(last[x]??'')}${d.truncated?'(结果已截断)':''}</div>`:'';   // 与取数预览相同,注明取的是哪一行
+  el.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%"><div class="muted">${esc(y||'')}</div><div style="font-size:34px;font-weight:700;color:var(--acc)">${esc(last[y]??'-')}</div>${rowLabel}</div>`;return;}
  el.innerHTML='';mk(el,vzChartOption(d,c.type,c.x,c.ys));}
-async function vzBoardsLoad(){const bs=await J('/api/viz/boards').catch(()=>[]);
+async function vzBoardsLoad(){const r=await J('/api/viz/boards').catch(e=>({error:''+e}));if(!Array.isArray(r)){$('#vz_board_n').innerHTML=`<div class="tag warn" style="margin:8px 0">加载失败:${esc(r.error||'返回内容不正确')}，请刷新重试</div>`;$('#vz_board_sel').innerHTML='<option value="">看板列表加载失败</option>';return;}const bs=r;
  $('#vz_board_sel').innerHTML='<option value="">— 新建看板 —</option>'+bs.map(b=>`<option value="${esc(b.id)}">${esc(b.name)} (${(b.charts||[]).length}图)</option>`).join('');VZ_BOARDS=bs;}
 let VZ_BOARDS=[];
 function vzLoadBoard(){const id=$('#vz_board_sel').value;if(!id){VZ_BOARD=[];$('#vz_board_name').value='';vzGridRender();return}
@@ -2362,12 +2366,12 @@ async function clawGraphs(pref){const gs=await JL('/api/graphs')||[];const sel=$
 async function clawSwitchGraph(){const key=clawGraph();try{localStorage.setItem('claw_graph',key)}catch(_){}
  CLAW_ID=null;$('#claw_log').innerHTML='<div class="muted" style="padding:8px">已切换图谱，请新建或选择该图谱下的会话。</div>';
  await clawSessions();await clawEdits();await clawAudit();}
-async function clawSessions(){const ss=await J('/api/ont/chats?graph='+encodeURIComponent(clawGraph()));
+async function clawSessions(){const ss=await J('/api/ont/chats?graph='+encodeURIComponent(clawGraph()));if(!Array.isArray(ss)){$('#claw_sessions').innerHTML=`<div class="tag warn" style="margin:8px 0">加载失败:${esc((ss&&ss.error)||'返回内容不正确')}，请刷新重试</div>`;return;}
  $('#claw_sessions').innerHTML=ss.map(x=>`<button type="button" class="step" onclick="clawOpen(${jsAttr(x.id)})">${esc(x.title||'(空)')} <span class="muted">${esc(x.n)}</span></button>`).join('')||'<div class=muted>无会话</div>';}
 async function clawOpen(id){CLAW_ID=id;const d=await J('/api/ont/chats/'+id);
  if((d.graph||'demo')!==clawGraph()){CLAW_ID=null;toast('该会话属于另一图谱，请重新选择');return;}
  $('#claw_log').innerHTML=(d.messages||[]).map(m=>`<div class="${m.role==='user'?'msg-user':'msg-ai'}">${esc(m.text||'').replace(/EDIT_OP:\{[\s\S]*\}/,'').replace(/\n/g,'<br>')}</div>`).join('');}
-async function clawNew(){const c=await J('/api/ont/chats/new',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:clawGraph()})});CLAW_ID=c.id;$('#claw_log').innerHTML='';clawSessions();}
+async function clawNew(){const c=await J('/api/ont/chats/new',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:clawGraph()})});if(c.error||!c.id){toast('新建会话失败:'+(c.error||'未返回会话')+',请重试',false);return;}CLAW_ID=c.id;$('#claw_log').innerHTML='';clawSessions();}   // 成功后才清空当前记录
 function clawFileLabel(){const n=($('#claw_file').files||[]).length;$('#claw_file_btn').textContent=n?`已选 ${n} 个附件`:'选择附件';}
 function clawReadAttachment(file){
  return new Promise((resolve,reject)=>{
@@ -2400,7 +2404,7 @@ async function clawAsk(){const q=$('#claw_q').value.trim();if(!q)return;$('#claw
 async function clawApply(opStr){const op=JSON.parse(opStr);
  const d=await J('/api/ont/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:clawGraph(),op,source:'chat',reviewer:($('#claw_who')&&$('#claw_who').value||'').trim()})});
  toast(d.error||'已执行，可撤销');clawEdits();clawAudit();}
-async function clawDel(){if(!CLAW_ID)return;await J('/api/ont/chats/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:CLAW_ID})});CLAW_ID=null;document.querySelector('#claw_log').innerHTML='';}
+async function clawDel(){if(!CLAW_ID)return;const d=await J('/api/ont/chats/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:CLAW_ID})});if(d.error){toast('清空会话失败:'+d.error+',请重试',false);return;}CLAW_ID=null;document.querySelector('#claw_log').innerHTML='';clawSessions();}   // 删除成功才清空并刷新会话列表
 async function clawUndo(){const d=await J('/api/ont/undo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:clawGraph()})});
  toast(d.error||'已撤销');clawEdits();clawAudit();}
 async function clawEdits(){try{const e=await J('/api/ont/edits?graph='+encodeURIComponent(clawGraph()));$('#claw_edits').textContent=`编辑历史: ${(e.ops||[]).length} 条(最近: ${JSON.stringify((e.ops||[]).slice(-1)[0]||{}).slice(0,110)})`;}catch(_){}}
