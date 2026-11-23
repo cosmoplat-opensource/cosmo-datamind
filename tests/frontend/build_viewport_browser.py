@@ -3,6 +3,10 @@ import pytest
 from playwright.sync_api import expect, sync_playwright
 
 
+# 失败时列出越出视口的最内层元素,便于在 CI 日志里直接定位
+WIDEST = """() => [...document.querySelectorAll('body *')].filter(e => { const r = e.getBoundingClientRect(); return r.width > 0 && r.right > innerWidth + 1; }).filter((e, _, all) => !all.some(p => p !== e && e.contains(p))).slice(0, 6).map(e => `${e.tagName.toLowerCase()}#${e.id}.${String(e.className).split(' ')[0]}:${Math.round(e.getBoundingClientRect().right)}`)"""
+
+
 @pytest.fixture(scope="module")
 def webkit_browser():
     with sync_playwright() as pw, pw.webkit.launch() as browser:
@@ -18,4 +22,5 @@ def test_build_reference_controls_fit_the_viewport(webkit_browser, site, width):
         expect(page.locator(".bc-ref-row select").first).to_be_visible()
         page.evaluate("document.fonts.ready")
         overflow = page.evaluate("document.scrollingElement.scrollWidth - document.documentElement.clientWidth")
-        assert overflow <= 1, f"构建页在 {width}px 视口多出 {overflow}px 横向滚动"
+        wide = [] if overflow <= 1 else page.evaluate(WIDEST)
+        assert overflow <= 1, f"构建页在 {width}px 视口多出 {overflow}px 横向滚动:{wide}"

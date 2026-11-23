@@ -9,6 +9,10 @@ from playwright.sync_api import expect, sync_playwright
 from tests.browser_runtime import browser_executable
 
 
+# 失败时列出越出视口的最内层元素,便于在 CI 日志里直接定位
+WIDEST = """() => [...document.querySelectorAll('body *')].filter(e => { const r = e.getBoundingClientRect(); return r.width > 0 && r.right > innerWidth + 1; }).filter((e, _, all) => !all.some(p => p !== e && e.contains(p))).slice(0, 6).map(e => `${e.tagName.toLowerCase()}#${e.id}.${String(e.className).split(' ')[0]}:${Math.round(e.getBoundingClientRect().right)}`)"""
+
+
 class NavigationInventory(HTMLParser):
     def __init__(self):
         super().__init__()
@@ -75,7 +79,7 @@ def test_navigation_survives_back_forward_and_reload(device, site, key):
         expect(root).to_contain_text(re.compile(r"\S"))
         # Allow API-driven cards and layouts to settle before measuring viewport overflow.
         page.wait_for_load_state("networkidle")
-        assert page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1"), key
+        assert page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1"), (key, page.evaluate(WIDEST))
         assert not errors, errors
 
 
