@@ -14,38 +14,6 @@ from tests.unit.test_deepqa_application_http import ROUTES, ask, qa_http
 __all__ = ["named_graph", "qa_http"]
 
 
-# 已确认、尚未修复的产品缺陷:按用例标为严格预期失败,修复后会以 XPASS 报错,提醒删去对应条目。
-OPEN_DEFECTS = {  # pytest 节点名:非 ASCII 参数按 pytest 默认写成 \uXXXX 转义
-    r"test_single_business_table_can_register[sqliteLedger]",
-    r"test_business_table_stays_discoverable_beside_control[catalog]",
-    r"test_business_table_stays_discoverable_beside_control[connections]",
-    r"test_business_table_stays_discoverable_beside_control[build-prep]",
-    r"test_delimited_upload_preserves_column_boundaries[Location, City-;]",
-    r"test_delimited_upload_preserves_column_boundaries[Location, City-|]",
-    r"test_alias_edit_never_guesses_between_shared_names[east-first-obj:\u5171\u7528\u5de5\u5355]",
-    r"test_alias_edit_never_guesses_between_shared_names[west-first-obj:\u5171\u7528\u5de5\u5355]",
-    r"test_aliases_entered_as_business_text_remain_separately_searchable[\uff0c]",
-    r"test_aliases_entered_as_business_text_remain_separately_searchable[\uff1b]",
-    r"test_exact_business_label_finds_its_profile[\u6cf5]",
-    r"test_object_detail_resolves_selected_node_id[True]",
-    r"test_metric_id_selects_the_same_contract_and_persisted_status[True-contract]",
-    r"test_metric_id_selects_the_same_contract_and_persisted_status[True-status]",
-    r"test_offline_count_follows_explicit_business_table[\u7ef4\u4fee\u5de5\u5355-/api/chat]",
-    r"test_offline_count_follows_explicit_business_table[\u7ef4\u4fee\u5de5\u5355-/api/chat/stream]",
-    r"test_rdf_terms_keep_identity_after_reordering[similar-classes-ttl-turtle]",
-    r"test_rdf_terms_keep_identity_after_reordering[similar-classes-jsonld-json-ld]",
-    r"test_rdf_terms_keep_identity_after_reordering[similar-classes-owl-xml]",
-    r"test_rdf_terms_keep_identity_after_reordering[relations-ttl-turtle]",
-    r"test_rdf_terms_keep_identity_after_reordering[relations-jsonld-json-ld]",
-    r"test_rdf_terms_keep_identity_after_reordering[relations-owl-xml]",
-}
-
-
-@pytest.fixture(autouse=True)
-def _open_defect(request):
-    if request.node.name in OPEN_DEFECTS:
-        request.applymarker(pytest.mark.xfail(strict=True, reason="已确认的业务名称检索缺陷,待修复"))
-
 
 @pytest.fixture
 def client():

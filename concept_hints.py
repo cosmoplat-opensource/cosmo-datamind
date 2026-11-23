@@ -354,7 +354,7 @@ def collect(db, max_tables=5000):
     con = sqlite3.connect(Path(db).absolute().as_uri() + "?mode=ro", uri=True)
     try:
         tables = [r[0] for r in con.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' "
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\' "
             "AND name NOT IN ('_dm_tables','_dm_columns') ORDER BY name")][:max_tables]
         cols = {t: [r[1] for r in con.execute(f"PRAGMA table_info({_q(t)})")] for t in tables}
         rows = {t: con.execute(f"SELECT COUNT(*) FROM {_q(t)}").fetchone()[0] for t in tables}

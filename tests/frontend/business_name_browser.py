@@ -11,52 +11,6 @@ from tests.frontend.navigation_transitions import inventory
 __all__ = ["named_graph"]
 
 
-# 已确认、尚未修复的产品缺陷:按用例标为严格预期失败,修复后会以 XPASS 报错,提醒删去对应条目。
-OPEN_DEFECTS = {
-    r"test_distinct_sources_can_be_identified_in_picker[True-sqldev-#app_source]",
-    r"test_distinct_sources_can_be_identified_in_picker[True-sqldev-#sd_src]",
-    r"test_distinct_sources_can_be_identified_in_picker[True-viz-#vz_src]",
-    r"test_metric_lineage_follows_clicked_row[True-deprecate]",
-    r"test_metric_lineage_follows_clicked_row[True-lineage]",
-    r"test_page_forms_are_named_and_fit_viewport[desktop-actioncenter]",
-    r"test_page_forms_are_named_and_fit_viewport[desktop-enginecfg]",
-    r"test_page_forms_are_named_and_fit_viewport[desktop-glossary]",
-    r"test_page_forms_are_named_and_fit_viewport[desktop-graph]",
-    r"test_page_forms_are_named_and_fit_viewport[desktop-metrics]",
-    r"test_page_forms_are_named_and_fit_viewport[desktop-ontquality]",
-    r"test_page_forms_are_named_and_fit_viewport[desktop-review]",
-    r"test_page_forms_are_named_and_fit_viewport[desktop-sparql]",
-    r"test_page_forms_are_named_and_fit_viewport[desktop-viz]",
-    r"test_page_forms_are_named_and_fit_viewport[narrow-actioncenter]",
-    r"test_page_forms_are_named_and_fit_viewport[narrow-build]",
-    r"test_page_forms_are_named_and_fit_viewport[narrow-catalog]",
-    r"test_page_forms_are_named_and_fit_viewport[narrow-chat]",
-    r"test_page_forms_are_named_and_fit_viewport[narrow-claw]",
-    r"test_page_forms_are_named_and_fit_viewport[narrow-conn]",
-    r"test_page_forms_are_named_and_fit_viewport[narrow-enginecfg]",
-    r"test_page_forms_are_named_and_fit_viewport[narrow-glossary]",
-    r"test_page_forms_are_named_and_fit_viewport[narrow-graph]",
-    r"test_page_forms_are_named_and_fit_viewport[narrow-home]",
-    r"test_page_forms_are_named_and_fit_viewport[narrow-jobs]",
-    r"test_page_forms_are_named_and_fit_viewport[narrow-library]",
-    r"test_page_forms_are_named_and_fit_viewport[narrow-metrics]",
-    r"test_page_forms_are_named_and_fit_viewport[narrow-ontquality]",
-    r"test_page_forms_are_named_and_fit_viewport[narrow-qaeval]",
-    r"test_page_forms_are_named_and_fit_viewport[narrow-quality]",
-    r"test_page_forms_are_named_and_fit_viewport[narrow-review]",
-    r"test_page_forms_are_named_and_fit_viewport[narrow-robotics-task]",
-    r"test_page_forms_are_named_and_fit_viewport[narrow-robotics-view]",
-    r"test_page_forms_are_named_and_fit_viewport[narrow-sparql]",
-    r"test_page_forms_are_named_and_fit_viewport[narrow-sqldev]",
-    r"test_page_forms_are_named_and_fit_viewport[narrow-viz]",
-}
-
-
-@pytest.fixture(autouse=True)
-def _open_defect(request):
-    if request.node.name in OPEN_DEFECTS:
-        request.applymarker(pytest.mark.xfail(strict=True, reason="已确认的业务名称与表单缺陷,待修复"))
-
 
 @pytest.mark.parametrize("surface,selector", [("sqldev", "#app_source"), ("sqldev", "#sd_src"), ("viz", "#vz_src")])
 @pytest.mark.parametrize("same_label", [False, True])

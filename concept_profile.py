@@ -84,7 +84,8 @@ def search(profiles, query, limit=5):
         # 名称按「原名 + 剥离中文表名后缀」两种形式匹配:业务问句里说的是「销售订单」,
         # 本体里可能叫「销售订单事实表」——只认原名会让最常见的命名方式召回为零。
         for n in p.get("names") or ([p["name"], p["cn"], p["table"]] + p["aliases"]):
-            if n and len(n) >= 2 and n.lower() in ql and n not in hits:
+            # 单字名称(如「泵」)只在整句就是这个名称时命中,否则任何含该字的问句都会召回它
+            if n and ((len(n) >= 2 and n.lower() in ql) or n.lower() == ql) and n not in hits:
                 score += 5; hits.append(n)
         for c in p["columns"]:
             for n in (c["cn"], c["col"]):

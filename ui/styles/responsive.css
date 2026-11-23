@@ -44,6 +44,16 @@
  #p_build .bc-result .hd>span{min-width:0}
 }
 @media (max-width:480px){
+ /* 320px 宽时顶栏不得撑出横向滚动:快捷入口(菜单里也有)与头像收起,品牌名与引擎状态可截断 */
+ .topbar{padding:0 10px;gap:8px}
+ .topbar .wm{flex:1 1 auto;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;display:block}
+ .topbar .tools{gap:6px;flex:0 0 auto}
+ .topbar .tools .pill:not(.nav-toggle):not(#rt_pill),.topbar .tools .av{display:none}
+ .topbar #rt_pill{max-width:96px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
  #p_build .bc-ref-row{grid-template-columns:minmax(0,1fr)}
+ /* 页面里写死宽度的下拉框与按最小列宽排布的卡片网格:窄屏收到容器宽度内,宽表格在自身范围内横向滚动 */
+ .page select,.page input:not([type=checkbox]):not([type=radio]),.page textarea{max-width:100%}
+ .page [style*="grid-template-columns:repeat(auto-fill,minmax("]{grid-template-columns:minmax(0,1fr)!important}
+ #p_enginecfg table{display:block;max-width:100%;overflow-x:auto}
  #p_build .bc-ref-row select{text-overflow:ellipsis;overflow:hidden}
 }

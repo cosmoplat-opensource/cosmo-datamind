@@ -100,7 +100,7 @@ def profile(db, deleted_share_cap=40):
     con = _connect(db)
     try:
         tables = [r[0] for r in con.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\' ORDER BY name")
             if r[0] not in META_TABLES]
         t_comment, c_comment, rows_est = _comments(con)
         cols, pks, fks, rows = {}, {}, 0, {}

@@ -30,7 +30,7 @@ _DATE = re.compile(r"(?<!\d)\d{4}[-/年]\d{1,2}(?:[-/月]\d{1,2}日?)?|(?<!\d)\d
 _NUM = re.compile(r"(?<![A-Za-z0-9_.\-/])-?\d[\d,]*(?:\.\d+)?%?(?![A-Za-z0-9_/\-])")
 _UNITS = {"万": 1e4, "亿": 1e8}
 _DOWN = re.compile(r"下降|减少|降低|下滑|下跌|回落|缩减|亏损|提前|不足|缺口|负|跌|降|少|低|早|欠|缺")
-_CLAUSE = re.compile(r"[,。;;\n!?!?]|,(?!\d)")
+_CLAUSE = re.compile(r"[，。；;\n！？!?]|,(?!\d)")
 MAX_LABELS = 400             # 参与「所属行」判断的行名个数上限
 
 
@@ -107,7 +107,7 @@ def _numbers(text, ignore=""):
 def _col_unit(name):
     """列名里写明的单位(收入_万、金额(亿元))→ 换算系数;没写返回 None。"""
     n = str(name or "")
-    return next((f for u, f in _UNITS.items() if re.search(u + r"元?[))]?$|[_((]" + u, n)), None)
+    return next((f for u, f in _UNITS.items() if re.search(u + r"元?[)）]?$|[_(（]" + u, n)), None)
 
 
 def _cell_num(v):
@@ -224,7 +224,7 @@ def _col_names(results):
     names: dict[str, str] = {}
     short: dict[str, list[str]] = {}
     for c in cols:
-        bare = re.sub(r"[_((]?(万|亿)元?[))]?$", "", c).strip("_ ")
+        bare = re.sub(r"[_(（]?(万|亿)元?[)）]?$", "", c).strip("_ ")
         for n in {c, bare}:
             if len(n) >= 2:
                 names[n] = c

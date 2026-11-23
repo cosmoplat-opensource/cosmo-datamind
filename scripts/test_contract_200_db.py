@@ -36,7 +36,7 @@ def user_tables(con: sqlite3.Connection) -> list[str]:
         row[0]
         for row in con.execute(
             "SELECT name FROM sqlite_master "
-            "WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+            "WHERE type='table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\' ORDER BY name"
         )
     ]
 
@@ -302,7 +302,7 @@ def test_acceptance(
         row[0]
         for row in con.execute(
             "SELECT name FROM sqlite_master "
-            "WHERE type='table' AND name LIKE 'sqlite_%'"
+            "WHERE type='table' AND name LIKE 'sqlite\\_%' ESCAPE '\\'"
         )
     ]
     declared_fks = sum(
@@ -311,7 +311,7 @@ def test_acceptance(
     )
     indexes = con.execute(
         "SELECT COUNT(*) FROM sqlite_master "
-        "WHERE type='index' AND name NOT LIKE 'sqlite_%'"
+        "WHERE type='index' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\'"
     ).fetchone()[0]
     total_rows = sum(
         con.execute(f"SELECT COUNT(*) FROM {qident(table)}").fetchone()[0]

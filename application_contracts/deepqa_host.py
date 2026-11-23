@@ -115,7 +115,7 @@ def _catalog(host):
             conn = host.ro_connect(str(path))
             try:
                 schemas.append([list(r) for r in conn.execute(
-                    "SELECT name,type,sql FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY name,type")])
+                    "SELECT name,type,sql FROM sqlite_master WHERE name NOT LIKE 'sqlite\\_%' ESCAPE '\\' ORDER BY name,type")])
             finally:
                 conn.close()
         except (OSError, sqlite3.Error):

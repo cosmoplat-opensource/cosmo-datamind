@@ -715,7 +715,7 @@ def table_list(db=None):
     try:
         tabs = [r[0] for r in con.execute(
             "SELECT name FROM sqlite_master "
-            "WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+            "WHERE type='table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\' ORDER BY name"
         )]
         cn_by_table = {}
         try:
@@ -1972,7 +1972,7 @@ def _qa_table_inventory(path=None):
             con = ro_connect(path)
             try:
                 return {str(r[0]).lower() for r in con.execute(
-                    "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")}
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\'")}
             finally:
                 con.close()
         except Exception:
@@ -1991,7 +1991,8 @@ def _qa_graph_profile(ir, inventory=None):
     for obj in (ir or {}).get("objects", []):
         table = str(_obj_table(obj) or "").strip()
         low = table.lower()
-        if table and re.fullmatch(_SQL_IDENT, table) and low not in seen:
+        # 只认数据库里真实存在的表(下面与清单比对),表名可以是中文等非 ASCII 标识符;SQL 里一律加引号
+        if table and "\x00" not in table and '"' not in table and low not in seen:
             seen.add(low); bound.append(table)
     available, upload_available, unavailable = [], [], []
     for table in bound:
@@ -2340,7 +2341,7 @@ def _uploads_schema():
     try:
         con = ro_connect(UPLOAD_DB)
         tabs = [r[0] for r in con.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\'"
         )]
         parts = []
         for t in tabs[:8]:
@@ -3052,8 +3053,10 @@ def fallback_plan(question, ir=None, focus_tables=None):
                 r"(?:记录|数据|行)(?:总数|数|数量)(?:是|有)?(?:多少|几)?(?:条|行)?)(?:吗)?|"
                 r"how many (?:rows|records)(?: (?:are (?:there )?)?in)?\s*|"
                 r"(?:row|record) count(?: (?:of|for))?\s*", remaining, re.I)
-            if simple_count and re.fullmatch(r"(?:up\.)?" + _SQL_IDENT, table, re.I):
-                quoted = ".".join('"' + part + '"' for part in table.split("."))
+            # 表名来自本体对象绑定的物理表,不来自问句;按 SQL 标准引用(双引号加倍),中文等非 ASCII 表名同样可计数
+            schema, _, bare = table.rpartition(".") if table.lower().startswith("up.") else ("", "", table)
+            if simple_count and bare and "\x00" not in bare:
+                quoted = ".".join('"' + part.replace('"', '""') + '"' for part in ([schema] if schema else []) + [bare])
                 return {"analyses": [{"title": (obj.get("cn") or obj.get("name") or table) + "记录数",
                                       "sql": f'SELECT COUNT(*) AS "记录数" FROM {quoted}', "chart": {}}],
                         "note": note}
@@ -3414,13 +3417,15 @@ def metric_lineage():
     name = request.args.get("name", "").strip()
     ir = _metric_graph_ir()
     if ir is None: return jsonify({"error": "非法图谱键"}), 400
-    hit = None
-    for k, arr in (ir.get("metric_layers") or {}).items():
-        for m in arr:
-            if m.get("name") == name:
-                hit = {**m, "layer": k}; break
-        if hit: break
-    if not hit: return jsonify({"error": "指标不存在"}), 404
+    # 先按指标主键找,再按名称;名称被多个指标共用时报错,不按排列顺序挑一个(与 /api/metric/contract 一致)
+    entries = [(k, m) for k, arr in (ir.get("metric_layers") or {}).items() for m in (arr or []) if isinstance(m, dict)]
+    found = [e for e in entries if e[1].get("id") == name] or [e for e in entries if e[1].get("name") == name]
+    if len(found) > 1:
+        return jsonify({"error": f"名称「{name}」对应多个指标,请用指标主键指明:"
+                                 + "、".join(str(m.get("id") or "?") for _, m in found)}), 409
+    if not found: return jsonify({"error": "指标不存在"}), 404
+    hit = {**found[0][1], "layer": found[0][0]}
+    name = hit.get("name") or name                       # 被引用关系按指标名称登记
     refs = []
     app_ir = (load_ir_edited("app") or {}) if database_scope.same_path(_active_db(), DB) else ir
     for o in app_ir.get("objects", []):
@@ -3568,12 +3573,17 @@ def _find_obj_any(ir, oid):
     objs = ir.get("objects", [])
     # 按条件分轮,而不是逐对象把三种条件一起试:后者会让靠前对象的表名
     # 压过靠后对象的中文名,命中谁取决于对象顺序,不可预期
+    # 主键唯一,直接命中;中文名、表名、别名可能被多个对象共用:同一轮命中多个时报错并列出候选,
+    # 不按对象顺序替调用方挑一个(否则改别名、确认、删除会落到排在前面的那个对象上)
     for probe in (lambda o: str(o.get("id") or o.get("name")) == key,
                   lambda o: str(o.get("cn") or "") == key,
                   lambda o: str(o.get("table") or "").lower() == low,
                   lambda o: any(str(a) == key for a in (o.get("aliases") or []))):
-        for o in objs:
-            if probe(o): return o
+        hits = [o for o in objs if probe(o)]
+        if len(hits) > 1:
+            raise ValueError(f"「{key}」对应多个对象,请用主键指明:"
+                             + "、".join(str(o.get("id") or o.get("name")) for o in hits))
+        if hits: return hits[0]
     return None
 
 def _stamp_review(x, op):
@@ -3616,7 +3626,7 @@ def apply_any(ir, op):
         o = _find_obj_any(ir, t.replace("obj:", "", 1))
         if not o: raise ValueError(f"对象不存在: {t}")
         raw = params.get("aliases")
-        if isinstance(raw, str): raw = [x for x in re.split(r"[,,、;;\s]+", raw) if x]
+        if isinstance(raw, str): raw = [x for x in re.split(r"[,，、;；\s]+", raw) if x]
         if not isinstance(raw, list): raise ValueError("params.aliases 需为列表或分隔字符串")
         # 上限在去重前校验:否则「21 个相同别名」去重后剩 1 个而绕过限制,
         # 大批量输入即可绕开防线(去重是清洗,不是防线)
@@ -4075,7 +4085,7 @@ def db_check():
         try:
             n = con.execute(
                 "SELECT count(*) FROM sqlite_master "
-                "WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+                "WHERE type='table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\'"
             ).fetchone()[0]
         finally:
             con.close()
@@ -4099,7 +4109,11 @@ def ont_chat_del():
 def ont_object(key, oid):
     """单对象详情:属性(含中文/证据)/关系/指标 —— 对齐平台 /api/object/<id>"""
     ir = load_ir_edited(key) or {}
-    o = next((x for x in ir.get("objects", []) if x.get("id") == oid or x.get("name") == oid), None)
+    # 图上节点的 id 是对象主键:先按主键找,主键都不中时才认 name,避免别的对象的 name 恰好等于这个主键而被选中
+    objs = ir.get("objects", [])
+    o = (next((x for x in objs if x.get("id") == oid), None)
+         or next((x for x in objs if not x.get("id") and x.get("name") == oid), None)
+         or next((x for x in objs if x.get("name") == oid), None))
     if not o: return jsonify({"error": "对象不存在"}), 404
     rels = [{"dir": "out" if l.get("source") == o.get("id") else "in", "verb": l.get("verb"),
              "other": l.get("target") if l.get("source") == o.get("id") else l.get("source"), "status": l.get("status")}
@@ -4236,10 +4250,15 @@ def _ir_to_turtle(key, ir):
         rx = str(x)
         if rx in _loc_of: return _loc_of[rx]
         s = "".join(ch if _pn_char(ch) else "_" for ch in rx) or "_"
+        lossy = s != rx                                    # 有字符被换掉;数字开头只补前缀,不算有损
         if s[0].isdigit(): s = "_" + s
-        if s in _loc_used or not s.strip("_"):            # 与另一个原名撞名,或整个名字都被替换掉:加原名摘要区分
+        # 转写有损时一律加原名摘要:本地名只由原名决定,不随对象排列顺序变化。
+        # 此前只给后出现的撞名者加摘要,「pump-east」「pump east」调换顺序后两个 IRI 互换。
+        if lossy or not s.strip("_"):
             s = (s.rstrip("_") or "n") + "_" + hashlib.sha1(rx.encode("utf-8")).hexdigest()[:6]
             if s[0].isdigit(): s = "_" + s
+        if s in _loc_used:                                  # 极少见:摘要后仍与另一原名相同,用更长的摘要
+            s = s + "_" + hashlib.sha1(rx.encode("utf-8")).hexdigest()[6:16]
         _loc_used.add(s); _loc_of[rx] = s
         return s
     def esc(x):                                           # 转义 + C0 控制字符→\uXXXX,兼容严格 TTL 解析器(Jena 等)
@@ -4305,9 +4324,13 @@ def _ir_to_turtle(key, ir):
             if not col: continue
             L.append(f':{loc(cid + "_" + col)} a owl:DatatypeProperty ; rdfs:domain :{cid} ; '
                      f'rdfs:range {xsd(a.get("type"))} ; rdfs:label "{esc(a.get("cn") or col)}"@zh .')
-    for i2, e2 in enumerate(g["edges"]):
-        # 关系 IRI 带 verb+序号,避免同一对节点的多条不同关系塌缩成一个属性(丢边)
-        rid = f'rel_{loc(e2["s"])}_{loc(e2.get("verb",""))}_{loc(e2["t"])}_{i2}'
+    _rel_seen: dict = {}
+    for e2 in g["edges"]:
+        # 关系 IRI 由 源+动词+目标 决定,只在完全相同的三元组之间编号;不用列表下标,关系调换顺序后 IRI 不变。
+        # 仍保证同一对节点的多条关系不塌缩成一个属性(丢边)
+        base = f'rel_{loc(e2["s"])}_{loc(e2.get("verb",""))}_{loc(e2["t"])}'
+        i2 = _rel_seen.get(base, 0); _rel_seen[base] = i2 + 1
+        rid = f'{base}_{i2}'
         seg = [f':{rid} a owl:ObjectProperty', f'rdfs:domain :{loc(e2["s"])}',
                f'rdfs:range :{loc(e2["t"])}', f'rdfs:label "{esc(e2.get("verb",""))}"@zh']
         grounding_iri = e2.get("grounding_iri") or ""
@@ -6249,7 +6272,7 @@ def _ctx_naive():
         con = ro_connect(_active_db())
         for (t,) in con.execute(
             "SELECT name FROM sqlite_master "
-            "WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+            "WHERE type='table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\' ORDER BY name"
         ):
             cols = [r[1] for r in con.execute(f'PRAGMA table_info("{t}")')][:10]
             lines.append(f"{t}({', '.join(cols)})")
@@ -6971,16 +6994,19 @@ def _decode_upload(raw):
 
 
 def _sniff_delimiter(text, default=","):
-    """分隔符:表头里出现次数最多、且前几行列数一致的那个。只在明显不是默认分隔符时才换。"""
+    """分隔符:按 CSV 规则(引号内的分隔符不算)解析前几行,列数一致且多于一列的分隔符胜出,默认分隔符优先。
+    不能只看表头里有没有默认分隔符:带引号的列名(如 "Location, City")里的逗号不是列边界。"""
     import csv as _csv, io
     lines = [ln for ln in text.splitlines()[:20] if ln.strip()]
-    if not lines or default in lines[0]:
+    if not lines:
         return default
-    for cand in (";", "\t", "|"):
-        if cand == default or cand not in lines[0]:
-            continue
+
+    def consistent(cand):
         widths = {len(r) for r in _csv.reader(io.StringIO("\n".join(lines)), delimiter=cand)}
-        if len(widths) == 1 and widths.pop() > 1:
+        return len(widths) == 1 and widths.pop() > 1
+
+    for cand in (default, ",", ";", "\t", "|"):
+        if cand in lines[0] and consistent(cand):
             return cand
     return default
 
@@ -7186,7 +7212,7 @@ def _sqlite_tables(path):
     try:
         c = sqlite3.connect(Path(path).absolute().as_uri() + "?mode=ro", uri=True)
         n = [r[0] for r in c.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\'"
         ) if r[0] not in build_prep.META_TABLES]
         c.close(); return n
     except Exception:
@@ -8198,7 +8224,7 @@ def _gather_evidence(db, cap_tabs=400, cap_docs=40, query="", focus=None):
         c = sqlite3.connect(Path(db).absolute().as_uri() + "?mode=ro", uri=True)
         tabs = [r[0] for r in c.execute(
             "SELECT name FROM sqlite_master "
-            "WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+            "WHERE type='table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\' ORDER BY name"
         )][:5000]
         if "_dm_tables" in tabs:
             dm_tables = {t: cm for t, cm in c.execute("SELECT table_name, comment FROM _dm_tables")}
@@ -11081,7 +11107,7 @@ def conn_tables():
         c = ro_connect(db)
         for (t,) in c.execute(
             "SELECT name FROM sqlite_master "
-            "WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+            "WHERE type='table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\' ORDER BY name"
         ):
             try: n = c.execute(f'SELECT COUNT(*) FROM "{t}"').fetchone()[0]
             except Exception: n = 0

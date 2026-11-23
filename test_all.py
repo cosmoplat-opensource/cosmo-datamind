@@ -90,7 +90,7 @@ def _preflight():
         _con = sqlite3.connect(Path(_local_db).absolute().as_uri() + "?mode=ro", uri=True)
         try:
             _names = [r[0] for r in _con.execute(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")]
+                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\'")]
             _local = sorted((n, _con.execute('SELECT COUNT(*) FROM "%s"' % n.replace('"', '""')).fetchone()[0],
                              len(_con.execute('PRAGMA table_info("%s")' % n.replace('"', '""')).fetchall()))
                             for n in _names)

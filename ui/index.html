@@ -296,7 +296,7 @@ a{color:var(--acc)}
     <div class="card"><h3>预览</h3><div id="vz_prev" class="chart" style="height:300px"><div class="muted" style="padding:40px;text-align:center">运行取数后在此预览图表</div></div></div>
     <div class="card" style="margin-top:12px"><div class="row" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
       <h3 style="margin:0">数据看板 <span class="muted" id="vz_board_n">（0/24 张）</span></h3>
-      <div class="row" style="gap:6px"><select id="vz_board_sel" onchange="vzLoadBoard()" style="width:150px"><option value="">— 新建看板 —</option></select>
+      <div class="row" style="gap:6px"><select id="vz_board_sel" aria-label="看板" onchange="vzLoadBoard()" style="width:150px"><option value="">— 新建看板 —</option></select>
        <input id="vz_board_name" placeholder="看板名称" style="width:120px"><button onclick="vzSaveBoard()">保存看板</button></div></div>
      <div id="vz_grid" class="vz-grid" style="margin-top:12px"><div class="muted" style="padding:20px;text-align:center">运行取数后点「添加到看板」，可拼装多图看板并保存</div></div></div>
    </div></div></div>
@@ -306,20 +306,20 @@ a{color:var(--acc)}
        约束的是「标签被从中间拆开」这一形态——JSON-LD / RDF/XML / 补定义/反例 都含
        连字符或斜杠，是浏览器的合法断行点，一旦容器压缩就会拆成「JSON-」「LD」两行。
        当前视口(1180~1600px)下未观察到该现象，此处是预防性约束，不改变正常布局。 -->
-  <div class="row" style="margin-bottom:10px;flex-wrap:wrap"><select id="g_sel" style="width:340px"></select>
+  <div class="row" style="margin-bottom:10px;flex-wrap:wrap"><select id="g_sel" aria-label="图谱" style="width:340px"></select>
    <span class="muted" id="g_info"></span><span style="flex:1"></span>
    <span id="g_legend"></span>
    <button id="g_ask" onclick="dqStartFromOntology($('#g_sel').value)" title="以当前本体为语义与数据边界新建深度问数">基于此本体问数</button>
    <span class="g-toolbar-group" style="display:inline-flex;align-items:center;gap:8px;white-space:nowrap">导出:<button class="ghost" onclick="expOnt('ttl')">TTL</button><button class="ghost" onclick="expOnt('jsonld')">JSON-LD</button><button class="ghost" onclick="expOnt('owl')">RDF/XML</button><button class="ghost" onclick="enrichOnt(this)" title="调用智能引擎为缺定义的对象提出属加种差定义、正例和反例；结果仍需人工复核">补定义/反例</button></span>
    <span class="g-toolbar-group" style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap">视图<button class="ghost" onclick="gReadable()">可读</button><button class="ghost" onclick="gFitAll()">全图</button><button class="ghost" onclick="gZoom(1.25)" aria-label="放大图谱">＋</button><button class="ghost" onclick="gZoom(.8)" aria-label="缩小图谱">－</button></span>
-   <span class="g-toolbar-group" style="display:inline-flex;align-items:center;gap:8px;white-space:nowrap">布局<select id="g_layout" onchange="this.dataset.userSelected='true';drawGraph($('#g_sel').value)" style="width:120px"><option value="dagre">分层</option><option value="force">力导向</option><option value="circular">环形</option><option value="radial">辐射</option></select></span></div>
+   <span class="g-toolbar-group" style="display:inline-flex;align-items:center;gap:8px;white-space:nowrap">布局<select id="g_layout" aria-label="布局" onchange="this.dataset.userSelected='true';drawGraph($('#g_sel').value)" style="width:120px"><option value="dagre">分层</option><option value="force">力导向</option><option value="circular">环形</option><option value="radial">辐射</option></select></span></div>
   <div id="g_hlbar" style="display:none;margin:-4px 0 10px;padding:7px 12px;border:1px solid #C7D2FE;background:#EEF2FF;border-radius:6px;font-size:12.5px"></div>
   <div style="position:relative"><div class="card" style="padding:6px"><div id="g_canvas"></div></div>
    <div class="card" id="g_detail" style="position:absolute;top:12px;right:12px;width:340px;max-height:calc(100% - 24px);overflow:auto;display:none;z-index:6;box-shadow:0 8px 30px rgba(31,45,61,.16)"></div>
    <div class="muted" style="position:absolute;bottom:10px;left:14px;font-size:12px;pointer-events:none;background:rgba(255,255,255,.92);padding:2px 8px;border-radius:4px">大型图谱默认全图 · 点「可读」放大查看 · 点击节点/连线查看详情 · 滚轮缩放 · 拖拽平移</div></div></div>
 
  <div class="page" id="p_review"><h2>本体评审 <span class="muted">人工审核：通过、否决、修改关系动词或删除，每条记录评审人与意见；人工结论记为「人工断言」，操作可撤销</span></h2>
-  <div class="card"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">图谱 <select id="rv_sel" style="min-width:280px;max-width:440px" onchange="rvLoad()"></select>
+  <div class="card"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">图谱 <select id="rv_sel" aria-label="图谱" style="min-width:280px;max-width:440px" onchange="rvLoad()"></select>
    评审人 <input id="rv_who" placeholder="姓名或工号(必填)" style="width:150px" onchange="rvSaveWho()" title="记录到每条评审操作与元素上">
    <span id="rv_kpis"></span><span style="flex:1"></span>
    <button class="ghost" id="rv_undo" onclick="rvUndo()" disabled title="还没有可撤销的操作">撤销上一步</button><button class="ghost" onclick="rvLoad()">刷新</button></div></div>
@@ -401,11 +401,11 @@ a{color:var(--acc)}
   <div style="display:flex;gap:8px;justify-content:flex-end"><button class="ghost" onclick="rvmClose()">取消</button><button id="rvm_ok" onclick="rvmSubmit()">提交评审</button></div>
  </div></div>
  <div class="page" id="p_metrics"><h2>指标中心 <span class="muted">指标计算规则：计算规则可编译、可执行、可与参照值比对 ·「已核验」由数据核验得出，「业务已确认」由人工标记</span></h2>
- <div class="row" style="gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">图谱 <select id="m_sel" style="width:300px" onchange="metrics()"></select>
+ <div class="row" style="gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">图谱 <select id="m_sel" aria-label="图谱" style="width:300px" onchange="metrics()"></select>
   <button class="ghost" onclick="metricReadjudicate()" title="按计算规则重新编译、只读执行并与已存参照比对；不新增候选">重跑核验</button><span id="m_kpi"></span></div>
  <div id="m_body"></div></div>
  <div class="page" id="p_ontquality"><h2>元数据覆盖 <span class="muted">统计定义、反例、开发状态、BFO/IOF 上层类别和标准关系映射；不代表本体完备性或业务正确性</span></h2>
-  <div class="row" style="margin-bottom:10px"><select id="oq_sel" style="width:340px"></select>
+  <div class="row" style="margin-bottom:10px"><select id="oq_sel" aria-label="图谱" style="width:340px"></select>
    <button class="ghost" onclick="ontQualityRender()">刷新</button>
    <button class="ghost" onclick="oqUpgrade(this)" title="提出缺失定义并按官方 IRI、定义域和值域复核关系映射；不会自动宣称符合 IOF 标准">补定义并复核映射</button></div>
   <div class="kpis" id="oq_kpis" style="grid-template-columns:repeat(5,1fr)"></div>
@@ -683,7 +683,7 @@ a{color:var(--acc)}
 
  <div class="page" id="p_glossary"><h2>术语管理 <span class="muted">英文↔中文业务词典(表名/列名/短语/词元)，深度问数与中文化共用的词典</span></h2>
   <div class="card"><div class="row" style="margin-bottom:10px"><input id="gl_q" placeholder="搜索英文/中文术语…" style="width:280px" oninput="glRender()">
-   <select id="gl_type" onchange="glRender()" style="width:120px"><option value="">全部类型</option><option>表名</option><option>列名</option><option>短语</option><option>词元</option></select>
+   <select id="gl_type" aria-label="术语类型" onchange="glRender()" style="width:120px"><option value="">全部类型</option><option>表名</option><option>列名</option><option>短语</option><option>词元</option></select>
    <span class="muted" id="gl_info"></span></div>
    <div class="scroll" style="max-height:calc(100vh - 260px)" id="gl_list"></div></div></div>
 
@@ -704,7 +704,7 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
  </div>
 
  <div class="page" id="p_sparql"><h2>SPARQL 查询 <span class="muted">对本体 OWL 图谱做语义查询(经典引擎 rdflib)</span></h2>
-  <div class="card"><textarea id="sq_q" style="height:120px;font-family:monospace">SELECT ?cls ?label WHERE { ?cls a <http://www.w3.org/2002/07/owl#Class>. OPTIONAL{?cls <http://www.w3.org/2000/01/rdf-schema#label> ?label} } LIMIT 20</textarea>
+  <div class="card"><textarea id="sq_q" aria-label="SPARQL 查询" style="height:120px;font-family:monospace">SELECT ?cls ?label WHERE { ?cls a <http://www.w3.org/2002/07/owl#Class>. OPTIONAL{?cls <http://www.w3.org/2000/01/rdf-schema#label> ?label} } LIMIT 20</textarea>
    <div class="row" style="margin-top:8px"><button onclick="sparqlRun()">执行</button><span class="muted" id="sq_info"></span></div>
    <div class="scroll" id="sq_out" style="margin-top:10px"></div></div></div>
 <div class="page" id="p_robotics-view"><div id="rv_host"></div></div>
@@ -812,7 +812,7 @@ async function oqUpgrade(btn){const k=$('#oq_sel').value;if(!k)return;const t0=b
  }catch(e){(window.toast||alert)('升级失败:'+e);}finally{btn.disabled=false;btn.textContent=t0;}}
 // SQL 工作台(C7：可选外部库实连数据源)
 async function sdInit(){try{const d=await J('/api/build/sources');const ss=(d.sources||[]).filter(s=>s.kind!=='api');
- $('#sd_src').innerHTML=ss.map(s=>`<option value="${esc(s.id)}">${esc(s.name)}${s.kind!=='sqlite'?' · '+esc((s.kind||'').toUpperCase())+' 实连':''}</option>`).join('')||'<option value="demo">示例主库</option>';const selected=APP_DATA.draft?.sqlSource||appSourceId();if(ss.some(x=>x.id===selected))$('#sd_src').value=selected;}catch(_){}}
+ $('#sd_src').innerHTML=ss.map(s=>`<option value="${esc(s.id)}">${esc(sourceLabel(s,ss))}${s.kind!=='sqlite'?' · '+esc((s.kind||'').toUpperCase())+' 实连':''}</option>`).join('')||'<option value="demo">示例主库</option>';const selected=APP_DATA.draft?.sqlSource||appSourceId();if(ss.some(x=>x.id===selected))$('#sd_src').value=selected;}catch(_){}}
 async function sqlDevRun(){const sql=$('#sd_q').value.trim();if(!sql)return;$('#sd_info').textContent='执行中…';
  const src=($('#sd_src')&&$('#sd_src').value)||'demo';
  const d=await J('/api/query',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sql,src})});
@@ -1118,7 +1118,7 @@ function actmRender(t){$('#actm_title').textContent=ACTM.mode==='create'?'新建
 function actmRows(){$('#actm_rows').innerHTML=ACTM.params.map((p,i)=>`<div class="row" style="gap:6px;margin-bottom:6px;align-items:center">
   <input placeholder="name(英文)" value="${esc(p.name||'')}" style="width:110px" oninput="ACTM.params[${i}].name=this.value">
   <input placeholder="中文名" value="${esc(p.cn||'')}" style="width:100px" oninput="ACTM.params[${i}].cn=this.value">
-  <select style="width:86px" onchange="ACTM.params[${i}].type=this.value;actmRows()"><option value="text" ${p.type==='text'?'selected':''}>短文本</option><option value="textarea" ${p.type==='textarea'?'selected':''}>长文本</option><option value="select" ${p.type==='select'?'selected':''}>下拉</option></select>
+  <select aria-label="参数类型" style="width:86px" onchange="ACTM.params[${i}].type=this.value;actmRows()"><option value="text" ${p.type==='text'?'selected':''}>短文本</option><option value="textarea" ${p.type==='textarea'?'selected':''}>长文本</option><option value="select" ${p.type==='select'?'selected':''}>下拉</option></select>
   ${p.type==='select'?`<input placeholder="选项，逗号分隔" value="${esc((p.options||[]).join(','))}" style="flex:1" oninput="ACTM.params[${i}].options=this.value.split(/[,,]/).filter(x=>x.trim())">`:''}
   <label style="font-size:12px;white-space:nowrap"><input type="checkbox" ${p.required?'checked':''} onchange="ACTM.params[${i}].required=this.checked"> 必填</label>
   <span class="x" onclick="ACTM.params.splice(${i},1);actmRows()">✕</span></div>`).join('')
@@ -1162,7 +1162,7 @@ function acLogRender(){const items=AC_LOG;
  const rows=acLogRows();
  $('#ac_log').innerHTML=`<div class="row" style="justify-content:space-between;align-items:center;margin-bottom:8px">
    <h3 style="margin:0">动作记录<span class="muted" style="font-weight:400;font-size:12px"> ${rows.length}/${items.length} 条</span></h3>
-   <div class="row" style="gap:6px"><select id="acf_status" onchange="acLogRender()" style="width:110px">
+   <div class="row" style="gap:6px"><select id="acf_status" aria-label="状态筛选" onchange="acLogRender()" style="width:110px">
      <option value="" ${st===''?'selected':''}>全部状态</option><option value="pending" ${st==='pending'?'selected':''}>待审批</option>
      <option value="executed" ${st==='executed'?'selected':''}>已形成记录</option><option value="denied" ${st==='denied'?'selected':''}>已驳回</option><option value="failed" ${st==='failed'?'selected':''}>执行失败</option><option value="executing" ${st==='executing'?'selected':''}>执行中</option><option value="unknown" ${st==='unknown'?'selected':''}>结果未知</option></select>
     <input id="acf_kw" placeholder="搜动作/操作人/参数…" value="${esc(kw)}" style="width:180px" oninput="acLogRender()">
@@ -1233,10 +1233,10 @@ async function egLoad(){EG=await J('/api/engine/config').catch(e=>({error:''+e})
     <b>${esc(nm)}</b> ${cur?'<span class="tag ok">当前引擎</span>':''}
     <div class="muted" style="font-size:12px;margin:3px 0 8px">${esc(sub)}</div>
     <div style="margin-bottom:6px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">模型
-     ${opts.length?`<select onchange="if(this.value){$('#eg_m_${esc(r)}').value=this.value;}" style="width:132px">
+     ${opts.length?`<select aria-label="${esc(nm)} 可选模型" onchange="if(this.value){$('#eg_m_${esc(r)}').value=this.value;}" style="width:132px">
        <option value="">— 选择 —</option>${opts.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('')}</select>`:''}
-     <input id="eg_m_${esc(r)}" value="${esc(m)}" placeholder="缺省" style="width:150px"></div>
-    ${r==='hermes'?`<div style="margin-bottom:6px">Provider <select id="eg_hp" style="width:210px">${EG.hermes_providers.map(p=>`<option value="${esc(p)}" ${p===EG.hermes_provider?'selected':''}>${p||'(hermes 默认)'}</option>`).join('')}</select>
+     <input id="eg_m_${esc(r)}" aria-label="${esc(nm)} 模型" value="${esc(m)}" placeholder="缺省" style="width:150px"></div>
+    ${r==='hermes'?`<div style="margin-bottom:6px">Provider <select id="eg_hp" aria-label="Hermes Provider" style="width:210px">${EG.hermes_providers.map(p=>`<option value="${esc(p)}" ${p===EG.hermes_provider?'selected':''}>${p||'(hermes 默认)'}</option>`).join('')}</select>
      <div class="muted" style="font-size:12px;margin-top:2px">oauth 类 provider(codex/qwen)需先在终端完成登录；API 类读下方 Key</div></div>`:''}
     <div style="display:flex;gap:6px;margin-top:4px">
      ${cur?'':`<button class="ghost" onclick="egSwitch(${jsAttr(r)})">设为当前</button>`}
@@ -1252,9 +1252,9 @@ async function egLoad(){EG=await J('/api/engine/config').catch(e=>({error:''+e})
     <b>${esc(nm)}</b>${(EG.task_models||{})[t]?' <span class="tag ok">已覆盖</span>':''}
     <div class="muted" style="font-size:12px;margin:3px 0 8px">${esc(tip)}</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-     ${allOpts.length?`<select onchange="if(this.value){$('#eg_tm_${t}').value=this.value;}" style="width:150px">
+     ${allOpts.length?`<select aria-label="${esc(nm)} 可选模型" onchange="if(this.value){$('#eg_tm_${t}').value=this.value;}" style="width:150px">
        <option value="">— 选择 —</option>${allOpts.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('')}</select>`:''}
-     <input id="eg_tm_${t}" value="${esc((EG.task_models||{})[t]||'')}" placeholder="(跟随引擎缺省)" style="width:180px">
+     <input id="eg_tm_${t}" aria-label="${esc(nm)} 模型" value="${esc((EG.task_models||{})[t]||'')}" placeholder="(跟随引擎缺省)" style="width:180px">
      <button class="ghost" onclick="egSaveTask(${jsAttr(t)})">保存</button></div></div>`).join('')
   +`</div>`;
  const KL={OPENAI_API_KEY:'OpenAI',ANTHROPIC_API_KEY:'Anthropic',ZHIPU_API_KEY:'智谱 GLM',DEEPSEEK_API_KEY:'DeepSeek',MOONSHOT_API_KEY:'Moonshot/Kimi',DASHSCOPE_API_KEY:'阿里 DashScope'};
@@ -1472,7 +1472,7 @@ async function metrics(){
  $('#m_body').innerHTML=`<div class="card" id="m_lineage" style="display:none"></div>`+
   Object.entries(m).map(([k,arr])=>`<div class="card"><h3>${names[k]||k}(${arr.length})<span class="muted">· 点行查看计算规则与数据溯源</span></h3>
   <div class="scroll" style="max-height:26vh"><table><tr><th>名称</th><th>状态</th><th>计算规则</th><th>来源表</th><th>取值列</th><th>单位</th><th>说明</th></tr>`+
-  arr.map(x=>`<tr style="cursor:pointer" onclick="lineage(${jsAttr(x.name)})"><td><b>${esc(x.name)}</b></td><td>${mstTag(mStatus(x))}</td><td><code style="font-size:12px">${esc(mCaliber(x))||'<span class=muted>未声明</span>'}</code></td><td>${esc(x.table)}</td><td>${esc(x.value_col)}</td><td>${esc(x.unit)}</td><td>${esc(x.desc||x.formula)}</td></tr>`).join('')+'</table></div></div>').join('');}
+  arr.map(x=>`<tr style="cursor:pointer" onclick="lineage(${jsAttr(x.id||x.name)})"><td><b>${esc(x.name)}</b></td><td>${mstTag(mStatus(x))}</td><td><code style="font-size:12px">${esc(mCaliber(x))||'<span class=muted>未声明</span>'}</code></td><td>${esc(x.table)}</td><td>${esc(x.value_col)}</td><td>${esc(x.unit)}</td><td>${esc(x.desc||x.formula)}</td></tr>`).join('')+'</table></div></div>').join('');}
 async function metricReadjudicate(){const g=mGraph();toast('重跑核验中…');
  const d=await J('/api/metric/adjudicate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:g})}).catch(e=>({error:''+e}));
  if(d.error){toast(d.error,false);return;}toast(`核验完成 · 规则 ${d.contracts} 条 · 已核验 ${d.verified} 条`,true);metrics();}
@@ -1509,7 +1509,7 @@ async function lineage(name){const g=mGraph();
     ${(st==='certified'||st==='deprecated')?`<button class="ghost" onclick="metricStatus(${jsAttr(name)},'candidate')">撤回为待核验</button>`:''}
    </div><div class="muted" style="margin-top:4px">「已核验」只能由核验产生，人工只能授予「业务已确认」或「停用」。</div></div>`
   :`<div class="step muted">该指标是旧形状(未声明聚合方式)，不能做业务确认；先在构建时反解或补充计算规则。</div>`;
- el.innerHTML=`<h3>${esc(name)} ${mstTag(st)}<span class="tag ok">${esc(LAYER_CN[ly]||ly)}</span>${m.unit?`<span class="tag" style="background:#F4F4F5;color:#606266">${esc(m.unit)}</span>`:''}${m.certified_by?`<span class="muted" style="font-size:12px">确认人 ${esc(m.certified_by)}${m.certified_at?' · '+esc(m.certified_at):''}</span>`:''}</h3>
+ el.innerHTML=`<h3>${esc(m.name||name)} ${mstTag(st)}<span class="tag ok">${esc(LAYER_CN[ly]||ly)}</span>${m.unit?`<span class="tag" style="background:#F4F4F5;color:#606266">${esc(m.unit)}</span>`:''}${m.certified_by?`<span class="muted" style="font-size:12px">确认人 ${esc(m.certified_by)}${m.certified_at?' · '+esc(m.certified_at):''}</span>`:''}</h3>
   ${isC?`<div class="step"><b>计算规则</b>: <code>${esc(c.caliber||'')}</code></div><div class="step"><b>编译 SQL</b>: <code style="font-size:12px;white-space:pre-wrap">${esc(c.compiled_sql||c.compile_error||'')}</code></div>`:''}
   ${m.desc?`<div class="step"><b>业务说明</b>: ${esc(m.desc)}</div>`:''}
   <div class="step">${srcLine}</div>${d.formula?`<div class="step"><b>计算公式</b>: ${esc(d.formula)}</div>`:''}
@@ -2268,7 +2268,7 @@ let VZ_DATA=null,VZ_QUICK={},VZ_REQUEST=0;
 async function vzInit(){
  const d=await J('/api/build/sources').catch(()=>({sources:[]}));
  const ready=(d.sources||[]).filter(s=>s.ready&&s.kind==='sqlite');
- $('#vz_src').innerHTML=ready.map(s=>`<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('')||'<option value="demo">示例主库</option>';const selected=APP_DATA.draft?.vizSource||appSourceId();if(ready.some(s=>s.id===selected))$('#vz_src').value=selected;
+ $('#vz_src').innerHTML=ready.map(s=>`<option value="${esc(s.id)}">${esc(sourceLabel(s,ready))}</option>`).join('')||'<option value="demo">示例主库</option>';const selected=APP_DATA.draft?.vizSource||appSourceId();if(ready.some(s=>s.id===selected))$('#vz_src').value=selected;
  await vzQuickOpts();vzBoardsLoad();if(VZ_BOARD.length)vzGridRender();}
 async function vzQuickOpts(){VZ_QUICK={};const src=$('#vz_src').value||'demo';let opts='<option value="">— 选表 / 指标自动生成 SQL —</option>';
  // 使用所选数据源的指标规则，不跨库复用。

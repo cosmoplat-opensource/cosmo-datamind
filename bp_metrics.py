@@ -24,12 +24,22 @@ def configure_metrics(load_graph, open_writable, db_for_source, write_json, writ
                  write_json=write_json, write_lock=write_lock, default_graph=default_graph)
 
 
+class AmbiguousMetric(ValueError):
+    pass
+
+
 def _find(ir, name):
-    for layer, arr in ((ir or {}).get("metric_layers") or {}).items():
-        for i, m in enumerate(arr or []):
-            if isinstance(m, dict) and (m.get("name") == name or m.get("id") == name):
-                return layer, i, m
-    return None, None, None
+    """先按指标主键找,再按名称找。名称被多个指标共用时抛 AmbiguousMetric,不按排列顺序替调用方挑一个。"""
+    entries = [(layer, i, m) for layer, arr in ((ir or {}).get("metric_layers") or {}).items()
+               for i, m in enumerate(arr or []) if isinstance(m, dict)]
+    by_id = [e for e in entries if e[2].get("id") == name]
+    if by_id:
+        return by_id[0]
+    by_name = [e for e in entries if e[2].get("name") == name]
+    if len(by_name) > 1:
+        raise AmbiguousMetric(f"名称「{name}」对应多个指标,请用指标主键指明:"
+                              + "、".join(str(e[2].get("id") or "?") for e in by_name))
+    return by_name[0] if by_name else (None, None, None)
 
 
 @bp_metrics.get("/api/metric/contract")
@@ -39,7 +49,10 @@ def metric_contract_view():
     ir = _deps["load_graph"](key)
     if ir is None: return jsonify({"error": "非法图谱键"}), 400
     if not ir: return jsonify({"error": "图谱不存在"}), 404
-    layer, _, m = _find(ir, name)
+    try:
+        layer, _, m = _find(ir, name)
+    except AmbiguousMetric as exc:
+        return jsonify({"error": str(exc)}), 409
     if not m: return jsonify({"error": "指标不存在"}), 404
     out = {"graph": key, "layer": layer, "metric": m, "is_contract": metric_contract.is_contract(m)}
     if metric_contract.is_contract(m):
@@ -67,7 +80,10 @@ def metric_status():
     with _deps["write_lock"]:
         ir, wp, err = _deps["open_writable"](key)
         if err: return err
-        layer, idx, m = _find(ir, name)
+        try:
+            layer, idx, m = _find(ir, name)
+        except AmbiguousMetric as exc:
+            return jsonify({"error": str(exc)}), 409
         if not m: return jsonify({"error": "指标不存在"}), 404
         if status == "certified":
             if not metric_contract.is_contract(m):

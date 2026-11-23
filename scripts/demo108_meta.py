@@ -174,7 +174,7 @@ def write(con: sqlite3.Connection, base: sqlite3.Connection) -> None:
     old_c = {(r[0], r[1]): (r[2], r[3]) for r in base.execute("SELECT table_name, column_name, column_name_cn, column_desc FROM dim_column_metadata")}
     con.execute("DELETE FROM dim_table_metadata")
     con.execute("DELETE FROM dim_column_metadata")
-    tables = [r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")]
+    tables = [r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\' ORDER BY name")]
     cn_default = {"DWS_EQUIPMENT_DAILY": "设备日汇总", "DWS_FINANCE_DAILY": "财务月汇总", "DWS_PROCUREMENT_DAILY": "采购日汇总",
                   "DWS_SAFETY_DAILY": "安全日汇总"}
     cid = 0
