@@ -12,7 +12,16 @@ function appRequestOptions(url, options) {
   }
   return out;
 }
-function appFetch(url, options) { return fetch(url, appRequestOptions(url, options)); }
+/* 页面卸载(刷新、后退)时中止仍在进行的请求:中止是可捕获的 AbortError;否则 WebKit 会把被打断的请求
+   报成未捕获的“access control checks”错误。自带 signal 的请求(如流式问数)沿用调用方的中止逻辑。 */
+let APP_UNLOAD = new AbortController();
+addEventListener('pagehide', () => APP_UNLOAD.abort());
+addEventListener('pageshow', () => { if (APP_UNLOAD.signal.aborted) APP_UNLOAD = new AbortController(); });   // 从往返缓存恢复后重新可用
+function appFetch(url, options) {
+  const opts = appRequestOptions(url, options);
+  if (!opts.signal) opts.signal = APP_UNLOAD.signal;
+  return fetch(url, opts);
+}
 
 function appGraphInitialLayout(graph) {
   const select=document.getElementById('g_layout');

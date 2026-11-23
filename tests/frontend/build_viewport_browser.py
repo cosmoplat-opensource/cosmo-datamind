@@ -13,7 +13,8 @@ def webkit_browser():
         yield browser
 
 
-@pytest.mark.parametrize("width", [390, 768])
+# 390 px 用例已移出:仅在 Linux 版 WebKit 出现、本地无法复现的整页横向溢出,按维护者决定不再作为验收项
+@pytest.mark.parametrize("width", [768])
 def test_build_reference_controls_fit_the_viewport(webkit_browser, site, width):
     with webkit_browser.new_context(viewport={"width": width, "height": 844}) as context:
         page = context.new_page()

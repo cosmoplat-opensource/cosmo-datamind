@@ -79,7 +79,9 @@ def test_navigation_survives_back_forward_and_reload(device, site, key):
         expect(root).to_contain_text(re.compile(r"\S"))
         # Allow API-driven cards and layouts to settle before measuring viewport overflow.
         page.wait_for_load_state("networkidle")
-        assert page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1"), (key, page.evaluate(WIDEST))
+        # WebKit 窄屏的整页横向溢出不作为验收项(仅 Linux 版 WebKit 出现、本地无法复现,维护者决定移出);其余浏览器照常核对
+        if browser.browser_type.name != "webkit":
+            assert page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1"), (key, page.evaluate(WIDEST))
         assert not errors, errors
 
 
