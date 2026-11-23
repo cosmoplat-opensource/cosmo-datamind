@@ -1587,11 +1587,11 @@ addEventListener('click',e=>{if(e.target.classList&&e.target.classList.contains(
 // 点击外部关闭构建历史弹窗
 addEventListener('click',e=>{const p=$('#bc_hist_pop');if(p&&p.style.display!=='none'&&!p.contains(e.target)&&!(e.target.textContent||'').includes('历史对话'))p.style.display='none';},true);
 async function dqOpenDs(){dqDsBegin();$('#dq_dsmodal').style.display='flex';dqDsTab('graph');}
-async function dqDsTab(t){
+let DQ_DS_SEQ=0;async function dqDsTab(t){const seq=++DQ_DS_SEQ;   // 连续切换页签时,只渲染最后一次切换的结果:晚到的本体列表不能盖掉数据表列表
  $('#dstab_graph').classList.toggle('on',t==='graph');$('#dstab_table').classList.toggle('on',t==='table');
  const body=$('#dq_ds_body');body.innerHTML='<div class="muted">加载中…</div>';
  if(t==='graph'){
-  if(!DQ_GRAPHS)DQ_GRAPHS=await JL('/api/graphs');
+  if(!DQ_GRAPHS)DQ_GRAPHS=await JL('/api/graphs');if(seq!==DQ_DS_SEQ)return;
   if(!DQ_GRAPHS){body.innerHTML='<div class="muted">本体列表加载失败，请关闭后重试</div>';return;}
   const sel=new Set(DQ_DS.graphs);
   const qgs=DQ_GRAPHS.filter(g=>g.queryable);
@@ -1599,7 +1599,7 @@ async function dqDsTab(t){
    <div class="muted" style="font-size:12px;margin-bottom:10px">只有绑定表已接入当前查询连接的本体可用于问数；其余本体仍可浏览与治理。</div>
    <div class="ds-grid">`+DQ_GRAPHS.map(g=>`<div class="ds-card ${sel.has(g.id)?'sel':''}" data-g="${esc(g.id)}" onclick="dqDsToggleG(${esc(JSON.stringify(g.id))})" style="${g.queryable?'':'opacity:.58;cursor:not-allowed'}" title="${esc(g.reason||'')}"><div class="ck">${g.queryable?'✓':'—'}</div><div class="nm">${esc(g.name)}</div><div class="ds">${g.nodes} 对象 / ${g.edges} 关系 · ${g.queryable?`可问数 ${g.available_table_count||0} 张表`:'不可问数'}</div></div>`).join('')+`</div>`;
  }else{
-  if(!DQ_TABLES)DQ_TABLES=await JL('/api/tables');
+  if(!DQ_TABLES)DQ_TABLES=await JL('/api/tables');if(seq!==DQ_DS_SEQ)return;
   if(!DQ_TABLES){body.innerHTML='<div class="muted">数据表列表加载失败，请关闭后重试</div>';return;}
   const sel=new Set(DQ_DS.tables);const groups={};
   DQ_TABLES.forEach(t=>{const g=(t.name.split('_')[0]||'其他').toUpperCase();(groups[g]=groups[g]||[]).push(t);});
