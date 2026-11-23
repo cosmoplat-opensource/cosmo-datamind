@@ -28,6 +28,13 @@ class AmbiguousMetric(ValueError):
     pass
 
 
+def _ambiguity(ir, name):
+    """名称被多个指标共用时的提示,直接由图谱数据生成(不回显异常文本)。"""
+    ids = [str(m.get("id") or "?") for arr in ((ir or {}).get("metric_layers") or {}).values()
+           for m in (arr or []) if isinstance(m, dict) and m.get("name") == name]
+    return f"名称「{name}」对应多个指标,请用指标主键指明:" + "、".join(ids)
+
+
 def _find(ir, name):
     """先按指标主键找,再按名称找。名称被多个指标共用时抛 AmbiguousMetric,不按排列顺序替调用方挑一个。"""
     entries = [(layer, i, m) for layer, arr in ((ir or {}).get("metric_layers") or {}).items()
@@ -51,8 +58,8 @@ def metric_contract_view():
     if not ir: return jsonify({"error": "图谱不存在"}), 404
     try:
         layer, _, m = _find(ir, name)
-    except AmbiguousMetric as exc:
-        return jsonify({"error": str(exc)}), 409
+    except AmbiguousMetric:
+        return jsonify({"error": _ambiguity(ir, name)}), 409
     if not m: return jsonify({"error": "指标不存在"}), 404
     out = {"graph": key, "layer": layer, "metric": m, "is_contract": metric_contract.is_contract(m)}
     if metric_contract.is_contract(m):
@@ -82,8 +89,8 @@ def metric_status():
         if err: return err
         try:
             layer, idx, m = _find(ir, name)
-        except AmbiguousMetric as exc:
-            return jsonify({"error": str(exc)}), 409
+        except AmbiguousMetric:
+            return jsonify({"error": _ambiguity(ir, name)}), 409
         if not m: return jsonify({"error": "指标不存在"}), 404
         if status == "certified":
             if not metric_contract.is_contract(m):

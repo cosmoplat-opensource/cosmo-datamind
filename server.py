@@ -4042,7 +4042,8 @@ def ont_chat():
             ok, r = runtime_cached(drv).run_turn(cid or "c_default", prompt, timeout=120)   # 缓存实例→多轮续接
             if ok and r: reply = r.strip(); break
     except Exception as e:
-        reply = f"(引擎异常: {e})"
+        _LOG.warning("本体对话引擎调用失败:%s", type(e).__name__)
+        reply = "(引擎异常,请稍后重试)"           # 异常详情只记日志,不回给前端
     reply = reply or "(引擎离线)"
     op = None
     m = re.search(r"EDIT_OP:(\{.*\})", reply, re.S)

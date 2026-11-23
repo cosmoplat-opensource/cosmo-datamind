@@ -49,7 +49,17 @@ def test_navigation_survives_back_forward_and_reload(device, site, key):
     with browser.new_context(viewport={"width": width, "height": 900}) as context:
         page = context.new_page()
         errors = []
-        page.on("pageerror", lambda error: errors.append(str(error)))
+        host = site.split("://", 1)[-1]
+
+        def collect(error):
+            text = str(error)
+            # WebKit 在后退、刷新打断本页仍在进行的同源请求时报 "<url> due to access control checks",
+            # 不是页面脚本错误(应用对这些请求已有错误处理);其余页面错误照常计入
+            if text.endswith("due to access control checks.") and host in text:
+                return
+            errors.append(text)
+
+        page.on("pageerror", collect)
         origin = "quality" if key == "glossary" else "glossary"
         page.goto(f"{site}/#{origin}")
         page.wait_for_function("APP_DATA.ready")
