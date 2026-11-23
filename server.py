@@ -377,6 +377,12 @@ def _sqlite_table(con, name):
                       "ORDER BY name = ? DESC LIMIT 1", (name, name)).fetchone()
     return row[0] if row else None
 
+def _missing_table(name):
+    """库里没有这张表时的响应:不像普通标识符的名字(如 x;drop)报 400 非法表名,否则 404 表不存在。"""
+    if not re.match(r"^[A-Za-z0-9_]{1,64}$", str(name or "")):
+        return jsonify({"error": "非法表名"}), 400
+    return jsonify({"error": "表不存在"}), 404
+
 def _safe_argv(val, cap=60, default="untitled"):
     """把用户/LLM 给的自由文本裁成可安全传给子进程的单个 argv:
     去掉控制字符与引号反引号等 shell 元字符、限长、禁止以 '-' 开头(避免被当成选项)。
@@ -3230,8 +3236,9 @@ def tables(): return jsonify(table_list())
 def table_detail(name):
     con = ro_connect(_active_db())
     try:
-        name = _sqlite_table(con, name)
-        if not name: return jsonify({"error": "表不存在"}), 404
+        real = _sqlite_table(con, name)
+        if not real: return _missing_table(name)
+        name = real
         ir = _active_ir()
         cn_map = {}
         for o in ir.get("objects", []):
@@ -3528,8 +3535,9 @@ def table_info(name):
     """表基本信息:行/列 + 所属本体对象 + 支撑指标(字段组织参照平台的元数据详情页)"""
     con = ro_connect(_active_db())
     try:
-        name = _sqlite_table(con, name)
-        if not name: return jsonify({"error": "表不存在"}), 404
+        real = _sqlite_table(con, name)
+        if not real: return _missing_table(name)
+        name = real
         rows = con.execute(f'SELECT count(*) FROM {_quote_ident(name)}').fetchone()[0]
         ncols = sum(1 for r in con.execute(f'PRAGMA table_xinfo({_quote_ident(name)})') if r[6] in (0, 2, 3))
     except Exception:
@@ -11246,7 +11254,7 @@ def conn_preview():
         con = ro_connect(db)
         try: real = _sqlite_table(con, table)
         finally: con.close()
-        if not real: return jsonify({"error": "表不存在"}), 404
+        if not real: return _missing_table(table)
         return jsonify(q(f'SELECT * FROM {_quote_ident(real)} LIMIT 100', db=db))
     except Exception as e:
         return jsonify({"error": str(e)[:120]})

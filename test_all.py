@@ -246,7 +246,7 @@ _m=_re.search(r'id="sq_q"[^>]*>(.*?)</textarea>', _ui, _re.S)
 _defq=_m.group(1).strip() if _m else ""
 r=po("/api/sparql",json={"query":_defq,"graph":"demo"}); chk("sparql 页面默认示例可跑", r.status_code==200 and len(r.json().get("rows",[]))>0)
 # 数据格子去浮点噪声:统一 cell() 定义存在,且数据预览值格用 cell()(防再退回 esc() 露出 14.74000…02)
-chk("前端 cell() 去浮点噪声助手存在", "const cell=" in _ui and "toPrecision(12)" in _ui)
+chk("前端 cell() 去浮点噪声助手存在", "const cell=" in _ui and "toPrecision(15)" in _ui)   # 15 位:去噪且不改动双精度能保真的值(DR-164)
 chk("数据预览值格统一走 cell()", _ui.count("<td>${cell(")>=5)
 # 错误信息如实:语法错报"查询错误"而非伪装成"超时"(_bounded_ex 区分异常/超时)
 r=po("/api/sparql",json={"query":"SELECT ?x WHERE { ?x <p>?y }","graph":"demo"}); chk("sparql 语法错报『查询错误』非『超时』", r.status_code==400 and "超时" not in r.json().get("error",""))

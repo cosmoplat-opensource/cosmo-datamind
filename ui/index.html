@@ -750,7 +750,7 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 // 安全地把值放进 onclick 等内联 JS 字符串:JSON.stringify 产生合法 JS 字面量，esc 再转义引号使其在属性内不越界
 const jsAttr=x=>esc(JSON.stringify(x));
 const JL=async u=>{const d=await J(u);if(Array.isArray(d))return d;toast('列表加载失败:'+((d&&d.error)||'返回内容不是列表'));return null;};  // 列表接口:失败时提示并返回 null,调用方按空列表或「加载失败」处理
-// 数据格子统一格式化：浮点去 IEEE-754 表示噪声(14.74000000000002→14.74、90.04999…8→90.05)，保留12位有效数字;
+// 数据格子统一格式化：浮点去 IEEE-754 表示噪声(14.74000000000002→14.74、90.04999…8→90.05)，保留15位有效数字(双精度能保真的位数);
 // 仅作用于显示层(预览/查询结果/看板)，不改后端原始值与导出。非数字/整数原样经 esc 转义。
 const cell=v=>v===null||v===undefined?'<span class="muted" title="空值(NULL)">NULL</span>':(typeof v==='number'&&Number.isFinite(v)&&!Number.isInteger(v))?esc(parseFloat(v.toPrecision(15))):esc(v);   // 15 位有效数字即双精度能保真的位数;NULL 与空串区分显示
 // 核心助手显式挂 window：内联 onclick 处理器在全局作用域执行，const 顶层绑定跨浏览器可见性不保证，显式暴露杜绝隐患
