@@ -30,6 +30,7 @@ pip install -r requirements.txt
 | 语义层 | rdflib、pyshacl | 服务正常;SPARQL、标准导出、SHACL 校验返回 503 并提示安装 |
 | 按需 | openpyxl、pymysql、psycopg2-binary | 仅在上传 xlsx、实连 MySQL/Doris/PostgreSQL 时需要 |
 | 按需 | cryptography | 加密保存外部库的连接凭据;未安装时凭据以明文保存(仅属主可读)并告警 |
+| 按需 | JDK 11+、Hive JDBC 驱动(standalone jar) | 仅在实连 Hive 或 Spark Thrift Server 时需要;设 `DATAMIND_HIVE_JDBC_CLASSPATH` 指向驱动,`java` 不在 PATH 时设 `DATAMIND_JAVA`。查询经 `drivers/HiveJdbcBridge.java` 执行,表清单只读 JDBC 元数据 |
 
 `requirements.txt` 只规定版本下限。需要可复现的安装时,使用固定了版本的 `requirements-dev.txt`。
 

@@ -49,7 +49,7 @@ def sha256_file(path: Path) -> str:
 
 def create_schema(con: sqlite3.Connection, layout: sqlite3.Connection) -> list[str]:
     tables = []
-    for name, sql in layout.execute("SELECT name, sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"):
+    for name, sql in layout.execute("SELECT name, sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\' ORDER BY name"):
         if name == "fact_material_consumption":
             sql = re.sub(r"(material_id[^,]*?REFERENCES\s+)\"?dim_product\"?\s*\(\s*\"?prod_id\"?\s*\)", r"\1dim_material(material_id)", sql)
         # DECIMAL 是 NUMERIC 亲和类型,SQLite 会把整值小数存成整数,查询时发生整数除法;小数列一律声明为 REAL

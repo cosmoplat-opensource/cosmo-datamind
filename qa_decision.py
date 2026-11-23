@@ -346,7 +346,7 @@ ACTION_MIN_SCORE = 4          # 至少两个字二元组与动作名重合(同�
 
 def _single_ask(q):
     """只问一件事:一个分句,且没有"和 / 及 / 分别 / 对应"等追加要求。"""
-    parts = [p for p in re.split(r"[,,;;??？。]", q or "") if p.strip()]
+    parts = [p for p in re.split(r"[,，;；?？。]", q or "") if p.strip()]
     return len(parts) == 1 and not re.search(r"和|及|并且|分别|对应|以及", q or "")
 
 

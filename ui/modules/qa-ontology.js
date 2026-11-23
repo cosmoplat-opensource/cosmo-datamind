@@ -31,7 +31,7 @@ function dqScopeAvailable(scope) {
   if (!ids.length) return 0;
   const metas = ids.map(dqGraphMeta).filter(Boolean);
   if (ids.length && metas.length === ids.length)
-    return metas.reduce((n, graph) => n + (graph.available_table_count || 0), 0);
+    return metas.reduce((n, graph) => n + (Number(graph.available_table_count) || 0), 0);
   return Number.isFinite(scope && scope.availableCount) ? scope.availableCount : null;
 }
 
@@ -87,7 +87,7 @@ function dqHeroScoped() {
   const usable = dqScopeAvailable(DQ_DS);
   const status = names.length
     ? `<div class="step" style="display:inline-block;text-align:left;margin:8px auto 14px"><b>当前本体：</b>${source}`
-      + (usable == null ? ' · 绑定表状态将在数据源列表加载后更新。' : ` · <b>${usable}</b> 张绑定表可查询。`)
+      + (usable == null ? ' · 绑定表状态将在数据源列表加载后更新。' : ` · <b>${esc(String(usable))}</b> 张绑定表可查询。`)   // 数量可能来自浏览器里保存的会话,同样转义
       + `新对话沿用该本体。</div>`
     : '';
   const examples = names.length ? '' : `<div class="egs">${EG_Q.map(q => `<span class="eg" onclick="dqAskEg(${esc(JSON.stringify(q))})">${esc(q)}</span>`).join('')}</div>`;
@@ -149,6 +149,8 @@ function dqDsCancel() {
 function dqDsCommit() {
   const valid = new Set((DQ_GRAPHS || []).filter(g => g.queryable).map(g => g.id));
   DQ_DS.graphs = DQ_DS.graphs.filter(id => valid.has(id));
+  // 勾选“不指定表”即放弃逐表选择:请求、标签与快照都不再带先前选中的表
+  if (DQ_DS.allTables) DQ_DS.tables = [];
   DQ_DS.availableCount = dqScopeAvailable(DQ_DS);
   const before = JSON.stringify(DQ_DS_BEFORE || {});
   const after = JSON.stringify(dqScopeSnapshot());

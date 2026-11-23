@@ -2,6 +2,66 @@
   "iteration": "IR-014 / IR-015",
   "requirements": [
     {
+      "id": "SCOPE-PAGE-01",
+      "criterion": "从链接进入任意已登记页面并刷新，全局数据库选择、上下文请求和实际表数一致。",
+      "tests": ["tests/frontend/result_scope_browser.py::test_link_and_reload_keep_the_database_shown_on_each_page"]
+    },
+    {
+      "id": "SCOPE-IMPORT-01",
+      "criterion": "API 导入达到行列边界时，保留原数据或明确告知拒绝或部分导入；成功响应的行数和列名与物化表相符。",
+      "tests": ["tests/unit/test_result_scope.py::test_api_import_reports_the_actual_scope"]
+    },
+    {
+      "id": "SCOPE-SOURCE-01",
+      "criterion": "不同 API 连接分别报告取数状态，并保留各自的查询结果，即使两项业务名称归一化后相同。",
+      "tests": ["tests/unit/test_result_scope.py::test_fetching_one_source_preserves_the_other_source"]
+    },
+    {
+      "id": "SCOPE-RDF-01",
+      "criterion": "SPARQL 查询或构造图谱的返回值须与导出的对象集合一致；截断时能识别部分结果或取得正确总数。",
+      "tests": ["tests/unit/test_result_scope.py::test_sparql_reports_full_cardinality_or_discloses_a_partial_result"]
+    },
+    {
+      "id": "SCOPE-PENDING-01",
+      "criterion": "在动作中心能从待审批数找到对应的未结事项，即使有超过一页的较新记录。",
+      "tests": ["tests/frontend/result_scope_browser.py::test_pending_approval_is_reachable_from_the_action_center"]
+    },
+    {
+      "id": "SCOPE-RETENTION-01",
+      "criterion": "保存新的动作记录时保留仍待处理的审批及其身份。",
+      "tests": ["tests/unit/test_result_scope.py::test_new_action_preserves_unresolved_approval"]
+    },
+    {
+      "id": "SCOPE-CSV-01",
+      "criterion": "动作记录导出与当前状态、关键词筛选相符，若导出所有记录，操作入口明确标识；无匹配时同样适用。",
+      "tests": ["tests/frontend/result_scope_browser.py::test_action_csv_matches_filtered_rows"]
+    },
+    {
+      "id": "SCOPE-CHAT-01",
+      "criterion": "问数请求使用最终确认的表范围，确认“分析所有表”清除先前表限制，取消编辑保留已确认的选择。",
+      "tests": ["tests/frontend/result_scope_browser.py::test_question_uses_the_confirmed_table_selection"]
+    },
+    {
+      "id": "SCOPE-REPLAY-01",
+      "criterion": "历史回放保留实时答案的行数和末条数据，使用户能复查同一期的结果。",
+      "tests": ["tests/frontend/result_scope_browser.py::test_history_replays_the_latest_row_and_total_of_the_live_answer"]
+    },
+    {
+      "id": "SCOPE-REVIEW-01",
+      "criterion": "批量评审仅更新提交的关系，任一项无效则整批不写入；分页筛选后全选按钮按本页实际勾选状态显示。",
+      "tests": ["tests/unit/test_result_scope.py::test_batch_review_preserves_selected_scope_and_atomicity", "tests/frontend/result_scope_browser.py::test_review_page_select_all_reflects_the_visible_checkboxes"]
+    },
+    {
+      "id": "SCOPE-REVIEW-02",
+      "criterion": "连续切换图谱后，当前选项、显示的关系、最终写入评审结论的图谱一致，包括较早响应晚到的情况。",
+      "tests": ["tests/frontend/result_scope_browser.py::test_review_saves_the_graph_whose_relationship_was_displayed"]
+    },
+    {
+      "id": "SCOPE-OBS-01",
+      "criterion": "按类型查询当天最近的事件时，其他类型的新增事件不能让最近的匹配记录消失。",
+      "tests": ["tests/unit/test_result_scope.py::test_recent_build_filter_finds_latest_build_in_todays_log"]
+    },
+    {
       "id": "ALG-01",
       "criterion": "完整值域决定重叠率，前缀截断不能制造或遗漏 verified",
       "tests": [
@@ -97,6 +157,65 @@
       "criterion": "构建断流可恢复、重复提交受控、基础本体切换无串线、结果安全呈现",
       "tests": [
         "tests/unit/test_build_ui.py::test_build_ui_behavior"
+      ]
+    },
+    {
+      "id": "BUILD-WEBKIT-01",
+      "criterion": "本体构建页的数据源和参照选择器加载完成后，在 WebKit 的 768 像素视口内可正常浏览，无整页横向滚动。",
+      "tests": [
+        "tests/frontend/build_viewport_browser.py::test_build_reference_controls_fit_the_viewport"
+      ]
+    },
+    {
+      "id": "ONT-RENAME-01",
+      "criterion": "图谱展示的对象可按页面返回的标识改中文名、重读并撤销，兼容 id 和 name 两种对象格式，保留原始构建文件。",
+      "tests": [
+        "tests/unit/test_ontology_rename_roundtrip.py::test_displayed_object_can_be_renamed_reloaded_and_restored"
+      ]
+    },
+    {
+      "id": "QUERY-COLUMNS-01",
+      "criterion": "SQL 工作台与可视化取数按列位置保留原值。列名相同或只差大小写时，为后续列生成唯一后缀并保留查询显式指定的别名。空结果也返回相同的列名。",
+      "tests": [
+        "tests/unit/test_query_and_board_fidelity.py::test_query_columns_preserve_both_values_or_explain_ambiguity",
+        "tests/unit/test_query_and_board_fidelity.py::test_generated_labels_preserve_explicit_aliases_and_do_not_depend_on_rows"
+      ]
+    },
+    {
+      "id": "VIZ-ROUNDTRIP-01",
+      "criterion": "每个看板最多保存 24 张图，超限时拒绝整次保存并保留旧看板。图表区分空值与零。修改预览过的 SQL 后，须重新取数才能添加到看板。",
+      "tests": [
+        "tests/unit/test_query_and_board_fidelity.py::test_board_update_preserves_all_charts_or_rejects_without_overwrite",
+        "tests/frontend/functional_workflows.py::test_missing_chart_value_stays_distinct_from_zero",
+        "tests/frontend/functional_workflows.py::test_adding_an_edited_query_uses_a_verified_chart_binding"
+      ]
+    },
+    {
+      "id": "ONT-CHAT-ACCESS-01",
+      "criterion": "本体对话的文本附件可以完整送达问答接口，覆盖 256 字节和 256 KiB；历史会话能用键盘选中并回放。",
+      "tests": [
+        "tests/frontend/functional_workflows.py::test_ontology_chat_attachment_reaches_the_stream_intact",
+        "tests/frontend/functional_workflows.py::test_ontology_chat_history_can_be_opened_with_keyboard"
+      ]
+    },
+    {
+      "id": "NAV-MOBILE-STATE-01",
+      "criterion": "窄屏菜单可通过键盘展开并进入目标页，展开与自动收起状态可由辅助技术读取。",
+      "tests": [
+        "tests/frontend/functional_workflows.py::test_mobile_menu_exposes_expanded_and_collapsed_state"
+      ]
+    },
+    {
+      "id": "QA-HISTORY-01",
+      "criterion": "在同一浏览器和数据源完成深度问数后，切到其他页面再返回应能从历史栏打开该会话。刷新后可用键盘打开历史并按原顺序回放各轮问题和答案，并看到原依据卡的结果编号。指标接口暂时不可用时仍可打开历史。浏览器存储已满时，旧会话仍可回放，新会话须可恢复或在用户离开前明确提示保存失败。",
+      "tests": [
+        "tests/frontend/qa_history_browser.py::test_completed_turns_replay_after_reload",
+        "tests/frontend/qa_history_browser.py::test_history_replays_with_tab_and_enter",
+        "tests/frontend/qa_history_browser.py::test_replay_preserves_the_original_result_reference",
+        "tests/frontend/qa_history_browser.py::test_completed_chat_is_listed_when_returning_from_another_page",
+        "tests/frontend/qa_history_browser.py::test_saved_chat_replays_when_metrics_are_unavailable",
+        "tests/frontend/qa_history_browser.py::test_storage_quota_cannot_silently_drop_a_completed_chat",
+        "tests/frontend/qa_history_browser.py::test_failed_followup_can_be_saved_again_without_losing_the_previous_turn"
       ]
     },
     {
@@ -4046,6 +4165,279 @@
         "tests/unit/test_robotics_baseline.py::test_fixture_digests_and_compatibility_cases_are_recorded",
         "tests/unit/test_robotics_baseline.py::test_frozen_consumer_contract_cases_execute",
         "tests/unit/test_robotics_baseline.py::test_frozen_real_task_without_evidence_still_refuses_a_candidate"
+      ]
+    },
+    {
+      "id": "STATE-BOARD-01",
+      "criterion": "保存新看板时，此前已确认保存的看板及其图表均可回读。达到收藏容量时允许明确拒绝新建。",
+      "tests": [
+        "tests/unit/test_state_transitions.py::test_board_collection_preserves_acknowledged_saves"
+      ]
+    },
+    {
+      "id": "STATE-SOURCE-01",
+      "criterion": "连续登记不同物理数据源时，已确认登记的连接仍可枚举和查询，超限应在新登记操作中说明。",
+      "tests": [
+        "tests/unit/test_state_transitions.py::test_registered_sources_still_resolve_after_next_registration"
+      ]
+    },
+    {
+      "id": "STATE-CHAT-01",
+      "criterion": "重叠的本体问答须保留每次已确认的问答，显式并发冲突可重试。在途回复完成后，已确认删除的会话仍保持删除。",
+      "tests": [
+        "tests/unit/test_state_transitions.py::test_chat_completed_during_another_turn_is_durable"
+      ]
+    },
+    {
+      "id": "STATE-SQL-01",
+      "criterion": "SQL 工作台在执行前后更换局部数据源时，旧结果须清除或标明来源，后续运行应显示新源的值。",
+      "tests": [
+        "tests/frontend/state_transition_browser.py::test_sql_results_belong_to_the_displayed_source"
+      ]
+    },
+    {
+      "id": "STATE-CHAT-02",
+      "criterion": "新建或清空会话失败时，保留当前会话、正文和可见的失败提示。确认清空后，会话从历史列表移除。",
+      "tests": [
+        "tests/frontend/state_transition_browser.py::test_chat_mutation_keeps_transcript_until_success"
+      ]
+    },
+    {
+      "id": "STATE-LIST-01",
+      "criterion": "数据质量、动作记录、看板目录、问数评测和本体会话列表须区分服务不可用和真实空数据；服务恢复后重新加载可读。",
+      "tests": [
+        "tests/frontend/state_transition_browser.py::test_list_distinguishes_service_failure_from_empty_and_recovers"
+      ]
+    },
+    {
+      "id": "STATE-CSV-01",
+      "criterion": "动作记录 CSV 每个导出字段有独立列名，含双引号、逗号或换行的值可正确读回。",
+      "tests": [
+        "tests/frontend/state_transition_browser.py::test_action_csv_has_one_header_for_each_exported_field"
+      ]
+    },
+    {
+      "id": "STATE-GRAPH-01",
+      "criterion": "元数据覆盖页仅显示当前图谱的语义评审统计；切换或重新选择图谱后不残留旧统计。",
+      "tests": [
+        "tests/frontend/state_transition_browser.py::test_metadata_review_count_tracks_selected_graph_and_revisits"
+      ]
+    },
+    {
+      "id": "STATE-NAV-01",
+      "criterion": "每个登记页面支持正常键盘入口或专用深链。浏览器后退、前进和刷新后当前页与选中导航一致，窄屏无页面级横向溢出。",
+      "tests": [
+        "tests/frontend/navigation_transitions.py::test_navigation_survives_back_forward_and_reload"
+      ]
+    },
+    {
+      "id": "STATE-NAV-02",
+      "criterion": "移动菜单收起时，Tab 可从工具栏进入当前页面，隐藏侧栏不会接收焦点。",
+      "tests": [
+        "tests/frontend/navigation_transitions.py::test_closed_mobile_sidebar_does_not_receive_tab_focus"
+      ]
+    },
+    {
+      "id": "STATE-READ-01",
+      "criterion": "总览恢复后指标数值与接口一致，术语组合筛选和清除后行数正确；SPARQL 的真值、假值、语法错误及恢复查询各自显示对应的结果。",
+      "tests": [
+        "tests/frontend/state_transition_browser.py::test_overview_survives_unavailable_data_and_recovers_exact_totals",
+        "tests/frontend/state_transition_browser.py::test_glossary_combined_filters_and_clear_restore_inventory",
+        "tests/frontend/state_transition_browser.py::test_sparql_replaces_previous_answer_after_empty_or_invalid_query"
+      ]
+    },
+    {
+      "id": "DISC-SCHEMA-01",
+      "criterion": "普通业务表 sqliteLedger 在单表库可登记，在双表库的目录、连接清单和构建预检中可见，与直接 SQL 和图表查询一致。SQLite 自建的 sqlite_sequence 仍从业务清单排除。",
+      "tests": [
+        "tests/unit/test_business_name_discovery.py::test_single_business_table_can_register",
+        "tests/unit/test_business_name_discovery.py::test_business_table_stays_discoverable_beside_control"
+      ]
+    },
+    {
+      "id": "DISC-IMPORT-01",
+      "criterion": "上传逗号、分号或竖线分隔文件后，带引号的表头和单元格内的逗号不改变实际列边界，SQL 可读取保留下来的两列和原始值。",
+      "tests": ["tests/unit/test_business_name_discovery.py::test_delimited_upload_preserves_column_boundaries"]
+    },
+    {
+      "id": "DISC-EDIT-01",
+      "criterion": "两个对象共用业务别名时，以此别名编辑须消歧，两个对象的别名均可原样回读。以唯一 ID 编辑仅更新所指对象，与对象排列顺序无关。",
+      "tests": ["tests/unit/test_business_name_discovery.py::test_alias_edit_never_guesses_between_shared_names"]
+    },
+    {
+      "id": "DISC-ALIAS-01",
+      "criterion": "通过文本输入多个中文业务别名时，逗号、顿号和全角分号分隔的别名可独立回读与检索。",
+      "tests": ["tests/unit/test_business_name_discovery.py::test_aliases_entered_as_business_text_remain_separately_searchable"]
+    },
+    {
+      "id": "DISC-PROFILE-01",
+      "criterion": "用完整且唯一的中文业务名查询对象画像时，单字名与多字名均可命中对应对象。",
+      "tests": ["tests/unit/test_business_name_discovery.py::test_exact_business_label_finds_its_profile"]
+    },
+    {
+      "id": "DISC-OBJECT-01",
+      "criterion": "从图谱公开节点 ID 打开对象详情，即使另一个对象使用相同文本作名称，也须返回所选节点的 ID 与中文名。",
+      "tests": ["tests/unit/test_business_name_discovery.py::test_object_detail_resolves_selected_node_id"]
+    },
+    {
+      "id": "DISC-METRIC-01",
+      "criterion": "按指标 ID 请求契约或变更状态时返回对应指标，若与名称冲突也可明确提示消歧并保留原状态。用户点选同名指标中的一行时，血缘和持久化的停用操作均落到所选行。",
+      "tests": [
+        "tests/unit/test_business_name_discovery.py::test_metric_id_selects_the_same_contract_and_persisted_status",
+        "tests/frontend/business_name_browser.py::test_metric_lineage_follows_clicked_row"
+      ]
+    },
+    {
+      "id": "DISC-QA-01",
+      "criterion": "无模型时对已绑定且唯一、明确点名的中文物理表询问记录总数，同步和流式入口均可核对同一源表的 COUNT 结果与锚定表名。",
+      "tests": ["tests/unit/test_business_name_discovery.py::test_offline_count_follows_explicit_business_table"]
+    },
+    {
+      "id": "DISC-PAGE-01",
+      "criterion": "在 320 与 1440 CSS 像素宽的窗口中，各页面原生可见表单控件提供可访问名称，页面整体无需横向滚动。",
+      "tests": ["tests/frontend/business_name_browser.py::test_page_forms_are_named_and_fit_viewport"]
+    },
+    {
+      "id": "DISC-EXPORT-01",
+      "criterion": "同一图谱中业务对象和关系的标识保持稳定。仅交换对象或关系列表顺序，重新解析 Turtle、JSON-LD、OWL 后，每个相同概念或关系仍有原来的 IRI。",
+      "tests": ["tests/unit/test_business_name_discovery.py::test_rdf_terms_keep_identity_after_reordering"]
+    },
+    {
+      "id": "DISC-SOURCE-01",
+      "criterion": "两个真实且内容不同的连接登记为同名时，全局数据库、SQL 工作台和图表的源选择器提供可辨识的信息。",
+      "tests": ["tests/frontend/business_name_browser.py::test_distinct_sources_can_be_identified_in_picker"]
+    },
+    {
+      "id": "DISC-BOARD-01",
+      "criterion": "两个同名看板按各自 ID 保存和回读，更新第二块看板的 SQL 和卡片后，第一块保留原结果定义。",
+      "tests": ["tests/unit/test_business_name_discovery.py::test_same_name_boards_reopen_with_independent_cards"]
+    },
+    {
+      "id": "FIELD-PORT-01",
+      "criterion": "数据连接页新建 Doris 或 Hive 连接时，未编辑端口应按所选引擎保存默认查询端口，手工填写端口时应保存输入值。",
+      "tests": [
+        "tests/frontend/representation_fidelity_browser.py::test_saved_connection_uses_selected_engine_port"
+      ]
+    },
+    {
+      "id": "FIELD-HIVE-STATUS-01",
+      "criterion": "仅完成登记的 Hive 连接，列表应让用户识别尚未验证的状态或当前可用的取数途径。",
+      "tests": [
+        "tests/frontend/representation_fidelity_browser.py::test_unverified_hive_connection_describes_its_availability"
+      ]
+    },
+    {
+      "id": "HIVE-LIVE-01",
+      "criterion": "Hive 或 Spark Thrift Server(HiveServer2 协议)连接经 JDBC 桥接实连:SQL 工作台、图表、表清单与预览返回 live 结果并保留数值与 NULL;写语句与堆叠语句在到达驱动前拒绝;口令经标准输入传递不出现在进程参数中。",
+      "tests": [
+        "tests/unit/test_hive_bridge.py::test_workbench_and_chart_return_live_hive_rows",
+        "tests/unit/test_hive_bridge.py::test_hive_rejects_writes_before_reaching_the_bridge",
+        "tests/unit/test_hive_bridge.py::test_table_catalog_and_preview_use_hive_metadata_and_backticks",
+        "tests/unit/test_hive_bridge.py::test_request_goes_over_stdin_and_rows_keep_types"
+      ]
+    },
+    {
+      "id": "HIVE-LIVE-02",
+      "criterion": "Hive 侧失败按阶段给出可处理的说明(驱动或 JDK 缺失、无法连接、服务端内存不足、超时),不回显地址与账号;连接列表据最近一次实连区分未验证、已连通与连接失败。表清单不提交查询作业,读不到的列数报告为未知而非 0。",
+      "tests": [
+        "tests/unit/test_hive_bridge.py::test_missing_driver_or_jdk_is_reported",
+        "tests/unit/test_hive_bridge.py::test_server_out_of_memory_is_explained",
+        "tests/unit/test_hive_bridge.py::test_connect_failure_hides_address_and_account",
+        "tests/unit/test_hive_bridge.py::test_server_failure_is_reported_and_marks_the_connection",
+        "tests/unit/test_hive_bridge.py::test_bridge_source_writes_valid_json_and_reads_the_database_from_the_url",
+        "tests/unit/test_hive_bridge.py::test_hiveserver2_identity_accepts_hive_and_spark_thrift"
+      ]
+    },
+    {
+      "id": "FID-CATALOG-01",
+      "criterion": "已登记库的两份表清单须与实际行列数一致，列出的中文表名、带空格表名可用原名打开详情和预览。",
+      "tests": [
+        "tests/unit/test_representation_fidelity.py::test_two_inventories_agree_with_physical_row_and_column_counts",
+        "tests/unit/test_representation_fidelity.py::test_listed_table_opens_with_its_original_name"
+      ]
+    },
+    {
+      "id": "FID-CATALOG-02",
+      "criterion": "字段详情须描述数据预览包含的可查询生成列，列数和计算值与物理表一致。",
+      "tests": [
+        "tests/unit/test_representation_fidelity.py::test_schema_describes_every_column_including_generated_preview_values"
+      ]
+    },
+    {
+      "id": "FID-LIMIT-01",
+      "criterion": "工作台和可视化须区分完整结果和已截断的预览；指标卡的末行与其数据范围一致。",
+      "tests": [
+        "tests/unit/test_representation_fidelity.py::test_bounded_queries_distinguish_complete_result_from_preview",
+        "tests/frontend/representation_fidelity_browser.py::test_last_observation_kpi_discloses_a_partial_result"
+      ]
+    },
+    {
+      "id": "FID-UPLOAD-01",
+      "criterion": "含引号、换行、前导零编码及零值的 UTF-8 BOM、GB18030 和 TSV 上传记录可经 SQL 原值读回。",
+      "tests": [
+        "tests/unit/test_representation_fidelity.py::test_uploaded_table_round_trips_codes_quotes_and_lines"
+      ]
+    },
+    {
+      "id": "FID-RDF-01",
+      "criterion": "完整本体导出的三个格式可独立解析，保留对象详情中每个字段及唯一所属对象，包括宽表和共享命名片段。",
+      "tests": [
+        "tests/unit/test_representation_fidelity.py::test_exported_properties_match_each_object_detail",
+        "tests/frontend/page_value_contracts.py::test_sparql_class_count_matches_reparsed_download",
+        "tests/frontend/page_value_contracts.py::test_download_buttons_export_the_selected_graphs_class_labels"
+      ]
+    },
+    {
+      "id": "FID-DRIVER-01",
+      "criterion": "外部驱动的定点金额经 JSON 往返保留精度；二进制值可区分、可重复读取和序列化。",
+      "tests": [
+        "tests/unit/test_representation_fidelity.py::test_external_fixed_point_values_survive_json_round_trip",
+        "tests/unit/test_representation_fidelity.py::test_external_binary_fields_are_identifiable_and_stable"
+      ]
+    },
+    {
+      "id": "FID-DISPLAY-01",
+      "criterion": "四个表格入口可核对 64 位编号与接近的高精度读数，文本 NULL 与空字符串可区分。",
+      "tests": [
+        "tests/frontend/representation_fidelity_browser.py::test_each_table_retains_inspectable_source_values",
+        "tests/frontend/representation_fidelity_browser.py::test_null_text_is_distinguishable_from_an_empty_string",
+        "tests/unit/test_representation_fidelity.py::test_numeric_payload_precedes_browser_formatting"
+      ]
+    },
+    {
+      "id": "FID-VIZ-01",
+      "criterion": "已验证可取数的外部数据源可用于界面建图；重新打开的指标卡保留预览中的多期观测归属。",
+      "tests": [
+        "tests/frontend/representation_fidelity_browser.py::test_live_sql_source_is_also_selectable_for_a_chart",
+        "tests/frontend/representation_fidelity_browser.py::test_saved_kpi_identifies_the_same_observation_as_its_preview"
+      ]
+    },
+    {
+      "id": "FID-AX-01",
+      "criterion": "用键盘切换到不同页面时，辅助技术可识别当前导航项。",
+      "tests": [
+        "tests/frontend/representation_fidelity_browser.py::test_navigation_exposes_the_current_destination_after_keyboard_activation"
+      ]
+    },
+    {
+      "id": "FID-PAGE-01",
+      "criterion": "总览序列、图谱选择、数据源、评审、指标、质量、术语和动作显示与相应的数据范围和记录一致。",
+      "tests": [
+        "tests/frontend/page_value_contracts.py::test_home_chart_periods_and_series_match_overview_rows",
+        "tests/frontend/page_value_contracts.py::test_available_source_counts_agree_with_registry",
+        "tests/frontend/page_value_contracts.py::test_graph_choices_refer_to_the_same_registered_ids",
+        "tests/frontend/page_value_contracts.py::test_metric_names_and_quality_counts_match_the_active_graph",
+        "tests/frontend/page_value_contracts.py::test_registry_rows_can_be_found_in_catalog_and_glossary",
+        "tests/frontend/page_value_contracts.py::test_current_engine_and_action_type_labels_match_configuration"
+      ]
+    },
+    {
+      "id": "FID-PAGE-02",
+      "criterion": "机器人历史条数与服务记录一致，缺少绑定的视图可返回资产库；问数模式和评测页显示对应内容。",
+      "tests": [
+        "tests/frontend/page_value_contracts.py::test_robotics_history_and_task_counts_match_records",
+        "tests/frontend/page_value_contracts.py::test_incomplete_robotics_deep_link_returns_to_the_asset_library",
+        "tests/frontend/page_value_contracts.py::test_question_modes_and_evaluation_agree_with_visible_outputs"
       ]
     }
   ],

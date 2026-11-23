@@ -368,6 +368,21 @@ def _quote_ident(name):
     转义后该值再也无法闭合引号越出标识符边界,注入面即被封死。"""
     return '"' + str(name or "").replace('"', '""') + '"'
 
+def _sqlite_table(con, name):
+    """库里真实存在的表名(大小写以库内为准),不存在返回 None。表名来自页面列表,可以是中文、
+    带空格或引号的名字;只要库里确有此表就放行,拼 SQL 时一律经 _quote_ident 加引号。"""
+    if not isinstance(name, str) or not name or "\x00" in name:
+        return None
+    row = con.execute("SELECT name FROM sqlite_master WHERE type IN ('table','view') AND name = ? COLLATE NOCASE "
+                      "ORDER BY name = ? DESC LIMIT 1", (name, name)).fetchone()
+    return row[0] if row else None
+
+def _missing_table(name):
+    """库里没有这张表时的响应:不像普通标识符的名字(如 x;drop)报 400 非法表名,否则 404 表不存在。"""
+    if not re.match(r"^[A-Za-z0-9_]{1,64}$", str(name or "")):
+        return jsonify({"error": "非法表名"}), 400
+    return jsonify({"error": "表不存在"}), 404
+
 def _safe_argv(val, cap=60, default="untitled"):
     """把用户/LLM 给的自由文本裁成可安全传给子进程的单个 argv:
     去掉控制字符与引号反引号等 shell 元字符、限长、禁止以 '-' 开头(避免被当成选项)。
@@ -576,12 +591,17 @@ def _iof_edge_ann(r, verb, source_bfo=None, target_bfo=None, bfo_enabled=True):
         "evidence_status": r.get("evidence_status") or r.get("status", ""),
     }
 
+def _graph_uses_object_names(ir):
+    objects = ir.get("objects")
+    return "relations" in ir and bool(objects) and "kind" in objects[0]
+
+
 def ir_to_graph(key, ir):
     """统一成 {nodes:[{id,name,kind,...IOF-AV}], edges:[{s,t,verb,status,founded_relation,temporal}]}"""
     nodes, edges = [], []
     if not isinstance(ir, dict): return {"nodes": nodes, "edges": edges}
     bfo_enabled = _bfo_enabled_for_ir(ir)
-    if "relations" in ir and "objects" in ir and ir["objects"] and "kind" in ir["objects"][0]:
+    if _graph_uses_object_names(ir):
         # 应用本体 IR:节点显示名优先用中文名(cn),id 仍用 name 以保证边引用稳定
         for o in ir["objects"]:
             nodes.append({"id": o["name"], "name": o.get("cn") or o["name"], "kind": o.get("kind", "object"),
@@ -630,7 +650,38 @@ def _clip_cell(v):
         return raw.hex(), False
     if isinstance(v, str) and len(v) > _MAX_CELL_CHARS:
         return v[:_MAX_CELL_CHARS] + f"…(已截断,原长 {len(v)} 字符)", True
-    return v, False
+    return _json_safe_int(v), False
+
+
+_JS_SAFE_INT = 2 ** 53 - 1
+
+
+def _json_safe_int(v):
+    """浏览器用双精度解析 JSON 数字,超过 ±(2^53-1) 的整数(64 位编号等)会被改成相邻值;这类整数以十进制字符串给出。"""
+    if isinstance(v, int) and not isinstance(v, bool) and abs(v) > _JS_SAFE_INT:
+        return str(v)
+    return v
+
+
+def _result_columns(description):
+    """Keep the first label and disambiguate repeats without taking another column's SQL alias."""
+    names = [column[0] for column in description or ()]
+    reserved = {name.casefold() for name in names}
+    next_suffix = {}
+    columns = []
+    for name in names:
+        key = name.casefold()
+        if key in next_suffix:
+            suffix = next_suffix[key]
+            while f"{key}_{suffix}" in reserved:
+                suffix += 1
+            name = f"{name}_{suffix}"
+            reserved.add(name.casefold())
+            next_suffix[key] = suffix + 1
+        else:
+            next_suffix[key] = 2
+        columns.append(name)
+    return columns
 
 
 def q(sql, db=None, limit=500, attach_uploads=False, clean=None):
@@ -667,15 +718,18 @@ def q(sql, db=None, limit=500, attach_uploads=False, clean=None):
         con.create_function('randomblob', 1, lambda n: os.urandom(blob_size(n, 1)))
     try:
         cur = con.execute(sql)
+        columns = _result_columns(cur.description)
         rows, cut = [], 0
         for r in cur.fetchmany(limit):
-            row = dict(r)
-            for k, v in row.items():
+            row = {}
+            for k, v in zip(columns, r):
                 shown, was_cut = _clip_cell(v)
-                if was_cut or shown is not v:
-                    row[k] = shown; cut += was_cut
+                row[k] = shown
+                cut += was_cut
             rows.append(row)
-        out = {"columns": [c[0] for c in cur.description or []], "rows": rows}
+        out = {"columns": columns, "rows": rows}
+        # 结果超出行数上限时如实标记:只返回前 limit 行,不能让调用方把它当成完整结果
+        if len(rows) == limit and cur.fetchone() is not None: out["truncated"] = True
         if cut: out["truncated_cells"] = cut
         if applied: out["cleaning"] = applied
         if notes: out["cleaning_notes"] = notes
@@ -688,7 +742,7 @@ def table_list(db=None):
     try:
         tabs = [r[0] for r in con.execute(
             "SELECT name FROM sqlite_master "
-            "WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+            "WHERE type='table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\' ORDER BY name"
         )]
         cn_by_table = {}
         try:
@@ -703,7 +757,7 @@ def table_list(db=None):
         for t in tabs:
             quoted = t.replace('"', '""')
             n = con.execute(f'SELECT count(*) FROM "{quoted}"').fetchone()[0]
-            cols = con.execute(f'PRAGMA table_info("{quoted}")').fetchall()
+            cols = [r for r in con.execute(f'PRAGMA table_xinfo("{quoted}")') if r[6] in (0, 2, 3)]
             out.append({"name": t, "cn": "、".join(cn_by_table.get(t.lower(), [])),
                         "rows": n, "cols": len(cols)})
         return out
@@ -1945,7 +1999,7 @@ def _qa_table_inventory(path=None):
             con = ro_connect(path)
             try:
                 return {str(r[0]).lower() for r in con.execute(
-                    "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")}
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\'")}
             finally:
                 con.close()
         except Exception:
@@ -1964,7 +2018,8 @@ def _qa_graph_profile(ir, inventory=None):
     for obj in (ir or {}).get("objects", []):
         table = str(_obj_table(obj) or "").strip()
         low = table.lower()
-        if table and re.fullmatch(_SQL_IDENT, table) and low not in seen:
+        # 只认数据库里真实存在的表(下面与清单比对),表名可以是中文等非 ASCII 标识符;SQL 里一律加引号
+        if table and "\x00" not in table and '"' not in table and low not in seen:
             seen.add(low); bound.append(table)
     available, upload_available, unavailable = [], [], []
     for table in bound:
@@ -2313,7 +2368,7 @@ def _uploads_schema():
     try:
         con = ro_connect(UPLOAD_DB)
         tabs = [r[0] for r in con.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\'"
         )]
         parts = []
         for t in tabs[:8]:
@@ -3025,8 +3080,10 @@ def fallback_plan(question, ir=None, focus_tables=None):
                 r"(?:记录|数据|行)(?:总数|数|数量)(?:是|有)?(?:多少|几)?(?:条|行)?)(?:吗)?|"
                 r"how many (?:rows|records)(?: (?:are (?:there )?)?in)?\s*|"
                 r"(?:row|record) count(?: (?:of|for))?\s*", remaining, re.I)
-            if simple_count and re.fullmatch(r"(?:up\.)?" + _SQL_IDENT, table, re.I):
-                quoted = ".".join('"' + part + '"' for part in table.split("."))
+            # 表名来自本体对象绑定的物理表,不来自问句;按 SQL 标准引用(双引号加倍),中文等非 ASCII 表名同样可计数
+            schema, _, bare = table.rpartition(".") if table.lower().startswith("up.") else ("", "", table)
+            if simple_count and bare and "\x00" not in bare:
+                quoted = ".".join('"' + part.replace('"', '""') + '"' for part in ([schema] if schema else []) + [bare])
                 return {"analyses": [{"title": (obj.get("cn") or obj.get("name") or table) + "记录数",
                                       "sql": f'SELECT COUNT(*) AS "记录数" FROM {quoted}', "chart": {}}],
                         "note": note}
@@ -3177,17 +3234,22 @@ def tables(): return jsonify(table_list())
 
 @app.get("/api/table/<name>")
 def table_detail(name):
-    if not re.match(r"^[A-Za-z0-9_]+$", name): return jsonify({"error": "bad name"}), 400
-    ir = _active_ir()
-    cn_map = {}
-    for o in ir.get("objects", []):
-        if (o.get("table") or "").lower() == name.lower():
-            cn_map = {a["col"]: a.get("cn", "") for a in o.get("attrs", [])}
     con = ro_connect(_active_db())
-    cols = [{"col": r[1], "type": r[2], "pk": bool(r[5]), "cn": cn_map.get(r[1], "")} for r in con.execute(f'PRAGMA table_info("{name}")')]
-    con.close()
+    try:
+        real = _sqlite_table(con, name)
+        if not real: return _missing_table(name)
+        name = real
+        ir = _active_ir()
+        cn_map = {}
+        for o in ir.get("objects", []):
+            if (o.get("table") or "").lower() == name.lower():
+                cn_map = {a["col"]: a.get("cn", "") for a in o.get("attrs", [])}
+        cols = [{"col": r[1], "type": r[2], "pk": bool(r[5]), "cn": cn_map.get(r[1], "")}
+                for r in con.execute(f'PRAGMA table_xinfo({_quote_ident(name)})') if r[6] in (0, 2, 3)]
+    finally:
+        con.close()
     if not cols: return jsonify({"error": "表不存在"}), 404
-    prev = q(f'SELECT * FROM "{name}" LIMIT 20')
+    prev = q(f'SELECT * FROM {_quote_ident(name)} LIMIT 20')
     return jsonify({"columns": cols, "preview": prev})
 
 # /api/graphs 行级缓存:该端点被前端六处调用(首屏/图谱页/复核页/问数范围/编辑器),
@@ -3387,13 +3449,15 @@ def metric_lineage():
     name = request.args.get("name", "").strip()
     ir = _metric_graph_ir()
     if ir is None: return jsonify({"error": "非法图谱键"}), 400
-    hit = None
-    for k, arr in (ir.get("metric_layers") or {}).items():
-        for m in arr:
-            if m.get("name") == name:
-                hit = {**m, "layer": k}; break
-        if hit: break
-    if not hit: return jsonify({"error": "指标不存在"}), 404
+    # 先按指标主键找,再按名称;名称被多个指标共用时报错,不按排列顺序挑一个(与 /api/metric/contract 一致)
+    entries = [(k, m) for k, arr in (ir.get("metric_layers") or {}).items() for m in (arr or []) if isinstance(m, dict)]
+    found = [e for e in entries if e[1].get("id") == name] or [e for e in entries if e[1].get("name") == name]
+    if len(found) > 1:
+        return jsonify({"error": f"名称「{name}」对应多个指标,请用指标主键指明:"
+                                 + "、".join(str(m.get("id") or "?") for _, m in found)}), 409
+    if not found: return jsonify({"error": "指标不存在"}), 404
+    hit = {**found[0][1], "layer": found[0][0]}
+    name = hit.get("name") or name                       # 被引用关系按指标名称登记
     refs = []
     app_ir = (load_ir_edited("app") or {}) if database_scope.same_path(_active_db(), DB) else ir
     for o in app_ir.get("objects", []):
@@ -3469,11 +3533,13 @@ def metric_quick():
 @app.get("/api/table/<name>/info")
 def table_info(name):
     """表基本信息:行/列 + 所属本体对象 + 支撑指标(字段组织参照平台的元数据详情页)"""
-    if not re.match(r"^[A-Za-z0-9_]+$", name): return jsonify({"error": "bad name"}), 400
     con = ro_connect(_active_db())
     try:
-        rows = con.execute(f'SELECT count(*) FROM "{name}"').fetchone()[0]
-        ncols = len(con.execute(f'PRAGMA table_info("{name}")').fetchall())
+        real = _sqlite_table(con, name)
+        if not real: return _missing_table(name)
+        name = real
+        rows = con.execute(f'SELECT count(*) FROM {_quote_ident(name)}').fetchone()[0]
+        ncols = sum(1 for r in con.execute(f'PRAGMA table_xinfo({_quote_ident(name)})') if r[6] in (0, 2, 3))
     except Exception:
         return jsonify({"error": "表不存在"}), 404
     finally:
@@ -3541,12 +3607,17 @@ def _find_obj_any(ir, oid):
     objs = ir.get("objects", [])
     # 按条件分轮,而不是逐对象把三种条件一起试:后者会让靠前对象的表名
     # 压过靠后对象的中文名,命中谁取决于对象顺序,不可预期
+    # 主键唯一,直接命中;中文名、表名、别名可能被多个对象共用:同一轮命中多个时报错并列出候选,
+    # 不按对象顺序替调用方挑一个(否则改别名、确认、删除会落到排在前面的那个对象上)
     for probe in (lambda o: str(o.get("id") or o.get("name")) == key,
                   lambda o: str(o.get("cn") or "") == key,
                   lambda o: str(o.get("table") or "").lower() == low,
                   lambda o: any(str(a) == key for a in (o.get("aliases") or []))):
-        for o in objs:
-            if probe(o): return o
+        hits = [o for o in objs if probe(o)]
+        if len(hits) > 1:
+            raise ValueError(f"「{key}」对应多个对象,请用主键指明:"
+                             + "、".join(str(o.get("id") or o.get("name")) for o in hits))
+        if hits: return hits[0]
     return None
 
 def _stamp_review(x, op):
@@ -3589,7 +3660,7 @@ def apply_any(ir, op):
         o = _find_obj_any(ir, t.replace("obj:", "", 1))
         if not o: raise ValueError(f"对象不存在: {t}")
         raw = params.get("aliases")
-        if isinstance(raw, str): raw = [x for x in re.split(r"[,,、;;\s]+", raw) if x]
+        if isinstance(raw, str): raw = [x for x in re.split(r"[,，、;；\s]+", raw) if x]
         if not isinstance(raw, list): raise ValueError("params.aliases 需为列表或分隔字符串")
         # 上限在去重前校验:否则「21 个相同别名」去重后剩 1 个而绕过限制,
         # 大批量输入即可绕开防线(去重是清洗,不是防线)
@@ -3659,8 +3730,28 @@ def apply_any(ir, op):
         if kind == "remove_relation":
             rels.remove(l)
             return
+    return _apply_upstream_edit(ir, op)
+
+
+def _apply_upstream_edit(ir, op):
     import serve_claw as SC
-    return SC.apply_op(ir, op)
+    if op.get("op") != "rename" or not _graph_uses_object_names(ir):
+        return SC.apply_op(ir, op)
+    # 构建图谱用 name 定位对象。为上游编辑器提供 id，同时保留其校验和人工修改依据。
+    from copy import deepcopy
+    key = op.get("target", "").removeprefix("obj:")
+    obj = next((o for o in ir["objects"] if o.get("name") == key), None)
+    if obj is None:  # 兼容按 id 记录的历史操作
+        obj = next((o for o in ir["objects"] if o.get("id") == key), None)
+    if obj is None:
+        raise ValueError(f"对象不存在: {key}")
+    edited = deepcopy(obj)
+    edited.update(id=key, cn=obj.get("cn") or key)
+    previous = SC.apply_op({**ir, "objects": [edited]}, op)
+    obj["cn"] = edited["cn"]
+    if "evidence" in edited:
+        obj["evidence"] = edited["evidence"]
+    return previous
 
 # 回放失败的编辑操作(DR-097):图谱键 → [{index, op, target, error}]。每次回放后整体替换。
 _EDIT_REPLAY_FAILED: dict[str, list] = {}
@@ -3919,6 +4010,7 @@ def ont_chat():
     sid = cid or "c_default"
     if sid in d and (d[sid].get("graph") or "demo") != key:
         return jsonify({"error": "会话所属图谱与当前图谱不一致，请新建会话"}), 409
+    existed = sid in d                     # 本轮开始时会话已存在:期间被删除就不再写回
     sess = d.setdefault(sid, {"title": "", "messages": [], "graph": key})
     sess["graph"] = key
     def _od(o):
@@ -3950,17 +4042,25 @@ def ont_chat():
             ok, r = runtime_cached(drv).run_turn(cid or "c_default", prompt, timeout=120)   # 缓存实例→多轮续接
             if ok and r: reply = r.strip(); break
     except Exception as e:
-        reply = f"(引擎异常: {e})"
+        _LOG.warning("本体对话引擎调用失败:%s", type(e).__name__)
+        reply = "(引擎异常,请稍后重试)"           # 异常详情只记日志,不回给前端
     reply = reply or "(引擎离线)"
     op = None
     m = re.search(r"EDIT_OP:(\{.*\})", reply, re.S)
     if m:
         try: op = json.loads(m.group(1))
         except Exception: pass
-    sess["messages"] += [{"role": "user", "text": msg}, {"role": "ai", "text": reply}]
-    sess["title"] = sess["title"] or msg[:24]
-    with _WRITE_LOCK:   # 重读→只更新本会话→写回,避免并发覆盖其它会话
-        cur = _chats(); cur[sid] = sess; _chats_w(cur)
+    # 模型作答期间同一会话可能已追加了别的轮次或被删除:写回时重读最新状态,只追加本轮的两条消息;
+    # 已删除的会话不复活。整体覆盖会丢掉并发轮次的问答。
+    with _WRITE_LOCK:
+        cur = _chats()
+        if existed and sid not in cur:
+            return jsonify({"reply": reply, "suggested_op": op, "discarded": "会话已删除,本轮未保存"})
+        latest = cur.setdefault(sid, {"title": "", "messages": [], "graph": key})
+        latest["graph"] = key
+        latest["messages"] = list(latest.get("messages") or []) + [{"role": "user", "text": msg}, {"role": "ai", "text": reply}]
+        latest["title"] = latest.get("title") or msg[:24]
+        _chats_w(cur)
     return jsonify({"reply": reply, "suggested_op": op})
 
 @app.post("/api/ont/chat/stream")
@@ -4028,7 +4128,7 @@ def db_check():
         try:
             n = con.execute(
                 "SELECT count(*) FROM sqlite_master "
-                "WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+                "WHERE type='table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\'"
             ).fetchone()[0]
         finally:
             con.close()
@@ -4052,7 +4152,11 @@ def ont_chat_del():
 def ont_object(key, oid):
     """单对象详情:属性(含中文/证据)/关系/指标 —— 对齐平台 /api/object/<id>"""
     ir = load_ir_edited(key) or {}
-    o = next((x for x in ir.get("objects", []) if x.get("id") == oid or x.get("name") == oid), None)
+    # 图上节点的 id 是对象主键:先按主键找,主键都不中时才认 name,避免别的对象的 name 恰好等于这个主键而被选中
+    objs = ir.get("objects", [])
+    o = (next((x for x in objs if x.get("id") == oid), None)
+         or next((x for x in objs if not x.get("id") and x.get("name") == oid), None)
+         or next((x for x in objs if x.get("name") == oid), None))
     if not o: return jsonify({"error": "对象不存在"}), 404
     rels = [{"dir": "out" if l.get("source") == o.get("id") else "in", "verb": l.get("verb"),
              "other": l.get("target") if l.get("source") == o.get("id") else l.get("source"), "status": l.get("status")}
@@ -4189,10 +4293,15 @@ def _ir_to_turtle(key, ir):
         rx = str(x)
         if rx in _loc_of: return _loc_of[rx]
         s = "".join(ch if _pn_char(ch) else "_" for ch in rx) or "_"
+        lossy = s != rx                                    # 有字符被换掉;数字开头只补前缀,不算有损
         if s[0].isdigit(): s = "_" + s
-        if s in _loc_used or not s.strip("_"):            # 与另一个原名撞名,或整个名字都被替换掉:加原名摘要区分
+        # 转写有损时一律加原名摘要:本地名只由原名决定,不随对象排列顺序变化。
+        # 此前只给后出现的撞名者加摘要,「pump-east」「pump east」调换顺序后两个 IRI 互换。
+        if lossy or not s.strip("_"):
             s = (s.rstrip("_") or "n") + "_" + hashlib.sha1(rx.encode("utf-8")).hexdigest()[:6]
             if s[0].isdigit(): s = "_" + s
+        if s in _loc_used:                                  # 极少见:摘要后仍与另一原名相同,用更长的摘要
+            s = s + "_" + hashlib.sha1(rx.encode("utf-8")).hexdigest()[6:16]
         _loc_used.add(s); _loc_of[rx] = s
         return s
     def esc(x):                                           # 转义 + C0 控制字符→\uXXXX,兼容严格 TTL 解析器(Jena 等)
@@ -4224,6 +4333,9 @@ def _ir_to_turtle(key, ir):
               if bfo_enabled else f':  a owl:Ontology ; rdfs:label "{esc(scen)}"@zh .'))
     L.append("")
     used_iris = set()
+    _field_names = collections.Counter(
+        loc(n["id"]) + "_" + str(a.get("col")) for n in g["nodes"]
+        for a in ((raw.get(str(n["id"])) or {}).get("attrs") or []) if a.get("col"))
     for n in g["nodes"]:
         cid = loc(n["id"]); up = _BFO_UP.get(n.get("bfo") or "", "")
         parts = [f':{cid} a owl:Class']
@@ -4253,14 +4365,21 @@ def _ir_to_turtle(key, ir):
         if standard_ref.get("candidate"):
             parts.append(f':standardCandidate "{esc(standard_ref.get("standard"))}::{esc(standard_ref.get("candidate"))}"')
         L.append(" ;\n    ".join(parts) + " .")
-        for a in ((raw.get(str(n["id"])) or {}).get("attrs") or [])[:60]:   # 字段级数据类型属性
+        for a in ((raw.get(str(n["id"])) or {}).get("attrs") or []):   # 字段级数据类型属性,全部导出不截断
             col = a.get("col")
             if not col: continue
-            L.append(f':{loc(cid + "_" + col)} a owl:DatatypeProperty ; rdfs:domain :{cid} ; '
+            # 「对象_列」在全图唯一时沿用;与别的对象/列拼成同一名字(plant+line_code 与 plant_line+code)时改用双下划线
+            joined = cid + "_" + col
+            field = joined if _field_names[joined] <= 1 else cid + "__" + col
+            L.append(f':{loc(field)} a owl:DatatypeProperty ; rdfs:domain :{cid} ; '
                      f'rdfs:range {xsd(a.get("type"))} ; rdfs:label "{esc(a.get("cn") or col)}"@zh .')
-    for i2, e2 in enumerate(g["edges"]):
-        # 关系 IRI 带 verb+序号,避免同一对节点的多条不同关系塌缩成一个属性(丢边)
-        rid = f'rel_{loc(e2["s"])}_{loc(e2.get("verb",""))}_{loc(e2["t"])}_{i2}'
+    _rel_seen: dict = {}
+    for e2 in g["edges"]:
+        # 关系 IRI 由 源+动词+目标 决定,只在完全相同的三元组之间编号;不用列表下标,关系调换顺序后 IRI 不变。
+        # 仍保证同一对节点的多条关系不塌缩成一个属性(丢边)
+        base = f'rel_{loc(e2["s"])}_{loc(e2.get("verb",""))}_{loc(e2["t"])}'
+        i2 = _rel_seen.get(base, 0); _rel_seen[base] = i2 + 1
+        rid = f'{base}_{i2}'
         seg = [f':{rid} a owl:ObjectProperty', f'rdfs:domain :{loc(e2["s"])}',
                f'rdfs:range :{loc(e2["t"])}', f'rdfs:label "{esc(e2.get("verb",""))}"@zh']
         grounding_iri = e2.get("grounding_iri") or ""
@@ -5125,6 +5244,9 @@ def ont_rebuild():
                     "backup": os.path.basename(discarded) if discarded else ""})
 
 
+SPARQL_ROW_LIMIT = 500
+
+
 @app.post("/api/sparql")
 def sparql():
     """原生 SPARQL:优先代理经典引擎(rdflib);未就绪时对当前 IR 做轻量三元组匹配(降级)"""
@@ -5146,22 +5268,33 @@ def sparql():
             with _RDF_LOCK:   # 串行化 SPARQL 解析+执行,规避 pyparsing 语法状态并发污染
                 qres = g.query(query)
                 if qres.type == "ASK":
-                    return "ASK", [], [], bool(qres.askAnswer)
+                    return "ASK", [], [], bool(qres.askAnswer), 1
+                # 最多返回 SPARQL_ROW_LIMIT 行,total 始终是完整结果数,超出时标记 truncated
                 if qres.type in ("CONSTRUCT", "DESCRIBE"):   # 结果是一张图:按 主/谓/宾 三列给出
-                    triples = [{"s": str(s), "p": str(p), "o": str(o)} for s, p, o in qres][:500]
-                    return qres.type, ["s", "p", "o"], triples, None
+                    triples, n = [], 0
+                    for s, p, o in qres:
+                        n += 1
+                        if n <= SPARQL_ROW_LIMIT:
+                            triples.append({"s": str(s), "p": str(p), "o": str(o)})
+                    return qres.type, ["s", "p", "o"], triples, None, n
                 vs = [str(v) for v in (qres.vars or [])]
-                return "SELECT", vs, [{v: (str(r[i]) if r[i] is not None else "") for i, v in enumerate(vs)} for r in qres][:500], None
+                rows, n = [], 0
+                for r in qres:
+                    n += 1
+                    if n <= SPARQL_ROW_LIMIT:
+                        rows.append({v: (str(r[i]) if r[i] is not None else "") for i, v in enumerate(vs)})
+                return "SELECT", vs, rows, None, n
         out, err, timed_out = _bounded_ex(_run, 8, default=None)   # 限时执行,防止病态查询占满 CPU
         if timed_out:
             return jsonify({"error": "SPARQL 执行超时(>8s):查询过重或图谱过大,请增加过滤或 LIMIT"}), 400
         if err is not None:   # 语法/语义错误——如实回报,不再伪装成超时
             return jsonify({"error": f"SPARQL 查询错误: {str(err)[:200]}"}), 400
-        kind, vars_, rows, answer = out
+        kind, vars_, rows, answer, total = out
         if kind == "ASK":
             return jsonify({"type": "ASK", "boolean": answer, "vars": ["结果"],
                             "rows": [{"结果": "是" if answer else "否"}], "total": 1, "graph": key})
-        return jsonify({"type": kind, "vars": vars_, "rows": rows, "total": len(rows), "graph": key})
+        return jsonify({"type": kind, "vars": vars_, "rows": rows, "total": total,
+                        "truncated": total > len(rows), "graph": key})
     except Exception as e:
         return jsonify({"error": f"SPARQL 失败: {str(e)[:200]}"}), 400
 
@@ -6188,7 +6321,7 @@ def _ctx_naive():
         con = ro_connect(_active_db())
         for (t,) in con.execute(
             "SELECT name FROM sqlite_master "
-            "WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+            "WHERE type='table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\' ORDER BY name"
         ):
             cols = [r[1] for r in con.execute(f'PRAGMA table_info("{t}")')][:10]
             lines.append(f"{t}({', '.join(cols)})")
@@ -6910,16 +7043,19 @@ def _decode_upload(raw):
 
 
 def _sniff_delimiter(text, default=","):
-    """分隔符:表头里出现次数最多、且前几行列数一致的那个。只在明显不是默认分隔符时才换。"""
+    """分隔符:按 CSV 规则(引号内的分隔符不算)解析前几行,列数一致且多于一列的分隔符胜出,默认分隔符优先。
+    不能只看表头里有没有默认分隔符:带引号的列名(如 "Location, City")里的逗号不是列边界。"""
     import csv as _csv, io
     lines = [ln for ln in text.splitlines()[:20] if ln.strip()]
-    if not lines or default in lines[0]:
+    if not lines:
         return default
-    for cand in (";", "\t", "|"):
-        if cand == default or cand not in lines[0]:
-            continue
+
+    def consistent(cand):
         widths = {len(r) for r in _csv.reader(io.StringIO("\n".join(lines)), delimiter=cand)}
-        if len(widths) == 1 and widths.pop() > 1:
+        return len(widths) == 1 and widths.pop() > 1
+
+    for cand in (default, ",", ";", "\t", "|"):
+        if cand in lines[0] and consistent(cand):
             return cand
     return default
 
@@ -7125,7 +7261,7 @@ def _sqlite_tables(path):
     try:
         c = sqlite3.connect(Path(path).absolute().as_uri() + "?mode=ro", uri=True)
         n = [r[0] for r in c.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\'"
         ) if r[0] not in build_prep.META_TABLES]
         c.close(); return n
     except Exception:
@@ -7139,12 +7275,13 @@ def build_sources():
     utabs = _sqlite_tables(UPLOAD_DB) if os.path.exists(UPLOAD_DB) else []
     srcs.append({"id": "uploads", "name": "上传数据库", "kind": "sqlite", "builtin": True,
                  "tables": len(utabs), "desc": "CSV/TSV 上传自动建表", "ready": bool(utabs), "table_names": utabs[:50]})
-    for c in _load_conns():
+    all_conns = _load_conns()
+    for c in all_conns:
         ready, tabs = False, 0
         if c.get("kind") == "sqlite" and c.get("path") and os.path.exists(c["path"]):
             t = _sqlite_tables(c["path"]); ready, tabs = bool(t), len(t)
         elif c.get("kind") == "api":             # API 源:已物化(up.api_*)即就绪
-            ready = _api_conn_table(c) in utabs; tabs = 1 if ready else 0
+            ready = _api_conn_table(c, all_conns) in utabs; tabs = 1 if ready else 0
         srcs.append({**_mask_conn(c), "tables": tabs, "ready": ready})   # DSN 里的残留凭据不回显
     assets = []
     for p in sorted(glob.glob(os.path.join(WORK, "uploads_*"))):
@@ -7156,6 +7293,9 @@ def build_sources():
                        "kb": round(os.path.getsize(p) / 1024, 1),
                        "usable": ext in _TEXT_EXT or ext in ("xlsx", "xls")})
     return jsonify({"sources": srcs, "assets": assets})
+
+MAX_CONNS = 30
+
 
 @app.post("/api/build/connect")
 def build_connect():
@@ -7199,7 +7339,10 @@ def build_connect():
         dup = next((c for c in conns if _same_source(c)), None)
         if dup:
             return jsonify({"ok": True, "conn": _mask_conn(dup), "deduped": True})
-        conns.insert(0, conn); _atomic_json(_BUILD_CONN_F, conns[:30])
+        # 已满时拒绝新登记,不悄悄挤掉最早的连接:已登记成功的数据源不能在下一次登记后消失
+        if len(conns) >= MAX_CONNS:
+            return jsonify({"error": f"已登记 {MAX_CONNS} 个数据源(上限),请先移除不再使用的连接"}), 409
+        conns.insert(0, conn); _atomic_json(_BUILD_CONN_F, conns)
     return jsonify({"ok": True, "conn": _mask_conn(conn)})
 
 # ── 构建前预处理(DR-060):外部库只读抽样 + 构建前检查 / 分轮计划 ──
@@ -7275,11 +7418,13 @@ def build_connect_sample():
             cl = _load_conns()
             cur = next((c for c in cl if c.get("kind") == "sqlite" and c.get("path") == out), None)
             if not cur:
+                if len(cl) >= MAX_CONNS:            # 已满:不挤掉已登记的连接,抽样库照常生成,只是不登记
+                    return None
                 cur = {"id": "conn_" + uuid.uuid4().hex[:6], "kind": "sqlite", "builtin": False, "path": out}
                 cl.insert(0, cur)
             cur.update(name=name, sampled_from=ids, sampled_at=time.strftime("%Y-%m-%d %H:%M"),
                        sample_stats={k: total[k] for k in ("tables", "rows")})
-            _atomic_json(_BUILD_CONN_F, cl[:30])
+            _atomic_json(_BUILD_CONN_F, cl)
         return cur
 
     def work(qq):
@@ -7346,6 +7491,9 @@ def build_connect_sample():
                 yield sse({"type": "error", "error": item[1]}); return
             elif kind == "done":
                 _, total, cur = item
+                if cur is None:
+                    yield sse({"type": "error", "error": f"抽样库已生成,但已登记 {MAX_CONNS} 个数据源(上限),"
+                                                         "未登记为新数据源;请先移除不再使用的连接后重试"}); return
                 yield sse({"type": "done", "conn": _mask_conn(cur), "tables": total["tables"], "rows": total["rows"],
                            "sampled_tables": len(total["sampled"]), "truncated": total["truncated"][:20],
                            "failed": total["failed"][:20]})
@@ -7360,10 +7508,26 @@ def build_connect_del():
     _save_conn_secret(cid, "", "")               # 连带清除凭据
     return jsonify({"ok": True})
 
-def _api_conn_table(conn):
-    """API 源物化目标表名:api_<连接名 slug>"""
-    slug = re.sub(r"[^a-z0-9_]+", "_", (conn.get("name") or "src").lower()).strip("_")[:24] or "src"
-    return "api_" + slug
+def _api_slug_table(conn):
+    slug = re.sub(r"[^a-z0-9_]+", "_", (conn.get("name") or "").lower()).strip("_")[:24]
+    return "api_" + slug if slug else ""
+
+
+def _api_conn_table(conn, conns=None):
+    """API 源物化目标表名,每个连接独占一张表。
+    取数时记下的表名若只属于本连接则沿用;否则用 api_<连接名 slug>,slug 为空(如中文名)或与其他
+    API 连接撞名(如 "line-a" 与 "line a")时追加连接编号的摘要,避免两个源写进同一张表。"""
+    conns = _load_conns() if conns is None else conns
+    others = [c for c in conns if c.get("kind") == "api" and c.get("id") != conn.get("id")]
+    recorded = conn.get("table")
+    if recorded and all(c.get("table") != recorded for c in others):
+        return recorded
+    base = _api_slug_table(conn)
+    claimed = {c.get("table") for c in others} | {_api_slug_table(c) for c in others}
+    if base and base not in claimed:
+        return base
+    tag = hashlib.sha1(str(conn.get("id") or "").encode()).hexdigest()[:8]
+    return f"{base or 'api_src'}_{tag}"
 
 @app.post("/api/conn/api_fetch")
 def conn_api_fetch():
@@ -7395,9 +7559,11 @@ def conn_api_fetch():
         data = [data]
     if not (isinstance(data, list) and data and all(isinstance(x, dict) for x in data[:5000])):
         return jsonify({"error": "json_path 需指向对象数组(list of objects)"}), 400
+    total_rows = len(data)
     data = data[:5000]
-    cols, source_cols, seen, used_names = [], [], set(), set()
+    cols, source_cols, seen, used_names, all_keys = [], [], set(), set(), set()
     for row in data:
+        all_keys.update(row.keys())
         for k in row.keys():
             if k not in seen and len(cols) < 40:
                 # 列名消毒后才可进 DDL:去除引号等可越出标识符边界的字符(与 CSV 上传同规则)
@@ -7437,8 +7603,12 @@ def conn_api_fetch():
         for c in conns:
             if c.get("id") == cid:
                 c["last_fetch"] = time.strftime("%Y-%m-%d %H:%M:%S"); c["last_rows"] = len(data); c["table"] = table
+                c["last_total_rows"], c["last_total_columns"] = total_rows, len(all_keys)
         _atomic_json(_BUILD_CONN_F, conns)
-    return jsonify({"ok": True, "table": "up." + table, "rows": len(data), "columns": cols})
+    # 超出 5000 行 / 40 列上限时如实报告:实际导入的范围与原始总数,不静默截断
+    truncated = total_rows > len(data) or len(all_keys) > len(cols)
+    return jsonify({"ok": True, "table": "up." + table, "rows": len(data), "columns": cols,
+                    "total_rows": total_rows, "total_columns": len(all_keys), "truncated": truncated})
 
 @app.get("/api/build/skills")
 def build_skills():
@@ -8114,7 +8284,7 @@ def _gather_evidence(db, cap_tabs=400, cap_docs=40, query="", focus=None):
         c = sqlite3.connect(Path(db).absolute().as_uri() + "?mode=ro", uri=True)
         tabs = [r[0] for r in c.execute(
             "SELECT name FROM sqlite_master "
-            "WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+            "WHERE type='table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\' ORDER BY name"
         )][:5000]
         if "_dm_tables" in tabs:
             dm_tables = {t: cm for t, cm in c.execute("SELECT table_name, comment FROM _dm_tables")}
@@ -10884,9 +11054,15 @@ def _jsonable_rows(cols, rows):
     """外部驱动返回 Decimal/datetime/bytes → JSON 可序列化(其余转为 str)"""
     import decimal, datetime as _dt
     def cv(v):
-        if isinstance(v, decimal.Decimal): return float(v)
+        if isinstance(v, decimal.Decimal):
+            # 定点数:float 能精确表示时保留数值,否则给出原样的十进制字符串,不丢精度
+            f = float(v)
+            return f if v.is_finite() and decimal.Decimal(repr(f)) == v else str(v)
+        if isinstance(v, int): return _json_safe_int(v)
         if isinstance(v, (_dt.date, _dt.datetime, _dt.time)): return str(v)
-        if isinstance(v, (bytes, bytearray)): return v.decode("utf-8", "replace")
+        if isinstance(v, (bytes, bytearray, memoryview)):
+            # 二进制按十六进制给出:稳定、可区分,不按文本解码成乱码
+            return "0x" + bytes(v).hex()
         return v
     return [{c: cv(r[i]) for i, c in enumerate(cols)} for r in rows]
 
@@ -10909,7 +11085,34 @@ def _single_statement(sql):
     parts = code.split(";")
     return bool(parts[0].strip()) and (len(parts) == 1 or (len(parts) == 2 and not parts[1].strip()))
 
+def _note_conn_status(conn, ok, engine=""):
+    """记下外部连接最近一次实连的结果:列表据此区分「已登记未验证」「已连通」「连接失败」。
+    只在状态变化时写盘,避免每次查询都改连接清单。"""
+    status = "ok" if ok else "failed"
+    with _WRITE_LOCK:
+        conns = _load_conns()
+        c = next((x for x in conns if x.get("id") == conn.get("id")), None)
+        if c is None or (c.get("live_status") == status and (not engine or c.get("engine") == engine)):
+            return
+        c["live_status"], c["live_checked_at"] = status, time.strftime("%Y-%m-%d %H:%M:%S")
+        if engine: c["engine"] = engine
+        _atomic_json(_BUILD_CONN_F, conns)
+
+
 def _ext_query(conn, sql, limit=500):
+    """外部库真查询并记录连通状态,见 _ext_query_raw。"""
+    try:
+        out = _ext_query_raw(conn, sql, limit)
+    except ValueError:
+        raise                                    # 只读、单语句等前置校验失败,不代表连接状态
+    except Exception:
+        _note_conn_status(conn, False)
+        raise
+    _note_conn_status(conn, True, out.get("engine") or "")
+    return out
+
+
+def _ext_query_raw(conn, sql, limit=500):
     """外部库真查询:只读放行 SELECT/WITH;驱动未装/不可达给明确报错(不静默)。→ {columns, rows}"""
     if not sql_is_readonly(sql): raise ValueError("仅允许只读 SELECT/WITH 查询")
     if not _single_statement(sql): raise ValueError("仅允许单条查询语句(检测到堆叠 SQL)")
@@ -10928,8 +11131,10 @@ def _ext_query(conn, sql, limit=500):
         try:
             cur = con.cursor()
             cur.execute(sql)
-            cols = [d[0] for d in cur.description or []]
-            return {"columns": cols, "rows": _jsonable_rows(cols, cur.fetchmany(limit))}
+            cols = _result_columns(cur.description)
+            fetched = cur.fetchmany(limit)
+            more = len(fetched) == limit and cur.fetchone() is not None
+            return {"columns": cols, "rows": _jsonable_rows(cols, fetched), **({"truncated": True} if more else {})}
         finally:
             con.close()
     if kind == "postgres":
@@ -10941,12 +11146,18 @@ def _ext_query(conn, sql, limit=500):
             con.set_session(readonly=True)       # 会话级只读,双保险
             cur = con.cursor()
             cur.execute(sql)
-            cols = [d[0] for d in cur.description or []]
-            return {"columns": cols, "rows": _jsonable_rows(cols, cur.fetchmany(limit))}
+            cols = _result_columns(cur.description)
+            fetched = cur.fetchmany(limit)
+            more = len(fetched) == limit and cur.fetchone() is not None
+            return {"columns": cols, "rows": _jsonable_rows(cols, fetched), **({"truncated": True} if more else {})}
         finally:
             con.close()
-    if kind == "hive":
-        raise RuntimeError("Hive 实连需 pyhive/thrift 与内网通道,当前经 hive-client 命令行侧通;HTTP 取数暂未接")
+    if kind == "hive":                           # HiveServer2(Hive 或 Spark Thrift Server)经 JDBC 桥接(DR-163)
+        import hive_bridge
+        out = hive_bridge.query(conn.get("dsn") or "", sec.get("user") or u["user"] or "", pwd, sql, limit=limit)
+        cols = out["columns"]
+        rows = [{c: _json_safe_int(r[i]) for i, c in enumerate(cols)} for r in out["rows"]]
+        return {"columns": cols, "rows": rows, "truncated": out["truncated"], "engine": out["engine"]}
     raise RuntimeError(f"不支持的连接类型: {kind}")
 
 def _ext_tables(conn):
@@ -10963,6 +11174,17 @@ def _ext_tables(conn):
                              "(SELECT COUNT(*) FROM information_schema.columns c WHERE c.table_name=s.relname) AS cols_ "
                              "FROM pg_stat_user_tables s ORDER BY 1", limit=500)
         return [{"name": r["name"], "rows": int(r["rows_"] or 0), "cols": int(r["cols_"] or 0)} for r in d["rows"]]
+    if kind == "hive":                           # 只读 JDBC 元数据,不提交查询作业;行数未知时为 None
+        import hive_bridge
+        u, sec = _parse_dsn(conn.get("dsn")), _conn_secret(conn.get("id"))
+        try:
+            out = hive_bridge.tables(conn.get("dsn") or "", sec.get("user") or u["user"] or "",
+                                     sec.get("password") or u["password"] or "")
+        except Exception:
+            _note_conn_status(conn, False)
+            raise
+        _note_conn_status(conn, True)
+        return out
     raise RuntimeError(f"该类型不支持表清单: {kind}")
 
 def _find_conn(src):
@@ -10997,11 +11219,11 @@ def conn_tables():
         c = ro_connect(db)
         for (t,) in c.execute(
             "SELECT name FROM sqlite_master "
-            "WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+            "WHERE type='table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\' ORDER BY name"
         ):
-            try: n = c.execute(f'SELECT COUNT(*) FROM "{t}"').fetchone()[0]
+            try: n = c.execute(f'SELECT COUNT(*) FROM {_quote_ident(t)}').fetchone()[0]
             except Exception: n = 0
-            try: cols = len(c.execute(f'PRAGMA table_info("{t}")').fetchall())
+            try: cols = sum(1 for r in c.execute(f'PRAGMA table_xinfo({_quote_ident(t)})') if r[6] in (0, 2, 3))
             except Exception: cols = 0
             out.append({"name": t, "rows": n, "cols": cols})
         c.close()
@@ -11013,23 +11235,28 @@ def conn_tables():
 def conn_preview():
     """预览某数据源某表前 100 行"""
     src = request.args.get("src") or (_active_source() or {}).get("id") or "demo"; table = request.args.get("table", "")
-    # 表名进的是标识符位,只能白名单;长度也限住,避免超长串灌进外部库
-    if not re.match(r"^[A-Za-z0-9_]{1,64}$", table): return jsonify({"error": "非法表名"}), 400
     db, nm = _resolve_src(src)
     if not db:
         conn = _find_conn(src)
         if conn and conn.get("kind") not in ("sqlite", "api"):    # C7 外部库:真连预览
+            # 外部库的表名进标识符位,只能白名单;长度也限住,避免超长串灌进外部库
+            if not re.match(r"^[A-Za-z0-9_]{1,64}$", table): return jsonify({"error": "非法表名"}), 400
             try:
                 # 按方言加标识符引号(MySQL/Doris 用反引号——默认配置下双引号是字符串字面量,
                 # 一律用 " 会让预览直接语法错)。表名已过 ^[A-Za-z0-9_]{1,64}$,引号内不可能出现
                 # 引号字符,故这里是纯粹的边界加固,不引入新的转义问题。
-                qt = "`" if _ext_kind(conn) in ("mysql", "doris") else '"'
+                qt = "`" if _ext_kind(conn) in ("mysql", "doris", "hive") else '"'
                 return jsonify({"live": True, **_ext_query(conn, f"SELECT * FROM {qt}{table}{qt} LIMIT 100", limit=100)})
             except Exception as e:
                 return jsonify({"error": f"外部库预览失败:{str(e)[:140]}"})
         return jsonify({"error": f"「{nm}」不可预览(外部库离线)"})
+    # SQLite:表名可以是中文、带空格或引号,只要库里确有此表即可,SQL 中按规范加引号
     try:
-        return jsonify(q(f'SELECT * FROM "{table}" LIMIT 100', db=db))
+        con = ro_connect(db)
+        try: real = _sqlite_table(con, table)
+        finally: con.close()
+        if not real: return _missing_table(table)
+        return jsonify(q(f'SELECT * FROM {_quote_ident(real)} LIMIT 100', db=db))
     except Exception as e:
         return jsonify({"error": str(e)[:120]})
 
@@ -11074,6 +11301,9 @@ def viz_delete():
         _atomic_json(_VIZ_BOARDS_F, [b for b in _load_boards() if b.get("id") != bid])
     return jsonify({"ok": True})
 
+MAX_BOARDS = 50
+
+
 @app.post("/api/viz/save")
 def viz_save():
     """保存/更新数据看板(一组图表卡片规格)"""
@@ -11082,11 +11312,16 @@ def viz_save():
     charts = body.get("charts") or []
     if not name: return jsonify({"error": "需要看板名称"}), 400
     if not isinstance(charts, list) or not charts: return jsonify({"error": "看板至少含一张图表"}), 400
+    if len(charts) > 24: return jsonify({"error": "每个看板最多可保存 24 张图表"}), 400
     bid = body.get("id") or ("board_" + uuid.uuid4().hex[:6])
-    board = {"id": bid, "name": name, "charts": charts[:24], "ts": time.strftime("%Y-%m-%d %H:%M:%S")}
+    board = {"id": bid, "name": name, "charts": charts, "ts": time.strftime("%Y-%m-%d %H:%M:%S")}
     with _WRITE_LOCK:
-        boards = [b for b in _load_boards() if b.get("id") != bid]
-        boards.insert(0, board); _atomic_json(_VIZ_BOARDS_F, boards[:50])
+        existing = _load_boards()
+        boards = [b for b in existing if b.get("id") != bid]
+        # 新看板在已满时拒绝,不悄悄删掉最早的看板;更新已有看板不受上限影响
+        if len(boards) == len(existing) and len(existing) >= MAX_BOARDS:
+            return jsonify({"error": f"已保存 {MAX_BOARDS} 个看板(上限),请先删除不再使用的看板"}), 409
+        boards.insert(0, board); _atomic_json(_VIZ_BOARDS_F, boards)
     return jsonify({"ok": True, "id": bid})
 
 # ── 指标契约 blueprint(DR-054):契约查看 / 人工确认计算规则 / 重跑核验 / 维度可达性 ──

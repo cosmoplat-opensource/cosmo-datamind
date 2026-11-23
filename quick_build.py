@@ -147,7 +147,7 @@ def _build(db, out, name, action_types=None, tables=None, source=None):
         r[0]
         for r in con.execute(
             "SELECT name FROM sqlite_master "
-            "WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+            "WHERE type='table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\' ORDER BY name"
         )
     ]
     # 只读抽样写入的库表 / 字段注释是元数据,不是业务实体

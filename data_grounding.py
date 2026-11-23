@@ -53,7 +53,7 @@ def _untimed(con):
 
 def profile_db(con: sqlite3.Connection, tables: list[str] | None = None) -> dict:
     names = tables or [r[0] for r in con.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")]
+        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\' ORDER BY name")]
     out = {}
     for t in names:
         try:
@@ -130,7 +130,7 @@ def _evidence_part(item: str) -> tuple[str, str]:
 def _columns_index(con: sqlite3.Connection) -> dict:
     """column name (lower) -> [(table, real column name)]"""
     idx: dict = {}
-    for (t,) in con.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"):
+    for (t,) in con.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\'"):
         for r in con.execute(f"PRAGMA table_info({_q(t)})"):
             idx.setdefault(r[1].lower(), []).append((t, r[1]))
     return idx

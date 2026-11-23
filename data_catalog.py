@@ -21,7 +21,7 @@ def qi(name):
 
 def schema(con):
     return {t: [(r[1], r[2]) for r in con.execute(f"PRAGMA table_info({qi(t)})")]
-            for (t,) in con.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")}
+            for (t,) in con.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\'")}
 
 
 def doc_dictionary(con: sqlite3.Connection) -> dict:

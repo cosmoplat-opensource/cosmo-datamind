@@ -12,7 +12,19 @@ function appRequestOptions(url, options) {
   }
   return out;
 }
-function appFetch(url, options) { return fetch(url, appRequestOptions(url, options)); }
+/* 页面卸载(刷新、后退)时中止仍在进行的请求:中止是可捕获的 AbortError;否则 WebKit 会把被打断的请求
+   报成未捕获的“access control checks”错误。自带 signal 的请求(如流式问数)沿用调用方的中止逻辑。 */
+const APP_CAN_ABORT = typeof AbortController === 'function' && typeof addEventListener === 'function';   // 无此 API 的环境(如脚本测试沙箱)照常请求
+let APP_UNLOAD = APP_CAN_ABORT ? new AbortController() : null;
+if (APP_CAN_ABORT) {
+  addEventListener('pagehide', () => APP_UNLOAD.abort());
+  addEventListener('pageshow', () => { if (APP_UNLOAD.signal.aborted) APP_UNLOAD = new AbortController(); });   // 从往返缓存恢复后重新可用
+}
+function appFetch(url, options) {
+  const opts = appRequestOptions(url, options);
+  if (APP_UNLOAD && !opts.signal) opts.signal = APP_UNLOAD.signal;
+  return fetch(url, opts);
+}
 
 function appGraphInitialLayout(graph) {
   const select=document.getElementById('g_layout');
@@ -76,7 +88,7 @@ async function appSourceInit() {
     if (context.error) throw new Error(context.error);
     window.APP_DATA.context = context;
     window.APP_DATA.ready = true;
-    select.innerHTML = ready.map(s => `<option value="${esc(s.id)}">${esc(s.name)} · ${s.tables} 表</option>`).join('');
+    select.innerHTML = ready.map(s => `<option value="${esc(s.id)}">${esc(sourceLabel(s, ready))} · ${s.tables} 表</option>`).join('');
     select.value = source.id; select.disabled = false; select.title = source.name;
     status.textContent = `${context.tables} 表 · ${context.graphs.length} 个本体`;
     if (wanted && wanted !== source.id) {
@@ -143,4 +155,14 @@ function appMetricChart(el, data) {
     xAxis:{type:'category',data:rows.map(r=>r[time]),...AX},yAxis:{type:'value',...AX},
     series:[{name:data.metric,type:'line',data:rows.map(r=>r[data.metric]),itemStyle:{color:'#4A5FF3'}}]});
 }
-Object.assign(window, {appSourceId, appSourceStorageKey, appRequestOptions, appFetch, appSourceChange, appSourceInit});
+/* 数据源下拉项的显示名:与列表里其他数据源重名时附上文件名(仍相同则附连接编号),
+   否则两个同名数据库在下拉框里无法区分,选中的未必是想要的那个(DR-161)。 */
+function sourceLabel(s, all) {
+  const name = String(s.name || s.id || '');
+  const peers = (all || []).filter(x => x !== s && String(x.name || x.id || '') === name);
+  if (!peers.length) return name;
+  const base = x => String(x.path || '').split(/[\\/]/).pop();
+  const hint = base(s) && !peers.some(x => base(x) === base(s)) ? base(s) : s.id;
+  return `${name}（${hint}）`;
+}
+Object.assign(window, {sourceLabel, appSourceId, appSourceStorageKey, appRequestOptions, appFetch, appSourceChange, appSourceInit});

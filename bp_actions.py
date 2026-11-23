@@ -152,7 +152,24 @@ def _store(item):
                 break
         else:
             log.insert(0, item)
-        _atomic_json(ACTION_LOG_F, log[:1000])
+        _atomic_json(ACTION_LOG_F, _retain(log))
+
+
+ACTION_LOG_LIMIT = 1000                 # 已了结记录的保留上限;未了结的记录不因日志变长而被删除
+UNRESOLVED = ("pending", "executing")
+
+
+def _retain(log):
+    """保留全部未了结记录(待审批、执行中),其余按新旧顺序填满到上限,删去最早的已了结记录。"""
+    room = max(ACTION_LOG_LIMIT - sum(1 for e in log if e.get("status") in UNRESOLVED), 0)
+    kept = []
+    for entry in log:
+        if entry.get("status") in UNRESOLVED:
+            kept.append(entry)
+        elif room:
+            kept.append(entry)
+            room -= 1
+    return kept
 
 
 def _reconcile(log):
@@ -412,7 +429,16 @@ def _recorded_effects(action_type):
 
 @bp_actions.get("/api/action/log")
 def action_log():
-    return jsonify({"items": [item for item in _load_reconciled() if _scope_matches(item)][:200]})
+    # 最近 200 条之外的待审批记录仍要能处理:全部未了结记录都返回,已了结的只返回最近 200 条
+    items, shown = [], 0
+    log = [item for item in _load_reconciled() if _scope_matches(item)]
+    for item in log:
+        if item.get("status") in UNRESOLVED:
+            items.append(item)
+        elif shown < 200:
+            items.append(item)
+            shown += 1
+    return jsonify({"items": items, "total": len(log), "truncated": len(items) < len(log)})
 
 
 @bp_actions.post("/api/action/approve")
