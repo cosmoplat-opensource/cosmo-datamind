@@ -4247,6 +4247,72 @@
       ]
     },
     {
+      "id": "DISC-SCHEMA-01",
+      "criterion": "普通业务表 sqliteLedger 在单表库可登记，在双表库的目录、连接清单和构建预检中可见，与直接 SQL 和图表查询一致。SQLite 自建的 sqlite_sequence 仍从业务清单排除。",
+      "tests": [
+        "tests/unit/test_business_name_discovery.py::test_single_business_table_can_register",
+        "tests/unit/test_business_name_discovery.py::test_business_table_stays_discoverable_beside_control"
+      ]
+    },
+    {
+      "id": "DISC-IMPORT-01",
+      "criterion": "上传逗号、分号或竖线分隔文件后，带引号的表头和单元格内的逗号不改变实际列边界，SQL 可读取保留下来的两列和原始值。",
+      "tests": ["tests/unit/test_business_name_discovery.py::test_delimited_upload_preserves_column_boundaries"]
+    },
+    {
+      "id": "DISC-EDIT-01",
+      "criterion": "两个对象共用业务别名时，以此别名编辑须消歧，两个对象的别名均可原样回读。以唯一 ID 编辑仅更新所指对象，与对象排列顺序无关。",
+      "tests": ["tests/unit/test_business_name_discovery.py::test_alias_edit_never_guesses_between_shared_names"]
+    },
+    {
+      "id": "DISC-ALIAS-01",
+      "criterion": "通过文本输入多个中文业务别名时，逗号、顿号和全角分号分隔的别名可独立回读与检索。",
+      "tests": ["tests/unit/test_business_name_discovery.py::test_aliases_entered_as_business_text_remain_separately_searchable"]
+    },
+    {
+      "id": "DISC-PROFILE-01",
+      "criterion": "用完整且唯一的中文业务名查询对象画像时，单字名与多字名均可命中对应对象。",
+      "tests": ["tests/unit/test_business_name_discovery.py::test_exact_business_label_finds_its_profile"]
+    },
+    {
+      "id": "DISC-OBJECT-01",
+      "criterion": "从图谱公开节点 ID 打开对象详情，即使另一个对象使用相同文本作名称，也须返回所选节点的 ID 与中文名。",
+      "tests": ["tests/unit/test_business_name_discovery.py::test_object_detail_resolves_selected_node_id"]
+    },
+    {
+      "id": "DISC-METRIC-01",
+      "criterion": "按指标 ID 请求契约或变更状态时返回对应指标，若与名称冲突也可明确提示消歧并保留原状态。用户点选同名指标中的一行时，血缘和持久化的停用操作均落到所选行。",
+      "tests": [
+        "tests/unit/test_business_name_discovery.py::test_metric_id_selects_the_same_contract_and_persisted_status",
+        "tests/frontend/business_name_browser.py::test_metric_lineage_follows_clicked_row"
+      ]
+    },
+    {
+      "id": "DISC-QA-01",
+      "criterion": "无模型时对已绑定且唯一、明确点名的中文物理表询问记录总数，同步和流式入口均可核对同一源表的 COUNT 结果与锚定表名。",
+      "tests": ["tests/unit/test_business_name_discovery.py::test_offline_count_follows_explicit_business_table"]
+    },
+    {
+      "id": "DISC-PAGE-01",
+      "criterion": "在 320 与 1440 CSS 像素宽的窗口中，各页面原生可见表单控件提供可访问名称，页面整体无需横向滚动。",
+      "tests": ["tests/frontend/business_name_browser.py::test_page_forms_are_named_and_fit_viewport"]
+    },
+    {
+      "id": "DISC-EXPORT-01",
+      "criterion": "同一图谱中业务对象和关系的标识保持稳定。仅交换对象或关系列表顺序，重新解析 Turtle、JSON-LD、OWL 后，每个相同概念或关系仍有原来的 IRI。",
+      "tests": ["tests/unit/test_business_name_discovery.py::test_rdf_terms_keep_identity_after_reordering"]
+    },
+    {
+      "id": "DISC-SOURCE-01",
+      "criterion": "两个真实且内容不同的连接登记为同名时，全局数据库、SQL 工作台和图表的源选择器提供可辨识的信息。",
+      "tests": ["tests/frontend/business_name_browser.py::test_distinct_sources_can_be_identified_in_picker"]
+    },
+    {
+      "id": "DISC-BOARD-01",
+      "criterion": "两个同名看板按各自 ID 保存和回读，更新第二块看板的 SQL 和卡片后，第一块保留原结果定义。",
+      "tests": ["tests/unit/test_business_name_discovery.py::test_same_name_boards_reopen_with_independent_cards"]
+    },
+    {
       "id": "FID-CATALOG-01",
       "criterion": "已登记库的两份表清单须与实际行列数一致，列出的中文表名、带空格表名可用原名打开详情和预览。",
       "tests": [

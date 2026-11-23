@@ -166,6 +166,7 @@ def main():
                                   env, reports, results)
                     if args.suite in ("ui", "all"):
                         for name, file in (("result-scope-browser", "result_scope_browser.py"),
+                                           ("business-name-browser", "business_name_browser.py"),
                                            ("state-transition-browser", "state_transition_browser.py"),
                                            ("navigation-browser", "navigation_transitions.py"),
                                            ("representation-browser", "representation_fidelity_browser.py"),
