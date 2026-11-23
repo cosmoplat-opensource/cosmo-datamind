@@ -74,3 +74,30 @@ python -m pytest tests/frontend/robotics-task-browser.py -k 'unused_profile_is_p
 ```
 
 服务重载记录、隔离任务副本的运行结果及 HTTP 核对结果只保留本地；不将用户任务数据、运行目录或模型配置发布到仓库。
+
+## CI 生成重试响应等待修正
+
+验证基于 `5cf8e73c5308039a5e90056ee69edbb95db7e632` 与本次差异；复现前记录版本并保存 `git diff --cached`，环境为 Python 3.10.12、仓库固定开发及 UI 依赖、Playwright Chromium 与可用 Node。
+CI 中任务浏览器阶段在 600 秒期限内执行结束，但重试生成的响应等待误用普通控件的 3500 毫秒默认值，先于产品的 30 秒请求期限失败。
+仅将该生成响应的测试等待明确为 30 秒，不修改产品期限、普通控件等待、生成逻辑或全局检查预算。
+新增浏览器传输延迟 4 秒的参数场景，仍请求真实服务并校验原始生成响应与下载 XML，不合成成功响应；结束后恢复网络条件。
+保留正常重试与响应丢失后重试的原用例、请求编号、修订号、固定版本、模型调用数量及独立 XML 标准答案断言。
+
+- 新增慢响应场景在修复前以相同的 `Timeout 3500ms` 失败；修复后正常、慢响应和超时后重试 3 项通过（51.392 秒），慢响应首字节等待实测 4000.382 毫秒。
+- 相关生成反馈、任务控制器、离线恢复、配置范围及规约检查 136 项通过（93.360 秒），无失败、错误或跳过。
+- 完整任务浏览器 27 项通过，检查进程耗时 348.826 秒，27 份交互证据均完成断言；原有 26 项保留并新增 1 项慢响应场景。
+- 规约更新后 95 项复核通过（9.912 秒，与相关组中的规约用例重叠，不重复累计）；全仓 lint、涉及文件的类型检查及差异空白检查通过。
+
+复现使用隔离的合成资产与模型响应，不连接真实模型或机械臂；本轮不声明远端 CI 或全量回归通过。
+
+```bash
+python tests/frontend/robotics-task-browser.py --case unused_profile_is_preserved
+python tests/frontend/robotics-task-browser.py
+python -m pytest tests/unit/test_robotics_task_generation_feedback.py tests/unit/test_robotics_task_ui.py tests/unit/test_robotics_offline_ui.py tests/unit/test_robotics_task_scope.py tests/meta -q
+python -m ruff check .
+python -m mypy tests/frontend/robotics-task-browser.py --no-error-summary
+git diff --check
+```
+
+完整任务浏览器通过 `scripts.check.isolated_env` 和 `run_check` 执行，使用现有的 600 秒阶段上限。
+逐次日志、截图、网络时间和候选差异仅保留本地或 CI。

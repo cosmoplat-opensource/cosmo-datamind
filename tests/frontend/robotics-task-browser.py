@@ -519,8 +519,12 @@ def test_unknown_configuration_can_be_created_inline_without_user_iri(live):
     done(site)
 
 
-@pytest.mark.parametrize('timeout_retry', [False, True])
-def test_unused_profile_is_preserved_and_task_errors_retry_current_selection(live, timeout_retry):
+@pytest.mark.parametrize('timeout_retry,response_latency_ms', [
+    pytest.param(False, 0, id='False'),
+    pytest.param(False, 4000, id='delayed-response'),
+    pytest.param(True, 0, id='True'),
+])
+def test_unused_profile_is_preserved_and_task_errors_retry_current_selection(live, timeout_retry, response_latency_ms):
     """DR-170: ignored drafts stay intact; old errors retry without a modelling detour."""
     from rdflib import RDFS, Literal
     site, page, calls = live
@@ -582,10 +586,31 @@ def test_unused_profile_is_preserved_and_task_errors_retry_current_selection(liv
         expect(panel.get_by_role('alert')).to_contain_text('请求超时')
         expect(panel.get_by_role('button', name='按当前配置重试生成', exact=True)).to_be_enabled()
         page.unroute('**/api/robotics/tasks/*/generate', lose_generation_reply)
-    with page.expect_response(lambda r: r.request.method == 'POST' and r.url.endswith('/generate')) as retry:
-        panel.get_by_role('button', name='按当前配置重试生成', exact=True).click()
+    network = None
+    if response_latency_ms:
+        # Keep the actual generation HTTP and payload; only throttle Chromium's transport.
+        network = page.context.new_cdp_session(page)
+        network.send('Network.enable')
+        network.send('Network.emulateNetworkConditions', {
+            'offline': False, 'latency': response_latency_ms,
+            'downloadThroughput': -1, 'uploadThroughput': -1,
+        })
+    try:
+        # Generation has the same 30-second request deadline as completion, not the UI action timeout.
+        with page.expect_response(lambda r: r.request.method == 'POST' and r.url.endswith('/generate'), timeout=30000) as retry:
+            panel.get_by_role('button', name='按当前配置重试生成', exact=True).click()
+    finally:
+        if network:
+            network.send('Network.emulateNetworkConditions', {
+                'offline': False, 'latency': 0, 'downloadThroughput': -1, 'uploadThroughput': -1,
+            })
+            network.detach()
     assert retry.value.status == 200
     restored = retry.value.json()
+    if response_latency_ms:
+        response_start = retry.value.request.timing['responseStart']
+        assert response_start > 3500, 'the real response must exceed the former UI action deadline'
+        site.evidence['generation_response_start_ms'] = response_start
     assert restored['status'] == 'generated' and restored['version_id'] == current['version_id']
     if timeout_retry:
         assert retry.value.request.post_data_json == held[0][0]
