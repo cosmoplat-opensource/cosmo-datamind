@@ -219,10 +219,14 @@ def init_app(app, runtime):
             from ontology_assets.interactive_ontology_graph_view import project_version
             from ontology_assets.robotics_application import ApplicationAssets, is_application
             from ontology_assets.robotics_offline import OfflineAssets
-            reader = (ApplicationAssets(runtime.root) if is_application(version) else DesignAssets(runtime.root)
-                      if version['metadata'].get('design_contract') else OfflineAssets(runtime.root))
+            if is_application(version):
+                read_payload = ApplicationAssets(runtime.root).payload
+            elif version['metadata'].get('design_contract'):
+                read_payload = DesignAssets(runtime.root).payload
+            else:
+                read_payload = OfflineAssets(runtime.root).graph_payload
             try:
-                document = project_version(version, reader.payload(ontology_id, version_id))
+                document = project_version(version, read_payload(ontology_id, version_id))
             except (ValueError, OSError) as exc:
                 raise BuildRequestError('artifact_integrity', '固定版本或来源工件缺失、损坏或规模不受支持。', 409) from exc
             return response({**document, 'ontology_id': ontology_id, 'version_id': version_id, 'view': view,

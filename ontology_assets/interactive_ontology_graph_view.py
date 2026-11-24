@@ -14,6 +14,10 @@ from domains.robotics.modeling._schema import validate_namespace
 from .payloads import robotics_version_mode
 
 
+MAX_INPUT_TRIPLES = 200_000
+MAX_TYPED_SUBJECTS = 20_000
+
+
 def _id(term):
     return '_:' + str(term) if isinstance(term, BNode) else str(term)
 
@@ -76,10 +80,10 @@ def project_version(version, payload):
 
 def _project(source, context, name):
     # Bound work before canonicalization, whose blank-node processing can be expensive.
-    if len(source) > 200000:
+    if len(source) > MAX_INPUT_TRIPLES:
         raise ValueError('本体规模超过视图上限。')
     named = {s for s, p, o in source if p == RDF.type and isinstance(s, URIRef)}
-    if len(named) > 20000:
+    if len(named) > MAX_TYPED_SUBJECTS:
         raise ValueError('本体实体规模超过视图上限。')
     graph = to_canonical_graph(source)
     nodes, properties, individuals, edges, relations = {}, {}, {}, {}, {}
