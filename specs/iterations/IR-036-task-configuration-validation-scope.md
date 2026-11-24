@@ -1,6 +1,6 @@
 # IR-036 · 最终任务配置校验
 
-状态：delivered。关联：[DR-170](../decisions/DR-170-task-configuration-validation-scope.md)。
+状态：delivered。关联：[DR-175](../decisions/DR-175-task-configuration-validation-scope.md)。
 
 ## 任务与验收
 

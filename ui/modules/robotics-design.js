@@ -1,4 +1,4 @@
-/* Persistent design interaction and immutable history — DR-152 / DR-166. */
+/* Persistent design interaction and immutable history — DR-152 / DR-171. */
 (function(g){'use strict';
 const clone=x=>JSON.parse(JSON.stringify(x)),prefix='/api/robotics/design-sessions/',active=s=>['queued','running'].includes(s?.status);
 const read=(fetch,url,options)=>g.RoboticsAssets.readJSON(fetch,url,options);

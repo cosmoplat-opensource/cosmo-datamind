@@ -1,6 +1,6 @@
 # IR-040 · 公开验证记录的材料边界
 
-状态：delivered。关联 [DR-174](../decisions/DR-174-public-verification-records.md) 和 [SPEC-MATERIAL-01](../acceptance.json)。
+状态：delivered。关联 [DR-179](../decisions/DR-179-public-verification-records.md) 和 [SPEC-MATERIAL-01](../acceptance.json)。
 
 ## 验收
 

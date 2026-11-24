@@ -1,6 +1,6 @@
 # IR-034 · 任务补齐反馈与完善方式说明
 
-状态：delivered。关联：[DR-168](../decisions/DR-168-task-completion-feedback.md)。
+状态：delivered。关联：[DR-173](../decisions/DR-173-task-completion-feedback.md)。
 
 ## 目标与任务
 
@@ -45,4 +45,4 @@ python scripts/scenario_bench.py
 
 ## 后续入口修订
 
-2026-11-20：维护者要求移除其它完善方式。TCF-01 当前范围及映射转由 [IR-035](IR-035-single-repair-entry-and-generation-feedback.md) 和 [DR-169](../decisions/DR-169-single-repair-entry-and-generation-feedback.md) 记录；本轮入口说明仅为历史结果，保存反馈 TCF-02 保持。
+2026-11-20：维护者要求移除其它完善方式。TCF-01 当前范围及映射转由 [IR-035](IR-035-single-repair-entry-and-generation-feedback.md) 和 [DR-174](../decisions/DR-174-single-repair-entry-and-generation-feedback.md) 记录；本轮入口说明仅为历史结果，保存反馈 TCF-02 保持。

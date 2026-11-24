@@ -1,4 +1,4 @@
-"""Inspect incomplete candidates and apply only task-scoped answers — DR-143 / DR-148 / DR-168 / DR-170.
+"""Inspect incomplete candidates and apply only task-scoped answers — DR-143 / DR-148 / DR-173 / DR-175.
 
 Inspection tolerates missing editable knowledge, never damaged executable semantics.
 Strict consumption still uses the unmodified consumer/SHACL contract.
@@ -25,7 +25,7 @@ def inspect_structure(graph, mode):
     for implementation in (S.grasp_Subtree_Impl, S.Place_Subtree_Impl):
         if (implementation, RDF.type, S.SkillImplementation) not in graph:
             raise ValueError('缺少当前模板的技能实现声明。')
-    # DR-170: admission checks executable structure before the task has chosen profiles.
+    # DR-175: admission checks executable structure before the task has chosen profiles.
     conforms, report, detail = graph_validation(graph, configuration_focus={})
     if not conforms:
         repairable = {S[name] for name in ('objectName', 'modelName', 'threshold', 'exposureTime',

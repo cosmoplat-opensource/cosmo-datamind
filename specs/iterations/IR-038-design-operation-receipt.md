@@ -1,6 +1,6 @@
 # IR-038 · 图谱故障时的设计操作回执
 
-状态：delivered。关联 [DR-172](../decisions/DR-172-design-operation-receipt.md) 和 DESIGN-RECEIPT-01。
+状态：delivered。关联 [DR-177](../decisions/DR-177-design-operation-receipt.md) 和 DESIGN-RECEIPT-01。
 
 ## 验收
 

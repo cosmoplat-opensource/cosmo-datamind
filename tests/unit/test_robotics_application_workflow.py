@@ -194,7 +194,7 @@ def test_existing_legacy_demo_rejects_real_task_without_model_calls(tmp_path):
 
 
 def test_application_task_switch_back_keeps_unfinished_draft_and_synchronized_bundle(tmp_path):
-    """DR-170: scope also applies to application-origin immutable JSON/OWL versions."""
+    """DR-175: scope also applies to application-origin immutable JSON/OWL versions."""
     service(tmp_path); _, _, completed = adapted(tmp_path)
     initial, transport = fill_task(tmp_path, completed['output_asset_ref'])
     original_profile = next(c['profile_iri'] for c in initial['configurations'] if c['field'] == 'hasPerceptionProfile')

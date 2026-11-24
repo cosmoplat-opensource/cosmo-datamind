@@ -1,4 +1,4 @@
-"""Load and revalidate a self-contained OWL snapshot — DR-142 / DR-147 / DR-169 / DR-170.
+"""Load and revalidate a self-contained OWL snapshot — DR-142 / DR-147 / DR-174 / DR-175.
 
 Publication validity does not confirm business mappings or execution readiness.
 """

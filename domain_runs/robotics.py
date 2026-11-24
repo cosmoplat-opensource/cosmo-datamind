@@ -1,4 +1,4 @@
-"""Generate from a pinned published asset and commit durable outputs — DR-144 / DR-146 / DR-147 / DR-170."""
+"""Generate from a pinned published asset and commit durable outputs — DR-144 / DR-146 / DR-147 / DR-175."""
 from pathlib import Path
 import tempfile
 

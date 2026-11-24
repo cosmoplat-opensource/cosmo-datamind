@@ -1,4 +1,4 @@
-/* Shared read-only revision and expansion controller — DR-161 §§4–9. */
+/* Shared read-only revision and expansion controller — DR-166 §§4–9. */
 import {GraphView} from './graph.js';
 import {GraphState} from './model.js';
 const copy = value => JSON.parse(JSON.stringify(value));

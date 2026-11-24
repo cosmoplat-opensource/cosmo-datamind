@@ -1,4 +1,4 @@
-"""Bounded workers and CI partitions retain dependencies and coverage gates — DR-163."""
+"""Bounded workers and CI partitions retain dependencies and coverage gates — DR-168."""
 from importlib import import_module
 import os
 import runpy

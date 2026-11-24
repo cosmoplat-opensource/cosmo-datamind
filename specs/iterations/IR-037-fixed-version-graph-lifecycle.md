@@ -1,6 +1,6 @@
 # IR-037 · 固定版本图谱的历史读取
 
-状态：delivered。关联 [DR-171](../decisions/DR-171-fixed-version-graph-lifecycle.md) 和 GRAPH-LIFE-01。
+状态：delivered。关联 [DR-176](../decisions/DR-176-fixed-version-graph-lifecycle.md) 和 GRAPH-LIFE-01。
 
 ## 交付与验收
 

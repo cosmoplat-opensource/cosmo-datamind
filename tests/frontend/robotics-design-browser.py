@@ -86,7 +86,7 @@ def wait_design(page, sid, stage, status):
 
 
 def wait_completed_design(page, site, sid):
-    """DR-166: completion leaves the editor; reopening remains a read-only history entry."""
+    """DR-171: completion leaves the editor; reopening remains a read-only history entry."""
     expect(page).to_have_url(re.compile(r'#robotics-view\?.*view=interactive-ontology-graph'), timeout=25000)
     ref = session(site, sid)['output_asset_ref']
     assert ref['ontology_id'] in page.url and ref['version_id'] in page.url
@@ -207,7 +207,7 @@ def test_model_ui_stage_confirmations_final_downloads_and_history(live):
         site.evidence['downloads'].append({'name': target.name, 'bytes': len(expected)})
     page.goto(site.url + '/#build?recipe=robotics&session=' + sid)
     wait_design(page, sid, 'abox', 'completed')
-    # DR-161: graph history is explicitly read-only; historical bytes remain unchanged.
+    # DR-166: graph history is explicitly read-only; historical bytes remain unchanged.
     expect(page.get_by_label('设计修订', exact=True)).to_be_visible()
     assert DesignService(site.root, read_only=True).export_revision(sid, schema['revision'], format='json') == old_json
     assert session(site, sid)['revision'] == final['revision'] and len(calls) == 2
@@ -983,7 +983,7 @@ def test_unresolved_role_allows_manual_selection_and_one_confirm_generate(live):
     done(site)
 
 
-# DR-166: user-visible workflow continuity, using actual persisted services.
+# DR-171: user-visible workflow continuity, using actual persisted services.
 @pytest.mark.parametrize('live', [{'prepare': prepare_incomplete_tbox}], indirect=True)
 def test_application_home_checks_incompatible_candidate_and_opens_its_revision(live):
     site, page, calls = live

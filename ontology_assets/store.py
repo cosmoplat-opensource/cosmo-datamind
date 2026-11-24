@@ -1,4 +1,4 @@
-"""Asset/version services with explicit publication and consumption — DR-141 / DR-146 / DR-147 / DR-170."""
+"""Asset/version services with explicit publication and consumption — DR-141 / DR-146 / DR-147 / DR-175."""
 from datetime import datetime, timezone
 import json
 from pathlib import Path

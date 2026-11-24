@@ -1,6 +1,6 @@
 # IR-035 · 单一完善入口与生成错误反馈
 
-状态：delivered。关联：[DR-169](../decisions/DR-169-single-repair-entry-and-generation-feedback.md)。
+状态：delivered。关联：[DR-174](../decisions/DR-174-single-repair-entry-and-generation-feedback.md)。
 
 ## 任务与验收
 

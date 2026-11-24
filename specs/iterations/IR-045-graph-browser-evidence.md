@@ -1,6 +1,6 @@
 # IR-045 · 图谱浏览器测试证据
 
-状态：delivered。关联 [DR-179](../decisions/DR-179-graph-browser-evidence.md) 和 [GRAPH-BROWSER-EVIDENCE-01](../acceptance.json)。
+状态：delivered。关联 [DR-184](../decisions/DR-184-graph-browser-evidence.md) 和 [GRAPH-BROWSER-EVIDENCE-01](../acceptance.json)。
 
 ## 验收
 

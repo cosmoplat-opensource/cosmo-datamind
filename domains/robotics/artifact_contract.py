@@ -1,4 +1,4 @@
-"""Trusted publication protocol and SHACL checks — DR-142 / DR-147 / DR-170.
+"""Trusted publication protocol and SHACL checks — DR-142 / DR-147 / DR-175.
 
 Validation migrated from the hash-verified agent of the robotics source project; source details in IR-016.
 """
@@ -63,7 +63,7 @@ def graph_validation(g, *, configuration_focus=None):
     shapes = Graph().parse(data=snapshot, format="turtle")
     sh = Namespace("http://www.w3.org/ns/shacl#")
     if configuration_focus is not None:
-        # DR-170: preserve every trusted constraint; only configuration targets are task scoped.
+        # DR-175: preserve every trusted constraint; only configuration targets are task scoped.
         for name, kinds in (
             ('ProfileShape', ('PerceptionProfile', 'PlacementProfile')),
             ('PerceptionProfileShape', ('PerceptionProfile',)),

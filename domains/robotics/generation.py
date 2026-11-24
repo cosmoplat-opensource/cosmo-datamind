@@ -1,4 +1,4 @@
-"""Strict structured-task generation and explicit authoring drafts — DR-143 / DR-144 / DR-170.
+"""Strict structured-task generation and explicit authoring drafts — DR-143 / DR-144 / DR-175.
 
 No LLM, source XML, online XML editor or physical robot execution is involved.
 """

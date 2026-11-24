@@ -65,7 +65,7 @@ def unit_command(py, reports, workers):
 def run_check(name, args, env, reports, results):
     start = time.monotonic()
     # Hosted runners also verify the complete RDF build and validation paths under coverage.
-    timeout = {"unit": 7200, "unit-shard": 3300}.get(name, 600)
+    timeout = {"unit": 7200, "unit-shard": 3300, "navigation-browser": 720}.get(name, 600)
     with (reports / f"{name}.log").open("w", encoding="utf-8") as log:
         process = subprocess.Popen(args, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT,
                                    start_new_session=True)
@@ -178,6 +178,21 @@ def main():
                                   "--graph", "built_2d74f0", "--report", str(reports / "strict10.json")],
                                   env, reports, results)
                     if args.suite in ("ui", "all"):
+                        for name, file in (("master-workflows-browser", "master_workflows_browser.py"),
+                                           ("result-scope-browser", "result_scope_browser.py"),
+                                           ("business-name-browser", "business_name_browser.py"),
+                                           ("state-transition-browser", "state_transition_browser.py"),
+                                           ("navigation-browser", "navigation_transitions.py"),
+                                           ("representation-browser", "representation_fidelity_browser.py"),
+                                           ("page-values-browser", "page_value_contracts.py")):
+                            run_check(name, [py, "-m", "pytest", f"tests/frontend/{file}",
+                                             "--junitxml", str(reports / f"{name}.xml")], env, reports, results)
+                        run_check("functional-browser", [py, "-m", "pytest", "tests/frontend/functional_workflows.py"],
+                                  env, reports, results)
+                        run_check("build-webkit-browser", [py, "-m", "pytest", "tests/frontend/build_viewport_browser.py"],
+                                  env, reports, results)
+                        run_check("qa-history-browser", [py, "-m", "pytest", "tests/frontend/qa_history_browser.py"],
+                                  env, reports, results)
                         for name in ("test_ui", "test_ui_ops"):
                             run_check(name, [py, name + ".py"], env, reports, results)
                         run_check("build-browser", [py, "tests/frontend/build-browser.py",
@@ -192,7 +207,7 @@ def main():
                                   "--output", str(reports / "robotics-task-browser")], env, reports, results)
                         run_check("robotics-design-browser", [py, "tests/frontend/robotics-design-browser.py",
                                   "--output", str(reports / "robotics-design-browser")], env, reports, results)
-                        # DR-161: both staged and fixed Ontology graph graphs, geometry and scale.
+                        # DR-166: both staged and fixed Ontology graph graphs, geometry and scale.
                         run_check("robotics-interactive-ontology-graph-browser", [py, "tests/frontend/robotics-interactive-ontology-graph-browser.py",
                                   "--output", str(reports / "robotics-interactive-ontology-graph-browser")], env, reports, results)
                         # DR-155: real fixed-version detail, preparation and history navigation.

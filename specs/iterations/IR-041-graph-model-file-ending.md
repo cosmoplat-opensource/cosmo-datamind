@@ -1,6 +1,6 @@
 # IR-041 · 图谱模型源码的文件结尾
 
-状态：delivered。关联 [DR-175](../decisions/DR-175-graph-model-file-ending.md) 和 [GRAPH-SOURCE-01](../acceptance.json)。
+状态：delivered。关联 [DR-180](../decisions/DR-180-graph-model-file-ending.md) 和 [GRAPH-SOURCE-01](../acceptance.json)。
 
 ## 验收
 

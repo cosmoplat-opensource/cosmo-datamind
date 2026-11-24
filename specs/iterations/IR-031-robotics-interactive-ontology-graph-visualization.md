@@ -26,11 +26,11 @@
 - [x] **STV-R05**：固定版本新旧机器人本体使用同一浏览体验，保留类别关系、实例事实、属性及并集含义，并按版本摘要验证来源。
 - [x] **STV-R06**：画布只读操作不触发模型或本体写入，多画布并存与销毁不串状态，错误不会显示另一资产作为成功结果。
 
-验收标准及对应测试见 [STV-R01～STV-R06](../acceptance.json)。交互与规模约束见 [DR-161](../decisions/DR-161-interactive-ontology-graph-visualization.md) 和 [DR-162](../decisions/DR-162-interactive-graph-limits-and-publication-boundary.md)。[原交付截图](../../docs/img/robotics-interactive-ontology-graph-workspace.png) 展示该阶段的界面。
+验收标准及对应测试见 [STV-R01～STV-R06](../acceptance.json)。交互与规模约束见 [DR-166](../decisions/DR-166-interactive-ontology-graph-visualization.md) 和 [DR-167](../decisions/DR-167-interactive-graph-limits-and-publication-boundary.md)。[原交付截图](../../docs/img/robotics-interactive-ontology-graph-workspace.png) 展示该阶段的界面。
 
 ## 验证范围与复现
 
-2026-11-17 的原交付记录覆盖 17 个全量检查阶段。后续范围与命名修订于 2026-11-19 验证，接口名称及兼容规则见 [DR-165](../decisions/DR-165-interactive-ontology-graph-naming-and-view-contract.md)。该修订记录了 165 项单元、HTTP、组件及规约检查，9 项图谱浏览器用例和 29 项设计浏览器用例。后一次验证仅覆盖相关回归。
+2026-11-17 的原交付记录覆盖 17 个全量检查阶段。后续范围与命名修订于 2026-11-19 验证，接口名称及兼容规则见 [DR-170](../decisions/DR-170-interactive-ontology-graph-naming-and-view-contract.md)。该修订记录了 165 项单元、HTTP、组件及规约检查，9 项图谱浏览器用例和 29 项设计浏览器用例。后一次验证仅覆盖相关回归。
 
 在[项目测试环境](../../README.md#测试)中，以下入口使用合成图谱、隔离服务和 Chromium，覆盖固定版本读取、1440px 与 390px 布局、真实拖拽、分页及画布释放。
 

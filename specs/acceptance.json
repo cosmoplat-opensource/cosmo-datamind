@@ -2,6 +2,116 @@
   "iteration": "IR-014–IR-036",
   "requirements": [
     {
+      "id": "MASTER-UPLOAD-01",
+      "criterion": "CSV 上传与 API 取数保留各自已经接受的数据。两种入口发生物理表名冲突时，使用独立的表或明确拒绝并保留原数据。",
+      "tests": ["tests/unit/test_master_workflows.py::test_upload_and_api_source_preserve_both_datasets",
+                "tests/unit/test_master_workflows.py::test_deleting_uploaded_file_keeps_api_table_with_long_suffix"]
+    },
+    {
+      "id": "MASTER-RECONNECT-01",
+      "criterion": "来源名称复用后，新连接首次取数前须正确显示尚未就绪。",
+      "tests": ["tests/unit/test_master_workflows.py::test_new_connection_needs_its_own_first_fetch"]
+    },
+    {
+      "id": "MASTER-IMPORT-01",
+      "criterion": "API 响应的原始总列数包括首次出现在行数上限以后的字段。",
+      "tests": ["tests/unit/test_master_workflows.py::test_import_total_columns_includes_fields_first_seen_after_row_limit"]
+    },
+    {
+      "id": "MASTER-RESOLVE-01",
+      "criterion": "需要人工处置的结果未知动作应保持可达，较新的已完成记录不能将其从日志或处置入口移除。",
+      "tests": [
+        "tests/unit/test_master_workflows.py::test_unknown_execution_remains_available_for_manual_resolution",
+        "tests/frontend/master_workflows_browser.py::test_unknown_action_can_be_resolved_from_the_status_filter"
+      ]
+    },
+    {
+      "id": "MASTER-RECEIPT-01",
+      "criterion": "未结审批占满记录容量时，普通动作的成功回执仍应可回读。无法保存时应明确返回失败。",
+      "tests": ["tests/unit/test_master_workflows.py::test_successful_record_is_readable_when_approval_queue_is_full"]
+    },
+    {
+      "id": "MASTER-METRIC-01",
+      "criterion": "图表快捷指标的取数结果与所选指标契约一致，即使另一个指标使用相同的业务名称。",
+      "tests": ["tests/frontend/master_workflows_browser.py::test_chart_quick_metric_applies_the_selected_calculation",
+                "tests/scenarios/test_scenarios.py::test_duplicate_metric_labels_resolve_by_id"]
+    },
+    {
+      "id": "MASTER-PICKER-01",
+      "criterion": "连续切换两个快捷指标时，最终选项、编辑器中的 SQL 与实际取数一致，包括较早的契约响应晚到的情况。",
+      "tests": ["tests/frontend/master_workflows_browser.py::test_quick_metric_changes_keep_the_last_selected_contract"]
+    },
+    {
+      "id": "MASTER-ALLTABLES-01",
+      "criterion": "在同一问数范围对话框中选中单表后，分析所有表的复选框应与实际选表状态一致。",
+      "tests": ["tests/frontend/master_workflows_browser.py::test_all_tables_checkbox_matches_selection_before_confirm"]
+    },
+    {
+      "id": "MASTER-KEYBOARD-01",
+      "criterion": "键盘选中的问数数据表向辅助技术提供可区分的选中状态，关闭对话框后焦点返回入口并保留此前确认的范围。",
+      "tests": ["tests/frontend/master_workflows_browser.py::test_keyboard_user_can_identify_the_selected_table_and_cancel"]
+    },
+    {
+      "id": "SCOPE-PAGE-01",
+      "criterion": "从链接进入任意已登记页面并刷新，全局数据库选择、上下文请求和实际表数一致。",
+      "tests": ["tests/frontend/result_scope_browser.py::test_link_and_reload_keep_the_database_shown_on_each_page"]
+    },
+    {
+      "id": "SCOPE-IMPORT-01",
+      "criterion": "API 导入达到行列边界时，保留原数据或明确告知拒绝或部分导入；成功响应的行数和列名与物化表相符。",
+      "tests": ["tests/unit/test_result_scope.py::test_api_import_reports_the_actual_scope"]
+    },
+    {
+      "id": "SCOPE-SOURCE-01",
+      "criterion": "不同 API 连接分别报告取数状态，并保留各自的查询结果，即使两项业务名称归一化后相同。",
+      "tests": ["tests/unit/test_result_scope.py::test_fetching_one_source_preserves_the_other_source"]
+    },
+    {
+      "id": "SCOPE-RDF-01",
+      "criterion": "SPARQL 查询或构造图谱的返回值须与导出的对象集合一致；截断时能识别部分结果或取得正确总数。",
+      "tests": ["tests/unit/test_result_scope.py::test_sparql_reports_full_cardinality_or_discloses_a_partial_result"]
+    },
+    {
+      "id": "SCOPE-PENDING-01",
+      "criterion": "在动作中心能从待审批数找到对应的未结事项，即使有超过一页的较新记录。",
+      "tests": ["tests/frontend/result_scope_browser.py::test_pending_approval_is_reachable_from_the_action_center"]
+    },
+    {
+      "id": "SCOPE-RETENTION-01",
+      "criterion": "保存新的动作记录时保留仍待处理的审批及其身份。",
+      "tests": ["tests/unit/test_result_scope.py::test_new_action_preserves_unresolved_approval"]
+    },
+    {
+      "id": "SCOPE-CSV-01",
+      "criterion": "动作记录导出与当前状态、关键词筛选相符，若导出所有记录，操作入口明确标识；无匹配时同样适用。",
+      "tests": ["tests/frontend/result_scope_browser.py::test_action_csv_matches_filtered_rows"]
+    },
+    {
+      "id": "SCOPE-CHAT-01",
+      "criterion": "问数请求使用最终确认的表范围，确认“分析所有表”清除先前表限制，取消编辑保留已确认的选择。",
+      "tests": ["tests/frontend/result_scope_browser.py::test_question_uses_the_confirmed_table_selection"]
+    },
+    {
+      "id": "SCOPE-REPLAY-01",
+      "criterion": "历史回放保留实时答案的行数和末条数据，使用户能复查同一期的结果。",
+      "tests": ["tests/frontend/result_scope_browser.py::test_history_replays_the_latest_row_and_total_of_the_live_answer"]
+    },
+    {
+      "id": "SCOPE-REVIEW-01",
+      "criterion": "批量评审仅更新提交的关系，任一项无效则整批不写入；分页筛选后全选按钮按本页实际勾选状态显示。",
+      "tests": ["tests/unit/test_result_scope.py::test_batch_review_preserves_selected_scope_and_atomicity", "tests/frontend/result_scope_browser.py::test_review_page_select_all_reflects_the_visible_checkboxes"]
+    },
+    {
+      "id": "SCOPE-REVIEW-02",
+      "criterion": "连续切换图谱后，当前选项、显示的关系、最终写入评审结论的图谱一致，包括较早响应晚到的情况。",
+      "tests": ["tests/frontend/result_scope_browser.py::test_review_saves_the_graph_whose_relationship_was_displayed"]
+    },
+    {
+      "id": "SCOPE-OBS-01",
+      "criterion": "按类型查询当天最近的事件时，其他类型的新增事件不能让最近的匹配记录消失。",
+      "tests": ["tests/unit/test_result_scope.py::test_recent_build_filter_finds_latest_build_in_todays_log"]
+    },
+    {
       "id": "ALG-01",
       "criterion": "完整值域决定重叠率，前缀截断不能制造或遗漏 verified",
       "tests": [
@@ -97,6 +207,65 @@
       "criterion": "构建断流可恢复、重复提交受控、基础本体切换无串线、结果安全呈现",
       "tests": [
         "tests/unit/test_build_ui.py::test_build_ui_behavior"
+      ]
+    },
+    {
+      "id": "BUILD-WEBKIT-01",
+      "criterion": "在 macOS WebKit 的 768 像素视口下，本体构建页的数据源和参照选择器加载完成后无整页横向滚动。Linux WebKit 构建页在所有宽度下均排除。",
+      "tests": [
+        "tests/frontend/build_viewport_browser.py::test_build_reference_controls_fit_the_viewport"
+      ]
+    },
+    {
+      "id": "ONT-RENAME-01",
+      "criterion": "图谱展示的对象可按页面返回的标识改中文名、重读并撤销，兼容 id 和 name 两种对象格式，保留原始构建文件。",
+      "tests": [
+        "tests/unit/test_ontology_rename_roundtrip.py::test_displayed_object_can_be_renamed_reloaded_and_restored"
+      ]
+    },
+    {
+      "id": "QUERY-COLUMNS-01",
+      "criterion": "SQL 工作台与可视化取数按列位置保留原值。列名相同或只差大小写时，为后续列生成唯一后缀并保留查询显式指定的别名。空结果也返回相同的列名。",
+      "tests": [
+        "tests/unit/test_query_and_board_fidelity.py::test_query_columns_preserve_both_values_or_explain_ambiguity",
+        "tests/unit/test_query_and_board_fidelity.py::test_generated_labels_preserve_explicit_aliases_and_do_not_depend_on_rows"
+      ]
+    },
+    {
+      "id": "VIZ-ROUNDTRIP-01",
+      "criterion": "每个看板最多保存 24 张图，超限时拒绝整次保存并保留旧看板。图表区分空值与零。修改预览过的 SQL 后，须重新取数才能添加到看板。",
+      "tests": [
+        "tests/unit/test_query_and_board_fidelity.py::test_board_update_preserves_all_charts_or_rejects_without_overwrite",
+        "tests/frontend/functional_workflows.py::test_missing_chart_value_stays_distinct_from_zero",
+        "tests/frontend/functional_workflows.py::test_adding_an_edited_query_uses_a_verified_chart_binding"
+      ]
+    },
+    {
+      "id": "ONT-CHAT-ACCESS-01",
+      "criterion": "本体对话的文本附件可以完整送达问答接口，覆盖 256 字节和 256 KiB；历史会话能用键盘选中并回放。",
+      "tests": [
+        "tests/frontend/functional_workflows.py::test_ontology_chat_attachment_reaches_the_stream_intact",
+        "tests/frontend/functional_workflows.py::test_ontology_chat_history_can_be_opened_with_keyboard"
+      ]
+    },
+    {
+      "id": "NAV-MOBILE-STATE-01",
+      "criterion": "窄屏菜单可通过键盘展开并进入目标页，展开与自动收起状态可由辅助技术读取。",
+      "tests": [
+        "tests/frontend/functional_workflows.py::test_mobile_menu_exposes_expanded_and_collapsed_state"
+      ]
+    },
+    {
+      "id": "QA-HISTORY-01",
+      "criterion": "在同一浏览器和数据源完成深度问数后，切到其他页面再返回应能从历史栏打开该会话。刷新后可用键盘打开历史并按原顺序回放各轮问题和答案，并看到原依据卡的结果编号。指标接口暂时不可用时仍可打开历史。浏览器存储已满时，旧会话仍可回放，新会话须可恢复或在用户离开前明确提示保存失败。",
+      "tests": [
+        "tests/frontend/qa_history_browser.py::test_completed_turns_replay_after_reload",
+        "tests/frontend/qa_history_browser.py::test_history_replays_with_tab_and_enter",
+        "tests/frontend/qa_history_browser.py::test_replay_preserves_the_original_result_reference",
+        "tests/frontend/qa_history_browser.py::test_completed_chat_is_listed_when_returning_from_another_page",
+        "tests/frontend/qa_history_browser.py::test_saved_chat_replays_when_metrics_are_unavailable",
+        "tests/frontend/qa_history_browser.py::test_storage_quota_cannot_silently_drop_a_completed_chat",
+        "tests/frontend/qa_history_browser.py::test_failed_followup_can_be_saved_again_without_losing_the_previous_turn"
       ]
     },
     {
@@ -3389,7 +3558,7 @@
     },
     {
       "id": "STV-R01",
-      "decision": "DR-161",
+      "decision": "DR-166",
       "iteration": "IR-031",
       "status": "delivered",
       "criterion": "机器人设计按已保存修订依次显示类别、关系与属性、实例，等待和失败不虚构结果，返回修改阶段清除失效内容。",
@@ -3404,7 +3573,7 @@
     },
     {
       "id": "STV-R02",
-      "decision": "DR-161",
+      "decision": "DR-166",
       "iteration": "IR-031",
       "status": "delivered",
       "criterion": "同一来源的增量更新保留有效布局、缩放、选择与展开状态，新增修改删除可辨识，历史与迟到响应不能覆盖当前设计。",
@@ -3418,7 +3587,7 @@
     },
     {
       "id": "STV-R04",
-      "decision": "DR-161",
+      "decision": "DR-166",
       "iteration": "IR-031",
       "status": "delivered",
       "criterion": "双击类别可展开收起全部可访问的显式归属实例，多类型去重，无实例明确说明，大类别分批显示准确数量且可继续访问。",
@@ -3432,7 +3601,7 @@
     },
     {
       "id": "STV-R05",
-      "decision": "DR-161",
+      "decision": "DR-166",
       "iteration": "IR-031",
       "status": "delivered",
       "criterion": "固定版本新旧机器人本体使用同一浏览体验，保留类别关系、实例事实、属性及并集含义，并按版本摘要验证来源。",
@@ -3450,7 +3619,7 @@
     },
     {
       "id": "STV-R06",
-      "decision": "DR-161",
+      "decision": "DR-166",
       "iteration": "IR-031",
       "status": "delivered",
       "criterion": "画布只读操作不触发模型或本体写入，多画布并存与销毁不串状态，错误不会显示另一资产作为成功结果。",
@@ -3464,7 +3633,7 @@
     },
     {
       "id": "STV-R03",
-      "decision": "DR-161",
+      "decision": "DR-166",
       "iteration": "IR-031",
       "status": "delivered",
       "criterion": "交互式本体图谱风格类别圆圈和关系标签可读，拖拽产生力导向联动，固定释放、搜索、缩放及键盘详情入口可用。",
@@ -3474,7 +3643,7 @@
     },
     {
       "id": "STV-H01",
-      "decision": "DR-162",
+      "decision": "DR-167",
       "status": "delivered",
       "criterion": "超限更新拒绝且上一修订、选择、坐标和提示一致",
       "tests": [
@@ -3484,7 +3653,7 @@
     },
     {
       "id": "STV-H02",
-      "decision": "DR-162",
+      "decision": "DR-167",
       "status": "delivered",
       "criterion": "属性笛卡尔积在分配连线前校验预算",
       "tests": [
@@ -3493,7 +3662,7 @@
     },
     {
       "id": "STV-H03",
-      "decision": "DR-162",
+      "decision": "DR-167",
       "status": "delivered",
       "criterion": "请求和响应体有总时限，销毁取消且释放资源",
       "tests": [
@@ -3502,7 +3671,7 @@
     },
     {
       "id": "STV-H04",
-      "decision": "DR-162",
+      "decision": "DR-167",
       "status": "delivered",
       "criterion": "关系搜索显示对象定义和约束，不静默清空选择",
       "tests": [
@@ -3511,7 +3680,7 @@
     },
     {
       "id": "STV-H05",
-      "decision": "DR-162",
+      "decision": "DR-167",
       "status": "delivered",
       "criterion": "跟踪的产品材料不含本机路径、工作流、工具署名或不可访问的本地证据链接",
       "tests": [
@@ -3522,7 +3691,7 @@
     },
     {
       "id": "PERF-T01",
-      "decision": "DR-163",
+      "decision": "DR-168",
       "status": "delivered",
       "criterion": "任务准备保持资产和运行身份独立；设计浏览器预置状态保持数据库与文件副本隔离；已有目录不覆盖、失败不缓存，操作中的真实校验保留",
       "tests": [
@@ -3535,7 +3704,7 @@
     },
     {
       "id": "PERF-T02",
-      "decision": "DR-163",
+      "decision": "DR-168",
       "criterion": "复用准备数据后，保存和每次读取仍完整执行原语义校验并拒绝损坏",
       "tests": [
         "tests/unit/test_robotics_seed_support.py::test_warm_seed_keeps_full_semantic_validation_and_rejects_corruption"
@@ -3543,7 +3712,7 @@
     },
     {
       "id": "PERF-T03",
-      "decision": "DR-163",
+      "decision": "DR-168",
       "status": "delivered",
       "criterion": "有界并行保留完整测试发现、单进程对照、逐用例耗时及分支覆盖率汇总",
       "tests": [
@@ -3558,7 +3727,7 @@
     },
     {
       "id": "PERF-T04",
-      "decision": "DR-163",
+      "decision": "DR-168",
       "status": "delivered",
       "criterion": "并行子进程测试失败不得被报告为成功，既有三层覆盖率门槛保持",
       "tests": [
@@ -3697,7 +3866,7 @@
     },
     {
       "id": "MERGE-GRAPH-01",
-      "decision": "DR-164",
+      "decision": "DR-169",
       "status": "delivered",
       "criterion": "合并保留 master 评审修复及交互式本体图谱交互，DR-159 至最新集成决策的编号连续且唯一，DR-160 不变，文件名、标题及引用同步；两种仅来源元数据不同的词表摘要兼容，未知摘要拒绝。",
       "tests": [
@@ -3710,8 +3879,281 @@
       ]
     },
     {
+      "id": "STATE-BOARD-01",
+      "criterion": "保存新看板时，此前已确认保存的看板及其图表均可回读。达到收藏容量时允许明确拒绝新建。",
+      "tests": [
+        "tests/unit/test_state_transitions.py::test_board_collection_preserves_acknowledged_saves"
+      ]
+    },
+    {
+      "id": "STATE-SOURCE-01",
+      "criterion": "连续登记不同物理数据源时，已确认登记的连接仍可枚举和查询，超限应在新登记操作中说明。",
+      "tests": [
+        "tests/unit/test_state_transitions.py::test_registered_sources_still_resolve_after_next_registration"
+      ]
+    },
+    {
+      "id": "STATE-CHAT-01",
+      "criterion": "重叠的本体问答须保留每次已确认的问答，显式并发冲突可重试。在途回复完成后，已确认删除的会话仍保持删除。",
+      "tests": [
+        "tests/unit/test_state_transitions.py::test_chat_completed_during_another_turn_is_durable"
+      ]
+    },
+    {
+      "id": "STATE-SQL-01",
+      "criterion": "SQL 工作台在执行前后更换局部数据源时，旧结果须清除或标明来源，后续运行应显示新源的值。",
+      "tests": [
+        "tests/frontend/state_transition_browser.py::test_sql_results_belong_to_the_displayed_source"
+      ]
+    },
+    {
+      "id": "STATE-CHAT-02",
+      "criterion": "新建或清空会话失败时，保留当前会话、正文和可见的失败提示。确认清空后，会话从历史列表移除。",
+      "tests": [
+        "tests/frontend/state_transition_browser.py::test_chat_mutation_keeps_transcript_until_success"
+      ]
+    },
+    {
+      "id": "STATE-LIST-01",
+      "criterion": "数据质量、动作记录、看板目录、问数评测和本体会话列表须区分服务不可用和真实空数据；服务恢复后重新加载可读。",
+      "tests": [
+        "tests/frontend/state_transition_browser.py::test_list_distinguishes_service_failure_from_empty_and_recovers"
+      ]
+    },
+    {
+      "id": "STATE-CSV-01",
+      "criterion": "动作记录 CSV 每个导出字段有独立列名，含双引号、逗号或换行的值可正确读回。",
+      "tests": [
+        "tests/frontend/state_transition_browser.py::test_action_csv_has_one_header_for_each_exported_field"
+      ]
+    },
+    {
+      "id": "STATE-GRAPH-01",
+      "criterion": "元数据覆盖页仅显示当前图谱的语义评审统计；切换或重新选择图谱后不残留旧统计。",
+      "tests": [
+        "tests/frontend/state_transition_browser.py::test_metadata_review_count_tracks_selected_graph_and_revisits"
+      ]
+    },
+    {
+      "id": "STATE-NAV-01",
+      "criterion": "每个登记页面支持正常键盘入口或专用深链。浏览器后退、前进和刷新后当前页与选中导航一致，窄屏无页面级横向溢出。",
+      "tests": [
+        "tests/frontend/navigation_transitions.py::test_navigation_survives_back_forward_and_reload"
+      ]
+    },
+    {
+      "id": "STATE-NAV-02",
+      "criterion": "移动菜单收起时，Tab 可从工具栏进入当前页面，隐藏侧栏不会接收焦点。",
+      "tests": [
+        "tests/frontend/navigation_transitions.py::test_closed_mobile_sidebar_does_not_receive_tab_focus"
+      ]
+    },
+    {
+      "id": "STATE-READ-01",
+      "criterion": "总览恢复后指标数值与接口一致，术语组合筛选和清除后行数正确；SPARQL 的真值、假值、语法错误及恢复查询各自显示对应的结果。",
+      "tests": [
+        "tests/frontend/state_transition_browser.py::test_overview_survives_unavailable_data_and_recovers_exact_totals",
+        "tests/frontend/state_transition_browser.py::test_glossary_combined_filters_and_clear_restore_inventory",
+        "tests/frontend/state_transition_browser.py::test_sparql_replaces_previous_answer_after_empty_or_invalid_query"
+      ]
+    },
+    {
+      "id": "DISC-SCHEMA-01",
+      "criterion": "普通业务表 sqliteLedger 在单表库可登记，在双表库的目录、连接清单和构建预检中可见，与直接 SQL 和图表查询一致。SQLite 自建的 sqlite_sequence 仍从业务清单排除。",
+      "tests": [
+        "tests/unit/test_business_name_discovery.py::test_single_business_table_can_register",
+        "tests/unit/test_business_name_discovery.py::test_business_table_stays_discoverable_beside_control"
+      ]
+    },
+    {
+      "id": "DISC-IMPORT-01",
+      "criterion": "上传逗号、分号或竖线分隔文件后，带引号的表头和单元格内的逗号不改变实际列边界，SQL 可读取保留下来的两列和原始值。",
+      "tests": ["tests/unit/test_business_name_discovery.py::test_delimited_upload_preserves_column_boundaries"]
+    },
+    {
+      "id": "DISC-EDIT-01",
+      "criterion": "两个对象共用业务别名时，以此别名编辑须消歧，两个对象的别名均可原样回读。以唯一 ID 编辑仅更新所指对象，与对象排列顺序无关。",
+      "tests": ["tests/unit/test_business_name_discovery.py::test_alias_edit_never_guesses_between_shared_names"]
+    },
+    {
+      "id": "DISC-ALIAS-01",
+      "criterion": "通过文本输入多个中文业务别名时，逗号、顿号和全角分号分隔的别名可独立回读与检索。",
+      "tests": ["tests/unit/test_business_name_discovery.py::test_aliases_entered_as_business_text_remain_separately_searchable"]
+    },
+    {
+      "id": "DISC-PROFILE-01",
+      "criterion": "用完整且唯一的中文业务名查询对象画像时，单字名与多字名均可命中对应对象。",
+      "tests": ["tests/unit/test_business_name_discovery.py::test_exact_business_label_finds_its_profile"]
+    },
+    {
+      "id": "DISC-OBJECT-01",
+      "criterion": "从图谱公开节点 ID 打开对象详情，即使另一个对象使用相同文本作名称，也须返回所选节点的 ID 与中文名。",
+      "tests": ["tests/unit/test_business_name_discovery.py::test_object_detail_resolves_selected_node_id"]
+    },
+    {
+      "id": "DISC-METRIC-01",
+      "criterion": "按指标 ID 请求契约或变更状态时返回对应指标，若与名称冲突也可明确提示消歧并保留原状态。用户点选同名指标中的一行时，血缘和持久化的停用操作均落到所选行。",
+      "tests": [
+        "tests/unit/test_business_name_discovery.py::test_metric_id_selects_the_same_contract_and_persisted_status",
+        "tests/frontend/business_name_browser.py::test_metric_lineage_follows_clicked_row"
+      ]
+    },
+    {
+      "id": "DISC-QA-01",
+      "criterion": "无模型时对已绑定且唯一、明确点名的中文物理表询问记录总数，同步和流式入口均可核对同一源表的 COUNT 结果与锚定表名。",
+      "tests": ["tests/unit/test_business_name_discovery.py::test_offline_count_follows_explicit_business_table"]
+    },
+    {
+      "id": "DISC-PAGE-01",
+      "criterion": "在 320 与 1440 CSS 像素宽的窗口中，各页面原生可见表单控件提供可访问名称，页面整体无需横向滚动。",
+      "tests": ["tests/frontend/business_name_browser.py::test_page_forms_are_named_and_fit_viewport"]
+    },
+    {
+      "id": "DISC-EXPORT-01",
+      "criterion": "同一图谱中业务对象和关系的标识保持稳定。仅交换对象或关系列表顺序，重新解析 Turtle、JSON-LD、OWL 后，每个相同概念或关系仍有原来的 IRI。",
+      "tests": ["tests/unit/test_business_name_discovery.py::test_rdf_terms_keep_identity_after_reordering"]
+    },
+    {
+      "id": "DISC-SOURCE-01",
+      "criterion": "两个真实且内容不同的连接登记为同名时，全局数据库、SQL 工作台和图表的源选择器提供可辨识的信息。",
+      "tests": ["tests/frontend/business_name_browser.py::test_distinct_sources_can_be_identified_in_picker"]
+    },
+    {
+      "id": "DISC-BOARD-01",
+      "criterion": "两个同名看板按各自 ID 保存和回读，更新第二块看板的 SQL 和卡片后，第一块保留原结果定义。",
+      "tests": ["tests/unit/test_business_name_discovery.py::test_same_name_boards_reopen_with_independent_cards"]
+    },
+    {
+      "id": "FIELD-PORT-01",
+      "criterion": "数据连接页新建 Doris 或 Hive 连接时，未编辑端口应按所选引擎保存默认查询端口，手工填写端口时应保存输入值。",
+      "tests": [
+        "tests/frontend/representation_fidelity_browser.py::test_saved_connection_uses_selected_engine_port"
+      ]
+    },
+    {
+      "id": "FIELD-HIVE-STATUS-01",
+      "criterion": "仅完成登记的 Hive 连接，列表应让用户识别尚未验证的状态或当前可用的取数途径。",
+      "tests": [
+        "tests/frontend/representation_fidelity_browser.py::test_unverified_hive_connection_describes_its_availability"
+      ]
+    },
+    {
+      "id": "HIVE-LIVE-01",
+      "criterion": "Hive 或 Spark Thrift Server(HiveServer2 协议)连接经 JDBC 桥接实连:SQL 工作台、图表、表清单与预览返回 live 结果并保留数值与 NULL;写语句与堆叠语句在到达驱动前拒绝;口令经标准输入传递不出现在进程参数中。",
+      "tests": [
+        "tests/unit/test_hive_bridge.py::test_workbench_and_chart_return_live_hive_rows",
+        "tests/unit/test_hive_bridge.py::test_hive_rejects_writes_before_reaching_the_bridge",
+        "tests/unit/test_hive_bridge.py::test_table_catalog_and_preview_use_hive_metadata_and_backticks",
+        "tests/unit/test_hive_bridge.py::test_request_goes_over_stdin_and_rows_keep_types"
+      ]
+    },
+    {
+      "id": "HIVE-LIVE-02",
+      "criterion": "Hive 侧失败按阶段给出可处理的说明(驱动或 JDK 缺失、无法连接、服务端内存不足、超时),不回显地址与账号;连接列表据最近一次实连区分未验证、已连通与连接失败。表清单不提交查询作业,读不到的列数报告为未知而非 0。",
+      "tests": [
+        "tests/unit/test_hive_bridge.py::test_missing_driver_or_jdk_is_reported",
+        "tests/unit/test_hive_bridge.py::test_server_out_of_memory_is_explained",
+        "tests/unit/test_hive_bridge.py::test_connect_failure_hides_address_and_account",
+        "tests/unit/test_hive_bridge.py::test_server_failure_is_reported_and_marks_the_connection",
+        "tests/unit/test_hive_bridge.py::test_bridge_source_writes_valid_json_and_reads_the_database_from_the_url",
+        "tests/unit/test_hive_bridge.py::test_hiveserver2_identity_accepts_hive_and_spark_thrift"
+      ]
+    },
+    {
+      "id": "FID-CATALOG-01",
+      "criterion": "已登记库的两份表清单须与实际行列数一致，列出的中文表名、带空格表名可用原名打开详情和预览。",
+      "tests": [
+        "tests/unit/test_representation_fidelity.py::test_two_inventories_agree_with_physical_row_and_column_counts",
+        "tests/unit/test_representation_fidelity.py::test_listed_table_opens_with_its_original_name"
+      ]
+    },
+    {
+      "id": "FID-CATALOG-02",
+      "criterion": "字段详情须描述数据预览包含的可查询生成列，列数和计算值与物理表一致。",
+      "tests": [
+        "tests/unit/test_representation_fidelity.py::test_schema_describes_every_column_including_generated_preview_values"
+      ]
+    },
+    {
+      "id": "FID-LIMIT-01",
+      "criterion": "工作台和可视化须区分完整结果和已截断的预览；指标卡的末行与其数据范围一致。",
+      "tests": [
+        "tests/unit/test_representation_fidelity.py::test_bounded_queries_distinguish_complete_result_from_preview",
+        "tests/frontend/representation_fidelity_browser.py::test_last_observation_kpi_discloses_a_partial_result"
+      ]
+    },
+    {
+      "id": "FID-UPLOAD-01",
+      "criterion": "含引号、换行、前导零编码及零值的 UTF-8 BOM、GB18030 和 TSV 上传记录可经 SQL 原值读回。",
+      "tests": [
+        "tests/unit/test_representation_fidelity.py::test_uploaded_table_round_trips_codes_quotes_and_lines"
+      ]
+    },
+    {
+      "id": "FID-RDF-01",
+      "criterion": "完整本体导出的三个格式可独立解析，保留对象详情中每个字段及唯一所属对象，包括宽表和共享命名片段。",
+      "tests": [
+        "tests/unit/test_representation_fidelity.py::test_exported_properties_match_each_object_detail",
+        "tests/frontend/page_value_contracts.py::test_sparql_class_count_matches_reparsed_download",
+        "tests/frontend/page_value_contracts.py::test_download_buttons_export_the_selected_graphs_class_labels"
+      ]
+    },
+    {
+      "id": "FID-DRIVER-01",
+      "criterion": "外部驱动的定点金额经 JSON 往返保留精度；二进制值可区分、可重复读取和序列化。",
+      "tests": [
+        "tests/unit/test_representation_fidelity.py::test_external_fixed_point_values_survive_json_round_trip",
+        "tests/unit/test_representation_fidelity.py::test_external_binary_fields_are_identifiable_and_stable"
+      ]
+    },
+    {
+      "id": "FID-DISPLAY-01",
+      "criterion": "四个表格入口可核对 64 位编号与接近的高精度读数，文本 NULL 与空字符串可区分。",
+      "tests": [
+        "tests/frontend/representation_fidelity_browser.py::test_each_table_retains_inspectable_source_values",
+        "tests/frontend/representation_fidelity_browser.py::test_null_text_is_distinguishable_from_an_empty_string",
+        "tests/unit/test_representation_fidelity.py::test_numeric_payload_precedes_browser_formatting"
+      ]
+    },
+    {
+      "id": "FID-VIZ-01",
+      "criterion": "已验证可取数的外部数据源可用于界面建图；重新打开的指标卡保留预览中的多期观测归属。",
+      "tests": [
+        "tests/frontend/representation_fidelity_browser.py::test_live_sql_source_is_also_selectable_for_a_chart",
+        "tests/frontend/representation_fidelity_browser.py::test_saved_kpi_identifies_the_same_observation_as_its_preview"
+      ]
+    },
+    {
+      "id": "FID-AX-01",
+      "criterion": "用键盘切换到不同页面时，辅助技术可识别当前导航项。",
+      "tests": [
+        "tests/frontend/representation_fidelity_browser.py::test_navigation_exposes_the_current_destination_after_keyboard_activation"
+      ]
+    },
+    {
+      "id": "FID-PAGE-01",
+      "criterion": "总览序列、图谱选择、数据源、评审、指标、质量、术语和动作显示与相应的数据范围和记录一致。",
+      "tests": [
+        "tests/frontend/page_value_contracts.py::test_home_chart_periods_and_series_match_overview_rows",
+        "tests/frontend/page_value_contracts.py::test_available_source_counts_agree_with_registry",
+        "tests/frontend/page_value_contracts.py::test_graph_choices_refer_to_the_same_registered_ids",
+        "tests/frontend/page_value_contracts.py::test_metric_names_and_quality_counts_match_the_active_graph",
+        "tests/frontend/page_value_contracts.py::test_registry_rows_can_be_found_in_catalog_and_glossary",
+        "tests/frontend/page_value_contracts.py::test_current_engine_and_action_type_labels_match_configuration"
+      ]
+    },
+    {
+      "id": "FID-PAGE-02",
+      "criterion": "机器人历史条数与服务记录一致，缺少绑定的视图可返回资产库；问数模式和评测页显示对应内容。",
+      "tests": [
+        "tests/frontend/page_value_contracts.py::test_robotics_history_and_task_counts_match_records",
+        "tests/frontend/page_value_contracts.py::test_incomplete_robotics_deep_link_returns_to_the_asset_library",
+        "tests/frontend/page_value_contracts.py::test_question_modes_and_evaluation_agree_with_visible_outputs"
+      ]
+    },
+    {
       "id": "GRAPH-NAME-01",
-      "decision": "DR-165",
+      "decision": "DR-170",
       "status": "delivered",
       "criterion": "交互式本体图谱目前仅支持机器人本体；模块、样式、只读响应、路径、页面参数、测试和文档使用对应功能名称，数据本体维持原样，已保存本体与机器人交互及校验语义保持。",
       "tests": [
@@ -3792,7 +4234,7 @@
     },
     {
       "id": "RUX-01",
-      "decision": "DR-166",
+      "decision": "DR-171",
       "iteration": "IR-032",
       "status": "delivered",
       "criterion": "行为树新任务入口先检查固定版本，骨架不兼容时进入对应设计修订；刷新不重建任务或重复检查。",
@@ -3802,7 +4244,7 @@
     },
     {
       "id": "RUX-02",
-      "decision": "DR-166",
+      "decision": "DR-171",
       "iteration": "IR-032",
       "status": "delivered",
       "criterion": "对象关联与参数补齐后只集中核对当前任务知识一次，不默认勾选、确认未展示内容或放宽消费者与适配依据检查。",
@@ -3813,7 +4255,7 @@
     },
     {
       "id": "RUX-03",
-      "decision": "DR-166",
+      "decision": "DR-171",
       "iteration": "IR-032",
       "status": "delivered",
       "criterion": "类别、关系属性及应用修订使用统一紧凑布局，步骤、确认、继续修改与输入位于画布上方；不重复展示标题框与摘要，完整定义和只读历史仍可查看。",
@@ -3825,7 +4267,7 @@
     },
     {
       "id": "RUX-04",
-      "decision": "DR-166",
+      "decision": "DR-171",
       "iteration": "IR-032",
       "status": "delivered",
       "criterion": "普通实例化完成自动打开该固定版本图谱；应用骨架修订完成按来源返回检查或适配并使用新候选，保留旧候选和原任务上下文。",
@@ -3836,7 +4278,7 @@
     },
     {
       "id": "RUX-05",
-      "decision": "DR-166",
+      "decision": "DR-171",
       "iteration": "IR-032",
       "status": "delivered",
       "criterion": "类别局部关联首次点击后立即提供恢复完整图谱按钮，无需重新选择节点，恢复后节点与选择正确。",
@@ -3846,7 +4288,7 @@
     },
     {
       "id": "RUX-06",
-      "decision": "DR-166",
+      "decision": "DR-171",
       "iteration": "IR-032",
       "status": "delivered",
       "criterion": "应用允许的自动执行结构适配成功后直接进入已检查的任务页；人工角色核对、只读检查、失败恢复及并发修订约束保留，刷新不重复适配。",
@@ -3863,7 +4305,7 @@
     },
     {
       "id": "AGN-01",
-      "decision": "DR-167",
+      "decision": "DR-172",
       "iteration": "IR-033",
       "status": "delivered",
       "criterion": "应用检查以业务含义说明缺少内容、影响及解决办法，技术标识和原始约束折叠保留并安全转义。",
@@ -3874,7 +4316,7 @@
     },
     {
       "id": "AGN-02",
-      "decision": "DR-167",
+      "decision": "DR-172",
       "iteration": "IR-033",
       "status": "delivered",
       "criterion": "默认只显示一个完善本体入口，受控词表缺项优先补充定义、自定义词表优先核对已有内容，保留其它处理能力与服务端校验。",
@@ -3886,7 +4328,7 @@
     },
     {
       "id": "AGN-03",
-      "decision": "DR-167",
+      "decision": "DR-172",
       "iteration": "IR-033",
       "status": "delivered",
       "criterion": "从修复流程后退时重新检查并恢复有效操作，保留固定版本与任务范围；不得强行启用过期报告、自动再次修复或留下永久禁用按钮。",
@@ -3901,7 +4343,7 @@
     },
     {
       "id": "AGN-04",
-      "decision": "DR-167",
+      "decision": "DR-172",
       "iteration": "IR-033",
       "status": "delivered",
       "criterion": "任务内嵌检查返回保留原任务与草稿，图谱导航恢复可操作控件；相关构建与评审的离开和返回不产生重复提交或放宽已有保护。",
@@ -3916,7 +4358,7 @@
     },
     {
       "id": "TCF-01",
-      "decision": "DR-169",
+      "decision": "DR-174",
       "iteration": "IR-035",
       "status": "delivered",
       "criterion": "应用检查仅提供完善本体入口，按既有推荐进入修订或人工对应流程，移除其它完善方式且保留服务端校验。",
@@ -3928,7 +4370,7 @@
     },
     {
       "id": "TCF-02",
-      "decision": "DR-168",
+      "decision": "DR-173",
       "iteration": "IR-034",
       "status": "delivered",
       "criterion": "保存按当前缺项给出确认、对象和参数等具体提示；失败保留输入且不写入，允许合法分步保存并说明剩余缺项。",
@@ -3942,7 +4384,7 @@
     },
     {
       "id": "GEN-FEEDBACK-01",
-      "decision": "DR-170",
+      "decision": "DR-175",
       "iteration": "IR-036",
       "status": "delivered",
       "criterion": "生成失败按当前任务配置提示补齐与重试，未选中草稿不触发完善本体，历史失败可显式重新生成；30秒期限内的慢响应仍能成功，超时后显式重试不重复模型请求。",
@@ -3955,7 +4397,7 @@
     },
     {
       "id": "CFG-SCOPE-01",
-      "decision": "DR-170",
+      "decision": "DR-175",
       "iteration": "IR-036",
       "status": "delivered",
       "criterion": "任务适配只校验最终选中配置及依赖，切回原配置后未完成草稿不阻断生成，草稿和历史保持；结构、可信规则、版本与完整发布校验保持。",
@@ -3969,7 +4411,7 @@
     },
     {
       "id": "TASK-NET-01",
-      "decision": "DR-167",
+      "decision": "DR-172",
       "iteration": "IR-033",
       "status": "delivered",
       "criterion": "任务读取、保存、生成与XML下载均有30秒总时限；超时恢复操作，保存与生成保留输入及请求编号；下载可显式重试，离开取消等待且迟到响应不触发下载或覆盖状态",
@@ -3985,7 +4427,7 @@
     },
     {
       "id": "GRAPH-LIFE-01",
-      "decision": "DR-171",
+      "decision": "DR-176",
       "iteration": "IR-037",
       "status": "delivered",
       "criterion": "已删除机器人本体的固定版本图谱只接受显式历史读取，回收站详情与图谱往返保留固定版本和历史状态，读取不写入，恢复后普通入口重新可用。",
@@ -3997,7 +4439,7 @@
     },
     {
       "id": "DESIGN-RECEIPT-01",
-      "decision": "DR-172",
+      "decision": "DR-177",
       "iteration": "IR-038",
       "status": "delivered",
       "criterion": "设计写入成功后，即使图谱无法生成，调用方仍收到原修订或运行的成功回执和独立提示；重放不重复写入，真实冲突仍报错，页面可只读恢复图谱。",
@@ -4008,7 +4450,7 @@
     },
     {
       "id": "DESIGN-HISTORY-01",
-      "decision": "DR-173",
+      "decision": "DR-178",
       "iteration": "IR-039",
       "status": "delivered",
       "criterion": "从选中历史修订起，界面与控制器阻止发送、确认、编辑和重试；返回当前设计后只有显式重试才会按当前修订和失败运行创建一次重试。",
@@ -4020,7 +4462,7 @@
     },
     {
       "id": "SPEC-MATERIAL-01",
-      "decision": "DR-174",
+      "decision": "DR-179",
       "iteration": "IR-040",
       "status": "delivered",
       "criterion": "公开文档按日期和变更范围区分历史全量与定向验证，复现入口使用公开版本的仓库命令。公开夹具采用中性来源标识，保留文件摘要和选取规则。历史提交号、外部来源的内部目录、开发操作与单次验证产物留在内部。",
@@ -4036,7 +4478,7 @@
     },
     {
       "id": "GRAPH-SOURCE-01",
-      "decision": "DR-175",
+      "decision": "DR-180",
       "iteration": "IR-041",
       "status": "delivered",
       "criterion": "交互式本体图谱模型源码的最后一行保留换行符，文件末尾无额外空行；图谱分页展开仍对共享实例去重。",
@@ -4047,7 +4489,7 @@
     },
     {
       "id": "GRAPH-TASK-MODE-01",
-      "decision": "DR-176",
+      "decision": "DR-181",
       "iteration": "IR-042",
       "status": "delivered",
       "criterion": "从活动固定版本交互式图谱进入行为树任务时，任务入口和应用检查均沿用固定本体、版本及其 demo 或 real 模式；缺少模式元数据的历史版本仍按 RDF 标记识别。",
@@ -4058,7 +4500,7 @@
     },
     {
       "id": "GRAPH-OFFLINE-READ-01",
-      "decision": "DR-177",
+      "decision": "DR-182",
       "iteration": "IR-043",
       "status": "delivered",
       "criterion": "读取固定离线版本的交互式图谱时，来源工件必须完整。三元组或带类型的命名主体数量超过输入上限时拒绝规范化，通过检查时仅在共享 RDF 锁外规范化一次。完整导出保留来源与原构建报告。",
@@ -4071,7 +4513,7 @@
     },
     {
       "id": "GRAPH-INITIAL-SCOPE-01",
-      "decision": "DR-178",
+      "decision": "DR-183",
       "iteration": "IR-044",
       "status": "delivered",
       "criterion": "首次打开超过同屏节点或连线上限的机器人图谱时，用户可从当前文档的对象索引选择或搜索类别，查看限额内的局部图谱。恢复超限全图时保留当前局部范围，超限修订不能覆盖已有画布。",
@@ -4084,7 +4526,7 @@
     },
     {
       "id": "GRAPH-BROWSER-EVIDENCE-01",
-      "decision": "DR-179",
+      "decision": "DR-184",
       "iteration": "IR-045",
       "status": "delivered",
       "criterion": "图谱浏览器用例的完成标记反映本次执行的最终结果。用例通过且页面无异常、清理完成时记录为完成，失败或跳过时记录为未完成。套件逐项核对 JUnit 和证据文件，缺失、损坏或不一致时以非零状态退出。",

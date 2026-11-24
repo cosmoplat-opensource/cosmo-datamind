@@ -1,6 +1,6 @@
 # IR-039 · 历史设计修订的写操作保护
 
-状态：delivered。关联 [DR-173](../decisions/DR-173-design-history-read-only.md) 和 DESIGN-HISTORY-01。
+状态：delivered。关联 [DR-178](../decisions/DR-178-design-history-read-only.md) 和 DESIGN-HISTORY-01。
 
 ## 验收
 

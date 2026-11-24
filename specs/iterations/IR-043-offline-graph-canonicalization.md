@@ -1,6 +1,6 @@
 # IR-043 · 离线固定版本图谱的读取与规模检查
 
-状态：delivered。关联 [DR-177](../decisions/DR-177-offline-graph-canonicalization.md) 和 [GRAPH-OFFLINE-READ-01](../acceptance.json)。
+状态：delivered。关联 [DR-182](../decisions/DR-182-offline-graph-canonicalization.md) 和 [GRAPH-OFFLINE-READ-01](../acceptance.json)。
 
 ## 验收
 

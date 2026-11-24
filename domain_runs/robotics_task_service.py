@@ -1,4 +1,4 @@
-"""Persistent task dialogue and atomic, scoped knowledge completion — DR-143 / DR-146 / DR-148 / DR-169 / DR-170.
+"""Persistent task dialogue and atomic, scoped knowledge completion — DR-143 / DR-146 / DR-148 / DR-174 / DR-175.
 
 Model calls run outside database/RDF locks. Public state is a fixed session snapshot;
 requests are idempotent, and immutable versions/runs remain the source of truth.

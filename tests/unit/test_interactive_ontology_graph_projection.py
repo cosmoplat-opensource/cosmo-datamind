@@ -1,4 +1,4 @@
-"""Frozen projection behavior oracles — DR-161 / IR-031 T02 RED."""
+"""Frozen projection behavior oracles — DR-166 / IR-031 T02 RED."""
 from copy import deepcopy
 import hashlib
 import importlib
@@ -20,7 +20,7 @@ RDFS = 'http://www.w3.org/2000/01/rdf-schema#'
 def api():
     # Absence of this new product capability is an assertion, not an import/collection error.
     assert importlib.util.find_spec('ontology_assets.interactive_ontology_graph_view') is not None, (
-        'DR-161 requires a read-only Ontology graph projection for saved designs and RDF versions')
+        'DR-166 requires a read-only Ontology graph projection for saved designs and RDF versions')
     return importlib.import_module('ontology_assets.interactive_ontology_graph_view')
 
 

@@ -1,6 +1,6 @@
 # IR-042 · 固定版本图谱的任务模式
 
-状态：delivered。关联 [DR-176](../decisions/DR-176-fixed-graph-task-mode.md) 和 [GRAPH-TASK-MODE-01](../acceptance.json)。
+状态：delivered。关联 [DR-181](../decisions/DR-181-fixed-graph-task-mode.md) 和 [GRAPH-TASK-MODE-01](../acceptance.json)。
 
 ## 验收
 

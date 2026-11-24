@@ -232,7 +232,7 @@ def user_tables(con: sqlite3.Connection) -> list[str]:
     return [
         row[0]
         for row in con.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\' ORDER BY name"
         )
     ]
 
@@ -615,7 +615,7 @@ def build_cases(con: sqlite3.Connection, specs: list[TableSpec], dirty: dict[str
         ("TRACEABILITY", "fact_lot_trace", "trace_id", "每条记录有唯一追溯标识",
          "SELECT COUNT(*)-COUNT(DISTINCT trace_id) FROM fact_lot_trace", "challenge"),
         ("METADATA_COMPLETENESS", "dim_column_metadata", "column_desc", "每个物理列都有元数据",
-         "SELECT COUNT(*) FROM sqlite_master m, pragma_table_info(m.name) p WHERE m.type='table' AND m.name NOT LIKE 'sqlite_%' "
+         "SELECT COUNT(*) FROM sqlite_master m, pragma_table_info(m.name) p WHERE m.type='table' AND m.name NOT LIKE 'sqlite\\_%' ESCAPE '\\' "
          "AND NOT EXISTS (SELECT 1 FROM dim_column_metadata c WHERE c.table_name=m.name AND c.column_name=p.name)", "challenge"),
         ("NEW_REFERENCE_INTEGRITY", "new tables", "*", "新表的引用(含未声明的)全部能在父表找到", _new_ref_orphan_sql(specs), "challenge"),
     ] + [(code, tbl, col, desc, sql, "base_known_issue") for code, tbl, col, desc, sql in BASE_ISSUES]
@@ -712,7 +712,7 @@ def validate_database(con: sqlite3.Connection, specs: list[TableSpec], extra: di
         "tables": len(tables), "columns": columns, "rows": total_rows, "new_tables": len(expected_new),
         "new_fact_tables": sum(1 for s in specs if s.kind == "fact"), "new_dimension_tables": sum(1 for s in specs if s.kind == "dim"),
         "declared_foreign_keys": sum(len(list(con.execute(f"PRAGMA foreign_key_list({qident(t)})"))) for t in tables),
-        "indexes": con.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name NOT LIKE 'sqlite_%'").fetchone()[0],
+        "indexes": con.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\'").fetchone()[0],
         "integrity_check": integrity, "foreign_key_violations": fk_by_table,
         "metadata": {"table_records": len(table_meta), "column_records": len(col_meta)},
         "deidentification": extra["deidentification"], "seeded_base_empty_tables": extra["seeded"],
@@ -779,7 +779,7 @@ def build(base: Path, output: Path, report: Path, dictionary: Path, force: bool,
         vc = by_name["dim_validation_case"]
         vc.rows = len(cases)
         seed_dimension(dest, vc, ctx, rng, [{"_case": c} for c in cases])
-        dest.execute("UPDATE dim_dataset_release SET column_count=(SELECT SUM(n) FROM (SELECT COUNT(*) n FROM sqlite_master m, pragma_table_info(m.name) WHERE m.type='table' AND m.name NOT LIKE 'sqlite_%'))")
+        dest.execute("UPDATE dim_dataset_release SET column_count=(SELECT SUM(n) FROM (SELECT COUNT(*) n FROM sqlite_master m, pragma_table_info(m.name) WHERE m.type='table' AND m.name NOT LIKE 'sqlite\\_%' ESCAPE '\\'))")
         ctx.invalidate("dim_dataset_release")
         ctx.invalidate("dim_validation_case")
         # 治理事实表:每个案例一条执行结果;每个登记的已知问题与脏数据一条数据质量问题

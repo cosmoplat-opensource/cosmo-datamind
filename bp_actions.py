@@ -143,16 +143,31 @@ def _run_executor(item, mode="execute"):
 
 
 def _store(item):
-    """把一条记录写入日志:已有同编号的就替换,否则插到最前。"""
     with _WRITE_LOCK:
-        log = load_action_log()
-        for i, entry in enumerate(log):
-            if entry.get("id") == item["id"]:
-                log[i] = item
-                break
-        else:
-            log.insert(0, item)
-        _atomic_json(ACTION_LOG_F, log[:1000])
+        _save_receipt(load_action_log(), item)
+
+
+def _save_receipt(log, item):
+    """调用方持有写锁。最新处置或执行回执排在最前面，同一 ID 只保留一次。"""
+    previous = [entry for entry in log if entry.get("id") != item["id"]]
+    _atomic_json(ACTION_LOG_F, _retain([item, *previous]))
+
+
+ACTION_LOG_LIMIT = 1000                 # 已了结记录的保留上限;未了结的记录不因日志变长而被删除
+UNRESOLVED = ("pending", "executing", "unknown")
+
+
+def _retain(log):
+    """保留全部未了结记录，以及最近 ACTION_LOG_LIMIT 条已了结记录。"""
+    room = ACTION_LOG_LIMIT
+    kept = []
+    for entry in log:
+        if entry.get("status") in UNRESOLVED:
+            kept.append(entry)
+        elif room:
+            kept.append(entry)
+            room -= 1
+    return kept
 
 
 def _reconcile(log):
@@ -412,7 +427,16 @@ def _recorded_effects(action_type):
 
 @bp_actions.get("/api/action/log")
 def action_log():
-    return jsonify({"items": [item for item in _load_reconciled() if _scope_matches(item)][:200]})
+    # 最近 200 条之外的待审批记录仍要能处理:全部未了结记录都返回,已了结的只返回最近 200 条
+    items, shown = [], 0
+    log = [item for item in _load_reconciled() if _scope_matches(item)]
+    for item in log:
+        if item.get("status") in UNRESOLVED:
+            items.append(item)
+        elif shown < 200:
+            items.append(item)
+            shown += 1
+    return jsonify({"items": items, "total": len(log), "truncated": len(items) < len(log)})
 
 
 @bp_actions.post("/api/action/approve")
@@ -452,7 +476,7 @@ def action_approve():
                 item["status"] = "executed"
         else:
             item["status"] = "denied"
-        _atomic_json(ACTION_LOG_F, log)
+        _save_receipt(log, item)
     if item["status"] == "executing":
         _run_executor(item)                       # 调用在锁外进行,完成后按回执写回记录
         _store(item)
@@ -484,5 +508,5 @@ def action_resolve():
                     resolve_ts=time.strftime("%Y-%m-%d %H:%M"))
         if item.get("real_writeback") is None:       # 人核对后的结论:已执行的正式调用即已写回,未执行即未写回
             item["real_writeback"] = (True if item.get("execution_mode") == "executor" else None) if outcome == "executed" else False
-        _atomic_json(ACTION_LOG_F, log)
+        _save_receipt(log, item)
     return jsonify({"ok": True, "status": item["status"]})

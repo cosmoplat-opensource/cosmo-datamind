@@ -20,13 +20,13 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 
 ## 机器人构建与应用交互
 
-[DR-167](decisions/DR-167-application-guidance-and-return-navigation.md) 与 [IR-033](iterations/IR-033-application-guidance-and-return-navigation.md)：应用检查提示、统一完善入口、浏览器后退与操作恢复。AGN-01～AGN-04。
+[DR-172](decisions/DR-172-application-guidance-and-return-navigation.md) 与 [IR-033](iterations/IR-033-application-guidance-and-return-navigation.md)：应用检查提示、统一完善入口、浏览器后退与操作恢复。AGN-01～AGN-04。
 
-[DR-166](decisions/DR-166-robotics-workflow-continuity.md) 与 [IR-032](iterations/IR-032-robotics-workflow-continuity.md)：任务检查入口、集中知识确认、紧凑设计画布、完成导航与自动执行适配。RUX-01～RUX-06。
+[DR-171](decisions/DR-171-robotics-workflow-continuity.md) 与 [IR-032](iterations/IR-032-robotics-workflow-continuity.md)：任务检查入口、集中知识确认、紧凑设计画布、完成导航与自动执行适配。RUX-01～RUX-06。
 
 ## 测试执行与隔离
 
-[DR-163 · 独立测试数据与有界并行验证](decisions/DR-163-isolated-test-seeds-and-bounded-parallel-checks.md)：复用真实构建准备产物，保存和读取仍完整校验；独立资产与运行身份；有界进程及完整覆盖率汇总。PERF-T01～T04。
+[DR-168 · 独立测试数据与有界并行验证](decisions/DR-168-isolated-test-seeds-and-bounded-parallel-checks.md)：复用真实构建准备产物，保存和读取仍完整校验；独立资产与运行身份；有界进程及完整覆盖率汇总。PERF-T01～T04。
 
 ## 开发约定(DR-066)
 - 需求 → 测试映射 `specs/acceptance.json`;有效行规则 `specs/models/valid_rows_rules.json`;场景回归基准 `tests/scenarios`(`scripts/scenario_bench.py`);构建步骤说明 `docs/pipelines/ontology_build.yaml`。
@@ -44,9 +44,9 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 
 当前仅接入机器人本体的设计阶段可视化与固定版本浏览。数据本体主图、构建结果预览、问数高亮、证据状态、详情和评审维持现有实现，不安排后续自动接入。
 
-- [DR-161 · 机器人交互式本体图谱与构建可视化](decisions/DR-161-interactive-ontology-graph-visualization.md)：方案已采纳；2026-11-19 范围和命名修订实现交付状态为 delivered，相关回归通过。
+- [DR-166 · 机器人交互式本体图谱与构建可视化](decisions/DR-166-interactive-ontology-graph-visualization.md)：方案已采纳；2026-11-19 范围和命名修订实现交付状态为 delivered，相关回归通过。
 - [IR-031 · 机器人交互式本体图谱与构建可视化](iterations/IR-031-robotics-interactive-ontology-graph-visualization.md)：delivered。2026-11-17 的原交付记录覆盖 17 个全量阶段；2026-11-19 的命名修订仅做定向回归。
-- [DR-162 · 交互式本体图谱边界与公开材料](decisions/DR-162-interactive-graph-limits-and-publication-boundary.md)：仅适用于机器人设计和版本浏览，保留预算、超时、只读及发布边界；STV-H01～H05 本次交付状态为 delivered。
+- [DR-167 · 交互式本体图谱边界与公开材料](decisions/DR-167-interactive-graph-limits-and-publication-boundary.md)：仅适用于机器人设计和版本浏览，保留预算、超时、只读及发布边界；STV-H01～H05 本次交付状态为 delivered。
 - 需求与测试登记于 `acceptance.json`；已移除数据本体接入的计划验收，不删除现有数据本体测试。
 
 ## 机器人双路径构建（2026-11-10，已确认方案）
@@ -366,20 +366,20 @@ IR-029 于 2026-11-17 按用户反馈精简删除／恢复弹窗及回收站卡�
 
 ## master 与交互式本体图谱兼容集成
 
-[DR-164 · master 修复与交互式本体图谱功能兼容集成](decisions/DR-164-master-and-interactive-ontology-graph-integration.md)：保留两边功能；master 编号保持，交互式本体图谱相关记录使用 DR-161、DR-162、DR-163，DR-160 保持不变；MERGE-GRAPH-01 本次交付状态为 delivered。
+[DR-169 · master 修复与交互式本体图谱功能兼容集成](decisions/DR-169-master-and-interactive-ontology-graph-integration.md)：保留两边功能；master 编号保持，交互式本体图谱相关记录使用 DR-166、DR-167、DR-168，DR-160 保持不变；MERGE-GRAPH-01 本次交付状态为 delivered。
 
 ## 交互式本体图谱统一命名
 
-[DR-165 · 交互式本体图谱命名与视图契约](decisions/DR-165-interactive-ontology-graph-naming-and-view-contract.md)：模块、只读接口、页面参数及验收入口统一使用功能名称；GRAPH-NAME-01 本次交付状态为 delivered。
+[DR-170 · 交互式本体图谱命名与视图契约](decisions/DR-170-interactive-ontology-graph-naming-and-view-contract.md)：模块、只读接口、页面参数及验收入口统一使用功能名称；GRAPH-NAME-01 本次交付状态为 delivered。
 
 ## 任务补齐反馈
 
-[DR-168 · 任务补齐的明确反馈与完善方式说明](decisions/DR-168-task-completion-feedback.md) ／ [IR-034](iterations/IR-034-task-completion-feedback.md)：保存反馈 TCF-02；入口验收 TCF-01 当前范围见下方 DR-169 / IR-035。
+[DR-173 · 任务补齐的明确反馈与完善方式说明](decisions/DR-173-task-completion-feedback.md) ／ [IR-034](iterations/IR-034-task-completion-feedback.md)：保存反馈 TCF-02；入口验收 TCF-01 当前范围见下方 DR-174 / IR-035。
 
 ## 单一完善入口与生成提示
 
-[DR-169 · 单一本体完善入口与生成结果提示](decisions/DR-169-single-repair-entry-and-generation-feedback.md) ／ [IR-035](iterations/IR-035-single-repair-entry-and-generation-feedback.md)：TCF-01；GEN-FEEDBACK-01 当前任务范围见下方 DR-170 / IR-036。
+[DR-174 · 单一本体完善入口与生成结果提示](decisions/DR-174-single-repair-entry-and-generation-feedback.md) ／ [IR-035](iterations/IR-035-single-repair-entry-and-generation-feedback.md)：TCF-01；GEN-FEEDBACK-01 当前任务范围见下方 DR-175 / IR-036。
 
 ## 最终任务配置范围
 
-[DR-170 · 按最终任务配置校验与生成](decisions/DR-170-task-configuration-validation-scope.md) ／ [IR-036](iterations/IR-036-task-configuration-validation-scope.md)：CFG-SCOPE-01、GEN-FEEDBACK-01。
+[DR-175 · 按最终任务配置校验与生成](decisions/DR-175-task-configuration-validation-scope.md) ／ [IR-036](iterations/IR-036-task-configuration-validation-scope.md)：CFG-SCOPE-01、GEN-FEEDBACK-01。

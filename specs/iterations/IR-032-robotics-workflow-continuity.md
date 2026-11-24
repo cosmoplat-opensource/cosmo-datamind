@@ -1,6 +1,6 @@
 # IR-032 · 机器人构建与行为树应用交互修复
 
-状态：delivered。关联：[DR-166](../decisions/DR-166-robotics-workflow-continuity.md)。
+状态：delivered。关联：[DR-171](../decisions/DR-171-robotics-workflow-continuity.md)。
 
 ## 目标
 

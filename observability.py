@@ -175,20 +175,23 @@ def recent(limit=200, kind=None):
     path = os.path.join(obs_dir(), time.strftime("events-%Y%m%d.jsonl"))
     if not os.path.exists(path):
         return []
+    # 先按 kind 过滤再取末尾 limit 条:逐行读取,内存只保留 limit 条匹配事件。
+    # 不能先截取文件末尾固定行数再过滤,否则大量其他类型事件会把当天较早的匹配事件挤出窗口。
+    out: deque = deque(maxlen=max(int(limit), 0))
     try:
         with open(path, encoding="utf-8") as fh:
-            lines = deque(fh, maxlen=5000)          # 只保留末尾若干行,不把整个文件读进内存
+            for ln in fh:
+                if kind is not None and str(kind) not in ln:      # 廉价预筛,最终以解析后的字段为准
+                    continue
+                try:
+                    ev = json.loads(ln)
+                except ValueError:
+                    continue
+                if isinstance(ev, dict) and (kind is None or ev.get("kind") == kind):
+                    out.append(ev)
     except OSError:
         return []
-    out = []
-    for ln in lines:
-        try:
-            ev = json.loads(ln)
-        except ValueError:
-            continue
-        if kind is None or ev.get("kind") == kind:
-            out.append(ev)
-    return out[-limit:]
+    return list(out)
 
 
 def reset():

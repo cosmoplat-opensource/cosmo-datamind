@@ -246,7 +246,7 @@ def fill_gaps(panel, state):
     mappings = {'hasPerceptionProfile': str(S.Perception_Current), 'hasPlacementProfile': str(S.Placement_Current)}
     for item in state['gaps']:
         if item['kind'] == 'confirmation':
-            # DR-166: confirm only after the remaining mappings/values are visible.
+            # DR-171: confirm only after the remaining mappings/values are visible.
             if not any(g['kind'] in ('mapping', 'parameter') for g in state['gaps']):
                 panel.get_by_role('checkbox', name='我已核对当前任务知识', exact=True).check()
             continue
@@ -301,7 +301,7 @@ def download(page, site, panel, current, *, values=None):
 
 
 def test_save_feedback_names_missing_fields_and_unchecked_knowledge_without_writes(live):
-    """DR-168: empty or blank saves explain the current stage and keep drafts."""
+    """DR-173: empty or blank saves explain the current stage and keep drafts."""
     site, page, calls = live
     ref = site.submit()['output_asset_ref']; panel = open_task(page, site, ref)
     current = submit_task(page, panel)
@@ -337,7 +337,7 @@ def test_save_feedback_names_missing_fields_and_unchecked_knowledge_without_writ
 
 
 def test_task_knowledge_is_confirmed_once_after_all_mapping_and_parameter_edits(live):
-    """DR-166: never confirm unseen dependencies or ask twice for known edits."""
+    """DR-171: never confirm unseen dependencies or ask twice for known edits."""
     site, page, calls = live
     ref = site.submit()['output_asset_ref']
     original = AssetStore(site.root).read_payload(**ref)
@@ -364,7 +364,7 @@ def test_task_knowledge_is_confirmed_once_after_all_mapping_and_parameter_edits(
 
 
 def test_inline_application_check_back_keeps_task_scope_draft_and_enabled_repair(live):
-    """DR-167: return refresh also handles an existing task's embedded report."""
+    """DR-172: return refresh also handles an existing task's embedded report."""
     site, page, calls = live
     ref = site.submit()['output_asset_ref']; panel = open_task(page, site, ref)
     current = submit_task(page, panel)
@@ -402,7 +402,7 @@ def test_inline_application_check_back_keeps_task_scope_draft_and_enabled_repair
 
 @pytest.mark.parametrize('navigation', ['back', 'recheck', 'direct'])
 def test_back_after_task_version_change_offers_current_task_instead_of_retry_loop(live, navigation):
-    """DR-167: a fixed report cannot be replayed against a newer task version."""
+    """DR-172: a fixed report cannot be replayed against a newer task version."""
     from domain_runs.robotics_task_service import TaskService
     site, page, calls = live
     ref = site.submit()['output_asset_ref']; panel = open_task(page, site, ref)
@@ -560,7 +560,7 @@ def test_unknown_configuration_can_be_created_inline_without_user_iri(live):
     pytest.param(True, 0, id='True'),
 ])
 def test_unused_profile_is_preserved_and_task_errors_retry_current_selection(live, timeout_retry, response_latency_ms):
-    """DR-170: ignored drafts stay intact; old errors retry without a modelling detour."""
+    """DR-175: ignored drafts stay intact; old errors retry without a modelling detour."""
     from rdflib import RDFS, Literal
     site, page, calls = live
     ref = site.submit()['output_asset_ref']; assets = AssetStore(site.root)
@@ -661,7 +661,7 @@ def test_unused_profile_is_preserved_and_task_errors_retry_current_selection(liv
     ('hasPlacementProfile', '放置配置', 'PlacementProfile', str(S.Placement_Current)),
 ])
 def test_switch_back_from_unfinished_configuration_generates_from_final_selection(live, field, label, kind, original):
-    """DR-170: the actual configuration editor can abandon a draft without blocking the task."""
+    """DR-175: the actual configuration editor can abandon a draft without blocking the task."""
     site, page, calls = live
     ref = site.submit()['output_asset_ref']; assets = AssetStore(site.root)
     before = assets.read_payload(**ref)
@@ -844,7 +844,7 @@ if __name__ == '__main__':
     # Two verbosity levels also override the repository's default quiet option.
     command = [str(Path(__file__).resolve()), '-vv', '-ra', '--tb=short', '--durations=20',
                '--junitxml=' + str(args.output / 'junit.xml')]
-    # DR-163: each worker owns its browser, model server and per-test storage.
+    # DR-168: each worker owns its browser, model server and per-test storage.
     if args.workers > 1:
         command.extend(['-n', str(args.workers), '--dist', 'worksteal'])
     if args.case: command += ['-k', args.case]

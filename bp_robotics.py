@@ -306,7 +306,7 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True, data_host=Non
             raise BuildRequestError('artifact_integrity', '设计文件缺失或损坏。', 409) from exc
 
     def design_display(row):
-        # DR-161: saved state projects read-only; confirmation remains explicit.
+        # DR-166: saved state projects read-only; confirmation remains explicit.
         from ontology_assets.interactive_ontology_graph_view import project_design
         return {**row, 'interactive_graph_view': project_design(row)}
 
@@ -356,7 +356,7 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True, data_host=Non
             raise _invalid()
         function = getattr(service, 'message' if operation=='messages' else operation.replace('-', '_'))
         receipt = function(sid, **body)
-        # DR-172: only the optional projection runs inside this boundary, after commit or replay.
+        # DR-177: only the optional projection runs inside this boundary, after commit or replay.
         try:
             display = design_display(receipt)
         except Exception as exc:

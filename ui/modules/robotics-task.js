@@ -1,4 +1,4 @@
-/* Persistent task controller and minimal task-page composition — DR-145 / DR-146 / DR-148 / DR-155 / DR-166 / DR-167 / DR-168 / DR-169 / DR-170. */
+/* Persistent task controller and minimal task-page composition — DR-145 / DR-146 / DR-148 / DR-155 / DR-171 / DR-172 / DR-173 / DR-174 / DR-175. */
 (function(global){
   'use strict';
   const copy = value => JSON.parse(JSON.stringify(value));
@@ -184,7 +184,7 @@
         {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({issue_id:issue.issue_id,action_id:action.action_id,input:{},expected_revision:action.target.expected_revision,request_id:requestId})});
       if(active!==view)return;
       if(reply.kind==='navigate'&&reply.href.startsWith('#')){
-        // DR-167: only this accepted navigation may request a fresh diagnostic on Back.
+        // DR-172: only this accepted navigation may request a fresh diagnostic on Back.
         const r=response.report;
         global.history.replaceState({...global.history.state,applicationCheckReturn:{check:r.check_id,refs:r.asset_refs,mode:r.context.mode,task:r.task_ref?.session_id||null}},'',global.location.hash);
         const href=await global.RoboticsDesign.beginRepair(reply,requestId,fetcher);
@@ -248,7 +248,7 @@
             if(params.get('task') || r.task_ref?.session_id)params.set('session',params.get('task') || r.task_ref.session_id);
             mountTask(host,params,response);return;
           }
-          // DR-166: the server still owns matching/validation; never automate schema edits or stale checks.
+          // DR-171: the server still owns matching/validation; never automate schema edits or stale checks.
           if(response.freshness==='current'&&!params.get('readonly')&&!params.get('adapted')&&
              r.issues.length&&r.issues.every(i=>i.layer==='execution')){
             const issue=r.issues.find(i=>i.repair_actions?.some(a=>a.action_id==='robotics.adapt_execution'&&a.availability==='available'));
@@ -304,7 +304,7 @@
       if(view.configEdit && (view.configEdit.session!==s.session_id || view.configEdit.revision!==s.revision))view.configEdit=null;
       const editing=view.configEdit;
       const gaps=editing?[]:s.gaps||[];
-      // DR-166: mappings can expose previously unseen profiles; confirm only the final visible scope.
+      // DR-171: mappings can expose previously unseen profiles; confirm only the final visible scope.
       const confirmations=knowledgeConfirmations(gaps);
       const offline=s.generation_policy==='offline', notesError=error?.operation==='notes';
       const noteValue=kind=>state.noteDrafts[kind]??(s.adaptation_notes||[]).filter(n=>n.kind===kind&&n.version_id===s.version_id&&JSON.stringify(n.task)===JSON.stringify(s.task)).at(-1)?.text??'';

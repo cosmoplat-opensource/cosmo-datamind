@@ -1,4 +1,4 @@
-"""Frozen vocabulary selects the default repair, without weakening checks — DR-167."""
+"""Frozen vocabulary selects the default repair, without weakening checks — DR-172."""
 import pytest
 
 from application_contracts.adapters import service

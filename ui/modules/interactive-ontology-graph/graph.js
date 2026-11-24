@@ -1,4 +1,4 @@
-/* Ontology graph layout — DR-161. */
+/* Ontology graph layout — DR-166. */
 import { label, shortIRI } from './model.js';
 import { placeLabels } from './labelLayout.js';
 import { routeEdges } from './edgeRouting.js';

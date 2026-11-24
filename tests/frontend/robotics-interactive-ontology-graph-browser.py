@@ -1,4 +1,4 @@
-"""Real Chromium and persisted fixtures for Ontology graph integration — DR-161 / IR-031 T04."""
+"""Real Chromium and persisted fixtures for Ontology graph integration — DR-166 / IR-031 T04."""
 import argparse
 import importlib.util
 import json
@@ -143,7 +143,7 @@ def probe(page, site, *, nodes=2, edges=1, instances=0):
 
 
 def test_class_focus_immediately_offers_restore_without_selecting_another_node(live):
-    """DR-166: the current selection must re-render after a focus change."""
+    """DR-171: the current selection must re-render after a focus change."""
     site, page, _ = live
     panel = probe(page, site, nodes=3, edges=1)
     panel.get_by_label('节点详情', exact=True).select_option('https://probe.test/#0')

@@ -1,4 +1,4 @@
-/* Ontology graph layout — DR-161. */
+/* Ontology graph layout — DR-166. */
 function onCurve(points, t) {
   const result = points.map(point => ({ ...point }));
   for (let length = result.length - 1; length > 0; length--)

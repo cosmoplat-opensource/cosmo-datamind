@@ -1,6 +1,6 @@
 # IR-033 · 应用检查提示、统一入口与后退恢复
 
-状态：delivered。关联：[DR-167](../decisions/DR-167-application-guidance-and-return-navigation.md)、[DR-163](../decisions/DR-163-isolated-test-seeds-and-bounded-parallel-checks.md)。
+状态：delivered。关联：[DR-172](../decisions/DR-172-application-guidance-and-return-navigation.md)、[DR-168](../decisions/DR-168-isolated-test-seeds-and-bounded-parallel-checks.md)。
 
 ## 目标与验收
 
@@ -64,8 +64,8 @@ python scripts/scenario_bench.py
 任务请求超时修订的历史验证环境为 Python 3.10.12，依赖采用仓库固定版本。
 任务请求期限覆盖响应头及响应体，离开或切换时取消等待，迟到响应不覆盖新状态；保存超时显示“保存结果待确认”，不推断服务端保存失败。
 真实浏览器在服务端已保存、前端响应丢失后推进时钟，验证按钮恢复、原请求编号重放、版本和修订号不重复递增；生成响应丢失后同样保留入口，重放不创建第二条生成记录，也不再次调用任务解析模型。
-详情用例同步 DR-169 的单一完善入口和提示规则，保留原始执行状态、任务身份、幂等、版本及草稿断言。
-设计浏览器准备和并行调整遵循 DR-163；所有 50 项仍执行，原 360 秒限制及三层覆盖率门槛不变。
+详情用例同步 DR-174 的单一完善入口和提示规则，保留原始执行状态、任务身份、幂等、版本及草稿断言。
+设计浏览器准备和并行调整遵循 DR-168；所有 50 项仍执行，原 360 秒限制及三层覆盖率门槛不变。
 
 - 相关单元、组件与规约 203 项通过，无失败、错误或跳过。
 - 设计浏览器 50 项通过，两个独立进程，检查进程耗时 214.555 秒。

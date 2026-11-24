@@ -104,6 +104,36 @@ jobs:
           path: ${{ runner.temp }}/datamind-results/
           if-no-files-found: error
 
+  deployment_smoke:
+    name: Gunicorn 部署与上传回读验收
+    needs: integration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - name: 在独立工作目录部署并验证服务
+        env:
+          DATAMIND_WORKDIR: ${{ runner.temp }}/datamind-deploy/workdir
+        run: |
+          mkdir -p "$DATAMIND_WORKDIR"
+          python scripts/service.py start
+          python scripts/service.py status
+          python scripts/test_deployed_upload.py --url http://127.0.0.1:8092 --report "$RUNNER_TEMP/datamind-deploy/upload.json"
+          python scripts/service.py restart
+          python scripts/service.py status
+      - if: always()
+        run: python scripts/service.py stop
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: deployment-smoke
+          path: ${{ runner.temp }}/datamind-deploy/upload.json
+          if-no-files-found: warn
+
   browser:
     name: 桌面与窄屏浏览器验收
     runs-on: ubuntu-24.04
@@ -115,7 +145,7 @@ jobs:
           python-version: "3.11"
       - run: python -m pip install --upgrade pip==26.2
       - run: pip install -r requirements-dev.txt -r requirements-ui.txt
-      - run: python -m playwright install --with-deps chromium
+      - run: python -m playwright install --with-deps chromium webkit firefox
       - id: checks
         run: python scripts/check.py --suite ui --report-dir "$RUNNER_TEMP/datamind-results"
       - uses: actions/upload-artifact@v7

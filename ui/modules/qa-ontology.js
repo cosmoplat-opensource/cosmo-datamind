@@ -31,7 +31,7 @@ function dqScopeAvailable(scope) {
   if (!ids.length) return 0;
   const metas = ids.map(dqGraphMeta).filter(Boolean);
   if (ids.length && metas.length === ids.length)
-    return metas.reduce((n, graph) => n + (graph.available_table_count || 0), 0);
+    return metas.reduce((n, graph) => n + (Number(graph.available_table_count) || 0), 0);
   return Number.isFinite(scope && scope.availableCount) ? scope.availableCount : null;
 }
 
@@ -87,7 +87,7 @@ function dqHeroScoped() {
   const usable = dqScopeAvailable(DQ_DS);
   const status = names.length
     ? `<div class="step" style="display:inline-block;text-align:left;margin:8px auto 14px"><b>当前本体：</b>${source}`
-      + (usable == null ? ' · 绑定表状态将在数据源列表加载后更新。' : ` · <b>${usable}</b> 张绑定表可查询。`)
+      + (usable == null ? ' · 绑定表状态将在数据源列表加载后更新。' : ` · <b>${esc(String(usable))}</b> 张绑定表可查询。`)   // 数量可能来自浏览器里保存的会话,同样转义
       + `新对话沿用该本体。</div>`
     : '';
   const examples = names.length ? '' : `<div class="egs">${EG_Q.map(q => `<span class="eg" onclick="dqAskEg(${esc(JSON.stringify(q))})">${esc(q)}</span>`).join('')}</div>`;
@@ -128,6 +128,26 @@ async function dqStartFromOntology(id) {
   return true;
 }
 
+function dqDsToggleG(id){const g=(DQ_GRAPHS||[]).find(x=>x.id===id);if(g&&!g.queryable){toast(g.reason||'该本体没有可查询的数据表',false);return;}const i=DQ_DS.graphs.indexOf(id);if(i<0)DQ_DS.graphs.push(id);else DQ_DS.graphs.splice(i,1);
+ const c=$('#dq_ds_body').querySelector(`.ds-card[data-g="${CSS.escape(id)}"]`);if(c)c.classList.toggle('sel');   // 原地切换，不重建(避免闪烁)
+ const gc=$('#ds_gcount');if(gc)gc.textContent=DQ_DS.graphs.length;const all=$('#ds_all_g');if(all)all.checked=DQ_GRAPHS&&DQ_DS.graphs.length===DQ_GRAPHS.length;}
+function dqDsAllG(on){DQ_DS.graphs=on?DQ_GRAPHS.filter(g=>g.queryable).map(g=>g.id):[];$('#dq_ds_body').querySelectorAll('.ds-card[data-g]').forEach(c=>{const g=DQ_GRAPHS.find(x=>x.id===c.dataset.g);c.classList.toggle('sel',on&&g&&g.queryable)});const gc=$('#ds_gcount');if(gc)gc.textContent=DQ_DS.graphs.length;}
+function dqDsSetAllTables(on){
+ DQ_DS.allTables=on;
+ if(on){
+  DQ_DS.tables=[];
+  $('#ds_tgrid').querySelectorAll('.sel').forEach(card=>{card.classList.remove('sel');card.setAttribute('aria-pressed','false');});
+ }
+}
+function dqDsToggleT(nm){
+ const i=DQ_DS.tables.indexOf(nm),selected=i<0;
+ if(selected){DQ_DS.tables.push(nm);DQ_DS.allTables=false;}else DQ_DS.tables.splice(i,1);
+ $('#ds_notable').checked=DQ_DS.allTables;
+ const card=$('#ds_tgrid').querySelector(`[data-t="${CSS.escape(nm)}"]`);
+ card.classList.toggle('sel',selected);card.setAttribute('aria-pressed',String(selected));
+}
+function dqDsTblFilter(){const q=($('#ds_tsearch').value||'').toLowerCase();$('#ds_tgrid').querySelectorAll('.ds-card').forEach(c=>{c.style.display=c.getAttribute('data-t').toLowerCase().includes(q)?'':'none';});}
+
 function dqDsBegin() {
   DQ_DS_BEFORE = dqScopeSnapshot();
 }
@@ -149,6 +169,8 @@ function dqDsCancel() {
 function dqDsCommit() {
   const valid = new Set((DQ_GRAPHS || []).filter(g => g.queryable).map(g => g.id));
   DQ_DS.graphs = DQ_DS.graphs.filter(id => valid.has(id));
+  // 勾选“不指定表”即放弃逐表选择:请求、标签与快照都不再带先前选中的表
+  if (DQ_DS.allTables) DQ_DS.tables = [];
   DQ_DS.availableCount = dqScopeAvailable(DQ_DS);
   const before = JSON.stringify(DQ_DS_BEFORE || {});
   const after = JSON.stringify(dqScopeSnapshot());

@@ -1,4 +1,4 @@
-"""Saved facts and actual generation failures remain distinct — DR-169."""
+"""Saved facts and actual generation failures remain distinct — DR-174."""
 import pytest
 from rdflib import RDF, RDFS, Literal
 from rdflib.compare import isomorphic

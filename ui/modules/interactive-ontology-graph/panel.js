@@ -1,4 +1,4 @@
-/* Interactive ontology graph workspace and read-only details — DR-161 / IR-031 T05. */
+/* Interactive ontology graph workspace and read-only details — DR-166 / IR-031 T05. */
 import {InteractiveOntologyGraphController} from './controller.js';
 import {label} from './model.js';
 export function mountPanel(host,{canvasId=null,embedded=false}={}){

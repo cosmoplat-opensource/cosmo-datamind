@@ -1,4 +1,4 @@
-"""Read-only robot interactive ontology graph projections — DR-161 §§3–6."""
+"""Read-only robot interactive ontology graph projections — DR-166 §§3–6."""
 from copy import deepcopy
 import hashlib
 import json

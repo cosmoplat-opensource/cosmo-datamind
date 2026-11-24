@@ -67,7 +67,7 @@ class Db:
         self.con = ro_connect(path)
         self._cols = {}
         self.tables = [r[0] for r in self.con.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '\\_dm\\_%' ESCAPE '\\'")]
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\' AND name NOT LIKE '\\_dm\\_%' ESCAPE '\\'")]
 
     def cols(self, table):
         if table not in self._cols:

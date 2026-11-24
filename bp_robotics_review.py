@@ -116,7 +116,7 @@ def version_history_requested():
 
 
 def visible_version_lifecycle(root, ontology_id, *, history):
-    """DR-171: detail and graph projections share the same fixed-version read policy."""
+    """DR-176: detail and graph projections share the same fixed-version read policy."""
     from ontology_assets.lifecycle import LifecycleService
     lifecycle = LifecycleService(root, read_only=True).get(ontology_id)
     if lifecycle['state'] == 'deleted' and not history:
@@ -215,7 +215,7 @@ def init_app(app, runtime):
         version = assets.get_version(ontology_id, version_id)
         visible_version_lifecycle(runtime.root, ontology_id, history=history)
         if view == 'interactive-ontology-graph':
-            # DR-161: use the same provenance readers as fixed-version exports.
+            # DR-166: use the same provenance readers as fixed-version exports.
             from ontology_assets.interactive_ontology_graph_view import project_version
             from ontology_assets.robotics_application import ApplicationAssets, is_application
             from ontology_assets.robotics_offline import OfflineAssets

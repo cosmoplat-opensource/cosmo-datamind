@@ -1,4 +1,4 @@
-"""Final task configuration defines generation scope, publication remains global — DR-170."""
+"""Final task configuration defines generation scope, publication remains global — DR-175."""
 from copy import deepcopy
 import hashlib
 

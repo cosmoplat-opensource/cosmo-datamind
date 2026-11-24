@@ -1,4 +1,4 @@
-"""Read-only robotics diagnostics and registered explicit repair navigation — DR-154 / DR-167."""
+"""Read-only robotics diagnostics and registered explicit repair navigation — DR-154 / DR-172."""
 import json
 from urllib.parse import urlencode
 
@@ -40,7 +40,7 @@ def schema(data):
     from domains.robotics.modeling.vocabulary import same_vocabulary
     choices=[action('robotics.revise_tbox','修订本体骨架',target),
              action('robotics.adapt_execution','核对角色对应',mapping_target)]
-    # DR-167: trusted fixed terms need definitions; unknown vocabularies require explicit correspondence.
+    # DR-172: trusted fixed terms need definitions; unknown vocabularies require explicit correspondence.
     if not same_vocabulary(doc['state'].get('vocabulary',{}).get('sha256')):
         choices.reverse()
     problems=[issue(p['code'],'schema',p['message'],entity=[tbox['namespace']+p.get('role','')],

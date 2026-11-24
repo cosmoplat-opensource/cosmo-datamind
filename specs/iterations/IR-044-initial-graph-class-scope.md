@@ -1,6 +1,6 @@
 # IR-044 · 从首次超限的图谱选择类别
 
-状态：delivered。关联 [DR-178](../decisions/DR-178-initial-graph-class-scope.md) 和 [GRAPH-INITIAL-SCOPE-01](../acceptance.json)。
+状态：delivered。关联 [DR-183](../decisions/DR-183-initial-graph-class-scope.md) 和 [GRAPH-INITIAL-SCOPE-01](../acceptance.json)。
 
 ## 验收
 

@@ -28,7 +28,9 @@ def _css_px(selector_re, prop="font-size"):
 
 def _groups():
     """解析侧边栏:返回 [(组名, [data-p, ...]), ...] 与顶层项。"""
-    aside = UI[UI.index('<aside>'):UI.index('</aside>')]
+    sidebar = re.search(r'<aside\b[^>]*>(.*?)</aside>', UI, re.S)
+    assert sidebar, "页面缺少侧边栏"
+    aside = sidebar.group(1)
     out = []
     rest = aside
     for gm in re.finditer(r'<div class="nav-group">(.*?)</div></div>', aside, re.S):
