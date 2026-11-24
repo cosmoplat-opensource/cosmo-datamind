@@ -20,7 +20,7 @@ from domain_runs.robotics_design_service import DesignService
 from ontology_assets.robotics_design import DesignAssets
 from tests.build_pipeline_support import blob_bytes, db_rows
 from tests.robotics_browser_support import choose_robotics, fill_robotics, submit_from_ui, wait_for, wait_run_ui
-from tests.robotics_design_browser_support import DesignSite, model_reply
+from tests.robotics_design_browser_support import DesignSite, browser_case_directory, model_reply
 from tests.robotics_design_support import Harness, proposals
 from tests.robotics_task_support import model_server
 from tests.robotics_seed_support import SeedCache
@@ -44,8 +44,7 @@ def live(tmp_path, request, browser, prepared_seeds):
     options = dict(getattr(request, 'param', {}))
     responses = options.pop('responses', [model_reply(p) for p in proposals()])
     offline = options.pop('offline', False)
-    output = Path(os.environ.get('DATAMIND_ROBOTICS_DESIGN_TEST_OUTPUT',
-        str(ROOT / '.check-results/robotics-design-browser'))) / re.sub(r'[^a-zA-Z0-9_-]', '_', request.node.name)
+    output = browser_case_directory(request.node.name)
     with model_server(*responses) as (url, calls):
         site = DesignSite(tmp_path / 'site', output, model_url=None if offline else url,
                           prepare_cache=prepared_seeds, **options)

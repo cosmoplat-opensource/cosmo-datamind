@@ -13,6 +13,8 @@ if str(ROOT) not in sys.path:
 import pytest
 from playwright.sync_api import expect
 
+pytest_plugins = ['tests.robotics_graph_browser_evidence']
+
 # Reuse the existing owned service and scripted model boundary, without replacing product HTTP.
 spec = importlib.util.spec_from_file_location('interactive_ontology_graph_design_browser_support', ROOT / 'tests/frontend/robotics-design-browser.py')
 assert spec is not None and spec.loader is not None
@@ -60,7 +62,6 @@ def test_recycle_bin_graph_round_trip_preserves_fixed_version(live):
     expect(page.get_by_test_id('robotics-version')).to_have_attribute('data-version-id', vid)
     assert (support.db_rows(site.root), support.blob_bytes(site.root)) == before
     assert calls == []
-    support.done(site)
 
 
 def test_classes_properties_instances_update_one_canvas(live):
@@ -210,7 +211,6 @@ def test_first_oversized_graph_can_open_a_class_from_the_index(live, nodes, edge
     expect(visible).to_have_count(local_nodes)
     expect(notice).to_be_empty()
     expect(panel.locator('svg [data-edge-id]')).to_have_count(400 if edges else 0)
-    support.done(site)
 
 
 def test_oversized_class_neighborhood_preserves_last_displayed_scope(live):
@@ -237,7 +237,6 @@ def test_oversized_class_neighborhood_preserves_last_displayed_scope(live):
     options.select_option('https://probe.test/#1')
     expect(visible).to_have_count(2)
     expect(panel.locator('svg [data-edge-id]')).to_have_count(1)
-    support.done(site)
 
 
 def test_panel_rejects_oversized_revision_without_changing_caption(live):
@@ -405,5 +404,11 @@ if __name__ == '__main__':
     args=parser.parse_args();args.output.mkdir(parents=True,exist_ok=True)
     os.environ['DATAMIND_ROBOTICS_DESIGN_TEST_OUTPUT']=str(args.output.resolve())
     code=pytest.main([__file__,'-q','--tb=short','-o','addopts=','--junitxml='+str(args.output/'results.xml')])
+    from tests.robotics_graph_browser_evidence import check_junit_evidence
+    errors = check_junit_evidence(args.output)
+    for error in errors:
+        print(error, file=sys.stderr)
+    if errors and not code:
+        code = pytest.ExitCode.TESTS_FAILED
     (args.output/'runner.json').write_text(json.dumps({'exit_code':code})+'\n')
     raise SystemExit(code)

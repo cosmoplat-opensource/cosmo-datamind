@@ -1,10 +1,20 @@
 """Owned real server with a local synthetic model, never fake application HTTP — DR-152."""
 import json
+import os
+from pathlib import Path
+import re
 from urllib.request import Request, urlopen
 import uuid
 
 from tests.robotics_browser_support import LiveSite
 from tests.robotics_modeling_support import sources
+
+
+def browser_case_directory(name, output=None):
+    if output is None:
+        default = Path(__file__).resolve().parents[1] / '.check-results/robotics-design-browser'
+        output = Path(os.environ.get('DATAMIND_ROBOTICS_DESIGN_TEST_OUTPUT', default))
+    return output / re.sub(r'[^a-zA-Z0-9_-]', '_', name)
 
 
 def model_reply(proposal):
