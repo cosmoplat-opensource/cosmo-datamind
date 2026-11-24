@@ -136,6 +136,61 @@ def test_confirm_classes_replay_and_return_to_edit_are_local(tmp_path):
         assert len(h.runtime.calls) == 1
 
 
+@pytest.mark.parametrize('operation,status', [('confirm-classes', 200), ('messages', 202)])
+def test_graph_failure_preserves_saved_receipt_and_idempotency(tmp_path, isolated_platform, monkeypatch, caplog,
+                                                              operation, status):
+    import observability
+    from ontology_assets import interactive_ontology_graph_view
+
+    def failed_projection(row):
+        raise ValueError('synthetic private projection detail')
+
+    def failures():
+        return sum(entry['value'] for entry in observability.snapshot()['counters']
+                   if entry['name'] == 'robotics.design.graph_projection_failed')
+
+    with http_app(tmp_path) as (_, client, _, root):
+        h = Harness(root)
+        state = h.classes() if operation == 'confirm-classes' else h.submit()
+        isolated_platform(h.config, RuntimeRegistry(openai=h.runtime))
+        body = dict(request_id='design-operation', expected_revision=state['revision'])
+        if operation == 'confirm-classes':
+            body.update(snapshot_sha256=state['snapshot_sha256'])
+        else:
+            body.update(expected_stage='classes', text='整理类别')
+        before_failures = failures()
+        with monkeypatch.context() as patch:
+            patch.setattr(interactive_ontology_graph_view, 'project_design', failed_projection)
+            accepted = mutate(client, state, operation, **body)
+            assert accepted.status_code == status, accepted.json
+            receipt = accepted.json.copy()
+            assert receipt.pop('interactive_graph_view') is None
+            warning = receipt.pop('interactive_graph_warning')
+            assert warning['code'] == 'graph_view_unavailable' and warning['message']
+            assert 'synthetic private' not in accepted.get_data(as_text=True)
+            assert receipt == h.get(state)
+            if status == 200:
+                assert receipt['revision'] == state['revision'] + 1 and receipt['stage'] == 'properties'
+            else:
+                assert receipt['status'] == 'queued' and receipt['run_id']
+            before = db_rows(root), blob_bytes(root)
+            stored = next(row for row in before[0]['design_requests'] if row['request_id'] == body['request_id'])
+            assert json.loads(stored['response']) == receipt
+            replay = mutate(client, state, operation, **body)
+            assert replay.status_code == status and replay.json == accepted.json
+            error(mutate(client, state, operation, **{**body, 'expected_revision': 99}), 409, 'request_conflict')
+            error(mutate(client, state, operation, **{**body, 'request_id': 'stale', 'expected_revision': 99}),
+                  409, 'revision_conflict')
+            assert failures() == before_failures + 2 and 'synthetic private' not in caplog.text
+            error(get(client, path(state)), 409, 'artifact_integrity')
+        recovered = mutate(client, state, operation, **body)
+        assert recovered.status_code == status
+        healthy = recovered.json.copy()
+        assert healthy.pop('interactive_graph_view')['context']['revision'] == receipt['revision']
+        assert healthy == receipt
+        assert (db_rows(root), blob_bytes(root)) == before
+
+
 @pytest.mark.parametrize('change,code', [('revision', 'revision_conflict'), ('digest', 'snapshot_conflict')])
 def test_confirmation_conflicts_preserve_effective_revision(tmp_path, change, code):
     with http_app(tmp_path) as (_, client, _, root):

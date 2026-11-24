@@ -308,12 +308,13 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True, data_host=Non
     def design_display(row):
         # DR-161: saved state projects read-only; confirmation remains explicit.
         from ontology_assets.interactive_ontology_graph_view import project_design
-        return {**row, 'interactive_graph_view': design_read(lambda: project_design(row))}
+        return {**row, 'interactive_graph_view': project_design(row)}
 
     @bp.get('/api/robotics/design-sessions/<sid>')
     def design_session(sid):
         _query_fields(set())
-        return jsonify(runtime.public(design_display(designs().get(sid))))
+        row = designs().get(sid)
+        return jsonify(runtime.public(design_read(lambda: design_display(row))))
 
     @bp.get('/api/robotics/design-sessions/<sid>/revisions')
     def design_revisions(sid):
@@ -354,7 +355,18 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True, data_host=Non
         if type(rev) is not int or rev<0:
             raise _invalid()
         function = getattr(service, 'message' if operation=='messages' else operation.replace('-', '_'))
-        return jsonify(runtime.public(design_display(function(sid, **body)))), 202 if operation in ('messages','confirm-schema','retry') else 200
+        receipt = function(sid, **body)
+        # DR-172: only the optional projection runs inside this boundary, after commit or replay.
+        try:
+            display = design_display(receipt)
+        except Exception as exc:
+            from observability import count
+            count('robotics.design.graph_projection_failed', operation=operation)
+            app.logger.warning('Design graph unavailable after %s (%s)', operation, type(exc).__name__)
+            display = {**receipt, 'interactive_graph_view': None, 'interactive_graph_warning': {
+                'code': 'graph_view_unavailable',
+                'message': '设计操作已受理，当前修订的图谱暂时无法显示。可刷新页面重新读取。'}}
+        return jsonify(runtime.public(display)), 202 if operation in ('messages','confirm-schema','retry') else 200
 
     def application_summary(oid, vid):
         from application_contracts.adapters import service

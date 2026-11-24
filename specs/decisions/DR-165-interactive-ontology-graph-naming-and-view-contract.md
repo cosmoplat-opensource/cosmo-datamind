@@ -12,6 +12,8 @@
 
 ## 调用方迁移
 
+设计操作的成功回执可包含图谱显示提示。若 `interactive_graph_view` 为 `null`，请显示 `interactive_graph_warning.message`，并按回执中的修订、阶段和运行编号更新设计状态。图谱提示无需重新提交设计操作。见 [DR-172](DR-172-design-operation-receipt.md)。
+
 本体移到回收站后，从“查看固定版本”进入详情，再点“打开图谱”可浏览历史版本。外部调用方读取该版本的图谱时须附加 `?state=deleted`。普通读取返回 HTTP 409（`ontology_deleted`），恢复本体后原图谱链接可再次使用。详见 [DR-171](DR-171-fixed-version-graph-lifecycle.md)。
 
 机器人前后端和测试调用方同步使用新名称。部署升级后刷新页面，并从机器人本体库重新打开图谱以取得当前深链；外部调用方按上述路径、字段和 schema 更新。已有 `view=relations` 入口继续保留。数据本体入口不迁移，已有本体和数据库无需重写，也不重新生成用户资产。

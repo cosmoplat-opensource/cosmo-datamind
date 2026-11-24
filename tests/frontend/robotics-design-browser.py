@@ -272,6 +272,52 @@ def prepare_waiting(root):
 
 
 @pytest.mark.parametrize('live', [{'prepare': prepare_waiting}], indirect=True)
+def test_graph_warning_preserves_saved_revision_and_recovers_on_read(live, tmp_path, monkeypatch):
+    from ontology_assets import interactive_ontology_graph_view
+    from tests.build_runtime_support import BASE_URL, http_app
+
+    site, page, calls = live
+    sid = site.prepared['session_id']
+    page.goto(site.url + '/#build?recipe=robotics&session=' + sid)
+    design = wait_design(page, sid, 'classes', 'awaiting_confirmation')
+    graph = design.get_by_test_id('interactive-ontology-graph-panel')
+    expect(graph).to_have_attribute('data-revision', '1')
+
+    def unavailable(row):
+        raise ValueError('synthetic graph failure')
+
+    # Serve this POST with the same Flask route and fixture database, isolating the projection fault.
+    with http_app(tmp_path, DATAMIND_DOMAIN_STORAGE_ROOT=str(site.root)) as (_, client, _, _):
+        monkeypatch.setattr(interactive_ontology_graph_view, 'project_design', unavailable)
+        def confirm(route):
+            response = client.post(f'/api/robotics/design-sessions/{sid}/confirm-classes',
+                                   json=route.request.post_data_json, base_url=BASE_URL)
+            route.fulfill(status=response.status_code, json=response.json)
+        page.route('**/confirm-classes', confirm, times=1)
+        receipt = click_operation(page, '确认类别', '/confirm-classes')
+    wait_design(page, sid, 'properties', 'awaiting_input')
+    expect(design).to_have_attribute('data-revision', '2')
+    warning = design.get_by_text(receipt['interactive_graph_warning']['message'], exact=True)
+    expect(warning).to_be_visible()
+    expect(graph).to_be_hidden()
+    before = db_rows(site.root), blob_bytes(site.root)
+    page.get_by_label('设计修订', exact=True).select_option('1')
+    expect(graph).to_be_visible()
+    expect(warning).to_be_hidden()
+    page.get_by_label('设计修订', exact=True).select_option('current')
+    expect(warning).to_be_visible()
+    expect(graph).to_be_hidden()
+    page.reload()
+    wait_design(page, sid, 'properties', 'awaiting_input')
+    expect(graph).to_be_visible()
+    expect(graph).to_have_attribute('data-revision', '2')
+    expect(warning).to_be_hidden()
+    assert len(site.design_posts()) == 1 and calls == []
+    assert (db_rows(site.root), blob_bytes(site.root)) == before
+    done(site)
+
+
+@pytest.mark.parametrize('live', [{'prepare': prepare_waiting}], indirect=True)
 def test_waiting_session_reload_and_owned_server_restart_are_readonly(live):
     site, page, calls = live; state = site.prepared; sid = state['session_id']
     before, files = db_rows(site.root), blob_bytes(site.root)

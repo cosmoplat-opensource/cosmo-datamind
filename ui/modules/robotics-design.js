@@ -77,13 +77,14 @@ function mount(host,sid,options={}){const esc=g.RoboticsAssets.escape;let c,cont
  const contextual=!!(options.checkId||options.adaptationId),abort=new AbortController();
  let interactiveGraphPanel=null,latest=null,interactiveGraphHistory=null;
  const graphHost=document.createElement('section'),historyBox=document.createElement('label'),historySelect=document.createElement('select');
+ const graphWarning=document.createElement('p');graphWarning.setAttribute('role','status');graphWarning.hidden=true;
  historyBox.className='rd-history';historySelect.setAttribute('aria-label','设计修订');historyBox.append(historySelect);
  const input=document.createElement('textarea');input.setAttribute('aria-label','建模要求');input.maxLength=20000;
  const editor=document.createElement('details'),body=document.createElement('div'),hint=document.createElement('div'),heading=document.createElement('div'),progress=document.createElement('div'),actions=document.createElement('div'),secondary=document.createElement('div');
  heading.className='rd-header';secondary.className='rd-secondary-actions';body.className='rd-reference';
  editor.className='rd-editor';progress.className='rd-progress';progress.hidden=true;progress.dataset.testid='design-progress';progress.setAttribute('role','status');progress.setAttribute('aria-live','polite');progress.setAttribute('aria-atomic','true');
  actions.className='rd-confirm-bar';actions.dataset.testid='design-confirmation';actions.hidden=true;
- host.replaceChildren(heading,progress,actions,editor,hint,secondary,graphHost,body);editor.append(input);const summary=document.createElement('summary'),label=document.createElement('label');label.textContent='建模要求';label.htmlFor='rd_message';input.id='rd_message';editor.prepend(summary,label);const send=document.createElement('button');send.textContent=contextual?'确认并发送建模要求':'发送建模要求';editor.append(send);
+ host.replaceChildren(heading,progress,actions,editor,hint,secondary,graphWarning,graphHost,body);editor.append(input);const summary=document.createElement('summary'),label=document.createElement('label');label.textContent='建模要求';label.htmlFor='rd_message';input.id='rd_message';editor.prepend(summary,label);const send=document.createElement('button');send.textContent=contextual?'确认并发送建模要求':'发送建模要求';editor.append(send);
  const startProperties=document.createElement('button');startProperties.textContent='开始关系与属性设计';editor.append(startProperties);
  input.oninput=()=>c.setMessage(input.value);send.onclick=()=>c.sendMessage();
  function complete(){if(!context)return;c.setMessage(repairSuggestion(context,c.snapshot().session?.stage));input.focus();input.setSelectionRange(input.value.length,input.value.length);}
@@ -141,8 +142,12 @@ function mount(host,sid,options={}){const esc=g.RoboticsAssets.escape;let c,cont
     historySelect.dataset.revision=String(row.revision);
   }
   historySelect.value=choice;
-  if(!interactiveGraphPanel)return;
   const selected=s.selectedRevision;
+  const warning=(selected||row).interactive_graph_warning;
+  graphHost.hidden=!!warning;
+  graphWarning.hidden=!warning;
+  graphWarning.textContent=warning?.message||'';
+  if(warning||!interactiveGraphPanel)return;
   if(selected?.interactive_graph_view){interactiveGraphHistory='history:'+selected.revision;interactiveGraphPanel.present(selected.interactive_graph_view,{scope:interactiveGraphHistory});return;}
   interactiveGraphHistory='current';
   if(row.status!=='completed'&&row.interactive_graph_view)interactiveGraphPanel.present(row.interactive_graph_view,{scope:'current:'+sid});
