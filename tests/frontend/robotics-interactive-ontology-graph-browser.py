@@ -172,6 +172,74 @@ def test_graph_back_restores_enabled_controls_without_writes(live):
     assert support.db_rows(site.root) == before and calls == []
 
 
+@pytest.mark.parametrize('nodes, edges', [(301, 0), (3, 601)])
+def test_first_oversized_graph_can_open_a_class_from_the_index(live, nodes, edges):
+    site, page, _ = live
+    panel = probe(page, site, nodes=nodes, edges=edges)
+    options = panel.get_by_label('节点详情', exact=True)
+    notice = panel.locator('[role=status]')
+    visible = panel.locator('svg [data-node-id]')
+    counts = panel.locator('.interactive-ontology-graph-counts')
+    expect(visible).to_have_count(0)
+    expect(notice).to_contain_text('类别')
+    expect(options.locator('option')).to_have_count(nodes + 1)
+    expect(counts).to_contain_text(f'{nodes} 个类别')
+    expect(panel).to_have_attribute('data-revision', 'fixed')
+
+    if edges:
+        panel.get_by_label('查找节点', exact=True).fill('类别 0')
+        panel.get_by_role('button', name='查找', exact=True).click()
+    else:
+        options.select_option('https://probe.test/#0')
+    local_nodes = 3 if edges else 1
+    expect(visible).to_have_count(local_nodes)
+    expect(counts).to_contain_text(f'当前显示 {local_nodes} 个节点')
+    expect(panel.locator('.interactive-ontology-graph-entity h3')).to_have_text('类别 0')
+    restore = panel.get_by_role('button', name='显示完整图谱', exact=True)
+    restore.click()
+    expect(notice).to_contain_text('范围')
+    expect(visible).to_have_count(local_nodes)
+    expect(restore).to_be_visible()
+
+    target = nodes - 1
+    panel.get_by_label('查找节点', exact=True).fill(f'类别 {target}')
+    panel.get_by_role('button', name='查找', exact=True).click()
+    expect(panel.locator('.interactive-ontology-graph-entity h3')).to_have_text(f'类别 {target}')
+    expect(options).to_have_value(f'https://probe.test/#{target}')
+    expect(panel.locator(f'svg [data-node-id="https://probe.test/#{target}"]')).to_have_count(1)
+    expect(visible).to_have_count(local_nodes)
+    expect(notice).to_be_empty()
+    expect(panel.locator('svg [data-edge-id]')).to_have_count(400 if edges else 0)
+    support.done(site)
+
+
+def test_oversized_class_neighborhood_preserves_last_displayed_scope(live):
+    site, page, _ = live
+    panel = probe(page, site, nodes=302, edges=0)
+    page.evaluate("""()=>{const {panel,doc}=interactiveGraphProbe;
+      const [hub,...others]=doc.nodes;
+      const edges=others.slice(0,300).map(node=>({id:node.id,source:hub.id,target:node.id,
+        predicate:'urn:test:related',kind:'object'}));
+      panel.present({...doc,context:{...doc.context,key:'with-hub'},edges});
+    }""")
+    options = panel.get_by_label('节点详情', exact=True)
+    visible = panel.locator('svg [data-node-id]')
+    options.select_option('https://probe.test/#0')
+    expect(panel.get_by_role('status')).to_contain_text('范围')
+    expect(visible).to_have_count(0)
+    options.select_option('https://probe.test/#301')
+    expect(visible).to_have_count(1)
+    options.select_option('https://probe.test/#0')
+    expect(panel.get_by_role('status')).to_contain_text('范围')
+    expect(options).to_have_value('https://probe.test/#301')
+    expect(panel.locator('.interactive-ontology-graph-entity h3')).to_have_text('类别 301')
+    expect(visible).to_have_count(1)
+    options.select_option('https://probe.test/#1')
+    expect(visible).to_have_count(2)
+    expect(panel.locator('svg [data-edge-id]')).to_have_count(1)
+    support.done(site)
+
+
 def test_panel_rejects_oversized_revision_without_changing_caption(live):
     site, page, _ = live
     panel = probe(page, site)
@@ -181,6 +249,8 @@ def test_panel_rejects_oversized_revision_without_changing_caption(live):
       panel.present(next,{scope:JSON.stringify([doc.context.kind,doc.context.key])});
     }""")
     expect(panel).to_have_attribute('data-revision', '1')
+    expect(panel.get_by_label('节点详情', exact=True).locator('option')).to_have_count(3)
+    expect(panel.get_by_label('节点详情', exact=True).locator('option').last).to_have_attribute('value', 'https://probe.test/#1')
     expect(panel.locator('svg [data-node-id]')).to_have_count(2)
     expect(panel.locator('.interactive-ontology-graph-notice')).to_contain_text('范围')
 

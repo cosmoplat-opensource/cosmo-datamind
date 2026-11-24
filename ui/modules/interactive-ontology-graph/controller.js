@@ -2,6 +2,7 @@
 import {GraphView} from './graph.js';
 import {GraphState} from './model.js';
 const copy = value => JSON.parse(JSON.stringify(value));
+const exceedsCanvasLimit = view => view.nodes.length > 300 || view.edges.length > 600;
 export class InteractiveOntologyGraphController {
   constructor(svg, callbacks={}) {
     this.svg=svg;this.callbacks=callbacks;this.epoch=0;this.dead=false;this.context=null;
@@ -13,7 +14,7 @@ export class InteractiveOntologyGraphController {
   }});}
   beginContext(context){
     if(this.dead)return this.epoch;
-    this.graph.destroy();this.makeGraph();this.state=new GraphState();this.document=null;
+    this.graph.destroy();this.makeGraph();this.state=new GraphState();this.document=null;this.overviewLimited=false;
     this.context=copy(context);this.expanded={};this.pages={};this.changes={added:[],modified:[],removed:[]};return ++this.epoch;
   }
   update(document,{epoch}={}){
@@ -33,14 +34,18 @@ export class InteractiveOntologyGraphController {
     }
     this.state.expanded=new Set(Object.keys(this.expanded));
     const projected=this.projected();
-    if(projected.nodes.length>300||projected.edges.length>600){
+    const oversized = exceedsCanvasLimit(projected);
+    if(oversized && old.document){
       Object.assign(this,old);this.callbacks.onNotice?.('当前范围超过同屏上限，请缩小范围后重试；已有画布保留上一修订。');return false;
     }
+    if(!this.state.classFocusId && !this.state.local)this.overviewLimited=oversized;
     this.context=copy(incoming);
     this.changes={added:[...next.keys()].filter(id=>!previous.has(id)),modified:[...next.keys()].filter(id=>previous.has(id)&&JSON.stringify(previous.get(id))!==JSON.stringify(next.get(id))),removed:[...previous.keys()].filter(id=>!next.has(id))};
     const valid=new Set([...document.nodes,...document.individuals].map(n=>n.id));
     for(const id of this.graph.positions.keys())if(!valid.has(id))this.graph.positions.delete(id);
-    this.graph.setData(projected);this.graph.setSelection(this.state.selectedId);
+    // On first load the index is usable even when the full canvas would exceed the limit.
+    if(!oversized)this.graph.setData(projected);
+    this.graph.setSelection(this.state.selectedId);
     if(previous.size)this.graph.restoreView(view);
     this.callbacks.onChange?.(this.capture());return true;
   }
@@ -57,7 +62,8 @@ export class InteractiveOntologyGraphController {
   }
   draw(){
     const view=this.projected();
-    if(view.nodes.length>300||view.edges.length>600){this.callbacks.onNotice?.('当前范围过大，请收起其它类别或选择局部范围。');return false;}
+    if(exceedsCanvasLimit(view)){this.callbacks.onNotice?.('当前范围过大，请收起其它类别或选择局部范围。');return false;}
+    if(!this.state.classFocusId && !this.state.local)this.overviewLimited=false;
     this.graph.setData(view);this.graph.setSelection(this.state.selectedId);return true;
   }
   select(id){if(this.dead)return;this.state.select(id);this.draw();this.callbacks.onSelect?.(id,this.state.entity(id));}

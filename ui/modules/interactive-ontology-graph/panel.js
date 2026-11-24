@@ -28,6 +28,20 @@ export function mountPanel(host,{canvasId=null,embedded=false}={}){
       dom.setAttribute('data-change',change);
     }
   }
+  function setClassScope(id){
+    const previous=controller.state.captureView();
+    if(id)controller.state.focusClass(id);
+    else controller.state.clearClassFocus();
+    if(!controller.draw()){
+      controller.state.restoreView(previous);
+      nodeSelect.value=selected||'';
+      return false;
+    }
+    notice.textContent=current.warnings.join(' ');
+    counts();
+    show(controller.state.entity(controller.state.selectedId));
+    return true;
+  }
   function show(entity){
     details.replaceChildren();selected=entity?.id||null;nodeSelect.value=selected||'';
     if(!entity){text(details,'p','点击类别或连线查看详情。');return;}
@@ -37,8 +51,8 @@ export function mountPanel(host,{canvasId=null,embedded=false}={}){
     if(entity.predicate){const prop=controller.state.properties.get(entity.predicate);text(details,'p',`${label(controller.state.entity(entity.source))} → ${label(prop||entity.predicate)} → ${label(controller.state.entity(entity.target))}`);}
     const id=text(details,'details','');text(id,'summary','对象标识');text(id,'code',entity.iri||entity.id);
     if(entity.type==='class'){
-      button(details,'仅显示此类关联',()=>{controller.state.focusClass(entity.id);controller.draw();counts();show(entity);});
-      if(controller.state.classFocusId)button(details,'显示完整图谱',()=>{controller.state.clearClassFocus();controller.draw();counts();show(entity);});
+      button(details,'仅显示此类关联',()=>setClassScope(entity.id));
+      if(controller.state.classFocusId)button(details,'显示完整图谱',()=>setClassScope(null));
       const total=entity.individuals?.length||0,offset=controller.pages[entity.id]||0,shown=Math.min(controller.expanded[entity.id]||0,total-offset);
       text(details,'p',`显式实例：已显示 ${shown} / ${total}${shown?` · 范围 ${offset+1}～${offset+shown}`:''}`);
       button(details,shown?'收起实例':'展开实例',()=>{controller.toggleClass(entity.id);show(entity);});
@@ -69,19 +83,23 @@ export function mountPanel(host,{canvasId=null,embedded=false}={}){
     nodeSelect.replaceChildren(new Option('选择对象查看详情',''));
     for(const item of items)nodeSelect.add(new Option(label(item),item.id));
   }
-  nodeSelect.onchange=()=>{
-    const id=nodeSelect.value;
+  function chooseObject(id,fromSearch=false){
+    if(controller.overviewLimited && controller.state.nodes.get(id)?.type==='class'){
+      if(setClassScope(id))controller.graph.center(id);
+      return;
+    }
+    if(fromSearch)controller.state.returnToClasses();
     if(controller.state.individuals.has(id)){
       const entity=controller.state.individuals.get(id);
       const owner=entity.types.find(t=>controller.state.nodes.has(t));
       if(owner&&!controller.expanded[owner])controller.toggleClass(owner);
     }
-    if(!controller.graph.data.nodes.length&&controller.state.nodes.get(id)?.type==='class')controller.state.focusClass(id);
-    controller.select(id);controller.graph.center(id);
-  };
+    controller.select(id);controller.graph.center(id);counts();
+  }
+  nodeSelect.onchange=()=>chooseObject(nodeSelect.value);
   q('select[aria-label="展示范围"]').onchange=setOptions;
   q('form').onsubmit=e=>{e.preventDefault();if(!current)return;const term=q('input').value.toLocaleLowerCase();const found=[...current.nodes,...current.individuals,...current.properties].find(n=>label(n).toLocaleLowerCase().includes(term));
-    if(found){controller.state.returnToClasses();q('select[aria-label="展示范围"]').value='all';setOptions();nodeSelect.value=found.id;nodeSelect.onchange();}else notice.textContent='未找到匹配对象。';};
+    if(found){q('select[aria-label="展示范围"]').value='all';setOptions();chooseObject(found.id,true);}else notice.textContent='未找到匹配对象。';};
   host.querySelectorAll('[data-op]').forEach(b=>{b.onclick=()=>{
     const op=b.dataset.op;
     if(op==='types'){controller.filters.datatypes=!controller.filters.datatypes;controller.draw();counts();b.textContent=controller.filters.datatypes?'隐藏属性类型':'显示属性类型';}
@@ -96,7 +114,9 @@ export function mountPanel(host,{canvasId=null,embedded=false}={}){
     if(fingerprint===last)return;
     if(controller.update(document,{epoch})){
       host.dataset.stage=document.context.stage;host.dataset.kind=document.context.kind;host.dataset.revision=String(document.context.revision);
-      current=document;last=fingerprint;setOptions();counts();notice.textContent=document.nodes.length&&!controller.graph.data.nodes.length?'当前图谱超出同屏范围，请从节点详情选择类别查看局部关联。':document.warnings.join(' ');
+      current=document;last=fingerprint;setOptions();counts();
+      notice.textContent=controller.overviewLimited && !controller.graph.data.nodes.length
+        ? '完整图谱超出同屏范围，请选择或搜索类别查看局部关联。' : document.warnings.join(' ');
       const caption=q('.interactive-ontology-graph-context');
       if(caption)caption.textContent=document.context.status==='historical'?`历史修订 ${document.context.revision} · 只读`:`${document.context.kind==='design'?'设计修订 '+document.context.revision:'固定版本 · '+({candidate:'候选',draft:'草案',published:'已发布'}[document.context.status]||document.context.status)} · 只读浏览 · 执行未验证`;
     }
