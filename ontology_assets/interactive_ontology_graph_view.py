@@ -11,6 +11,8 @@ from domains.robotics.modeling.common import digest
 from domains.robotics.modeling.export import tbox_owl
 from domains.robotics.modeling._schema import validate_namespace
 
+from .payloads import robotics_version_mode
+
 
 def _id(term):
     return '_:' + str(term) if isinstance(term, BNode) else str(term)
@@ -67,7 +69,9 @@ def project_version(version, payload):
     context = {'kind': 'version', 'key': json.dumps([version['ontology_id'], version['version_id']], separators=(',', ':')),
                'revision': version['payload_sha256'], 'snapshot_sha256': version['payload_sha256'],
                'stage': 'fixed', 'status': version.get('publication_state', 'candidate')}
-    return _project(graph, context, version.get('name', ''))
+    view = _project(graph, context, version.get('name', ''))
+    view['mode'] = robotics_version_mode(version, graph)
+    return view
 
 
 def _project(source, context, name):

@@ -17,7 +17,7 @@
     const viewUrl = '/api/ontology-assets/' + encodeURIComponent(oid) + '/versions/' + encodeURIComponent(vid) +
       '/views/' + encodeURIComponent(view) + (history ? '?state=deleted' : '');
     function taskAction(mode) {
-      if (history) return '';
+      if (history || !['demo', 'real'].includes(mode)) return '';
       const href = global.RoboticsTask.link(oid, vid, mode) + '&assess=1';
       return `<a class="ra-button" href="${escape(href)}">基于此本体生成行为树</a>`;
     }
@@ -154,7 +154,7 @@
           const body=await global.RoboticsAssets.readJSON(global.fetch.bind(global),viewUrl,{signal:abort.signal});
           if(current!==token)return;
           if(body.ontology_id!==oid||body.version_id!==vid)throw Error('返回的本体版本不匹配。');
-          host.innerHTML=`<a class="ra-back" href="${escape(detailLink)}">← 返回本体详情</a><header class="rt-heading"><div><h2>${escape(body.name)}</h2><p>${history ? '历史查看' : '当前'}：版本 ${escape(body.version_number)} · 只读浏览</p></div>${taskAction()}</header><div class="rv-interactive-ontology-graph"></div>`;
+          host.innerHTML=`<a class="ra-back" href="${escape(detailLink)}">← 返回本体详情</a><header class="rt-heading"><div><h2>${escape(body.name)}</h2><p>${history ? '历史查看' : '当前'}：版本 ${escape(body.version_number)} · 只读浏览</p></div>${taskAction(body.mode)}</header><div class="rv-interactive-ontology-graph"></div>`;
           const panel=module.mountPanel(host.querySelector('.rv-interactive-ontology-graph'),{canvasId:'rv_canvas'});
           active={dispose:()=>{abort.abort();panel.destroy();}};
           const display=global.RoboticsTask.displayLabel;

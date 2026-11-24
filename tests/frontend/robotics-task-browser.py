@@ -899,6 +899,31 @@ def test_task_application_history_retains_two_generations_and_reopens_without_mo
     done(site)
 
 
+@pytest.mark.parametrize('mode', ['demo', 'real'])
+def test_interactive_graph_task_keeps_fixed_version_mode(live, mode):
+    from domain_runs.robotics_task_demo import packaged_demo
+
+    site, page, calls = live
+    version = packaged_demo(site.root) if mode == 'demo' else site.submit()['output_asset_ref']
+    ref = {key: version[key] for key in ('ontology_id', 'version_id')}
+    site.enable_task_model()
+    path = f"/#robotics-view?asset={ref['ontology_id']}&version={ref['version_id']}&view=interactive-ontology-graph"
+    with page.expect_response(lambda r: r.url.endswith('/views/interactive-ontology-graph'), timeout=30000) as graph:
+        page.goto(site.url + path)
+    assert graph.value.ok and graph.value.json()['mode'] == mode
+    action = page.get_by_role('link', name='基于此本体生成行为树', exact=True)
+    with page.expect_response(lambda r: r.request.method == 'POST' and r.url.endswith('/api/application-checks'),
+                              timeout=30000) as checked:
+        action.click(timeout=30000)
+    response = checked.value
+    assert response.ok, response.text()
+    report = response.json()['report']
+    assert response.request.post_data_json['context']['mode'] == mode
+    assert report['context']['mode'] == mode and report['asset_refs'] == [ref]
+    assert calls == []
+    done(site)
+
+
 def test_graph_starts_task_with_selected_ontology_version(live):
     site, page, calls = live
     ref = site.submit()['output_asset_ref']

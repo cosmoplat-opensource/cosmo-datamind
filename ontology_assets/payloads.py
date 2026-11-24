@@ -5,7 +5,15 @@ from xml.sax import SAXException
 from rdflib import Graph
 from rdflib.exceptions import Error as RDFError
 
+from domains.robotics.graph import ONTOLOGY, S
+
 KINDS = {"data": "datamind_ir", "robotics": "robotics_rdf"}
+
+
+def robotics_version_mode(version, graph):
+    """Use the fixed version's recorded mode, or its RDF dataset marker for legacy records."""
+    return version.get('publication_mode') or version.get('metadata', {}).get('mode') or (
+        'demo' if str(graph.value(ONTOLOGY, S.datasetKind)) == 'demo' else 'real')
 
 
 def json_text(value):

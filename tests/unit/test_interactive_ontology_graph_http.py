@@ -82,7 +82,7 @@ def test_graph_history_query_preserves_validation_and_integrity(tmp_path):
         oid, vid = version['ontology_id'], version['version_id']
         path = f'/api/ontology-assets/{oid}/versions/{vid}/views/interactive-ontology-graph'
         apply(LifecycleService(root), oid)
-        for query in ('state=all', 'state=', 'state=deleted&state=active', 'state=deleted&extra=1'):
+        for query in ('state=all', 'state=', 'state=deleted&state=active', 'state=deleted&extra=1', 'mode=demo'):
             bad = client.get(path + '?' + query, base_url=BASE_URL)
             assert bad.status_code == 400 and bad.json['error']['code'] == 'invalid_request'
         history = path + '?state=deleted'

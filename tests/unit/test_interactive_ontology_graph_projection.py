@@ -131,6 +131,24 @@ def test_explicit_membership_counts_deduplicate_without_inference():
     assert next(n for n in view['individuals'] if n['id'] == NS + 'a')['types'] == [NS + 'Arm', NS + 'Gripper']
 
 
+@pytest.mark.parametrize('metadata, publication, kind, expected', [
+    ({}, None, None, 'real'),
+    ({}, None, 'demo', 'demo'),
+    ({'mode': 'demo'}, None, 'demo', 'demo'),
+    ({'mode': 'real'}, 'demo', 'demo', 'demo'),
+])
+def test_fixed_graph_resolves_version_mode(metadata, publication, kind, expected):
+    from rdflib import Literal
+    from domains.robotics.graph import ONTOLOGY, S
+
+    graph = Graph()
+    if kind:
+        graph.add((ONTOLOGY, S.datasetKind, Literal(kind)))
+    version, raw = fixed(graph.serialize(format='xml', encoding='utf-8'))
+    version.update(metadata=metadata, publication_mode=publication)
+    assert api().project_version(version, raw)['mode'] == expected
+
+
 def test_fixed_legacy_and_design_payloads_preserve_rdf_semantics():
     version, raw = fixed()
     view = api().project_version(version, raw)

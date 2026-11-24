@@ -12,6 +12,8 @@
 
 机器人设计会话及历史修订响应通过 `interactive_graph_view` 返回只读投影；固定版本入口使用 `/api/ontology-assets/<ontology_id>/versions/<version_id>/views/interactive-ontology-graph`，页面参数为 `view=interactive-ontology-graph`；视图 schema 为 `datamind-interactive-ontology-graph/1`。这些名称只作用于展示层，不修改机器人本体 RDF、已存设计、资产版本、来源摘要和执行资格。
 
+固定版本响应的顶层 `mode` 表示该版本的任务模式。调用方从活动图谱创建任务时应将该值与本体、版本编号一同传递，见 [DR-176](DR-176-fixed-graph-task-mode.md)。
+
 ## 调用方迁移
 
 设计操作的成功回执可包含图谱显示提示。若 `interactive_graph_view` 为 `null`，请显示 `interactive_graph_warning.message`，并按回执中的修订、阶段和运行编号更新设计状态。图谱提示无需重新提交设计操作。见 [DR-172](DR-172-design-operation-receipt.md)。
