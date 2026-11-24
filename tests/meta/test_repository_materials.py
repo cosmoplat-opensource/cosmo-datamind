@@ -45,6 +45,12 @@ def test_development_materials_are_not_tracked():
     assert not findings, '\n'.join(findings)
 
 
+def test_graph_model_ends_with_one_line_terminator():
+    model = ROOT / 'ui/modules/interactive-ontology-graph/model.js'
+    source = model.read_bytes()
+    assert source.endswith(b'\n') and source.splitlines()[-1].strip(), model.name
+
+
 @pytest.mark.parametrize('pattern', [
     r'(?:尚未|没有|未|无|不)(?:执行)?(?:提交(?:\s*Git\b|[、或]推送)|\s*Git\s*提交)',
     r'(?:确认本机[^。；]*后[，,]|实际\s*\d+\s*服务已)[^。；]*(?:重启|重载|重新加载)'

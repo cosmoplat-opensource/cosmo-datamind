@@ -236,4 +236,3 @@ export class GraphState {
     return this.projected;
   }
 }
-
