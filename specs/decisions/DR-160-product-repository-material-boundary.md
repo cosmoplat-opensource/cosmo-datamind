@@ -16,6 +16,6 @@
 
 复现：安装开发依赖后执行 `python -m pytest tests/meta/test_repository_materials.py tests/unit/test_robotics_baseline.py tests/unit/test_robotics_imports.py -ra`，以及 `python scripts/check.py --suite unit`。运行前记录 `git rev-parse HEAD`、`git status --short` 和依赖版本；新克隆也必须通过，不依赖被忽略的本地副本。
 
-2026-11-19 根目录文档边界修订的交付状态：delivered。该修订对应开发快照 `7914cd8`，规约检查 95 项、机器人兼容基线与导入检查 9 项通过，无跳过，相关 lint 与类型检查通过。相关回归复现命令：`python -m pytest tests/meta/ tests/unit/test_robotics_baseline.py tests/unit/test_robotics_imports.py -ra`；依赖安装见仓库 README，Node 需位于 PATH。此修订不改变产品运行逻辑，未重跑全量回归，不据此声明全仓通过。
+2026-11-19 根目录文档边界修订的交付状态：delivered。该修订的规约检查 95 项、机器人兼容基线与导入检查 9 项通过，无跳过，相关 lint 与类型检查通过。相关回归复现命令：`python -m pytest tests/meta/ tests/unit/test_robotics_baseline.py tests/unit/test_robotics_imports.py -ra`；依赖安装见仓库 README，Node 需位于 PATH。此修订不改变产品运行逻辑，未重跑全量回归，不据此声明全仓通过。
 
 需要恢复跟踪时，由维护者撤销本次普通提交并重新评审提交边界。本地文件不因退出跟踪而删除；本次不改变产品 API、存量资产或数据库结构。

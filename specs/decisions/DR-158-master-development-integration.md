@@ -5,7 +5,7 @@
 > 2026-11-18：本轮集成代码已于 2026-11-17 经 GitHub PR #1 合入 master，合入前没有人工代码审查。合入后的审查结果与修复见 [DR-159](DR-159-pr1-review-fixes.md)。
 
 - 状态：accepted。
-- 基准：master `47dbab0`。
+- 基准：2026-11-17 机器人功能集成前的主分支。
 - 关联：[IR-030](../iterations/IR-030-master-development-integration.md)。
 
 ## 决定

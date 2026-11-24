@@ -24,7 +24,6 @@
 
 ## 验证
 
-本轮功能的开发快照为 `3f0056d`。
 先运行缺项提示、替代入口移除及历史提示的失败测试，再实现对应修复。
 
 - 任务浏览器 19 项通过；历史错误兼容及提示收尾后，实际错误和正常生成 2 项复跑通过。
@@ -52,10 +51,10 @@ python -m mypy domains/robotics/consumer.py domain_runs/robotics_task_service.py
 python scripts/scenario_bench.py
 ```
 
-逐次日志、截图及候选差异只留本地或 CI；以上实现版本与命令为公开复现入口。
+逐次日志、截图及候选差异只留本地或 CI；可用上述命令复核当前检出版本。
 
 ## 后续范围修订
 
-2026-11-20 详情回归修正：该修订对应开发快照 `c7b191e`，详情浏览器 29 项及设计浏览器 50 项通过，单一入口与后端执行状态断言均保留；复现及同轮边界见 [IR-033 本轮回归](IR-033-application-guidance-and-return-navigation.md#本轮回归补充)。
+2026-11-20 详情回归修正中，详情浏览器 29 项及设计浏览器 50 项通过，单一入口与后端执行状态断言均保留；复现及同轮边界见 [IR-033 本轮回归](IR-033-application-guidance-and-return-navigation.md#本轮回归补充)。
 
 2026-11-20：未选中配置继续阻断任务生成的行为由 [IR-036](IR-036-task-configuration-validation-scope.md) 修正；GEN-FEEDBACK-01 当前范围随之更新，本轮历史结果不作为新范围通过的证据。

@@ -26,4 +26,4 @@
 
 GRAPH-NAME-01 映射模块导入、schema、固定版本 HTTP、设计与历史修订只读响应、完整数据本体版本的拒绝路径，以及实际浏览器交互测试。已有图谱语义、隔离、错误路径、覆盖率及布局断言保留，测试入口见 `specs/acceptance.json`。
 
-2026-11-19 的命名修订对应开发快照 `88380ef`。该修订的定向回归覆盖 165 项单元、HTTP、组件和规约检查，另有图谱浏览器 9 项、设计浏览器 29 项通过。相关 lint 和类型检查通过，无跳过。该次未运行全量回归或全仓覆盖率门禁。原图谱交付的验证范围及仓库复现命令见 [IR-031](../iterations/IR-031-robotics-interactive-ontology-graph-visualization.md)。
+2026-11-19 命名修订的定向回归覆盖 165 项单元、HTTP、组件和规约检查，另有图谱浏览器 9 项、设计浏览器 29 项通过。相关 lint 和类型检查通过，无跳过。该次未运行全量回归或全仓覆盖率门禁。原图谱交付的验证范围及仓库复现命令见 [IR-031](../iterations/IR-031-robotics-interactive-ontology-graph-visualization.md)。

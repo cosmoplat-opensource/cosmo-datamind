@@ -2,7 +2,6 @@
 
 用于 IR-018 T02，验证旧数据真实迁移，不用新版初始化器伪造旧库。
 
-- 冻结来源提交：`05a6df947568e0645a37c25944003f7dc0e7f017`。
 - 文件：`schema2_snapshot.json`，SHA-256：`7e421534fe626d93ebc618d2da56ba4bf2b48196fd1b099ae74e92496c4ad27b`。
 - 来源：在临时目录运行 IR-017 原有 AssetStore / RunStore 服务，读取 SQLite 的真实 schema、行与实际磁盘文件，序列化成可审查 JSON；文件内容使用 base64 保存。
 - 包含数据资产及来源/版本、legacy_assets 绑定、queued/running/completed/failed 运行、retry_of、事件、报告和 manifest。
@@ -16,9 +15,9 @@
 
 `schema5_snapshot.json` 用于设计会话迁移测试，由 T07 实现前的代码在临时目录还原 schema4，再实际升级到 schema5，并创建一个合成离线策略任务会话后冻结。
 它包含 16 张表、8 条旧运行、22 件字节文件，以及旧数据资产、机器人资产、来源构建、manifest 和任务会话。
-`provenance` 记录 schema4 夹具与当时 storage.py 摘要；`base_created_from_commit` 仅指继承的 schema4 来源提交，不声称是本次快照的代码提交。
+`provenance` 记录继承的 schema4 夹具与当时 storage.py 的摘要。
 测试通过 `tests.robotics_design_support.restore_v5` 直接恢复 SQL、行与字节，再调用待测初始化器，不能在 T07 用新 schema 反造旧库。
 没有读取用户数据库、聊天或模型配置，没有调用真实模型。
-文件摘要记录在 `docs/audits/IR-024-t06-red-results.json`；人审后冻结该文件及新测试。
+公开版文件 SHA-256：`a0d81d39f043ae136b0bf10b69bbd261c7972e233fccca608e0905546472fa46`。
 
 公开副本已经脱敏，保留历史结构与记录身份；Base64 附件也替换为合成参数和测试类型，并更新字节摘要及关联引用，不代表原始平台资产。

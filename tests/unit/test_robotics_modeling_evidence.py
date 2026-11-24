@@ -19,6 +19,8 @@ def test_real_ur_fixture_oracle_is_independent_of_new_implementation():
     assert len(calls) == 25
     assert sum(len(set(n.attrib) - {'ID', 'name'}) for n in calls) == 129
     manifest = json.loads((FIXTURES / 'provenance.json').read_text())
+    assert manifest['source_id'] == 'robotics-schema-reference'
+    assert 'source_file' not in manifest
     assert hashlib.sha256((FIXTURES / 'ur_selected_tbox.json').read_bytes()).hexdigest() == manifest['fixture_sha256']
 
 
