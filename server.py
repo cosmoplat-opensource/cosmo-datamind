@@ -7210,18 +7210,16 @@ def build_asset_delete():
                 con = sqlite3.connect(UPLOAD_DB)
                 try:
                     api_tables = _api_bound_tables(_load_conns())
-                    if t.casefold() not in api_tables:
-                        con.execute(f'DROP TABLE IF EXISTS "{t}"')
-                    in_use_now = {_upload_table_name(os.path.basename(p)[8:]).casefold()
-                                  for p in glob.glob(os.path.join(WORK, "uploads_*")) if p.lower().endswith((".csv", ".tsv"))}
-                    in_use_now.update(api_tables)
-                    if (t + "_long").casefold() not in in_use_now:      # 多级表头另存的长表(DR-135)
-                        con.execute(f'DROP TABLE IF EXISTS "{t}_long"')
-                    old = _upload_table_name_legacy(fn)
-                    if old != t and old.casefold() not in in_use_now:
-                        con.execute(f'DROP TABLE IF EXISTS "{old}"')
+                    file_tables = _uploaded_tables(glob.glob(os.path.join(WORK, "uploads_*")))
+                    candidates = (t, t + "_long", _upload_table_name_legacy(fn))
+                    removable = {name.casefold() for name in candidates} - api_tables - file_tables
+                    # DDL 标识符取自库内目录。文件名只决定哪些既有表属于要删除的资料。
+                    names = con.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+                    for (name,) in names:
+                        if name.casefold() in removable:
+                            con.execute(f"DROP TABLE {_quote_ident(name)}")
                     con.commit()
-                    dropped = t if t.casefold() not in api_tables else ""
+                    dropped = t if t.casefold() in removable else ""
                 finally:
                     con.close()
             except Exception:

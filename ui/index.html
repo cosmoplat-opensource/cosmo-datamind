@@ -729,7 +729,7 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
 <script src="/assets/modules/review.js?v=3"></script>
 <script src="/assets/modules/build-prep.js?v=5"></script>
 <!-- 问数作用域模块先于主脚本执行，避免 #chat 首屏初始化竞态；版本号打破旧标签缓存。 -->
-<script src="/assets/modules/qa-ontology.js?v=7"></script>
+<script src="/assets/modules/qa-ontology.js?v=8"></script>
 <script src="/assets/modules/qa-history.js?v=2"></script>
 <script src="/assets/modules/qa-anchor.js?v=5"></script>
 <script src="/assets/modules/evidence-card.js?v=3"></script>
@@ -1607,25 +1607,6 @@ let DQ_DS_SEQ=0;async function dqDsTab(t){const seq=++DQ_DS_SEQ;   // 连续切�
    <input id="ds_tsearch" placeholder="搜索表名…" style="width:260px;margin-bottom:10px" oninput="dqDsTblFilter()">
    <div class="ds-grid" id="ds_tgrid">`+DQ_TABLES.map(t=>`<div class="ds-card ${sel.has(t.name)?'sel':''}" data-t="${esc(t.name)}" role="button" tabindex="0" aria-pressed="${sel.has(t.name)}" onclick="dqDsToggleT(${esc(JSON.stringify(t.name))})"><div class="ck" aria-hidden="true">✓</div><div class="nm">${esc(t.name)}</div><div class="ds">${t.rows??'-'} 行 · ${t.cols??'-'} 列</div></div>`).join('')+`</div>`;
  }}
-function dqDsToggleG(id){const g=(DQ_GRAPHS||[]).find(x=>x.id===id);if(g&&!g.queryable){toast(g.reason||'该本体没有可查询的数据表',false);return;}const i=DQ_DS.graphs.indexOf(id);if(i<0)DQ_DS.graphs.push(id);else DQ_DS.graphs.splice(i,1);
- const c=$('#dq_ds_body').querySelector(`.ds-card[data-g="${CSS.escape(id)}"]`);if(c)c.classList.toggle('sel');   // 原地切换，不重建(避免闪烁)
- const gc=$('#ds_gcount');if(gc)gc.textContent=DQ_DS.graphs.length;const all=$('#ds_all_g');if(all)all.checked=DQ_GRAPHS&&DQ_DS.graphs.length===DQ_GRAPHS.length;}
-function dqDsAllG(on){DQ_DS.graphs=on?DQ_GRAPHS.filter(g=>g.queryable).map(g=>g.id):[];$('#dq_ds_body').querySelectorAll('.ds-card[data-g]').forEach(c=>{const g=DQ_GRAPHS.find(x=>x.id===c.dataset.g);c.classList.toggle('sel',on&&g&&g.queryable)});const gc=$('#ds_gcount');if(gc)gc.textContent=DQ_DS.graphs.length;}
-function dqDsSetAllTables(on){
- DQ_DS.allTables=on;
- if(on){
-  DQ_DS.tables=[];
-  $('#ds_tgrid').querySelectorAll('.sel').forEach(card=>{card.classList.remove('sel');card.setAttribute('aria-pressed','false');});
- }
-}
-function dqDsToggleT(nm){
- const i=DQ_DS.tables.indexOf(nm),selected=i<0;
- if(selected){DQ_DS.tables.push(nm);DQ_DS.allTables=false;}else DQ_DS.tables.splice(i,1);
- $('#ds_notable').checked=DQ_DS.allTables;
- const card=$('#ds_tgrid').querySelector(`[data-t="${CSS.escape(nm)}"]`);
- card.classList.toggle('sel',selected);card.setAttribute('aria-pressed',String(selected));
-}
-function dqDsTblFilter(){const q=($('#ds_tsearch').value||'').toLowerCase();$('#ds_tgrid').querySelectorAll('.ds-card').forEach(c=>{c.style.display=c.getAttribute('data-t').toLowerCase().includes(q)?'':'none';});}
 function dqDsConfirm(){dqDsCommit();}
 async function dqOpenSkill(){$('#dq_skmodal').style.display='flex';const body=$('#dq_sk_body');body.innerHTML='<div class="muted">加载中…</div>';
  let sinked=[];try{sinked=await J('/api/chat/skills');}catch(e){}

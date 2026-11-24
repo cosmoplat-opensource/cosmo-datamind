@@ -46,6 +46,21 @@ def test_upload_and_api_source_preserve_both_datasets(client, api_sources, tmp_p
     assert values == [units for _, units in imported], {"file_table": file_table, "api_table": api_table, "values": values}
 
 
+def test_deleting_uploaded_file_keeps_api_table_with_long_suffix(client, api_sources, tmp_path, monkeypatch):
+    register, db_path = api_sources
+    monkeypatch.setattr(server, "WORK", str(tmp_path))
+    status, result = fetch(client, register("daily_long", [{"units": 22}]))
+    assert status == 200 and result["table"] == "up.api_daily_long"
+    name = "api_daily.csv"
+    uploaded = client.post("/api/build/upload", data={"files": (BytesIO(b"units\n11\n"), name)})
+    assert uploaded.json["saved"] == [name]
+    deleted = client.post("/api/build/asset/delete", json={"name": name})
+    assert deleted.json["dropped_table"] == "api_daily"
+    with sqlite3.connect(db_path) as db:
+        assert db.execute("SELECT units FROM api_daily_long").fetchall() == [("22",)]
+        assert db.execute("SELECT name FROM sqlite_master WHERE name = 'api_daily'").fetchall() == []
+
+
 @pytest.mark.parametrize("replacement", ["weekly", "daily"])
 def test_new_connection_needs_its_own_first_fetch(client, api_sources, replacement):
     register, db_path = api_sources
