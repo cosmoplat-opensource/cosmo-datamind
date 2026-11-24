@@ -45,7 +45,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 当前仅接入机器人本体的设计阶段可视化与固定版本浏览。数据本体主图、构建结果预览、问数高亮、证据状态、详情和评审维持现有实现，不安排后续自动接入。
 
 - [DR-161 · 机器人交互式本体图谱与构建可视化](decisions/DR-161-interactive-ontology-graph-visualization.md)：方案已采纳；2026-11-19 范围和命名修订实现交付状态为 delivered，相关回归通过。
-- [IR-031 · 机器人交互式本体图谱与构建可视化](iterations/IR-031-robotics-interactive-ontology-graph-visualization.md)：delivered；当前修订相关回归通过；历史结果按各自快照保留。
+- [IR-031 · 机器人交互式本体图谱与构建可视化](iterations/IR-031-robotics-interactive-ontology-graph-visualization.md)：delivered。2026-11-17 的原交付记录覆盖 17 个全量阶段；2026-11-19 的命名修订仅做定向回归。
 - [DR-162 · 交互式本体图谱边界与公开材料](decisions/DR-162-interactive-graph-limits-and-publication-boundary.md)：仅适用于机器人设计和版本浏览，保留预算、超时、只读及发布边界；STV-H01～H05 本次交付状态为 delivered。
 - 需求与测试登记于 `acceptance.json`；已移除数据本体接入的计划验收，不删除现有数据本体测试。
 
@@ -354,9 +354,9 @@ T01 应用契约基础 v1：已冻结；T02 RED 评审。
 - [DR-154 机器人应用检查与可追溯补全](decisions/DR-154-robotics-application-adaptation.md) ／ [IR-026](iterations/IR-026-robotics-application-adaptation.md)：T01 规约 已冻结，T05 集成 GREEN 的 57 项已审测试及全量 13 段通过，70 项核心仍绿；T06 真实副本验收 及全量 13 段已通过（2333 passed／5 可选跳过，覆盖率 86.1%），自动匹配与人工例外已纳入，2026-11-13 用户要求提交代码，确认 delivered。
 - [DR-155 本体详情与应用修复体验](decisions/DR-155-ontology-detail-experience.md) ／ [IR-027](iterations/IR-027-ontology-detail-experience.md)：delivered，T03 GREEN 及全量回归已通过；T04 集成 RED 已于 2026-11-16 获继续指令，T05 GREEN 已实现直达任务对话、只读历史与修复入口及历史读取锁冲突修复，14 段全量回归通过；T06 真实副本技术验证 20 项通过，已于 2026-11-16 获用户确认交付。
 - [DR-156 深度问数应用契约兼容](decisions/DR-156-deepqa-application-compatibility.md) ／ [IR-028](iterations/IR-028-deepqa-application-compatibility.md)：delivered；2026-11-16 用户确认后完成 T06，原句计数与实际 SQL 说明修复、8 道真实模型基线、48 组协议／模式复放和完整浏览器验收通过；最终全量 14 段完整退出 0。详见 T06 验收。
-- [DR-157 本体删除恢复与历史保留](decisions/DR-157-ontology-asset-lifecycle.md) ／ [IR-029](iterations/IR-029-ontology-asset-lifecycle.md)：delivered（2026-11-17 用户明确确认整个 IR 最终验收）；删除／恢复及精简 UI 完成，工作副本和浏览器验证通过，最终刷新全量 14 段退出 0。详见 T06 验收。
+- [DR-157 本体删除恢复与历史保留](decisions/DR-157-ontology-asset-lifecycle.md) ／ [IR-029](iterations/IR-029-ontology-asset-lifecycle.md)：delivered（2026-11-17 用户明确确认整个 IR 最终验收）；删除／恢复及精简 UI 完成，工作副本和浏览器验证通过，该阶段全量检查 14 段退出 0。详见 T06 验收。
 
-IR-025 当前结果：T06 交付评审，公共服务／HTTP／最小 UI 与生成守卫已验证并获用户确认交付。
+IR-025 的 T06 公共服务、HTTP、最小 UI 与生成守卫于 2026-11-12 经用户确认交付。
 
 IR-029 于 2026-11-17 按用户反馈精简删除／恢复弹窗及回收站卡片；87 项相关检查和隔离浏览器验证通过，原全量报告为精简前代码，现已刷新全量并完成交付。见 UI 精简记录。
 

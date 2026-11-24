@@ -2,6 +2,8 @@
 
 状态：accepted。日期：2026-11-19。依据：维护者要求使用“交互式本体图谱”描述当前功能，现阶段仅适用于机器人本体。设计决定与实现交付状态分开记录。
 
+实现交付状态：delivered。
+
 ## 决策
 
 中文名称统一为“交互式本体图谱”，页面标题明确为“机器人交互式本体图谱”。前端模块、样式、测试及文档使用 `interactive-ontology-graph` / `interactive_ontology_graph`，后端只读投影模块为 `ontology_assets.interactive_ontology_graph_view`，控制器为 `InteractiveOntologyGraphController`。
@@ -22,4 +24,4 @@
 
 GRAPH-NAME-01 映射模块导入、schema、固定版本 HTTP、设计与历史修订只读响应、完整数据本体版本的拒绝路径，以及实际浏览器交互测试。已有图谱语义、隔离、错误路径、覆盖率及布局断言保留，测试入口见 `specs/acceptance.json`。
 
-当前修订的实现交付状态：delivered。本次相关回归通过：165 项单元、HTTP、组件及规约检查，9 项图谱浏览器用例，29 项机器人设计浏览器用例；相关文件 lint、类型检查通过，无跳过。未完成当前修订的全量回归及全仓覆盖率门禁，不据此声明全仓通过。以上为历史阶段结果；当前检出版本的依赖环境及完整复现入口见[仓库验证说明](../../README.md#测试)，具体相关测试见 `specs/acceptance.json` 的 GRAPH-NAME-01 映射。
+2026-11-19 的命名修订对应开发快照 `88380ef`。该修订的定向回归覆盖 165 项单元、HTTP、组件和规约检查，另有图谱浏览器 9 项、设计浏览器 29 项通过。相关 lint 和类型检查通过，无跳过。该次未运行全量回归或全仓覆盖率门禁。原图谱交付的验证范围及仓库复现命令见 [IR-031](../iterations/IR-031-robotics-interactive-ontology-graph-visualization.md)。

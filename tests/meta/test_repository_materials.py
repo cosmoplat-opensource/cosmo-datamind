@@ -1,7 +1,9 @@
 """Keep local review materials outside the published product tree — DR-160."""
 from fnmatch import fnmatchcase
+from fnmatch import filter as match_paths
 from pathlib import Path, PurePosixPath
 import re
+import shlex
 import subprocess
 from urllib.parse import unquote, urlsplit
 
@@ -41,6 +43,51 @@ def tracked_files():
 def test_development_materials_are_not_tracked():
     findings = [name for name in tracked_files() if local_material(name)]
     assert not findings, '\n'.join(findings)
+
+
+@pytest.mark.parametrize('pattern', [
+    r'(?:尚未|没有|未|无|不)(?:执行)?(?:提交(?:\s*Git\b|[、或]推送)|\s*Git\s*提交)',
+    r'(?:确认本机[^。；]*后[，,]|实际\s*\d+\s*服务已)[^。；]*(?:重启|重载|重新加载)'
+    r'|(?:重启|重载|重新加载)后[^。；]*(?:回读|读取)原失败任务',
+], ids=['git-progress', 'local-service-receipt'])
+def test_public_specs_exclude_transient_operation_reports(pattern):
+    """Check known operation reports across public specifications, including their index."""
+    findings = []
+    for name in tracked_files():
+        if not name.startswith('specs/') or not name.endswith('.md'):
+            continue
+        for number, line in enumerate((ROOT / name).read_text().splitlines(), 1):
+            if re.search(pattern, line, re.IGNORECASE):
+                findings.append(f'{name}:{number}')
+    assert not findings, '\n'.join(findings)
+
+
+@pytest.mark.parametrize('record, entry_point', [
+    ('IR-016', 'scripts/demo_robotics.py'),
+    ('IR-027', 'tests/unit/test_ontology_detail_ui.py'),
+    ('IR-029', 'tests/unit/test_asset_lifecycle.py'),
+    ('IR-030', 'tests/unit/test_merge_lifecycle_regressions.py'),
+    ('IR-031', 'tests/frontend/robotics-interactive-ontology-graph-browser.py'),
+    ('IR-036', 'tests/frontend/robotics-task-browser.py'),
+])
+def test_iteration_replay_uses_published_test_files(record, entry_point):
+    tracked = tracked_files()
+    name, = match_paths(tracked, f'specs/iterations/{record}-*.md')
+    commands = re.findall(r'^```(?:sh|bash)\n(.*?)^```', (ROOT / name).read_text(), re.M | re.S)
+    paths = set()
+    for block in commands:
+        for line in block.replace('\\\n', ' ').splitlines():
+            args = shlex.split(line, comments=True)
+            if not args or Path(args[0]).name not in {'python', 'python3'}:
+                continue
+            if len(args) > 1 and args[1].endswith('.py'):
+                paths.add(args[1])
+            if args[1:2] == ['scripts/service.py']:
+                assert not {'start', 'stop', 'restart'}.intersection(args[2:]), name
+            paths.update(arg for arg in args if arg.startswith(('scripts/', 'tests/')) and arg.endswith('.py'))
+    assert entry_point in paths, name
+    missing = sorted(path for path in paths if not match_paths(tracked, path))
+    assert not missing, (name, missing)
 
 
 @pytest.mark.parametrize('name', [
