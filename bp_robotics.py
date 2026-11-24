@@ -427,23 +427,16 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True, data_host=Non
 
     @bp.get('/api/ontology-assets/<ontology_id>/versions/<version_id>')
     def version(ontology_id, version_id):
-        # 已删除资产仅在显式 state=deleted 历史视图中可读（与目录的 state 参数一致）。
-        _query_fields({'state'})
-        if request.args.get('state', 'active') not in ('active', 'deleted'):
-            raise _invalid()
-        history = request.args.get('state') == 'deleted'
+        history = bp_robotics_review.version_history_requested()
         from asset_lifecycle import root_for
         version_root=root_for(data_host) if data_host is not None else root
         if not (version_root / 'domain.sqlite3').exists():
             raise KeyError(version_id)
         assets = AssetStore(version_root,read_only=True)
-        from ontology_assets.lifecycle import LifecycleService
         row = assets.get_version(ontology_id, version_id)
         rid = row['metadata'].get('build_run_id')
-        lifecycle = LifecycleService(version_root,read_only=True).get(ontology_id)
+        lifecycle = bp_robotics_review.visible_version_lifecycle(version_root, ontology_id, history=history)
         deleted = lifecycle['state'] == 'deleted'
-        if deleted and not history:
-            raise BuildRequestError('ontology_deleted', '本体已移到回收站；查看历史请使用 state=deleted。', 409)
         result = {**row, 'lifecycle':lifecycle,
                   'version_number': assets.version_number(ontology_id, version_id),
                   'asset': assets.get_asset(ontology_id), 'build_run_id': rid,

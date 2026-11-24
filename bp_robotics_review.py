@@ -108,6 +108,22 @@ def require_robotics(service, oid):
         raise invalid()
 
 
+def version_history_requested():
+    states = request.args.getlist('state')
+    if set(request.args) - {'state'} or states not in ([], ['active'], ['deleted']):
+        raise invalid()
+    return states == ['deleted']
+
+
+def visible_version_lifecycle(root, ontology_id, *, history):
+    """DR-171: detail and graph projections share the same fixed-version read policy."""
+    from ontology_assets.lifecycle import LifecycleService
+    lifecycle = LifecycleService(root, read_only=True).get(ontology_id)
+    if lifecycle['state'] == 'deleted' and not history:
+        raise BuildRequestError('ontology_deleted', '本体已移到回收站；查看历史请使用 state=deleted。', 409)
+    return lifecycle
+
+
 def checked_path(root, relative):
     path = Path(relative)
     if path.is_absolute() or '..' in path.parts:
@@ -189,18 +205,20 @@ def init_app(app, runtime):
     @bp.get(prefix + '/versions/<version_id>/views/<view>')
     def visualization(ontology_id, version_id, view):
         # DR-150: GET only, fixed version, same read-only integrity boundary.
-        if request.args or view not in {'relations', 'behavior-tree', 'interactive-ontology-graph'}:
+        if view not in {'relations', 'behavior-tree', 'interactive-ontology-graph'}:
             raise invalid()
-        service(ontology_id)  # DR-152: retain the original domain guard before resolving versions.
+        history = version_history_requested()
+        store = service(ontology_id)  # Check the domain before resolving the version.
         from ontology_assets.robotics_design import DesignAssets
         from application_contracts.adapters import service as application_checks
-        assets = runtime.assets()
+        assets = store.assets
+        version = assets.get_version(ontology_id, version_id)
+        visible_version_lifecycle(runtime.root, ontology_id, history=history)
         if view == 'interactive-ontology-graph':
             # DR-161: use the same provenance readers as fixed-version exports.
             from ontology_assets.interactive_ontology_graph_view import project_version
             from ontology_assets.robotics_application import ApplicationAssets, is_application
             from ontology_assets.robotics_offline import OfflineAssets
-            version = assets.get_version(ontology_id, version_id)
             reader = (ApplicationAssets(runtime.root) if is_application(version) else DesignAssets(runtime.root)
                       if version['metadata'].get('design_contract') else OfflineAssets(runtime.root))
             try:
@@ -209,7 +227,7 @@ def init_app(app, runtime):
                 raise BuildRequestError('artifact_integrity', '固定版本或来源工件缺失、损坏或规模不受支持。', 409) from exc
             return response({**document, 'ontology_id': ontology_id, 'version_id': version_id, 'view': view,
                 'name': assets.get_asset(ontology_id)['name'], 'version_number': assets.version_number(ontology_id, version_id)})
-        if assets.get_version(ontology_id, version_id)['metadata'].get('design_contract'):
+        if version['metadata'].get('design_contract'):
             if view != 'relations': raise invalid()
             reader=DesignAssets(runtime.root)
             graph=reader.graph(ontology_id, version_id)
@@ -219,7 +237,7 @@ def init_app(app, runtime):
             return response({**graph, 'ontology_id':ontology_id, 'version_id':version_id, 'view':view,
                 'name':assets.get_asset(ontology_id)['name'], 'version_number':assets.version_number(ontology_id,version_id),
                 'application_compatibility':application_checks(runtime.root, read_only=True).summary(ontology_id,version_id)})
-        result = service(ontology_id).visualize(ontology_id, version_id, view)
+        result = store.visualize(ontology_id, version_id, view)
         from application_contracts.adapters import service as checks
         result['application_compatibility'] = checks(runtime.root, read_only=True).summary(ontology_id, version_id)
         return response(result)

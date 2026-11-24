@@ -2,7 +2,7 @@
 (function (global) {
   'use strict';
   const escape = value => global.RoboticsAssets.escape(value);
-  const link = (oid, vid, view='interactive-ontology-graph') => '#robotics-view?asset=' + encodeURIComponent(oid) + '&version=' + encodeURIComponent(vid) + '&view=' + encodeURIComponent(view);
+  const link = (oid, vid, view='interactive-ontology-graph', deleted=false) => '#robotics-view?asset=' + encodeURIComponent(oid) + '&version=' + encodeURIComponent(vid) + '&view=' + encodeURIComponent(view) + (deleted ? '&state=deleted' : '');
   const colors = {business:'#4a5ff3',skills:'#7c3aed',other:'#0891b2'};
   let active = null, token = 0;
   function page(name) {
@@ -12,6 +12,15 @@
     const host = global.document.getElementById('rv_host');
     const params = new URLSearchParams(global.location.hash.split('?')[1] || '');
     const oid = params.get('asset'), vid = params.get('version'), view = params.get('view') || 'relations';
+    const history = params.get('state') === 'deleted';
+    const detailLink = global.RoboticsAssets.versionLink(oid, vid, history);
+    const viewUrl = '/api/ontology-assets/' + encodeURIComponent(oid) + '/versions/' + encodeURIComponent(vid) +
+      '/views/' + encodeURIComponent(view) + (history ? '?state=deleted' : '');
+    function taskAction(mode) {
+      if (history) return '';
+      const href = global.RoboticsTask.link(oid, vid, mode) + '&assess=1';
+      return `<a class="ra-button" href="${escape(href)}">基于此本体生成行为树</a>`;
+    }
     host.innerHTML = '<p class="ra-empty" role="status">正在读取本体视图…</p>';
     let canvas = null, resize = null, data = null, visibleNodes = [], selectedTree = null;
     const treeHistory = [];
@@ -103,8 +112,8 @@
     }
     function render() {
       const tree=view==='behavior-tree';selectedTree=tree?data.main_tree:null;
-      host.innerHTML=`<a class="ra-back" href="${escape(global.RoboticsAssets.versionLink(oid,vid))}">← 返回本体详情</a>
-        <header class="rt-heading"><div><span class="rt-eyebrow">机器人本体 · ${tree?'行为树视图':'关系图'}</span><h2>${escape(data.name)}</h2><p>当前：版本 ${escape(data.version_number)} · 只读浏览</p></div><p>${escape(data.application_compatibility?.status==='not_assessed'?'尚未检查':(data.application_compatibility?.reasons||[]).join('；'))}</p><a class="ra-button" href="${escape(global.RoboticsTask.link(oid,vid,data.mode||'real')+'&assess=1')}">基于此本体生成行为树</a></header>
+      host.innerHTML=`<a class="ra-back" href="${escape(detailLink)}">← 返回本体详情</a>
+        <header class="rt-heading"><div><span class="rt-eyebrow">机器人本体 · ${tree?'行为树视图':'关系图'}</span><h2>${escape(data.name)}</h2><p>${history ? '历史查看' : '当前'}：版本 ${escape(data.version_number)} · 只读浏览</p></div><p>${escape(data.application_compatibility?.status==='not_assessed'?'尚未检查':(data.application_compatibility?.reasons||[]).join('；'))}</p>${taskAction(data.mode || 'real')}</header>
         <p class="rv-help">${tree?'本体流程 · 非任务生成结果。显示本体保存的流程与参数绑定；具体任务的参数以生成结果为准。':'展示当前版本的实例及实例间关系。新旧本体使用相同分组；类别和属性定义请在本体详情中查看。'}</p>
         <section class="card rv-toolbar">${tree?`<label>行为树<select id="rv_tree" aria-label="行为树">${data.trees.map(t=>`<option value="${escape(t.name)}">${escape(t.name)}${t.name===data.main_tree?' · 主流程':' · 子树'}</option>`).join('')}</select></label>`:'<label>展示范围<select id="rv_group" aria-label="展示范围"><option value="business">业务对象与配置</option><option value="skills">技能与流程</option><option value="other">参数与其他对象</option><option value="all">全部对象</option></select></label><label>实例类型<select id="rv_type" aria-label="实例类型"><option value="">全部类型</option></select></label>'}
         <form id="rv_search"><label>查找节点<input id="rv_query" placeholder="输入节点名称" autocomplete="off"></label><button class="ghost" type="submit">查找</button></form><span id="rv_search_result" role="status"></span>
@@ -137,22 +146,22 @@
         if(!oid||!vid||!['interactive-ontology-graph','relations','behavior-tree'].includes(view))throw Error('缺少本体、版本或有效视图，请从本体库重新打开。');
         // DR-150 scope update: source workflows are not user-facing task results.
         if(view==='behavior-tree'){
-          host.innerHTML=`<section class="card ra-overview"><h2>请在任务生成完成后查看行为树</h2><p class="rv-help" role="status">本体构建来源中的流程暂不展示。请进入本体详情，输入任务描述并生成行为树。</p><div class="ra-detail-actions"><a class="ra-button" href="${escape(global.RoboticsAssets.versionLink(oid,vid))}">返回本体详情</a><a class="ra-button" href="${escape(link(oid,vid))}">打开本体图谱</a></div></section>`;
+          host.innerHTML=`<section class="card ra-overview"><h2>请在任务生成完成后查看行为树</h2><p class="rv-help" role="status">本体构建来源中的流程暂不展示。请进入本体详情，输入任务描述并生成行为树。</p><div class="ra-detail-actions"><a class="ra-button" href="${escape(detailLink)}">返回本体详情</a><a class="ra-button" href="${escape(link(oid, vid, 'interactive-ontology-graph', history))}">打开本体图谱</a></div></section>`;
           return;
         }
         if(view==='interactive-ontology-graph'){
           const module=await import('/assets/modules/interactive-ontology-graph/panel.js');if(current!==token)return;
-          const body=await global.RoboticsAssets.readJSON(global.fetch.bind(global),'/api/ontology-assets/'+encodeURIComponent(oid)+'/versions/'+encodeURIComponent(vid)+'/views/interactive-ontology-graph',{signal:abort.signal});
+          const body=await global.RoboticsAssets.readJSON(global.fetch.bind(global),viewUrl,{signal:abort.signal});
           if(current!==token)return;
           if(body.ontology_id!==oid||body.version_id!==vid)throw Error('返回的本体版本不匹配。');
-          host.innerHTML=`<a class="ra-back" href="${escape(global.RoboticsAssets.versionLink(oid,vid))}">← 返回本体详情</a><header class="rt-heading"><div><h2>${escape(body.name)}</h2><p>当前：版本 ${escape(body.version_number)} · 只读浏览</p></div><a class="ra-button" href="${escape(global.RoboticsTask.link(oid,vid)+'&assess=1')}">基于此本体生成行为树</a></header><div class="rv-interactive-ontology-graph"></div>`;
+          host.innerHTML=`<a class="ra-back" href="${escape(detailLink)}">← 返回本体详情</a><header class="rt-heading"><div><h2>${escape(body.name)}</h2><p>${history ? '历史查看' : '当前'}：版本 ${escape(body.version_number)} · 只读浏览</p></div>${taskAction()}</header><div class="rv-interactive-ontology-graph"></div>`;
           const panel=module.mountPanel(host.querySelector('.rv-interactive-ontology-graph'),{canvasId:'rv_canvas'});
           active={dispose:()=>{abort.abort();panel.destroy();}};
           const display=global.RoboticsTask.displayLabel;
           const document={...body,nodes:body.nodes.map(n=>({...n,labels:n.labels.map(l=>({...l,value:display(l.value)}))})),individuals:body.individuals.map(n=>({...n,labels:n.labels.map(l=>({...l,value:display(l.value)})),data:n.data.map(d=>d.predicate==='http://www.w3.org/2000/01/rdf-schema#label'?{...d,value:display(d.value)}:d)}))};
           panel.present(document);return;
         }
-        const response=await global.fetch('/api/ontology-assets/'+encodeURIComponent(oid)+'/versions/'+encodeURIComponent(vid)+'/views/'+view,{signal:abort.signal});
+        const response=await global.fetch(viewUrl,{signal:abort.signal});
         const body=await response.json();if(current!==token)return;
         if(!response.ok)throw Error(body.error?.message||`读取失败（HTTP ${response.status}）`);
         if(body.ontology_id!==oid||body.version_id!==vid||body.view!==view)throw Error('返回的本体版本不匹配。');

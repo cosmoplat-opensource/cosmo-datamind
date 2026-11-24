@@ -36,6 +36,33 @@ def interactive_graph_panel(page):
     return canvas
 
 
+@pytest.mark.parametrize('live', [{'prepare': support.prepare_candidate}], indirect=True)
+def test_recycle_bin_graph_round_trip_preserves_fixed_version(live):
+    from ontology_assets.lifecycle import LifecycleService
+    from tests.unit.test_asset_lifecycle import apply
+
+    site, page, calls = live
+    ref = site.prepared['output_asset_ref']
+    oid, vid = ref['ontology_id'], ref['version_id']
+    apply(LifecycleService(site.root), oid)
+    before = support.db_rows(site.root), support.blob_bytes(site.root)
+    page.goto(site.url + '/#library?state=deleted')
+    card = page.locator(f'[data-ontology-id="{oid}"]')
+    card.get_by_role('link', name='查看固定版本').click()
+    graph = page.get_by_role('link', name='打开图谱', exact=True)
+    expect(graph).to_have_attribute('href', re.compile(r'&state=deleted(?:&|$)'))
+    graph.click()
+    expect(interactive_graph_panel(page)).to_have_attribute('data-kind', 'version')
+    expect(page.locator('#rv_host header')).to_contain_text('历史查看')
+    expect(page.locator('#rv_host').get_by_role('link', name='基于此本体生成行为树')).to_have_count(0)
+    page.locator('#rv_host').get_by_role('link', name='返回本体详情').click()
+    expect(page).to_have_url(site.url + f'/#library?asset={oid}&version={vid}&state=deleted')
+    expect(page.get_by_test_id('robotics-version')).to_have_attribute('data-version-id', vid)
+    assert (support.db_rows(site.root), support.blob_bytes(site.root)) == before
+    assert calls == []
+    support.done(site)
+
+
 def test_classes_properties_instances_update_one_canvas(live):
     site, page, calls = live
     admitted = support.ui_admit(page, site)
