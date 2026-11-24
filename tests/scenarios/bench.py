@@ -267,7 +267,29 @@ def run_business(tmp):
 
 def run_all(tmp):
     return (run_lakehouse(tmp) + run_business(tmp) + run_semantic_catalog(tmp)
-            + run_multi_database(tmp) + run_merge_contract(tmp))
+            + run_multi_database(tmp) + run_merge_contract(tmp) + run_shift_metrics(tmp))
+
+
+def run_shift_metrics(tmp):
+    server = _server()
+    work = Path(tmp) / "work_shifts"
+    work.mkdir(exist_ok=True)
+    db = work / "shifts.db"
+    ir, totals = fixtures.shift_metrics(db)
+    checks = []
+    with _patched(server, WORK=str(work), _BUILD_CONN_F=str(work / "build_connections.json")):
+        source = _register(server, work, db, "班次库")
+        ir["build_manifest"] = {"source": {"id": source}}
+        (work / "built_shifts.json").write_text(json.dumps(ir), encoding="utf-8")
+        client = server.app.test_client()
+        for metric, total in totals.items():
+            contract = client.get("/api/metric/contract", query_string={"name": metric},
+                                  headers={"X-DataMind-Source": source}).get_json()
+            data = client.post("/api/viz/run", json={"src": source, "sql": contract.get("compiled_sql", "")}).get_json()
+            actual = [list(row.values()) for row in data.get("rows", [])]
+            checks.append(Check("同名班次指标", metric, contract.get("metric", {}).get("id") == metric
+                                and actual == [[total]], str(actual)))
+    return checks
 
 
 def run_multi_database(tmp):

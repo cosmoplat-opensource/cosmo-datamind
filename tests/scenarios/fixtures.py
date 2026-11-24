@@ -40,6 +40,19 @@ def _zip(files):
     return buf.getvalue()
 
 
+def shift_metrics(path, same_label=True):
+    """同一班次的两个指标可以同名，各区的总量由原始行独立计算。"""
+    east, west = [(40,), (50,)], [(11,), (22,)]
+    _create(path, {"east_units": ("units INTEGER", east), "west_units": ("units INTEGER", west)})
+    metrics = [{"id": "east_total", "name": "班次产量", "table": "east_units"},
+               {"id": "west_total", "name": "班次产量" if same_label else "西区产量", "table": "west_units"}]
+    for metric in metrics:
+        metric.update(measure={"col": "units", "agg": "sum"}, status="certified")
+    ir = {"scenario": {"name": "班次"}, "objects": [{"name": m["table"], "id": m["table"], "table": m["table"]}
+          for m in metrics], "links": [], "metric_layers": {"atomic": metrics}}
+    return ir, {"east_total": sum(x for x, in east), "west_total": sum(x for x, in west)}
+
+
 def semantic_catalog(path):
     """Name/value data, ambiguous units, a numeric unit code and two role references."""
     rows = [(i, 1 + i % 3, 1 + (i + 1) % 3, f'Metric{i % 20}', float(i), 'USD' if i % 2 else 'EUR')

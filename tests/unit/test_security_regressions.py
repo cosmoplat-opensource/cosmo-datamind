@@ -230,7 +230,8 @@ def test_json_write_routes_reject_non_object_bodies(body):
 
 @pytest.fixture
 def api_source(monkeypatch, tmp_path):
-    conn = {"id": "test-api", "kind": "api", "name": "demo", "url": "https://api.example/data"}
+    conn = {"id": "test-api", "kind": "api", "name": "demo", "url": "https://api.example/data",
+            "table": "api_demo"}  # 上次成功取数时持久化的表绑定，下面用旧数据验证刷新与回滚。
     db = tmp_path / "uploads.db"
     with sqlite3.connect(db) as connection:
         connection.execute("CREATE TABLE api_demo(old TEXT)")

@@ -48,14 +48,41 @@ def test_upload_and_api_source_preserve_both_datasets(client, api_sources, tmp_p
 
 @pytest.mark.parametrize("replacement", ["weekly", "daily"])
 def test_new_connection_needs_its_own_first_fetch(client, api_sources, replacement):
-    register, _ = api_sources
+    register, db_path = api_sources
     original = register("daily", [{"units": 11}])
-    assert fetch(client, original)[0] == 200
+    status, first = fetch(client, original)
+    assert status == 200
     assert client.post("/api/build/connect/delete", json={"id": original}).json["ok"]
     current = register(replacement, [{"units": 22}])
     assert current != original
     sources = {s["id"]: s for s in client.get("/api/build/sources").json["sources"]}
     assert sources[current]["ready"] is False
+    status, second = fetch(client, current)
+    assert status == 200
+    with sqlite3.connect(db_path) as db:
+        for result, expected in [(first, "11"), (second, "22")]:
+            table = result["table"].removeprefix("up.")
+            assert db.execute(f'SELECT units FROM "{table}"').fetchall() == [(expected,)]
+
+
+def test_api_binding_write_failure_rolls_back_and_can_retry(client, api_sources, monkeypatch):
+    register, db_path = api_sources
+    rows = [{"units": 11}]
+    cid = register("daily", rows)
+    assert fetch(client, cid)[0] == 200
+    rows[0]["units"] = 22
+
+    def disk_full(*args):
+        raise OSError("simulated full disk")
+
+    with monkeypatch.context() as fail:
+        fail.setattr(server, "_atomic_json", disk_full)
+        assert fetch(client, cid)[0] == 502
+    with sqlite3.connect(db_path) as db:
+        assert db.execute("SELECT units FROM api_daily").fetchall() == [("11",)]
+    assert fetch(client, cid)[0] == 200
+    with sqlite3.connect(db_path) as db:
+        assert db.execute("SELECT units FROM api_daily").fetchall() == [("22",)]
 
 
 @pytest.mark.parametrize("late_column_at", [5000, 5001])

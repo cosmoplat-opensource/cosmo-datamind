@@ -1,6 +1,5 @@
 """Accept the outcome of the latest user interaction in three browser engines."""
 import json
-import sqlite3
 from threading import Event
 from time import monotonic
 
@@ -11,6 +10,7 @@ from playwright.sync_api import expect
 import server
 from tests.frontend.result_scope_browser import page, scope_browser
 from tests.result_scope_support import action_ledger
+from tests.scenarios.fixtures import shift_metrics
 
 __all__ = ["action_ledger", "page", "scope_browser"]
 
@@ -184,26 +184,18 @@ def open_shift_metrics(page, site, tmp_path, monkeypatch, same_label):
     monkeypatch.setattr(server, "WORK", str(tmp_path))
     monkeypatch.setattr(server, "_BUILD_CONN_F", str(tmp_path / "connections.json"))
     db = tmp_path / "shifts.db"
-    with sqlite3.connect(db) as conn:
-        conn.executescript("CREATE TABLE east_units(units INTEGER);INSERT INTO east_units VALUES(40),(50);"
-                           "CREATE TABLE west_units(units INTEGER);INSERT INTO west_units VALUES(11),(22);")
+    ir, totals = shift_metrics(db, same_label)
     registered = page.request.post(site + "/api/build/connect", data={
         "kind": "sqlite", "name": "班次库", "path": str(db)})
     assert registered.ok
     source = registered.json()["conn"]["id"]
-    metrics = [{"id": "east_total", "name": "班次产量", "table": "east_units"},
-               {"id": "west_total", "name": "班次产量" if same_label else "西区产量", "table": "west_units"}]
-    for metric in metrics:
-        metric.update(measure={"col": "units", "agg": "sum"}, status="certified")
-    ir = {"scenario": {"name": "班次"}, "objects": [{"id": t, "name": t, "table": t}
-          for t in ("east_units", "west_units")], "links": [], "metric_layers": {"atomic": metrics},
-          "build_manifest": {"source": {"id": source}}}
+    ir["build_manifest"] = {"source": {"id": source}}
     (tmp_path / "built_shifts.json").write_text(json.dumps(ir), encoding="utf-8")
     headers = {"X-DataMind-Source": source}
     contract = page.request.get(site + "/api/metric/contract", params={"name": "west_total"}, headers=headers)
     assert contract.ok and contract.json()["metric"]["id"] == "west_total", contract.text()
     expected = page.request.post(site + "/api/viz/run", data={"src": source, "sql": contract.json()["compiled_sql"]})
-    assert expected.ok and list(expected.json()["rows"][0].values()) == [33]
+    assert expected.ok and list(expected.json()["rows"][0].values()) == [totals["west_total"]]
     page.goto(site + "/?source=" + source + "#viz")
     options = page.locator("#vz_quick optgroup").filter(has=page.locator("option[value='m1']"))
     expect(options.locator("option")).to_have_count(2)
