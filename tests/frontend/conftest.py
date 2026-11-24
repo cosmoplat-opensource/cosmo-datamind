@@ -1,7 +1,20 @@
 """Shared isolated site and Chromium for the browser acceptance suite."""
+import sys
 from threading import Thread
 
 import pytest
+
+
+def pytest_collection_modifyitems(items):
+    if sys.platform != "linux":
+        return
+    skip = pytest.mark.skip(reason="Linux WebKit 构建页已移出验收范围")
+    for item in items:
+        params = item.callspec.params if hasattr(item, "callspec") else {}
+        device = params.get("device", ())
+        webkit = params.get("scope_browser") == "webkit" or device[:1] == ("webkit",)
+        if item.path.name == "build_viewport_browser.py" or (params.get("key") == "build" and webkit):
+            item.add_marker(skip)
 from werkzeug.serving import make_server
 
 

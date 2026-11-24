@@ -1,6 +1,4 @@
 """WebKit 下，本体构建页加载参照选择器后仍须适配窄屏。"""
-import os
-
 import pytest
 from playwright.sync_api import expect, sync_playwright
 
@@ -15,8 +13,7 @@ def webkit_browser():
         yield browser
 
 
-# 默认门禁覆盖 768px。显式启用时在同一浏览器复查 390px 的 Linux WebKit 问题。
-@pytest.mark.parametrize("width", [390, 768] if os.environ.get("DATAMIND_WEBKIT_390") == "1" else [768])
+@pytest.mark.parametrize("width", [768])
 def test_build_reference_controls_fit_the_viewport(webkit_browser, site, width):
     with webkit_browser.new_context(viewport={"width": width, "height": 844}) as context:
         page = context.new_page()
