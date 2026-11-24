@@ -143,25 +143,23 @@ def _run_executor(item, mode="execute"):
 
 
 def _store(item):
-    """把一条记录写入日志:已有同编号的就替换,否则插到最前。"""
     with _WRITE_LOCK:
-        log = load_action_log()
-        for i, entry in enumerate(log):
-            if entry.get("id") == item["id"]:
-                log[i] = item
-                break
-        else:
-            log.insert(0, item)
-        _atomic_json(ACTION_LOG_F, _retain(log))
+        _save_receipt(load_action_log(), item)
+
+
+def _save_receipt(log, item):
+    """调用方持有写锁。最新处置或执行回执排在最前面，同一 ID 只保留一次。"""
+    previous = [entry for entry in log if entry.get("id") != item["id"]]
+    _atomic_json(ACTION_LOG_F, _retain([item, *previous]))
 
 
 ACTION_LOG_LIMIT = 1000                 # 已了结记录的保留上限;未了结的记录不因日志变长而被删除
-UNRESOLVED = ("pending", "executing")
+UNRESOLVED = ("pending", "executing", "unknown")
 
 
 def _retain(log):
-    """保留全部未了结记录(待审批、执行中),其余按新旧顺序填满到上限,删去最早的已了结记录。"""
-    room = max(ACTION_LOG_LIMIT - sum(1 for e in log if e.get("status") in UNRESOLVED), 0)
+    """保留全部未了结记录，以及最近 ACTION_LOG_LIMIT 条已了结记录。"""
+    room = ACTION_LOG_LIMIT
     kept = []
     for entry in log:
         if entry.get("status") in UNRESOLVED:
@@ -478,7 +476,7 @@ def action_approve():
                 item["status"] = "executed"
         else:
             item["status"] = "denied"
-        _atomic_json(ACTION_LOG_F, log)
+        _save_receipt(log, item)
     if item["status"] == "executing":
         _run_executor(item)                       # 调用在锁外进行,完成后按回执写回记录
         _store(item)
@@ -510,5 +508,5 @@ def action_resolve():
                     resolve_ts=time.strftime("%Y-%m-%d %H:%M"))
         if item.get("real_writeback") is None:       # 人核对后的结论:已执行的正式调用即已写回,未执行即未写回
             item["real_writeback"] = (True if item.get("execution_mode") == "executor" else None) if outcome == "executed" else False
-        _atomic_json(ACTION_LOG_F, log)
+        _save_receipt(log, item)
     return jsonify({"ok": True, "status": item["status"]})

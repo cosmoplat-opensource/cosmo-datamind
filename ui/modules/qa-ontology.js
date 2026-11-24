@@ -128,6 +128,26 @@ async function dqStartFromOntology(id) {
   return true;
 }
 
+function dqDsToggleG(id){const g=(DQ_GRAPHS||[]).find(x=>x.id===id);if(g&&!g.queryable){toast(g.reason||'该本体没有可查询的数据表',false);return;}const i=DQ_DS.graphs.indexOf(id);if(i<0)DQ_DS.graphs.push(id);else DQ_DS.graphs.splice(i,1);
+ const c=$('#dq_ds_body').querySelector(`.ds-card[data-g="${CSS.escape(id)}"]`);if(c)c.classList.toggle('sel');   // 原地切换，不重建(避免闪烁)
+ const gc=$('#ds_gcount');if(gc)gc.textContent=DQ_DS.graphs.length;const all=$('#ds_all_g');if(all)all.checked=DQ_GRAPHS&&DQ_DS.graphs.length===DQ_GRAPHS.length;}
+function dqDsAllG(on){DQ_DS.graphs=on?DQ_GRAPHS.filter(g=>g.queryable).map(g=>g.id):[];$('#dq_ds_body').querySelectorAll('.ds-card[data-g]').forEach(c=>{const g=DQ_GRAPHS.find(x=>x.id===c.dataset.g);c.classList.toggle('sel',on&&g&&g.queryable)});const gc=$('#ds_gcount');if(gc)gc.textContent=DQ_DS.graphs.length;}
+function dqDsSetAllTables(on){
+ DQ_DS.allTables=on;
+ if(on){
+  DQ_DS.tables=[];
+  $('#ds_tgrid').querySelectorAll('.sel').forEach(card=>{card.classList.remove('sel');card.setAttribute('aria-pressed','false');});
+ }
+}
+function dqDsToggleT(nm){
+ const i=DQ_DS.tables.indexOf(nm),selected=i<0;
+ if(selected){DQ_DS.tables.push(nm);DQ_DS.allTables=false;}else DQ_DS.tables.splice(i,1);
+ $('#ds_notable').checked=DQ_DS.allTables;
+ const card=$('#ds_tgrid').querySelector(`[data-t="${CSS.escape(nm)}"]`);
+ card.classList.toggle('sel',selected);card.setAttribute('aria-pressed',String(selected));
+}
+function dqDsTblFilter(){const q=($('#ds_tsearch').value||'').toLowerCase();$('#ds_tgrid').querySelectorAll('.ds-card').forEach(c=>{c.style.display=c.getAttribute('data-t').toLowerCase().includes(q)?'':'none';});}
+
 function dqDsBegin() {
   DQ_DS_BEFORE = dqScopeSnapshot();
 }

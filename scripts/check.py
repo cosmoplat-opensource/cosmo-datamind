@@ -165,7 +165,8 @@ def main():
                                   "--graph", "built_2d74f0", "--report", str(reports / "strict10.json")],
                                   env, reports, results)
                     if args.suite in ("ui", "all"):
-                        for name, file in (("result-scope-browser", "result_scope_browser.py"),
+                        for name, file in (("master-workflows-browser", "master_workflows_browser.py"),
+                                           ("result-scope-browser", "result_scope_browser.py"),
                                            ("business-name-browser", "business_name_browser.py"),
                                            ("state-transition-browser", "state_transition_browser.py"),
                                            ("navigation-browser", "navigation_transitions.py"),

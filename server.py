@@ -7032,6 +7032,15 @@ def _upload_table_name_legacy(filename):
     return re.sub(r"[^A-Za-z0-9_]", "_", filename.rsplit(".", 1)[0])[:40]
 
 
+def _api_bound_tables(conns):
+    return {c["table"].casefold() for c in conns if c.get("kind") == "api" and c.get("table")}
+
+
+def _uploaded_tables(files):
+    return {_upload_table_name(os.path.basename(p)[8:]).casefold()
+            for p in files if p.lower().endswith((".csv", ".tsv"))}
+
+
 def _decode_upload(raw):
     """→ (文本, 编码名)。先按 UTF-8(含 BOM),不行再按 GB18030(覆盖 GBK/GB2312,国内导出文件常见)。"""
     for enc in ("utf-8-sig", "gb18030"):
@@ -7085,6 +7094,7 @@ def build_upload():
     saved, tables, notes = [], [], []
     import csv as _csv, io
     with _WRITE_LOCK:                                     # 串行化上传写,避免 uploads.db "database is locked"
+        api_tables = _api_bound_tables(_load_conns())
         con = sqlite3.connect(UPLOAD_DB)                  # 置于 with 内:connect 抛错也由上下文管理器释放锁
         try:
             for f in request.files.getlist("files"):
@@ -7118,7 +7128,7 @@ def build_upload():
                                     and _upload_table_name(other_name).casefold() == t.casefold()):
                                 raise ValueError("文件名与另一资料的表名冲突，请更换文件名")
                         exists = con.execute("SELECT 1 FROM sqlite_master WHERE lower(name)=lower(?)", (t,)).fetchone()
-                        if exists and not os.path.isfile(path):
+                        if t.casefold() in api_tables or (exists and not os.path.isfile(path)):
                             raise ValueError("目标表已存在且不属于同名上传资料，请更换文件名")
                         if os.path.exists(path):
                             with open(path, "rb") as old:
@@ -7136,6 +7146,7 @@ def build_upload():
                                              for o in glob.glob(os.path.join(WORK, "uploads_*")) if os.path.abspath(o) != path)
                         lhdr = [re.sub(r"[^A-Za-z0-9_一-鿿]", "_", h) or f"c{i}"
                                 for i, h in enumerate((_hp["long"] or {}).get("columns") or [])]
+                        _long_free = _long_free and (t + "_long").casefold() not in api_tables
                         if _long_free:                   # 重新上传后不再是多级表头时,旧的长表一并删除
                             con.execute(f'DROP TABLE IF EXISTS "{t}_long"')
                         if _hp["long"] and _long_free and len({h.casefold() for h in lhdr}) == len(lhdr):
@@ -7198,19 +7209,17 @@ def build_asset_delete():
             try:
                 con = sqlite3.connect(UPLOAD_DB)
                 try:
-                    con.execute(f'DROP TABLE IF EXISTS "{t}"')
-                    in_use_now = {_upload_table_name(os.path.basename(p)[8:]).casefold()
-                                  for p in glob.glob(os.path.join(WORK, "uploads_*")) if p.lower().endswith((".csv", ".tsv"))}
-                    if (t + "_long").casefold() not in in_use_now:      # 多级表头另存的长表(DR-135)
-                        con.execute(f'DROP TABLE IF EXISTS "{t}_long"')
-                    old = _upload_table_name_legacy(fn)
-                    in_use = {_upload_table_name(os.path.basename(p)[8:]).casefold()
-                              for p in glob.glob(os.path.join(WORK, "uploads_*"))
-                              if p.lower().endswith((".csv", ".tsv"))}
-                    if old != t and old.casefold() not in in_use:      # 按旧规则建的表,且没有别的资料在用这个名字
-                        con.execute(f'DROP TABLE IF EXISTS "{old}"')
+                    api_tables = _api_bound_tables(_load_conns())
+                    file_tables = _uploaded_tables(glob.glob(os.path.join(WORK, "uploads_*")))
+                    candidates = (t, t + "_long", _upload_table_name_legacy(fn))
+                    removable = {name.casefold() for name in candidates} - api_tables - file_tables
+                    # DDL 标识符取自库内目录。文件名只决定哪些既有表属于要删除的资料。
+                    names = con.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+                    for (name,) in names:
+                        if name.casefold() in removable:
+                            con.execute(f"DROP TABLE {_quote_ident(name)}")
                     con.commit()
-                    dropped = t
+                    dropped = t if t.casefold() in removable else ""
                 finally:
                     con.close()
             except Exception:
@@ -7276,15 +7285,21 @@ def build_sources():
     srcs.append({"id": "uploads", "name": "上传数据库", "kind": "sqlite", "builtin": True,
                  "tables": len(utabs), "desc": "CSV/TSV 上传自动建表", "ready": bool(utabs), "table_names": utabs[:50]})
     all_conns = _load_conns()
+    upload_files = sorted(glob.glob(os.path.join(WORK, "uploads_*")))
+    file_tables = _uploaded_tables(upload_files)
+    bindings = collections.Counter(c["table"].casefold() for c in all_conns if c.get("kind") == "api" and c.get("table"))
     for c in all_conns:
         ready, tabs = False, 0
         if c.get("kind") == "sqlite" and c.get("path") and os.path.exists(c["path"]):
             t = _sqlite_tables(c["path"]); ready, tabs = bool(t), len(t)
         elif c.get("kind") == "api":             # API 源:已物化(up.api_*)即就绪
-            ready = _api_conn_table(c, all_conns) in utabs; tabs = 1 if ready else 0
+            table = c.get("table")
+            ready = bool(table and table in utabs and table.casefold() not in file_tables
+                         and bindings[table.casefold()] == 1)
+            tabs = int(ready)
         srcs.append({**_mask_conn(c), "tables": tabs, "ready": ready})   # DSN 里的残留凭据不回显
     assets = []
-    for p in sorted(glob.glob(os.path.join(WORK, "uploads_*"))):
+    for p in upload_files:
         fn = os.path.basename(p)[8:]
         ext = fn.rsplit(".", 1)[-1].lower() if "." in fn else ""
         # usable 与 _gather_evidence 的读取范围保持同一判据：
@@ -7513,21 +7528,27 @@ def _api_slug_table(conn):
     return "api_" + slug if slug else ""
 
 
-def _api_conn_table(conn, conns=None):
+def _api_conn_table(conn, conns, occupied, file_tables):
     """API 源物化目标表名,每个连接独占一张表。
-    取数时记下的表名若只属于本连接则沿用;否则用 api_<连接名 slug>,slug 为空(如中文名)或与其他
-    API 连接撞名(如 "line-a" 与 "line a")时追加连接编号的摘要,避免两个源写进同一张表。"""
-    conns = _load_conns() if conns is None else conns
+    已登记的独占表可以刷新。首次取数避开已有的物理表、文件和其他连接，
+    有重名或空 slug 时用连接编号的摘要生成新表名。"""
     others = [c for c in conns if c.get("kind") == "api" and c.get("id") != conn.get("id")]
     recorded = conn.get("table")
-    if recorded and all(c.get("table") != recorded for c in others):
+    claimed = _api_bound_tables(others) | file_tables
+    if recorded and recorded.casefold() not in claimed:
         return recorded
     base = _api_slug_table(conn)
-    claimed = {c.get("table") for c in others} | {_api_slug_table(c) for c in others}
+    claimed.update(occupied)
+    claimed.update(_api_slug_table(c) for c in others)
     if base and base not in claimed:
         return base
     tag = hashlib.sha1(str(conn.get("id") or "").encode()).hexdigest()[:8]
-    return f"{base or 'api_src'}_{tag}"
+    stem = f"{base or 'api_src'}_{tag}"
+    table, suffix = stem, 2
+    while table in claimed:
+        table = f"{stem}_{suffix}"
+        suffix += 1
+    return table
 
 @app.post("/api/conn/api_fetch")
 def conn_api_fetch():
@@ -7557,13 +7578,13 @@ def conn_api_fetch():
         return jsonify({"error": f"json_path「{conn.get('json_path')}」在返回结构中不存在"}), 400
     if isinstance(data, dict):                   # 单对象 → 单行
         data = [data]
-    if not (isinstance(data, list) and data and all(isinstance(x, dict) for x in data[:5000])):
+    if not (isinstance(data, list) and data and all(isinstance(x, dict) for x in data)):
         return jsonify({"error": "json_path 需指向对象数组(list of objects)"}), 400
     total_rows = len(data)
+    all_keys = {key for row in data for key in row}
     data = data[:5000]
-    cols, source_cols, seen, used_names, all_keys = [], [], set(), set(), set()
+    cols, source_cols, seen, used_names = [], [], set(), set()
     for row in data:
-        all_keys.update(row.keys())
         for k in row.keys():
             if k not in seen and len(cols) < 40:
                 # 列名消毒后才可进 DDL:去除引号等可越出标识符边界的字符(与 CSV 上传同规则)
@@ -7581,30 +7602,37 @@ def conn_api_fetch():
         return jsonify({"error": "API 对象至少需要一个可用字段"}), 400
     # Read values using original JSON keys, never their normalized SQL names.
     rows = [tuple("" if row.get(k) is None else str(row[k]) for k in source_cols) for row in data]
-    table = _api_conn_table(conn)
     with _WRITE_LOCK:
+        conns = _load_conns()
+        current = next((c for c in conns if c.get("id") == cid), None)
+        if current is None:
+            return jsonify({"error": "API 连接已移除"}), 404
         con = sqlite3.connect(UPLOAD_DB)
         try:
             # sqlite3 does not implicitly BEGIN for DDL: without this explicit
             # transaction a later CREATE/INSERT failure permanently loses the old table.
             con.execute("BEGIN IMMEDIATE")
+            occupied = {row[0].casefold() for row in con.execute("SELECT name FROM sqlite_master")}
+            file_tables = _uploaded_tables(glob.glob(os.path.join(WORK, "uploads_*")))
+            table = _api_conn_table(current, conns, occupied, file_tables)
             con.execute(f'DROP TABLE IF EXISTS "{table}"')
             con.execute(f'CREATE TABLE "{table}" ({", ".join(chr(34)+c+chr(34)+" TEXT" for c in cols)})')
             con.executemany(f'INSERT INTO "{table}" VALUES ({", ".join("?" for _ in cols)})',
                             rows)
-            con.commit()
-        except sqlite3.Error as exc:
+            binding = dict(current, last_fetch=time.strftime("%Y-%m-%d %H:%M:%S"), last_rows=len(data),
+                           table=table, last_total_rows=total_rows, last_total_columns=len(all_keys))
+            _atomic_json(_BUILD_CONN_F, [binding if c is current else c for c in conns])
+            try:
+                con.commit()
+            except sqlite3.Error:
+                _atomic_json(_BUILD_CONN_F, conns)
+                raise
+        except (OSError, sqlite3.Error) as exc:
             con.rollback()
             _LOG.warning("API 数据物化失败:%s", type(exc).__name__)
             return jsonify({"error": "API 数据写入失败，原数据已保留"}), 502
         finally:
             con.close()
-        conns = _load_conns()
-        for c in conns:
-            if c.get("id") == cid:
-                c["last_fetch"] = time.strftime("%Y-%m-%d %H:%M:%S"); c["last_rows"] = len(data); c["table"] = table
-                c["last_total_rows"], c["last_total_columns"] = total_rows, len(all_keys)
-        _atomic_json(_BUILD_CONN_F, conns)
     # 超出 5000 行 / 40 列上限时如实报告:实际导入的范围与原始总数,不静默截断
     truncated = total_rows > len(data) or len(all_keys) > len(cols)
     return jsonify({"ok": True, "table": "up." + table, "rows": len(data), "columns": cols,

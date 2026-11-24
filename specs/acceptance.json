@@ -2,6 +2,56 @@
   "iteration": "IR-014 / IR-015",
   "requirements": [
     {
+      "id": "MASTER-UPLOAD-01",
+      "criterion": "CSV 上传与 API 取数保留各自已经接受的数据。两种入口发生物理表名冲突时，使用独立的表或明确拒绝并保留原数据。",
+      "tests": ["tests/unit/test_master_workflows.py::test_upload_and_api_source_preserve_both_datasets",
+                "tests/unit/test_master_workflows.py::test_deleting_uploaded_file_keeps_api_table_with_long_suffix"]
+    },
+    {
+      "id": "MASTER-RECONNECT-01",
+      "criterion": "来源名称复用后，新连接首次取数前须正确显示尚未就绪。",
+      "tests": ["tests/unit/test_master_workflows.py::test_new_connection_needs_its_own_first_fetch"]
+    },
+    {
+      "id": "MASTER-IMPORT-01",
+      "criterion": "API 响应的原始总列数包括首次出现在行数上限以后的字段。",
+      "tests": ["tests/unit/test_master_workflows.py::test_import_total_columns_includes_fields_first_seen_after_row_limit"]
+    },
+    {
+      "id": "MASTER-RESOLVE-01",
+      "criterion": "需要人工处置的结果未知动作应保持可达，较新的已完成记录不能将其从日志或处置入口移除。",
+      "tests": [
+        "tests/unit/test_master_workflows.py::test_unknown_execution_remains_available_for_manual_resolution",
+        "tests/frontend/master_workflows_browser.py::test_unknown_action_can_be_resolved_from_the_status_filter"
+      ]
+    },
+    {
+      "id": "MASTER-RECEIPT-01",
+      "criterion": "未结审批占满记录容量时，普通动作的成功回执仍应可回读。无法保存时应明确返回失败。",
+      "tests": ["tests/unit/test_master_workflows.py::test_successful_record_is_readable_when_approval_queue_is_full"]
+    },
+    {
+      "id": "MASTER-METRIC-01",
+      "criterion": "图表快捷指标的取数结果与所选指标契约一致，即使另一个指标使用相同的业务名称。",
+      "tests": ["tests/frontend/master_workflows_browser.py::test_chart_quick_metric_applies_the_selected_calculation",
+                "tests/scenarios/test_scenarios.py::test_duplicate_metric_labels_resolve_by_id"]
+    },
+    {
+      "id": "MASTER-PICKER-01",
+      "criterion": "连续切换两个快捷指标时，最终选项、编辑器中的 SQL 与实际取数一致，包括较早的契约响应晚到的情况。",
+      "tests": ["tests/frontend/master_workflows_browser.py::test_quick_metric_changes_keep_the_last_selected_contract"]
+    },
+    {
+      "id": "MASTER-ALLTABLES-01",
+      "criterion": "在同一问数范围对话框中选中单表后，分析所有表的复选框应与实际选表状态一致。",
+      "tests": ["tests/frontend/master_workflows_browser.py::test_all_tables_checkbox_matches_selection_before_confirm"]
+    },
+    {
+      "id": "MASTER-KEYBOARD-01",
+      "criterion": "键盘选中的问数数据表向辅助技术提供可区分的选中状态，关闭对话框后焦点返回入口并保留此前确认的范围。",
+      "tests": ["tests/frontend/master_workflows_browser.py::test_keyboard_user_can_identify_the_selected_table_and_cancel"]
+    },
+    {
       "id": "SCOPE-PAGE-01",
       "criterion": "从链接进入任意已登记页面并刷新，全局数据库选择、上下文请求和实际表数一致。",
       "tests": ["tests/frontend/result_scope_browser.py::test_link_and_reload_keep_the_database_shown_on_each_page"]
@@ -161,7 +211,7 @@
     },
     {
       "id": "BUILD-WEBKIT-01",
-      "criterion": "本体构建页的数据源和参照选择器加载完成后，在 WebKit 的 768 像素视口内可正常浏览，无整页横向滚动。",
+      "criterion": "在 macOS WebKit 的 768 像素视口下，本体构建页的数据源和参照选择器加载完成后无整页横向滚动。Linux WebKit 构建页在所有宽度下均排除。",
       "tests": [
         "tests/frontend/build_viewport_browser.py::test_build_reference_controls_fit_the_viewport"
       ]
