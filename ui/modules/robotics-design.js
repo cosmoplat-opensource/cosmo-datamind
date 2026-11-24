@@ -5,24 +5,35 @@ const read=(fetch,url,options)=>g.RoboticsAssets.readJSON(fetch,url,options);
 function createController(o={}){
  const fetch=o.fetch||g.fetch.bind(g),emit=o.onChange||(()=>{}),schedule=o.schedule||g.setTimeout.bind(g),cancel=o.cancelSchedule||g.clearTimeout.bind(g),newId=o.requestId||(()=>g.dmRequestId());
  const requests=new AbortController();
- let s={session:null,messageText:'',selectedRevision:null,busy:false,error:null},dead=false,epoch=0,id=null,timer=null,flight=null,identity=null;
+ let s={session:null,messageText:'',historyRevision:null,selectedRevision:null,busy:false,error:null},dead=false,epoch=0,id=null,timer=null,flight=null,identity=null;
  const notify=()=>{if(!dead)emit(clone(s));},clear=()=>{if(timer!==null)cancel(timer);timer=null;};
  function later(){clear();if(!dead&&!s.error&&active(s.session))timer=schedule(()=>{timer=null;return poll();},1000);}
  async function poll(){if(dead||!id)return;if(flight)return flight;clear();const token=epoch,sid=id;
   const p=(async()=>{try{const row=await read(fetch,prefix+encodeURIComponent(sid),{signal:requests.signal});if(dead||token!==epoch)return;if(row.session_id!==sid)throw Error('会话身份不匹配');s.session=row;s.error=null;}catch(e){if(!dead&&token===epoch)s.error={message:e.message,code:e.code,status:e.status};}finally{if(!dead&&token===epoch){flight=null;notify();later();}}})();flight=p;return p;}
- async function openSession(sid){if(dead)return;epoch++;if(id!==sid){s.messageText='';identity=null;}id=sid;flight=null;clear();s.busy=false;s.session=null;s.selectedRevision=null;s.error=null;notify();await poll();}
- async function act(op,extra={}){if(dead||s.busy||!s.session)return;const original=clone(s.session),text=s.messageText,token=epoch;
+ async function openSession(sid){if(dead)return;epoch++;if(id!==sid){s.messageText='';identity=null;}id=sid;flight=null;clear();s.busy=false;s.session=null;s.historyRevision=null;s.selectedRevision=null;s.error=null;notify();await poll();}
+ async function act(op,extra={}){if(dead||s.busy||!s.session||s.historyRevision!==null)return;const original=clone(s.session),text=s.messageText,token=epoch;
   const body={request_id:'',expected_revision:original.revision,...extra},fingerprint=JSON.stringify([id,op,body]);
   if(identity?.fingerprint!==fingerprint)identity={fingerprint,id:newId()};body.request_id=identity.id;s.busy=true;s.error=null;notify();
   try{const row=await read(fetch,prefix+encodeURIComponent(id)+'/'+op,{signal:requests.signal,method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-   if(dead||token!==epoch)return;if(row.session_id!==id)throw Error('会话身份不匹配');s.session=row;s.selectedRevision=null;identity=null;if(op==='messages'&&s.messageText===text)s.messageText='';
+   if(dead||token!==epoch)return;if(row.session_id!==id)throw Error('会话身份不匹配');s.session=row;identity=null;if(op==='messages'&&s.messageText===text)s.messageText='';
   }catch(e){if(!dead&&token===epoch)s.error={message:e.message,code:e.code,status:e.status};}finally{if(!dead&&token===epoch){s.busy=false;notify();later();}}}
  return {snapshot:()=>clone(s),openSession,poll,setMessage(text){if(dead)return;s.messageText=text;notify();},
  sendMessage(){if(!s.messageText.trim()||active(s.session))return;return act('messages',{text:s.messageText,expected_stage:s.session.stage});},
  confirmClasses(){return act('confirm-classes',{snapshot_sha256:s.session?.snapshot_sha256});},editClasses(){return act('edit-classes');},editProperties(){return act('edit-properties');},
  confirmSchema(){return act('confirm-schema',{snapshot_sha256:s.session?.snapshot_sha256});},retry(){if(!['failed','interrupted'].includes(s.session?.status))return;return act('retry',{failed_run_id:s.session.run_id});},
- showCurrent(){s.selectedRevision=null;notify();},
- async openRevision(revision){const token=epoch;try{const row=await read(fetch,prefix+encodeURIComponent(id)+'/revisions/'+revision,{signal:requests.signal});if(!dead&&token===epoch){s.selectedRevision=row;notify();}}catch(e){if(!dead&&token===epoch){s.error={message:e.message};notify();}}},
+ showCurrent(){s.historyRevision=null;s.selectedRevision=null;notify();},
+ async openRevision(revision){
+  if(dead||!id)return;
+  const token=epoch;
+  const stillSelected=()=>!dead&&token===epoch&&s.historyRevision===revision;
+  s.historyRevision=revision;s.error=null;notify();
+  try{
+   const row=await read(fetch,prefix+encodeURIComponent(id)+'/revisions/'+revision,{signal:requests.signal});
+   if(stillSelected()){s.selectedRevision=row;notify();}
+  }catch(e){
+   if(stillSelected()){s.historyRevision=s.selectedRevision?.revision??null;s.error={message:e.message};notify();}
+  }
+ },
  dispose(){dead=true;epoch++;requests.abort();clear();}};
 }
 async function beginRepair(reply,requestId,fetch=g.fetch.bind(g)){
@@ -105,6 +116,7 @@ function mount(host,sid,options={}){const esc=g.RoboticsAssets.escape;let c,cont
  syncInteractiveGraphView(s);
  const needsProperties=row.stage==='properties'&&row.status==='awaiting_input';
  const selected=s.selectedRevision,result=selected?.state?.result||row.result,ref=row.output_asset_ref,waiting=active(row),failed=['failed','interrupted'].includes(row.status);
+ const history=s.historyRevision!==null;
  const awaiting=row.status==='awaiting_confirmation',suggesting=context&&!awaiting&&row.stage!=='abox';
  host.setAttribute('aria-busy',String(waiting||s.busy));
  progress.hidden=!(waiting||s.busy);
@@ -113,29 +125,34 @@ function mount(host,sid,options={}){const esc=g.RoboticsAssets.escape;let c,cont
   const content=`<span class="rd-progress-spinner" aria-hidden="true"></span><span>${message}</span>`;
   if(progress.innerHTML!==content)progress.innerHTML=content;
  }
- const primary=awaiting&&!selected?(row.stage==='classes'?['confirmClasses','确认类别']:row.stage==='properties'?['confirmSchema','确认骨架并构建实例']:null):null;
- actions.hidden=!primary&&(!ref||!!selected);
- actions.innerHTML=primary?`<span>设计已生成，请核对后确认</span><button class="rd-primary-confirm" data-op="${primary[0]}" ${s.busy?'disabled':''}>${primary[1]}</button>`:ref&&!selected?`<span>本体实例已保存</span><a class="ra-button" href="${esc(completionLink(ref))}">${contextual?'返回应用检查':'打开图谱界面'}</a>`:'';
+ const primary=awaiting&&!history?(row.stage==='classes'?['confirmClasses','确认类别']:row.stage==='properties'?['confirmSchema','确认骨架并构建实例']:null):null;
+ actions.hidden=!primary&&(!ref||history);
+ actions.innerHTML=primary?`<span>设计已生成，请核对后确认</span><button class="rd-primary-confirm" data-op="${primary[0]}" ${s.busy?'disabled':''}>${primary[1]}</button>`:ref&&!history?`<span>本体实例已保存</span><a class="ra-button" href="${esc(completionLink(ref))}">${contextual?'返回应用检查':'打开图谱界面'}</a>`:'';
  hint.innerHTML=contextError?`<p role="alert" data-testid="schema-repair-context-error">${esc(contextError)}</p>`:'';
  const stage=selected?.state?.stage||row.stage;
- heading.innerHTML=`<div><h3 class="rd-stage-guide">${esc(({classes:'第 1 步：类别设计',properties:'第 2 步：关系与属性设计',abox:'第 3 步：实例构建'})[stage]||stage)}</h3><p class="rd-status">${selected?'历史修订 '+selected.revision+' · 只读':'修订 '+row.revision+' · '+esc(({queued:'排队中',running:'运行中',needs_description:'等待建模要求',awaiting_input:'等待输入',awaiting_confirmation:'等待确认',completed:'已完成',failed:'失败',interrupted:'已中断'})[row.status]||row.status)} · 执行未验证</p></div>${(s.error||row.error)?`<p role="alert">${esc(s.error?.message||row.error?.message||'设计失败')}</p>`:''}`;
+ const statusLabel=({queued:'排队中',running:'运行中',needs_description:'等待建模要求',awaiting_input:'等待输入',awaiting_confirmation:'等待确认',completed:'已完成',failed:'失败',interrupted:'已中断'})[row.status]||row.status;
+ let revisionLabel='修订 '+row.revision+' · '+statusLabel;
+ if(history){
+  revisionLabel=selected?.revision===s.historyRevision?'历史修订 '+s.historyRevision+' · 只读':'正在读取历史修订 '+s.historyRevision+'…';
+ }
+ heading.innerHTML=`<div><h3 class="rd-stage-guide">${esc(({classes:'第 1 步：类别设计',properties:'第 2 步：关系与属性设计',abox:'第 3 步：实例构建'})[stage]||stage)}</h3><p class="rd-status">${esc(revisionLabel)} · 执行未验证</p></div>${(s.error||row.error)?`<p role="alert">${esc(s.error?.message||row.error?.message||'设计失败')}</p>`:''}`;
  heading.append(historyBox);
  const reviewOptions={classes:row.class_confirmation?.classes||[]};
  body.innerHTML=`<details><summary>查看完整定义与说明</summary>
  ${needsProperties&&!selected?presentation({classes:row.class_confirmation?.classes||result?.classes||[]},esc):result?`${result.reply?`<details class="rd-design-details"><summary>查看模型设计说明</summary><p>${esc(result.reply)}</p></details>`:''}${presentation(result,esc,reviewOptions)}`:''}</details>
  ${selected?`<section data-testid="robotics-design-diff"><h4>与当前设计的差异</h4><details open><summary>历史设计</summary>${presentation(selected.state.result,esc)}</details><details open><summary>当前设计</summary>${presentation(row.result,esc)}</details></section>`:''}
  ${ref?`<p>设计候选已保存 · 执行未验证</p><a href="${esc(g.RoboticsAssets.versionLink(ref.ontology_id,ref.version_id))}">查看本体候选</a>`:''}`;
- secondary.innerHTML=`${!selected&&!waiting&&row.revision?'<button data-op="editClasses">返回类别修改</button>':''}${failed?'<button data-op="retry">重试设计</button>':''}`;
+ secondary.innerHTML=`${!history&&!waiting&&row.revision?'<button data-op="editClasses">返回类别修改</button>':''}${!history&&failed?'<button data-op="retry">重试设计</button>':''}`;
  [...actions.querySelectorAll('[data-op]'),...secondary.querySelectorAll('[data-op]')].forEach(b=>{b.disabled=s.busy;b.onclick=()=>c[b.dataset.op]();});
  const phase=[row.stage,row.status,row.revision].join(':');
  if(phase!==editorPhase){editor.open=!awaiting||!!s.messageText.trim();editorPhase=phase;}
  summary.hidden=!awaiting;summary.textContent='继续提修改意见';
- editor.hidden=!!selected||waiting||row.stage==='abox';startProperties.hidden=contextual||!needsProperties||!!s.messageText.trim();startProperties.disabled=s.busy;send.hidden=!contextual&&needsProperties&&!s.messageText.trim();send.disabled=s.busy||row.stage==='abox'||(contextual&&!s.messageText.trim());input.placeholder=awaiting?'可继续输入修改意见':suggesting?repairSuggestion(context,row.stage)+'（Tab 填入）':contextual&&!context&&!contextError?'正在读取修订建议…':needsProperties?'可选：填写希望补充的关系、参数或关注点；留空可按已有要求继续。':'填写本轮建模要求或修改意见'; if(input.value!==s.messageText)input.value=s.messageText;
- if(completionPending&&!selected&&(!contextual||context)){completionPending=false;g.location.hash=completionLink(ref);}
+ editor.hidden=history||waiting||row.stage==='abox';startProperties.hidden=contextual||!needsProperties||!!s.messageText.trim();startProperties.disabled=s.busy;send.hidden=!contextual&&needsProperties&&!s.messageText.trim();send.disabled=s.busy||row.stage==='abox'||(contextual&&!s.messageText.trim());input.placeholder=awaiting?'可继续输入修改意见':suggesting?repairSuggestion(context,row.stage)+'（Tab 填入）':contextual&&!context&&!contextError?'正在读取修订建议…':needsProperties?'可选：填写希望补充的关系、参数或关注点；留空可按已有要求继续。':'填写本轮建模要求或修改意见'; if(input.value!==s.messageText)input.value=s.messageText;
+ if(completionPending&&!history&&(!contextual||context)){completionPending=false;g.location.hash=completionLink(ref);}
  }
  function syncInteractiveGraphView(s){
   const row=s.session;if(!row)return;
-  const choice=s.selectedRevision?String(s.selectedRevision.revision):'current';
+  const choice=String(s.historyRevision??'current');
   if(historySelect.dataset.revision!==String(row.revision)){
     historySelect.replaceChildren(new Option('当前设计','current'));
     for(let i=1;i<=row.revision;i++)historySelect.add(new Option('历史修订 '+i,String(i)));

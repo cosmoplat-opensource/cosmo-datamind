@@ -105,7 +105,64 @@ const cases={
   assert.equal(f.posts()[0].url,'/api/robotics/design-sessions/s1/retry');const body=JSON.parse(f.posts()[0].options.body);
   assert.deepEqual({...body,request_id:'id'},{request_id:'id',expected_revision:1,failed_run_id:'failed'});
  },
+ async history_blocks_design_writes(){
+  const [status, phase] = process.argv.slice(3);
+  const f = fixture(), gate = defer();
+  await f.open({revision:2, status, run_id:'failed-run'});
+  f.c.setMessage('保留当前设计草稿');
+  f.handler = async (url, options) => {
+    if (options.method === 'POST') return response({error:{message:'unexpected write'}},409);
+    await gate.promise;
+    return response({revision:1,state:{stage:'classes'}});
+  };
+  const reading = f.c.openRevision(1);
+  if (phase === 'loaded') { gate.resolve(); await reading; }
+  try {
+    for (const op of ['retry','sendMessage','editClasses','editProperties','confirmClasses','confirmSchema']) {
+      await f.c[op]();
+      assert.equal(f.posts().length, 0, op+' sent a write while history was '+phase);
+    }
+  } finally {
+    gate.resolve();
+    await reading;
+  }
+  assert.equal(f.s().selectedRevision.revision, 1);
+  f.handler = async () => response({error:{message:'历史读取失败'}},404);
+  await f.c.openRevision(2);
+  assert.equal(f.s().selectedRevision.revision, 1);
+  await f.c.retry();
+  assert.equal(f.posts().length, 0);
+  f.c.showCurrent();
+  assert.equal(f.s().messageText, '保留当前设计草稿');
+  f.handler = async () => response(state('s1',{revision:2,status:'queued'}),202);
+  await f.c.retry();
+  assert.equal(f.posts().length, 1);
+  const body = JSON.parse(f.posts()[0].options.body);
+  assert.equal(body.expected_revision, 2);
+  assert.equal(body.failed_run_id, 'failed-run');
+ },
  async retry_guard(){const f=fixture();await f.open();await f.c.retry();assert.equal(f.posts().length,0);},
+ async history_selection_survives_pending_write(){
+  const f=fixture(), write=defer(), history=defer();
+  await f.open({revision:2,status:'failed',run_id:'failed-run'});
+  f.handler=(url,options)=>options.method==='POST'?write.promise:response({revision:1,state:{stage:'classes'}});
+  const retry=f.c.retry();
+  await f.c.openRevision(1);
+  write.resolve(response(state('s1',{revision:2,status:'queued',run_id:'retried-run'}),202));
+  await retry;
+  assert.equal(f.s().session.run_id,'retried-run');
+  assert.equal(f.s().selectedRevision.revision,1);
+  await f.c.editClasses();
+  assert.equal(f.posts().length,1);
+  f.handler=()=>history.promise;
+  const reading=f.c.openRevision(2);
+  f.c.showCurrent();
+  history.resolve(response({revision:2,state:{stage:'properties'}}));
+  await reading;
+  assert.equal(f.s().selectedRevision,null);
+  assert.equal(f.posts().length,1);
+  f.c.dispose();
+ },
  async snapshot_is_detached(){const f=fixture();await f.open();const s=f.s();s.session.result.classes[0].label='mutated';
   assert.equal(f.s().session.result.classes[0].label,'技能');},
 };

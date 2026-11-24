@@ -271,6 +271,40 @@ def prepare_waiting(root):
     return Harness(root).classes()
 
 
+@pytest.mark.parametrize('live', [{'responses': [model_reply(proposals()[0]),
+    {'status': 401, 'body': b'synthetic-model-error'}, model_reply(proposals()[1])]}], indirect=True)
+def test_history_cannot_retry_current_failed_design(live):
+    site, page, calls = live
+    sid = ui_admit(page, site)['session_id']
+    wait_design(page, sid, 'classes', 'awaiting_confirmation')
+    click_operation(page, '确认类别', '/confirm-classes')
+    wait_design(page, sid, 'properties', 'awaiting_input')
+    click_operation(page, '开始关系与属性设计', '/messages')
+    panel = wait_design(page, sid, 'properties', 'failed')
+    failed = session(site, sid)
+    assert failed['revision'] == 2 and len(calls) == 2
+    retry = panel.get_by_role('button', name='重试设计', exact=True)
+    expect(retry).to_be_enabled()
+    before = db_rows(site.root), blob_bytes(site.root)
+    post_count = len(site.design_posts())
+    selector = page.get_by_label('设计修订', exact=True)
+    selector.select_option('1')
+    expect(panel.locator('.rd-status')).to_contain_text('历史修订 1 · 只读')
+    expect(retry).to_have_count(0)
+    expect(panel.get_by_role('button', name='返回类别修改')).to_have_count(0)
+    expect(panel.get_by_role('button', name='发送建模要求')).to_have_count(0)
+    selector.select_option('current')
+    expect(retry).to_be_enabled()
+    assert (db_rows(site.root), blob_bytes(site.root)) == before
+    assert len(site.design_posts()) == post_count and len(calls) == 2
+    received = click_operation(page, '重试设计', '/retry')
+    wait_design(page, sid, 'properties', 'awaiting_confirmation')
+    run = RunStore(site.root, read_only=True).get_run(received['run_id'])
+    assert run['retry_of'] == failed['run_id'] and received['revision'] == 2
+    assert len(site.design_posts()) == post_count + 1 and len(calls) == 3
+    done(site)
+
+
 @pytest.mark.parametrize('live', [{'prepare': prepare_waiting}], indirect=True)
 def test_graph_warning_preserves_saved_revision_and_recovers_on_read(live, tmp_path, monkeypatch):
     from ontology_assets import interactive_ontology_graph_view

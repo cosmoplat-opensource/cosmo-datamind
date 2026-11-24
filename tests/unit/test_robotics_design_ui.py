@@ -27,6 +27,16 @@ def test_design_controller_contract(case):
     run(case)
 
 
+@pytest.mark.parametrize('status', ['failed', 'interrupted'])
+@pytest.mark.parametrize('phase', ['loading', 'loaded'])
+def test_history_blocks_design_writes(status, phase):
+    run('history_blocks_design_writes', status, phase)
+
+
+def test_history_selection_survives_pending_write():
+    run('history_selection_survives_pending_write')
+
+
 @pytest.mark.parametrize('status', ['needs_description', 'awaiting_input', 'awaiting_confirmation',
                                     'completed', 'failed', 'interrupted'])
 def test_design_waiting_and_terminal_states_stop_polling(status):
