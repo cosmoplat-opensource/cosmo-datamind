@@ -149,11 +149,11 @@
           host.innerHTML=`<section class="card ra-overview"><h2>请在任务生成完成后查看行为树</h2><p class="rv-help" role="status">本体构建来源中的流程暂不展示。请进入本体详情，输入任务描述并生成行为树。</p><div class="ra-detail-actions"><a class="ra-button" href="${escape(detailLink)}">返回本体详情</a><a class="ra-button" href="${escape(link(oid, vid, 'interactive-ontology-graph', history))}">打开本体图谱</a></div></section>`;
           return;
         }
+        const body=await global.RoboticsAssets.readJSON(global.fetch.bind(global),viewUrl,{signal:abort.signal});
+        if(current!==token)return;
+        if(body.ontology_id!==oid||body.version_id!==vid||(view==='relations'&&body.view!==view))throw Error('返回的本体版本不匹配。');
         if(view==='interactive-ontology-graph'){
           const module=await import('/assets/modules/interactive-ontology-graph/panel.js');if(current!==token)return;
-          const body=await global.RoboticsAssets.readJSON(global.fetch.bind(global),viewUrl,{signal:abort.signal});
-          if(current!==token)return;
-          if(body.ontology_id!==oid||body.version_id!==vid)throw Error('返回的本体版本不匹配。');
           host.innerHTML=`<a class="ra-back" href="${escape(detailLink)}">← 返回本体详情</a><header class="rt-heading"><div><h2>${escape(body.name)}</h2><p>${history ? '历史查看' : '当前'}：版本 ${escape(body.version_number)} · 只读浏览</p></div>${taskAction(body.mode)}</header><div class="rv-interactive-ontology-graph"></div>`;
           const panel=module.mountPanel(host.querySelector('.rv-interactive-ontology-graph'),{canvasId:'rv_canvas'});
           active={dispose:()=>{abort.abort();panel.destroy();}};
@@ -161,10 +161,6 @@
           const document={...body,nodes:body.nodes.map(n=>({...n,labels:n.labels.map(l=>({...l,value:display(l.value)}))})),individuals:body.individuals.map(n=>({...n,labels:n.labels.map(l=>({...l,value:display(l.value)})),data:n.data.map(d=>d.predicate==='http://www.w3.org/2000/01/rdf-schema#label'?{...d,value:display(d.value)}:d)}))};
           panel.present(document);return;
         }
-        const response=await global.fetch(viewUrl,{signal:abort.signal});
-        const body=await response.json();if(current!==token)return;
-        if(!response.ok)throw Error(body.error?.message||`读取失败（HTTP ${response.status}）`);
-        if(body.ontology_id!==oid||body.version_id!==vid||body.view!==view)throw Error('返回的本体版本不匹配。');
         // DR-150: share task-page aliases for historical names. Only display
         // labels change; fixed OWL bytes, identifiers and parameter values stay intact.
         const displayLabel=global.RoboticsTask.displayLabel;

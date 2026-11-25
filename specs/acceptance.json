@@ -4545,6 +4545,86 @@
         "tests/unit/test_interactive_ontology_graph_ui.py::test_moving_labels_follow_edges_and_refine_when_settled",
         "tests/frontend/robotics-interactive-ontology-graph-browser.py::test_first_oversized_graph_can_open_a_class_from_the_index"
       ]
+    },
+    {
+      "id": "METRIC-GRAPH-RESPONSE-01",
+      "decision": "DR-186",
+      "iteration": "IR-047",
+      "status": "delivered",
+      "criterion": "切换指标图谱期间移除旧表的操作入口，列表与溯源仅渲染当前加载请求的响应，切换前已提交的状态操作作用于原图谱且不会在新图谱打开旧详情。",
+      "tests": [
+        "tests/frontend/business_name_browser.py::test_metrics_ignore_late_graph_response",
+        "tests/frontend/business_name_browser.py::test_metric_details_stay_with_current_selection",
+        "tests/frontend/business_name_browser.py::test_metric_lineage_follows_clicked_row"
+      ]
+    },
+    {
+      "id": "ROBOTICS-BROWSER-BUILD-OWNER-01",
+      "decision": "DR-186",
+      "iteration": "IR-047",
+      "status": "delivered",
+      "criterion": "历史配置与生成记录的浏览器夹具使用站点后台执行器完成真实样本构建，并基于完成的固定版本保留原有图谱命名、OWL 字节和生成记录验收。",
+      "tests": [
+        "tests/frontend/robotics-build-browser.py::test_legacy_configuration_names_match_task_page_without_changing_owl",
+        "tests/frontend/robotics-task-browser.py::test_task_application_history_retains_two_generations_and_reopens_without_model"
+      ]
+    },
+    {
+      "id": "METRIC-UI-MODULE-01",
+      "decision": "DR-186",
+      "iteration": "IR-047",
+      "status": "delivered",
+      "criterion": "指标列表及溯源逻辑由独立的指标脚本加载，页面入口保留指标交互且 HTML 继续满足少于 2500 行的现有约束。",
+      "tests": [
+        "tests/unit/test_metrics_ui.py::test_metric_logic_is_loaded_from_its_own_script",
+        "tests/unit/test_qa_anchor_ui.py::test_index_keeps_anchor_module_out_of_monolith",
+        "tests/frontend/business_name_browser.py::test_metrics_ignore_late_graph_response"
+      ]
+    },
+    {
+      "id": "ROBOTICS-DETAIL-SEED-01",
+      "decision": "DR-186",
+      "iteration": "IR-047",
+      "status": "delivered",
+      "criterion": "本体详情映射修复用例在站点启动前准备自定义术语的固定版本，映射修复仍指向同一版本且不修改其 OWL 或新增本体版本。",
+      "tests": [
+        "tests/frontend/ontology-detail-browser.py::test_mapping_repair_prepares_correspondence_for_same_version_without_revising_schema"
+      ]
+    },
+    {
+      "id": "METRIC-SELECTION-RESPONSE-01",
+      "decision": "DR-187",
+      "iteration": "IR-048",
+      "status": "delivered",
+      "criterion": "同一图谱内切换指标后，迟到的状态写入响应更新列表状态，保留用户当前的指标详情及未提交的编辑内容。",
+      "tests": [
+        "tests/frontend/business_name_browser.py::test_metric_status_refresh_preserves_newer_detail_in_same_graph",
+        "tests/frontend/business_name_browser.py::test_metric_details_stay_with_current_selection"
+      ]
+    },
+    {
+      "id": "UI-REQUEST-DEADLINE-01",
+      "decision": "DR-187",
+      "iteration": "IR-048",
+      "status": "delivered",
+      "criterion": "指标页的图谱列表、指标列表、溯源、规则读取、状态写入和重跑核验，以及固定版本图谱读取，均有 30 秒的客户端等待时限。读取超时可显式重试或重新打开，写入超时提示结果待确认且不会自动重发。",
+      "tests": [
+        "tests/frontend/business_name_browser.py::test_metric_read_timeout_can_retry_current_view",
+        "tests/frontend/business_name_browser.py::test_metric_write_timeout_reports_unknown_result_without_retry",
+        "tests/frontend/robotics-build-browser.py::test_fixed_graph_read_timeout_can_reopen_view"
+      ]
+    },
+    {
+      "id": "METADATA-COVERAGE-RESPONSE-01",
+      "decision": "DR-187",
+      "iteration": "IR-048",
+      "status": "delivered",
+      "criterion": "元数据覆盖只显示当前图谱最近一次读取的统计。切换或刷新时清除旧统计，迟到的旧响应不改变页面。读取等待时限为 30 秒，失败后可以刷新恢复。",
+      "tests": [
+        "tests/frontend/state_transition_browser.py::test_metadata_review_count_tracks_selected_graph_and_revisits",
+        "tests/frontend/state_transition_browser.py::test_metadata_coverage_ignores_late_response",
+        "tests/frontend/state_transition_browser.py::test_metadata_coverage_times_out_and_refreshes"
+      ]
     }
   ],
   "planned_requirements": []

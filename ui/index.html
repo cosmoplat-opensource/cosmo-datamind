@@ -717,13 +717,13 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
 <script src="/assets/modules/robotics-task-app.js?v=3"></script>
 <script src="/assets/modules/robotics-assets.js?v=17"></script><script src="/assets/modules/ontology-lifecycle.js?v=2"></script>
 <script src="/assets/modules/ontology-detail.js?v=5"></script>
-<script src="/assets/modules/robotics-views.js?v=15"></script>
+<script src="/assets/modules/robotics-views.js?v=16"></script>
 <script src="/assets/modules/robotics-design.js?v=14"></script>
 <script src="/assets/modules/robotics-build.js?v=4"></script>
 <script src="/assets/modules/robotics-review.js?v=2"></script>
 <script src="/assets/modules/robotics-review-page.js?v=1"></script>
 <script src="/assets/modules/catalog.js?v=3"></script>
-<script src="/assets/modules/database-scope.js?v=2"></script>
+<script src="/assets/modules/database-scope.js?v=3"></script>
 <script src="/assets/modules/build-references.js?v=5"></script>
 <script src="/assets/modules/build-stream.js?v=5"></script>
 <script src="/assets/modules/review.js?v=3"></script>
@@ -737,19 +737,22 @@ FROM fact_sales_order GROUP BY 1 ORDER BY 1 DESC LIMIT 12</textarea>
 <script src="/assets/modules/chart-series.js?v=3"></script>
 <script src="/assets/modules/qa-contract.js?v=1"></script>
 <script src="/assets/modules/action-log.js?v=1"></script>
+<script src="/assets/modules/metrics.js?v=1"></script>
 <script>const $=s=>document.querySelector(s);
 // 刚被点击的按钮:写请求在途时置灰,避免重复提交(各页面的提交函数不必各写一遍)
 let CLICKED=null,CLICKED_AT=0;addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('button');if(b){CLICKED=b;CLICKED_AT=Date.now();}},true);
-const J=async(u,o)=>{const m=((o&&o.method)||'GET').toUpperCase();
+const J=async(u,o)=>{const {timeoutMs,...options}=(o||{});const m=(options.method||'GET').toUpperCase();
  const b=m!=='GET'&&CLICKED&&Date.now()-CLICKED_AT<400&&!CLICKED.disabled?CLICKED:null;
  if(b){b.disabled=true;b.setAttribute('aria-busy','true');}
- try{const r=await appFetch(u,o);const t=await r.text();try{return JSON.parse(t)}catch(_){return{error:`请求失败(HTTP ${r.status})`}}}
- catch(e){return{error:'网络错误:'+(e&&e.message||e)}}
+ const read=async requestOptions=>{const r=await appFetch(u,requestOptions);const t=await r.text();try{return JSON.parse(t)}catch(_){return{error:`请求失败(HTTP ${r.status})`}}};
+ try{return timeoutMs?await appRequestDeadline(signal=>read({...options,signal}),options.signal,timeoutMs):await read(options);}
+ catch(e){if(timeoutMs&&e?.name==='TimeoutError')return{error:m==='GET'?'读取超时，请重试。':'请求超时，结果待确认。请先刷新核对。'};
+  return{error:'网络错误:'+(e&&e.message||e)}}
  finally{if(b){b.disabled=false;b.removeAttribute('aria-busy');}}};  // 永不抛：后端 404/500 返回 HTML 时降级为 {error}，交由既有 d.error 守卫提示，避免页面半渲染无提示
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // 安全地把值放进 onclick 等内联 JS 字符串:JSON.stringify 产生合法 JS 字面量，esc 再转义引号使其在属性内不越界
 const jsAttr=x=>esc(JSON.stringify(x));
-const JL=async u=>{const d=await J(u);if(Array.isArray(d))return d;toast('列表加载失败:'+((d&&d.error)||'返回内容不是列表'));return null;};  // 列表接口:失败时提示并返回 null,调用方按空列表或「加载失败」处理
+const JL=async(u,timeoutMs)=>{const d=await J(u,{timeoutMs});if(Array.isArray(d))return d;toast('列表加载失败:'+((d&&d.error)||'返回内容不是列表'));return null;};  // 列表接口:失败时提示并返回 null,调用方按空列表或「加载失败」处理
 // 数据格子统一格式化：浮点去 IEEE-754 表示噪声(14.74000000000002→14.74、90.04999…8→90.05)，保留15位有效数字(双精度能保真的位数);
 // 仅作用于显示层(预览/查询结果/看板)，不改后端原始值与导出。非数字/整数原样经 esc 转义。
 const cell=v=>v===null||v===undefined?'<span class="muted" title="空值(NULL)">NULL</span>':(typeof v==='number'&&Number.isFinite(v)&&!Number.isInteger(v))?esc(parseFloat(v.toPrecision(15))):esc(v);   // 15 位有效数字即双精度能保真的位数;NULL 与空串区分显示
@@ -799,13 +802,22 @@ async function load(p){if(loaded[p])return;loaded[p]=1;
 async function ontQualityLoad(){const gs=await JL('/api/graphs')||[];const cur=$('#oq_sel').value;
  $('#oq_sel').innerHTML=graphOptions(gs,g=>g.name);if(cur&&gs.some(g=>g.id===cur))$('#oq_sel').value=cur;
  $('#oq_sel').onchange=ontQualityRender;ontQualityRender();}
-async function ontQualityRender(){const k=$('#oq_sel').value;if(!k)return;
- const d=await J('/api/ont/completeness/'+k);if(!d||d.error){$('#oq_kpis').innerHTML='<div class="muted">加载失败</div>';return;}
+// DR-187: only the latest read for the selected graph may update coverage.
+let OQ_REQUEST=0;
+async function ontQualityRender(){
+ const select=$('#oq_sel'), k=select.value, request=++OQ_REQUEST, kpis=$('#oq_kpis');
+ $('#oq_sem')?.remove();
+ for(const id of ['#oq_bfo','#oq_mat','#oq_gaps'])$(id).replaceChildren();
+ kpis.innerHTML=k?'<div class="muted" role="status">正在读取元数据覆盖…</div>':'';
+ if(!k)return;
+ const d=await J('/api/ont/completeness/'+encodeURIComponent(k),{timeoutMs:30000});
+ if(request!==OQ_REQUEST||select.value!==k)return;
+ if(!d||d.error){kpis.innerHTML='<div class="muted" role="alert">加载失败，请刷新重试。</div>';return;}
  const o=d.objects,r=d.relations,sc=d.score,scol=sc>=70?'#16a34a':sc>=40?'#d97706':'#b91c1c';
- $('#oq_kpis').innerHTML=[['元数据覆盖',sc+'%',scol],['对象定义',o.withDefinition+'/'+o.total,'#4A5FF3'],['反例',o.withCounterExample+'/'+o.total,'#4A5FF3'],['开发状态',o.withMaturity+'/'+o.total,'#4A5FF3'],['标准关系映射',r.grounded+'/'+r.total,'#4A5FF3']].map(([l,n,c])=>`<div class="kpi"><div class="n" style="color:${c}">${esc(''+n)}</div><div class="l">${esc(l)}</div></div>`).join('');
+ kpis.innerHTML=[['元数据覆盖',sc+'%',scol],['对象定义',o.withDefinition+'/'+o.total,'#4A5FF3'],['反例',o.withCounterExample+'/'+o.total,'#4A5FF3'],['开发状态',o.withMaturity+'/'+o.total,'#4A5FF3'],['标准关系映射',r.grounded+'/'+r.total,'#4A5FF3']].map(([l,n,c])=>`<div class="kpi"><div class="n" style="color:${c}">${esc(''+n)}</div><div class="l">${esc(l)}</div></div>`).join('');
  const bar=(obj)=>{const ent=Object.entries(obj||{});const tot=ent.reduce((a,b)=>a+b[1],0)||1;return ent.sort((a,b)=>b[1]-a[1]).map(([kk,v])=>`<div class="step"><b>${esc(kk)}</b> ${v} <span class="muted">(${Math.round(100*v/tot)}%)</span><div style="height:6px;background:#eef2ff;border-radius:3px;margin-top:3px"><div style="height:6px;width:${Math.round(100*v/tot)}%;background:#4A5FF3;border-radius:3px"></div></div></div>`).join('')||'<div class="muted">—</div>';};
  $('#oq_bfo').innerHTML=bar(o.byBFO);$('#oq_mat').innerHTML=bar(o.byMaturity);
- const _sr=d.relations||{};$('#oq_sem')?.remove();if(_sr.semanticReviewed>0){const el=document.createElement('div');el.id='oq_sem';el.className='muted';el.style.cssText='margin-top:6px;font-size:12px';el.textContent=`语义评审:${_sr.semanticReviewed} 条已审 · ${_sr.semanticDisputed||0} 条存疑`;$('#oq_kpis').after(el);}
+ if(r.semanticReviewed>0){const el=document.createElement('div');el.id='oq_sem';el.className='muted';el.style.cssText='margin-top:6px;font-size:12px';el.textContent=`语义评审:${r.semanticReviewed} 条已审 · ${r.semanticDisputed||0} 条存疑`;kpis.after(el);}
  $('#oq_gaps').innerHTML=(d.gaps&&d.gaps.length)?d.gaps.map(g=>`<div class="step">${esc(g)}</div>`).join(''):'<div class="muted">没有待补定义，全部对象已有定义 ✓</div>';}
 async function oqUpgrade(btn){const k=$('#oq_sel').value;if(!k)return;const t0=btn.textContent;btn.disabled=true;btn.textContent='补定义中…';
  const P=(p)=>appFetch(p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:k})}).then(x=>x.json());
@@ -1457,71 +1469,7 @@ function showNodeDetail(n){if(!n)return;const rel=GRAPH_CUR.edges.filter(x=>x.s=
   const mine=(ts||[]).filter(t=>t.id===n.action_id||(t.object_table&&tbl.includes(t.object_table.toLowerCase()))||t.object===n.name);
   if(mine.length)el.innerHTML='<h3 style="margin-top:10px" class="gd-h">已配置动作('+mine.length+')</h3>'
    +mine.map(t=>`<div class="step">${esc(t.cn)} <span class="tag ${t.risk==='high'?'warn':'ok'}" style="margin-left:4px">${t.risk==='high'?'须审批':'直接登记'}</span> <a href="#" onclick="event.preventDefault();acOpen(${jsAttr(t.id)})">发起 ↗</a></div>`).join('');}).catch(()=>{});}
-// 指标状态(DR-054):certified 业务已确认 > verified 已核验 > candidate 待核验；旧形状指标只有启发式计算规则
-const MST={certified:['ok','业务已确认'],verified:['ok','已核验'],candidate:['warn','待核验'],deprecated:['evt','已停用'],heuristic:['warn','旧规则(启发式)']};
-function mStatus(x){return x.status||(x.measure&&x.measure.agg?'candidate':'heuristic');}
-function mstTag(st){const t=MST[st]||['evt',st||'-'];return `<span class="tag ${t[0]}">${esc(t[1])}</span>`;}
-function mCaliber(x){if(!(x.measure&&x.measure.agg))return '';const a=x.measure.agg.toUpperCase().replace('COUNT_DISTINCT','COUNT DISTINCT'),c=x.measure.col||'*';
- const f=(x.filters||[]).map(f=>`${f.col} ${f.op}${f.value!==undefined&&f.value!==null?' '+JSON.stringify(f.value):''}`).join(' AND ');
- return `${a}(${c})${f?' WHERE '+f:''}${x.time&&x.time.col?' 按 '+x.time.col+'/'+((x.time.grain||['month'])[0]):''}`;}
-function mGraph(){return ($('#m_sel')&&$('#m_sel').value)||'demo';}
-let M_GRAPHS=null;
-async function metrics(){
- if(!M_GRAPHS){M_GRAPHS=await JL('/api/graphs');if(!M_GRAPHS)return;const sel=$('#m_sel');sel.innerHTML=graphOptions(M_GRAPHS,g=>g.name);if(M_GRAPHS.some(g=>g.id==='demo'))sel.value='demo';}
- const g=mGraph();const m=await J('/api/metrics?graph='+encodeURIComponent(g));const names={atomic:'原子指标',derived:'派生指标',composite:'复合指标'};
- if(m.error){$('#m_body').innerHTML=`<div class="muted">${esc(m.error)}</div>`;return;}
- const cnt={};Object.values(m).forEach(a=>(a||[]).forEach(x=>{const st=mStatus(x);cnt[st]=(cnt[st]||0)+1;}));
- $('#m_kpi').innerHTML=['certified','verified','candidate','deprecated','heuristic'].filter(k=>cnt[k]).map(k=>`${mstTag(k)}<span class="muted" style="margin-right:8px">${cnt[k]}</span>`).join('');
- $('#m_body').innerHTML=`<div class="card" id="m_lineage" style="display:none"></div>`+
-  Object.entries(m).map(([k,arr])=>`<div class="card"><h3>${names[k]||k}(${arr.length})<span class="muted">· 点行查看计算规则与数据溯源</span></h3>
-  <div class="scroll" style="max-height:26vh"><table><tr><th>名称</th><th>状态</th><th>计算规则</th><th>来源表</th><th>取值列</th><th>单位</th><th>说明</th></tr>`+
-  arr.map(x=>`<tr style="cursor:pointer" onclick="lineage(${jsAttr(x.id||x.name)})"><td><b>${esc(x.name)}</b></td><td>${mstTag(mStatus(x))}</td><td><code style="font-size:12px">${esc(mCaliber(x))||'<span class=muted>未声明</span>'}</code></td><td>${esc(x.table)}</td><td>${esc(x.value_col)}</td><td>${esc(x.unit)}</td><td>${esc(x.desc||x.formula)}</td></tr>`).join('')+'</table></div></div>').join('');}
-async function metricReadjudicate(){const g=mGraph();toast('重跑核验中…');
- const d=await J('/api/metric/adjudicate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:g})}).catch(e=>({error:''+e}));
- if(d.error){toast(d.error,false);return;}toast(`核验完成 · 规则 ${d.contracts} 条 · 已核验 ${d.verified} 条`,true);metrics();}
-async function metricStatus(name,status){const g=mGraph();const who=($('#ml_who')&&$('#ml_who').value.trim())||'';const reason=($('#ml_reason')&&$('#ml_reason').value.trim())||'';
- if(status==='certified'&&!who){toast('业务确认须填写确认人(姓名或工号)',false);$('#ml_who').focus();return;}
- try{localStorage.setItem('rv_reviewer',who);}catch(e){}
- const d=await J('/api/metric/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({graph:g,metric:name,status,reviewer:who,reason})}).catch(e=>({error:''+e}));
- if(d.error){toast(d.error,false);return;}toast(`已置为 ${MST[status]?MST[status][1]:status}`,true);await metrics();lineage(name);}
-const LAYER_CN={atomic:'原子指标',derived:'派生指标',composite:'复合指标'};
 const MAT_CN={Provisional:'试行',Released:'已发布',Deprecated:'已废弃'};
-async function lineage(name){const g=mGraph();
- const [d,c]=await Promise.all([J('/api/metric/lineage?graph='+encodeURIComponent(g)+'&name='+encodeURIComponent(name)),
-                                J('/api/metric/contract?graph='+encodeURIComponent(g)+'&name='+encodeURIComponent(name)).catch(e=>({error:''+e}))]);
- const el=$('#m_lineage');el.style.display='block';
- if(d.error){el.innerHTML=`<h3>${esc(name)}</h3><div class="muted">${esc(d.error)}</div>`;return}
- const m=d.metric||{},ly=m.layer,st=mStatus(m),ev=m.evidence||{},ref=ev.reference||{};
- const srcLine=d.source_table
-   ? `<b>数据来源</b>: ${esc(d.source_table)} . ${esc(d.source_col||'-')} <a href="#" onclick="event.preventDefault();document.querySelector('[data-p=catalog]').click();setTimeout(()=>tbl(${jsAttr((d.source_table||'').toLowerCase())}),400)">查表↗</a>`
-   : `<b>数据来源</b>: <span class="muted">${ly==='derived'?'派生指标 · 由原子指标按业务规则汇总/计算(未直接绑表)':ly==='composite'?'复合指标 · 由多指标按公式组合计算(未直接绑表)':'未绑定数据表'}</span>`;
- const isC=!!(c&&c.is_contract);
- const evLine=isC?`<div class="step"><b>核验证据</b>: ${ev.executed?'<span class="tag ok">已执行</span>':'<span class="tag warn">未执行</span>'}`+
-   (ev.match===true?'<span class="tag ok">与参照一致</span>':ev.match===false?'<span class="tag warn">与参照不一致</span>':'<span class="tag evt">无参照</span>')+
-   (ref.source?`<span class="muted"> 参照:${esc(ref.source)}${ref.note?' · '+esc(ref.note):''}</span>`:'')+(ev.error?`<div class="muted" style="color:var(--warn)">${esc(ev.error)}</div>`:'')+
-   (ev.value!==undefined?`<div class="muted">标量值:${esc(String(ev.value))}${m.unit?' '+esc(m.unit):''}${ev.checked_at?' · 核验于 '+esc(ev.checked_at):''}</div>`:'')+`</div>`:'';
- const dims=(c&&c.allowed_dimensions)||null;
- const dimLine=dims?`<div class="step"><b>可下钻维度</b>: ${(dims.columns||[]).map(x=>`<code>${esc(x)}</code>`).join(' ')||'<span class=muted>无</span>'}${(dims.objects||[]).length?' · 关联对象: '+dims.objects.map(o=>`${esc(o.object)}<span class="muted">(${esc(o.table)}${o.fan_out_risk?' · 父侧，有扇出风险':''})</span>`).join('、'):''}</div>`:'';
- const prov=(m.provenance||[]).map(p=>`${esc(p.kind||'-')}:${esc(p.source||'')}`).join('; ');
- const who=localStorage.getItem('rv_reviewer')||'';
- const actions=isC?`<div class="step" style="border-top:1px dashed #E5E9F2;padding-top:8px">
-   <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">
-    确认人 <input id="ml_who" placeholder="姓名或工号" value="${esc(who)}" style="width:140px"> 意见 <input id="ml_reason" placeholder="确认依据(可选)" style="width:260px">
-    ${st!=='certified'?`<button onclick="metricStatus(${jsAttr(name)},'certified')" title="由业务人员确认计算规则；等价于关系的人工断言">业务确认</button>`:''}
-    ${st!=='deprecated'?`<button class="ghost" onclick="metricStatus(${jsAttr(name)},'deprecated')">停用</button>`:''}
-    ${(st==='certified'||st==='deprecated')?`<button class="ghost" onclick="metricStatus(${jsAttr(name)},'candidate')">撤回为待核验</button>`:''}
-   </div><div class="muted" style="margin-top:4px">「已核验」只能由核验产生，人工只能授予「业务已确认」或「停用」。</div></div>`
-  :`<div class="step muted">该指标是旧形状(未声明聚合方式)，不能做业务确认；先在构建时反解或补充计算规则。</div>`;
- el.innerHTML=`<h3>${esc(m.name||name)} ${mstTag(st)}<span class="tag ok">${esc(LAYER_CN[ly]||ly)}</span>${m.unit?`<span class="tag" style="background:#F4F4F5;color:#606266">${esc(m.unit)}</span>`:''}${m.certified_by?`<span class="muted" style="font-size:12px">确认人 ${esc(m.certified_by)}${m.certified_at?' · '+esc(m.certified_at):''}</span>`:''}</h3>
-  ${isC?`<div class="step"><b>计算规则</b>: <code>${esc(c.caliber||'')}</code></div><div class="step"><b>编译 SQL</b>: <code style="font-size:12px;white-space:pre-wrap">${esc(c.compiled_sql||c.compile_error||'')}</code></div>`:''}
-  ${m.desc?`<div class="step"><b>业务说明</b>: ${esc(m.desc)}</div>`:''}
-  <div class="step">${srcLine}</div>${d.formula?`<div class="step"><b>计算公式</b>: ${esc(d.formula)}</div>`:''}
-  ${evLine}${dimLine}
-  ${prov?`<div class="step"><b>来源</b>: <span class="muted">${prov}</span></div>`:''}
-  ${(d.inputs||[]).length?`<div class="step"><b>输入指标</b>: ${d.inputs.map(i=>`<a href="#" onclick="event.preventDefault();lineage(${esc(JSON.stringify(i))})">${esc(i)}</a>`).join('、')}</div>`:''}
-  <div class="step"><b>被本体对象引用(${(d.referenced_by||[]).length})</b>: ${(d.referenced_by||[]).map(r=>`${esc(r.object)}<span class="muted">(${esc(r.kind)})</span>`).join('、')||'<span class=muted>无(该指标未挂载到本体对象)</span>'}</div>
-  <div class="step"><b>编码</b>: <code>${esc(m.id||'-')}</code>${m.review_reason?` · <span class="muted">${esc(m.review_reason)}</span>`:''}</div>${actions}`;
- el.scrollIntoView({behavior:'smooth'});}
 let CHAT_HIST=[];
 async function chatInit(){
  if(!DQ_CONV && !$('#dq_stream').innerHTML.trim()){$('#dq_stream').innerHTML=dqHero();$('#dqv_deep').classList.add('dqv-empty');}

@@ -855,7 +855,7 @@ def test_task_application_history_retains_two_generations_and_reopens_without_mo
     """DR-151: one ontology, independent tasks, discoverable fixed results after restart."""
     from tests.robotics_task_support import fixture
     site, page, calls = live
-    _, version, _ = fixture(site.root, ready=True)
+    _, version, _ = fixture(site.root, ready=True, build_run=site.submit(name='new source'))
     site.enable_task_model()
     page.goto(site.url + '/#robotics-task')
     expect(page.locator('.nav-group').filter(has_text='本体应用').get_by_text('行为树生成', exact=True)).to_be_visible()

@@ -209,7 +209,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - [IR-004 · 数据连接 + 数据可视化模块](iterations/IR-004-connection-and-viz.md) · **delivered**
 - [IR-005 · 安全加固 + 工业化 + 复审收敛](iterations/IR-005-hardening-and-review.md) · **delivered(持续)**
 - [IR-006 · IOF/BFO 语义工程层(注释/映射/导出/元数据覆盖)](iterations/IR-006-iof-bfo-semantic-layer.md) · **delivered**
-- [IR-007 · 工程校验与 TDD 基础设施(pytest/coverage/ruff/CI + 确定性模块单测)](iterations/IR-007-tdd-foundation.md) · **in-progress**
+- [IR-007 · 工程校验与 TDD 基础设施(pytest/coverage/ruff/CI + 确定性模块单测)](iterations/IR-007-tdd-foundation.md) · **delivered**
 - [IR-008 · 裁决核收敛与算法强化(dao_core 单一事实源 + 引擎平价 + 零回归)](iterations/IR-008-adjudication-core-convergence.md) · **in-progress**
 - [IR-011 · 单体路由蓝图化(共享上下文基座 + 逐簇拆 blueprint)](iterations/IR-011-blueprint-modularization.md) · **in-progress**
 - [IR-012 · 恢复行业参照与本体标准构建配置](iterations/IR-012-build-reference-profiles.md) · **delivered**
@@ -217,11 +217,11 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - [IR-009 · 反幻觉评测台与门槛量化(对抗基准 + 泄漏率 + DR-038 回归实测)](iterations/IR-009-eval-and-definition-quality.md) · **in-progress**
 
 ## 上游素材(真相来源)
-- `../上游本体引擎/` — 引擎(agent_runtime/export_owl/serve_claw)、技能(skills_seed)、方法论(其 `系统设计.md` 与 `specs/`)。DataMind 复用其 engine 与技能。
+- [可选上游引擎的接入方式](../README.md#两种运行方式)。安装可访问的引擎后，用 `DATAMIND_ENGINE_DIR` 指定其目录。
 - `DATAMIND_DB` — 实际只读数据源；仓库附带 `examples/demo_metrics.db`（108 表示例库），另可用 `examples/sample_db.sql` 创建 6 张表的最小示例库。
 - `README.md` — 模块能力总览与实测部署命令。
 - `ARCHITECTURE.md` — 分层/数据流/统一约定/安全模型/已知边界(架构说明)
-- `docs/audits/` — 各轮审计与复核报告。
+- [项目测试说明](../README.md#测试)提供隔离回归命令。
 - `test_all.py` — 系统级回归，源码定义 548 个检查点。
 
 ## 现状校准

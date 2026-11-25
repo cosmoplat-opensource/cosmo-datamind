@@ -26,6 +26,24 @@ function appFetch(url, options) {
   return fetch(url, opts);
 }
 
+async function appRequestDeadline(read, signal, timeoutMs) {
+  const parent = signal || APP_UNLOAD?.signal;
+  const abort = new AbortController();
+  const cancel = () => abort.abort(parent.reason);
+  if (parent?.aborted) cancel();
+  else parent?.addEventListener('abort', cancel, {once: true});
+  const timeout = new DOMException('请求超时。', 'TimeoutError');
+  const timer = setTimeout(() => abort.abort(timeout), timeoutMs);
+  try {
+    return await read(abort.signal);
+  } catch (error) {
+    throw abort.signal.reason === timeout ? timeout : error;
+  } finally {
+    clearTimeout(timer);
+    parent?.removeEventListener('abort', cancel);
+  }
+}
+
 function appGraphInitialLayout(graph) {
   const select=document.getElementById('g_layout');
   if(select && !select.dataset.userSelected)select.value=graph.nodes.length>120?'force':'dagre';

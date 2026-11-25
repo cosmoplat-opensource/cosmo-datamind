@@ -33,7 +33,7 @@ def test_failed_requests_are_not_rendered_as_empty_success():
     assert "if(d.error)" in upload and "catch(e)" not in upload
     assert "const JL=" in INDEX                      # 列表接口失败时给出提示并按空列表处理
     for call in ("J('/api/graphs')", "J('/api/tables')"):
-        assert call not in INDEX and call not in MODULES["catalog.js"]
+        assert not any(call in source for source in (INDEX, MODULES["catalog.js"], MODULES["metrics.js"]))
 
 
 def test_unknown_confidence_does_not_break_the_diagnosis_card():

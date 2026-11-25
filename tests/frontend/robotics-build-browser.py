@@ -455,6 +455,29 @@ def test_view_zoom_remains_effective_after_node_selection(live, view):
     done(site)
 
 
+@pytest.mark.parametrize('view', ['relations', 'interactive-ontology-graph'])
+def test_fixed_graph_read_timeout_can_reopen_view(live, view):
+    site, page = live
+    ref = site.submit()['output_asset_ref']
+    page.clock.install()
+    endpoint = f"{site.url}/api/ontology-assets/{ref['ontology_id']}/versions/{ref['version_id']}/views/{view}"
+    url = site.url + f"/#robotics-view?asset={ref['ontology_id']}&version={ref['version_id']}&view={view}"
+    held = []
+    page.route(endpoint, lambda route: held.append(route), times=1)
+    with page.expect_request(endpoint):
+        page.goto(url, wait_until='domcontentloaded')
+    host = page.locator('#rv_host')
+    expect(host.get_by_role('status')).to_contain_text('正在读取本体视图')
+    page.clock.fast_forward(30001)
+    expect(host.get_by_role('alert')).to_contain_text('读取超时')
+    assert len(held) == 1
+    held[0].abort()
+    page.reload(wait_until='domcontentloaded')
+    canvas = '#rv_canvas canvas, #rv_canvas svg' if view == 'relations' else '[data-testid="interactive-ontology-graph-panel"] svg'
+    expect(host.locator(canvas)).to_be_visible(timeout=15000)
+    done(site)
+
+
 def test_catalog_hides_source_tree_and_old_tree_link_cannot_display_it(live):
     """DR-150 scope update: only generated task results expose a behavior tree UI."""
     site, page = live
@@ -482,13 +505,20 @@ def test_catalog_hides_source_tree_and_old_tree_link_cannot_display_it(live):
     done(site)
 
 
-def test_legacy_configuration_names_match_task_page_without_changing_owl(live):
+def test_legacy_configuration_names_match_task_page_without_changing_owl(live, monkeypatch):
     """DR-150: normalize historical names throughout the graph, preserving RDF data."""
     from rdflib import Literal, RDFS
     from tests.robotics_support import S
     from tests.robotics_task_support import fixture
 
     site, page = live
+    start_inline = RunStore.start
+
+    def start_after_live_claim(store, run_id):
+        site.terminal(run_id)
+        return start_inline(store, run_id)
+
+    monkeypatch.setattr(RunStore, 'start', start_after_live_claim)
     names = [
         (S.Perception_Current, S.PartType_A, S.hasPerceptionProfile,
          '源文件当前感知参数；尚未绑定业务零件类型', '源文件感知配置'),
@@ -501,7 +531,10 @@ def test_legacy_configuration_names_match_task_page_without_changing_owl(live):
             graph.set((owner, predicate, target))
         graph.set((S.LeftCamera, RDFS.label, Literal('用户自定义相机名称', lang='zh')))
 
-    assets, version, _ = fixture(site.root, mutate=historical_labels)
+    assets, version, build = fixture(site.root, mutate=historical_labels, build_run=site.submit(name='new source'))
+    events = RunStore(site.root, read_only=True).events(build['run_id'])
+    assert [event['payload']['status'] for event in events if event['kind'] == 'state'] == [
+        'queued', 'running', 'completed']
     ref = {key: version[key] for key in ('ontology_id', 'version_id')}
     original = assets.read_payload(**ref)
     page.goto(site.url + '/#library')

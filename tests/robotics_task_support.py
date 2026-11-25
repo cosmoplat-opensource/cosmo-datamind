@@ -40,10 +40,13 @@ def model(*responses):
                        transport=transport), transport
 
 
-def fixture(root, *, ready=False, mutate=None):
-    """Use a real two-XML build; ready/mutations are clearly test-only setup."""
-    version, build_run = built_seed(root)
+def fixture(root, *, ready=False, mutate=None, build_run=None):
+    """Use a completed two-XML build, supplied by the worker for a live site (DR-186)."""
+    if build_run is None:
+        _, build_run = built_seed(root)
+    assert build_run['status'] == 'completed' and build_run['result']['status'] == 'built', build_run
     assets = AssetStore(root)
+    version = assets.get_version(**build_run['output_asset_ref'])
     if ready or mutate is not None:
         if ready:
             graph = Graph().parse(data=ready_payload(), format='xml')

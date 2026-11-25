@@ -47,10 +47,21 @@ def browser():
 
 
 @pytest.fixture
-def live(tmp_path, request, browser, detail_seed):
+def live(tmp_path, request, browser, detail_seed, monkeypatch):
     output = Path(os.environ.get('DATAMIND_DETAIL_TEST_OUTPUT', str(ROOT / '.check-results/ir027-t04/browser')))
     output = output / re.sub(r'[^a-zA-Z0-9_-]', '_', request.node.name)
-    site = DesignSite(tmp_path / 'site', output, prepare=lambda target: clone_seed(detail_seed, target))
+
+    def prepare(target):
+        info = clone_seed(detail_seed, target)
+        if getattr(request, 'param', None) == 'custom-vocabulary':
+            from tests.robotics_auto_adaptation_support import custom_candidate
+
+            # DR-186: finish the offline design before DesignSite starts its executor.
+            _, design, record = custom_candidate(target, monkeypatch, request_id='detail-custom-vocabulary')
+            info['custom_vocabulary'] = (design, record)
+        return info
+
+    site = DesignSite(tmp_path / 'site', output, prepare=prepare)
     context = browser.new_context(viewport={'width': 1440, 'height': 1000}, accept_downloads=True)
     page = context.new_page(); page.set_default_timeout(4000); page.set_default_navigation_timeout(20000)
     site.observe(page)
@@ -218,11 +229,12 @@ def test_missing_schema_stays_in_diagnosis_and_revision_targets_original_design(
     done(site)
 
 
-def test_mapping_repair_prepares_correspondence_for_same_version_without_revising_schema(live, monkeypatch):
-    from tests.robotics_auto_adaptation_support import custom_candidate
+@pytest.mark.parametrize('live', ['custom-vocabulary'], indirect=True)
+def test_mapping_repair_prepares_correspondence_for_same_version_without_revising_schema(live):
     site, page, info = live
+    assert 'custom_vocabulary' in info, 'the custom candidate must be ready when the browser site starts'
     # A custom vocabulary needs explicit correspondence; trusted missing terms now use schema repair.
-    _, original_design, record = custom_candidate(site.root, monkeypatch, request_id='detail-custom-vocabulary')
+    original_design, record = info['custom_vocabulary']
     original = AssetStore(site.root).read_payload(**record)
     versions = AssetStore(site.root).list_versions(record['ontology_id'])
     open_detail(site, page, record); response = start_check(site, page)

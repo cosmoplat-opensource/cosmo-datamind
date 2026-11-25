@@ -1,8 +1,8 @@
 # IR-007 · 工程校验与 TDD 基础设施
 
-- **状态 / Status**: in-progress
+- **状态 / Status**: delivered
 - **日期 / Date**: 2026-07-31
-- **关联 / Refs**: [[PROPOSAL-sdd-tdd-improvement]];新增 DR-045(工程校验)、DR-046(确定性模块单测);
+- **关联 / Refs**：[DR-045（工程校验）](../decisions/DR-045-engineering-harness-and-tdd.md)、[DR-046（确定性模块单测）](../decisions/DR-046-deterministic-module-unit-tests.md)。
   实证=`pyproject.toml`、`tests/`、`requirements-dev.txt`、`.github/workflows/ci.yml`、`.pre-commit-config.yaml`
 
 ## 目标 Goal
@@ -45,7 +45,7 @@
 - [x] `ruff check .`:F/B 规则 **25 条**真 bug 类 findings(F601 重复键 13 条经核验值相同无害;B023 闭包捕获 4 条列为 IR-008 前置排查项)。
 - [x] `test_quick_build.py` 的 git diff 可证「先红(IndexError)后绿(5 passed)」。
 - [x] 重构后 `quick_build.py` 子进程 CLI 产物与改造前逐值一致(orders→customers verified,overlap 100)。
-- [ ] CI 在远端跑通(本仓当前未配远端；本地按相同命令验证，待推送后确认运行记录)。
+- [x] 后续版本的[远端 CI 运行](https://github.com/cosmoplat-opensource/cosmo-datamind/actions/runs/45526079722)成功，确认远端工程校验已运行。上面的测试数量和覆盖率保留为最初的本地基线记录。
 
 ## 备注
 
