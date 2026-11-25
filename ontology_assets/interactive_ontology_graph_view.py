@@ -3,7 +3,7 @@ from copy import deepcopy
 import hashlib
 import json
 
-from rdflib import BNode, Graph, Literal, OWL, RDF, RDFS, URIRef
+from rdflib import BNode, Graph, Literal, OWL, RDF, RDFS, URIRef, XSD
 from rdflib.collection import Collection
 from rdflib.compare import to_canonical_graph
 
@@ -70,12 +70,16 @@ def project_version(version, payload):
         graph = Graph().parse(data=payload, format='xml')
     except Exception as exc:
         raise ValueError('无法读取固定版本 RDF。') from exc
-    context = {'kind': 'version', 'key': json.dumps([version['ontology_id'], version['version_id']], separators=(',', ':')),
-               'revision': version['payload_sha256'], 'snapshot_sha256': version['payload_sha256'],
-               'stage': 'fixed', 'status': version.get('publication_state', 'candidate')}
+    context = version_context(version)
     view = _project(graph, context, version.get('name', ''))
     view['mode'] = robotics_version_mode(version, graph)
     return view
+
+
+def version_context(version):
+    return {'kind': 'version', 'key': json.dumps([version['ontology_id'], version['version_id']], separators=(',', ':')),
+            'revision': version['payload_sha256'], 'snapshot_sha256': version['payload_sha256'],
+            'stage': 'fixed', 'status': version.get('publication_state', 'candidate')}
 
 
 def _project(source, context, name):
@@ -105,8 +109,12 @@ def _project(source, context, name):
                 if isinstance(v, Literal)]
 
     def base(term, kind):
-        return {'id': _id(term), 'iri': _id(term), 'type': kind, 'labels': labels(term),
+        item = {'id': _id(term), 'iri': _id(term), 'type': kind, 'labels': labels(term),
                 'definition': str(next(iter(sorted(graph.objects(term, RDFS.comment), key=str)), ''))}
+        if context['kind'] == 'edit-copy':
+            item['comment_zh'] = next((str(v) for v in graph.objects(term, RDFS.comment)
+                                       if isinstance(v, Literal) and (v.language or '').lower() == 'zh'), '')
+        return item
 
     def add_node(term, kind='class'):
         if term is None or isinstance(term, Literal):
@@ -137,8 +145,23 @@ def _project(source, context, name):
     for term in sorted(class_terms, key=_id):
         add_node(term)
     property_terms = set()
+    implicit = {'object': set(), 'data': set()}
+    if context['kind'] == 'edit-copy':
+        # Predicates without a declaration still have editable uses on explicit individuals.
+        declared = set(graph.subjects(RDF.type, OWL.AnnotationProperty))
+        declared.update(graph.subjects(RDF.type, OWL.DatatypeProperty))
+        declared.update(graph.subjects(RDF.type, OWL.ObjectProperty))
+        subjects_with_type = {s for s, t in graph.subject_objects(RDF.type) if t == OWL.NamedIndividual or t in class_terms}
+        standard = tuple(map(str, (RDF, RDFS, OWL, XSD)))
+        for subject in subjects_with_type:
+            for p, o in graph.predicate_objects(subject):
+                if p not in declared and not str(p).startswith(standard):
+                    implicit['data' if isinstance(o, Literal) else 'object'].add(p)
+        mixed = implicit['object'] & implicit['data']
+        implicit['object'] -= mixed
+        implicit['data'] -= mixed
     for rdf_type, kind in ((OWL.ObjectProperty, 'object'), (OWL.DatatypeProperty, 'data')):
-        for term in sorted(graph.subjects(RDF.type, rdf_type), key=_id):
+        for term in sorted(set(graph.subjects(RDF.type, rdf_type)) | implicit[kind], key=_id):
             property_terms.add(term)
             prop = base(term, kind)
             domains = sorted(set(graph.objects(term, RDFS.domain)), key=_id)
@@ -184,7 +207,7 @@ def _project(source, context, name):
     supported = {OWL.unionOf, OWL.disjointWith, OWL.equivalentClass}
     if any(str(p).startswith(str(OWL)) and p not in supported for _, p, _ in graph):
         warnings.add('部分 OWL 公理未在画布展开；完整语义保留于原始本体。')
-    return {'schema': 'datamind-interactive-ontology-graph/1', 'context': context, 'metadata': {'name': name, 'read_only': True},
+    return {'schema': 'datamind-interactive-ontology-graph/1', 'context': context, 'metadata': {'name': name, 'read_only': context['kind'] != 'edit-copy'},
             'nodes': [nodes[k] for k in sorted(nodes)], 'properties': [properties[k] for k in sorted(properties)],
             'individuals': [individuals[k] for k in sorted(individuals)], 'edges': [edges[k] for k in sorted(edges)],
             'relations': [relations[k] for k in sorted(relations)], 'warnings': sorted(warnings)}

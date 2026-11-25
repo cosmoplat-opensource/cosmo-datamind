@@ -383,3 +383,7 @@ IR-029 于 2026-11-17 按用户反馈精简删除／恢复弹窗及回收站卡�
 ## 最终任务配置范围
 
 [DR-175 · 按最终任务配置校验与生成](decisions/DR-175-task-configuration-validation-scope.md) ／ [IR-036](iterations/IR-036-task-configuration-validation-scope.md)：CFG-SCOPE-01、GEN-FEEDBACK-01。
+
+## 交互式图谱基础编辑
+
+[DR-188 编辑副本](decisions/DR-188-graph-edit-copy.md) ／ [IR-049](iterations/IR-049-graph-edit-copy.md) ／ [GRAPH-EDIT-01 验收映射](acceptance.json)。

@@ -55,6 +55,7 @@ def test_recycle_bin_graph_round_trip_preserves_fixed_version(live):
     expect(graph).to_have_attribute('href', re.compile(r'&state=deleted(?:&|$)'))
     graph.click()
     expect(interactive_graph_panel(page)).to_have_attribute('data-kind', 'version')
+    expect(page.get_by_role('button', name='编辑副本', exact=True)).to_have_count(0)
     expect(page.locator('#rv_host header')).to_contain_text('历史查看')
     expect(page.locator('#rv_host').get_by_role('link', name='基于此本体生成行为树')).to_have_count(0)
     page.locator('#rv_host').get_by_role('link', name='返回本体详情').click()
@@ -62,6 +63,96 @@ def test_recycle_bin_graph_round_trip_preserves_fixed_version(live):
     expect(page.get_by_test_id('robotics-version')).to_have_attribute('data-version-id', vid)
     assert (support.db_rows(site.root), support.blob_bytes(site.root)) == before
     assert calls == []
+
+
+
+@pytest.mark.parametrize('live', [{'prepare': support.prepare_candidate}], indirect=True)
+def test_edit_copy_create_cancel_delete_undo_redo_export(live):
+    from rdflib import Graph, OWL, RDF, URIRef
+    site, page, _ = live
+    ref = site.prepared['output_asset_ref']
+    page.goto(site.url + '/#robotics-view?asset=' + ref['ontology_id'] + '&version=' + ref['version_id']
+              + '&view=interactive-ontology-graph')
+    panel = interactive_graph_panel(page)
+    before = support.db_rows(site.root), support.blob_bytes(site.root)
+    panel.get_by_role('button', name='编辑副本', exact=True).click()
+    panel.get_by_role('button', name='新增实例', exact=True).first.click()
+    dialog = page.get_by_role('dialog')
+    dialog.get_by_label('名称', exact=True).fill('样例实例')
+    iri = dialog.get_by_label('IRI', exact=True).input_value()
+    assert iri
+    dialog.get_by_role('button', name='应用').click()
+    details = panel.locator('.interactive-ontology-graph-entity')
+    expect(details.get_by_role('heading', name='样例实例')).to_be_visible()
+    expect(panel.get_by_label('节点详情').locator('optgroup[label="未分类实例"] option').filter(has_text='样例实例')).to_have_count(1)
+    expect(page.locator('#rv_host header')).to_contain_text('编辑副本')
+    expect(page.locator('#rv_host header').get_by_role('link', name='基于此本体生成行为树')).to_have_count(0)
+    details.get_by_role('button', name='删除实体').click()
+    expect(dialog).to_contain_text('2 条')
+    dialog.get_by_role('button', name='取消').click()
+    expect(details.get_by_role('heading', name='样例实例')).to_be_visible()
+    details.get_by_role('button', name='删除实体').click()
+    dialog.get_by_role('button', name='确认删除').click()
+    selector = panel.get_by_label('节点详情')
+    expect(selector.locator(f'option[value="{iri}"]')).to_have_count(0)
+    panel.get_by_role('button', name='撤销', exact=True).click()
+    expect(selector.locator(f'option[value="{iri}"]')).to_have_count(1)
+    panel.get_by_role('button', name='重做', exact=True).click()
+    expect(selector.locator(f'option[value="{iri}"]')).to_have_count(0)
+    panel.get_by_role('button', name='撤销', exact=True).click()
+    with page.expect_download() as download:
+        panel.get_by_role('button', name='导出副本').click()
+    exported = Graph().parse(download.value.path(), format='xml')
+    assert (URIRef(iri), RDF.type, OWL.NamedIndividual) in exported
+    assert (support.db_rows(site.root), support.blob_bytes(site.root)) == before
+
+
+
+@pytest.mark.parametrize('live', [{'prepare': support.prepare_candidate}], indirect=True)
+def test_edit_copy_unlinks_one_instance_relation_and_cancels_pending_edit(live):
+    site, page, _ = live
+    ref = site.prepared['output_asset_ref']
+    page.goto(site.url + '/#robotics-view?asset=' + ref['ontology_id'] + '&version=' + ref['version_id']
+              + '&view=interactive-ontology-graph')
+    panel = interactive_graph_panel(page)
+    panel.get_by_role('button', name='编辑副本', exact=True).click()
+    dialog = page.get_by_role('dialog')
+    def create(title, name):
+        panel.get_by_role('button', name='新增' + title, exact=True).first.click()
+        dialog.get_by_label('名称', exact=True).fill(name)
+        iri = dialog.get_by_label('IRI', exact=True).input_value()
+        dialog.get_by_role('button', name='应用', exact=True).click()
+        expect(dialog).to_have_count(0)
+        return iri
+    prop = create('对象属性', '样例关联')
+    a = create('实例', '左端')
+    b = create('实例', '右端')
+    panel.get_by_role('button', name='新增关系').click()
+    dialog.get_by_label('关系类型').select_option(label='实例关系')
+    for title, iri in [('起点', a), ('对象属性', prop), ('终点', b)]:
+        dialog.get_by_label(title, exact=True).select_option(iri)
+    dialog.get_by_role('button', name='应用').click()
+    details = panel.locator('.interactive-ontology-graph-entity')
+    edge = details.get_by_role('listitem').filter(has_text='样例关联')
+    expect(edge).to_contain_text('左端 → 样例关联 → 右端')
+    edge.get_by_role('button', name='解除关系').click()
+    expect(dialog).to_contain_text('移除 1 条')
+    dialog.get_by_role('button', name='确认删除').click()
+    expect(edge).to_have_count(0)
+    selector = panel.get_by_label('节点详情')
+    for iri in (a, b, prop):
+        expect(selector.locator(f'option[value="{iri}"]')).to_have_count(1)
+    details.get_by_role('button', name='编辑实体').click()
+    dialog.get_by_label('中文名称').fill('应取消')
+    with page.expect_request('**/graph-edit-copy'):
+        page.route('**/graph-edit-copy', lambda route: None)
+        dialog.get_by_role('button', name='应用').click()
+    page.keyboard.press('Escape')
+    expect(dialog).to_have_count(0)
+    expect(details.get_by_role('heading', name='左端')).to_be_visible()
+    page.unroute('**/graph-edit-copy')
+    panel.get_by_role('button', name='撤销', exact=True).click()
+    expect(edge).to_be_visible()
 
 
 def test_classes_properties_instances_update_one_canvas(live):

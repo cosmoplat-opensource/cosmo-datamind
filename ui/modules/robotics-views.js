@@ -155,7 +155,19 @@
         if(view==='interactive-ontology-graph'){
           const module=await import('/assets/modules/interactive-ontology-graph/panel.js');if(current!==token)return;
           host.innerHTML=`<a class="ra-back" href="${escape(detailLink)}">← 返回本体详情</a><header class="rt-heading"><div><h2>${escape(body.name)}</h2><p>${history ? '历史查看' : '当前'}：版本 ${escape(body.version_number)} · 只读浏览</p></div>${taskAction(body.mode)}</header><div class="rv-interactive-ontology-graph"></div>`;
-          const panel=module.mountPanel(host.querySelector('.rv-interactive-ontology-graph'),{canvasId:'rv_canvas'});
+          const editUrl='/api/ontology-assets/'+encodeURIComponent(oid)+'/versions/'+encodeURIComponent(vid)+'/graph-edit-copy';
+          const editRequest=history?null:(operations,format,signal)=>global.RoboticsAssets.readJSON(global.fetch.bind(global),editUrl,{
+            method:'POST',signal,headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({base_sha256:body.context.revision,operations,format})
+          });
+          const heading=host.querySelector('header'),caption=heading.querySelector('p'),originalCaption=caption.textContent;
+          const taskLink=heading.querySelector('a');
+          function onEditMode(editing){
+            caption.textContent=editing?'编辑副本 · 来源版本 '+body.version_number:originalCaption;
+            if(editing)taskLink?.remove();
+            else if(taskLink && !taskLink.isConnected)heading.append(taskLink);
+          }
+          const panel=module.mountPanel(host.querySelector('.rv-interactive-ontology-graph'),{canvasId:'rv_canvas',editRequest,onEditMode});
           active={dispose:()=>{abort.abort();panel.destroy();}};
           const display=global.RoboticsTask.displayLabel;
           const document={...body,nodes:body.nodes.map(n=>({...n,labels:n.labels.map(l=>({...l,value:display(l.value)}))})),individuals:body.individuals.map(n=>({...n,labels:n.labels.map(l=>({...l,value:display(l.value)})),data:n.data.map(d=>d.predicate==='http://www.w3.org/2000/01/rdf-schema#label'?{...d,value:display(d.value)}:d)}))};

@@ -93,3 +93,26 @@ def test_catalog_unit_sets_match_actual_data_with_quoted_identifiers(seed):
         assert e['rows'] == sum(r[0] == e['value'] for r in rows)
         assert e['unit'] == (next(iter(units)) if len(units) == 1 else '')
     con.close()
+
+
+def test_graph_edit_deletes_only_selected_named_individual_facts():
+    """DR-188：不同密度、循环和自环下，删除范围只由 RDF 资源身份决定。"""
+    from rdflib import Graph, Literal, Namespace, OWL, RDF
+    from ontology_assets.graph_edit_copy import apply_edit
+
+    rng = random.Random(188)
+    ns = Namespace('urn:sample:')
+    for size in range(2, 22):
+        graph = Graph()
+        graph.add((ns.link, RDF.type, OWL.ObjectProperty))
+        graph.add((ns.value, RDF.type, OWL.DatatypeProperty))
+        nodes = [ns[f'n{i}'] for i in range(size)]
+        target = rng.choice(nodes)
+        for node in nodes:
+            graph.add((node, RDF.type, OWL.NamedIndividual))
+            graph.add((node, ns.value, Literal(str(target))))
+            for neighbor in rng.sample(nodes, rng.randrange(size + 1)):
+                graph.add((node, ns.link, neighbor))
+        expected = {t for t in graph if target not in t}
+        apply_edit(graph, {'op': 'delete', 'iri': str(target)})
+        assert set(graph) == expected

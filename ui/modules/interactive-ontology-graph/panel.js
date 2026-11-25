@@ -1,7 +1,8 @@
 /* Interactive ontology graph workspace and read-only details — DR-166 / IR-031 T05. */
 import {InteractiveOntologyGraphController} from './controller.js';
+import {mountEditor} from './editor.js';
 import {label} from './model.js';
-export function mountPanel(host,{canvasId=null,embedded=false}={}){
+export function mountPanel(host,{canvasId=null,embedded=false,editRequest=null,onEditMode=null}={}){
   host.className='interactive-ontology-graph-panel';host.dataset.testid='interactive-ontology-graph-panel';
   host.innerHTML=`${embedded?'':'<div class="interactive-ontology-graph-title"><strong>机器人交互式本体图谱</strong><span class="interactive-ontology-graph-context"></span></div>'}
     <div class="interactive-ontology-graph-toolbar"><form><input aria-label="查找节点" placeholder="搜索类别、关系、实例"><button>查找</button></form>
@@ -14,7 +15,7 @@ export function mountPanel(host,{canvasId=null,embedded=false}={}){
     <p class="interactive-ontology-graph-counts"></p>`;
   const q=s=>host.querySelector(s),svg=q('svg'),plot=q('.interactive-ontology-graph-plot'),details=q('.interactive-ontology-graph-entity'),notice=q('.interactive-ontology-graph-notice'),nodeSelect=q('select[aria-label="节点详情"]');
   if(canvasId){plot.id=canvasId;nodeSelect.id='rv_node';details.id='rv_properties';}
-  let dead=false,scope=null,epoch=0,current=null,last=null,selected=null;
+  let dead=false,scope=null,epoch=0,current=null,last=null,selected=null,editor=null;
   function text(parent,tag,value){const e=document.createElement(tag);e.textContent=value;parent.append(e);return e;}
   function button(parent,name,fn){const b=text(parent,'button',name);b.type='button';b.onclick=fn;return b;}
   const controller=new InteractiveOntologyGraphController(svg,{onSelect:(_id,entity)=>show(entity),onNotice:message=>{notice.textContent=message;},onChange:()=>{counts();if(selected)show(controller.state.entity(selected));}});
@@ -70,10 +71,11 @@ export function mountPanel(host,{canvasId=null,embedded=false}={}){
       button(details,'查看实例关系',()=>{controller.state.toggleRelations();controller.draw();counts();});
       button(details,'展开数据值',()=>{controller.state.toggleData();controller.draw();counts();});
       const dl=document.createElement('dl');details.append(dl);
-      for(const value of entity.data||[]){text(dl,'dt',label(controller.state.properties.get(value.predicate)||value.predicate));text(dl,'dd',String(value.value));}
+      for(const value of entity.data||[]){text(dl,'dt',label(controller.state.properties.get(value.predicate)||value.predicate));const row=text(dl,'dd',String(value.value));editor?.value(row,entity.id,value);}
       const ul=document.createElement('ul');details.append(ul);
-      for(const edge of current.relations.filter(e=>e.source===entity.id||e.target===entity.id))text(ul,'li',`${label(controller.state.entity(edge.source))} → ${label(controller.state.properties.get(edge.predicate)||edge.predicate)} → ${label(controller.state.entity(edge.target))}`);
+      for(const edge of current.relations.filter(e=>e.source===entity.id||e.target===entity.id)){const row=text(ul,'li',`${label(controller.state.entity(edge.source))} → ${label(controller.state.properties.get(edge.predicate)||edge.predicate)} → ${label(controller.state.entity(edge.target))}`);editor?.edge(row,edge);}
     }
+    editor?.details(details,entity);
     if(controller.graph.positions.has(entity.id))button(details,controller.graph.positions.get(entity.id).pinned?'释放节点':'固定节点',()=>{controller.pin(entity.id,!controller.graph.positions.get(entity.id).pinned);show(entity);});
   }
   function setOptions(){
@@ -81,7 +83,14 @@ export function mountPanel(host,{canvasId=null,embedded=false}={}){
     const skill=iri=>/\b(?:AtomicSkill|CompositeSkill|SkillInvocation|SkillImplementation|TaskProcedure)$/.test(iri.split('#').pop());
     const items=[...current.nodes,...current.individuals,...current.properties].filter(n=>group==='all'||(group==='skills'?(n.types||[]).some(skill):!(n.types||[]).some(skill)));
     nodeSelect.replaceChildren(new Option('选择对象查看详情',''));
-    for(const item of items)nodeSelect.add(new Option(label(item),item.id));
+    const unclassified=document.createElement('optgroup');
+    unclassified.label='未分类实例';
+    for(const item of items){
+      const option=new Option(label(item),item.id);
+      if(current.context.kind==='edit-copy' && item.type==='individual' && !item.types.length)unclassified.append(option);
+      else nodeSelect.add(option);
+    }
+    if(unclassified.childElementCount)nodeSelect.append(unclassified);
   }
   function chooseObject(id,fromSearch=false){
     if(controller.overviewLimited && controller.state.nodes.get(id)?.type==='class'){
@@ -108,17 +117,46 @@ export function mountPanel(host,{canvasId=null,embedded=false}={}){
     else if(op==='pause'){controller.pause(!controller.graph.paused);b.textContent=controller.graph.paused?'继续布局':'暂停布局';}
     else controller.graph.zoomBy(op==='in'?1.25:.8);
   };});
-  return {controller,present(document,{scope:nextScope=JSON.stringify([document.context.kind,document.context.key])}={}){
+  function present(document,{scope:nextScope=JSON.stringify([document.context.kind,document.context.key])}={}){
     if(dead)return;const fingerprint=JSON.stringify(document);
     if(nextScope!==scope){scope=nextScope;epoch=controller.beginContext(document.context);controller.graph.options.readableMinimum=.9;selected=null;show(null);last=null;}
-    if(fingerprint===last)return;
+    if(fingerprint===last)return true;
     if(controller.update(document,{epoch})){
       host.dataset.stage=document.context.stage;host.dataset.kind=document.context.kind;host.dataset.revision=String(document.context.revision);
-      current=document;last=fingerprint;setOptions();counts();
+      current=document;last=fingerprint;setOptions();counts();show(controller.state.entity(controller.state.selectedId));
+      if(document.context.kind==='version')editor?.source(document);
       notice.textContent=controller.overviewLimited && !controller.graph.data.nodes.length
         ? '完整图谱超出同屏范围，请选择或搜索类别查看局部关联。' : document.warnings.join(' ');
       const caption=q('.interactive-ontology-graph-context');
-      if(caption)caption.textContent=document.context.status==='historical'?`历史修订 ${document.context.revision} · 只读`:`${document.context.kind==='design'?'设计修订 '+document.context.revision:'固定版本 · '+({candidate:'候选',draft:'草案',published:'已发布'}[document.context.status]||document.context.status)} · 只读浏览 · 执行未验证`;
+      if(caption)caption.textContent=document.context.kind==='edit-copy'?'编辑副本 · 导出后保留':document.context.status==='historical'?`历史修订 ${document.context.revision} · 只读`:`${document.context.kind==='design'?'设计修订 '+document.context.revision:'固定版本 · '+({candidate:'候选',draft:'草案',published:'已发布'}[document.context.status]||document.context.status)} · 只读浏览 · 执行未验证`;
+      return true;
     }
-  },error(message){notice.textContent=message;},destroy(){dead=true;controller.destroy();delete host.interactiveGraphController;host.replaceChildren();delete host.dataset.testid;}};
+    return false;
+  }
+  if(editRequest)editor=mountEditor(host,{
+    request:editRequest,
+    present:view=>{
+      const applied=present(view);
+      if(applied)onEditMode?.(view.context.kind==='edit-copy');
+      return applied;
+    },
+    select:(id,{data=false}={})=>{
+      if(!id){controller.select(null);return;}
+      chooseObject(id,true);
+      if(data && controller.state.focusId===id && !controller.state.showData){
+        controller.state.toggleData();
+        controller.draw();counts();
+      }
+    },
+    notice:message=>{notice.textContent=message;},
+    capture:()=>({selection:controller.state.captureView(),expanded:{...controller.expanded},
+      pages:{...controller.pages},layout:controller.graph.getView()}),
+    restore:view=>{
+      if(!view)return;
+      controller.expanded={...view.expanded};controller.pages={...view.pages};
+      controller.state.restoreView(view.selection);controller.draw();controller.graph.restoreView(view.layout);
+      show(controller.state.entity(controller.state.selectedId));counts();
+    }
+  });
+  return {controller,present,error(message){notice.textContent=message;},destroy(){dead=true;editor?.destroy();controller.destroy();delete host.interactiveGraphController;host.replaceChildren();delete host.dataset.testid;}};
 }
