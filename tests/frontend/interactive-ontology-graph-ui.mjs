@@ -37,6 +37,53 @@ const position=(c,id)=>new Map(c.capture().positions).get(ns+id);
 const visit=(element,fn)=>{fn(element);element.children.forEach(e=>visit(e,fn));};
 const ids=svg=>{const result=[];visit(svg,e=>{if(e.getAttribute('data-node-id'))result.push(e.getAttribute('data-node-id'));});return result;};
 const cases={
+  moving_labels_follow_edges_and_refine_when_settled(){
+    const c=new InteractiveOntologyGraphController(new Element('svg'),{}),d=fixture();
+    d.edges=Array.from({length:8},(_,i)=>({...d.edges[0],id:`edge-${i}`,label:`relation ${i}`}));
+    c.update(d,{epoch:c.beginContext(d.context)});
+    const g=c.graph;
+    Object.assign(g.positions.get(ns+'A'),{x:0,y:-180,vx:0,vy:0,pinned:true});
+    Object.assign(g.positions.get(ns+'B'),{x:0,y:180,vx:0,vy:0,pinned:true});
+    const leaderPlacements=()=>g.routes.flatMap(route=>{
+      const {group,leader}=g.edgeLabels.get(route.id);
+      const line=leader.getAttribute('d');
+      if(!line)return [];
+      const [x,y]=group.getAttribute('transform').slice(10,-1).split(',').map(Number);
+      const [anchorX,anchorY]=line.slice(1).split(' L')[0].split(',').map(Number);
+      const anchorIndex=route.anchors.findIndex(anchor=>Math.hypot(anchor.x-anchorX,anchor.y-anchorY)<1e-6);
+      assert.notEqual(anchorIndex,-1,'the leader must point to the current edge');
+      return [{id:route.id,anchorIndex,offset:[Math.round((x-anchorX)*100),Math.round((y-anchorY)*100)]}];
+    });
+    const advance=()=>{
+      const next=frames.get(g.frame);
+      assert(next,'layout frame must be scheduled');
+      frames.delete(g.frame);
+      next(0);
+    };
+    c.pause(true);
+    const initial=leaderPlacements();
+    assert(initial.some(({anchorIndex})=>anchorIndex>0),'fixture must include labels attached away from the middle of their edges');
+    c.pause(false);
+    g.ticks=1;
+    Object.assign(g.positions.get(ns+'A'),{x:-180,y:0});
+    Object.assign(g.positions.get(ns+'B'),{x:180,y:0});
+    advance();
+    assert.deepEqual(leaderPlacements(),initial,'labels must keep their offsets while the graph moves');
+    advance();
+    const final=leaderPlacements();
+    assert.notDeepEqual(final,initial,'layout must refine the labels after the last frame');
+    c.pause(true);
+    assert.deepEqual(leaderPlacements(),final,'settled labels must already have their stationary placement');
+    c.pause(false);
+    Object.assign(g.positions.get(ns+'A'),{x:0,y:-180});
+    Object.assign(g.positions.get(ns+'B'),{x:0,y:180});
+    advance();
+    c.pause(true);
+    assert.deepEqual(leaderPlacements(),initial,'pausing a pending layout must refine the labels');
+    assert.equal(frames.size,0);
+    c.destroy();
+    assert.equal(frames.size,0);
+  },
   oversized_updates_are_transactional(){
     for(const replace of [false,true]){
       const notices=[],c=new InteractiveOntologyGraphController(new Element('svg'),{onNotice:n=>notices.push(n)}),d=fixture();

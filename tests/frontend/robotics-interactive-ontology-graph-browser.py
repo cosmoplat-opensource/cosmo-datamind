@@ -176,6 +176,9 @@ def test_graph_back_restores_enabled_controls_without_writes(live):
 @pytest.mark.parametrize('nodes, edges', [(301, 0), (3, 601)])
 def test_first_oversized_graph_can_open_a_class_from_the_index(live, nodes, edges):
     site, page, _ = live
+    if edges:
+        cdp = page.context.new_cdp_session(page)
+        cdp.send('Emulation.setCPUThrottlingRate', {'rate': 2})
     panel = probe(page, site, nodes=nodes, edges=edges)
     options = panel.get_by_label('节点详情', exact=True)
     notice = panel.locator('[role=status]')
@@ -197,6 +200,8 @@ def test_first_oversized_graph_can_open_a_class_from_the_index(live, nodes, edge
     expect(counts).to_contain_text(f'当前显示 {local_nodes} 个节点')
     expect(panel.locator('.interactive-ontology-graph-entity h3')).to_have_text('类别 0')
     restore = panel.get_by_role('button', name='显示完整图谱', exact=True)
+    if edges:
+        assert page.evaluate('interactiveGraphProbe.panel.controller.graph.frame > 0')
     restore.click()
     expect(notice).to_contain_text('范围')
     expect(visible).to_have_count(local_nodes)

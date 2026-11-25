@@ -1,4 +1,4 @@
-/* Ontology graph layout — DR-166. */
+/* Ontology graph layout — DR-166 / DR-185. */
 import { label, shortIRI } from './model.js';
 import { placeLabels } from './labelLayout.js';
 import { routeEdges } from './edgeRouting.js';
@@ -32,6 +32,18 @@ function linesOf(text, width, limit = 4) {
   if (!lines.length) lines.push('');
   if (lines.join('').length < String(text).replaceAll('\n', '').length) lines[lines.length - 1] += '…';
   return lines;
+}
+
+function paintEdgeLabel(metrics, anchors) {
+  const placement = metrics.placement;
+  const anchor = anchors[placement?.anchorIndex] ?? anchors[0];
+  const x = anchor.x + (placement?.x ?? 0), y = anchor.y + (placement?.y ?? 0);
+  metrics.group.setAttribute('transform', `translate(${x},${y})`);
+  if (!placement) return;
+  const dx = anchor.x - x, dy = anchor.y - y;
+  const boundary = Math.min(metrics.width / 2 / Math.max(Math.abs(dx), .001), metrics.height / 2 / Math.max(Math.abs(dy), .001));
+  metrics.leader.setAttribute('d', boundary < 1
+    ? `M${anchor.x},${anchor.y} L${x + dx * boundary},${y + dy * boundary}` : '');
 }
 
 let instanceSequence = 0;
@@ -117,7 +129,7 @@ export class GraphView {
     view.edges.forEach(edge => this.drawEdge(edge));
     if (focusIds?.length || centerId) this.autoFit = { ids: focusIds?.length ? focusIds : [centerId], centerOnly: !focusIds?.length };
     else if (wasEmpty && view.nodes.length) this.autoFit = { ids: [...ids], centerOnly: false };
-    this.paint(); this.applyAutoFit(); this.wake();
+    this.paint({ moving: !this.paused }); this.applyAutoFit(); this.wake();
   }
 
   drawNode(node) {
@@ -225,13 +237,15 @@ export class GraphView {
     }
     const leader = element('path', { fill: 'none', stroke: color, 'stroke-width': .8,
       'stroke-opacity': .8, 'pointer-events': 'none' });
-    this.edgeLabels.set(edge.id, { width, height, visible, group: labelGroup, leader });
+    const previous = this.edgeLabels.get(edge.id);
+    const placement = previous?.visible && previous.width === width && previous.height === height ? previous.placement : undefined;
+    this.edgeLabels.set(edge.id, { width, height, visible, group: labelGroup, leader, placement });
     dom.append(path, hit, labelGroup, element('title', {}, `${full}\n${edge.predicate || ''}`), leader);
     dom.setAttribute('aria-label', full);
     dom.setAttribute('aria-pressed', String(!!selected));
   }
 
-  paint(recalculateRoutes = true) {
+  paint({ moving = this.frame !== 0 } = {}) {
     for (const node of this.data.nodes) {
       const pos = this.positions.get(node.id);
       this.nodeElements.get(node.id)?.setAttribute('transform', `translate(${pos.x},${pos.y})`);
@@ -240,26 +254,26 @@ export class GraphView {
     const visiblePositions = new Map(this.data.nodes.map(node => [node.id, this.positions.get(node.id)]));
     const routeSignature = JSON.stringify([[...visiblePositions].map(([id, p]) => [id, p.x, p.y, p.width, p.height, p.box]),
       this.data.edges.map(edge => [edge.id, edge.source, edge.target])]);
-    if (routeSignature !== this.routeSignature || recalculateRoutes && !this.routesOptimized) {
-      this.routes = routeEdges(this.data.edges, visiblePositions, this.routeBends, recalculateRoutes);
-      this.routeSignature = routeSignature; this.routesOptimized = recalculateRoutes;
+    if (routeSignature !== this.routeSignature || !moving && !this.routesOptimized) {
+      this.routes = routeEdges(this.data.edges, visiblePositions, this.routeBends, !moving);
+      this.routeSignature = routeSignature; this.routesOptimized = !moving;
     }
     for (const routed of this.routes) {
       const dom = this.edgeElements.get(routed.id), metrics = this.edgeLabels.get(routed.id);
       dom.children[0].setAttribute('d', routed.path); dom.children[1].setAttribute('d', routed.path);
-      metrics.group.setAttribute('transform', `translate(${routed.anchors[0].x},${routed.anchors[0].y})`);
-      if (metrics.visible) labels.push({ id: routed.id, width: metrics.width, height: metrics.height,
+      if (!metrics.visible) continue;
+      if (moving) paintEdgeLabel(metrics, routed.anchors);
+      else labels.push({ id: routed.id, width: metrics.width, height: metrics.height,
         anchors: routed.anchors, normal: routed.anchors[0].normal });
     }
+    if (moving) return;
     const nodeBoxes = this.data.nodes.map(node => this.positions.get(node.id));
-    for (const placed of placeLabels(labels, nodeBoxes, this.routes)) {
+    for (const [index, placed] of placeLabels(labels, nodeBoxes, this.routes).entries()) {
       const metrics = this.edgeLabels.get(placed.id);
-      Object.assign(metrics, placed);
-      metrics.group.setAttribute('transform', `translate(${placed.x},${placed.y})`);
-      const dx = placed.anchorX - placed.x, dy = placed.anchorY - placed.y;
-      const boundary = Math.min(placed.width / 2 / Math.max(Math.abs(dx), .001), placed.height / 2 / Math.max(Math.abs(dy), .001));
-      metrics.leader.setAttribute('d', boundary < 1
-        ? `M${placed.anchorX},${placed.anchorY} L${placed.x + dx * boundary},${placed.y + dy * boundary}` : '');
+      const anchors = labels[index].anchors;
+      const anchorIndex = anchors.findIndex(anchor => anchor.x === placed.anchorX && anchor.y === placed.anchorY);
+      metrics.placement = { anchorIndex, x: placed.x - placed.anchorX, y: placed.y - placed.anchorY };
+      paintEdgeLabel(metrics, anchors);
     }
   }
 
@@ -310,9 +324,9 @@ export class GraphView {
         this.fpsLabel.textContent = `${Math.round(1000 / (timestamp - this.lastFrame))} FPS`;
       this.lastFrame = timestamp;
       if (this.ticks-- > 0) {
-        this.step(); this.paint(this.ticks % 30 === 0); this.applyAutoFit();
+        this.step(); this.paint({ moving: true }); this.applyAutoFit();
         this.frame = requestAnimationFrame(animate);
-      } else { this.applyAutoFit(); this.autoFit = null; }
+      } else { this.paint(); this.applyAutoFit(); this.autoFit = null; }
     };
     this.frame = requestAnimationFrame(animate);
   }
@@ -345,7 +359,7 @@ export class GraphView {
     this.grid.style.display = this.options.grid ? '' : 'none';
     this.fpsLabel.style.display = this.options.showFPS ? '' : 'none';
     this.data.nodes.forEach(node => this.drawNode(node)); this.data.edges.forEach(edge => this.drawEdge(edge));
-    this.paint(); this.wake();
+    this.paint({ moving: !this.paused }); this.wake();
   }
   pause(value) {
     this.paused = !!value;
@@ -394,7 +408,7 @@ export class GraphView {
       position.x = this.options.snap ? Math.round(world.x / 20) * 20 : Math.round(world.x * factor) / factor;
       position.y = this.options.snap ? Math.round(world.y / 20) * 20 : Math.round(world.y * factor) / factor;
       position.vx = position.vy = 0;
-      this.paint(false); this.wake();
+      this.paint({ moving: true }); this.wake();
     }
   }
   endPointer(event) {
@@ -405,7 +419,7 @@ export class GraphView {
         this.positions.get(this.pointer.id).pinned = true;
         if (node) this.drawNode(node);
       }
-      this.paint();
+      this.paint({ moving: false });
     }
     if (this.pointer.capture.hasPointerCapture(event.pointerId)) this.pointer.capture.releasePointerCapture(event.pointerId);
     this.pointer = null;
@@ -469,7 +483,9 @@ export class GraphView {
     }
     const t = view.transform;
     if (t && [t.x, t.y, t.k].every(Number.isFinite) && t.k > 0) this.transform = { x: t.x, y: t.y, k: Math.max(.025, Math.min(4, t.k)) };
-    this.autoFit = null; this.pause(!!view.paused); this.paint(); this.applyTransform();
+    this.autoFit = null; this.pause(!!view.paused);
+    if (!this.paused) this.paint();
+    this.applyTransform();
   }
   exportSvg() {
     const clone = this.svg.cloneNode(true);

@@ -46,6 +46,10 @@ def test_oversized_updates_are_transactional():
     run_case('oversized_updates_are_transactional')
 
 
+def test_moving_labels_follow_edges_and_refine_when_settled():
+    run_case('moving_labels_follow_edges_and_refine_when_settled')
+
+
 def test_graph_browser_shared_fixture_dependencies_resolve(tmp_path):
     result = subprocess.run([sys.executable, '-m', 'pytest',
         'tests/frontend/robotics-interactive-ontology-graph-browser.py', '--setup-plan', '-q',
