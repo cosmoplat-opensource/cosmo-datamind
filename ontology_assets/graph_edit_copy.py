@@ -171,6 +171,8 @@ def entity_change(graph, op):
                 for kind in roles(graph, predicate) & {'object', 'data'}:
                     preserved.add((predicate, RDF.type, KINDS[kind]))
         return facts, preserved
+    if not op['name'].strip():
+        raise ValueError('请填写中文名称。')  # DR-198
     new = iri(op['new_iri'])
     editable(new)
     if new != term and occurrences(graph, new):

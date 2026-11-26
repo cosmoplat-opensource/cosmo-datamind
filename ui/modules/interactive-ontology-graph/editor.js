@@ -212,6 +212,7 @@ export function mountEditor(host, {request, openSaved, present, select, capture,
       // DR-194: hosts may show display names; edits start from the stored label.
       const stored = entity.labels.find(l => l.language.toLowerCase() === 'zh');
       const name = field(parent, '中文名称', null, stored?.raw_value ?? stored?.value ?? '');
+      name.required = true;  // DR-198: same rule as creating an entity.
       const comment = field(parent, '中文说明', null, entity.comment_zh || '');
       return () => [{op: 'edit', iri: entity.id, new_iri: id.value, name: name.value, comment: comment.value}, id.value];
     });

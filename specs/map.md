@@ -425,3 +425,7 @@ IR-029 于 2026-11-17 按用户反馈精简删除／恢复弹窗及回收站卡�
 ## 图谱编辑副本的 RDF 库版本边界
 
 [DR-197 版本边界](decisions/DR-197-graph-edit-rdflib-support.md) ／ [IR-058 验收与复现](iterations/IR-058-graph-edit-rdflib-support.md) ／ [GRAPH-RDFLIB-01 验收映射](acceptance.json)。
+
+## 编辑实体时中文名称必填
+
+[DR-198 名称必填](decisions/DR-198-graph-edit-name-required.md) ／ [IR-059 验收与复现](iterations/IR-059-graph-edit-name-required.md) ／ [GRAPH-LABEL-02 验收映射](acceptance.json)。

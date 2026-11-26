@@ -854,3 +854,32 @@ def test_edit_copy_keeps_legacy_display_labels_and_edits_raw_label(live):
     expect(dialog.get_by_label('中文名称', exact=True)).to_have_value(legacy)
     dialog.get_by_role('button', name='应用').click()
     expect(dialog.get_by_role('alert')).to_contain_text('没有可应用的改动')
+
+
+@pytest.mark.parametrize('live', [{'prepare': support.prepare_candidate}], indirect=True)
+def test_edit_entity_requires_chinese_name(live):
+    """DR-198: an empty name keeps the dialog open without sending an edit."""
+    site, page, _ = live
+    ref = site.prepared['output_asset_ref']
+    target = 'https://example.org/robotics-design#Workstation'
+    page.goto(site.url + '/#robotics-view?asset=' + ref['ontology_id'] + '&version=' + ref['version_id']
+              + '&view=interactive-ontology-graph')
+    panel = interactive_graph_panel(page)
+    panel.get_by_role('button', name='编辑副本', exact=True).click()
+    expect(panel.get_by_role('button', name='新增关系')).to_be_visible()
+    panel.get_by_label('节点详情').select_option(target)
+    details = panel.locator('.interactive-ontology-graph-entity')
+    details.get_by_role('button', name='编辑实体', exact=True).click()
+    dialog = page.get_by_role('dialog')
+    name = dialog.get_by_label('中文名称', exact=True)
+    sent = []
+    page.on('request', lambda request: sent.append(request.url) if 'graph-edit-copy' in request.url else None)
+    name.fill('')
+    dialog.get_by_role('button', name='应用').click()
+    expect(dialog).to_be_visible()
+    assert name.evaluate('input => input.validity.valueMissing') is True
+    assert sent == []
+    name.fill('新工位')
+    dialog.get_by_role('button', name='应用').click()
+    expect(dialog).to_have_count(0)
+    expect(details.get_by_role('heading', name='新工位')).to_be_visible()
