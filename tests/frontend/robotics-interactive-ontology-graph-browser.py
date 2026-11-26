@@ -819,3 +819,38 @@ if __name__ == '__main__':
         code = pytest.ExitCode.TESTS_FAILED
     (args.output/'runner.json').write_text(json.dumps({'exit_code':code})+'\n')
     raise SystemExit(code)
+
+
+@pytest.mark.parametrize('live', [{'prepare': support.prepare_candidate}], indirect=True)
+def test_edit_copy_keeps_legacy_display_labels_and_edits_raw_label(live):
+    """DR-194: edit-copy views reuse DR-148 display names; edit forms keep the stored label."""
+    from ontology_assets import AssetStore
+    site, page, _ = live
+    ref = site.prepared['output_asset_ref']
+    legacy, shown = '源文件当前感知参数；尚未绑定业务零件类型', '源文件感知配置'
+    iri = 'urn:example:legacy-profile'
+    version = AssetStore(site.root, read_only=True).get_version(**ref)
+    page.goto(site.url + '/#library')
+    saved = page.evaluate('''async ([oid, vid, body]) => RoboticsAssets.readJSON(fetch.bind(window),
+        `/api/ontology-assets/${oid}/versions/${vid}/graph-edit-copy/save`,
+        {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)})''',
+        [ref['ontology_id'], ref['version_id'], {'base_sha256': version['payload_sha256'], 'operations': [
+            {'op': 'create', 'kind': 'individual', 'name': legacy, 'iri': iri,
+             'parent': 'https://example.org/robotics-design#Workstation'}]}])
+    page.goto(site.url + '/#robotics-view?asset=' + ref['ontology_id'] + '&version=' + saved['version_id']
+              + '&view=interactive-ontology-graph')
+    panel = interactive_graph_panel(page)
+    option = panel.get_by_label('节点详情').locator(f'option[value="{iri}"]')
+    expect(option).to_have_text(shown)
+    panel.get_by_role('button', name='编辑副本', exact=True).click()
+    expect(panel.get_by_role('button', name='新增关系')).to_be_visible()
+    expect(option).to_have_text(shown)
+    expect(panel.locator('select option', has_text=legacy)).to_have_count(0)
+    panel.get_by_label('节点详情').select_option(iri)
+    details = panel.locator('.interactive-ontology-graph-entity')
+    expect(details.get_by_role('heading')).to_have_text(shown)
+    details.get_by_role('button', name='编辑实体', exact=True).click()
+    dialog = page.get_by_role('dialog')
+    expect(dialog.get_by_label('中文名称', exact=True)).to_have_value(legacy)
+    dialog.get_by_role('button', name='应用').click()
+    expect(dialog.get_by_role('alert')).to_contain_text('没有可应用的改动')

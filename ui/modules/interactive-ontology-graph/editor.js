@@ -209,7 +209,9 @@ export function mountEditor(host, {request, openSaved, present, select, capture,
   function editEntity(entity) {
     editForm('编辑实体', parent => {
       const id = field(parent, 'IRI', null, entity.id);
-      const name = field(parent, '中文名称', null, entity.labels.find(l => l.language.toLowerCase() === 'zh')?.value || '');
+      // DR-194: hosts may show display names; edits start from the stored label.
+      const stored = entity.labels.find(l => l.language.toLowerCase() === 'zh');
+      const name = field(parent, '中文名称', null, stored?.raw_value ?? stored?.value ?? '');
       const comment = field(parent, '中文说明', null, entity.comment_zh || '');
       return () => [{op: 'edit', iri: entity.id, new_iri: id.value, name: name.value, comment: comment.value}, id.value];
     });
@@ -320,7 +322,7 @@ export function mountEditor(host, {request, openSaved, present, select, capture,
   }
 
   function removeValue(subject, value) {
-    deletion({op: 'remove_value', source: subject, predicate: value.predicate, value: value.value,
+    deletion({op: 'remove_value', source: subject, predicate: value.predicate, value: value.raw_value ?? value.value,
       language: value.language || '', datatype: value.datatype || ''}, '删除此数据值', subject);
   }
 

@@ -155,14 +155,21 @@
         if(view==='interactive-ontology-graph'){
           const module=await import('/assets/modules/interactive-ontology-graph/panel.js');if(current!==token)return;
           host.innerHTML=`<a class="ra-back" href="${escape(detailLink)}">← 返回本体详情</a><header class="rt-heading"><div><h2>${escape(body.name)}</h2><p>${history ? '历史查看' : '当前'}：版本 ${escape(body.version_number)} · 只读浏览</p></div>${taskAction(body.mode)}</header><div class="rv-interactive-ontology-graph"></div>`;
+          // DR-148 / DR-194: display names only; raw_value keeps the stored text for edit forms.
+          const display=global.RoboticsTask.displayLabel;
+          const shown=item=>display(item.value)===item.value?item:{...item,value:display(item.value),raw_value:item.value};
+          const displayView=view=>({...view,nodes:view.nodes.map(n=>({...n,labels:n.labels.map(shown)})),
+            individuals:view.individuals.map(n=>({...n,labels:n.labels.map(shown),
+              data:n.data.map(d=>d.predicate==='http://www.w3.org/2000/01/rdf-schema#label'?shown(d):d)}))});
           const editUrl='/api/ontology-assets/'+encodeURIComponent(oid)+'/versions/'+encodeURIComponent(vid)+'/graph-edit-copy';
-          const editRequest=history?null:(operations,format,signal)=>{
+          const editRequest=history?null:async(operations,format,signal)=>{
             const payload={base_sha256:body.context.revision,operations};
             const saving=format==='save';
             if(!saving)payload.format=format;
-            return global.RoboticsAssets.readJSON(global.fetch.bind(global),saving?editUrl+'/save':editUrl,{
+            const result=await global.RoboticsAssets.readJSON(global.fetch.bind(global),saving?editUrl+'/save':editUrl,{
               method:'POST',signal,headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)
             });
+            return result?.view?{...result,view:displayView(result.view)}:result;
           };
           const openSaved=body.can_save_copy?saved=>{
             if(saved.ontology_id!==oid || !saved.version_id || saved.version_id===vid)throw Error('保存响应与来源版本不匹配。');
@@ -177,9 +184,7 @@
           }
           const panel=module.mountPanel(host.querySelector('.rv-interactive-ontology-graph'),{canvasId:'rv_canvas',editRequest,onEditMode,openSaved});
           active={dispose:()=>{abort.abort();panel.destroy();}};
-          const display=global.RoboticsTask.displayLabel;
-          const document={...body,nodes:body.nodes.map(n=>({...n,labels:n.labels.map(l=>({...l,value:display(l.value)}))})),individuals:body.individuals.map(n=>({...n,labels:n.labels.map(l=>({...l,value:display(l.value)})),data:n.data.map(d=>d.predicate==='http://www.w3.org/2000/01/rdf-schema#label'?{...d,value:display(d.value)}:d)}))};
-          panel.present(document);return;
+          panel.present(displayView(body));return;
         }
         // DR-150: share task-page aliases for historical names. Only display
         // labels change; fixed OWL bytes, identifiers and parameter values stay intact.

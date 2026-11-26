@@ -409,3 +409,7 @@ IR-029 于 2026-11-17 按用户反馈精简删除／恢复弹窗及回收站卡�
 ## 图谱编辑副本的日期与日期时间数据值
 
 [DR-193 日期词法校验](decisions/DR-193-graph-date-literals.md) ／ [IR-054 验收与复现](iterations/IR-054-graph-date-literals.md) ／ [GRAPH-LITERAL-01 验收映射](acceptance.json)。
+
+## 图谱编辑副本沿用显示名称
+
+[DR-194 显示名称](decisions/DR-194-graph-edit-display-labels.md) ／ [IR-055 验收与复现](iterations/IR-055-graph-edit-display-labels.md) ／ [GRAPH-LABEL-01 验收映射](acceptance.json)。
