@@ -5,6 +5,8 @@ from rdflib import BNode, Literal, OWL, RDF, RDFS, URIRef, XSD
 
 from domains.robotics.authoring import iri as absolute_iri
 from domains.robotics.xml_text import invalid_xml_text
+from .graph_class_projection import confirmed_class_aliases
+from .graph_datatypes import is_data_range, value_types
 
 KINDS = {'class': OWL.Class, 'individual': OWL.NamedIndividual,
          'object': OWL.ObjectProperty, 'data': OWL.DatatypeProperty}
@@ -137,7 +139,7 @@ def create(graph, op):
         if (field == 'parent') != (kind in {'individual', 'class'}):
             raise ValueError('字段不适用于此实体类型。')
         if kind == 'data' and field == 'range':
-            if not str(target).startswith(str(XSD)) and (target, RDF.type, RDFS.Datatype) not in graph:
+            if not is_data_range(graph, target):
                 raise ValueError('请选择数据类型。')
         elif not is_class(graph, target):
             raise ValueError('请选择已有类别。')
@@ -208,7 +210,57 @@ def validate_literal(value, datatype):
     raise ValueError('数据值与所选数据类型不符。')
 
 
-def assertion_change(graph, op):
+def class_ancestors(graph, seeds, role_map, *, equivalent):
+    aliases = {}
+    if role_map:
+        declared = {str(c) for kind in (OWL.Class, RDFS.Class) for c in graph.subjects(RDF.type, kind)}
+        aliases, _ = confirmed_class_aliases(role_map, declared)
+    equivalents = {}
+    for source, app in aliases.items():
+        for a, b in ((source, app), (app, source)):
+            equivalents.setdefault(URIRef(a), []).append(URIRef(b))
+
+    pending = list(seeds)
+    known = set()
+    while pending:
+        cls = pending.pop()
+        if cls in known:
+            continue
+        known.add(cls)
+        pending.extend(equivalents.get(cls, ()))
+        pending.extend(p for p in graph.objects(cls, RDFS.subClassOf) if isinstance(p, URIRef))
+        if equivalent:
+            pending.extend(p for p in graph.objects(cls, OWL.equivalentClass) if isinstance(p, URIRef))
+            pending.extend(p for p in graph.subjects(OWL.equivalentClass, cls) if isinstance(p, URIRef))
+    return known
+
+
+def check_class_endpoint(graph, person, predicate, side, role_map, message):
+    constraints = list(graph.objects(predicate, side))
+    if not constraints:
+        return
+    types = {t for t in graph.objects(person, RDF.type) if isinstance(t, URIRef) and t != OWL.NamedIndividual}
+    known = class_ancestors(graph, types | {OWL.Thing}, role_map, equivalent=True)
+
+    def matches(constraint, known):
+        pending = [constraint]
+        visited = set()
+        while pending:
+            term = pending.pop()
+            if term in known:
+                return True
+            if isinstance(term, BNode) and term not in visited:
+                visited.add(term)
+                head = graph.value(term, OWL.unionOf)
+                if head is not None:
+                    pending.extend(graph.items(head))
+        return False
+
+    if not all(matches(c, known) for c in constraints):
+        raise ValueError(message)
+
+
+def assertion_change(graph, op, role_map):
     subject, predicate = iri(op['source']), iri(op['predicate'])
     editable(subject)
     verb = op['op']
@@ -226,20 +278,28 @@ def assertion_change(graph, op):
             if target is None:
                 raise ValueError('所选数据值不存在。')
         else:
+            check_class_endpoint(graph, subject, predicate, RDFS.domain, role_map, '实例不满足数据属性的定义域。')
+            literal_type = RDF.langString if lang else URIRef(datatype) if datatype else XSD.string
+            if literal_type not in value_types(graph.objects(predicate, RDFS.range)):
+                raise ValueError('数据值的类型不满足数据属性的值域，或基础编辑器不支持此类型。')
             validate_literal(op['value'], datatype)
             target = Literal(op['value'], lang=lang or None, datatype=iri(datatype) if datatype else None, normalize=False)
     else:
         target = iri(op['target'])
         if predicate in CLASS_LINKS:
-            if not is_class(graph, subject) or not is_class(graph, target) or subject == target:
+            if not is_class(graph, subject) or not is_class(graph, target) or (subject == target and verb == 'link'):
                 raise ValueError('请选择两个不同的已有类别。')
+            if verb == 'link' and predicate == RDFS.subClassOf:
+                ancestors = class_ancestors(graph, [target], role_map, equivalent=False)
+                if subject in ancestors:
+                    raise ValueError('父类不能指向自身或已有子类，否则会形成循环继承。')
         elif predicate == RDF.type:
             require_role(graph, subject, {'individual'})
             require_role(graph, target, {'class'})
         elif predicate in (RDFS.domain, RDFS.range):
             require_role(graph, subject, {'object', 'data'})
             if predicate == RDFS.range and 'data' in roles(graph, subject):
-                if not str(target).startswith(str(XSD)) and (target, RDF.type, RDFS.Datatype) not in graph:
+                if verb == 'link' and not is_data_range(graph, target):
                     raise ValueError('数据属性的值域须为数据类型。')
             else:
                 require_role(graph, target, {'class'})
@@ -248,6 +308,9 @@ def assertion_change(graph, op):
             require_role(graph, predicate, {'object'})
             for term in (subject, target):
                 require_role(graph, term, {'individual'})
+            if verb == 'link':
+                check_class_endpoint(graph, subject, predicate, RDFS.domain, role_map, '起点实例不满足对象属性的定义域。')
+                check_class_endpoint(graph, target, predicate, RDFS.range, role_map, '终点实例不满足对象属性的值域。')
     triple = (subject, predicate, target)
     if verb in ('link', 'add_value'):
         if triple in graph:
@@ -265,7 +328,7 @@ def assertion_change(graph, op):
     return removed, keep
 
 
-def apply_edit(graph, op):
+def apply_edit(graph, op, *, role_map=None):
     if not isinstance(op, dict) or not all(isinstance(v, str) and len(v) <= 4096 and not invalid_xml_text(v)
                                            for v in op.values()) or op.get('op') not in FIELDS:
         raise ValueError('图谱编辑操作无效。')
@@ -279,7 +342,7 @@ def apply_edit(graph, op):
     elif verb in ('delete', 'edit'):
         removed, added = entity_change(graph, op)
     else:
-        removed, added = assertion_change(graph, op)
+        removed, added = assertion_change(graph, op, role_map)
     removed, added = removed - added, {t for t in added if t not in graph}
     if not removed and not added:
         raise ValueError('没有可应用的改动。')
@@ -331,7 +394,7 @@ def render_copy(graph, version, operations, fmt, *, role_map=None):
         raise ValueError('基础编辑支持最多两万条 RDF 断言。')
     impact = {'added': 0, 'removed': 0, 'sample': []}
     for operation in operations:
-        impact = apply_edit(graph, operation)
+        impact = apply_edit(graph, operation, role_map=role_map)
         if len(graph) > 20000:
             raise ValueError('编辑结果超过两万条 RDF 断言。')
     if fmt != 'view':
@@ -360,4 +423,14 @@ def render_copy(graph, version, operations, fmt, *, role_map=None):
         return {'content': content}
     context = {**version_context(version), 'kind': 'edit-copy', 'status': 'editing'}
     view = _project(graph, context, '', role_map=role_map)
+    for node in view['nodes']:
+        if node['type'] == 'class' and not is_class(graph, URIRef(node['id'])):
+            node['declared_class'] = False
+    datatypes = {t for t in graph.subjects(RDF.type, RDFS.Datatype) if is_data_range(graph, t)}
+    for prop in view['properties']:
+        if prop['type'] == 'data':
+            ranges = list(graph.objects(URIRef(prop['id']), RDFS.range))
+            datatypes.update(t for t in ranges if is_data_range(graph, t))
+            prop['value_types'] = [str(t) for t in value_types(ranges)]
+    view['declared_datatypes'] = sorted(map(str, datatypes))
     return {'view': view, 'impact': impact}

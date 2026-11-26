@@ -391,3 +391,7 @@ IR-029 于 2026-11-17 按用户反馈精简删除／恢复弹窗及回收站卡�
 ## 应用图匹配类别
 
 [DR-189 类别合并展示](decisions/DR-189-application-graph-class-mapping.md) ／ [IR-050](iterations/IR-050-application-graph-class-mapping.md) ／ [GRAPH-CLASS-01 验收映射](acceptance.json)。
+
+## 图谱关系端点与数据值校验
+
+[DR-190 设计决定](decisions/DR-190-graph-relation-endpoints.md) ／ [IR-051 验收与复现](iterations/IR-051-graph-relation-endpoints.md) ／ [验收映射](acceptance.json)。GRAPH-ENDPOINT-01 覆盖按所选对象属性筛选实例关系两端和服务端写入校验，GRAPH-DIRECTION-01 覆盖继承、归属、属性声明及数据值。

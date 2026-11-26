@@ -38,6 +38,100 @@ def interactive_graph_panel(page):
     return canvas
 
 
+@pytest.mark.parametrize('live', [{'prepare': support.prepare_candidate}], indirect=True)
+def test_directional_schema_and_data_value_choices(live):
+    site, page, _ = live
+    ref = site.prepared['output_asset_ref']
+    page.goto(site.url + '/#robotics-view?asset=' + ref['ontology_id'] + '&version=' + ref['version_id']
+              + '&view=interactive-ontology-graph')
+    panel = interactive_graph_panel(page)
+    panel.get_by_role('button', name='编辑副本', exact=True).click()
+    dialog = page.get_by_role('dialog')
+    ns = 'https://example.org/robotics-design#'
+    xsd = 'http://www.w3.org/2001/XMLSchema#'
+    panel.get_by_role('button', name='新增关系').click()
+    kind = dialog.get_by_label('关系类型')
+    start, end = dialog.get_by_label('起点'), dialog.get_by_label('终点')
+    start.select_option(ns + 'Skill')
+    expect(end.locator(f'option[value="{ns}AtomicSkill"]')).to_have_count(0)
+    expect(end.locator(f'option[value="{ns}Skill"]')).to_have_count(0)
+    kind.select_option(label='互斥')
+    start.select_option(ns + 'Skill')
+    expect(end.locator(f'option[value="{ns}AtomicSkill"]')).to_have_count(1)
+    kind.select_option(label='属性值域')
+    start.select_option(ns + 'stepIndex')
+    expect(end.locator(f'option[value="{xsd}integer"]')).to_have_count(1)
+    expect(end.locator(f'option[value="{ns}Skill"]')).to_have_count(0)
+    start.select_option(ns + 'hasCarrier')
+    expect(end.locator(f'option[value="{ns}Workstation"]')).to_have_count(1)
+    expect(end.locator(f'option[value="{xsd}integer"]')).to_have_count(0)
+    kind.select_option(label='属性定义域')
+    start.select_option(ns + 'stepIndex')
+    end.select_option(ns + 'SkillInvocation')
+    dialog.get_by_role('button', name='应用').click()
+    expect(dialog).to_have_count(0)
+
+    for cls, valid in [('Carrier', False), ('SkillInvocation', True)]:
+        panel.get_by_role('button', name='新增实例', exact=True).first.click()
+        dialog.get_by_label('名称', exact=True).fill('样例' + cls)
+        dialog.get_by_label('所属类别').select_option(ns + cls)
+        dialog.get_by_role('button', name='应用').click()
+        panel.get_by_role('button', name='新增数据值').click()
+        prop = dialog.get_by_label('数据属性')
+        expect(prop.locator(f'option[value="{ns}stepIndex"]')).to_have_count(int(valid))
+        if valid:
+            prop.select_option(ns + 'stepIndex')
+            datatype = dialog.get_by_label('数据类型')
+            expect(datatype).to_have_value(xsd + 'integer')
+            expect(datatype.locator(f'option[value="{xsd}string"]')).to_have_count(0)
+            dialog.get_by_label('值', exact=True).fill('7')
+            dialog.get_by_role('button', name='应用').click()
+            expect(dialog).to_have_count(0)
+        else:
+            dialog.get_by_role('button', name='取消').click()
+
+
+@pytest.mark.parametrize('live', [{'prepare': support.prepare_candidate}], indirect=True)
+def test_object_property_filters_both_instance_selectors(live):
+    site, page, _ = live
+    ref = site.prepared['output_asset_ref']
+    page.goto(site.url + '/#robotics-view?asset=' + ref['ontology_id'] + '&version=' + ref['version_id']
+              + '&view=interactive-ontology-graph')
+    panel = interactive_graph_panel(page)
+    panel.get_by_role('button', name='编辑副本', exact=True).click()
+    dialog = page.get_by_role('dialog')
+    ns = 'https://example.org/robotics-design#'
+    def create(name, cls):
+        panel.get_by_role('button', name='新增实例', exact=True).first.click()
+        dialog.get_by_label('名称', exact=True).fill(name)
+        dialog.get_by_label('所属类别').select_option(ns + cls)
+        iri = dialog.get_by_label('IRI', exact=True).input_value()
+        dialog.get_by_role('button', name='应用').click()
+        expect(dialog).to_have_count(0)
+        return iri
+    station = create('工位甲', 'Workstation')
+    carrier = create('载具甲', 'Carrier')
+    panel.get_by_role('button', name='新增关系').click()
+    dialog.get_by_label('关系类型').select_option(label='实例关系')
+    prop = dialog.get_by_label('对象属性')
+    prop.select_option(ns + 'hasCarrier')
+    start, end = dialog.get_by_label('起点'), dialog.get_by_label('终点')
+    expect(start.locator(f'option[value="{station}"]')).to_have_count(1)
+    expect(start.locator(f'option[value="{carrier}"]')).to_have_count(0)
+    expect(end.locator(f'option[value="{station}"]')).to_have_count(0)
+    expect(end.locator(f'option[value="{carrier}"]')).to_have_count(1)
+    prop.select_option(ns + 'hasSlot')
+    expect(start.locator(f'option[value="{carrier}"]')).to_have_count(1)
+    expect(start.locator(f'option[value="{station}"]')).to_have_count(0)
+    expect(dialog.get_by_role('button', name='应用')).to_be_disabled()
+    expect(dialog.get_by_text('没有符合值域的终点实例。', exact=True)).to_be_visible()
+    prop.select_option(ns + 'hasCarrier')
+    start.select_option(station)
+    end.select_option(carrier)
+    dialog.get_by_role('button', name='应用').click()
+    expect(panel.locator('.interactive-ontology-graph-entity').get_by_role('listitem').filter(has_text='载具甲')).to_have_count(1)
+
+
 @pytest.mark.parametrize('live', [{'prepare': support.prepare_completed_adaptation}], indirect=True)
 def test_mapped_class_is_one_canvas_node_and_one_instance_choice(live):
     from rdflib import Graph, OWL, RDF, RDFS, URIRef
@@ -185,7 +279,7 @@ def test_edit_copy_unlinks_one_instance_relation_and_cancels_pending_edit(live):
     b = create('实例', '右端')
     panel.get_by_role('button', name='新增关系').click()
     dialog.get_by_label('关系类型').select_option(label='实例关系')
-    for title, iri in [('起点', a), ('对象属性', prop), ('终点', b)]:
+    for title, iri in [('对象属性', prop), ('起点', a), ('终点', b)]:
         dialog.get_by_label(title, exact=True).select_option(iri)
     dialog.get_by_role('button', name='应用').click()
     details = panel.locator('.interactive-ontology-graph-entity')

@@ -4,9 +4,9 @@ import json
 from domains.robotics.graph import CLASSES, S
 
 
-def group_application_classes(view, role_map, declared):
+def confirmed_class_aliases(role_map, declared):
     if not role_map or role_map.get('confirmed') is not True or role_map.get('version') != '1':
-        return view
+        return {}, set()
     aliases = {}
     for binding in role_map['bindings']:
         if binding['kind'] == 'classes' and binding['role'] in CLASSES:
@@ -16,8 +16,14 @@ def group_application_classes(view, role_map, declared):
     # An IRI used on both sides of distinct bindings has no unique application representative.
     overlap = aliases.keys() & set(aliases.values())
     if overlap:
-        view['warnings'].append('部分角色映射的标识重叠，相关类别按原标识分别展示。')
         aliases = {k: v for k, v in aliases.items() if k not in overlap and v not in overlap}
+    return aliases, overlap
+
+
+def group_application_classes(view, role_map, declared):
+    aliases, overlap = confirmed_class_aliases(role_map, declared)
+    if overlap:
+        view['warnings'].append('部分角色映射的标识重叠，相关类别按原标识分别展示。')
     if not aliases:
         return view
     nodes = {node['id']: node for node in view['nodes']}

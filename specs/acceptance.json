@@ -4658,6 +4658,35 @@
         "tests/unit/test_mapped_graph_classes.py::test_overlapping_class_roles_keep_ambiguous_nodes_separate",
         "tests/frontend/robotics-interactive-ontology-graph-browser.py::test_mapped_class_is_one_canvas_node_and_one_instance_choice"
       ]
+    },
+    {
+      "id": "GRAPH-ENDPOINT-01",
+      "decision": "DR-190",
+      "iteration": "IR-051",
+      "status": "delivered",
+      "criterion": "新增实例关系时，按所选对象属性的定义域筛选起点、值域筛选终点。切换属性后更新两端候选，任一端无候选时禁止提交。服务端对编辑和导出使用相同规则，任一端不匹配时返回 422，已有连接仍可解除。",
+      "tests": [
+        "tests/unit/test_graph_relation_endpoints.py::test_new_relation_validates_both_endpoints_but_legacy_relation_can_be_unlinked",
+        "tests/unit/test_graph_relation_endpoints.py::test_confirmed_alias_union_and_multiple_declarations_use_current_copy",
+        "tests/unit/test_graph_relation_endpoints.py::test_edit_api_checks_selected_property_endpoints_on_view_and_export",
+        "tests/unit/test_graph_relation_endpoints.py::test_editor_and_server_agree_on_projected_class_constraints",
+        "tests/frontend/robotics-interactive-ontology-graph-browser.py::test_object_property_filters_both_instance_selectors"
+      ]
+    },
+    {
+      "id": "GRAPH-DIRECTION-01",
+      "decision": "DR-190",
+      "iteration": "IR-051",
+      "status": "delivered",
+      "criterion": "编辑副本按继承、实例归属和属性声明的方向校验端点，阻止新增循环继承，对数据属性写值校验定义域和值域，并可清理历史断言。",
+      "tests": [
+        "tests/unit/test_graph_directional_relations.py::test_subclass_rejects_reverse_paths_and_projected_alias_cycles",
+        "tests/unit/test_graph_directional_relations.py::test_schema_relation_roles_and_datatype_range_are_checked_on_create_and_link",
+        "tests/unit/test_graph_directional_relations.py::test_data_values_check_instance_domain_and_literal_range_and_allow_legacy_removal",
+        "tests/unit/test_graph_directional_relations.py::test_edit_http_replays_direction_checks_before_export",
+        "tests/unit/test_graph_directional_relations.py::test_edit_view_exposes_existing_datatypes_and_only_declared_class_choices",
+        "tests/frontend/robotics-interactive-ontology-graph-browser.py::test_directional_schema_and_data_value_choices"
+      ]
     }
   ],
   "planned_requirements": []
