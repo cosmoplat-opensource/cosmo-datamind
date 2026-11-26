@@ -405,3 +405,7 @@ IR-029 于 2026-11-17 按用户反馈精简删除／恢复弹窗及回收站卡�
 ## 图谱副本的目录当前版本与生成边界
 
 [DR-192 目录与生成边界](decisions/DR-192-graph-copy-boundaries.md) ／ [IR-053 验收与复现](iterations/IR-053-graph-copy-boundaries.md) ／ [GRAPH-COPY-01 验收映射](acceptance.json)。
+
+## 图谱编辑副本的日期与日期时间数据值
+
+[DR-193 日期词法校验](decisions/DR-193-graph-date-literals.md) ／ [IR-054 验收与复现](iterations/IR-054-graph-date-literals.md) ／ [GRAPH-LITERAL-01 验收映射](acceptance.json)。

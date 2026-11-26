@@ -4712,6 +4712,19 @@
         "tests/unit/test_graph_copy_boundaries.py::test_catalog_keeps_work_version_after_graph_save",
         "tests/unit/test_graph_copy_boundaries.py::test_application_copy_is_blocked_before_generation"
       ]
+    },
+    {
+      "id": "GRAPH-LITERAL-01",
+      "decision": "DR-193",
+      "iteration": "IR-054",
+      "status": "delivered",
+      "criterion": "编辑副本写入日期和日期时间数据值时按 XSD 词法与实际日历校验，结果不随 Python 版本变化。合法的时区、小数秒和闰日写法可写入，不完整、重复时区、紧凑或越界的写法被拒绝并提示正确示例，副本不变。",
+      "tests": [
+        "tests/unit/test_graph_literal_lexical.py::test_valid_xsd_lexical_forms_are_accepted",
+        "tests/unit/test_graph_literal_lexical.py::test_invalid_lexical_forms_are_rejected_with_format_hint",
+        "tests/unit/test_graph_literal_lexical.py::test_rejected_date_value_is_not_written_to_the_copy",
+        "tests/unit/test_properties.py::test_graph_edit_date_values_match_calendar_and_xsd_shape"
+      ]
     }
   ],
   "planned_requirements": []

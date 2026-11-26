@@ -190,24 +190,33 @@ def entity_change(graph, op):
     return removed, added
 
 
+# XSD lexical forms, limited to years 0001-9999 and without 24:00:00 so RDF readers accept the value.
+_DAY = r'(?P<year>000[1-9]|00[1-9][0-9]|0[1-9][0-9]{2}|[1-9][0-9]{3})-(?P<month>0[1-9]|1[0-2])-(?P<day>0[1-9]|[12][0-9]|3[01])'
+_ZONE = r'(?:Z|[+-](?:(?:0[0-9]|1[0-3]):[0-5][0-9]|14:00))?'
+_LEXICAL = {
+    str(XSD.integer): re.compile(r'[+-]?[0-9]+', re.ASCII),
+    str(XSD.decimal): re.compile(r'[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)', re.ASCII),
+    str(XSD.boolean): re.compile(r'true|false|0|1'),
+    str(XSD.date): re.compile(_DAY + _ZONE, re.ASCII),
+    str(XSD.dateTime): re.compile(_DAY + r'T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](?:\.[0-9]+)?' + _ZONE, re.ASCII),
+}
+_HINTS = {str(XSD.date): '日期须写为 2026-11-26，可带 Z 或 +08:00 等时区。',
+          str(XSD.dateTime): '日期时间须写为 2026-11-26T10:00:00，秒可带小数，可带 Z 或 +08:00 等时区。'}
+
+
 def validate_literal(value, datatype):
-    from datetime import date, datetime
+    """DR-193: check lexical forms explicitly, never via Python-version-dependent ISO parsers."""
+    from calendar import monthrange
     if not datatype or datatype == str(XSD.string):
         return
-    patterns = {str(XSD.integer): r'[+-]?[0-9]+', str(XSD.decimal): r'[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)',
-                str(XSD.boolean): r'(?:true|false|0|1)'}
-    if datatype in patterns and re.fullmatch(patterns[datatype], value):
-        return
-    try:
-        if datatype == str(XSD.date):
-            date.fromisoformat(value)
-            return
-        if datatype == str(XSD.dateTime) and 'T' in value:
-            datetime.fromisoformat(value.removesuffix('Z'))
-            return
-    except ValueError:
-        pass
-    raise ValueError('数据值与所选数据类型不符。')
+    pattern = _LEXICAL.get(datatype)
+    match = pattern.fullmatch(value) if pattern else None
+    if match and 'day' in match.groupdict():
+        year, month, day = (int(match[k]) for k in ('year', 'month', 'day'))
+        if day > monthrange(year, month)[1]:
+            match = None
+    if match is None:
+        raise ValueError('数据值与所选数据类型不符。' + _HINTS.get(datatype, ''))
 
 
 def class_ancestors(graph, seeds, role_map, *, equivalent):

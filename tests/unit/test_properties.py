@@ -116,3 +116,32 @@ def test_graph_edit_deletes_only_selected_named_individual_facts():
         expected = {t for t in graph if target not in t}
         apply_edit(graph, {'op': 'delete', 'iri': str(target)})
         assert set(graph) == expected
+
+
+def test_graph_edit_date_values_match_calendar_and_xsd_shape():
+    """DR-193：随机日历日期、时区与小数秒的合法写法都通过，单处结构破坏都被拒绝。"""
+    from datetime import date, timedelta
+    from ontology_assets.graph_edit_copy import validate_literal
+
+    rng = random.Random(193)
+    date_type, datetime_type = 'http://www.w3.org/2001/XMLSchema#date', 'http://www.w3.org/2001/XMLSchema#dateTime'
+
+    def rejected(value, datatype):
+        try:
+            validate_literal(value, datatype)
+        except ValueError:
+            return True
+        return False
+
+    for _ in range(400):
+        day = date(1, 1, 1) + timedelta(days=rng.randrange(date(9999, 12, 31).toordinal()))
+        zone = rng.choice(['', 'Z', f"{rng.choice('+-')}{rng.randrange(14):02d}:{rng.randrange(60):02d}", '+14:00'])
+        clock = f'{rng.randrange(24):02d}:{rng.randrange(60):02d}:{rng.randrange(60):02d}'
+        fraction = rng.choice(['', '.' + str(rng.randrange(10 ** 6)).zfill(rng.randint(1, 6))])
+        validate_literal(day.isoformat() + zone, date_type)
+        validate_literal(f'{day.isoformat()}T{clock}{fraction}{zone}', datetime_type)
+        assert rejected(day.isoformat().replace('-', ''), date_type)
+        assert rejected(f'{day.isoformat()}T{clock[:5]}{zone}', datetime_type)
+        assert rejected(f'{day.isoformat()}T{clock}{fraction}+00:00Z', datetime_type)
+        last = (date(day.year + (day.month == 12), day.month % 12 + 1, 1) - timedelta(days=1)).day if day.year < 9999 or day.month < 12 else 31
+        assert rejected(f'{day.year:04d}-{day.month:02d}-{last + 1:02d}', date_type)
