@@ -243,7 +243,7 @@ def init_app(app, runtime):
             try:
                 if save and not args['operations']:
                     raise ValueError('请先应用至少一项编辑后再保存。')
-                result = render_copy(graph, version, args['operations'], fmt, role_map=role_map)
+                result = render_copy(graph, version, args['operations'], fmt, role_map=role_map, saving=save)
             except ValueError as exc:
                 raise BuildRequestError('invalid_graph_edit', str(exc), 422) from exc
             if save:

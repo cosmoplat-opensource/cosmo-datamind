@@ -394,7 +394,36 @@ def parse_source(version, payload):
     return graph
 
 
-def render_copy(graph, version, operations, fmt, *, role_map=None):
+LISTED_IRIS = 5
+
+
+def unrepresentable_predicates(graph):
+    """Predicates RDF/XML cannot write as element names — DR-196. Only called after a failed write."""
+    from rdflib import Graph
+    found = []
+    for predicate in sorted(set(graph.predicates()), key=str):
+        probe = Graph()
+        probe.add((URIRef('urn:probe:subject'), predicate, Literal('')))
+        try:
+            probe.serialize(format='xml')
+        except ValueError:
+            found.append(str(predicate))
+    return found
+
+
+def format_failure(found, *, saving):
+    listed = '、'.join(found[:LISTED_IRIS]) + (f' 等 {len(found)} 个' if len(found) > LISTED_IRIS else '')
+    if saving:
+        if not found:
+            return '无法保存为新版本：版本以 RDF/XML 存储，此副本含无法表示的内容。'
+        return (f'无法保存为新版本：版本以 RDF/XML 存储，以下属性 IRI 无法表示：{listed}。'
+                '请修改这些属性的 IRI，使最后一段以字母或下划线开头且不以 / 或 # 结尾，再保存。')
+    if not found:
+        return '此副本含所选格式无法表示的断言，请选择其他导出格式。'
+    return f'无法导出为 OWL（RDF/XML），以下属性 IRI 无法表示：{listed}。可改用 Turtle 或 JSON-LD 导出，或修改这些属性的 IRI。'
+
+
+def render_copy(graph, version, operations, fmt, *, role_map=None, saving=False):
     import json
     from .interactive_ontology_graph_view import _project, version_context
 
@@ -429,7 +458,8 @@ def render_copy(graph, version, operations, fmt, *, role_map=None):
             try:
                 content = graph.serialize(format={'owl': 'xml', 'ttl': 'nt'}[fmt])
             except (ValueError, UnicodeError) as exc:
-                raise ValueError('此副本含所选格式无法表示的断言，请选择其他导出格式。') from exc
+                found = unrepresentable_predicates(graph) if fmt == 'owl' else []
+                raise ValueError(format_failure(found, saving=saving)) from exc
         return {'content': content}
     context = {**version_context(version), 'kind': 'edit-copy', 'status': 'editing'}
     view = _project(graph, context, '', role_map=role_map)

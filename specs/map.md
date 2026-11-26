@@ -417,3 +417,7 @@ IR-029 于 2026-11-17 按用户反馈精简删除／恢复弹窗及回收站卡�
 ## 解除断言时的属性身份声明
 
 [DR-195 身份声明](decisions/DR-195-graph-unlink-declarations.md) ／ [IR-056 验收与复现](iterations/IR-056-graph-unlink-declarations.md) ／ [GRAPH-UNLINK-01 验收映射](acceptance.json)。
+
+## 保存与导出时的 RDF/XML 表示限制
+
+[DR-196 格式限制提示](decisions/DR-196-graph-save-format-errors.md) ／ [IR-057 验收与复现](iterations/IR-057-graph-save-format-errors.md) ／ [GRAPH-FORMAT-01 验收映射](acceptance.json)。
