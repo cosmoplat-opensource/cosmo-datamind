@@ -17,6 +17,7 @@ from ontology_assets.robotics_design import DesignAssets
 from domain_runs.design_executor import DesignExecutor
 from domain_runs.store import _decode
 from ontology_assets import AssetStore
+from ontology_assets.store import is_graph_copy
 import bp_robotics_review
 from domain_runs.robotics_build_routing import resolve_route
 
@@ -418,7 +419,8 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True, data_host=Non
                     continue
                 versions = assets.list_versions(asset['ontology_id'])
                 versions = [{**v, 'version_number': i} for i, v in enumerate(versions, 1)]
-                latest = versions[-1] if versions else None
+                # DR-192: graph saves are listed but never become the catalog head.
+                latest = next((v for v in reversed(versions) if not is_graph_copy(v)), None)
                 # DR-152: the catalog offers the current version; historic eligibility is checked on explicit access.
                 if latest and asset['domain']=='robotics':
                     latest['application_compatibility'] = application_summary(asset['ontology_id'], latest['version_id'])

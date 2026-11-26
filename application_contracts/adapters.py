@@ -59,6 +59,11 @@ class Resolver:
                     "SELECT adaptation_id,record FROM robotics_adaptations WHERE json_extract(record,'$.asset_ref.ontology_id')=? AND json_extract(record,'$.asset_ref.version_id')=? ORDER BY rowid",
                     (asset_refs[0]['ontology_id'],asset_refs[0]['version_id']))]
                 robotics['latest'] = latest_work_version(conn, asset_refs[0]['ontology_id'])
+                # DR-192: a graph copy of an application version has not been adapted itself.
+                from ontology_assets.graph_copy_version import application_copy_source
+                source = application_copy_source(conn, version)
+                if source:
+                    robotics['application_copy'] = {'parent_version_id': source}
             from ontology_assets.governance import GovernanceService
             revocations = [GovernanceService(self.root, read_only=True).revocations(r['ontology_id']) for r in asset_refs]
             return {'snapshots': snapshots, 'task': task, 'context': {'mode': context['mode'], 'generation_policy': policy},

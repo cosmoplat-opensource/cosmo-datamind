@@ -35,6 +35,12 @@ def latest_work_version(conn, ontology_id):
     return row[0] if row else None
 
 
+def is_graph_copy(version):
+    """The Python form of the latest_work_version filter — DR-192."""
+    edit = version['metadata'].get('graph_edit')
+    return isinstance(edit, dict) and edit.get('parent') == (version['parent_version_id'] or '')
+
+
 def _version(row):
     result = dict(row)
     for field in ("source_asset_ids", "metadata", "validation"):

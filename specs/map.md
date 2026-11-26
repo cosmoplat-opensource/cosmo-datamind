@@ -401,3 +401,7 @@ IR-029 于 2026-11-17 按用户反馈精简删除／恢复弹窗及回收站卡�
 目录中的「版本列表」弹窗可打开活动机器人本体的各个登记版本。图谱副本预览与持久保存各有独立接口。计入保存入口后，后端共 208 条路由。
 
 [DR-191 保存与版本隔离](decisions/DR-191-graph-copy-version.md) ／ [IR-052 验收与复现](iterations/IR-052-graph-copy-version.md) ／ [GRAPH-SAVE-01 验收映射](acceptance.json)。
+
+## 图谱副本的目录当前版本与生成边界
+
+[DR-192 目录与生成边界](decisions/DR-192-graph-copy-boundaries.md) ／ [IR-053 验收与复现](iterations/IR-053-graph-copy-boundaries.md) ／ [GRAPH-COPY-01 验收映射](acceptance.json)。

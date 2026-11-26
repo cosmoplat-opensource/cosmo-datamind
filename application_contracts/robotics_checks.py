@@ -22,6 +22,11 @@ def action(action_id,label,target):
 def schema(data):
     info=data['environment'].get('robotics',{});doc=info.get('design')
     origin=info.get('application_origin')
+    if info.get('application_copy'):
+        # DR-192: block direct generation until copies of application versions have their own adaptation.
+        return row('schema.payload','unsupported',[issue('schema.application_copy','schema',
+            '此版本是由应用版本保存的图谱编辑副本，未经过应用适配，暂不能直接生成行为树。请从原应用版本生成。',
+            expected='经过应用适配的应用版本',observed='应用版本的图谱编辑副本')])
     if origin and data['task']:
         from domains.robotics.application_adaptation import resolve_roles
         problems=resolve_roles(tbox=origin['tbox'],role_map=origin['role_map'],required_for='task')['issues']

@@ -3,7 +3,19 @@ from .lifecycle import require_active
 from .payloads import json_text
 from .robotics_application import is_application
 from .storage import digest
-from .store import _required
+from .store import _required, _version, is_graph_copy
+
+
+def application_copy_source(conn, version):
+    """Return the application version a (possibly nested) graph copy was saved from — DR-192."""
+    seen = set()
+    while is_graph_copy(version) and version['version_id'] not in seen:
+        seen.add(version['version_id'])
+        version = _version(_required(conn, 'SELECT * FROM versions WHERE ontology_id=? AND version_id=?',
+                                     (version['ontology_id'], version['parent_version_id'])))
+        if is_application(version):
+            return version['version_id']
+    return None
 
 
 def save_copy(assets, parent, operations, content, role_map):
