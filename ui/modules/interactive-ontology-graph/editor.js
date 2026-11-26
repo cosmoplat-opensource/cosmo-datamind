@@ -32,6 +32,10 @@ function field(parent, title, options, initial = '') {
   return input;
 }
 
+const membershipPredicate = RDF + 'type';
+const domainPredicate = RDFS + 'domain';
+const rangePredicate = RDFS + 'range';
+const constraintFields = new Map([[membershipPredicate, 'types'], [domainPredicate, 'domains'], [rangePredicate, 'ranges']]);
 const empty = ['', '（无）'];
 const kinds = {class: '类别', individual: '实例', object: '对象属性', data: '数据属性'};
 const standard = id => [RDF, RDFS, OWL, XSD].some(ns => id.startsWith(ns));
@@ -81,8 +85,12 @@ export function mountEditor(host, {request, present, select, capture, restore, n
     if (context?.kind !== 'edit-copy' || context.key !== source.context.key || context.revision !== source.context.revision) {
       throw new Error('编辑响应与来源版本不匹配，请重新打开图谱。');
     }
-    if (!present(result.view)) throw new Error('编辑后的图谱超过同屏上限，请缩小显示范围后重试。');
+    const previous = model;
     model = result.view;
+    if (!present(model)) {
+      model = previous;
+      throw new Error('编辑后的图谱超过同屏上限，请缩小显示范围后重试。');
+    }
   }
 
   function commit(op, result, focus) {
@@ -172,6 +180,7 @@ export function mountEditor(host, {request, present, select, capture, restore, n
       const id = field(parent, 'IRI');
       id.required = true;
       const used = new Set([...model.nodes, ...model.individuals, ...model.properties].map(n => n.id));
+      for (const node of model.nodes) for (const design of node.design_classes || []) used.add(design.id);
       const first = selectedClass || classes().find(([id]) => !standard(id))?.[0] || 'urn:ontology:';
       const base = first.slice(0, Math.max(first.lastIndexOf('#'), first.lastIndexOf('/'), first.lastIndexOf(':')) + 1);
       let manual = false;
@@ -203,21 +212,21 @@ export function mountEditor(host, {request, present, select, capture, restore, n
   function relation() {
     editForm('新增关系', parent => {
       const type = field(parent, '关系类型', [
-        [RDFS.subClassOf, '继承'], [OWL.equivalentClass, '等价'], [OWL.disjointWith, '互斥'],
-        [RDF.type, '实例归属'], ['instance', '实例关系'], [RDFS.domain, '属性定义域'], [RDFS.range, '属性值域']]);
+        [RDFS + 'subClassOf', '继承'], [OWL + 'equivalentClass', '等价'], [OWL + 'disjointWith', '互斥'],
+        [membershipPredicate, '实例归属'], ['instance', '实例关系'], [domainPredicate, '属性定义域'], [rangePredicate, '属性值域']]);
       const fields = element('div');
       parent.append(fields);
       let source, target, property;
       function endpoints() {
         fields.replaceChildren();
-        const constraint = [RDFS.domain, RDFS.range].includes(type.value);
+        const constraint = [domainPredicate, rangePredicate].includes(type.value);
         const subjects = constraint ? model.properties.map(choice) :
-          [RDF.type, 'instance'].includes(type.value) ? instances() : classes();
+          [membershipPredicate, 'instance'].includes(type.value) ? instances() : classes();
         source = field(fields, '起点', subjects);
         property = type.value === 'instance' ? field(fields, '对象属性', properties('object')) : null;
         function targets() {
           target?.parentElement?.remove();
-          const dataRange = type.value === RDFS.range && model.properties.some(p => p.id === source.value && p.type === 'data');
+          const dataRange = type.value === rangePredicate && model.properties.some(p => p.id === source.value && p.type === 'data');
           target = field(fields, '终点', type.value === 'instance' ? instances() : dataRange ? datatypes : classes());
         }
         source.onchange = targets;
@@ -254,6 +263,25 @@ export function mountEditor(host, {request, present, select, capture, restore, n
 
   function unlink(edge) {
     deletion({op: 'unlink', source: edge.source, predicate: edge.predicate, target: edge.target}, '解除关系', edge.source);
+  }
+
+  function unlinkButtons(parent, edge) {
+    const {source, predicate, target} = edge;
+    const field = constraintFields.get(predicate);
+    let pairs = edge.assertion_pairs || [[source, target]];
+    if (field) {
+      const record = (field === 'types' ? model.individuals : model.properties).find(n => n.id === source);
+      const originals = record?.['original_' + field];
+      if (originals) {
+        const group = model.nodes.find(n => n.id === target)?.design_classes || [];
+        const ids = new Set([target, ...group.map(n => n.id)]);
+        pairs = originals.filter(id => ids.has(id)).map(id => [source, id]);
+      }
+    }
+    for (const [s, t] of pairs) {
+      const title = pairs.length === 1 ? '解除关系' : `解除关系 · ${s} → ${t}`;
+      button(parent, title, () => unlink({source: s, predicate, target: t}));
+    }
   }
 
   function download() {
@@ -309,15 +337,22 @@ export function mountEditor(host, {request, present, select, capture, restore, n
       if (!active || !entity) return;
       if (['class', 'object', 'data', 'individual'].includes(entity.type) && !standard(entity.id)) {
         if (entity.type === 'class') button(parent, '新增实例', () => entityForm('individual', entity.id));
-        button(parent, '编辑实体', () => editEntity(entity));
-        button(parent, '删除实体', () => deletion({op: 'delete', iri: entity.id}, '删除实体'));
+        let selectedEntity = () => entity;
+        if (entity.design_classes?.length) {
+          const members = [entity, ...entity.design_classes];
+          const source = field(parent, '编辑或删除的类别', members.map(n => [n.id, n.id]), entity.id);
+          selectedEntity = () => members.find(n => n.id === source.value);
+        }
+        button(parent, '编辑实体', () => editEntity(selectedEntity()));
+        button(parent, '删除实体', () => deletion({op: 'delete', iri: selectedEntity().id}, '删除实体'));
         if (entity.type === 'individual') button(parent, '新增数据值', () => addValue(entity));
-        for (const [field, predicate, title] of [['domains', RDFS.domain, '定义域'], ['ranges', RDFS.range, '值域'], ['types', RDF.type, '归属']]) {
-          for (const target of entity[field] || []) button(parent, '解除' + title + ' · ' + label(target),
+        for (const [field, predicate, title] of [['domains', domainPredicate, '定义域'], ['ranges', rangePredicate, '值域'], ['types', membershipPredicate, '归属']]) {
+          const originals = entity['original_' + field];
+          for (const target of originals || entity[field] || []) button(parent, '解除' + title + ' · ' + (originals ? target : label(target)),
             () => unlink({source: entity.id, predicate, target}));
         }
       } else if (['subclass', 'equivalent', 'disjoint', 'membership', 'relation', 'propertyConstraint'].includes(entity.kind)) {
-        button(parent, '解除关系', () => unlink(entity));
+        unlinkButtons(parent, entity);
       } else if (entity.type === 'literal' && model.properties.some(p => p.id === entity.predicate && p.type === 'data')) {
         button(parent, '删除此数据值', () => removeValue(entity.subject, entity));
       } else if (['object', 'data'].includes(entity.kind)) {

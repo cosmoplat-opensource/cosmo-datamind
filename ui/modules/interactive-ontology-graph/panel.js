@@ -50,7 +50,13 @@ export function mountPanel(host,{canvasId=null,embedded=false,editRequest=null,o
     text(details,'p',({class:'类别',individual:'实例',property:'属性定义',expression:'类别表达式',literal:'数据值'})[entity.type]||'关系');
     if(entity.definition)text(details,'p',entity.definition);
     if(entity.predicate){const prop=controller.state.properties.get(entity.predicate);text(details,'p',`${label(controller.state.entity(entity.source))} → ${label(prop||entity.predicate)} → ${label(controller.state.entity(entity.target))}`);}
-    const id=text(details,'details','');text(id,'summary','对象标识');text(id,'code',entity.iri||entity.id);
+    const id=text(details,'details','');text(id,'summary','对象标识');
+    if(entity.design_classes?.length)text(id,'p','应用类别');
+    text(id,'code',entity.iri||entity.id);
+    if(entity.design_classes?.length){
+      text(id,'p','对应的设计类别');
+      for(const design of entity.design_classes)text(id,'code',design.iri);
+    }
     if(entity.type==='class'){
       button(details,'仅显示此类关联',()=>setClassScope(entity.id));
       if(controller.state.classFocusId)button(details,'显示完整图谱',()=>setClassScope(null));
@@ -93,6 +99,8 @@ export function mountPanel(host,{canvasId=null,embedded=false,editRequest=null,o
     if(unclassified.childElementCount)nodeSelect.append(unclassified);
   }
   function chooseObject(id,fromSearch=false){
+    const grouped=current.nodes.find(n=>n.design_classes?.some(c=>c.id===id));
+    if(grouped)id=grouped.id;
     if(controller.overviewLimited && controller.state.nodes.get(id)?.type==='class'){
       if(setClassScope(id))controller.graph.center(id);
       return;

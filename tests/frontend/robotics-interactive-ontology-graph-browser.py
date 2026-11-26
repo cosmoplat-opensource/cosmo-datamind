@@ -38,6 +38,62 @@ def interactive_graph_panel(page):
     return canvas
 
 
+@pytest.mark.parametrize('live', [{'prepare': support.prepare_completed_adaptation}], indirect=True)
+def test_mapped_class_is_one_canvas_node_and_one_instance_choice(live):
+    from rdflib import Graph, OWL, RDF, RDFS, URIRef
+    from domains.robotics.graph import S
+    from ontology_assets.robotics_application import ApplicationAssets
+    site, page, _ = live
+    ref = site.prepared['output_asset_ref']
+    roles = ApplicationAssets(site.root).detail(**ref)['role_map']['bindings']
+    origin = next(r['iri'] for r in roles if r['kind'] == 'classes' and r['role'] == 'Workstation')
+    target = str(S.Workstation)
+    page.goto(site.url + '/#robotics-view?asset=' + ref['ontology_id'] + '&version=' + ref['version_id']
+              + '&view=interactive-ontology-graph')
+    panel = interactive_graph_panel(page)
+    selector = panel.get_by_label('节点详情')
+    expect(selector.locator(f'option[value="{origin}"]')).to_have_count(0)
+    selector.select_option(target)
+    expect(panel.locator(f'svg [data-node-id="{target}"]')).to_have_count(1)
+    expect(panel.locator(f'svg [data-node-id="{origin}"]')).to_have_count(0)
+    panel.get_by_text('对象标识', exact=True).click()
+    expect(panel.locator('.interactive-ontology-graph-entity')).to_contain_text(origin)
+    panel.get_by_role('button', name='编辑副本', exact=True).click()
+    details = panel.locator('.interactive-ontology-graph-entity')
+    details.get_by_role('button', name='新增实例', exact=True).click()
+    dialog = page.get_by_role('dialog')
+    owner = dialog.get_by_label('所属类别')
+    expect(owner).to_have_value(target)
+    expect(owner.locator(f'option[value="{origin}"]')).to_have_count(0)
+    dialog.get_by_label('名称', exact=True).fill('样例工位')
+    individual = dialog.get_by_label('IRI', exact=True).input_value()
+    dialog.get_by_role('button', name='应用', exact=True).click()
+    expect(details.get_by_role('heading', name='样例工位')).to_be_visible()
+    expect(panel.locator(f'svg [data-node-id="{origin}"]')).to_have_count(0)
+    membership = f'membership:{individual}|{target}'
+    expect(panel.locator(f'svg [data-edge-id="{membership}"]')).to_have_count(1)
+    selector.select_option(target)
+    details.get_by_label('编辑或删除的类别').select_option(origin)
+    details.get_by_role('button', name='编辑实体', exact=True).click()
+    expect(dialog.get_by_label('IRI', exact=True)).to_have_value(origin)
+    dialog.get_by_role('button', name='取消', exact=True).click()
+    design_skill = next(r['iri'] for r in roles if r['kind'] == 'classes' and r['role'] == 'AtomicSkill')
+    edge_id = json.dumps(['subclass', str(S.AtomicSkill), str(RDFS.subClassOf), str(S.Skill)], separators=(',', ':'))
+    subclass = panel.locator(f"svg [data-edge-id='{edge_id}']")
+    subclass.press('Enter')
+    details.get_by_role('button', name=f'解除关系 · {design_skill} → {S.Skill}', exact=True).click()
+    dialog.get_by_role('button', name='确认删除', exact=True).click()
+    expect(dialog).to_have_count(0)
+    expect(subclass).to_have_count(1)
+    with page.expect_download() as download:
+        panel.get_by_role('button', name='导出副本').click()
+    graph = Graph().parse(download.value.path(), format='xml')
+    assert (URIRef(design_skill), RDFS.subClassOf, S.Skill) not in graph
+    assert (S.AtomicSkill, RDFS.subClassOf, S.Skill) in graph
+    assert all((URIRef(iri), RDF.type, OWL.Class) in graph for iri in (origin, target))
+    assert (URIRef(individual), RDF.type, URIRef(target)) in graph
+
+
 @pytest.mark.parametrize('live', [{'prepare': support.prepare_candidate}], indirect=True)
 def test_recycle_bin_graph_round_trip_preserves_fixed_version(live):
     from ontology_assets.lifecycle import LifecycleService
@@ -153,6 +209,54 @@ def test_edit_copy_unlinks_one_instance_relation_and_cancels_pending_edit(live):
     page.unroute('**/graph-edit-copy')
     panel.get_by_role('button', name='撤销', exact=True).click()
     expect(edge).to_be_visible()
+
+
+@pytest.mark.parametrize('live', [{'prepare': support.prepare_candidate}], indirect=True)
+def test_unclassified_individual_can_be_assigned_and_unlinked(live):
+    from rdflib import Graph, OWL, RDF, RDFS, URIRef
+
+    site, page, _ = live
+    ref = site.prepared['output_asset_ref']
+    page.goto(site.url + '/#robotics-view?asset=' + ref['ontology_id'] + '&version=' + ref['version_id']
+              + '&view=interactive-ontology-graph')
+    panel = interactive_graph_panel(page)
+    panel.get_by_role('button', name='编辑副本', exact=True).click()
+    panel.get_by_role('button', name='新增实例', exact=True).click()
+    dialog = page.get_by_role('dialog')
+    name = '归属检查样例'
+    dialog.get_by_label('名称', exact=True).fill(name)
+    individual = dialog.get_by_label('IRI', exact=True).input_value()
+    assert dialog.get_by_label('所属类别').input_value() == ''
+    dialog.get_by_role('button', name='应用', exact=True).click()
+    unclassified = panel.get_by_label('节点详情').locator('optgroup[label="未分类实例"] option').filter(has_text=name)
+    expect(unclassified).to_have_count(1)
+
+    panel.get_by_role('button', name='新增关系', exact=True).click()
+    relation = dialog.get_by_label('关系类型')
+    relation.select_option(label='实例归属')
+    source = dialog.get_by_label('起点', exact=True)
+    expect(source.locator('option').filter(has_text=name)).to_have_count(1)
+    source.select_option(label=name)
+    assert source.input_value() == individual
+    target = dialog.get_by_label('终点', exact=True)
+    expect(target.locator('option').filter(has_text=name)).to_have_count(0)
+    cls = target.input_value()
+    assert cls
+    for text, predicate in [('实例归属', RDF.type), ('继承', RDFS.subClassOf), ('等价', OWL.equivalentClass),
+                            ('互斥', OWL.disjointWith), ('属性定义域', RDFS.domain), ('属性值域', RDFS.range)]:
+        expect(relation.get_by_role('option', name=text, exact=True)).to_have_attribute('value', str(predicate))
+    dialog.get_by_role('button', name='应用', exact=True).click()
+    expect(dialog).to_have_count(0)
+    expect(unclassified).to_have_count(0)
+    with page.expect_download() as saved:
+        panel.get_by_role('button', name='导出副本').click()
+    exported = Graph().parse(saved.value.path(), format='xml')
+    assert (URIRef(individual), RDF.type, URIRef(cls)) in exported
+
+    panel.get_by_role('button', name=re.compile('^解除归属')).click()
+    expect(dialog).to_contain_text('移除 1 条')
+    dialog.get_by_role('button', name='确认删除').click()
+    expect(unclassified).to_have_count(1)
 
 
 def test_classes_properties_instances_update_one_canvas(live):

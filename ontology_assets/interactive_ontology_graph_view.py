@@ -11,6 +11,7 @@ from domains.robotics.modeling.common import digest
 from domains.robotics.modeling.export import tbox_owl
 from domains.robotics.modeling._schema import validate_namespace
 
+from .graph_class_projection import group_application_classes
 from .payloads import robotics_version_mode
 
 
@@ -59,7 +60,7 @@ def project_design(session):
     return _project(graph, context, state.get('name', ''))
 
 
-def project_version(version, payload):
+def project_version(version, payload, *, role_map=None):
     """Artifact readers must first validate provenance; this verifies exact bytes."""
     if (version.get('payload_kind') != 'robotics_rdf' or not isinstance(payload, bytes)
             or hashlib.sha256(payload).hexdigest() != version.get('payload_sha256')):
@@ -71,7 +72,7 @@ def project_version(version, payload):
     except Exception as exc:
         raise ValueError('无法读取固定版本 RDF。') from exc
     context = version_context(version)
-    view = _project(graph, context, version.get('name', ''))
+    view = _project(graph, context, version.get('name', ''), role_map=role_map)
     view['mode'] = robotics_version_mode(version, graph)
     return view
 
@@ -82,7 +83,7 @@ def version_context(version):
             'stage': 'fixed', 'status': version.get('publication_state', 'candidate')}
 
 
-def _project(source, context, name):
+def _project(source, context, name, *, role_map=None):
     # Bound work before canonicalization, whose blank-node processing can be expensive.
     if len(source) > MAX_INPUT_TRIPLES:
         raise ValueError('本体规模超过视图上限。')
@@ -207,7 +208,8 @@ def _project(source, context, name):
     supported = {OWL.unionOf, OWL.disjointWith, OWL.equivalentClass}
     if any(str(p).startswith(str(OWL)) and p not in supported for _, p, _ in graph):
         warnings.add('部分 OWL 公理未在画布展开；完整语义保留于原始本体。')
-    return {'schema': 'datamind-interactive-ontology-graph/1', 'context': context, 'metadata': {'name': name, 'read_only': context['kind'] != 'edit-copy'},
+    view = {'schema': 'datamind-interactive-ontology-graph/1', 'context': context, 'metadata': {'name': name, 'read_only': context['kind'] != 'edit-copy'},
             'nodes': [nodes[k] for k in sorted(nodes)], 'properties': [properties[k] for k in sorted(properties)],
             'individuals': [individuals[k] for k in sorted(individuals)], 'edges': [edges[k] for k in sorted(edges)],
             'relations': [relations[k] for k in sorted(relations)], 'warnings': sorted(warnings)}
+    return group_application_classes(view, role_map, {str(t) for t in class_terms}) if role_map else view

@@ -202,17 +202,17 @@ def init_app(app, runtime):
         if request.args: raise invalid()
         return response(service(ontology_id).inspect(ontology_id, version_id))
 
-    def graph_payload(version):
+    def graph_input(version):
         from ontology_assets.robotics_design import DesignAssets
         from ontology_assets.robotics_application import ApplicationAssets, is_application
         from ontology_assets.robotics_offline import OfflineAssets
         if is_application(version):
-            read_payload = ApplicationAssets(runtime.root).payload
-        elif version['metadata'].get('design_contract'):
+            return ApplicationAssets(runtime.root).graph_input(version['ontology_id'], version['version_id'])
+        if version['metadata'].get('design_contract'):
             read_payload = DesignAssets(runtime.root).payload
         else:
             read_payload = OfflineAssets(runtime.root).graph_payload
-        return read_payload(version['ontology_id'], version['version_id'])
+        return read_payload(version['ontology_id'], version['version_id']), None
 
     @bp.post(prefix + '/versions/<version_id>/graph-edit-copy')
     def graph_edit_copy(ontology_id, version_id):
@@ -231,11 +231,12 @@ def init_app(app, runtime):
             raise BuildRequestError('version_conflict', '来源版本摘要已变化，请重新打开图谱。', 409)
         with run('graph_edit_copy', format=args['format']):
             try:
-                graph = parse_source(version, graph_payload(version))
+                payload, role_map = graph_input(version)
+                graph = parse_source(version, payload)
             except (ValueError, OSError) as exc:
                 raise BuildRequestError('artifact_integrity', '无法读取完整的固定版本或来源工件。', 409) from exc
             try:
-                result = render_copy(graph, version, args['operations'], args['format'])
+                result = render_copy(graph, version, args['operations'], args['format'], role_map=role_map)
             except ValueError as exc:
                 raise BuildRequestError('invalid_graph_edit', str(exc), 422) from exc
         return jsonify(result)
@@ -256,7 +257,8 @@ def init_app(app, runtime):
             # DR-166: use the same provenance readers as fixed-version exports.
             from ontology_assets.interactive_ontology_graph_view import project_version
             try:
-                document = project_version(version, graph_payload(version))
+                payload, role_map = graph_input(version)
+                document = project_version(version, payload, role_map=role_map)
             except (ValueError, OSError) as exc:
                 raise BuildRequestError('artifact_integrity', '固定版本或来源工件缺失、损坏或规模不受支持。', 409) from exc
             return response({**document, 'ontology_id': ontology_id, 'version_id': version_id, 'view': view,

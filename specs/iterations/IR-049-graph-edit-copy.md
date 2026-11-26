@@ -21,7 +21,7 @@
 
 删除用例还覆盖隐式属性、带嵌套注解的数据值、带前导零的类型值、共享限制和其他语言标签。另有浏览器用例验证，在编辑请求返回前按 Esc 取消，实例保留原名称。
 
-图谱、性质、HTTP 与验收映射检查通过 96 项，离线读取规模与规范化检查通过 3 项。图谱浏览器通过 17 项，运行记录与 JUnit 结果一致。RDFLib 的 JSON-LD 回读产生一条弃用提示。
+基础版交付时，图谱、性质、HTTP 与验收映射检查通过 96 项，离线读取规模与规范化检查通过 3 项。图谱浏览器通过 17 项，运行记录与 JUnit 结果一致。RDFLib 的 JSON-LD 回读产生一条弃用提示。
 
 在仓库根目录准备项目开发和浏览器测试依赖后运行以下定向检查。
 
@@ -40,3 +40,15 @@ mypy bp_robotics_review.py ontology_assets/{graph_edit_copy,interactive_ontology
 ```
 
 验证范围为内存编辑、图谱读取、画布交互、导出与规约。全工程回归和真实设备执行不在本次验证范围内。
+
+## 实例归属修正
+
+选择「实例归属」后，起点列表包含刚创建的未分类实例，终点列表提供已有命名类别。
+应用后导出的 OWL 包含实例指向该类别的 `rdf:type` 断言；解除该实例唯一的类别归属后，它重新出现在「未分类实例」分组。
+
+本次定向回归通过 3 个编辑浏览器用例和 31 个编辑服务与图谱组件用例。浏览器用例同时核对标准关系选项的 RDF 标识，并从实际下载的 OWL 回读归属关系。
+
+```sh
+python -m pytest tests/frontend/robotics-interactive-ontology-graph-browser.py -k 'edit_copy or unclassified_individual_can'
+python -m pytest tests/unit/test_graph_edit_copy.py tests/unit/test_interactive_ontology_graph_ui.py
+```

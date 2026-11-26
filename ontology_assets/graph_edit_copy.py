@@ -321,7 +321,7 @@ def parse_source(version, payload):
     return graph
 
 
-def render_copy(graph, version, operations, fmt):
+def render_copy(graph, version, operations, fmt, *, role_map=None):
     import json
     from .interactive_ontology_graph_view import _project, version_context
 
@@ -359,5 +359,5 @@ def render_copy(graph, version, operations, fmt):
                 raise ValueError('此副本含所选格式无法表示的断言，请选择其他导出格式。') from exc
         return {'content': content}
     context = {**version_context(version), 'kind': 'edit-copy', 'status': 'editing'}
-    view = _project(graph, context, '')
+    view = _project(graph, context, '', role_map=role_map)
     return {'view': view, 'impact': impact}

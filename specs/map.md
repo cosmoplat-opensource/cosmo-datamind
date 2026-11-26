@@ -387,3 +387,7 @@ IR-029 于 2026-11-17 按用户反馈精简删除／恢复弹窗及回收站卡�
 ## 交互式图谱基础编辑
 
 [DR-188 编辑副本](decisions/DR-188-graph-edit-copy.md) ／ [IR-049](iterations/IR-049-graph-edit-copy.md) ／ [GRAPH-EDIT-01 验收映射](acceptance.json)。
+
+## 应用图匹配类别
+
+[DR-189 类别合并展示](decisions/DR-189-application-graph-class-mapping.md) ／ [IR-050](iterations/IR-050-application-graph-class-mapping.md) ／ [GRAPH-CLASS-01 验收映射](acceptance.json)。

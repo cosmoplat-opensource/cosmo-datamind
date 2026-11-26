@@ -76,6 +76,10 @@ class ApplicationAssets:
             version = _version(_required(conn,'SELECT * FROM versions WHERE ontology_id=? AND version_id=?',(oid,vid)))
             return load(self.storage,conn,version)
 
+    def graph_input(self, ontology_id, version_id):
+        raw, _, document = self._load(ontology_id, version_id)
+        return raw, document.get('role_map')
+
     def payload(self, ontology_id, version_id): return self._load(ontology_id,version_id)[0]
     def export_json(self, ontology_id, version_id): return self._load(ontology_id,version_id)[1]
     def detail(self, ontology_id, version_id): return self._load(ontology_id,version_id)[2]
