@@ -331,8 +331,9 @@ def assertion_change(graph, op, role_map):
     keep = set()
     if predicate == RDF.type and not any(t != target and is_class(graph, t) for t in graph.objects(subject, RDF.type)):
         keep.add((subject, RDF.type, OWL.NamedIndividual))
-    # The last use may be the only declaration of the predicate's identity.
-    if not str(predicate).startswith(STANDARD) and not list(graph.objects(predicate, RDF.type)):
+    # DR-195: the last use may be the only declaration of the predicate's identity.
+    if (not str(predicate).startswith(STANDARD) and not list(graph.objects(predicate, RDF.type))
+            and set(graph.triples((None, predicate, None))) <= removed):
         keep.add((predicate, RDF.type, OWL.DatatypeProperty if isinstance(target, Literal) else OWL.ObjectProperty))
     return removed, keep
 

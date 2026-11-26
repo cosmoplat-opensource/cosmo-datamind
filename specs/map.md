@@ -413,3 +413,7 @@ IR-029 于 2026-11-17 按用户反馈精简删除／恢复弹窗及回收站卡�
 ## 图谱编辑副本沿用显示名称
 
 [DR-194 显示名称](decisions/DR-194-graph-edit-display-labels.md) ／ [IR-055 验收与复现](iterations/IR-055-graph-edit-display-labels.md) ／ [GRAPH-LABEL-01 验收映射](acceptance.json)。
+
+## 解除断言时的属性身份声明
+
+[DR-195 身份声明](decisions/DR-195-graph-unlink-declarations.md) ／ [IR-056 验收与复现](iterations/IR-056-graph-unlink-declarations.md) ／ [GRAPH-UNLINK-01 验收映射](acceptance.json)。
