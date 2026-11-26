@@ -69,6 +69,23 @@
       dispose() { dead = true; catalogToken++; detailToken++; }
     };
   }
+  function graphVersionList(item) {
+    if (item.domain !== 'robotics' || item.lifecycle?.state === 'deleted'
+        || (item.versions?.length ?? 0) < 2) return '';
+    return '<button type="button" class="ra-versions-trigger" aria-haspopup="dialog">版本列表</button>';
+  }
+  function showGraphVersions(dialog, item) {
+    dialog.querySelector('p').textContent = item.name;
+    const numbers = new Map(item.versions.map(v => [v.version_id, v.version_number]));
+    const entries = [...item.versions].reverse().map(version => {
+      const url = global.RoboticsViews.link(item.ontology_id, version.version_id);
+      const parent = numbers.get(version.parent_version_id);
+      const basis = parent ? `<small>基于版本 ${escape(parent)}</small>` : '';
+      return `<li><a href="${escape(url)}"><span>版本 ${escape(version.version_number)}${basis}</span><span class="rb-soft-tag">${escape(statusText(version.publication_state))}</span></a></li>`;
+    });
+    dialog.querySelector('ul').innerHTML = entries.join('');
+    dialog.showModal();
+  }
   function readiness(result = {}) {
     if(result.status==='designed'&&result.contract?.id==='robotics-design')return '<div class="rb-readiness"><span>设计与来源检查：通过</span><span>行为树应用：'+(result.task_readiness==='supported'?'支持':'不支持')+'</span><span>执行：未验证</span></div>';
     const structure = result.validation?.shacl_conforms === true && result.status === 'built' ? '通过' : result.status === 'error' ? '未通过' : '未记录';
@@ -123,7 +140,12 @@
     const doc = global.document, host = doc.getElementById('ra_host'), version = !!(oid || vid);
     host.innerHTML = version ? '<section class="ra-detail" data-testid="robotics-version"><p class="ra-empty" role="status">正在读取指定版本…</p></section>' :
       `<header class="rb-hero ra-hero"><div class="rb-hero-copy">${assetIcon}<div><h2>让本体知识持续复用</h2><p>管理数据与机器人本体，从已有知识开始探索或生成任务。</p></div></div><a class="ra-button ra-hero-action" href="#build">构建本体 <span aria-hidden="true">＋</span></a></header>
-      <div class="ra-toolbar card"><label for="ra_domain">本体领域</label><select id="ra_domain" aria-label="本体领域"><option value="">全部领域</option><option value="data">数据本体</option><option value="robotics">机器人本体</option></select><label for="ra_state">展示</label><select id="ra_state" aria-label="本体状态"><option value="active">本体目录</option><option value="deleted">回收站</option></select><div class="ra-import-host"></div></div><div data-testid="ontology-catalog" class="rb-catalog ra-catalog"></div>`;
+      <div class="ra-toolbar card"><label for="ra_domain">本体领域</label><select id="ra_domain" aria-label="本体领域"><option value="">全部领域</option><option value="data">数据本体</option><option value="robotics">机器人本体</option></select><label for="ra_state">展示</label><select id="ra_state" aria-label="本体状态"><option value="active">本体目录</option><option value="deleted">回收站</option></select><div class="ra-import-host"></div></div><div data-testid="ontology-catalog" class="rb-catalog ra-catalog"></div>
+      <dialog class="ra-versions-dialog" aria-labelledby="ra_versions_title">
+        <header><div><h3 id="ra_versions_title">版本列表</h3><p></p></div><form method="dialog"><button class="ghost">关闭</button></form></header>
+        <ul></ul>
+      </dialog>`;
+    const versionsDialog = host.querySelector('.ra-versions-dialog');
     if(!version)global.RoboticsTask?.importButton(host.querySelector('.ra-import-host'));
     const legacy = doc.getElementById('lib_legacy'); if (legacy) legacy.hidden = version;
     const controller = createController({onChange:state => {
@@ -160,12 +182,22 @@
             ? `<a href="#graph=${escape(encodeURIComponent(item.legacy_key))}">打开数据图谱</a>`
             : item.domain==='robotics'&&item.version_id ? `<a href="${escape(global.RoboticsViews.link(item.ontology_id,item.version_id))}">打开图谱</a>`
             : item.version_id ? `<a href="${escape(versionLink(item.ontology_id,item.version_id))}">查看固定版本</a>` : '<span class="muted">暂无版本</span>';
-          return `<article class="card ra-asset" ${legacy ? `data-legacy-key="${escape(item.legacy_key)}"` : `data-ontology-id="${escape(item.ontology_id)}"`}><div class="ra-card-top"><span class="ra-icon">${domainIcon(legacy ? 'data' : item.domain)}</span><span class="rb-soft-tag"${item.lifecycle?.state==='deleted'?' role="status"':''}>${item.lifecycle?.state==='deleted'?'已删除':legacy ? '未登记版本' : escape(statusText(item.publication_state))}</span></div><span class="rt-eyebrow">${legacy ? '旧数据图谱' : item.domain === 'robotics' ? '机器人本体' : '数据本体'}</span><h3>${title}</h3><p class="ra-version">${item.version_number ? '版本 '+escape(item.version_number) : '保留原有数据图谱'}</p><div class="ra-card-actions">${link}</div></article>`;
+          return `<article class="card ra-asset" ${legacy ? `data-legacy-key="${escape(item.legacy_key)}"` : `data-ontology-id="${escape(item.ontology_id)}"`}><div class="ra-card-top"><span class="ra-icon">${domainIcon(legacy ? 'data' : item.domain)}</span><span class="rb-soft-tag"${item.lifecycle?.state==='deleted'?' role="status"':''}>${item.lifecycle?.state==='deleted'?'已删除':legacy ? '未登记版本' : escape(statusText(item.publication_state))}</span></div><span class="rt-eyebrow">${legacy ? '旧数据图谱' : item.domain === 'robotics' ? '机器人本体' : '数据本体'}</span><h3>${title}</h3><p class="ra-version">${item.version_number ? '版本 '+escape(item.version_number) : '保留原有数据图谱'}</p><div class="ra-card-actions">${link}${graphVersionList(item)}</div></article>`;
         }).join('') || '<div class="card ra-empty"><div class="rb-empty-mark" aria-hidden="true">◇</div><h3>此领域暂无登记条目</h3><p>构建或导入本体后，即可在这里查看和使用。</p></div>';
-        state.items.forEach(item=>{if(!item.ontology_id)return;const card=list.querySelector('[data-ontology-id="'+CSS.escape(item.ontology_id)+'"]');if(card)global.OntologyLifecycle?.attach(card,item,()=>controller.loadCatalog({domain:doc.getElementById('ra_domain').value,state:doc.getElementById('ra_state').value}));});
+        state.items.forEach(item => {
+          if (!item.ontology_id) return;
+          const card = list.querySelector('[data-ontology-id="'+CSS.escape(item.ontology_id)+'"]');
+          if (!card) return;
+          const trigger = card.querySelector('.ra-versions-trigger');
+          if (trigger) trigger.onclick = () => showGraphVersions(versionsDialog, item);
+          global.OntologyLifecycle?.attach(card,item,()=>controller.loadCatalog({domain:doc.getElementById('ra_domain').value,state:doc.getElementById('ra_state').value}));
+        });
       }
     }});
-    active = controller;
+    active = {dispose() {
+      if (versionsDialog?.open) versionsDialog.close();
+      controller.dispose();
+    }};
     if (version) controller.openVersion(oid || '', vid || '', params.get('state') === 'deleted');
     else {
       doc.getElementById('ra_domain').onchange = event => {

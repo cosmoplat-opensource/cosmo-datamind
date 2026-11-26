@@ -189,6 +189,119 @@ def test_mapped_class_is_one_canvas_node_and_one_instance_choice(live):
 
 
 @pytest.mark.parametrize('live', [{'prepare': support.prepare_candidate}], indirect=True)
+def test_catalog_lists_multiple_versions_without_graph_edits(live):
+    from ontology_assets import AssetStore
+
+    site, page, _ = live
+    ref = site.prepared['output_asset_ref']
+    oid, first = ref['ontology_id'], ref['version_id']
+    assets = AssetStore(site.root)
+    assert len(assets.list_versions(oid)) == 1
+    page.goto(site.url + '/#library')
+    card = page.locator(f'article[data-ontology-id="{oid}"]')
+    expect(card).to_be_visible()
+    summary = card.get_by_text('版本列表', exact=True)
+    expect(summary).to_have_count(0)
+
+    payload = assets.read_payload(oid, first)
+    latest = first
+    for _ in range(11):
+        latest = assets.add_version(oid, payload, payload_kind='robotics_rdf',
+                                    parent_version_id=latest)['version_id']
+    page.reload()
+    for width in (1280, 390):
+        page.set_viewport_size({'width': width, 'height': 700})
+        expect(card).to_be_visible()
+        height = card.bounding_box()['height']
+        summary.click()
+        assert card.bounding_box()['height'] == height
+        dialog = page.get_by_role('dialog', name='版本列表')
+        expect(dialog).to_be_visible()
+        bounds = dialog.bounding_box()
+        assert 0 <= bounds['x'] and bounds['x'] + bounds['width'] <= width
+        assert 0 <= bounds['y'] and bounds['y'] + bounds['height'] <= 700
+        listing = dialog.get_by_role('list')
+        assert listing.evaluate('(el) => el.scrollHeight > el.clientHeight')
+        links = listing.get_by_role('link')
+        expect(links).to_have_count(12)
+        expect(links.first).to_have_attribute('href', re.compile(latest))
+        expect(links.last).to_have_attribute('href', re.compile(first))
+        page.keyboard.press('Escape')
+        expect(summary).to_be_focused()
+    summary.click()
+    dialog.get_by_role('button', name='关闭').click()
+    expect(summary).to_be_focused()
+    summary.click()
+    links.last.click()
+    expect(dialog).not_to_be_visible()
+    expect(page).to_have_url(re.compile(f'version={first}&'))
+    interactive_graph_panel(page)
+
+
+@pytest.mark.parametrize('live', [{'prepare': support.prepare_completed_adaptation}], indirect=True)
+def test_save_edit_cursor_retry_and_reopen_mapped_version(live):
+    from domains.robotics.graph import S
+    from ontology_assets import AssetStore
+    from ontology_assets.robotics_application import ApplicationAssets
+
+    site, page, _ = live
+    ref = site.prepared['output_asset_ref']
+    assets = AssetStore(site.root, read_only=True)
+    before = assets.list_versions(ref['ontology_id'])
+    roles = ApplicationAssets(site.root).detail(**ref)['role_map']['bindings']
+    origin = next(r['iri'] for r in roles if r['kind'] == 'classes' and r['role'] == 'Workstation')
+    target = str(S.Workstation)
+    page.goto(site.url + '/#robotics-view?asset=' + ref['ontology_id'] + '&version=' + ref['version_id']
+              + '&view=interactive-ontology-graph')
+    panel = interactive_graph_panel(page)
+    original_url = page.url
+    panel.get_by_role('button', name='编辑副本').click()
+    save = panel.get_by_role('button', name='保存为新版本', exact=True)
+    expect(save).to_be_disabled()
+    iris = []
+    for name in ('保留的实例', '撤销的实例'):
+        panel.get_by_role('button', name='新增实例', exact=True).first.click()
+        dialog = page.get_by_role('dialog')
+        dialog.get_by_label('名称', exact=True).fill(name)
+        dialog.get_by_label('所属类别').select_option(target)
+        iris.append(dialog.get_by_label('IRI', exact=True).input_value())
+        dialog.get_by_role('button', name='应用').click()
+        expect(dialog).to_have_count(0)
+    panel.get_by_role('button', name='撤销', exact=True).click()
+
+    def lose_response(route):
+        assert route.fetch().ok
+        route.abort('failed')
+    page.route('**/graph-edit-copy/save', lose_response, times=1)
+    save.click()
+    expect(save).to_be_enabled()
+    assert page.url == original_url
+    assert len(assets.list_versions(ref['ontology_id'])) == len(before) + 1
+    save.click()
+    child = assets.list_versions(ref['ontology_id'])[-1]
+    page.wait_for_url('**/*' + child['version_id'] + '*')
+    page.reload()
+    panel = interactive_graph_panel(page)
+    selector = panel.get_by_label('节点详情')
+    expect(selector.locator(f'option[value="{iris[0]}"]')).to_have_count(1)
+    expect(selector.locator(f'option[value="{iris[1]}"]')).to_have_count(0)
+    expect(selector.locator(f'option[value="{origin}"]')).to_have_count(0)
+    selector.select_option(target)
+    panel.get_by_text('对象标识', exact=True).click()
+    expect(panel.locator('.interactive-ontology-graph-entity')).to_contain_text(origin)
+    assert assets.list_versions(ref['ontology_id']) == before + [child]
+    page.goto(site.url + '/#library')
+    card = page.locator(f'article[data-ontology-id="{ref["ontology_id"]}"]')
+    card.get_by_text('版本列表', exact=True).click()
+    versions = page.get_by_role('dialog', name='版本列表')
+    expect(versions.get_by_role('link').filter(has_text=f'版本 {len(before) + 1}')).to_have_count(1)
+    versions.locator(f'a[href*="{ref["version_id"]}"]').click()
+    expect(page).to_have_url(original_url)
+    panel = interactive_graph_panel(page)
+    expect(panel.get_by_label('节点详情').locator(f'option[value="{iris[0]}"]')).to_have_count(0)
+
+
+@pytest.mark.parametrize('live', [{'prepare': support.prepare_candidate}], indirect=True)
 def test_recycle_bin_graph_round_trip_preserves_fixed_version(live):
     from ontology_assets.lifecycle import LifecycleService
     from tests.unit.test_asset_lifecycle import apply

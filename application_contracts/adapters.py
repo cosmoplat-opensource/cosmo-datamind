@@ -11,6 +11,7 @@ class Resolver:
 
     def resolve(self, *, entrypoint, asset_refs, context, _history=False):
         from ontology_assets import AssetStore
+        from ontology_assets.store import latest_work_version
         assets = AssetStore(self.root, read_only=True)
         snapshots = []
         try:
@@ -57,7 +58,7 @@ class Resolver:
                 robotics['adaptations']=[{'id':r[0],'revision':json.loads(r[1])['revision']} for r in conn.execute(
                     "SELECT adaptation_id,record FROM robotics_adaptations WHERE json_extract(record,'$.asset_ref.ontology_id')=? AND json_extract(record,'$.asset_ref.version_id')=? ORDER BY rowid",
                     (asset_refs[0]['ontology_id'],asset_refs[0]['version_id']))]
-                robotics['latest']=conn.execute('SELECT version_id FROM versions WHERE ontology_id=? ORDER BY rowid DESC LIMIT 1',(asset_refs[0]['ontology_id'],)).fetchone()[0]
+                robotics['latest'] = latest_work_version(conn, asset_refs[0]['ontology_id'])
             from ontology_assets.governance import GovernanceService
             revocations = [GovernanceService(self.root, read_only=True).revocations(r['ontology_id']) for r in asset_refs]
             return {'snapshots': snapshots, 'task': task, 'context': {'mode': context['mode'], 'generation_policy': policy},

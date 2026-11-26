@@ -43,7 +43,7 @@ const standard = id => [RDF, RDFS, OWL, XSD].some(ns => id.startsWith(ns));
 const choice = item => [item.id, label(item)];
 const datatypes = ['string', 'integer', 'decimal', 'boolean', 'date', 'dateTime'].map(t => [XSD + t, t]);
 
-export function mountEditor(host, {request, present, select, capture, restore, notice}) {
+export function mountEditor(host, {request, openSaved, present, select, capture, restore, notice}) {
   const bar = element('div');
   bar.className = 'interactive-ontology-graph-toolbar graph-edit-toolbar';
   host.querySelector('.interactive-ontology-graph-notice').before(bar);
@@ -370,13 +370,19 @@ export function mountEditor(host, {request, present, select, capture, restore, n
         const result = await load([]);
         active = true;
         try { display(result); restore(view); } catch (error) { active = false; throw error; }
-        notice('正在编辑临时副本，离开页面前请导出。');
+        notice(openSaved ? '正在编辑副本，完成后可保存为新版本或导出文件。' : '正在编辑临时副本，离开页面前请导出。');
       }));
     } else {
       for (const [kind, title] of Object.entries(kinds)) button(bar, '新增' + title, () => entityForm(kind));
       button(bar, '新增关系', relation);
       button(bar, '撤销', () => jump(cursor - 1)).disabled = cursor === 0;
       button(bar, '重做', () => jump(cursor + 1)).disabled = cursor === history.length;
+      if (openSaved) {
+        button(bar, '保存为新版本', () => run(async load => {
+          const saved = await load(operations(), 'save');
+          openSaved(saved);
+        })).disabled = cursor === 0;
+      }
       const format = field(bar, '导出格式', [['owl', 'OWL'], ['ttl', 'Turtle'], ['json', 'JSON-LD']], exportFormat);
       format.onchange = () => { exportFormat = format.value; };
       button(bar, '导出副本', download);
@@ -387,7 +393,7 @@ export function mountEditor(host, {request, present, select, capture, restore, n
         };
         if (!cursor) { leave(); return; }
         const form = modal('离开编辑副本', '离开');
-        form.content.append(element('p', '离开将丢弃当前副本，请先导出需要保留的修改。'));
+        form.content.append(element('p', openSaved ? '离开将丢弃当前副本，请先保存为新版本或导出文件。' : '离开将丢弃当前副本，请先导出需要保留的修改。'));
         form.onSave(() => { leave(); dialog.close(); });
       });
     }

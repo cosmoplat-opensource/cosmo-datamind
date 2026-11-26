@@ -2,7 +2,7 @@
 import {InteractiveOntologyGraphController} from './controller.js';
 import {mountEditor} from './editor.js';
 import {label} from './model.js';
-export function mountPanel(host,{canvasId=null,embedded=false,editRequest=null,onEditMode=null}={}){
+export function mountPanel(host,{canvasId=null,embedded=false,editRequest=null,onEditMode=null,openSaved=null}={}){
   host.className='interactive-ontology-graph-panel';host.dataset.testid='interactive-ontology-graph-panel';
   host.innerHTML=`${embedded?'':'<div class="interactive-ontology-graph-title"><strong>机器人交互式本体图谱</strong><span class="interactive-ontology-graph-context"></span></div>'}
     <div class="interactive-ontology-graph-toolbar"><form><input aria-label="查找节点" placeholder="搜索类别、关系、实例"><button>查找</button></form>
@@ -136,13 +136,13 @@ export function mountPanel(host,{canvasId=null,embedded=false,editRequest=null,o
       notice.textContent=controller.overviewLimited && !controller.graph.data.nodes.length
         ? '完整图谱超出同屏范围，请选择或搜索类别查看局部关联。' : document.warnings.join(' ');
       const caption=q('.interactive-ontology-graph-context');
-      if(caption)caption.textContent=document.context.kind==='edit-copy'?'编辑副本 · 导出后保留':document.context.status==='historical'?`历史修订 ${document.context.revision} · 只读`:`${document.context.kind==='design'?'设计修订 '+document.context.revision:'固定版本 · '+({candidate:'候选',draft:'草案',published:'已发布'}[document.context.status]||document.context.status)} · 只读浏览 · 执行未验证`;
+      if(caption)caption.textContent=document.context.kind==='edit-copy'?'编辑副本':document.context.status==='historical'?`历史修订 ${document.context.revision} · 只读`:`${document.context.kind==='design'?'设计修订 '+document.context.revision:'固定版本 · '+({candidate:'候选',draft:'草案',published:'已发布'}[document.context.status]||document.context.status)} · 只读浏览 · 执行未验证`;
       return true;
     }
     return false;
   }
   if(editRequest)editor=mountEditor(host,{
-    request:editRequest,
+    request:editRequest, openSaved,
     present:view=>{
       const applied=present(view);
       if(applied)onEditMode?.(view.context.kind==='edit-copy');

@@ -212,33 +212,49 @@ def init_app(app, runtime):
             read_payload = DesignAssets(runtime.root).payload
         else:
             read_payload = OfflineAssets(runtime.root).graph_payload
-        return read_payload(version['ontology_id'], version['version_id']), None
+        edit = version['metadata'].get('graph_edit')
+        role_map = edit.get('role_map') if isinstance(edit, dict) else None
+        return read_payload(version['ontology_id'], version['version_id']), role_map
 
-    @bp.post(prefix + '/versions/<version_id>/graph-edit-copy')
-    def graph_edit_copy(ontology_id, version_id):
+    @bp.post(prefix + '/versions/<version_id>/graph-edit-copy', defaults={'save': False})
+    @bp.post(prefix + '/versions/<version_id>/graph-edit-copy/save', defaults={'save': True})
+    def graph_edit_copy(ontology_id, version_id, save):
         from observability import run
         from ontology_assets.graph_edit_copy import parse_source, render_copy
 
         if request.args:
             raise invalid()
-        store = service(ontology_id)
+        store = service(ontology_id, write=save)
         visible_version_lifecycle(runtime.root, ontology_id, history=False)
         version = store.assets.get_version(ontology_id, version_id)
-        args = body({'base_sha256', 'operations', 'format'})
-        if args['format'] not in ('view', 'owl', 'ttl', 'json'):
+        fields = {'base_sha256', 'operations'}
+        args = body(fields if save else fields | {'format'})
+        fmt = 'owl' if save else args['format']
+        if fmt not in ('view', 'owl', 'ttl', 'json'):
             raise invalid()
         if args['base_sha256'] != version['payload_sha256']:
             raise BuildRequestError('version_conflict', '来源版本摘要已变化，请重新打开图谱。', 409)
-        with run('graph_edit_copy', format=args['format']):
+        with run('graph_edit_save' if save else 'graph_edit_copy', format=fmt):
             try:
                 payload, role_map = graph_input(version)
                 graph = parse_source(version, payload)
             except (ValueError, OSError) as exc:
                 raise BuildRequestError('artifact_integrity', '无法读取完整的固定版本或来源工件。', 409) from exc
             try:
-                result = render_copy(graph, version, args['operations'], args['format'], role_map=role_map)
+                if save and not args['operations']:
+                    raise ValueError('请先应用至少一项编辑后再保存。')
+                result = render_copy(graph, version, args['operations'], fmt, role_map=role_map)
             except ValueError as exc:
                 raise BuildRequestError('invalid_graph_edit', str(exc), 422) from exc
+            if save:
+                from ontology_assets.graph_copy_version import save_copy
+                from ontology_assets.lifecycle import LifecycleError
+                try:
+                    result = save_copy(store.assets, version, args['operations'], result['content'], role_map)
+                except LifecycleError as exc:
+                    raise BuildRequestError(exc.code, str(exc), 409) from exc
+                except ValueError as exc:
+                    raise BuildRequestError('save_conflict', '保存失败，请检查版本及其来源是否完整。', 409) from exc
         return jsonify(result)
 
     @bp.get(prefix + '/versions/<version_id>/views/<view>')
@@ -261,7 +277,8 @@ def init_app(app, runtime):
                 document = project_version(version, payload, role_map=role_map)
             except (ValueError, OSError) as exc:
                 raise BuildRequestError('artifact_integrity', '固定版本或来源工件缺失、损坏或规模不受支持。', 409) from exc
-            return response({**document, 'ontology_id': ontology_id, 'version_id': version_id, 'view': view,
+            return response({**document, 'can_save_copy': runtime.enabled and not history,
+                'ontology_id': ontology_id, 'version_id': version_id, 'view': view,
                 'name': assets.get_asset(ontology_id)['name'], 'version_number': assets.version_number(ontology_id, version_id)})
         if version['metadata'].get('design_contract'):
             if view != 'relations': raise invalid()

@@ -27,6 +27,14 @@ def _required(conn, sql, params):
     return dict(row)
 
 
+def latest_work_version(conn, ontology_id):
+    """Graph saves are detached candidates; they do not supersede work in progress."""
+    row = conn.execute("""SELECT version_id FROM versions WHERE ontology_id=?
+        AND json_extract(metadata, '$.graph_edit.parent') IS NOT coalesce(parent_version_id, '')
+        ORDER BY rowid DESC LIMIT 1""", (ontology_id,)).fetchone()
+    return row[0] if row else None
+
+
 def _version(row):
     result = dict(row)
     for field in ("source_asset_ids", "metadata", "validation"):
@@ -87,7 +95,7 @@ class AssetStore:
         return self.storage.read_bytes(record["path"], record["sha256"])
 
     def _add_version(self, conn, ontology_id, content, *, payload_kind, parent_version_id=None,
-                     source_asset_ids=None, metadata=None):
+                     source_asset_ids=None, metadata=None, inherit_application=True):
         from .robotics_application import is_application, load as load_application, save as save_application
         if metadata is not None and not isinstance(metadata,dict):raise ValueError('metadata 必须是对象。')
         metadata = {} if metadata is None else dict(metadata)
@@ -99,7 +107,7 @@ class AssetStore:
         if parent_version_id is not None:
             parent = _version(_required(conn, "SELECT * FROM versions WHERE ontology_id=? AND version_id=?",
                       (ontology_id, parent_version_id)))
-            if is_application(parent):
+            if inherit_application and is_application(parent):
                 _, _, parent_document = load_application(self.storage, conn, parent)
                 metadata['application_contract'] = parent['metadata']['application_contract']
                 if metadata.get('build_run_id'):

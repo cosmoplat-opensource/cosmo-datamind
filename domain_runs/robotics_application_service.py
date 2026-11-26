@@ -10,6 +10,7 @@ from domains.robotics.application_adaptation import resolve_roles, adapt, export
 from domains.robotics.modeling.common import digest as json_digest
 from ontology_assets import AssetStore
 from ontology_assets.storage import Storage
+from ontology_assets.store import latest_work_version
 from ontology_assets.payloads import json_text
 from ontology_assets.robotics_design import DesignAssets
 from ontology_assets.robotics_application import CONTRACT, save
@@ -113,10 +114,10 @@ class ApplicationService:
         require(expected==state['revision'],'revision_conflict','适配记录已变化，请刷新后重试。')
 
     def _head(self, conn, oid):
-        last=conn.execute('SELECT version_id FROM versions WHERE ontology_id=? ORDER BY rowid DESC LIMIT 1',(oid,)).fetchone()
+        last = latest_work_version(conn, oid)
         require(last is not None,'not_found')
         row=conn.execute('SELECT version_id,revision FROM governance_heads WHERE ontology_id=?',(oid,)).fetchone()
-        return {'latest':last[0],'governance':dict(row) if row else None}
+        return {'latest':last,'governance':dict(row) if row else None}
 
     def _head_check(self, conn, state):
         require(self._head(conn,state['asset_ref']['ontology_id'])==state['head'],'head_conflict','本体已有新修订，请刷新并明确选择版本。')

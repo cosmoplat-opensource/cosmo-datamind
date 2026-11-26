@@ -59,7 +59,9 @@ def test_graph_browser_shared_fixture_dependencies_resolve(tmp_path):
     # Resolve the complete fixture graph without starting a browser or service.
     import xml.etree.ElementTree as ET
     cases = list(ET.parse(tmp_path / 'fixture-plan.xml').getroot().iter('testcase'))
-    assert len(cases) == 21
+    assert len(cases) == 23
+    assert any(c.get('name', '').startswith('test_catalog_lists_multiple_versions_without_graph_edits') for c in cases)
+    assert any(c.get('name', '').startswith('test_save_edit_cursor_retry_and_reopen_mapped_version') for c in cases)
     assert any(c.get('name', '').startswith('test_directional_schema_and_data_value_choices') for c in cases)
     assert any(c.get('name', '').startswith('test_object_property_filters_both_instance_selectors') for c in cases)
     assert any(c.get('name', '').startswith('test_mapped_class_is_one_canvas_node_') for c in cases)

@@ -17,7 +17,7 @@ from srv_context import _RDF_LOCK
 from .payloads import json_text, robotics_version_mode, validate_payload
 from .storage import digest
 from .lifecycle import LifecycleError
-from .store import AssetStore, _required, _version
+from .store import AssetStore, _required, _version, latest_work_version
 
 
 # 资源护栏默认值；HTTP 层可通过配置覆盖。
@@ -129,8 +129,10 @@ class GovernanceService:
         self._asset(conn, oid)
         row = conn.execute('SELECT version_id,revision FROM governance_heads WHERE ontology_id=?', (oid,)).fetchone()
         if row: return dict(row)
-        last = _required(conn, 'SELECT version_id FROM versions WHERE ontology_id=? ORDER BY rowid DESC LIMIT 1', (oid,))
-        return {'version_id': last['version_id'], 'revision': 0}
+        last = latest_work_version(conn, oid)
+        if last is None:
+            raise GovernanceError('not_found', '本体尚无版本。')
+        return {'version_id': last, 'revision': 0}
 
     def head(self, ontology_id):
         with self._atomic() as conn: return self._head(conn, ontology_id)

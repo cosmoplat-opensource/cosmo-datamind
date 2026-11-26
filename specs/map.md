@@ -42,7 +42,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 
 ## 机器人交互式本体图谱
 
-当前仅接入机器人本体的设计阶段可视化与固定版本浏览。数据本体主图、构建结果预览、问数高亮、证据状态、详情和评审维持现有实现，不安排后续自动接入。
+机器人本体支持设计阶段可视化和固定版本浏览。活动本体的固定版本支持编辑副本、导出文件和保存为候选子版本。数据本体主图、构建结果预览、问数高亮、证据状态、详情和评审维持现有实现，不安排后续自动接入。
 
 - [DR-166 · 机器人交互式本体图谱与构建可视化](decisions/DR-166-interactive-ontology-graph-visualization.md)：方案已采纳；2026-11-19 范围和命名修订实现交付状态为 delivered，相关回归通过。
 - [IR-031 · 机器人交互式本体图谱与构建可视化](iterations/IR-031-robotics-interactive-ontology-graph-visualization.md)：delivered。2026-11-17 的原交付记录覆盖 17 个全量阶段；2026-11-19 的命名修订仅做定向回归。
@@ -395,3 +395,9 @@ IR-029 于 2026-11-17 按用户反馈精简删除／恢复弹窗及回收站卡�
 ## 图谱关系端点与数据值校验
 
 [DR-190 设计决定](decisions/DR-190-graph-relation-endpoints.md) ／ [IR-051 验收与复现](iterations/IR-051-graph-relation-endpoints.md) ／ [验收映射](acceptance.json)。GRAPH-ENDPOINT-01 覆盖按所选对象属性筛选实例关系两端和服务端写入校验，GRAPH-DIRECTION-01 覆盖继承、归属、属性声明及数据值。
+
+## 图谱编辑副本保存为新版本
+
+目录中的「版本列表」弹窗可打开活动机器人本体的各个登记版本。图谱副本预览与持久保存各有独立接口。计入保存入口后，后端共 208 条路由。
+
+[DR-191 保存与版本隔离](decisions/DR-191-graph-copy-version.md) ／ [IR-052 验收与复现](iterations/IR-052-graph-copy-version.md) ／ [GRAPH-SAVE-01 验收映射](acceptance.json)。
