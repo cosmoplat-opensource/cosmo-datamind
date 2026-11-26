@@ -220,7 +220,7 @@ def init_app(app, runtime):
     @bp.post(prefix + '/versions/<version_id>/graph-edit-copy/save', defaults={'save': True})
     def graph_edit_copy(ontology_id, version_id, save):
         from observability import run
-        from ontology_assets.graph_edit_copy import parse_source, render_copy
+        from ontology_assets.graph_edit_copy import LexicalSupportError, parse_source, render_copy
 
         if request.args:
             raise invalid()
@@ -238,6 +238,8 @@ def init_app(app, runtime):
             try:
                 payload, role_map = graph_input(version)
                 graph = parse_source(version, payload)
+            except LexicalSupportError as exc:
+                raise BuildRequestError('graph_edit_unavailable', str(exc), 503) from exc
             except (ValueError, OSError) as exc:
                 raise BuildRequestError('artifact_integrity', '无法读取完整的固定版本或来源工件。', 409) from exc
             try:

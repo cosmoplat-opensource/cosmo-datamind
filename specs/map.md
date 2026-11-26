@@ -421,3 +421,7 @@ IR-029 于 2026-11-17 按用户反馈精简删除／恢复弹窗及回收站卡�
 ## 保存与导出时的 RDF/XML 表示限制
 
 [DR-196 格式限制提示](decisions/DR-196-graph-save-format-errors.md) ／ [IR-057 验收与复现](iterations/IR-057-graph-save-format-errors.md) ／ [GRAPH-FORMAT-01 验收映射](acceptance.json)。
+
+## 图谱编辑副本的 RDF 库版本边界
+
+[DR-197 版本边界](decisions/DR-197-graph-edit-rdflib-support.md) ／ [IR-058 验收与复现](iterations/IR-058-graph-edit-rdflib-support.md) ／ [GRAPH-RDFLIB-01 验收映射](acceptance.json)。

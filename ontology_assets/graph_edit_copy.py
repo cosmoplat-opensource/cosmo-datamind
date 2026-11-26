@@ -2,6 +2,7 @@
 import re
 
 from rdflib import BNode, Literal, OWL, RDF, RDFS, URIRef, XSD
+from rdflib.plugins.parsers.rdfxml import RDFXMLHandler
 
 from domains.robotics.authoring import iri as absolute_iri
 from domains.robotics.xml_text import invalid_xml_text
@@ -364,34 +365,64 @@ def apply_edit(graph, op, *, role_map=None):
             'sample': sorted(' '.join(term.n3() for term in t) for t in removed)[:20]}
 
 
-def parse_source(version, payload):
-    """Preserve typed lexical forms locally, without changing RDFLib's process defaults."""
-    import hashlib
+class LexicalHandler(RDFXMLHandler):
+    """Keep typed lexical forms locally, without changing RDFLib's process defaults."""
+
+    def property_element_end(self, name, qname):
+        current = self.current
+        if current.datatype is not None and current.data is not None and current.object is None:
+            current.object = Literal(current.data, datatype=current.datatype, normalize=False)
+            current.data = None
+        super().property_element_end(name, qname)
+
+
+class LexicalSupportError(RuntimeError):
+    """The installed RDF library no longer keeps lexical forms through LexicalHandler — DR-197."""
+
+
+_PROBE = (b'<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:p="urn:probe:">'
+          b'<rdf:Description rdf:about="urn:probe:s">'
+          b'<p:v rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">01</p:v>'
+          b'</rdf:Description></rdf:RDF>')
+_lexical_supported = None
+
+
+def _parse_lexical(payload):
     from rdflib import Graph
     from rdflib.parser import create_input_source
-    from rdflib.plugins.parsers.rdfxml import RDFXMLHandler, create_parser
-
-    if (version['payload_kind'] != 'robotics_rdf' or hashlib.sha256(payload).hexdigest() != version['payload_sha256']
-            or b'\x00' in payload or b'<!DOCTYPE' in payload.upper() or b'<!ENTITY' in payload.upper()):
-        raise ValueError('固定版本 RDF 无效。')
-
-    class LexicalHandler(RDFXMLHandler):
-        def property_element_end(self, name, qname):
-            current = self.current
-            if current.datatype is not None and current.data is not None and current.object is None:
-                current.object = Literal(current.data, datatype=current.datatype, normalize=False)
-                current.data = None
-            super().property_element_end(name, qname)
+    from rdflib.plugins.parsers.rdfxml import create_parser
 
     graph = Graph()
     source = create_input_source(data=payload)
     parser = create_parser(source, graph)
     parser.setContentHandler(LexicalHandler(graph))
+    parser.parse(source)
+    return graph
+
+
+def require_lexical_support():
+    """Fail closed once per process if a library change would rewrite stored values on save."""
+    global _lexical_supported
+    if _lexical_supported is None:
+        try:
+            _lexical_supported = [str(o) for o in _parse_lexical(_PROBE).objects()] == ['01']
+        except Exception:
+            _lexical_supported = False
+    if not _lexical_supported:
+        raise LexicalSupportError('当前运行环境的 RDF 库无法保留数据值原文，图谱编辑副本暂不可用。')
+
+
+def parse_source(version, payload):
+    import hashlib
+
+    require_lexical_support()
+    if (version['payload_kind'] != 'robotics_rdf' or hashlib.sha256(payload).hexdigest() != version['payload_sha256']
+            or b'\x00' in payload or b'<!DOCTYPE' in payload.upper() or b'<!ENTITY' in payload.upper()):
+        raise ValueError('固定版本 RDF 无效。')
     try:
-        parser.parse(source)
+        return _parse_lexical(payload)
     except Exception as exc:
         raise ValueError('无法读取固定版本 RDF。') from exc
-    return graph
 
 
 LISTED_IRIS = 5

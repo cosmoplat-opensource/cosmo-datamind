@@ -81,6 +81,6 @@ XML 是生成工件，不作为独立可编辑知识源；缺口由工程师补�
 
 保存的副本不会成为目录卡片的当前版本。「打开图谱」仍打开原有的工作版本，副本通过「版本列表」打开。已有行为树任务、适配和评审仍使用各自引用的固定版本。由应用版本保存的副本（包括在其基础上再次保存的副本）未经过应用适配，从它进入「基于此本体生成行为树」时，应用检查会提示改从原应用版本生成。发布需要单独评审。需要本地文件时可点击「导出副本」，选择 RDF/XML（OWL）、Turtle 或 JSON-LD。新版本以 RDF/XML 存储。属性 IRI 的最后一段以数字开头，或以 / 或 # 结尾时，RDF/XML 无法表示，保存和 OWL 导出都会列出这些 IRI（最多 5 个）并提示修改；导出时也可改用 Turtle 或 JSON-LD。历史修订及回收站提供只读浏览。
 
-接口为 `POST /api/ontology-assets/<ontology_id>/versions/<version_id>/graph-edit-copy`。请求包含固定版本的 `base_sha256`、按顺序重放的 `operations` 和 `format`。格式 `view` 返回编辑视图以及最后一次操作增删的三元组数量和至多 20 条移除示例，`owl`、`ttl`、`json` 返回可下载的 `content`。空操作列表打开原始副本。请求格式错误返回 400，版本摘要冲突或资产进入回收站返回 409，编辑不符合约束返回 422。操作示例见[编辑验收测试](../../tests/unit/test_graph_edit_copy.py)。
+接口为 `POST /api/ontology-assets/<ontology_id>/versions/<version_id>/graph-edit-copy`。请求包含固定版本的 `base_sha256`、按顺序重放的 `operations` 和 `format`。格式 `view` 返回编辑视图以及最后一次操作增删的三元组数量和至多 20 条移除示例，`owl`、`ttl`、`json` 返回可下载的 `content`。空操作列表打开原始副本。请求格式错误返回 400，版本摘要冲突或资产进入回收站返回 409，编辑不符合约束返回 422。运行环境的 RDF 库无法保留数据值原文时，编辑和保存返回 503（`graph_edit_unavailable`），只读图谱不受影响；运行时依赖要求 `rdflib>=7.6.0,<8`。操作示例见[编辑验收测试](../../tests/unit/test_graph_edit_copy.py)。
 
 保存使用 `POST /api/ontology-assets/<ontology_id>/versions/<version_id>/graph-edit-copy/save`，请求字段为 `base_sha256` 和非空的 `operations`。成功时返回 `ontology_id` 和新的 `version_id`。对同一父版本重试相同的操作序列会得到同一版本。
