@@ -1,4 +1,4 @@
-/* Interactive ontology graph workspace and read-only details — DR-166 / IR-031 T05. */
+/* Interactive ontology graph workspace and read-only details — DR-166 / IR-031 T05 / DR-192. */
 import {InteractiveOntologyGraphController} from './controller.js';
 import {label} from './model.js';
 export function mountPanel(host,{canvasId=null,embedded=false}={}){
@@ -98,7 +98,9 @@ export function mountPanel(host,{canvasId=null,embedded=false}={}){
   }
   nodeSelect.onchange=()=>chooseObject(nodeSelect.value);
   q('select[aria-label="展示范围"]').onchange=setOptions;
-  q('form').onsubmit=e=>{e.preventDefault();if(!current)return;const term=q('input').value.toLocaleLowerCase();const found=[...current.nodes,...current.individuals,...current.properties].find(n=>label(n).toLocaleLowerCase().includes(term));
+  // DR-192: a blank query prompts instead of matching every label.
+  q('form').onsubmit=e=>{e.preventDefault();if(!current)return;const input=q('input'),term=input.value.trim().toLocaleLowerCase();
+    if(!term){notice.textContent='请输入要查找的类别、关系或实例名称。';input.focus();return;}const found=[...current.nodes,...current.individuals,...current.properties].find(n=>label(n).toLocaleLowerCase().includes(term));
     if(found){q('select[aria-label="展示范围"]').value='all';setOptions();chooseObject(found.id,true);}else notice.textContent='未找到匹配对象。';};
   host.querySelectorAll('[data-op]').forEach(b=>{b.onclick=()=>{
     const op=b.dataset.op;

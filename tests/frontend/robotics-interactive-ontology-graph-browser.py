@@ -288,6 +288,30 @@ def test_panel_rejects_oversized_revision_without_changing_caption(live):
     expect(panel.locator('.interactive-ontology-graph-notice')).to_contain_text('范围')
 
 
+def test_blank_search_prompts_without_changing_selection_or_scope(live):
+    """DR-192: an empty or whitespace query never selects the first object."""
+    site, page, _ = live
+    panel = probe(page, site, nodes=3, edges=2)
+    nodes = panel.get_by_label('节点详情', exact=True)
+    nodes.select_option('https://probe.test/#2')
+    details = panel.locator('.interactive-ontology-graph-entity h3')
+    expect(details).to_have_text('类别 2')
+    scope = panel.get_by_label('展示范围', exact=True)
+    scope.select_option('skills')
+    search = panel.get_by_label('查找节点', exact=True)
+    notice = panel.locator('.interactive-ontology-graph-notice')
+    for term in ('', '   '):
+        search.fill(term)
+        panel.get_by_role('button', name='查找', exact=True).click()
+        expect(notice).to_have_text('请输入要查找的类别、关系或实例名称。')
+        expect(details).to_have_text('类别 2')
+        expect(scope).to_have_value('skills')
+        expect(search).to_be_focused()
+    search.fill('  类别 1  ')
+    panel.get_by_role('button', name='查找', exact=True).click()
+    expect(details).to_have_text('类别 1')
+
+
 def test_property_search_shows_definition_and_constraint_details(live):
     site, page, _ = live
     panel = probe(page, site)
