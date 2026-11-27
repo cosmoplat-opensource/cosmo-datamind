@@ -182,6 +182,80 @@ def test_metadata_review_count_tracks_selected_graph_and_revisits(page, site):
     expect(count).to_have_count(1)
 
 
+@pytest.mark.parametrize("late_status", [200, 503], ids=["success", "failure"])
+def test_metadata_coverage_ignores_late_response(page, site, late_status):
+    open_page(page, site, "home")
+    old, current = [g["id"] for g in page.request.get(site + "/api/graphs").json()][:2]
+    old_url = site + "/api/ont/completeness/" + old
+    current_url = site + "/api/ont/completeness/" + current
+    held = []
+
+    def current_stats(route):
+        response = route.fetch()
+        data = response.json()
+        data["score"] = 27
+        data["relations"]["semanticReviewed"] = 2
+        route.fulfill(response=response, json=data)
+
+    page.route(old_url, lambda route: held.append(route), times=1)
+    page.route(current_url, current_stats)
+    with page.expect_request(old_url):
+        page.locator('[data-p="ontquality"]').click()
+    select = page.locator("#oq_sel")
+    select.select_option(current)
+    score = page.locator("#oq_kpis .kpi .n").first
+    review = page.locator("#oq_sem")
+    expect(score).to_have_text("27%")
+    expect(review).to_contain_text("2 条已审")
+
+    route, = held
+    with page.expect_event("requestfinished", predicate=lambda req: req.url == old_url):
+        if late_status == 200:
+            response = route.fetch()
+            data = response.json()
+            data["score"] = 73
+            data["relations"]["semanticReviewed"] = 3
+            route.fulfill(response=response, json=data)
+        else:
+            route.fulfill(status=late_status, json={"error": "此前图谱读取失败"})
+    next_paint(page)
+    expect(select).to_have_value(current)
+    expect(score).to_have_text("27%")
+    expect(review).to_contain_text("2 条已审")
+
+
+def test_metadata_coverage_times_out_and_refreshes(page, site):
+    open_page(page, site, "ontquality")
+    scores = page.locator("#oq_kpis .kpi .n")
+    expect(scores).to_have_count(5)
+    select = page.locator("#oq_sel")
+    old = select.input_value()
+    current = next(g["id"] for g in page.request.get(site + "/api/graphs").json() if g["id"] != old)
+    url = site + "/api/ont/completeness/" + current
+    expected = page.request.get(url).json()["score"]
+    page.clock.install()
+    held = []
+    page.route(url, lambda route: held.append(route), times=1)
+    with page.expect_request(url):
+        select.select_option(current)
+    panel = page.locator("#p_ontquality")
+    try:
+        expect(panel.get_by_role("status")).to_contain_text("正在读取")
+        for selector in ("#oq_bfo", "#oq_mat", "#oq_gaps"):
+            expect(panel.locator(selector)).to_be_empty()
+        expect(panel.locator("#oq_sem")).to_have_count(0)
+        page.clock.fast_forward(30001)
+        expect(panel.get_by_role("alert")).to_contain_text("刷新重试")
+        expect(scores).to_have_count(0)
+        assert len(held) == 1
+    finally:
+        for route in held:
+            route.abort()
+    panel.get_by_role("button", name="刷新", exact=True).click()
+    expect(select).to_have_value(current)
+    expect(scores.first).to_have_text(f"{expected}%")
+
+
 def test_overview_survives_unavailable_data_and_recovers_exact_totals(page, site):
     kpis = page.request.get(site + "/api/overview", headers={"X-DataMind-Source": "demo"}).json()["kpi"]
     page.route("**/api/overview*", lambda r: r.fulfill(status=503, json={"error": "总览暂不可用"}))

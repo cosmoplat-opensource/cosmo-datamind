@@ -1,4 +1,5 @@
 """T04 RED: real Blueprint, guards, OWL import and task artifact identity — DR-145 / DR-146 / DR-148."""
+import importlib
 import io
 import json
 
@@ -44,6 +45,9 @@ def message(client, session, text=TEXT, request_id='message'):
 
 @pytest.fixture
 def model_config(monkeypatch):
+    # Initialize startup configuration before installing this test's model endpoint.
+    # Otherwise the first server import can remove the fixture's environment values.
+    importlib.import_module('server')
     monkeypatch.setattr(evidence, 'utc_now', lambda: NOW)
     with model_server({}) as (url, calls):
         monkeypatch.setenv('DATAMIND_LLM_BASE', url)

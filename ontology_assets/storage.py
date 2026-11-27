@@ -232,3 +232,20 @@ class Storage:
         if digest(content) != expected:
             raise ValueError("载荷文件摘要与登记记录不一致。")
         return content
+
+    def verify_file(self, relative, expected, size, *, chunk_size=1 << 20):
+        """DR-191: check a registered file's length and digest in bounded chunks, without loading it whole."""
+        if type(size) is not int or size < 0 or type(chunk_size) is not int or chunk_size <= 0:
+            raise ValueError("登记文件长度或读取块大小无效。")
+        hasher, total = hashlib.sha256(), 0
+        with Path(confine(self.root, relative)).open('rb') as stream:
+            while block := stream.read(chunk_size):
+                total += len(block)
+                if total > size:
+                    raise ValueError("登记文件长度不一致。")
+                hasher.update(block)
+        if total != size:
+            raise ValueError("登记文件长度不一致。")
+        if hasher.hexdigest() != expected:
+            raise ValueError("载荷文件摘要与登记记录不一致。")
+        return total

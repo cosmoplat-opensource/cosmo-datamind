@@ -324,6 +324,14 @@ class RunStore:
                                     (run_id, artifact_id)))
         return self.storage.read_bytes(record["path"], record["sha256"])
 
+    def verify_artifact(self, run_id, artifact_id):
+        """DR-191: check a registered artifact's digest and length without loading it whole."""
+        with self.storage.transaction() as conn:
+            _run(conn, run_id)
+            record = dict(_required(conn, "SELECT * FROM run_artifacts WHERE run_id=? AND artifact_id=?",
+                                    (run_id, artifact_id)))
+        return self.storage.verify_file(record["path"], record["sha256"], record["byte_size"])
+
     def manifest(self, run_id):
         with self.storage.transaction() as conn:
             run = _run(conn, run_id)

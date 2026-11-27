@@ -136,6 +136,104 @@ def test_confirm_classes_replay_and_return_to_edit_are_local(tmp_path):
         assert len(h.runtime.calls) == 1
 
 
+@pytest.mark.parametrize('operation,status', [('confirm-classes', 200), ('messages', 202)])
+def test_graph_failure_preserves_saved_receipt_and_idempotency(tmp_path, isolated_platform, monkeypatch, caplog,
+                                                              operation, status):
+    import observability
+    from ontology_assets import interactive_ontology_graph_view
+
+    def failed_projection(row):
+        raise ValueError('synthetic private projection detail')
+
+    def failures():
+        return sum(entry['value'] for entry in observability.snapshot()['counters']
+                   if entry['name'] == 'robotics.design.graph_projection_failed')
+
+    with http_app(tmp_path) as (_, client, _, root):
+        h = Harness(root)
+        state = h.classes() if operation == 'confirm-classes' else h.submit()
+        isolated_platform(h.config, RuntimeRegistry(openai=h.runtime))
+        body = dict(request_id='design-operation', expected_revision=state['revision'])
+        if operation == 'confirm-classes':
+            body.update(snapshot_sha256=state['snapshot_sha256'])
+        else:
+            body.update(expected_stage='classes', text='整理类别')
+        before_failures = failures()
+        with monkeypatch.context() as patch:
+            patch.setattr(interactive_ontology_graph_view, 'project_design', failed_projection)
+            accepted = mutate(client, state, operation, **body)
+            assert accepted.status_code == status, accepted.json
+            receipt = accepted.json.copy()
+            assert receipt.pop('interactive_graph_view') is None
+            warning = receipt.pop('interactive_graph_warning')
+            assert warning['code'] == 'graph_view_unavailable' and warning['message']
+            assert 'synthetic private' not in accepted.get_data(as_text=True)
+            assert receipt == h.get(state)
+            if status == 200:
+                assert receipt['revision'] == state['revision'] + 1 and receipt['stage'] == 'properties'
+            else:
+                assert receipt['status'] == 'queued' and receipt['run_id']
+            before = db_rows(root), blob_bytes(root)
+            stored = next(row for row in before[0]['design_requests'] if row['request_id'] == body['request_id'])
+            assert json.loads(stored['response']) == receipt
+            replay = mutate(client, state, operation, **body)
+            assert replay.status_code == status and replay.json == accepted.json
+            error(mutate(client, state, operation, **{**body, 'expected_revision': 99}), 409, 'request_conflict')
+            error(mutate(client, state, operation, **{**body, 'request_id': 'stale', 'expected_revision': 99}),
+                  409, 'revision_conflict')
+            assert failures() == before_failures + 2 and 'synthetic private' not in caplog.text
+            # DR-188: the saved receipt stays readable on refresh while the graph is unavailable.
+            refreshed = get(client, path(state))
+            assert refreshed.status_code == 200, refreshed.get_data(as_text=True)
+            assert refreshed.json['interactive_graph_view'] is None
+            assert refreshed.json['interactive_graph_warning']['code'] == 'graph_view_unavailable'
+            assert refreshed.json['revision'] == receipt['revision']
+        recovered = mutate(client, state, operation, **body)
+        assert recovered.status_code == status
+        healthy = recovered.json.copy()
+        assert healthy.pop('interactive_graph_view')['context']['revision'] == receipt['revision']
+        assert healthy == receipt
+        assert (db_rows(root), blob_bytes(root)) == before
+
+
+def test_graph_failure_on_reads_keeps_session_and_history_readable(tmp_path, monkeypatch, caplog):
+    """DR-188: a projection fault is a display warning on reads, never a design integrity error."""
+    import observability
+    from ontology_assets import interactive_ontology_graph_view
+
+    def failures(operation):
+        return sum(entry['value'] for entry in observability.snapshot()['counters']
+                   if entry['name'] == 'robotics.design.graph_projection_failed'
+                   and entry['labels'].get('operation') == operation)
+
+    def failed_projection(row):
+        raise ValueError('synthetic private projection detail')
+
+    with http_app(tmp_path) as (_, client, _, root):
+        h = Harness(root); state = h.classes()
+        healthy_session = get(client, path(state)).json
+        healthy_revision = get(client, path(state, '/revisions/1')).json
+        before, files, counted = db_rows(root), blob_bytes(root), failures('read')
+        with monkeypatch.context() as patch:
+            patch.setattr(interactive_ontology_graph_view, 'project_design', failed_projection)
+            for url, healthy in ((path(state), healthy_session), (path(state, '/revisions/1'), healthy_revision)):
+                response = get(client, url)
+                assert response.status_code == 200, response.get_data(as_text=True)
+                degraded = response.json.copy()
+                assert degraded.pop('interactive_graph_view') is None
+                warning = degraded.pop('interactive_graph_warning')
+                assert warning == {'code': 'graph_view_unavailable',
+                                   'message': '当前修订的图谱暂时无法显示，设计内容不受影响。可稍后刷新重试。'}
+                expected = {k: v for k, v in healthy.items() if k != 'interactive_graph_view'}
+                assert degraded == expected
+                assert 'synthetic private' not in response.get_data(as_text=True)
+        assert failures('read') == counted + 2 and 'synthetic private' not in caplog.text
+        assert (db_rows(root), blob_bytes(root)) == (before, files)
+        recovered = get(client, path(state)).json
+        assert recovered['interactive_graph_view']['context']['revision'] == state['revision']
+        assert 'interactive_graph_warning' not in recovered
+
+
 @pytest.mark.parametrize('change,code', [('revision', 'revision_conflict'), ('digest', 'snapshot_conflict')])
 def test_confirmation_conflicts_preserve_effective_revision(tmp_path, change, code):
     with http_app(tmp_path) as (_, client, _, root):

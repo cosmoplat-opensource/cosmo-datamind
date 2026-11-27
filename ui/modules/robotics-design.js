@@ -1,27 +1,46 @@
-/* Persistent design interaction and immutable history — DR-152. */
+/* Persistent design interaction and immutable history — DR-152 / DR-171 / DR-189. */
 (function(g){'use strict';
 const clone=x=>JSON.parse(JSON.stringify(x)),prefix='/api/robotics/design-sessions/',active=s=>['queued','running'].includes(s?.status);
-async function read(fetch,url,options){const r=await fetch(url,options);let b;try{b=await r.json();}catch(_){throw Error('响应不是 JSON（HTTP '+r.status+'）');}if(!r.ok)throw Object.assign(Error(b.error?.message||b.error||'请求失败'),{code:b.error?.code,status:r.status});return b;}
+const read=(fetch,url,options)=>g.RoboticsAssets.readJSON(fetch,url,options);
+// DR-189: only reads retry automatically; transient failures back off within a fixed bound.
+const READ_RETRY_DELAYS=[2000,4000,5000,5000,5000],WRITE_TIMEOUT='请求超时，结果待确认。请重新读取设计状态后再操作。';
+const transient=e=>e.status===undefined||e.status===429||e.status>=500;
 function createController(o={}){
  const fetch=o.fetch||g.fetch.bind(g),emit=o.onChange||(()=>{}),schedule=o.schedule||g.setTimeout.bind(g),cancel=o.cancelSchedule||g.clearTimeout.bind(g),newId=o.requestId||(()=>g.dmRequestId());
- let s={session:null,messageText:'',selectedRevision:null,busy:false,error:null},dead=false,epoch=0,id=null,timer=null,flight=null,identity=null;
+ const requests=new AbortController();
+ let s={session:null,messageText:'',historyRevision:null,selectedRevision:null,busy:false,error:null,readRetry:null},dead=false,epoch=0,id=null,timer=null,flight=null,identity=null,failures=0;
  const notify=()=>{if(!dead)emit(clone(s));},clear=()=>{if(timer!==null)cancel(timer);timer=null;};
- function later(){clear();if(!dead&&active(s.session))timer=schedule(()=>{timer=null;return poll();},1000);}
+ function later(){clear();if(dead)return;const delay=s.readRetry?.waiting?READ_RETRY_DELAYS[s.readRetry.attempt-1]:!s.error&&active(s.session)?1000:null;
+  if(delay)timer=schedule(()=>{timer=null;return poll();},delay);}
  async function poll(){if(dead||!id)return;if(flight)return flight;clear();const token=epoch,sid=id;
-  const p=(async()=>{try{const row=await read(fetch,prefix+encodeURIComponent(sid));if(dead||token!==epoch)return;if(row.session_id!==sid)throw Error('会话身份不匹配');s.session=row;s.error=null;}catch(e){if(!dead&&token===epoch)s.error={message:e.message,code:e.code,status:e.status};}finally{if(!dead&&token===epoch){flight=null;notify();later();}}})();flight=p;return p;}
- async function openSession(sid){if(dead)return;epoch++;if(id!==sid){s.messageText='';identity=null;}id=sid;flight=null;clear();s.busy=false;s.session=null;s.selectedRevision=null;s.error=null;notify();await poll();}
- async function act(op,extra={}){if(dead||s.busy||!s.session)return;const original=clone(s.session),text=s.messageText,token=epoch;
+  const p=(async()=>{try{const row=await read(fetch,prefix+encodeURIComponent(sid),{signal:requests.signal});if(dead||token!==epoch)return;if(row.session_id!==sid)throw Error('会话身份不匹配');s.session=row;s.error=null;s.readRetry=null;failures=0;}catch(e){if(!dead&&token===epoch){failures++;s.error={message:e.message,code:e.code,status:e.status};
+   s.readRetry={attempt:failures,max:READ_RETRY_DELAYS.length,waiting:active(s.session)&&transient(e)&&failures<=READ_RETRY_DELAYS.length};}}finally{if(!dead&&token===epoch){flight=null;notify();later();}}})();flight=p;return p;}
+ async function openSession(sid){if(dead)return;epoch++;if(id!==sid){s.messageText='';identity=null;}id=sid;flight=null;clear();s.busy=false;s.session=null;s.historyRevision=null;s.selectedRevision=null;s.error=null;s.readRetry=null;failures=0;notify();await poll();}
+ async function act(op,extra={}){if(dead||s.busy||!s.session||s.historyRevision!==null)return;const original=clone(s.session),text=s.messageText,token=epoch;
   const body={request_id:'',expected_revision:original.revision,...extra},fingerprint=JSON.stringify([id,op,body]);
-  if(identity?.fingerprint!==fingerprint)identity={fingerprint,id:newId()};body.request_id=identity.id;s.busy=true;s.error=null;notify();
-  try{const row=await read(fetch,prefix+encodeURIComponent(id)+'/'+op,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-   if(dead||token!==epoch)return;if(row.session_id!==id)throw Error('会话身份不匹配');s.session=row;s.selectedRevision=null;identity=null;if(op==='messages'&&s.messageText===text)s.messageText='';
-  }catch(e){if(!dead&&token===epoch)s.error={message:e.message,code:e.code,status:e.status};}finally{if(!dead&&token===epoch){s.busy=false;notify();later();}}}
- return {snapshot:()=>clone(s),openSession,poll,setMessage(text){if(dead)return;s.messageText=text;notify();},
+  if(identity?.fingerprint!==fingerprint)identity={fingerprint,id:newId()};body.request_id=identity.id;s.busy=true;s.error=null;s.readRetry=null;notify();
+  try{const row=await read(fetch,prefix+encodeURIComponent(id)+'/'+op,{signal:requests.signal,method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+   if(dead||token!==epoch)return;if(row.session_id!==id)throw Error('会话身份不匹配');s.session=row;identity=null;if(op==='messages'&&s.messageText===text)s.messageText='';
+  }catch(e){if(!dead&&token===epoch)s.error={message:e.code==='request_timeout'||e.name==='TimeoutError'?WRITE_TIMEOUT:e.message,code:e.code,status:e.status};}finally{if(!dead&&token===epoch){s.busy=false;notify();later();}}}
+ function reread(){if(dead||!id||s.busy)return;failures=0;s.readRetry=null;clear();return poll();}
+ return {snapshot:()=>clone(s),openSession,poll,reread,setMessage(text){if(dead)return;s.messageText=text;notify();},
  sendMessage(){if(!s.messageText.trim()||active(s.session))return;return act('messages',{text:s.messageText,expected_stage:s.session.stage});},
  confirmClasses(){return act('confirm-classes',{snapshot_sha256:s.session?.snapshot_sha256});},editClasses(){return act('edit-classes');},editProperties(){return act('edit-properties');},
  confirmSchema(){return act('confirm-schema',{snapshot_sha256:s.session?.snapshot_sha256});},retry(){if(!['failed','interrupted'].includes(s.session?.status))return;return act('retry',{failed_run_id:s.session.run_id});},
- async openRevision(revision){const token=epoch;try{const row=await read(fetch,prefix+encodeURIComponent(id)+'/revisions/'+revision);if(!dead&&token===epoch){s.selectedRevision=row;notify();}}catch(e){if(!dead&&token===epoch){s.error={message:e.message};notify();}}},
- dispose(){dead=true;epoch++;clear();}};
+ showCurrent(){s.historyRevision=null;s.selectedRevision=null;notify();},
+ async openRevision(revision){
+  if(dead||!id)return;
+  const token=epoch;
+  const stillSelected=()=>!dead&&token===epoch&&s.historyRevision===revision;
+  s.historyRevision=revision;s.error=null;notify();
+  try{
+   const row=await read(fetch,prefix+encodeURIComponent(id)+'/revisions/'+revision,{signal:requests.signal});
+   if(stillSelected()){s.selectedRevision=row;notify();}
+  }catch(e){
+   if(stillSelected()){s.historyRevision=s.selectedRevision?.revision??null;s.error={message:e.message};notify();}
+  }
+ },
+ dispose(){dead=true;epoch++;requests.abort();clear();}};
 }
 async function beginRepair(reply,requestId,fetch=g.fetch.bind(g)){
  const phase=reply.design_repair;
@@ -54,6 +73,7 @@ function repairContext(response,sid,adaptation=false){
  const items=adaptation?issues:issues.filter(i=>(i.repair_actions||[]).some(a=>a.action_id==='robotics.revise_tbox'&&a.target?.resource_id===sid));
  if(!items.length)throw Error('检查报告中没有当前设计的骨架缺项。');
  return {items,freshness:adaptation?'current':response.freshness,checkId:report.check_id,
+   taskRef:report.task_ref,mode:adaptation?report.mode:report.context?.mode,
    revision:adaptation?report.origin_session?.revision:items[0].repair_actions.find(a=>a.action_id==='robotics.revise_tbox'&&a.target?.resource_id===sid)?.target.expected_revision};
 }
 function repairSuggestion(context,stage){
@@ -70,13 +90,18 @@ function repairSuggestion(context,stage){
  const classes=parts(['classes','other']);
  return '根据此前应用检查，本轮仅修订类别'+(classes?'：请核对并补充'+classes:'，请核对现有类别')+'，保留其它类别及层次。关系与属性在类别确认后处理。'+basis;
 }
-function mount(host,sid,options={}){const esc=g.RoboticsAssets.escape;let c,context=null,contextError='',dead=false,editorPhase=null;
+function mount(host,sid,options={}){const esc=g.RoboticsAssets.escape;let c,context=null,contextError='',dead=false,editorPhase=null,completionPending=false;
  const contextual=!!(options.checkId||options.adaptationId),abort=new AbortController();
+ let interactiveGraphPanel=null,latest=null,interactiveGraphHistory=null;
+ const graphHost=document.createElement('section'),historyBox=document.createElement('label'),historySelect=document.createElement('select');
+ const graphWarning=document.createElement('p');graphWarning.setAttribute('role','status');graphWarning.hidden=true;
+ historyBox.className='rd-history';historySelect.setAttribute('aria-label','设计修订');historyBox.append(historySelect);
  const input=document.createElement('textarea');input.setAttribute('aria-label','建模要求');input.maxLength=20000;
- const editor=document.createElement('details'),body=document.createElement('div'),hint=document.createElement('div'),heading=document.createElement('div'),progress=document.createElement('div'),actions=document.createElement('div');
+ const editor=document.createElement('details'),body=document.createElement('div'),hint=document.createElement('div'),heading=document.createElement('div'),progress=document.createElement('div'),actions=document.createElement('div'),secondary=document.createElement('div');
+ heading.className='rd-header';secondary.className='rd-secondary-actions';body.className='rd-reference';
  editor.className='rd-editor';progress.className='rd-progress';progress.hidden=true;progress.dataset.testid='design-progress';progress.setAttribute('role','status');progress.setAttribute('aria-live','polite');progress.setAttribute('aria-atomic','true');
  actions.className='rd-confirm-bar';actions.dataset.testid='design-confirmation';actions.hidden=true;
- host.replaceChildren(heading,progress,actions,hint,editor,body);editor.append(input);const summary=document.createElement('summary'),label=document.createElement('label');label.textContent='建模要求';label.htmlFor='rd_message';input.id='rd_message';editor.prepend(summary,label);const send=document.createElement('button');send.textContent=contextual?'确认并发送建模要求':'发送建模要求';editor.append(send);
+ host.replaceChildren(heading,progress,actions,editor,hint,secondary,graphWarning,graphHost,body);editor.append(input);const summary=document.createElement('summary'),label=document.createElement('label');label.textContent='建模要求';label.htmlFor='rd_message';input.id='rd_message';editor.prepend(summary,label);const send=document.createElement('button');send.textContent=contextual?'确认并发送建模要求':'发送建模要求';editor.append(send);
  const startProperties=document.createElement('button');startProperties.textContent='开始关系与属性设计';editor.append(startProperties);
  input.oninput=()=>c.setMessage(input.value);send.onclick=()=>c.sendMessage();
  function complete(){if(!context)return;c.setMessage(repairSuggestion(context,c.snapshot().session?.stage));input.focus();input.setSelectionRange(input.value.length,input.value.length);}
@@ -86,10 +111,22 @@ function mount(host,sid,options={}){const esc=g.RoboticsAssets.escape;let c,cont
   if(text.length<suggestion.length&&suggestion.startsWith(text)&&input.selectionStart===text.length&&input.selectionEnd===text.length){e.preventDefault();complete();}
  };
  startProperties.onclick=()=>{if(!c.snapshot().messageText.trim())c.setMessage('请基于已确认的类别、建模要求和上传的 XML，设计对象关系与数据属性；只采用来源支持的信息，不明确的内容列为待明确项。');return c.sendMessage();};
- function render(s){const row=s.session;if(!row){heading.textContent=s.error?.message||'正在读取设计…';body.replaceChildren();progress.hidden=true;actions.hidden=true;editor.hidden=true;return;}
+ function completionLink(ref){
+  if(options.adaptationId)return '#robotics-task?adaptation='+encodeURIComponent(options.adaptationId)+'&revised='+encodeURIComponent(ref.version_id);
+  if(options.checkId)return g.RoboticsTask.link(ref.ontology_id,ref.version_id,context?.mode||'real')+'&assess=1'+(context?.taskRef?.session_id?'&task='+encodeURIComponent(context.taskRef.session_id):'');
+  return '#robotics-view?asset='+encodeURIComponent(ref.ontology_id)+'&version='+encodeURIComponent(ref.version_id)+'&view=interactive-ontology-graph';
+ }
+ // DR-189: a read failure says whether it retries itself; otherwise the user can reread explicitly.
+ const readNotice=s=>s.readRetry?.waiting?` 正在自动重新读取（第 ${s.readRetry.attempt}/${s.readRetry.max} 次）。`:'';
+ const rereadButton=s=>s.error&&!s.busy&&!s.readRetry?.waiting?'<button type="button" data-op="reread">重新读取设计状态</button>':'';
+ function render(s){const previous=latest?.session;latest=s;const row=s.session;if(!row){heading.innerHTML=s.error?`<p role="alert">${esc(s.error.message+readNotice(s))}</p>${rereadButton(s)}`:'<p role="status">正在读取设计…</p>';
+  heading.querySelector('[data-op]')?.addEventListener('click',()=>c.reread());body.replaceChildren();progress.hidden=true;actions.hidden=true;editor.hidden=true;secondary.replaceChildren();return;}
+ if(previous&&previous.status!=='completed'&&row.status==='completed'&&row.output_asset_ref)completionPending=true;
  host.dataset.testid='robotics-design';host.dataset.sessionId=sid;host.dataset.stage=row.stage;host.dataset.revision=row.revision;host.dataset.status=row.status;
+ syncInteractiveGraphView(s);
  const needsProperties=row.stage==='properties'&&row.status==='awaiting_input';
  const selected=s.selectedRevision,result=selected?.state?.result||row.result,ref=row.output_asset_ref,waiting=active(row),failed=['failed','interrupted'].includes(row.status);
+ const history=s.historyRevision!==null;
  const awaiting=row.status==='awaiting_confirmation',suggesting=context&&!awaiting&&row.stage!=='abox';
  host.setAttribute('aria-busy',String(waiting||s.busy));
  progress.hidden=!(waiting||s.busy);
@@ -98,27 +135,65 @@ function mount(host,sid,options={}){const esc=g.RoboticsAssets.escape;let c,cont
   const content=`<span class="rd-progress-spinner" aria-hidden="true"></span><span>${message}</span>`;
   if(progress.innerHTML!==content)progress.innerHTML=content;
  }
- const primary=awaiting&&!selected?(row.stage==='classes'?['confirmClasses','确认类别']:row.stage==='properties'?['confirmSchema','确认骨架并构建实例']:null):null;
- actions.hidden=!primary;
- actions.innerHTML=primary?`<span>设计已生成，请核对后确认</span><button class="rd-primary-confirm" data-op="${primary[0]}" ${s.busy?'disabled':''}>${primary[1]}</button>`:'';
+ const primary=awaiting&&!history?(row.stage==='classes'?['confirmClasses','确认类别']:row.stage==='properties'?['confirmSchema','确认骨架并构建实例']:null):null;
+ actions.hidden=!primary&&(!ref||history);
+ actions.innerHTML=primary?`<span>设计已生成，请核对后确认</span><button class="rd-primary-confirm" data-op="${primary[0]}" ${s.busy?'disabled':''}>${primary[1]}</button>`:ref&&!history?`<span>本体实例已保存</span><a class="ra-button" href="${esc(completionLink(ref))}">${contextual?'返回应用检查':'打开图谱界面'}</a>`:'';
  hint.innerHTML=contextError?`<p role="alert" data-testid="schema-repair-context-error">${esc(contextError)}</p>`:'';
- heading.innerHTML=`<h3>模型辅助构建 · ${esc(row.model?.model||'')}</h3><p>${esc(({classes:'类别设计',properties:'关系与属性设计',abox:'实例构建'})[row.stage]||row.stage)} · 修订 ${row.revision} · ${esc(({queued:'排队中',running:'运行中',needs_description:'等待建模要求',awaiting_input:'等待输入',awaiting_confirmation:'等待确认',completed:'已完成',failed:'失败',interrupted:'已中断'})[row.status]||row.status)} · 执行未验证</p>${(s.error||row.error)?`<p role="alert">${esc(s.error?.message||row.error?.message||'设计失败')}</p>`:''}`;
+ const stage=selected?.state?.stage||row.stage;
+ const statusLabel=({queued:'排队中',running:'运行中',needs_description:'等待建模要求',awaiting_input:'等待输入',awaiting_confirmation:'等待确认',completed:'已完成',failed:'失败',interrupted:'已中断'})[row.status]||row.status;
+ let revisionLabel='修订 '+row.revision+' · '+statusLabel;
+ if(history){
+  revisionLabel=selected?.revision===s.historyRevision?'历史修订 '+s.historyRevision+' · 只读':'正在读取历史修订 '+s.historyRevision+'…';
+ }
+ heading.innerHTML=`<div><h3 class="rd-stage-guide">${esc(({classes:'第 1 步：类别设计',properties:'第 2 步：关系与属性设计',abox:'第 3 步：实例构建'})[stage]||stage)}</h3><p class="rd-status">${esc(revisionLabel)} · 执行未验证</p></div>${(s.error||row.error)?`<p role="alert">${esc(s.error?s.error.message+readNotice(s):row.error?.message||'设计失败')}</p>`:''}`;
+ heading.append(historyBox);
  const reviewOptions={classes:row.class_confirmation?.classes||[]};
- const guidance=({classes:'第 1 步：确定要描述哪些对象。核对名称和范围，缺少或不合适的内容可用日常语言提出修改。',properties:'第 2 步：确定对象之间的联系，以及需要记录的信息。核对是否符合你的业务，再确认并从文件构建实例。',abox:'第 3 步：从上传文件整理具体对象和信息。构建完成后可打开本体查看结果。'})[selected?.state?.stage||row.stage]||'';
- body.innerHTML=`<p class="rd-stage-guide">${esc(guidance)}</p>
- ${needsProperties&&!selected?`${context?'':'<section role="status" class="rd-next-step"><h4>类别已确认，下一步设计关系与属性</h4><p>确认类别只固定类别范围。请在下方补充关系与属性设计要求，或直接点击“开始关系与属性设计”，按已确认类别和 XML 继续。</p></section>'}<details><summary>查看已确认的类别</summary>${presentation({classes:row.class_confirmation?.classes||result?.classes||[]},esc)}</details>`:result?`${result.reply?`<details class="rd-design-details"><summary>查看模型设计说明</summary><p>${esc(result.reply)}</p></details>`:''}${presentation(result,esc,reviewOptions)}`:''}
+ body.innerHTML=`<details><summary>查看完整定义与说明</summary>
+ ${needsProperties&&!selected?presentation({classes:row.class_confirmation?.classes||result?.classes||[]},esc):result?`${result.reply?`<details class="rd-design-details"><summary>查看模型设计说明</summary><p>${esc(result.reply)}</p></details>`:''}${presentation(result,esc,reviewOptions)}`:''}</details>
  ${selected?`<section data-testid="robotics-design-diff"><h4>与当前设计的差异</h4><details open><summary>历史设计</summary>${presentation(selected.state.result,esc)}</details><details open><summary>当前设计</summary>${presentation(row.result,esc)}</details></section>`:''}
- <div>${!waiting&&row.revision?'<button data-op="editClasses">返回类别修改</button>':''}${failed?'<button data-op="retry">重试设计</button>':''}</div>
  ${ref?`<p>设计候选已保存 · 执行未验证</p><a href="${esc(g.RoboticsAssets.versionLink(ref.ontology_id,ref.version_id))}">查看本体候选</a>`:''}`;
- host.querySelectorAll('[data-op]').forEach(b=>{b.disabled=s.busy;b.onclick=()=>c[b.dataset.op]();});
+ secondary.innerHTML=`${rereadButton(s)}${!history&&!waiting&&row.revision?'<button data-op="editClasses">返回类别修改</button>':''}${!history&&failed?'<button data-op="retry">重试设计</button>':''}`;
+ [...actions.querySelectorAll('[data-op]'),...secondary.querySelectorAll('[data-op]')].forEach(b=>{b.disabled=s.busy;b.onclick=()=>c[b.dataset.op]();});
  const phase=[row.stage,row.status,row.revision].join(':');
  if(phase!==editorPhase){editor.open=!awaiting||!!s.messageText.trim();editorPhase=phase;}
  summary.hidden=!awaiting;summary.textContent='继续提修改意见';
- editor.hidden=waiting||row.stage==='abox';startProperties.hidden=contextual||!needsProperties||!!s.messageText.trim();startProperties.disabled=s.busy;send.hidden=!contextual&&needsProperties&&!s.messageText.trim();send.disabled=s.busy||row.stage==='abox'||(contextual&&!s.messageText.trim());input.placeholder=awaiting?'可继续输入修改意见':suggesting?repairSuggestion(context,row.stage)+'（Tab 填入）':contextual&&!context&&!contextError?'正在读取修订建议…':needsProperties?'可选：填写希望补充的关系、参数或关注点；留空可按已有要求继续。':'填写本轮建模要求或修改意见'; if(input.value!==s.messageText)input.value=s.messageText;
+ editor.hidden=history||waiting||row.stage==='abox';startProperties.hidden=contextual||!needsProperties||!!s.messageText.trim();startProperties.disabled=s.busy;send.hidden=!contextual&&needsProperties&&!s.messageText.trim();send.disabled=s.busy||row.stage==='abox'||(contextual&&!s.messageText.trim());input.placeholder=awaiting?'可继续输入修改意见':suggesting?repairSuggestion(context,row.stage)+'（Tab 填入）':contextual&&!context&&!contextError?'正在读取修订建议…':needsProperties?'可选：填写希望补充的关系、参数或关注点；留空可按已有要求继续。':'填写本轮建模要求或修改意见'; if(input.value!==s.messageText)input.value=s.messageText;
+ if(completionPending&&!history&&(!contextual||context)){completionPending=false;g.location.hash=completionLink(ref);}
  }
+ function syncInteractiveGraphView(s){
+  const row=s.session;if(!row)return;
+  const choice=String(s.historyRevision??'current');
+  if(historySelect.dataset.revision!==String(row.revision)){
+    historySelect.replaceChildren(new Option('当前设计','current'));
+    for(let i=1;i<=row.revision;i++)historySelect.add(new Option('历史修订 '+i,String(i)));
+    historySelect.dataset.revision=String(row.revision);
+  }
+  historySelect.value=choice;
+  const selected=s.selectedRevision;
+  const warning=(selected||row).interactive_graph_warning;
+  graphHost.hidden=!!warning;
+  graphWarning.hidden=!warning;
+  graphWarning.textContent=warning?.message||'';
+  if(warning||!interactiveGraphPanel)return;
+  if(selected?.interactive_graph_view){interactiveGraphHistory='history:'+selected.revision;interactiveGraphPanel.present(selected.interactive_graph_view,{scope:interactiveGraphHistory});return;}
+  interactiveGraphHistory='current';
+  if(row.status!=='completed'&&row.interactive_graph_view)interactiveGraphPanel.present(row.interactive_graph_view,{scope:'current:'+sid});
+  const ref=row.output_asset_ref;
+  if(row.status==='completed'&&ref){
+    const key=JSON.stringify(ref);
+    if(graphHost.dataset.result===key){if(graphHost.interactiveGraphResult)interactiveGraphPanel.present(graphHost.interactiveGraphResult,{scope:'output:'+key});return;}
+    graphHost.dataset.result=key;
+    read(g.fetch.bind(g),'/api/ontology-assets/'+encodeURIComponent(ref.ontology_id)+'/versions/'+encodeURIComponent(ref.version_id)+'/views/interactive-ontology-graph',{signal:abort.signal}).then(doc=>{
+      if(dead||JSON.stringify(latest?.session?.output_asset_ref)!==key)return;
+      graphHost.interactiveGraphResult=doc;if(interactiveGraphHistory==='current')interactiveGraphPanel.present(doc,{scope:'output:'+key});
+    }).catch(error=>{if(!dead&&error.name!=='AbortError'){delete graphHost.dataset.result;interactiveGraphPanel.error(error.message);}});
+  }else {delete graphHost.dataset.result;delete graphHost.interactiveGraphResult;}
+ }
+ historySelect.onchange=()=>historySelect.value==='current'?c.showCurrent():c.openRevision(Number(historySelect.value));
+ import('/assets/modules/interactive-ontology-graph/panel.js').then(module=>{if(dead)return;interactiveGraphPanel=module.mountPanel(graphHost,{embedded:true});if(latest)syncInteractiveGraphView(latest);}).catch(error=>{if(!dead)graphHost.textContent='图谱组件加载失败：'+error.message;});
  c=createController({onChange:render});c.openSession(sid);
  if(contextual){const url=options.checkId?'/api/application-checks/'+encodeURIComponent(options.checkId):'/api/robotics/application-adaptations/'+encodeURIComponent(options.adaptationId);
   read(g.fetch.bind(g),url,{signal:abort.signal}).then(response=>{if(dead)return;context=repairContext(response,sid,!options.checkId);render(c.snapshot());}).catch(e=>{if(dead||e.name==='AbortError')return;contextError=e.message;render(c.snapshot());});}
- return {...c,dispose(){dead=true;abort.abort();c.dispose();}};
+ return {...c,dispose(){dead=true;abort.abort();interactiveGraphPanel?.destroy();delete graphHost.interactiveGraphResult;c.dispose();}};
 }
 g.RoboticsDesign={createController,mount,repairContext,repairSuggestion,beginRepair};})(window);

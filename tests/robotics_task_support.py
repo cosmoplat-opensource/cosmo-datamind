@@ -1,7 +1,8 @@
 """IR-020 real storage fixtures, scripted HTTP model and independent XML oracle — DR-144 / DR-146 / DR-148.
 
 Synthetic inputs test software contracts only; never evidence of physical applicability.
-Only the external model is replaced. No task/save/compiler/download service is mocked.
+Initial build preconditions use independent copies of real-built seeds.
+No task/save/compiler/download service or consumer validation is mocked.
 """
 from collections import deque
 from contextlib import contextmanager
@@ -18,9 +19,9 @@ from domain_runs import RunStore
 from domains.robotics.publisher import publish_ontology
 from domains.robotics.task_model import ModelClient
 from ontology_assets import AssetStore
-from tests.robotics_governance_support import NOW, TASK, actual_build, evidence_spec
+from tests.robotics_governance_support import TASK
+from tests.robotics_seed_support import built_seed, ready_payload
 from tests.robotics_support import S, config, sequence, source_root, trees
-from tests.unit.test_robotics_task_completion import ready_graph
 from tests.unit.test_robotics_task_model import ScriptedTransport, envelope
 
 TEXT = '生成把零部件A放到工位B载具B01放置位B01的行为树'
@@ -39,33 +40,21 @@ def model(*responses):
                        transport=transport), transport
 
 
-def fixture(root, *, ready=False, mutate=None):
-    """Use a real two-XML build; ready/mutations are clearly test-only setup."""
-    version, build_run = actual_build(root)
+def fixture(root, *, ready=False, mutate=None, build_run=None):
+    """Use a completed two-XML build, supplied by the worker for a live site (DR-186)."""
+    if build_run is None:
+        _, build_run = built_seed(root)
+    assert build_run['status'] == 'completed' and build_run['result']['status'] == 'built', build_run
     assets = AssetStore(root)
+    version = assets.get_version(**build_run['output_asset_ref'])
     if ready or mutate is not None:
-        graph = ready_graph() if ready else Graph().parse(data=assets.read_payload(
-            version['ontology_id'], version['version_id']), format='xml')
-        target = root.parent / (root.name + '-synthetic-fixture.owl')
-        publish_ontology(graph, target, mode='real')
-        # Normalize a valid contract first. Incomplete editable candidates use storage's
-        # RDF syntax contract, not the strict consumer/publisher gate they cannot yet pass.
-        graph = Graph().parse(data=target.read_bytes(), format='xml')
         if ready:
-            # Publishing normalizes executable port metadata. Confirm synthetic evidence
-            # against that normalized graph, not the different pre-publication digest.
-            from domains.robotics import evidence
-            for index, kind, implementation, slot in [
-                (0, 'grasp_compatibility', S.grasp_Subtree_Impl, None),
-                (1, 'placement_compatibility', S.Place_Subtree_Impl, str(S.Slot_B_01)),
-            ]:
-                subject = S[f'TaskCompletionEvidence{index}']
-                graph.remove((subject, None, None))
-                spec = evidence_spec(iri=str(subject), kind=kind, implementation=str(implementation),
-                    slot=slot, reference=BASIS, valid_until=EXPIRY)
-                graph = evidence.register_evidence(graph, spec, mode='real', now=NOW)
-                graph = evidence.review_evidence(graph, str(subject), decision='accepted',
-                    actor='synthetic fixture', reason=BASIS, now=NOW)
+            graph = Graph().parse(data=ready_payload(), format='xml')
+        else:
+            graph = Graph().parse(data=assets.read_payload(version['ontology_id'], version['version_id']), format='xml')
+            target = root.parent / (root.name + '-synthetic-fixture.owl')
+            publish_ontology(graph, target, mode='real')
+            graph = Graph().parse(data=target.read_bytes(), format='xml')
         if mutate:
             mutate(graph)
         version = assets.add_version(version['ontology_id'], graph.serialize(format='xml', encoding='utf-8'), payload_kind='robotics_rdf',

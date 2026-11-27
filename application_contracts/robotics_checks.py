@@ -1,4 +1,4 @@
-"""Read-only robotics diagnostics and registered explicit repair navigation — DR-154."""
+"""Read-only robotics diagnostics and registered explicit repair navigation — DR-154 / DR-172."""
 import json
 from urllib.parse import urlencode
 
@@ -37,11 +37,16 @@ def schema(data):
     ref={k:data['snapshots'][0][k] for k in ('ontology_id','version_id')}
     mapping_target={'resource_kind':'ontology_version','resource_id':ref['version_id'],'expected_revision':0,
         **ref,'mode':data['context']['mode']}
+    from domains.robotics.modeling.vocabulary import same_vocabulary
+    choices=[action('robotics.revise_tbox','修订本体骨架',target),
+             action('robotics.adapt_execution','核对角色对应',mapping_target)]
+    # DR-172: trusted fixed terms need definitions; unknown vocabularies require explicit correspondence.
+    if not same_vocabulary(doc['state'].get('vocabulary',{}).get('sha256')):
+        choices.reverse()
     problems=[issue(p['code'],'schema',p['message'],entity=[tbox['namespace']+p.get('role','')],
         expected=p.get('expected'),observed=p.get('observed'),
         evidence=[doc['state']['schema_confirmation']['sha256']],
-        actions=[action('robotics.revise_tbox','修订本体骨架',target),
-                 action('robotics.adapt_execution','核对角色对应',mapping_target)]) for p in problems]
+        actions=choices) for p in problems]
     return row('schema.payload','missing' if problems else 'passed',problems)
 
 

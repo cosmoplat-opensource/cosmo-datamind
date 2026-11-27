@@ -7,8 +7,8 @@
 - **当前环节**：2026-11-04 用户在了解演示流程、子进程机制及验收内容后回复“可以进行下一步了”，据此确认本轮交付；T01～T08 完成。
 - **关联 / Refs**: [[DR-141-unified-domain-semantic-graph]]、[[DR-146-persistent-build-runs-and-artifact-manifests]]、[[DR-147-robotics-migration-and-compatibility-validation]]。
 - **前置**：[IR-016](IR-016-robotics-contract-integration.md) 已于 2026-11-03 经用户确认交付。
-- **方案**：集成 Proposal（本地材料） 第 6 节步骤 2。
-- **流程依据**：[SDD 工作流](../../AGENTS.md) 第③～⑤步。
+- **范围**：资产、不可变版本与持久化运行。
+- **流程依据**：先登记需求与验收映射，再依次运行失败测试、实现及回归。
 
 ## 目标 Goal
 
@@ -35,7 +35,6 @@ AST-08 的旧 UI 回归只能证明旧能力未受破坏，不能作为新 UI �
 
 后续每个涉及 UI 的 IR 必须同时列出页面改动、接口契约、浏览器联动测试及人工操作路径，不把联动全部推迟到最后才检查。
 步骤 5～6 应按可操作的用户流程拆分实施批次，避免只完成 API 或只完成静态页面就宣称该流程交付。
-最终产品完成标准见 Proposal 第 6.1 节（本地材料）。
 这些说明是后续范围的追踪，不将 UI 工作计入本 IR 的 AST-01～09，也不视为已获验收批准。
 
 ### 代码依据与复用边界
@@ -70,8 +69,8 @@ AST-08 的旧 UI 回归只能证明旧能力未受破坏，不能作为新 UI �
 - [x] 数据领域只读适配器：登记有效 IR 快照；显式再次登记产生或复用对应快照，不将旧 JSON 目录静默迁移为新权威源。
 - [x] 机器人适配：存储指定版本的完整 OWL，并通过 IR-016 的加载与严格生成入口使用该版本。
 - [x] 行为测试：资产版本、身份隔离、重启恢复、失败原子性、并发事件、路径约束和旧存储保护，按批次先 RED 后 GREEN。
-- [x] `scripts/demo_domain_storage.py` 及 `docs/domain-storage-demo.md`：可直接执行的离线演示与跨进程检查说明。
-- [x] `docs/audits/IR-017-storage-validation.md`：各批 RED/GREEN、人审记录、实际命令、失败与补验、产物路径及最终回归证据。
+- [x] `scripts/demo_domain_storage.py` 及离线演示指南（现仅保留本地）：可直接执行的离线演示与跨进程检查；公开命令见[运行存储说明](../../domain_runs/README.md#验证)。
+- [x] 验证记录：验证双领域目录、不可变版本、旧图谱适配、运行与事件恢复、工件提交与清单、路径与完整性，以及跨进程离线复核（AST-01～09）；各批 RED/GREEN 与人审经过见下方记录。复现：`python -m pytest tests/unit/test_ontology_asset_catalog.py tests/unit/test_ontology_asset_versions.py tests/unit/test_legacy_asset_adapter.py tests/unit/test_domain_run_store.py tests/unit/test_domain_artifacts.py tests/unit/test_domain_storage_integrity.py tests/unit/test_domain_storage_demo_cli.py`，以及上方离线演示命令和 `--verify-storage` 只读核验。原始验证记录仅保留本地，不随仓库发布。
 - [x] 更新 acceptance 映射、Proposal 和 specs 索引，新增代码关联 DR，真实测试创建后替换计划入口。
 
 ### 最小存储约定
@@ -127,7 +126,7 @@ T02 已将 AST-01～03、08 的首批真实测试入口登记到 `acceptance.jso
 ```
 
 演示在输出根目录下创建唯一子目录，包含数据库、来源与版本载荷、工件、summary.json 和 summary.md。
-具体用法见 [离线演示说明](../../docs/domain-storage-demo.md)；另可用 `--verify-storage <storage_root>` 在新的进程中只读核验。
+具体命令见[运行存储说明](../../domain_runs/README.md#验证)；另可用 `--verify-storage <storage_root>` 在新的进程中只读核验。
 至少展示同目录双领域资产、固定旧版本生成、真实缺证据无候选、运行中断与重启查询四种结果。
 跨进程检查必须由新的 Python 进程读取磁盘记录，不能仅在原进程重新创建一个对象冒充重启。
 summary 输出 storage_root、run_id、版本引用和独立检查结果，说明所有演示依据及执行未验证状态。
@@ -147,7 +146,6 @@ summary 输出 storage_root、run_id、版本引用和独立检查结果，说�
 - 全部因 ontology_assets 尚未实现而预期失败，0 收集/运行错误、0 跳过，pytest 退出 1；ruff 检查通过。
 - 独立检查现有新构建 OWL 和 server 编辑回放/只读接口的夹具前提通过；不计为存储实现成功。
 - AST-01～03、08 已关联首批真实测试，未覆盖部分与后续批次在审计中明确列出；没有运行全量回归，没有修改生产代码。
-- 详见 T02 测试审查记录（本地材料） 与 机器结果（本地材料）。
 - 用户明确回复“这部分测试覆盖已确认，继续下一步实现”，随后进入 T03；本节保留 T02 原 RED 证据。
 
 ### T03 GREEN 记录
@@ -158,7 +156,7 @@ summary 输出 storage_root、run_id、版本引用和独立检查结果，说�
 - 30 项已审测试全部通过，三个测试文件与辅助模块的 SHA-256 与 T02 记录一致。
 - ontology_assets 已纳入覆盖率统计，原门槛保持 81%；全量检查实际退出 0：948 单元通过 / 5 可选上游跳过、551 HTTP 通过 / 8 可选上游跳过，覆盖率 86.8%。
 - 10 轮变序、64 项 UI 走查、50 项 UI 实操与 10 项构建页浏览器检查通过；3 项真实模型配置检查因未配置端点跳过。
-- 详见 T03 审计记录（本地材料） 与 [模块说明](../../ontology_assets/README.md)。
+- 资产与版本的用法见[模块说明](../../ontology_assets/README.md)。
 - T03 完成不代表 IR-017 整体交付；下一任务 T04 编写运行/事件/工件等失败测试并按 skill 审查。
 
 ### T04 RED 记录
@@ -168,9 +166,7 @@ summary 输出 storage_root、run_id、版本引用和独立检查结果，说�
 - 测试采用合成任务与文件验证持久化，不把合成 XML 当作通过机器人校验的候选；真实构建/生成接入由 T06 验证。
 - 写文件、写后摘要和数据库事务提交前故障，必须保持运行记录、事件及可见工件索引原状；允许遗留未登记文件，但不能下载或算作成功。
 - ruff 与类型检查通过；T02 已审测试和 T03 生产实现未修改，未运行全量回归。
-- 详见 T04 审查记录（本地材料） 与 机器结果（本地材料）。
 - 用户听取本批测试解释后回复“确认没问题”，据此完成 T04 覆盖审查并进入 T05；本节保留原 RED 证据。
-
 
 ### T05 GREEN 记录
 
@@ -179,9 +175,8 @@ summary 输出 storage_root、run_id、版本引用和独立检查结果，说�
 - 49 项 T04 已审测试全部通过；T02/T04 八个测试及辅助文件 SHA-256 与 RED 记录一致。
 - 全量检查退出 0：997 单元通过 / 5 可选上游跳过；覆盖率 87.0%，门槛仍为 81%；551 HTTP 通过 / 8 可选上游跳过。
 - 10 轮变序、64 UI 走查、50 UI 实操及 10 构建页浏览器检查通过；3 项未配置真实模型端点检查跳过。
-- 详见 T05 机器结果（本地材料）、审计说明（本地材料） 与 [运行服务用法](../../domain_runs/README.md)。
+- 持久化运行的读写方式见[运行服务用法](../../domain_runs/README.md)。
 - T05 不代表 IR-017 交付；下一任务 T06 为真实内核接入与跨进程演示编写失败测试，审查后由 T07 实现，最后 T08 进入整轮交付审查。
-
 
 ### T06 RED 记录
 
@@ -189,35 +184,29 @@ summary 输出 storage_root、run_id、版本引用和独立检查结果，说�
 - 新增 `tests/storage_pipeline_support.py`、`test_domain_storage_pipeline.py` 和 `test_domain_storage_demo_cli.py`，参数化展开 30 项：内核接入 15 项、CLI/跨进程核验 15 项。
 - 全部因 `domain_runs.robotics` 或 `scripts/demo_domain_storage.py` 尚未实现而预期失败；0 收集/运行错误、0 跳过，pytest 退出 1。
 - 从两份 XML 新构建 OWL，再发布入库，验证指定版本生成、独立六参数 XML 对照、真实缺证据等负向结果、异常与存储失败、跨进程历史、工件损坏及重复演示保护。
-- 拟定 `generate_from_version` 接入接口和 CLI 三场景/独立核验入口，完整契约见审计；任务仍为六字段结构化输入，不包含 LLM 和新 UI。
+- 拟定 `generate_from_version` 接入接口和 CLI 三场景/独立核验入口；任务仍为六字段结构化输入，不包含 LLM 和新 UI。
 - AST-02、04～09 已映射真实测试；ruff/mypy 通过，测试前提单独实测通过，不把前提检查算作新功能通过；没有运行全量回归。
-- 详见 T06 覆盖审查（本地材料） 与 机器结果（本地材料）。
 - 用户听取本批测试解释后回复“继续下一步”，据此确认 T06 覆盖并进入 T07；本节保留原 RED 证据。
-
 
 ### T07 GREEN 记录
 
 - 实现指定已发布版本的严格生成接入、不可变候选/报告保存、三个离线场景、真实子进程中断/恢复以及只读核验 CLI。
 - 30 项已审测试全部通过；T02/T04/T06 的 11 个测试/辅助文件 SHA-256 不变。
-- 实际运行 all 演示与独立核验均退出 0，三场景分别为 generated、needs_information、interrupted；输出可按 [演示说明](../../docs/domain-storage-demo.md) 直接复查。
+- 本阶段实际运行 all 演示与独立核验均退出 0，三场景分别为 generated、needs_information、interrupted；当前复现命令见[运行存储说明](../../domain_runs/README.md#验证)。
 - 全量命令退出 0：1027 单元通过 / 5 可选上游跳过，覆盖率 84.6%（门槛 81%）；551 HTTP、10 轮变序、64 UI 走查、50 UI 实操及 10 构建页检查通过。
 - HTTP 可选上游跳过 8 项，未配置真实模型的 UI 检查跳过 3 项；未把这些能力算作已验证。
 - 新增实测 208.617 秒的接入/CLI 测试，check.py 单元段预算从 360 秒调整为 720 秒，其他段和所有断言/覆盖率门槛保持不变；全量单元段实际 525.403 秒。
-- 详见 T07 GREEN 机器记录（本地材料） 与 审计说明（本地材料）。
 - 下一任务 T08 整理交付证据；新 UI/API 仍由后续集成阶段承接。
-
 
 ### T08 最终验收整理（待用户交付确认）
 
-- T07 实现提交为 `bc38671`；本任务只整理文档与验收记录，没有修改生产代码或已审测试。
+- 本阶段汇总 T07 实现的文档与验收记录。
 - 复用紧接 T07 完成的统一环境全量回归及实际演示证据；生产文件摘要再次核对一致，未对相同实现重复执行整套耗时回归。
 - T02/T04/T06 三批共 109 项已审用例全部通过，11 个测试/辅助文件摘要保持不变；AST-01～09 验收原文未改变，映射为 verified-awaiting-human-delivery。
 - 全量九段退出 0，统计与跳过原因见 T07 记录；最终文档及验收映射的 21 项元测试通过。
-- 最终审查入口见 验收对照表（本地材料） 与 机器记录（本地材料）。
-- [直接运行演示](../../docs/domain-storage-demo.md) 可查看三场景、旧版生成、报告、工件与跨进程核验，不依赖新 UI。
-- 按 SDD skill 第⑨步“人确认这一轮做完了”，本 IR 仍为 in-progress，Deliverables 和 Acceptance 的交付勾选保留为未确认；只有用户确认本轮交付后才标记 delivered。
+- 通过[演示 CLI](../../scripts/demo_domain_storage.py) 可查看三场景、旧版生成、报告、工件与跨进程核验，不依赖新 UI；参数见 `--help`。
+- T08 技术复核结束时尚待交付确认。最终确认日期和范围见下节。
 - 本轮交付仅为 Proposal 步骤 2；后续本体构建 API/UI、知识维护与发布 UI、任务解析与生成界面以及浏览器联动验收仍须独立 IR。
-
 
 ### 最终交付确认
 

@@ -51,10 +51,21 @@ def isolated_env(directory):
     return env
 
 
+def unit_command(py, reports, workers):
+    if workers not in range(1, 5):
+        raise ValueError('Unit workers must be between 1 and 4')
+    command = [py, '-m', 'pytest', 'tests/', '-ra', '--cov', '--cov-report=',
+               '--cov-config=' + str(ROOT / 'pyproject.toml'), '--durations=30',
+               '--junitxml=' + str(Path(reports) / 'unit.xml')]
+    if workers > 1:
+        command.extend(['-n', str(workers), '--dist', 'worksteal'])
+    return command
+
+
 def run_check(name, args, env, reports, results):
     start = time.monotonic()
     # Hosted runners also verify the complete RDF build and validation paths under coverage.
-    timeout = {"unit": 7200, "unit-shard": 3300, "navigation-browser": 720}.get(name, 360)
+    timeout = {"unit": 7200, "unit-shard": 3300, "navigation-browser": 720}.get(name, 600)
     with (reports / f"{name}.log").open("w", encoding="utf-8") as log:
         process = subprocess.Popen(args, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT,
                                    start_new_session=True)
@@ -84,6 +95,8 @@ def run_check(name, args, env, reports, results):
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--suite", choices=("unit", "integration", "ui", "all", "serve"), default="all")
+    ap.add_argument("--workers", type=int, choices=range(1, 5), default=min(4, os.cpu_count() or 1),
+                    help="Bounded unit workers; use 1 for the serial comparison")
     ap.add_argument("--report-dir", type=Path, default=ROOT / ".check-results")
     mode = ap.add_mutually_exclusive_group()
     mode.add_argument("--unit-shard", nargs=2, type=int, metavar=("INDEX", "COUNT"),
@@ -111,7 +124,7 @@ def main():
                        "--junitxml", str(reports / "unit.xml")]
             return int(not run_check("unit-shard", command, env, reports, results))
         if args.suite in ("unit", "all"):
-            unit_stage = ("unit", pytest_command)
+            unit_stage = ("unit", unit_command(py, reports, args.workers))
             if args.combine_unit:
                 unit_stage = ("coverage-combine", [py, "-m", "coverage", "combine", "--keep",
                                                   *map(str, args.combine_unit)])
@@ -194,6 +207,9 @@ def main():
                                   "--output", str(reports / "robotics-task-browser")], env, reports, results)
                         run_check("robotics-design-browser", [py, "tests/frontend/robotics-design-browser.py",
                                   "--output", str(reports / "robotics-design-browser")], env, reports, results)
+                        # DR-166: both staged and fixed Ontology graph graphs, geometry and scale.
+                        run_check("robotics-interactive-ontology-graph-browser", [py, "tests/frontend/robotics-interactive-ontology-graph-browser.py",
+                                  "--output", str(reports / "robotics-interactive-ontology-graph-browser")], env, reports, results)
                         # DR-155: real fixed-version detail, preparation and history navigation.
                         run_check("ontology-detail-browser", [py, "tests/frontend/ontology-detail-browser.py",
                                   "--output", str(reports / "ontology-detail-browser")], env, reports, results)

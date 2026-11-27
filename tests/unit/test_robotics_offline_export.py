@@ -38,6 +38,39 @@ def download(client, version):
                       + '/exports/json', base_url=BASE_URL)
 
 
+def graph_view(client, version):
+    path = (f"/api/ontology-assets/{version['ontology_id']}/versions/{version['version_id']}"
+            "/views/interactive-ontology-graph")
+    return client.get(path, base_url=BASE_URL)
+
+
+@pytest.mark.parametrize('limit', [None, 'MAX_INPUT_TRIPLES', 'MAX_TYPED_SUBJECTS'])
+def test_offline_graph_checks_input_budget_before_single_unlocked_canonicalization(live, monkeypatch, limit):
+    from rdflib.compare import to_canonical_graph
+    from ontology_assets import interactive_ontology_graph_view as projection, robotics_offline
+    from srv_context import _RDF_LOCK
+
+    client, _, version, _ = live
+    lock_states = []
+
+    def counted(graph):
+        lock_states.append(_RDF_LOCK._is_owned())
+        return to_canonical_graph(graph)
+
+    for module in (projection, robotics_offline):
+        monkeypatch.setattr(module, 'to_canonical_graph', counted)
+    if limit:
+        monkeypatch.setattr(projection, limit, 1)
+    response = graph_view(client, version)
+    if limit:
+        assert lock_states == []
+        assert response.status_code == 409 and response.json['error']['code'] == 'artifact_integrity'
+    else:
+        assert response.status_code == 200, response.json
+        assert response.json['context']['revision'] == version['payload_sha256']
+        assert lock_states == [False]
+
+
 def test_offline_complete_json_contains_exact_payload_sources_and_build_reports_without_writes(live):
     client, root, version, run = live
     assets = AssetStore(root, read_only=True); runs = RunStore(root, read_only=True)
@@ -104,6 +137,8 @@ def test_incomplete_offline_bundle_fails_instead_of_returning_partial_success(li
     owl = client.get('/api/ontology-assets/' + version['ontology_id'] + '/versions/' + version['version_id']
                      + '/payload', base_url=BASE_URL)
     assert owl.status_code == 409 and owl.json['error']['code'] == 'artifact_integrity'
+    graph = graph_view(client, version)
+    assert graph.status_code == 409 and graph.json['error']['code'] == 'artifact_integrity'
     assert (db_rows(root), blob_bytes(root)) == before
 
 
@@ -148,6 +183,8 @@ def test_published_version_includes_its_own_artifacts_in_addition_to_original_bu
     if corrupt:
         (root / next(r for r in records if r['kind'] == 'validation')['path']).write_bytes(b'broken publication report')
         assert download(client, published).status_code == 409
+        graph = graph_view(client, published)
+        assert graph.status_code == 409 and graph.json['error']['code'] == 'artifact_integrity'
         return
     before = db_rows(root), blob_bytes(root)
     response = download(client, published)

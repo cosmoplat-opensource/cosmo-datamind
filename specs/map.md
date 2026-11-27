@@ -1,7 +1,6 @@
 # Specs Map · COSMO DataMind 数据智脑
 
-> 入口文件。AI 代理与协作者从这里查找相关 spec。
-> 规约驱动开发(SDD)。消费方式:`Consult @specs/map.md to find relevant context.`
+> 产品规约索引，用于查找设计决策、接口契约与验收范围。
 
 > **阅读说明（2026-08-28）：** `decisions/`、`iterations/` 与下文带日期的条目是历史决策记录，
 > 会保留当时的页面名、接口名和测试数字，不代表当前能力。当前能力以 `README.md`、
@@ -19,8 +18,18 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 > DataMind 是**下游产品化前端**,复用其 engine/技能,但采用**独立的本地执行、路由、安全与命名规则**——
 > 本 `specs/` 只记录 DataMind 自身的决定与迭代,与平台 specs 前缀独立、勿混用。
 
+## 机器人构建与应用交互
+
+[DR-172](decisions/DR-172-application-guidance-and-return-navigation.md) 与 [IR-033](iterations/IR-033-application-guidance-and-return-navigation.md)：应用检查提示、统一完善入口、浏览器后退与操作恢复。AGN-01～AGN-04。
+
+[DR-171](decisions/DR-171-robotics-workflow-continuity.md) 与 [IR-032](iterations/IR-032-robotics-workflow-continuity.md)：任务检查入口、集中知识确认、紧凑设计画布、完成导航与自动执行适配。RUX-01～RUX-06。
+
+## 测试执行与隔离
+
+[DR-168 · 独立测试数据与有界并行验证](decisions/DR-168-isolated-test-seeds-and-bounded-parallel-checks.md)：复用真实构建准备产物，保存和读取仍完整校验；独立资产与运行身份；有界进程及完整覆盖率汇总。PERF-T01～T04。
+
 ## 开发约定(DR-066)
-- 需求 → 测试映射 `specs/acceptance.json`;有效行规则 `specs/models/valid_rows_rules.json`;场景回归基准 `tests/scenarios`(`scripts/scenario_bench.py`);构建步骤说明 `docs/pipelines/ontology_build.yaml`;开发顺序见根目录 `AGENTS.md`。
+- 需求 → 测试映射 `specs/acceptance.json`;有效行规则 `specs/models/valid_rows_rules.json`;场景回归基准 `tests/scenarios`(`scripts/scenario_bench.py`);构建步骤说明 `docs/pipelines/ontology_build.yaml`。
 
 ## 关键契约
 - **数据执行**:侧栏选择已登记的 SQLite 来源，总览、目录、问数、指标与可视化沿用该来源；SQL 和可视化可显式覆盖。`DATAMIND_DB` 为默认库。防写由 `mode=ro`、`sql_is_readonly` 与单句执行共同实现。SPARQL 在当前本体的本地 rdflib RDF 图(IR→Turtle)执行。见 DR-001、DR-095。
@@ -30,6 +39,15 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - **前端**:对齐 iiot-platform/design-system 设计 token(#4A5FF3/#409EFF、圆角 4px、PingFang);**工业级去 emoji**(accent bar + 单色 SVG + 状态点),见 [[DR-005-frontend-design-system]]。
 - **安全**:只读 SQL、全局 CSRF 校验、图谱键路径穿越校验、命令白名单、SPARQL 禁 SERVICE/FROM 外链,见 [[DR-006-security-model]]。
 - **寻址**:18 个子页经 `#<page>` hash 直接寻址 + 深链,见 [[DR-007-url-hash-routing]]。
+
+## 机器人交互式本体图谱
+
+当前仅接入机器人本体的设计阶段可视化与固定版本浏览。数据本体主图、构建结果预览、问数高亮、证据状态、详情和评审维持现有实现，不安排后续自动接入。
+
+- [DR-166 · 机器人交互式本体图谱与构建可视化](decisions/DR-166-interactive-ontology-graph-visualization.md)：方案已采纳；2026-11-19 范围和命名修订实现交付状态：delivered。
+- [IR-031 · 机器人交互式本体图谱与构建可视化](iterations/IR-031-robotics-interactive-ontology-graph-visualization.md)：delivered。2026-11-17 的原交付记录覆盖 17 个全量阶段；2026-11-19 的命名修订仅做定向回归。
+- [DR-167 · 交互式本体图谱边界与公开材料](decisions/DR-167-interactive-graph-limits-and-publication-boundary.md)：仅适用于机器人设计和版本浏览，保留预算、超时、只读及发布边界；STV-H01～H05 本次交付状态为 delivered。
+- 需求与测试登记于 `acceptance.json`；已移除数据本体接入的计划验收，不删除现有数据本体测试。
 
 ## 机器人双路径构建（2026-11-10，已确认方案）
 
@@ -51,7 +69,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 
 ### 决定 / Decisions
 - [DR-159 · PR #1 合入后的审查与修复](decisions/DR-159-pr1-review-fixes.md)：已实现；公开内容清理、生命周期与问数闸门、机器人领域与接口、界面与测试。
-- [DR-158 · master 与机器人开发分支兼容集成](decisions/DR-158-master-development-integration.md) ／ [IR-030](iterations/IR-030-master-development-integration.md)：in-progress；编号迁移表。
+- [DR-158 · master 与机器人本体功能的兼容集成](decisions/DR-158-master-development-integration.md) ／ [IR-030](iterations/IR-030-master-development-integration.md)：in-progress；编号迁移表。
 - [DR-141 · 统一本体资产、版本与领域权威载荷](decisions/DR-141-unified-domain-semantic-graph.md) · **accepted**（2026-11-18 维护者确认，见 DR-159）
 - [DR-142 · 机器人本体自动构建、增量编辑与发布契约](decisions/DR-142-robotics-source-recipes-and-reverse-build.md) · **accepted**（2026-11-18 维护者确认，见 DR-159）
 - [DR-143 · 参数依据、适配证据与分层准入](decisions/DR-143-parameter-contracts-calibration-and-readiness.md) · **accepted**（2026-11-18 维护者确认，见 DR-159）
@@ -182,7 +200,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - [IR-016 · 第一阶段：机器人包边界与构建消费契约贯通](iterations/IR-016-robotics-contract-integration.md) · **delivered（2026-11-03 用户确认）**：Proposal 步骤 0～1，89 项机器人测试与实际三场景演示通过，各回归检查段经补验通过，最终交付已确认。
 - [IR-017 · 第二阶段：本体资产、不可变版本与持久化运行基础](iterations/IR-017-ontology-assets-and-persistent-runs.md) · **delivered（2026-11-04 用户确认）**：资产/版本、运行/事件/工件、真实生成接入、离线三场景与独立进程核验已交付；109 项已审用例及全量九段通过，覆盖率 84.6%。后续构建 API/UI 与浏览器联动继续按 Proposal 步骤 3～7 实施。
 - [IR-018 · 第三阶段：机器人本体构建 API 与平台 UI](iterations/IR-018-robotics-build-api-and-ui.md) · **delivered（2026-11-04 用户确认整轮交付）**：Proposal 步骤 3，双 XML 上传、来源型运行、候选目录/详情/下载及真实浏览器联动；构建/存储、HTTP/执行器及 UI 已实现；40 项前端状态与 14 项真实浏览器通过，全量十段检查退出 0。
-- [IR-019 · 第四阶段：机器人知识维护、重建合并与评审发布](iterations/IR-019-robotics-knowledge-review-and-publication.md) · **delivered（2026-11-18 维护者确认，代码已经 PR #1 合入，见 DR-159）**：Proposal 步骤 4，受控业务编辑、参数/证据、并发版本、三方冲突合并与审核发布；122 项领域/存储测试及 83 项治理 HTTP 测试转绿，全量十段通过；知识维护、审核发布与版本下载已接入 HTTP/UI，离线 CLI 四场景可运行；T07 全量 11 段通过，待 T08 人审交付。
+- [IR-019 · 第四阶段：机器人知识维护、重建合并与评审发布](iterations/IR-019-robotics-knowledge-review-and-publication.md) · **delivered（2026-11-18 维护者确认，代码已经 PR #1 合入，见 DR-159）**：Proposal 步骤 4，受控业务编辑、参数/证据、并发版本、三方冲突合并与审核发布；122 项领域/存储测试及 83 项治理 HTTP 测试转绿，全量十段通过；知识维护、审核发布与版本下载已接入 HTTP/UI，离线 CLI 四场景可运行；T07 全量 11 段通过。
 - [IR-015 · 实际部署与前后端验收](iterations/IR-015-live-deployment-acceptance.md) · **delivered**
 - [IR-014 · 算法、安全、UI 与 SDD/TDD 综合验收](iterations/IR-014-evidence-security-ui-validation.md) · **delivered**
 - [IR-001 · DataMind 基座(目录/图谱/指标/质量/SQL)](iterations/IR-001-foundation.md) · **delivered**
@@ -191,7 +209,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - [IR-004 · 数据连接 + 数据可视化模块](iterations/IR-004-connection-and-viz.md) · **delivered**
 - [IR-005 · 安全加固 + 工业化 + 复审收敛](iterations/IR-005-hardening-and-review.md) · **delivered(持续)**
 - [IR-006 · IOF/BFO 语义工程层(注释/映射/导出/元数据覆盖)](iterations/IR-006-iof-bfo-semantic-layer.md) · **delivered**
-- [IR-007 · 工程校验与 TDD 基础设施(pytest/coverage/ruff/CI + 确定性模块单测)](iterations/IR-007-tdd-foundation.md) · **in-progress**
+- [IR-007 · 工程校验与 TDD 基础设施(pytest/coverage/ruff/CI + 确定性模块单测)](iterations/IR-007-tdd-foundation.md) · **delivered**
 - [IR-008 · 裁决核收敛与算法强化(dao_core 单一事实源 + 引擎平价 + 零回归)](iterations/IR-008-adjudication-core-convergence.md) · **in-progress**
 - [IR-011 · 单体路由蓝图化(共享上下文基座 + 逐簇拆 blueprint)](iterations/IR-011-blueprint-modularization.md) · **in-progress**
 - [IR-012 · 恢复行业参照与本体标准构建配置](iterations/IR-012-build-reference-profiles.md) · **delivered**
@@ -199,11 +217,11 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 - [IR-009 · 反幻觉评测台与门槛量化(对抗基准 + 泄漏率 + DR-038 回归实测)](iterations/IR-009-eval-and-definition-quality.md) · **in-progress**
 
 ## 上游素材(真相来源)
-- `../上游本体引擎/` — 引擎(agent_runtime/export_owl/serve_claw)、技能(skills_seed)、方法论(其 `系统设计.md` 与 `specs/`)。DataMind 复用其 engine 与技能。
+- [可选上游引擎的接入方式](../README.md#两种运行方式)。安装可访问的引擎后，用 `DATAMIND_ENGINE_DIR` 指定其目录。
 - `DATAMIND_DB` — 实际只读数据源；仓库附带 `examples/demo_metrics.db`（108 表示例库），另可用 `examples/sample_db.sql` 创建 6 张表的最小示例库。
 - `README.md` — 模块能力总览与实测部署命令。
 - `ARCHITECTURE.md` — 分层/数据流/统一约定/安全模型/已知边界(架构说明)
-- `docs/audits/` — 各轮审计与复核报告。
+- [项目测试说明](../README.md#测试)提供隔离回归命令。
 - `test_all.py` — 系统级回归，源码定义 548 个检查点。
 
 ## 现状校准
@@ -336,8 +354,60 @@ T01 应用契约基础 v1：已冻结；T02 RED 评审。
 - [DR-154 机器人应用检查与可追溯补全](decisions/DR-154-robotics-application-adaptation.md) ／ [IR-026](iterations/IR-026-robotics-application-adaptation.md)：T01 规约 已冻结，T05 集成 GREEN 的 57 项已审测试及全量 13 段通过，70 项核心仍绿；T06 真实副本验收 及全量 13 段已通过（2333 passed／5 可选跳过，覆盖率 86.1%），自动匹配与人工例外已纳入，2026-11-13 用户要求提交代码，确认 delivered。
 - [DR-155 本体详情与应用修复体验](decisions/DR-155-ontology-detail-experience.md) ／ [IR-027](iterations/IR-027-ontology-detail-experience.md)：delivered，T03 GREEN 及全量回归已通过；T04 集成 RED 已于 2026-11-16 获继续指令，T05 GREEN 已实现直达任务对话、只读历史与修复入口及历史读取锁冲突修复，14 段全量回归通过；T06 真实副本技术验证 20 项通过，已于 2026-11-16 获用户确认交付。
 - [DR-156 深度问数应用契约兼容](decisions/DR-156-deepqa-application-compatibility.md) ／ [IR-028](iterations/IR-028-deepqa-application-compatibility.md)：delivered；2026-11-16 用户确认后完成 T06，原句计数与实际 SQL 说明修复、8 道真实模型基线、48 组协议／模式复放和完整浏览器验收通过；最终全量 14 段完整退出 0。详见 T06 验收。
-- [DR-157 本体删除恢复与历史保留](decisions/DR-157-ontology-asset-lifecycle.md) ／ [IR-029](iterations/IR-029-ontology-asset-lifecycle.md)：delivered（2026-11-17 用户明确确认整个 IR 最终验收）；删除／恢复及精简 UI 完成，工作副本和浏览器验证通过，最终刷新全量 14 段退出 0。详见 T06 验收。
+- [DR-157 本体删除恢复与历史保留](decisions/DR-157-ontology-asset-lifecycle.md) ／ [IR-029](iterations/IR-029-ontology-asset-lifecycle.md)：delivered（2026-11-17 用户明确确认整个 IR 最终验收）；删除／恢复及精简 UI 完成，工作副本和浏览器验证通过，该阶段全量检查 14 段退出 0。详见 T06 验收。
 
-IR-025 当前结果：T06 交付评审，公共服务／HTTP／最小 UI 与生成守卫已验证并获用户确认交付。
+IR-025 的 T06 公共服务、HTTP、最小 UI 与生成守卫于 2026-11-12 经用户确认交付。
 
 IR-029 于 2026-11-17 按用户反馈精简删除／恢复弹窗及回收站卡片；87 项相关检查和隔离浏览器验证通过，原全量报告为精简前代码，现已刷新全量并完成交付。见 UI 精简记录。
+
+## 产品仓库材料边界
+
+[DR-160 · 产品仓库与本地开发材料边界](decisions/DR-160-product-repository-material-boundary.md)：保留决策与迭代；指定开发中间材料及契约草案仅保留本地副本。
+
+## master 与交互式本体图谱兼容集成
+
+[DR-169 · master 修复与交互式本体图谱功能兼容集成](decisions/DR-169-master-and-interactive-ontology-graph-integration.md)：保留两边功能；master 编号保持，交互式本体图谱相关记录使用 DR-166、DR-167、DR-168，DR-160 保持不变；MERGE-GRAPH-01 本次交付状态为 delivered。
+
+## 交互式本体图谱统一命名
+
+[DR-170 · 交互式本体图谱命名与视图契约](decisions/DR-170-interactive-ontology-graph-naming-and-view-contract.md)：模块、只读接口、页面参数及验收入口统一使用功能名称；GRAPH-NAME-01 本次交付状态为 delivered。
+
+## 任务补齐反馈
+
+[DR-173 · 任务补齐的明确反馈与完善方式说明](decisions/DR-173-task-completion-feedback.md) ／ [IR-034](iterations/IR-034-task-completion-feedback.md)：保存反馈 TCF-02；入口验收 TCF-01 当前范围见下方 DR-174 / IR-035。
+
+## 单一完善入口与生成提示
+
+[DR-174 · 单一本体完善入口与生成结果提示](decisions/DR-174-single-repair-entry-and-generation-feedback.md) ／ [IR-035](iterations/IR-035-single-repair-entry-and-generation-feedback.md)：TCF-01；GEN-FEEDBACK-01 当前任务范围见下方 DR-175 / IR-036。
+
+## 最终任务配置范围
+
+[DR-175 · 按最终任务配置校验与生成](decisions/DR-175-task-configuration-validation-scope.md) ／ [IR-036](iterations/IR-036-task-configuration-validation-scope.md)：CFG-SCOPE-01、GEN-FEEDBACK-01。
+
+## 读取设计时的图谱故障
+
+[DR-188 读取降级](decisions/DR-188-design-graph-read-degradation.md) ／ [IR-049 验收与复现](iterations/IR-049-design-graph-read-degradation.md) ／ [DESIGN-RECEIPT-02 验收映射](acceptance.json)。
+
+## 设计页读取失败恢复
+
+[DR-189 有限重试与手动重新读取](decisions/DR-189-design-read-recovery.md) ／ [IR-050 验收与复现](iterations/IR-050-design-read-recovery.md) ／ [DESIGN-POLL-01 验收映射](acceptance.json)。
+
+## 交互式图谱布局计算量
+
+[DR-190 网格剪枝与标签复用](decisions/DR-190-graph-layout-work-bound.md) ／ [IR-051 验收与复现](iterations/IR-051-graph-layout-work-bound.md) ／ [GRAPH-LAYOUT-01 验收映射](acceptance.json)。
+
+## 固定版本图谱的条件读取
+
+[DR-191 ETag 与分块核对](decisions/DR-191-fixed-graph-revalidation.md) ／ [IR-052 验收与复现](iterations/IR-052-fixed-graph-revalidation.md) ／ [GRAPH-CACHE-01 验收映射](acceptance.json)。
+
+## 交互式图谱空白查找
+
+[DR-192 空白查找提示](decisions/DR-192-graph-blank-search.md) ／ [IR-053 验收与复现](iterations/IR-053-graph-blank-search.md) ／ [GRAPH-SEARCH-01 验收映射](acceptance.json)。
+
+## 决策记录交付状态格式
+
+[DR-193 交付状态只写状态值](decisions/DR-193-decision-status-format.md) ／ [IR-054 验收与复现](iterations/IR-054-decision-status-format.md) ／ [DR-STATUS-01 验收映射](acceptance.json)。
+
+## 公开文档的本地证据引用
+
+[DR-194 不以本地文件作为证据](decisions/DR-194-local-evidence-citations.md) ／ [IR-055 验收与复现](iterations/IR-055-local-evidence-citations.md) ／ [REPO-EVIDENCE-01 验收映射](acceptance.json)。

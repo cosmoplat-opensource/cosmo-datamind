@@ -12,13 +12,30 @@
     : '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>') + '</svg>';
   const statusText = status => ({queued:'排队中', running:'构建中', completed:'构建完成', failed:'构建失败', interrupted:'运行中断',
     computing:'计算与结构校验', committing:'保存候选与报告', candidate:'待评审', published:'已发布', retired:'已退役'})[status] || status || '未记录';
-  async function json(fetcher, url) {
-    const response = await fetcher(url);
-    let body;
-    try { body = await response.json(); } catch (_) { throw Object.assign(new Error(`请求失败（HTTP ${response.status}）：响应不是 JSON`), {status:response.status}); }
-    if (!response.ok) throw Object.assign(new Error(body.error?.message || body.error || `请求失败（HTTP ${response.status}）`), {status:response.status, code:body.error?.code});
-    return body;
+  async function readJSON(fetcher,url,options={}) {
+    const abort=new AbortController(),parent=options.signal;
+    let timer,onAbort;
+    const cancelled=new Promise((_resolve,reject)=>{
+      onAbort=()=>{abort.abort();reject(Object.assign(new Error('请求已取消。'),{name:'AbortError'}));};
+      if(parent?.aborted){onAbort();return;}
+      parent?.addEventListener('abort',onAbort,{once:true});
+      timer=global.setTimeout(()=>{abort.abort();reject(Object.assign(new Error('读取超时，请稍后重试。'),{name:'TimeoutError',code:'request_timeout'}));},30000);
+    });
+    try {
+      return await Promise.race([cancelled,(async()=>{
+        if(abort.signal.aborted)throw Object.assign(new Error('请求已取消。'),{name:'AbortError'});
+        const response=await fetcher(url,{...options,signal:abort.signal});
+        let body;
+        try{body=await response.json();}catch(error){if(abort.signal.aborted)throw error;throw Object.assign(new Error(`请求失败（HTTP ${response.status}）：响应不是 JSON`),{status:response.status});}
+        if(!response.ok)throw Object.assign(new Error(body.error?.message||body.error||`请求失败（HTTP ${response.status}）`),{status:response.status,code:body.error?.code});
+        return body;
+      })()]);
+    } finally {
+      if(timer!==undefined)global.clearTimeout(timer);
+      parent?.removeEventListener('abort',onAbort);
+    }
   }
+  const json = (fetcher,url) => readJSON(fetcher,url);
   function createController(options = {}) {
     const fetcher = options.fetch || global.fetch.bind(global), emit = options.onChange || (() => {});
     let state = {items:[], detail:null, error:null, loading:false, catalogLoaded:false}, dead = false, catalogToken = 0, detailToken = 0;
@@ -174,5 +191,5 @@
       host.querySelector('[data-next]')?.addEventListener('click', () => loadJobs(offset + 20));
     } catch (e) { if (token === jobsGeneration) host.innerHTML = `<div role="alert">${escape(e.message)}</div>`; }
   }
-  global.RoboticsAssets = {createController, page, escape, errorText, statusText, runLink, versionLink, readiness, issues, sources, downloads, bindDownloads};
+  global.RoboticsAssets = {readJSON, createController, page, escape, errorText, statusText, runLink, versionLink, readiness, issues, sources, downloads, bindDownloads};
 })(window);

@@ -1,10 +1,20 @@
 """Owned real server with a local synthetic model, never fake application HTTP — DR-152."""
 import json
+import os
+from pathlib import Path
+import re
 from urllib.request import Request, urlopen
 import uuid
 
 from tests.robotics_browser_support import LiveSite
 from tests.robotics_modeling_support import sources
+
+
+def browser_case_directory(name, output=None):
+    if output is None:
+        default = Path(__file__).resolve().parents[1] / '.check-results/robotics-design-browser'
+        output = Path(os.environ.get('DATAMIND_ROBOTICS_DESIGN_TEST_OUTPUT', default))
+    return output / re.sub(r'[^a-zA-Z0-9_-]', '_', name)
 
 
 def model_reply(proposal):
@@ -13,8 +23,9 @@ def model_reply(proposal):
 
 
 class DesignSite(LiveSite):
-    def __init__(self, directory, output, *, model_url=None, incomplete=False, prepare=None):
+    def __init__(self, directory, output, *, model_url=None, incomplete=False, prepare=None, prepare_cache=None):
         self.model_url, self.incomplete, self.prepare = model_url, incomplete, prepare
+        self.prepare_cache = prepare_cache
         self.prepared = None
         super().__init__(directory, output)
 
@@ -26,7 +37,8 @@ class DesignSite(LiveSite):
                 self.env.pop('DATAMIND_LLM_KEY', None)
         if self.prepare is not None:
             callback, self.prepare = self.prepare, None
-            self.prepared = callback(self.root)
+            self.prepared = (self.prepare_cache.restore(callback, self.root, callback)
+                             if self.prepare_cache is not None else callback(self.root))
         super().start()
 
     def post_json(self, path, body):

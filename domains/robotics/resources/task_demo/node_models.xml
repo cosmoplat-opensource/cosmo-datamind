@@ -36,9 +36,9 @@
             <input_port name="ercode" type="std::string"/>
         </Action>
         <Action ID="FrameTransform">
-            <output_port name="pos_target" type="robot_types::PoseQuat"/>
-            <input_port name="robot_pose" type="robot_types::PoseQuat">TCP [x,y,z,qw,qx,qy,qz], metres, in the message frame</input_port>
-            <input_port name="pos_source" type="robot_types::PoseQuat"/>
+            <output_port name="pos_target" type="demo::PoseQuat"/>
+            <input_port name="robot_pose" type="demo::PoseQuat">Synthetic pose port; physical layout unspecified</input_port>
+            <input_port name="pos_source" type="demo::PoseQuat"/>
             <input_port name="target" type="std::string"/>
             <input_port name="source" type="std::string"/>
         </Action>
@@ -56,15 +56,15 @@
             <input_port name="topic_name" type="std::string" default="/topic">Topic name</input_port>
         </Condition>
         <Condition ID="GetTCP">
-            <output_port name="pose" type="robot_types::PoseQuat">TCP [x,y,z,w,x,y,z], metres/radians, in the message frame</output_port>
-            <input_port name="tool" type="robot_types::PoseRPY"/>
+            <output_port name="pose" type="demo::PoseQuat">Synthetic pose port; physical layout unspecified</output_port>
+            <input_port name="tool" type="demo::PoseRPY"/>
             <input_port name="topic_name" type="std::string" default="/topic">Topic name</input_port>
         </Condition>
         <Action ID="HttpRequest"/>
         <Action ID="IncOffsetByObjCor">
-            <output_port name="result" type="robot_types::PoseQuat"/>
-            <input_port name="offset" type="robot_types::PoseQuat"/>
-            <input_port name="origin" type="robot_types::PoseQuat"/>
+            <output_port name="result" type="demo::PoseQuat"/>
+            <input_port name="offset" type="demo::PoseQuat"/>
+            <input_port name="origin" type="demo::PoseQuat"/>
         </Action>
         <Action ID="InitGripper">
             <input_port name="service_name" type="std::string" default="">Service name</input_port>
@@ -83,8 +83,8 @@
             <input_port name="action_name" type="std::string" default="">Action server name</input_port>
         </Action>
         <Action ID="MoveL">
-            <input_port name="target" type="robot_types::PoseQuat"/>
-            <input_port name="tool" type="robot_types::PoseRPY"/>
+            <input_port name="target" type="demo::PoseQuat"/>
+            <input_port name="tool" type="demo::PoseRPY"/>
             <input_port name="vel" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;" default="[0.2]">vel</input_port>
             <input_port name="acc" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;" default="[0.1]">acc</input_port>
             <input_port name="radius" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;" default="[0.25]">r</input_port>
@@ -119,7 +119,7 @@
             <input_port name="model_name" type="std::string" default="">模型名</input_port>
             <input_port name="threshold" type="std::string" default="">检测阈值</input_port>
             <input_port name="depth_image_frame_id" type="std::string" default="123">对应帧</input_port>
-            <output_port name="pose" type="robot_types::PoseQuat">相机坐标系下的6D位姿</output_port>
+            <output_port name="pose" type="demo::PoseQuat">相机坐标系下的6D位姿</output_port>
             <input_port name="timeout_s" type="std::string" default="2.0">timeout</input_port>
         </Action>
         <Action ID="SimpleMock">
@@ -136,14 +136,14 @@
         </Action>
         <Action ID="Test">
             <input_port name="acc" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;"/>
-            <input_port name="Cart" type="std::vector&lt;robot_types::PoseQuat, std::allocator&lt;robot_types::PoseQuat&gt; &gt;"/>
+            <input_port name="Cart" type="std::vector&lt;demo::PoseQuat, std::allocator&lt;demo::PoseQuat&gt; &gt;"/>
             <input_port name="value" type="std::vector&lt;std::vector&lt;double, std::allocator&lt;double&gt; &gt;, std::allocator&lt;std::vector&lt;double, std::allocator&lt;double&gt; &gt; &gt; &gt;"/>
         </Action>
         <Action ID="ToolPoseCalculate">
             <input_port name="gripper_ref" type="std::string"/>
-            <output_port name="gripper_pos" type="robot_types::PoseQuat"/>
+            <output_port name="gripper_pos" type="demo::PoseQuat"/>
             <input_port name="robot_ref" type="std::string">[x,y,z,qw,qx,qy,qz], metres, in the message frame</input_port>
-            <input_port name="object_in_robot" type="robot_types::PoseQuat"/>
+            <input_port name="object_in_robot" type="demo::PoseQuat"/>
         </Action>
         <Action ID="TrajectoryPlanning">
             <input_port name="service_name" type="std::string"/>

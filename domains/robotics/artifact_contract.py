@@ -1,4 +1,4 @@
-"""Trusted publication protocol and SHACL checks — DR-142 / DR-147.
+"""Trusted publication protocol and SHACL checks — DR-142 / DR-147 / DR-175.
 
 Validation migrated from the hash-verified agent of the robotics source project; source details in IR-016.
 """
@@ -48,7 +48,7 @@ def trusted_shapes():
     return content.decode("utf-8")
 
 
-def graph_validation(g):
+def graph_validation(g, *, configuration_focus=None):
     if any(g.triples((None, OWL.imports, None))):
         raise ValueError("本体输入必须自包含，不能声明 owl:imports 或依赖外部文件。")
     for prop in ("artifactContract", "validationShapes"):
@@ -62,6 +62,18 @@ def graph_validation(g):
         raise ValueError("本体内嵌校验规则不在 agent 支持的白名单中；请匹配导出与 agent 版本。")
     shapes = Graph().parse(data=snapshot, format="turtle")
     sh = Namespace("http://www.w3.org/ns/shacl#")
+    if configuration_focus is not None:
+        # DR-175: preserve every trusted constraint; only configuration targets are task scoped.
+        for name, kinds in (
+            ('ProfileShape', ('PerceptionProfile', 'PlacementProfile')),
+            ('PerceptionProfileShape', ('PerceptionProfile',)),
+            ('PlacementProfileShape', ('PlacementProfile',)),
+            ('SpatialValueShape', ('JointConfiguration', 'CartesianPose')),
+        ):
+            shapes.remove((S[name], sh.targetClass, None))
+            for kind in kinds:
+                for node in configuration_focus.get(kind, ()):
+                    shapes.add((S[name], sh.targetNode, node))
     registered = BNode()
     shapes.add((registered, RDF.type, sh.NodeShape))
     shapes.add((registered, sh.targetClass, S.SkillCondition))

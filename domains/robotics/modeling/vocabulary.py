@@ -11,6 +11,7 @@ VOCABULARY_PATH = Path(__file__).resolve().parent/'data'/'ur_skill_terminology.j
 # 术语内容未变;按首版冻结的设计仍按同一词表处理。
 EQUIVALENT_SHA256 = {
     'eef9314fb13144a35efd659f6fd863dcc89cebf1ae0e54c3777bcdcf8e2a06aa': 'v1:source 字段的本机路径换成占位符',
+    '866cfc32f78bcc37a31aefdeb32da68e6f31c5b7f05e08a368aed05cc1a96996': 'v1:source 字段采用另一种脱敏占位符',
 }
 INVALID_TEXT = re.compile('[\x00-\x08\x0b\x0c\x0e-\x1f\ud800-\udfff\ufffe\uffff]')
 

@@ -305,10 +305,28 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True, data_host=Non
         except (ValueError, OSError) as exc:
             raise BuildRequestError('artifact_integrity', '设计文件缺失或损坏。', 409) from exc
 
+    GRAPH_WARNINGS = {
+        'write': '设计操作已受理，当前修订的图谱暂时无法显示。可刷新页面重新读取。',
+        'read': '当前修订的图谱暂时无法显示，设计内容不受影响。可稍后刷新重试。'}
+
+    def design_display(document, *, operation, source=None):
+        """DR-166 / DR-177 / DR-188: the read-only graph is optional; its failure never changes the saved result."""
+        from ontology_assets import interactive_ontology_graph_view
+        try:
+            view = interactive_ontology_graph_view.project_design(document if source is None else source)
+        except Exception as exc:
+            from observability import count
+            count('robotics.design.graph_projection_failed', operation=operation)
+            app.logger.warning('Design graph unavailable after %s (%s)', operation, type(exc).__name__)
+            return {**document, 'interactive_graph_view': None, 'interactive_graph_warning': {
+                'code': 'graph_view_unavailable',
+                'message': GRAPH_WARNINGS['read' if operation == 'read' else 'write']}}
+        return {**document, 'interactive_graph_view': view}
+
     @bp.get('/api/robotics/design-sessions/<sid>')
     def design_session(sid):
         _query_fields(set())
-        return jsonify(runtime.public(designs().get(sid)))
+        return jsonify(runtime.public(design_display(designs().get(sid), operation='read')))
 
     @bp.get('/api/robotics/design-sessions/<sid>/revisions')
     def design_revisions(sid):
@@ -324,7 +342,10 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True, data_host=Non
         service = designs()
         raw = design_read(lambda: service.export_revision(sid, int(revision), format=format or 'json'))
         if format is None:
-            return jsonify(runtime.public(__import__('json').loads(raw)))
+            document = __import__('json').loads(raw)
+            document = design_display(document, operation='read',
+                source={**document['state'], 'session_id': sid, 'status': 'historical'})
+            return jsonify(runtime.public(document))
         return send_file(io.BytesIO(raw), mimetype='application/json' if format=='json' else 'application/rdf+xml',
             as_attachment=True, download_name='design.'+format, max_age=0)
 
@@ -345,7 +366,10 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True, data_host=Non
         if type(rev) is not int or rev<0:
             raise _invalid()
         function = getattr(service, 'message' if operation=='messages' else operation.replace('-', '_'))
-        return jsonify(runtime.public(function(sid, **body))), 202 if operation in ('messages','confirm-schema','retry') else 200
+        receipt = function(sid, **body)
+        # DR-177: only the optional projection runs inside this boundary, after commit or replay.
+        display = design_display(receipt, operation=operation)
+        return jsonify(runtime.public(display)), 202 if operation in ('messages','confirm-schema','retry') else 200
 
     def application_summary(oid, vid):
         from application_contracts.adapters import service
@@ -418,23 +442,16 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True, data_host=Non
 
     @bp.get('/api/ontology-assets/<ontology_id>/versions/<version_id>')
     def version(ontology_id, version_id):
-        # 已删除资产仅在显式 state=deleted 历史视图中可读（与目录的 state 参数一致）。
-        _query_fields({'state'})
-        if request.args.get('state', 'active') not in ('active', 'deleted'):
-            raise _invalid()
-        history = request.args.get('state') == 'deleted'
+        history = bp_robotics_review.version_history_requested()
         from asset_lifecycle import root_for
         version_root=root_for(data_host) if data_host is not None else root
         if not (version_root / 'domain.sqlite3').exists():
             raise KeyError(version_id)
         assets = AssetStore(version_root,read_only=True)
-        from ontology_assets.lifecycle import LifecycleService
         row = assets.get_version(ontology_id, version_id)
         rid = row['metadata'].get('build_run_id')
-        lifecycle = LifecycleService(version_root,read_only=True).get(ontology_id)
+        lifecycle = bp_robotics_review.visible_version_lifecycle(version_root, ontology_id, history=history)
         deleted = lifecycle['state'] == 'deleted'
-        if deleted and not history:
-            raise BuildRequestError('ontology_deleted', '本体已移到回收站；查看历史请使用 state=deleted。', 409)
         result = {**row, 'lifecycle':lifecycle,
                   'version_number': assets.version_number(ontology_id, version_id),
                   'asset': assets.get_asset(ontology_id), 'build_run_id': rid,

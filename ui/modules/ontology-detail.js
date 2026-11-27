@@ -21,7 +21,8 @@
     const oid = encodeURIComponent(detail.ontology_id), vid = encodeURIComponent(detail.version_id);
     const base = '/api/ontology-assets/' + oid + '/versions/' + vid;
     const taskLink = global.RoboticsTask.link(detail.ontology_id, detail.version_id, detail.metadata?.mode || detail.publication_mode || 'real') + '&assess=1';
-    const graphLink = global.RoboticsViews.link(detail.ontology_id, detail.version_id);
+    const graphLink = global.RoboticsViews.link(detail.ontology_id, detail.version_id,
+      'interactive-ontology-graph', detail.lifecycle?.state === 'deleted');
     const method = detail.metadata?.method || (detail.application_design ? 'application_adaptation' : detail.design ? 'llm_tbox_abox' : detail.build_run_id ? 'legacy_xml' : '');
     const methodText = ({llm_tbox_abox:'模型辅助构建', legacy_xml:'XML 离线构建', application_adaptation:'应用适配版本'})[method] || '构建方式未记录';
     const report = detail.design?.report || detail.application_design?.coverage || {};

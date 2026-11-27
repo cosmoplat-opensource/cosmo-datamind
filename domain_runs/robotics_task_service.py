@@ -1,4 +1,4 @@
-"""Persistent task dialogue and atomic, scoped knowledge completion — DR-143 / DR-146 / DR-148.
+"""Persistent task dialogue and atomic, scoped knowledge completion — DR-143 / DR-146 / DR-148 / DR-174 / DR-175.
 
 Model calls run outside database/RDF locks. Public state is a fixed session snapshot;
 requests are idempotent, and immutable versions/runs remain the source of truth.
@@ -10,12 +10,12 @@ import uuid
 import xml.etree.ElementTree as ET
 from xml.sax import SAXException
 
-from rdflib import RDF, RDFS, Graph, URIRef
+from rdflib import RDF, RDFS, Graph, URIRef, Namespace
 from rdflib.exceptions import Error as RDFError
 
 from domains.robotics import consumer, evidence, task_knowledge
 from domains.robotics.graph import S
-from domains.robotics.task_completion import inspect_gaps
+from domains.robotics.task_completion import inspect_gaps, LABELS
 from domains.robotics.task_dialogue import catalog_from_graph, grounded_mentions, ENTITY_FIELDS
 from domains.robotics.task_model import ModelClient, ModelError
 from ontology_assets import AssetStore
@@ -56,6 +56,32 @@ def _tree(node):
 def _clear(state):
     state.update(candidate=None, tree=None, run_id=None, error=None, result=None, gaps=[], issues=[], configurations=[])
     state.update(optional_gaps=[], task_readiness='not_verified')
+
+
+def _validation_feedback(exc):
+    """Project trusted constraint results into business fields, without raw IRIs."""
+    sh = Namespace('http://www.w3.org/ns/shacl#')
+    groups = {}
+    for result in exc.report.subjects(RDF.type, sh.ValidationResult):
+        subject, path = exc.report.value(result, sh.focusNode), exc.report.value(result, sh.resultPath)
+        field = str(path).removeprefix(str(S)) if path is not None else ''
+        label = LABELS.get(field, {'rawValue': '参数值'}.get(field, '必要定义或配置'))
+        entity = str(exc.graph.value(subject, RDFS.label) or '未命名配置')
+        missing = exc.report.value(result, sh.sourceConstraintComponent) == sh.MinCountConstraintComponent
+        fields = groups.setdefault((entity, missing), [])
+        if label not in fields:
+            fields.append(label)
+    return [{'code': 'ontology_invalid_configuration',
+             'message': f'“{entity}”' + ('缺少' if missing else '需要调整') + '、'.join(fields) + '。'}
+            for (entity, missing), fields in groups.items()]
+
+
+def _validation_failure(state, exc, *, saved):
+    problems = _validation_feedback(exc)
+    state.update(status='error', issues=problems, error={'code': 'ontology_validation_failed',
+        'message': ('信息已保存，但' if saved else '') + '暂时无法生成行为树：'
+            + ''.join(p['message'] for p in problems)
+            + '请核对当前任务配置后重试；若问题涉及本体定义，请重新进行应用检查。'})
 
 
 def checked_owl_bytes(graph):
@@ -127,8 +153,11 @@ class TaskService:
         with _RDF_LOCK, self.storage.transaction() as conn:
             state = self._get(conn, session_id)
             if state['generation_policy'] == 'offline' and state.get('task'):
+                validation_issues = state['issues'] if (state.get('error') or {}).get('code') == 'ontology_validation_failed' else None
                 self._project(state, self._graph(state, conn, inspect_structure=False),
                               self.governance._revocations(conn, state['ontology_id']))
+                if validation_issues is not None:
+                    state['issues'] = validation_issues
             if 'configurations' not in state:
                 state['configurations'] = (inspect_gaps(self._graph(state, conn, inspect_structure=False),
                     state['task'], mode=state['mode'])['configurations'] if state.get('task') else [])
@@ -231,6 +260,8 @@ class TaskService:
                 self._evaluate(state)
         except ModelError as exc:
             state.update(status='error', error={'code': exc.code, 'message': str(exc)})
+        except consumer.GraphValidationError as exc:
+            _validation_failure(state, exc, saved=False)
         except (TaskError, ValueError, OSError) as exc:
             state.update(status='error', error={'code': getattr(exc, 'code', 'generation_error'),
                 'message': '无法完成本次任务，请检查本体和连接后重试。'})
@@ -433,9 +464,17 @@ class TaskService:
             self._put(conn, state)
         try:
             self._evaluate(state)
-        except (ValueError, OSError) as exc:
-            state.update(status='error', error={'code': getattr(exc, 'code', 'generation_error'),
-                'message': '信息已保存，但本体仍未通过严格生成校验，请检查后继续。'})
+        except consumer.GraphValidationError as exc:
+            _validation_failure(state, exc, saved=True)
+        except OSError:
+            state.update(status='error', error={'code': 'generation_error',
+                'message': '信息已保存，但行为树结果暂时无法保存。请稍后重试生成。'})
+        except ValueError as exc:
+            code = getattr(exc, 'code', 'generation_error')
+            state.update(status='error', error={'code': code,
+                'message': '信息已保存，但当前本体尚未满足行为树应用要求，请重新检查后继续。'
+                    if code == 'application_not_ready' else
+                    '信息已保存，但暂时无法生成行为树。请检查本体内容后重试。'})
         return self._finish(state, request_id)
 
     def read_candidate(self, session_id, *, expected_revision, run_id=None, artifact_id=None):

@@ -16,7 +16,7 @@
 
 以「否决 fact_delivery→fact_sales_order」为探针:①图谱剔除 ②总览-1 ③**问数 JOIN 提示剔除** ④SPARQL 三元组消失(关系在 OWL 中具体化为 rel_* 资源,探针用 rdfs:domain/range)⑤评审页显示已否决 ⑥列表计数=图谱页;改动词→⑦图谱边 ⑧详情卡即时更新;撤销→全部复原;⑨构建产物删对象→列表计数即时变化并可复原。
 
-## 增补(同日):人审 ↔ 本体图谱 页面级实时反映
+## 增补(同日):人审 ↔ 本体图谱页面级实时反映
 
 - **发现 UI 层真 bug**:页面初始化被 `loaded[p]` 一次性守卫——评审页人审后**切回图谱页不重取数据**,看到旧图(API 层一致、页面层滞后)。修法:`goPage` 对易变页(graph/review/actioncenter/ontquality)**重访即重取**(revisit 时 drawGraph/rvLoad/acLogLoad/ontQualityRender;首访仍走 load 防双初始化)。
 - 样式即语义:通过(candidate→asserted)= 橙长虚[4,3]→蓝短虚[2,2];否决=整条剔除;确认对象=候选标记消失——人审结果在图上**肉眼可辨**。

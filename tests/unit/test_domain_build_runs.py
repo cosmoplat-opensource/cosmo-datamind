@@ -212,6 +212,9 @@ def test_durable_fault_rolls_back_asset_version_run_events_and_artifact_indexes(
         calls = []
 
         def fail_write(self, relative, content):
+            # IR-031 T06: fault injection belongs only to this test store.
+            if self.root != root.resolve():
+                return original(self, relative, content)
             calls.append(relative)
             if len(calls) == 2:
                 injected.append('write')
@@ -223,7 +226,7 @@ def test_durable_fault_rolls_back_asset_version_run_events_and_artifact_indexes(
         original_read = Storage.read_bytes
 
         def fail_read(self, relative, expected):
-            if relative.startswith(('versions/', 'artifacts/')):
+            if self.root == root.resolve() and relative.startswith(('versions/', 'artifacts/')):
                 injected.append('readback')
                 raise ValueError('injected output digest mismatch')
             return original_read(self, relative, expected)

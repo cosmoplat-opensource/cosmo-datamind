@@ -19,7 +19,8 @@ def run(case, *args):
 
 @pytest.mark.parametrize('case', ['restore_get_only', 'scoped_save', 'duplicate_save', 'non_json_error',
     'retry_identity', 'late_session', 'changed_during_save', 'late_dispose', 'clear_previous_result',
-    'wrong_identity', 'snapshot_copy'])
+    'wrong_identity', 'snapshot_copy', 'hidden_confirmation_draft_is_not_submitted_with_mapping_or_parameter_edits',
+    'restored_task_version_change_requires_explicit_reentry'])
 def test_task_controller_state_contract(case):
     run(case)
 
@@ -27,6 +28,15 @@ def test_task_controller_state_contract(case):
 @pytest.mark.parametrize('status', [400, 409, 413, 422, 503])
 def test_task_save_error_preserves_editable_answers(status):
     run('failed_save_keeps_input', str(status))
+
+
+@pytest.mark.parametrize('operation', ['load', 'save', 'generate'])
+def test_task_request_timeout_unlocks_and_explicit_retry_preserves_identity(operation):
+    run('request_deadlines_and_idempotent_retry', operation)
+
+
+def test_task_body_timeout_and_disposal_cancel_pending_requests():
+    run('body_deadline_and_dispose_abort')
 
 
 def test_actual_task_browser_suite_is_wired_into_all_checks():

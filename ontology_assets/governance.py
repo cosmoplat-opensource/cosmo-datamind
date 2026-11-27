@@ -14,7 +14,7 @@ from domains.robotics import authoring, consumer, evidence, version_diff, views
 from domains.robotics.graph import S
 from srv_context import _RDF_LOCK
 
-from .payloads import json_text, validate_payload
+from .payloads import json_text, robotics_version_mode, validate_payload
 from .storage import digest
 from .lifecycle import LifecycleError
 from .store import AssetStore, _required, _version
@@ -122,13 +122,8 @@ class GovernanceService:
             raise GovernanceError('ontology_too_large', f'本体三元组超过上限 {self.max_triples}。')
         if record['metadata'].get('evidence_policy') and evidence.policy(graph) != evidence.POLICY:
             raise GovernanceError('integrity_conflict', '治理版本不能移除受控证据策略。')
-        consumer.check_mode(graph, self._mode(record, graph))
+        consumer.check_mode(graph, robotics_version_mode(record, graph))
         return graph
-
-    @staticmethod
-    def _mode(record, graph):
-        return record['publication_mode'] or record['metadata'].get('mode') or (
-            'demo' if str(graph.value(evidence.ONTOLOGY, S.datasetKind)) == 'demo' else 'real')
 
     def _head(self, conn, oid):
         self._asset(conn, oid)
@@ -189,7 +184,7 @@ class GovernanceService:
         info = deepcopy(base['metadata'])
         origin = info.pop('build_run_id', None)
         if origin: info['origin_build_run_id'] = origin
-        info.update(evidence_policy=evidence.POLICY, mode=self._mode(base,graph))
+        info.update(evidence_policy=evidence.POLICY, mode=robotics_version_mode(base,graph))
         if origin:
             info['source_baseline'] = {key:base[key] for key in ('ontology_id','version_id','payload_sha256')}
         if metadata: info.update(metadata)
@@ -235,7 +230,7 @@ class GovernanceService:
             if not isinstance(source_ids,list): raise ValueError('附件需要逻辑 ID 列表。')
             rows = self._sources(conn,source_ids)
             from domains.robotics.evidence import register_evidence
-            changed = register_evidence(graph,declaration,mode=self._mode(base,graph))
+            changed = register_evidence(graph,declaration,mode=robotics_version_mode(base,graph))
             subject = authoring.iri(declaration['iri'])
             # The digest, size and role are embedded in the reviewed evidence itself.
             for row in rows:
@@ -278,7 +273,7 @@ class GovernanceService:
                 authoring.kind(graph,subject)
                 basis = [p for p in authoring.inspect_knowledge(graph)['provenance'] if p['iri'] == raw and p['basis']]
                 if not basis: raise ValueError('需先登记该对象的知识及依据，再明确审核。')
-                status = ('simulated' if self._mode(base,graph) == 'demo' else 'confirmed') if decision == 'accepted' else 'rejected'
+                status = ('simulated' if robotics_version_mode(base,graph) == 'demo' else 'confirmed') if decision == 'accepted' else 'rejected'
                 changed.set((subject,S.confirmationStatus,Literal(status,datatype=XSD.string)))
                 authoring.provenance(changed,subject,'review',args['reason'])
             return changed,base['source_asset_ids']
@@ -390,7 +385,7 @@ class GovernanceService:
             return self._bytes(self._version(conn, ontology_id, version_id))
 
     def _report(self, conn, oid, version, graph):
-        mode = self._mode(version,graph)
+        mode = robotics_version_mode(version,graph)
         validation, _ = consumer.validate_graph(graph,mode=mode)
         validation['ontology_sha256'] = version['payload_sha256']
         if evidence.policy(graph): validation['evidence_policy'] = evidence.POLICY
@@ -473,7 +468,7 @@ class GovernanceService:
                             'source_asset_ids':version['source_asset_ids'],'execution_readiness':'not_verified'}
                 self._artifact(conn,ontology_id,version,'manifest',json_text(manifest).encode(),review_id)
             conn.execute("UPDATE versions SET publication_state='published',publication_mode=?,validation=? WHERE version_id=?",
-                         (self._mode(version,graph),json_text(report['validation']),version_id))
+                         (robotics_version_mode(version,graph),json_text(report['validation']),version_id))
             self._event(conn,ontology_id,version_id,'publish',args,review_id=review_id)
             result = self._version(conn,ontology_id,version_id)
             return self._finish(conn,ontology_id,fingerprint,args,result)
@@ -494,6 +489,16 @@ class GovernanceService:
             raw = self.storage.read_bytes(item['path'],item['sha256'])
             if len(raw) != item['byte_size']: raise ValueError('工件长度不一致。')
             return raw
+
+    def verify_artifact(self, ontology_id, version_id, artifact_id):
+        """DR-191: the read_artifact checks, with the file hashed in bounded chunks."""
+        with self._atomic() as conn:
+            version = self._version(conn,ontology_id,version_id)
+            row = _required(conn,'SELECT record FROM version_artifacts WHERE ontology_id=? AND version_id=? AND artifact_id=?',
+                            (ontology_id,version_id,artifact_id))
+            item = json.loads(row['record'])
+            if item['payload_sha256'] != version['payload_sha256']: raise ValueError('工件不属于当前固定载荷。')
+            return self.storage.verify_file(item['path'],item['sha256'],item['byte_size'])
 
     def _revocations(self, conn, oid):
         return [json.loads(row[0]) for row in conn.execute('SELECT record FROM evidence_revocations WHERE ontology_id=? ORDER BY rowid',(oid,))]
@@ -567,12 +572,12 @@ class GovernanceService:
                 raise GovernanceError('merge_conflict','人工版本没有可证明的原来源基线。')
             visited.add(cursor['version_id'])
             cursor = self._version(conn,oid,cursor['parent_version_id'])
-        if len({self._mode(v,g) for v,g in [(base,bg),(current,lg),(incoming,rg)]}) != 1:
+        if len({robotics_version_mode(v,g) for v,g in [(base,bg),(current,lg),(incoming,rg)]}) != 1:
             raise GovernanceError('merge_conflict','合并模式不一致。')
         if any(v['metadata'].get('profile_id') != 'ur_pick_place' for v in (base,current,incoming)):
             raise GovernanceError('merge_conflict','合并构建模板不一致。')
-        consumer.validate_graph(bg,mode=self._mode(base,bg))
-        consumer.validate_graph(rg,mode=self._mode(incoming,rg))
+        consumer.validate_graph(bg,mode=robotics_version_mode(base,bg))
+        consumer.validate_graph(rg,mode=robotics_version_mode(incoming,rg))
         preview = version_diff.merge_graphs(bg,lg,rg,decisions={})
         token = _hash({'inputs':inputs,'conflicts':preview['conflicts'],'policy':evidence.POLICY})
         result = preview if not decisions else version_diff.merge_graphs(bg,lg,rg,decisions=decisions)
@@ -591,7 +596,7 @@ class GovernanceService:
             preview,graph,current,incoming,baseline_run,incoming_run = self._merge(conn,ontology_id,inputs,decisions)
             if merge_token != preview['merge_token'] or graph is None:
                 raise GovernanceError('merge_conflict','预览过期、输入被修改或仍有未解决冲突。')
-            consumer.validate_graph(graph,mode=self._mode(current,graph))
+            consumer.validate_graph(graph,mode=robotics_version_mode(current,graph))
             metadata = {'merge':{'base':inputs['base'],'incoming':inputs['incoming'],'decisions':decisions,
                                 'baseline_run_id':baseline_run,'incoming_run_id':incoming_run},
                         'source_baseline':inputs['incoming'],'origin_build_run_id':incoming_run}

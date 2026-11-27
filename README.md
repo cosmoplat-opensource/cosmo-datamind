@@ -58,7 +58,7 @@ SQL 工作台与可视化还可单独选择来源。保存的看板逐图保留�
 
 ## 安装与部署
 
-以下为安装命令；本轮验证环境及范围见审计报告。
+安装后可按[测试说明](#测试)准备隔离环境，在自己的检出版本运行检查。
 
 ### 1. 安装
 
@@ -318,7 +318,7 @@ GLM 的配置步骤(OpenAI 端点的配置方式相同,但未实测)、用自然
 - `specs/map.md` — 入口索引
 
 审查报告、执行日志、探索方案、评审附件、来源迁移快照与 `specs/contracts/` 仅保留本地副本，
-不随产品仓库提交。当前功能与调用方式以本文件和 `docs/` 中的产品指南为准。
+不随产品仓库提交。`docs/` 根目录的 Markdown 与 Word 文档同样仅保留本地，唯独保留[建模与问数教程](docs/TUTORIAL-llm-build-qa.md)；图片、流水线等子目录继续发布。当前功能与调用方式以本文件、模块 README 和公开规约为准。
 
 半自动构建方法的核心取舍（为何数据验证优先于模型判断、为何人工确认产生 `asserted`、
 如何执行确定性验收检查、如何选择或不选择行业/标准）记在 `DR-002`、`DR-011`、
@@ -359,14 +359,14 @@ python3 -m venv .venv
 
 ### 开发约定(DR-066)
 
-见 [AGENTS.md](AGENTS.md)。主要的回归手段是场景回归基准(DR-067):用湖仓、元数据业务库和名称—取值型指标库的合成数据端到端运行构建前检查、构建、复核与问数,与标准答案比对;`python3 scripts/scenario_bench.py` 逐项打印检查结果。此外有三类自动检查:流水线说明与构建代码的步骤一致
+主要的回归手段是场景回归基准(DR-067):用湖仓、元数据业务库和名称—取值型指标库的合成数据端到端运行构建前检查、构建、复核与问数,与标准答案比对;`python3 scripts/scenario_bench.py` 逐项打印检查结果。此外有三类自动检查:流水线说明与构建代码的步骤一致
 (`tests/meta/test_models.py`)、领域模块不依赖 Web 层(`tests/meta/test_architecture.py`)、
 表族识别与观测脱敏的性质测试(`tests/unit/test_properties.py`)。构建与问数的追踪和指标见
 `/api/obs/metrics`、`/api/obs/runs`。
 
 ## 贡献
 
-欢迎 issue 与 PR。改动请按 [AGENTS.md](AGENTS.md) 先写测试并登记需求,附上对应的 DR 说明,并保证
+欢迎 issue 与 PR。改动请先写测试并登记需求,附上对应的 DR 说明,并保证
 `scripts/check.py --suite unit` 全部通过、`test_all.py` 不出现新的失败项。
 安全问题请勿公开提交,见 [SECURITY.md](SECURITY.md)。
 

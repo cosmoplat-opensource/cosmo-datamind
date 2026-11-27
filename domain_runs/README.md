@@ -63,7 +63,9 @@ SQLite 写事务串行分配运行内事件序号；`events(run_id, after=N)` �
 这 49 项测试使用合成任务与文件，验证存储行为；T06 另有 30 项已审真实内核接入和跨进程演示测试。
 T07 的 `domain_runs.robotics.generate_from_version` 接收指定已发布版本和结构化任务，保存实际候选字节及报告。
 `domain_runs.verification.verify_storage` 通过只读连接核验历史及文件，不初始化、迁移或恢复运行。
-可直接运行的 CLI、三场景说明和接口用法见 [离线演示](../docs/domain-storage-demo.md)。
+在仓库根目录执行 `python scripts/demo_domain_storage.py --case all`，运行演示生成、缺少知识和跨进程中断恢复三个合成场景。
+CLI 输出本次存储目录；另开进程执行 `python scripts/demo_domain_storage.py --verify-storage <storage_root>` 可只读核验该目录。
+场景均符合预期且独立核验通过时退出 0，否则退出 1；完整参数见 [CLI](../scripts/demo_domain_storage.py) 的 `--help`。
 
 ## 机器人构建 API 与执行器（IR-018 T05）
 
@@ -71,4 +73,5 @@ T07 的 `domain_runs.robotics.generate_from_version` 接收指定已发布版本
 HTTP 能力、受理、运行/事件、目录/版本、重试与工件下载已通过独立 Blueprint 接入 server；新 UI 仍由后续任务实现。
 `RunStore.start()` 继续保留原先的来源校验；专用 `claim_build()` 允许认领损坏来源的 queued 运行，由只读计算返回明确失败报告，避免阻塞队列。
 `recover_interrupted(operation="build_ontology")` 只在独占构建宿主启动时使用，不处理其他运行类型；原无参恢复接口行为保留。
-使用方式、配置、恢复语义和隔离命令见 [机器人构建 API 指南](../docs/robotics-build-api.md)。
+HTTP 请求与响应契约见 [构建接口测试](../tests/unit/test_robotics_build_http.py)，模型路由分流见 [双路径决策](../specs/decisions/DR-152-robotics-dual-build.md)。
+隔离环境与检查入口见 [仓库验证说明](../README.md#测试)；进程恢复遵循上文的显式恢复语义。
