@@ -305,16 +305,28 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True, data_host=Non
         except (ValueError, OSError) as exc:
             raise BuildRequestError('artifact_integrity', '设计文件缺失或损坏。', 409) from exc
 
-    def design_display(row):
-        # DR-166: saved state projects read-only; confirmation remains explicit.
-        from ontology_assets.interactive_ontology_graph_view import project_design
-        return {**row, 'interactive_graph_view': project_design(row)}
+    GRAPH_WARNINGS = {
+        'write': '设计操作已受理，当前修订的图谱暂时无法显示。可刷新页面重新读取。',
+        'read': '当前修订的图谱暂时无法显示，设计内容不受影响。可稍后刷新重试。'}
+
+    def design_display(document, *, operation, source=None):
+        """DR-166 / DR-177 / DR-188: the read-only graph is optional; its failure never changes the saved result."""
+        from ontology_assets import interactive_ontology_graph_view
+        try:
+            view = interactive_ontology_graph_view.project_design(document if source is None else source)
+        except Exception as exc:
+            from observability import count
+            count('robotics.design.graph_projection_failed', operation=operation)
+            app.logger.warning('Design graph unavailable after %s (%s)', operation, type(exc).__name__)
+            return {**document, 'interactive_graph_view': None, 'interactive_graph_warning': {
+                'code': 'graph_view_unavailable',
+                'message': GRAPH_WARNINGS['read' if operation == 'read' else 'write']}}
+        return {**document, 'interactive_graph_view': view}
 
     @bp.get('/api/robotics/design-sessions/<sid>')
     def design_session(sid):
         _query_fields(set())
-        row = designs().get(sid)
-        return jsonify(runtime.public(design_read(lambda: design_display(row))))
+        return jsonify(runtime.public(design_display(designs().get(sid), operation='read')))
 
     @bp.get('/api/robotics/design-sessions/<sid>/revisions')
     def design_revisions(sid):
@@ -331,9 +343,8 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True, data_host=Non
         raw = design_read(lambda: service.export_revision(sid, int(revision), format=format or 'json'))
         if format is None:
             document = __import__('json').loads(raw)
-            from ontology_assets.interactive_ontology_graph_view import project_design
-            document['interactive_graph_view'] = design_read(lambda: project_design({**document['state'], 'session_id': sid,
-                'status': 'historical'}))
+            document = design_display(document, operation='read',
+                source={**document['state'], 'session_id': sid, 'status': 'historical'})
             return jsonify(runtime.public(document))
         return send_file(io.BytesIO(raw), mimetype='application/json' if format=='json' else 'application/rdf+xml',
             as_attachment=True, download_name='design.'+format, max_age=0)
@@ -357,15 +368,7 @@ def init_app(app, *, workdir, legacy_catalog, start_executor=True, data_host=Non
         function = getattr(service, 'message' if operation=='messages' else operation.replace('-', '_'))
         receipt = function(sid, **body)
         # DR-177: only the optional projection runs inside this boundary, after commit or replay.
-        try:
-            display = design_display(receipt)
-        except Exception as exc:
-            from observability import count
-            count('robotics.design.graph_projection_failed', operation=operation)
-            app.logger.warning('Design graph unavailable after %s (%s)', operation, type(exc).__name__)
-            display = {**receipt, 'interactive_graph_view': None, 'interactive_graph_warning': {
-                'code': 'graph_view_unavailable',
-                'message': '设计操作已受理，当前修订的图谱暂时无法显示。可刷新页面重新读取。'}}
+        display = design_display(receipt, operation=operation)
         return jsonify(runtime.public(display)), 202 if operation in ('messages','confirm-schema','retry') else 200
 
     def application_summary(oid, vid):

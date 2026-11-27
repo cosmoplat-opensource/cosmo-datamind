@@ -4449,6 +4449,19 @@
       ]
     },
     {
+      "id": "DESIGN-RECEIPT-02",
+      "decision": "DR-188",
+      "iteration": "IR-049",
+      "status": "delivered",
+      "criterion": "图谱无法生成时，读取会话和历史修订仍返回已保存的设计内容和图谱提示，不报告设计文件损坏，读取不产生写入；设计文件本身损坏时仍报告完整性错误。",
+      "tests": [
+        "tests/unit/test_robotics_design_http.py::test_graph_failure_on_reads_keeps_session_and_history_readable",
+        "tests/unit/test_robotics_design_http.py::test_graph_failure_preserves_saved_receipt_and_idempotency",
+        "tests/unit/test_robotics_design_http.py::test_revision_artifact_tampering_returns_integrity_error",
+        "tests/frontend/robotics-design-browser.py::test_persistent_graph_failure_keeps_design_and_history_readable"
+      ]
+    },
+    {
       "id": "DESIGN-HISTORY-01",
       "decision": "DR-178",
       "iteration": "IR-039",

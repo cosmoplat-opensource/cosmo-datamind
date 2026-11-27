@@ -351,6 +351,53 @@ def test_graph_warning_preserves_saved_revision_and_recovers_on_read(live, tmp_p
 
 
 @pytest.mark.parametrize('live', [{'prepare': prepare_waiting}], indirect=True)
+def test_persistent_graph_failure_keeps_design_and_history_readable(live, tmp_path, monkeypatch):
+    """DR-188: reloads and history reads show the graph warning, not a damaged-design error."""
+    from urllib.parse import urlparse
+    from ontology_assets import interactive_ontology_graph_view
+    from tests.build_runtime_support import BASE_URL, http_app
+
+    site, page, calls = live
+    sid = site.prepared['session_id']
+
+    def unavailable(row):
+        raise ValueError('synthetic graph failure')
+
+    before = db_rows(site.root), blob_bytes(site.root)
+    # Serve every design read through the same Flask route and database with a persistent projection fault.
+    with http_app(tmp_path, DATAMIND_DOMAIN_STORAGE_ROOT=str(site.root)) as (_, client, _, _):
+        monkeypatch.setattr(interactive_ontology_graph_view, 'project_design', unavailable)
+        reads = []
+
+        def read(route):
+            if route.request.method != 'GET':
+                return route.continue_()
+            response = client.get(urlparse(route.request.url).path, base_url=BASE_URL)
+            reads.append(response.status_code)
+            route.fulfill(status=response.status_code, json=response.json)
+        page.route(re.compile(r'.*/api/robotics/design-sessions/' + re.escape(sid) + r'(/revisions/\d+)?$'), read)
+        page.goto(site.url + '/#build?recipe=robotics&session=' + sid)
+        design = wait_design(page, sid, 'classes', 'awaiting_confirmation')
+        graph = design.get_by_test_id('interactive-ontology-graph-panel')
+        warning = design.get_by_text('当前修订的图谱暂时无法显示，设计内容不受影响。可稍后刷新重试。', exact=True)
+        expect(warning).to_be_visible()
+        expect(graph).to_be_hidden()
+        expect(design.get_by_role('button', name='确认类别', exact=True)).to_be_enabled()
+        expect(design.get_by_text('设计文件缺失或损坏。')).to_have_count(0)
+        page.reload()
+        wait_design(page, sid, 'classes', 'awaiting_confirmation')
+        expect(warning).to_be_visible()
+        page.get_by_label('设计修订', exact=True).select_option('1')
+        expect(design.locator('.rd-status')).to_contain_text('历史修订 1 · 只读')
+        expect(warning).to_be_visible()
+        expect(design.get_by_text('设计文件缺失或损坏。')).to_have_count(0)
+        assert reads and set(reads) == {200}
+    assert (db_rows(site.root), blob_bytes(site.root)) == before
+    assert site.design_posts() == [] and calls == []
+    done(site)
+
+
+@pytest.mark.parametrize('live', [{'prepare': prepare_waiting}], indirect=True)
 def test_waiting_session_reload_and_owned_server_restart_are_readonly(live):
     site, page, calls = live; state = site.prepared; sid = state['session_id']
     before, files = db_rows(site.root), blob_bytes(site.root)
