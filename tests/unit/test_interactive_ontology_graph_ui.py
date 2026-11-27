@@ -63,7 +63,8 @@ def test_graph_browser_shared_fixture_dependencies_resolve(tmp_path):
     # Resolve the complete fixture graph without starting a browser or service.
     import xml.etree.ElementTree as ET
     cases = list(ET.parse(tmp_path / 'fixture-plan.xml').getroot().iter('testcase'))
-    assert len(cases) == 15
+    assert len(cases) == 16
+    assert any(c.get('name', '').startswith('test_reopening_fixed_graph_revalidates_with_etag') for c in cases)
     assert sum(c.get('name', '').startswith('test_first_oversized_graph_') for c in cases) == 2
     assert any(c.get('name', '').startswith('test_recycle_bin_graph_round_trip_') for c in cases)
     assert all(c.find('error') is None and c.find('failure') is None for c in cases)

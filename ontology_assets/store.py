@@ -86,6 +86,11 @@ class AssetStore:
         record = self.get_source(source_asset_id)
         return self.storage.read_bytes(record["path"], record["sha256"])
 
+    def verify_source(self, source_asset_id):
+        """DR-191: the same digest and registered length check as read_source, streamed."""
+        record = self.get_source(source_asset_id)
+        return self.storage.verify_file(record["path"], record["sha256"], record["byte_size"])
+
     def _add_version(self, conn, ontology_id, content, *, payload_kind, parent_version_id=None,
                      source_asset_ids=None, metadata=None):
         from .robotics_application import is_application, load as load_application, save as save_application

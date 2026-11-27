@@ -1,4 +1,5 @@
 """Knowledge governance HTTP transport and version downloads — DR-141 / DR-143 / DR-145 / DR-146 / DR-147."""
+import hashlib
 import io
 from pathlib import Path
 import re
@@ -9,6 +10,7 @@ from werkzeug.exceptions import BadRequest, RequestEntityTooLarge
 
 from domain_runs.build_service import BuildRequestError
 from ontology_assets.governance import GovernanceError, GovernanceService
+from ontology_assets.payloads import json_text
 
 IDENTITY = {'request_id', 'actor', 'reason'}
 CONDITION = {'base_version_id', 'base_payload_sha256', 'expected_head_version_id', 'expected_revision'} | IDENTITY
@@ -216,7 +218,7 @@ def init_app(app, runtime):
         visible_version_lifecycle(runtime.root, ontology_id, history=history)
         if view == 'interactive-ontology-graph':
             # DR-166: use the same provenance readers as fixed-version exports.
-            from ontology_assets.interactive_ontology_graph_view import project_version
+            from ontology_assets import interactive_ontology_graph_view
             from ontology_assets.robotics_application import ApplicationAssets, is_application
             from ontology_assets.robotics_offline import OfflineAssets
             if is_application(version):
@@ -225,12 +227,21 @@ def init_app(app, runtime):
                 read_payload = DesignAssets(runtime.root).payload
             else:
                 read_payload = OfflineAssets(runtime.root).graph_payload
+            # DR-191: the validator covers every registered input of this response; access checks ran above.
+            name, number = assets.get_asset(ontology_id)['name'], assets.version_number(ontology_id, version_id)
+            tag = hashlib.sha256(json_text([interactive_ontology_graph_view.PROJECTION_DIGEST, view, history, version, name,
+                number, GovernanceService(runtime.root, read_only=True).artifacts(ontology_id, version_id)]).encode()).hexdigest()
+            def revalidated(reply):
+                reply.set_etag(tag); reply.headers['Cache-Control'] = 'private, no-cache'
+                return reply
+            if request.if_none_match.contains_weak(tag):
+                return revalidated(app.response_class(status=304))
             try:
-                document = project_version(version, read_payload(ontology_id, version_id))
+                document = interactive_ontology_graph_view.project_version(version, read_payload(ontology_id, version_id))
             except (ValueError, OSError) as exc:
                 raise BuildRequestError('artifact_integrity', '固定版本或来源工件缺失、损坏或规模不受支持。', 409) from exc
-            return response({**document, 'ontology_id': ontology_id, 'version_id': version_id, 'view': view,
-                'name': assets.get_asset(ontology_id)['name'], 'version_number': assets.version_number(ontology_id, version_id)})
+            return revalidated(jsonify(runtime.public({**document, 'ontology_id': ontology_id, 'version_id': version_id,
+                'view': view, 'name': name, 'version_number': number})))
         if version['metadata'].get('design_contract'):
             if view != 'relations': raise invalid()
             reader=DesignAssets(runtime.root)

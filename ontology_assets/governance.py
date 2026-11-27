@@ -490,6 +490,16 @@ class GovernanceService:
             if len(raw) != item['byte_size']: raise ValueError('工件长度不一致。')
             return raw
 
+    def verify_artifact(self, ontology_id, version_id, artifact_id):
+        """DR-191: the read_artifact checks, with the file hashed in bounded chunks."""
+        with self._atomic() as conn:
+            version = self._version(conn,ontology_id,version_id)
+            row = _required(conn,'SELECT record FROM version_artifacts WHERE ontology_id=? AND version_id=? AND artifact_id=?',
+                            (ontology_id,version_id,artifact_id))
+            item = json.loads(row['record'])
+            if item['payload_sha256'] != version['payload_sha256']: raise ValueError('工件不属于当前固定载荷。')
+            return self.storage.verify_file(item['path'],item['sha256'],item['byte_size'])
+
     def _revocations(self, conn, oid):
         return [json.loads(row[0]) for row in conn.execute('SELECT record FROM evidence_revocations WHERE ontology_id=? ORDER BY rowid',(oid,))]
 

@@ -395,3 +395,7 @@ IR-029 于 2026-11-17 按用户反馈精简删除／恢复弹窗及回收站卡�
 ## 交互式图谱布局计算量
 
 [DR-190 网格剪枝与标签复用](decisions/DR-190-graph-layout-work-bound.md) ／ [IR-051 验收与复现](iterations/IR-051-graph-layout-work-bound.md) ／ [GRAPH-LAYOUT-01 验收映射](acceptance.json)。
+
+## 固定版本图谱的条件读取
+
+[DR-191 ETag 与分块核对](decisions/DR-191-fixed-graph-revalidation.md) ／ [IR-052 验收与复现](iterations/IR-052-fixed-graph-revalidation.md) ／ [GRAPH-CACHE-01 验收映射](acceptance.json)。

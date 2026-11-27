@@ -39,6 +39,35 @@ def interactive_graph_panel(page):
 
 
 @pytest.mark.parametrize('live', [{'prepare': support.prepare_candidate}], indirect=True)
+def test_reopening_fixed_graph_revalidates_with_etag(live):
+    """DR-191: the browser revalidates the unchanged fixed graph and the server answers 304."""
+    site, page, calls = live
+    ref = site.prepared['output_asset_ref']
+    url = (site.url + '/#robotics-view?asset=' + ref['ontology_id'] + '&version=' + ref['version_id']
+           + '&view=interactive-ontology-graph')
+    view_path = '/views/interactive-ontology-graph'
+    before = support.db_rows(site.root), support.blob_bytes(site.root)
+    with page.expect_response(lambda r: view_path in r.url) as first:
+        page.goto(url)
+    assert first.value.status == 200 and first.value.headers['etag']
+    expect(interactive_graph_panel(page)).to_have_attribute('data-kind', 'version')
+    page.goto(site.url + '/#library')
+    with page.expect_response(lambda r: view_path in r.url) as second:
+        page.goto(url)
+    sent = second.value.request.all_headers()
+    assert sent.get('if-none-match') == first.value.headers['etag'], 'the browser must revalidate its cached graph'
+    # Chromium reports a revalidated cache hit with the cached 200, so confirm the server reply directly.
+    from urllib.request import Request, urlopen
+    from urllib.error import HTTPError
+    with pytest.raises(HTTPError) as replied:
+        urlopen(Request(second.value.url, headers={'If-None-Match': first.value.headers['etag']}), timeout=10)
+    assert replied.value.code == 304 and replied.value.headers['ETag'] == first.value.headers['etag']
+    expect(interactive_graph_panel(page)).to_have_attribute('data-kind', 'version')
+    assert (support.db_rows(site.root), support.blob_bytes(site.root)) == before
+    assert calls == []
+
+
+@pytest.mark.parametrize('live', [{'prepare': support.prepare_candidate}], indirect=True)
 def test_recycle_bin_graph_round_trip_preserves_fixed_version(live):
     from ontology_assets.lifecycle import LifecycleService
     from tests.unit.test_asset_lifecycle import apply

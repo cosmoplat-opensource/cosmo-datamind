@@ -2,6 +2,7 @@
 from copy import deepcopy
 import hashlib
 import json
+from pathlib import Path
 
 from rdflib import BNode, Graph, Literal, OWL, RDF, RDFS, URIRef
 from rdflib.collection import Collection
@@ -14,6 +15,8 @@ from domains.robotics.modeling._schema import validate_namespace
 from .payloads import robotics_version_mode
 
 
+# DR-191: cache validators change whenever the projection code does.
+PROJECTION_DIGEST = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 MAX_INPUT_TRIPLES = 200_000
 MAX_TYPED_SUBJECTS = 20_000
 

@@ -46,6 +46,10 @@ class OfflineAssets:
         artifacts = [] if include_files else None
         reports = []
         for item in runs.artifacts(run_id):
+            if not include_files and item['kind'] != 'validation':
+                # DR-191: graph reads only need the integrity result, so hash large files in chunks.
+                runs.verify_artifact(run_id, item['artifact_id'])
+                continue
             content = runs.read_artifact(run_id, item['artifact_id'])
             self._collect_file(artifacts, item, content)
             if item['kind'] == 'validation':
@@ -70,11 +74,17 @@ class OfflineAssets:
             raise ValueError('本体载荷无效。')
         sources = None if graph_only else []
         for sid in version['source_asset_ids']:
-            self._collect_file(sources, assets.get_source(sid), assets.read_source(sid))
+            if graph_only:
+                assets.verify_source(sid)
+            else:
+                self._collect_file(sources, assets.get_source(sid), assets.read_source(sid))
         build = self._verified_build(ontology_id, metadata, include_files=not graph_only)
         governance = GovernanceService(self.root, read_only=True)
         artifacts = None if graph_only else []
         for item in governance.artifacts(ontology_id, version_id):
+            if graph_only:
+                governance.verify_artifact(ontology_id, version_id, item['artifact_id'])
+                continue
             content = governance.read_artifact(ontology_id, version_id, item['artifact_id'])
             self._collect_file(artifacts, item, content)
         if graph_only:
