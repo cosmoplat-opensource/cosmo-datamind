@@ -1,4 +1,5 @@
-/* Ontology graph layout — DR-166. */
+/* Ontology graph layout — DR-166 / DR-190. */
+import { SpatialGrid, segmentBoxes } from './spatialGrid.js';
 function onCurve(points, t) {
   const result = points.map(point => ({ ...point }));
   for (let length = result.length - 1; length > 0; length--)
@@ -59,7 +60,10 @@ function hitsNode(points, node) {
   return false;
 }
 
-export function routeEdges(edges, positions, bends = new Map(), optimize = true) {
+
+const finitePoint = point => Number.isFinite(point.x) && Number.isFinite(point.y);
+
+export function routeEdges(edges, positions, bends = new Map(), optimize = true, stats = null) {
   const groups = new Map();
   for (const edge of edges) {
     const key = JSON.stringify([edge.source, edge.target].sort());
@@ -84,31 +88,59 @@ export function routeEdges(edges, positions, bends = new Map(), optimize = true)
   for (const key of bends.keys()) if (!groups.has(key)) bends.delete(key);
   const routed = valid.map(([key, group]) => make(group, optimize ? 0 : bends.get(key) || 0));
   // shortcut: local curve choices reduce crossings without global routing; dense nonplanar graphs can still cross.
-  if (optimize) for (let index = 0; index < valid.length; index++) {
-    let best;
-    for (const bend of [0, 60, -60, 120, -120, 180, -180, 240, -240]) {
-      const candidates = make(valid[index][1], bend);
-      let score = Math.abs(bend) * .01;
-      for (const candidate of candidates) {
-        for (const node of nodes) if (node.id !== candidate.source && node.id !== candidate.target && hitsNode(candidate.points, node)) score += 100;
-        for (let otherIndex = 0; otherIndex < routed.length; otherIndex++) {
-          if (index === otherIndex) continue;
-          for (const other of routed[otherIndex]) {
-            if ([candidate.source, candidate.target].some(id => id === other.source || id === other.target)) continue;
-            if (candidate.right < other.left || candidate.left > other.right || candidate.bottom < other.top || candidate.top > other.bottom) continue;
-            let crossing = false;
-            for (let i = 1; i < candidate.points.length && !crossing; i++)
-              for (let j = 1; j < other.points.length && !crossing; j++)
-                crossing = crosses(candidate.points[i - 1], candidate.points[i], other.points[j - 1], other.points[j]);
-            if (crossing) score += 100;
+  if (optimize) {
+    const finite = nodes.every(node => finitePoint(node) && Number.isFinite(node.width) && Number.isFinite(node.height))
+      && routed.every(group => group.every(item => item.points.every(finitePoint)));
+    const nodeGrid = new SpatialGrid(finite, 64), routeGrid = new SpatialGrid(finite, 64), placed = routed.map(() => []);
+    nodes.forEach(node => {
+      // The same margins as hitsNode: circles use their radius on both axes.
+      const halfWidth = node.width / 2 + 8, halfHeight = (node.box ? node.height : node.width) / 2 + 8;
+      nodeGrid.add({ node }, [[node.x - halfWidth, node.y - halfHeight, node.x + halfWidth, node.y + halfHeight]]);
+    });
+    const place = (index, group) => {
+      for (const [item, keys] of placed[index]) routeGrid.remove(item, keys);
+      placed[index] = group.flatMap(other => segmentBoxes(other.points).map((box, segment) => {
+        const item = { other, index, segment: segment + 1 };
+        return [item, routeGrid.add(item, [box])];
+      }));
+    };
+    routed.forEach((group, index) => place(index, group));
+    if (stats) Object.assign(stats, { candidates: 0, nodeTests: 0, routeTests: 0, nodes: nodes.length,
+      routes: routed.reduce((total, group) => total + group.length, 0) });
+    for (let index = 0; index < valid.length; index++) {
+      let best;
+      for (const bend of [0, 60, -60, 120, -120, 180, -180, 240, -240]) {
+        const candidates = make(valid[index][1], bend);
+        let score = Math.abs(bend) * .01;
+        for (const candidate of candidates) {
+          const boxes = finite ? segmentBoxes(candidate.points) : [];
+          if (stats) stats.candidates++;
+          nodeGrid.visit(boxes, ({ node }) => {
+            if (stats) stats.nodeTests++;
+            if (node.id !== candidate.source && node.id !== candidate.target && hitsNode(candidate.points, node)) score += 100;
+          });
+          // An edge counts once when any of its segments properly crosses any candidate segment.
+          const crossed = new Set();
+          for (let i = 1; i < candidate.points.length; i++) {
+            const a = candidate.points[i - 1], b = candidate.points[i];
+            routeGrid.visit(finite ? [boxes[i - 1]] : [], ({ other, index: otherIndex, segment }) => {
+              if (index === otherIndex || crossed.has(other)) return;
+              if (candidate.source === other.source || candidate.source === other.target
+                || candidate.target === other.source || candidate.target === other.target) return;
+              if (stats) stats.routeTests++;
+              if (crosses(a, b, other.points[segment - 1], other.points[segment])) crossed.add(other);
+            });
           }
+          // Add one penalty at a time, as before, so floating-point ties resolve identically.
+          for (let count = 0; count < crossed.size; count++) score += 100;
         }
+        if (!best || score < best.score) best = { score, candidates, bend };
+        if (!score) break;
       }
-      if (!best || score < best.score) best = { score, candidates, bend };
-      if (!score) break;
+      routed[index] = best.candidates;
+      place(index, best.candidates);
+      bends.set(valid[index][0], best.bend);
     }
-    routed[index] = best.candidates;
-    bends.set(valid[index][0], best.bend);
   }
   return routed.flat().map(routed => {
     const anchors = [.5, .4, .6, .3, .7, .2, .8, .1, .9].map(t => {

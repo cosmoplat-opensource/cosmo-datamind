@@ -1,4 +1,4 @@
-/* Ontology graph layout — DR-166 / DR-185. */
+/* Ontology graph layout — DR-166 / DR-185 / DR-190. */
 import { label, shortIRI } from './model.js';
 import { placeLabels } from './labelLayout.js';
 import { routeEdges } from './edgeRouting.js';
@@ -53,6 +53,8 @@ export class GraphView {
     this.positions = new Map(); this.nodeElements = new Map(); this.edgeElements = new Map();
     this.edgeLabels = new Map(); this.routeBends = new Map(); this.links = []; this.degrees = new Map();
     this.data = { nodes: [], edges: [] }; this.selectedId = null; this.language = 'zh';
+    // DR-190: count full layout passes; unchanged inputs reuse the settled routes and label placements.
+    this.layoutStats = { routes: 0, labels: 0 }; this.routeVersion = 0; this.labelSignature = null;
     this.options = { classDistance: 220, datatypeDistance: 150, charge: 650, gravity: 0.025,
       lineStrength: 0.035, labelWidth: 138, dynamicLabelWidth: true, scaleByIndividuals: false,
       rectangular: false, compact: false, colorExternals: false, pinOnDrag: true,
@@ -257,6 +259,7 @@ export class GraphView {
     if (routeSignature !== this.routeSignature || !moving && !this.routesOptimized) {
       this.routes = routeEdges(this.data.edges, visiblePositions, this.routeBends, !moving);
       this.routeSignature = routeSignature; this.routesOptimized = !moving;
+      this.routeVersion++; this.layoutStats.routes++;
     }
     for (const routed of this.routes) {
       const dom = this.edgeElements.get(routed.id), metrics = this.edgeLabels.get(routed.id);
@@ -267,6 +270,13 @@ export class GraphView {
         anchors: routed.anchors, normal: routed.anchors[0].normal });
     }
     if (moving) return;
+    // Label placement depends only on the routes, node boxes (both covered by routeVersion) and label sizes.
+    const labelSignature = JSON.stringify([this.routeVersion, labels.map(label => [label.id, label.width, label.height])]);
+    if (labelSignature === this.labelSignature && labels.every(label => this.edgeLabels.get(label.id).placement)) {
+      for (const label of labels) paintEdgeLabel(this.edgeLabels.get(label.id), label.anchors);
+      return;
+    }
+    this.labelSignature = labelSignature; this.layoutStats.labels++;
     const nodeBoxes = this.data.nodes.map(node => this.positions.get(node.id));
     for (const [index, placed] of placeLabels(labels, nodeBoxes, this.routes).entries()) {
       const metrics = this.edgeLabels.get(placed.id);

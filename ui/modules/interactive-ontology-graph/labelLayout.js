@@ -1,4 +1,5 @@
-/* Ontology graph layout — DR-166. */
+/* Ontology graph layout — DR-166 / DR-190. */
+import { SpatialGrid } from './spatialGrid.js';
 function rectangle(x, y, width, height, padding = 0) {
   return { left: x - width / 2 - padding, right: x + width / 2 + padding,
     top: y - height / 2 - padding, bottom: y + height / 2 + padding };
@@ -30,7 +31,7 @@ function crossingLength(segment, bounds) {
   return (end - start) * segment.length;
 }
 
-export function placeLabels(labels, nodes, routes = []) {
+export function placeLabels(labels, nodes, routes = [], stats = null) {
   // shortcut: dense labels can still overlap; keep them near their own curve rather than moving them into unrelated regions.
   const occupied = nodes.map(node => rectangle(node.x, node.y, node.width, node.height, 5));
   const segments = [];
@@ -42,6 +43,21 @@ export function placeLabels(labels, nodes, routes = []) {
         right: Math.max(a.x, b.x), top: Math.min(a.y, b.y), bottom: Math.max(a.y, b.y) });
     }
   }
+  // DR-190: grids only skip obstacles and segments whose boxes cannot touch; visits keep ascending
+  // index order so every sum, early exit and tie matches the full scan.
+  const box = rect => [rect.left, rect.top, rect.right, rect.bottom];
+  const finite = [...occupied, ...segments].every(rect => box(rect).every(Number.isFinite))
+    && labels.every(label => Number.isFinite(label.width) && Number.isFinite(label.height)
+      && label.anchors.every(anchor => Number.isFinite(anchor.x) && Number.isFinite(anchor.y)));
+  const obstacleGrid = new SpatialGrid(finite, 64), segmentGrid = new SpatialGrid(finite, 64);
+  occupied.forEach((rect, index) => obstacleGrid.add({ index }, [box(rect)]));
+  segments.forEach((segment, index) => segmentGrid.add({ index }, [box(segment)]));
+  const near = (grid, bounds) => {
+    const found = [];
+    grid.visit([box(bounds)], item => found.push(item.index));
+    return found.sort((a, b) => a - b);
+  };
+  if (stats) Object.assign(stats, { considers: 0, obstacleTests: 0, segmentTests: 0, segments: segments.length, obstacles: 0 });
   const result = [];
   const ordered = labels.map((label, index) => ({ label, index }))
     .sort((a, b) => b.label.width * b.label.height - a.label.width * a.label.height);
@@ -51,14 +67,17 @@ export function placeLabels(labels, nodes, routes = []) {
       const x = anchor.x + nx * offset, y = anchor.y + ny * offset;
       const bounds = rectangle(x, y, label.width, label.height);
       let area = 0;
-      for (const obstacle of occupied) {
-        area += overlapArea(bounds, obstacle);
+      const obstacles = near(obstacleGrid, bounds);
+      if (stats) { stats.considers++; stats.obstacleTests += obstacles.length; stats.obstacles = occupied.length; }
+      for (const obstacle of obstacles) {
+        area += overlapArea(bounds, occupied[obstacle]);
         if (best && area > best.area) break;
       }
       if (best && area > best.area) return false;
       let crossings = 0;
-      for (const segment of segments) {
-        if (segment.id !== label.id) crossings += crossingLength(segment, bounds);
+      for (const item of near(segmentGrid, bounds)) {
+        const segment = segments[item];
+        if (segment.id !== label.id) { if (stats) stats.segmentTests++; crossings += crossingLength(segment, bounds); }
       }
       const distance = (x - label.anchors[0].x) ** 2 + (y - label.anchors[0].y) ** 2;
       if (!best || area < best.area || area === best.area && (crossings < best.crossings
@@ -86,7 +105,9 @@ export function placeLabels(labels, nodes, routes = []) {
     const placed = { id: label.id, x: best.x, y: best.y, width: label.width, height: label.height,
       anchorX: best.anchorX, anchorY: best.anchorY };
     result[index] = placed;
-    occupied.push(rectangle(placed.x, placed.y, placed.width, placed.height, 4));
+    const rect = rectangle(placed.x, placed.y, placed.width, placed.height, 4);
+    obstacleGrid.add({ index: occupied.length }, [box(rect)]);
+    occupied.push(rect);
   }
   return result;
 }

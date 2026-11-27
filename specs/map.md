@@ -391,3 +391,7 @@ IR-029 于 2026-11-17 按用户反馈精简删除／恢复弹窗及回收站卡�
 ## 设计页读取失败恢复
 
 [DR-189 有限重试与手动重新读取](decisions/DR-189-design-read-recovery.md) ／ [IR-050 验收与复现](iterations/IR-050-design-read-recovery.md) ／ [DESIGN-POLL-01 验收映射](acceptance.json)。
+
+## 交互式图谱布局计算量
+
+[DR-190 网格剪枝与标签复用](decisions/DR-190-graph-layout-work-bound.md) ／ [IR-051 验收与复现](iterations/IR-051-graph-layout-work-bound.md) ／ [GRAPH-LAYOUT-01 验收映射](acceptance.json)。

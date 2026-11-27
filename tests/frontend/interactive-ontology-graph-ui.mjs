@@ -84,6 +84,25 @@ const cases={
     c.destroy();
     assert.equal(frames.size,0);
   },
+  // DR-190: unchanged geometry reuses settled label placements; any input change lays them out again.
+  settled_labels_are_reused_until_layout_inputs_change(){
+    const c=new InteractiveOntologyGraphController(new Element('svg'),{}),d=fixture();
+    d.edges=Array.from({length:6},(_,i)=>({...d.edges[0],id:`edge-${i}`,label:`relation ${i}`}));
+    c.update(d,{epoch:c.beginContext(d.context)});c.pause(true);
+    const g=c.graph,transforms=()=>g.routes.map(route=>g.edgeLabels.get(route.id).group.getAttribute('transform'));
+    assert(g.layoutStats,'graph must report layout passes');
+    const settled={...g.layoutStats},placed=transforms();
+    c.select(ns+'A');c.select(ns+'B');c.select(null);g.setLanguage('zh');
+    assert.deepEqual(g.layoutStats,settled,'selection and redraws must not repeat routing or label layout');
+    assert.deepEqual(transforms(),placed,'reused labels keep their settled placement');
+    Object.assign(g.positions.get(ns+'A'),{x:g.positions.get(ns+'A').x+90});g.paint();
+    assert.equal(g.layoutStats.labels,settled.labels+1,'moved nodes lay labels out again');
+    assert.equal(g.layoutStats.routes,settled.routes+1,'moved nodes route edges again');
+    const moved={...g.layoutStats};
+    g.setOptions({labelWidth:180,dynamicLabelWidth:false});c.pause(true);
+    assert(g.layoutStats.labels>moved.labels,'changed node sizes lay labels out again');
+    c.destroy();
+  },
   oversized_updates_are_transactional(){
     for(const replace of [false,true]){
       const notices=[],c=new InteractiveOntologyGraphController(new Element('svg'),{onNotice:n=>notices.push(n)}),d=fixture();
