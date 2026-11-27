@@ -70,7 +70,7 @@ AST-08 的旧 UI 回归只能证明旧能力未受破坏，不能作为新 UI �
 - [x] 机器人适配：存储指定版本的完整 OWL，并通过 IR-016 的加载与严格生成入口使用该版本。
 - [x] 行为测试：资产版本、身份隔离、重启恢复、失败原子性、并发事件、路径约束和旧存储保护，按批次先 RED 后 GREEN。
 - [x] `scripts/demo_domain_storage.py` 及离线演示指南（现仅保留本地）：可直接执行的离线演示与跨进程检查；公开命令见[运行存储说明](../../domain_runs/README.md#验证)。
-- [x] `docs/audits/IR-017-storage-validation.md`：各批 RED/GREEN、人审记录、实际命令、失败与补验、产物路径及最终回归证据。
+- [x] 验证记录：验证双领域目录、不可变版本、旧图谱适配、运行与事件恢复、工件提交与清单、路径与完整性，以及跨进程离线复核（AST-01～09）；各批 RED/GREEN 与人审经过见下方记录。复现：`python -m pytest tests/unit/test_ontology_asset_catalog.py tests/unit/test_ontology_asset_versions.py tests/unit/test_legacy_asset_adapter.py tests/unit/test_domain_run_store.py tests/unit/test_domain_artifacts.py tests/unit/test_domain_storage_integrity.py tests/unit/test_domain_storage_demo_cli.py`，以及上方离线演示命令和 `--verify-storage` 只读核验。原始验证记录仅保留本地，不随仓库发布。
 - [x] 更新 acceptance 映射、Proposal 和 specs 索引，新增代码关联 DR，真实测试创建后替换计划入口。
 
 ### 最小存储约定

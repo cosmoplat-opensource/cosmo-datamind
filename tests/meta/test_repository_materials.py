@@ -120,6 +120,23 @@ def test_retained_specifications_are_not_ignored(name):
     assert result.returncode == 1, name
 
 
+def test_published_markdown_does_not_cite_local_files_as_evidence():
+    """A code span naming a local-only file is evidence readers cannot open — DR-194.
+
+    Directory names such as `docs/audits/` remain allowed when they describe the boundary itself.
+    """
+    findings = []
+    for name in sorted(filter(None, tracked_files())):
+        if not name.endswith('.md') or local_material(name):
+            continue
+        for number, line in enumerate((ROOT / name).read_text(encoding='utf-8').splitlines(), 1):
+            for span in re.findall(r'`([^`\s]+)`', line):
+                candidate = span.removeprefix('./')
+                if not candidate.endswith('/') and local_material(candidate):
+                    findings.append(f'{name}:{number}: {span}')
+    assert not findings, '\n'.join(findings)
+
+
 def test_published_markdown_does_not_link_to_local_materials():
     findings = []
     tracked = set(filter(None, tracked_files()))

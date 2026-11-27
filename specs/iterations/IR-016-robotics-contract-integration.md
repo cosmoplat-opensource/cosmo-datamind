@@ -43,14 +43,14 @@
 ## 交付 Deliverables
 
 - [x] `tests/fixtures/robotics/`：来源 XML、节点模型、构建侧/agent 侧真实 OWL、演示 OWL、结构化任务及来源摘要。
-- [x] `docs/audits/IR-016-robotics-baseline.md`：兼容矩阵、已知断点、原始文件摘要、环境及复测命令。
+- [x] 兼容基线：验证 8 份输入夹具的来源、用途和 SHA-256，以及兼容矩阵中已有成功、协议失败和策略差异分开记录（ROB-01），包导入不依赖原归档路径（ROB-02）。复现：`python -m pytest tests/unit/test_robotics_baseline.py tests/unit/test_robotics_imports.py`。原始基线记录仅保留本地，不随仓库发布。
 - [x] `domains/robotics/`：可包导入的构建、profile、语义读取、校验、发布与编译最小模块，新增文件关联 DR。
 - [x] 草稿与严格生成策略：未解决值只进入明确标记的作者草稿，不进入严格候选成功结果。
 - [x] 发布与消费契约：当前支持的协议/规则及其版本对应关系，新发布物通过实际消费侧校验。
 - [x] `tests/unit/test_robotics_*.py`：可离线执行的行为测试，覆盖下面列出的验收要求。
 - [x] `scripts/demo_robotics.py`：可直接运行的离线演示入口，串联实际业务内核，验证成功、缺证据和契约拒绝三类场景。
 - [x] 离线演示指南（现仅保留本地）：运行前提、命令、预期结果、退出码与产物阅读说明；公开命令见[领域模块说明](../../domains/robotics/README.md)，不要求启动 UI、服务或配置模型密钥。
-- [x] `docs/audits/IR-016-robotics-validation.md`：RED/GREEN 记录、新链路语义对照、完整回归结果和剩余限制。
+- [x] 验证记录：各批 RED/GREEN 结果见下方进展记录；新构建链路按结构、调用、端口和数据流与基线对照（ROB-11），发布与消费契约见 ROB-04/05，离线演示三类场景见 ROB-13；剩余限制为未做真实模型和现场机器人执行验收。复现：`python -m pytest tests/unit/test_robotics_*.py`、`python scripts/demo_robotics.py --case all --output-dir .check-results/robotics-demo` 和 `python scripts/check.py --suite all`。原始验证记录仅保留本地，不随仓库发布。
 - [x] 更新 `specs/acceptance.json` 中本轮要求的真实测试入口，删除已完成项的计划占位信息。
 
 清单所列文件与实现已创建；根据用户最终确认勾选交付项，自动验证证据见下方进展记录。

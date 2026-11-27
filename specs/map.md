@@ -407,3 +407,7 @@ IR-029 于 2026-11-17 按用户反馈精简删除／恢复弹窗及回收站卡�
 ## 决策记录交付状态格式
 
 [DR-193 交付状态只写状态值](decisions/DR-193-decision-status-format.md) ／ [IR-054 验收与复现](iterations/IR-054-decision-status-format.md) ／ [DR-STATUS-01 验收映射](acceptance.json)。
+
+## 公开文档的本地证据引用
+
+[DR-194 不以本地文件作为证据](decisions/DR-194-local-evidence-citations.md) ／ [IR-055 验收与复现](iterations/IR-055-local-evidence-citations.md) ／ [REPO-EVIDENCE-01 验收映射](acceptance.json)。
