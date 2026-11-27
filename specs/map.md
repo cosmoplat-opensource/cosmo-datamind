@@ -44,7 +44,7 @@ COSMO DataMind 是「数据治理 × 本体 × 深度问数」原型：
 
 当前仅接入机器人本体的设计阶段可视化与固定版本浏览。数据本体主图、构建结果预览、问数高亮、证据状态、详情和评审维持现有实现，不安排后续自动接入。
 
-- [DR-166 · 机器人交互式本体图谱与构建可视化](decisions/DR-166-interactive-ontology-graph-visualization.md)：方案已采纳；2026-11-19 范围和命名修订实现交付状态为 delivered，相关回归通过。
+- [DR-166 · 机器人交互式本体图谱与构建可视化](decisions/DR-166-interactive-ontology-graph-visualization.md)：方案已采纳；2026-11-19 范围和命名修订实现交付状态：delivered。
 - [IR-031 · 机器人交互式本体图谱与构建可视化](iterations/IR-031-robotics-interactive-ontology-graph-visualization.md)：delivered。2026-11-17 的原交付记录覆盖 17 个全量阶段；2026-11-19 的命名修订仅做定向回归。
 - [DR-167 · 交互式本体图谱边界与公开材料](decisions/DR-167-interactive-graph-limits-and-publication-boundary.md)：仅适用于机器人设计和版本浏览，保留预算、超时、只读及发布边界；STV-H01～H05 本次交付状态为 delivered。
 - 需求与测试登记于 `acceptance.json`；已移除数据本体接入的计划验收，不删除现有数据本体测试。
@@ -403,3 +403,7 @@ IR-029 于 2026-11-17 按用户反馈精简删除／恢复弹窗及回收站卡�
 ## 交互式图谱空白查找
 
 [DR-192 空白查找提示](decisions/DR-192-graph-blank-search.md) ／ [IR-053 验收与复现](iterations/IR-053-graph-blank-search.md) ／ [GRAPH-SEARCH-01 验收映射](acceptance.json)。
+
+## 决策记录交付状态格式
+
+[DR-193 交付状态只写状态值](decisions/DR-193-decision-status-format.md) ／ [IR-054 验收与复现](iterations/IR-054-decision-status-format.md) ／ [DR-STATUS-01 验收映射](acceptance.json)。

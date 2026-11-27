@@ -2,6 +2,7 @@
 import ast
 import json
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -73,3 +74,30 @@ def test_delivered_requirements_do_not_list_missing_planned_tests():
     missing = [(r["id"], t) for r in reqs if r.get("status") == "delivered" for t in r.get("planned_tests") or []
                if not (root / t.split("::")[0]).is_file()]
     assert not missing, missing
+
+
+STATUS_SENTENCE = re.compile(r'(?P<scope>.*?)实现交付状态：(?:delivered|planned|in_progress|withdrawn)')
+
+
+def test_decision_delivery_status_states_only_its_value():
+    """A DR's delivery status is a bare value at the end of its line, with no test or regression notes — DR-193."""
+    findings = []
+    for path in sorted((ROOT / 'specs/decisions').glob('DR-*.md')):
+        for number, line in enumerate(path.read_text(encoding='utf-8').splitlines(), 1):
+            # Quoted examples and code spans describe the format; only declarations are checked.
+            text = re.sub(r'“[^”]*”|`[^`]*`', '', line).strip()
+            if text.startswith('#') or '交付状态' not in text:
+                continue
+            sentences = [s for s in text.split('。') if s.strip()]
+            for index, sentence in enumerate(sentences):
+                if not re.search(r'交付状态[：为]', sentence):
+                    continue
+                match = STATUS_SENTENCE.fullmatch(sentence.strip())
+                scope = match['scope'] if match else ''
+                if (not match or any(mark in scope for mark in ('（', '(', '回归', '通过', '测试'))
+                        or index != len(sentences) - 1):
+                    findings.append(f'{path.name}:{number}: {sentence.strip()[:60]}')
+    for number, line in enumerate((ROOT / 'specs/map.md').read_text(encoding='utf-8').splitlines(), 1):
+        if '交付状态' in line and ('回归' in line or '通过' in line):
+            findings.append(f'map.md:{number}: delivery status carries regression notes')
+    assert not findings, '\n'.join(findings)
