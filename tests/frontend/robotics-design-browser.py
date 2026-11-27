@@ -398,6 +398,26 @@ def test_persistent_graph_failure_keeps_design_and_history_readable(live, tmp_pa
 
 
 @pytest.mark.parametrize('live', [{'prepare': prepare_waiting}], indirect=True)
+def test_failed_design_read_offers_explicit_reread(live):
+    """DR-189: a failed read leaves a visible reread control instead of a stuck page."""
+    site, page, calls = live
+    sid = site.prepared['session_id']
+    before = db_rows(site.root), blob_bytes(site.root)
+    page.route(re.compile(r'.*/api/robotics/design-sessions/' + re.escape(sid) + r'$'),
+               lambda route: route.abort('connectionrefused'), times=1)
+    page.goto(site.url + '/#build?recipe=robotics&session=' + sid)
+    reread = page.get_by_role('button', name='重新读取设计状态', exact=True)
+    expect(reread).to_be_visible()
+    reread.click()
+    design = wait_design(page, sid, 'classes', 'awaiting_confirmation')
+    expect(reread).to_have_count(0)
+    expect(design.get_by_role('button', name='确认类别', exact=True)).to_be_enabled()
+    assert (db_rows(site.root), blob_bytes(site.root)) == before
+    assert site.design_posts() == [] and calls == []
+    done(site)
+
+
+@pytest.mark.parametrize('live', [{'prepare': prepare_waiting}], indirect=True)
 def test_waiting_session_reload_and_owned_server_restart_are_readonly(live):
     site, page, calls = live; state = site.prepared; sid = state['session_id']
     before, files = db_rows(site.root), blob_bytes(site.root)

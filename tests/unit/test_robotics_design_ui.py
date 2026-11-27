@@ -22,7 +22,10 @@ def run(case, *args):
     'edit_clears_current_output', 'duplicate_message', 'transport_retry_identity', 'changed_input_new_identity',
     'new_text_survives_late_success', 'failure_preserves_input_and_design', 'non_json_error',
     'wrong_session_identity', 'late_session_response', 'dispose_ignores_pending', 'polling_single_flight',
-    'history_does_not_change_writable_revision', 'explicit_retry_bound_to_failure', 'retry_guard', 'snapshot_is_detached'])
+    'history_does_not_change_writable_revision', 'explicit_retry_bound_to_failure', 'retry_guard', 'snapshot_is_detached',
+    'failed_poll_retries_with_bounded_backoff', 'non_transient_poll_error_waits_for_reread',
+    'initial_read_failure_offers_reread', 'write_timeout_is_pending_confirmation_and_not_resent',
+    'dispose_stops_read_retry'])
 def test_design_controller_contract(case):
     run(case)
 

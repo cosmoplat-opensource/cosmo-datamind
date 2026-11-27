@@ -1,23 +1,29 @@
-/* Persistent design interaction and immutable history — DR-152 / DR-171. */
+/* Persistent design interaction and immutable history — DR-152 / DR-171 / DR-189. */
 (function(g){'use strict';
 const clone=x=>JSON.parse(JSON.stringify(x)),prefix='/api/robotics/design-sessions/',active=s=>['queued','running'].includes(s?.status);
 const read=(fetch,url,options)=>g.RoboticsAssets.readJSON(fetch,url,options);
+// DR-189: only reads retry automatically; transient failures back off within a fixed bound.
+const READ_RETRY_DELAYS=[2000,4000,5000,5000,5000],WRITE_TIMEOUT='请求超时，结果待确认。请重新读取设计状态后再操作。';
+const transient=e=>e.status===undefined||e.status===429||e.status>=500;
 function createController(o={}){
  const fetch=o.fetch||g.fetch.bind(g),emit=o.onChange||(()=>{}),schedule=o.schedule||g.setTimeout.bind(g),cancel=o.cancelSchedule||g.clearTimeout.bind(g),newId=o.requestId||(()=>g.dmRequestId());
  const requests=new AbortController();
- let s={session:null,messageText:'',historyRevision:null,selectedRevision:null,busy:false,error:null},dead=false,epoch=0,id=null,timer=null,flight=null,identity=null;
+ let s={session:null,messageText:'',historyRevision:null,selectedRevision:null,busy:false,error:null,readRetry:null},dead=false,epoch=0,id=null,timer=null,flight=null,identity=null,failures=0;
  const notify=()=>{if(!dead)emit(clone(s));},clear=()=>{if(timer!==null)cancel(timer);timer=null;};
- function later(){clear();if(!dead&&!s.error&&active(s.session))timer=schedule(()=>{timer=null;return poll();},1000);}
+ function later(){clear();if(dead)return;const delay=s.readRetry?.waiting?READ_RETRY_DELAYS[s.readRetry.attempt-1]:!s.error&&active(s.session)?1000:null;
+  if(delay)timer=schedule(()=>{timer=null;return poll();},delay);}
  async function poll(){if(dead||!id)return;if(flight)return flight;clear();const token=epoch,sid=id;
-  const p=(async()=>{try{const row=await read(fetch,prefix+encodeURIComponent(sid),{signal:requests.signal});if(dead||token!==epoch)return;if(row.session_id!==sid)throw Error('会话身份不匹配');s.session=row;s.error=null;}catch(e){if(!dead&&token===epoch)s.error={message:e.message,code:e.code,status:e.status};}finally{if(!dead&&token===epoch){flight=null;notify();later();}}})();flight=p;return p;}
- async function openSession(sid){if(dead)return;epoch++;if(id!==sid){s.messageText='';identity=null;}id=sid;flight=null;clear();s.busy=false;s.session=null;s.historyRevision=null;s.selectedRevision=null;s.error=null;notify();await poll();}
+  const p=(async()=>{try{const row=await read(fetch,prefix+encodeURIComponent(sid),{signal:requests.signal});if(dead||token!==epoch)return;if(row.session_id!==sid)throw Error('会话身份不匹配');s.session=row;s.error=null;s.readRetry=null;failures=0;}catch(e){if(!dead&&token===epoch){failures++;s.error={message:e.message,code:e.code,status:e.status};
+   s.readRetry={attempt:failures,max:READ_RETRY_DELAYS.length,waiting:active(s.session)&&transient(e)&&failures<=READ_RETRY_DELAYS.length};}}finally{if(!dead&&token===epoch){flight=null;notify();later();}}})();flight=p;return p;}
+ async function openSession(sid){if(dead)return;epoch++;if(id!==sid){s.messageText='';identity=null;}id=sid;flight=null;clear();s.busy=false;s.session=null;s.historyRevision=null;s.selectedRevision=null;s.error=null;s.readRetry=null;failures=0;notify();await poll();}
  async function act(op,extra={}){if(dead||s.busy||!s.session||s.historyRevision!==null)return;const original=clone(s.session),text=s.messageText,token=epoch;
   const body={request_id:'',expected_revision:original.revision,...extra},fingerprint=JSON.stringify([id,op,body]);
-  if(identity?.fingerprint!==fingerprint)identity={fingerprint,id:newId()};body.request_id=identity.id;s.busy=true;s.error=null;notify();
+  if(identity?.fingerprint!==fingerprint)identity={fingerprint,id:newId()};body.request_id=identity.id;s.busy=true;s.error=null;s.readRetry=null;notify();
   try{const row=await read(fetch,prefix+encodeURIComponent(id)+'/'+op,{signal:requests.signal,method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
    if(dead||token!==epoch)return;if(row.session_id!==id)throw Error('会话身份不匹配');s.session=row;identity=null;if(op==='messages'&&s.messageText===text)s.messageText='';
-  }catch(e){if(!dead&&token===epoch)s.error={message:e.message,code:e.code,status:e.status};}finally{if(!dead&&token===epoch){s.busy=false;notify();later();}}}
- return {snapshot:()=>clone(s),openSession,poll,setMessage(text){if(dead)return;s.messageText=text;notify();},
+  }catch(e){if(!dead&&token===epoch)s.error={message:e.code==='request_timeout'||e.name==='TimeoutError'?WRITE_TIMEOUT:e.message,code:e.code,status:e.status};}finally{if(!dead&&token===epoch){s.busy=false;notify();later();}}}
+ function reread(){if(dead||!id||s.busy)return;failures=0;s.readRetry=null;clear();return poll();}
+ return {snapshot:()=>clone(s),openSession,poll,reread,setMessage(text){if(dead)return;s.messageText=text;notify();},
  sendMessage(){if(!s.messageText.trim()||active(s.session))return;return act('messages',{text:s.messageText,expected_stage:s.session.stage});},
  confirmClasses(){return act('confirm-classes',{snapshot_sha256:s.session?.snapshot_sha256});},editClasses(){return act('edit-classes');},editProperties(){return act('edit-properties');},
  confirmSchema(){return act('confirm-schema',{snapshot_sha256:s.session?.snapshot_sha256});},retry(){if(!['failed','interrupted'].includes(s.session?.status))return;return act('retry',{failed_run_id:s.session.run_id});},
@@ -110,7 +116,11 @@ function mount(host,sid,options={}){const esc=g.RoboticsAssets.escape;let c,cont
   if(options.checkId)return g.RoboticsTask.link(ref.ontology_id,ref.version_id,context?.mode||'real')+'&assess=1'+(context?.taskRef?.session_id?'&task='+encodeURIComponent(context.taskRef.session_id):'');
   return '#robotics-view?asset='+encodeURIComponent(ref.ontology_id)+'&version='+encodeURIComponent(ref.version_id)+'&view=interactive-ontology-graph';
  }
- function render(s){const previous=latest?.session;latest=s;const row=s.session;if(!row){heading.textContent=s.error?.message||'正在读取设计…';body.replaceChildren();progress.hidden=true;actions.hidden=true;editor.hidden=true;return;}
+ // DR-189: a read failure says whether it retries itself; otherwise the user can reread explicitly.
+ const readNotice=s=>s.readRetry?.waiting?` 正在自动重新读取（第 ${s.readRetry.attempt}/${s.readRetry.max} 次）。`:'';
+ const rereadButton=s=>s.error&&!s.busy&&!s.readRetry?.waiting?'<button type="button" data-op="reread">重新读取设计状态</button>':'';
+ function render(s){const previous=latest?.session;latest=s;const row=s.session;if(!row){heading.innerHTML=s.error?`<p role="alert">${esc(s.error.message+readNotice(s))}</p>${rereadButton(s)}`:'<p role="status">正在读取设计…</p>';
+  heading.querySelector('[data-op]')?.addEventListener('click',()=>c.reread());body.replaceChildren();progress.hidden=true;actions.hidden=true;editor.hidden=true;secondary.replaceChildren();return;}
  if(previous&&previous.status!=='completed'&&row.status==='completed'&&row.output_asset_ref)completionPending=true;
  host.dataset.testid='robotics-design';host.dataset.sessionId=sid;host.dataset.stage=row.stage;host.dataset.revision=row.revision;host.dataset.status=row.status;
  syncInteractiveGraphView(s);
@@ -135,14 +145,14 @@ function mount(host,sid,options={}){const esc=g.RoboticsAssets.escape;let c,cont
  if(history){
   revisionLabel=selected?.revision===s.historyRevision?'历史修订 '+s.historyRevision+' · 只读':'正在读取历史修订 '+s.historyRevision+'…';
  }
- heading.innerHTML=`<div><h3 class="rd-stage-guide">${esc(({classes:'第 1 步：类别设计',properties:'第 2 步：关系与属性设计',abox:'第 3 步：实例构建'})[stage]||stage)}</h3><p class="rd-status">${esc(revisionLabel)} · 执行未验证</p></div>${(s.error||row.error)?`<p role="alert">${esc(s.error?.message||row.error?.message||'设计失败')}</p>`:''}`;
+ heading.innerHTML=`<div><h3 class="rd-stage-guide">${esc(({classes:'第 1 步：类别设计',properties:'第 2 步：关系与属性设计',abox:'第 3 步：实例构建'})[stage]||stage)}</h3><p class="rd-status">${esc(revisionLabel)} · 执行未验证</p></div>${(s.error||row.error)?`<p role="alert">${esc(s.error?s.error.message+readNotice(s):row.error?.message||'设计失败')}</p>`:''}`;
  heading.append(historyBox);
  const reviewOptions={classes:row.class_confirmation?.classes||[]};
  body.innerHTML=`<details><summary>查看完整定义与说明</summary>
  ${needsProperties&&!selected?presentation({classes:row.class_confirmation?.classes||result?.classes||[]},esc):result?`${result.reply?`<details class="rd-design-details"><summary>查看模型设计说明</summary><p>${esc(result.reply)}</p></details>`:''}${presentation(result,esc,reviewOptions)}`:''}</details>
  ${selected?`<section data-testid="robotics-design-diff"><h4>与当前设计的差异</h4><details open><summary>历史设计</summary>${presentation(selected.state.result,esc)}</details><details open><summary>当前设计</summary>${presentation(row.result,esc)}</details></section>`:''}
  ${ref?`<p>设计候选已保存 · 执行未验证</p><a href="${esc(g.RoboticsAssets.versionLink(ref.ontology_id,ref.version_id))}">查看本体候选</a>`:''}`;
- secondary.innerHTML=`${!history&&!waiting&&row.revision?'<button data-op="editClasses">返回类别修改</button>':''}${!history&&failed?'<button data-op="retry">重试设计</button>':''}`;
+ secondary.innerHTML=`${rereadButton(s)}${!history&&!waiting&&row.revision?'<button data-op="editClasses">返回类别修改</button>':''}${!history&&failed?'<button data-op="retry">重试设计</button>':''}`;
  [...actions.querySelectorAll('[data-op]'),...secondary.querySelectorAll('[data-op]')].forEach(b=>{b.disabled=s.busy;b.onclick=()=>c[b.dataset.op]();});
  const phase=[row.stage,row.status,row.revision].join(':');
  if(phase!==editorPhase){editor.open=!awaiting||!!s.messageText.trim();editorPhase=phase;}

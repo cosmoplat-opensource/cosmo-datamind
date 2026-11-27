@@ -16,13 +16,13 @@ function fixture(build=false){
   vm.runInContext(fs.readFileSync(path.join(ROOT,'ui/modules/robotics-assets.js'),'utf8'),context);
   vm.runInContext(fs.readFileSync(file,'utf8'),context,{filename:file});
   const api=context[build?'RoboticsBuild':'RoboticsDesign'];assert.equal(typeof api?.createController,'function');
-  const f={calls:[],emissions:[],timers:new Map(),handler:async url=>response(url.includes('/events?')?{items:[]}:
+  const f={calls:[],emissions:[],timers:new Map(),delays:[],handler:async url=>response(url.includes('/events?')?{items:[]}:
     url.includes('/api/domain-runs/')?{run_id:'r1',status:'completed'}:state())};let id=0,timer=0;
   f.c=api.createController({fetch:async(url,options={})=>{f.calls.push({url:String(url),options});return f.handler(String(url),options);},
     onChange:s=>f.emissions.push(s),requestId:()=>`request-${++id}`,
-    schedule:(fn,ms)=>{assert.ok(ms>=250&&ms<=5000);f.timers.set(++timer,fn);return timer;},
+    schedule:(fn,ms)=>{assert.ok(ms>=250&&ms<=5000);f.delays.push(ms);f.timers.set(++timer,fn);return timer;},
     cancelSchedule:key=>f.timers.delete(key)});
-  f.s=()=>f.c.snapshot();f.posts=()=>f.calls.filter(x=>x.options.method==='POST');
+  f.s=()=>f.c.snapshot();f.tick=async()=>{const [key,fn]=[...f.timers][0];f.timers.delete(key);await fn();};f.posts=()=>f.calls.filter(x=>x.options.method==='POST');
   f.open=async extra=>{f.handler=async()=>response(state('s1',extra));await f.c.openSession('s1');f.calls.length=0;};
   return f;
 }
@@ -162,6 +162,53 @@ const cases={
   assert.equal(f.s().selectedRevision,null);
   assert.equal(f.posts().length,1);
   f.c.dispose();
+ },
+ // DR-189: failed reads retry within a fixed bound, then wait for an explicit reread.
+ async failed_poll_retries_with_bounded_backoff(){const f=fixture();await f.open({status:'running'});
+  assert.equal(f.timers.size,1);f.delays.length=0;
+  f.handler=async()=>{throw Object.assign(Error('网络中断'),{name:'TypeError'});};
+  for(let attempt=1;attempt<=5;attempt++){
+   await f.tick();
+   assert.equal(f.s().error.message,'网络中断');
+   assert.deepEqual(clone(f.s().readRetry),{attempt,max:5,waiting:true});
+   assert.equal(f.timers.size,1);
+  }
+  assert.deepEqual(f.delays,[2000,4000,5000,5000,5000]);
+  await f.tick();
+  assert.deepEqual(clone(f.s().readRetry),{attempt:6,max:5,waiting:false});
+  assert.equal(f.timers.size,0);assert.equal(f.s().session.status,'running');
+  const reads=f.calls.length;
+  f.handler=async()=>response(state('s1',{status:'running'}));
+  await f.c.reread();
+  assert.equal(f.calls.length,reads+1);assert.equal(f.s().error,null);assert.equal(f.s().readRetry,null);
+  assert.equal(f.timers.size,1);assert.equal(f.delays.at(-1),1000);assert.equal(f.posts().length,0);
+  f.handler=async()=>{throw Error('再次中断');};await f.tick();
+  assert.deepEqual(clone(f.s().readRetry),{attempt:1,max:5,waiting:true},'a successful reread resets the bound');
+ },
+ async non_transient_poll_error_waits_for_reread(){const f=fixture();await f.open({status:'queued'});
+  f.handler=async()=>response({error:{code:'not_found',message:'设计会话不存在。'}},404);await f.tick();
+  assert.equal(f.s().error.code,'not_found');assert.deepEqual(clone(f.s().readRetry),{attempt:1,max:5,waiting:false});
+  assert.equal(f.timers.size,0);
+  f.handler=async()=>response(state('s1',{status:'completed',output_asset_ref:{ontology_id:'o',version_id:'v'}}));
+  await f.c.reread();assert.equal(f.s().session.status,'completed');assert.equal(f.s().error,null);assert.equal(f.timers.size,0);
+ },
+ async initial_read_failure_offers_reread(){const f=fixture();f.handler=async()=>{throw Error('网络中断');};await f.c.openSession('s1');
+  assert.equal(f.s().session,null);assert.deepEqual(clone(f.s().readRetry),{attempt:1,max:5,waiting:false});assert.equal(f.timers.size,0);
+  f.handler=async()=>response(state());await f.c.reread();assert.equal(f.s().session.session_id,'s1');assert.equal(f.s().readRetry,null);
+ },
+ async write_timeout_is_pending_confirmation_and_not_resent(){const f=fixture();await f.open();f.c.setMessage('设计');
+  f.handler=async()=>{throw Object.assign(Error('读取超时，请稍后重试。'),{name:'TimeoutError',code:'request_timeout'});};
+  await f.c.sendMessage();
+  assert.equal(f.s().error.message,'请求超时，结果待确认。请重新读取设计状态后再操作。');
+  assert.equal(f.s().readRetry,null);assert.equal(f.timers.size,0);assert.equal(f.posts().length,1);
+  const id=JSON.parse(f.posts()[0].options.body).request_id;
+  f.handler=async()=>response(state('s1',{status:'awaiting_confirmation'}));await f.c.reread();
+  assert.equal(f.posts().length,1,'reread never resends the write');assert.equal(f.s().error,null);
+  f.handler=async()=>response(state('s1',{status:'queued'}),202);await f.c.sendMessage();
+  assert.equal(JSON.parse(f.posts()[1].options.body).request_id,id,'an explicit resend keeps the idempotency key');
+ },
+ async dispose_stops_read_retry(){const f=fixture();await f.open({status:'running'});f.handler=async()=>{throw Error('网络中断');};
+  await f.tick();assert.equal(f.timers.size,1);f.c.dispose();assert.equal(f.timers.size,0);await f.c.reread();assert.equal(f.calls.length,1);
  },
  async snapshot_is_detached(){const f=fixture();await f.open();const s=f.s();s.session.result.classes[0].label='mutated';
   assert.equal(f.s().session.result.classes[0].label,'技能');},
